@@ -17,11 +17,13 @@ package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
+import io.camunda.client.api.command.AddClockCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignProcessInstanceBusinessIdCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
@@ -35,6 +37,7 @@ import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
@@ -66,6 +69,8 @@ import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
+import io.camunda.client.api.command.ListSecretsCommandStep1;
+import io.camunda.client.api.command.LookupUserTaskCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -73,10 +78,13 @@ import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
+import io.camunda.client.api.command.ResolveSecretsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.command.SuspendProcessInstanceCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
@@ -94,10 +102,12 @@ import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
+import io.camunda.client.api.command.UpdateJobPriorityCommandStep1;
 import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
@@ -105,10 +115,13 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentDefinitionGetRequest;
+import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.ClockGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -116,6 +129,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.FormGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -138,6 +152,9 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentDefinitionSearchRequest;
+import io.camunda.client.api.search.request.AgentInstanceHistorySearchRequest;
+import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
@@ -150,6 +167,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.ElementInstanceWaitStateSearchRequest;
 import io.camunda.client.api.search.request.GlobalTaskListenerSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
@@ -166,6 +184,7 @@ import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
@@ -190,6 +209,7 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatist
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -226,6 +246,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   }
 
   /**
+   * @return a builder to configure and create a new {@link CamundaClient} based on an existing
+   *     configuration.
+   */
+  static CamundaClientBuilder newClientBuilder(final CamundaClientConfiguration configuration) {
+    return new CamundaClientBuilderImpl().withConfiguration(configuration);
+  }
+
+  /**
    * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
    */
   static CamundaClientCloudBuilderStep1 newCloudClientBuilder() {
@@ -253,16 +281,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   TopologyRequestStep1 newTopologyRequest();
 
   /**
-   * Request the current cluster status. Can be used to check if the cluster is healthy (has at
-   * least one partition with a healthy leader).
+   * Request the current cluster status. Can be used to check whether the cluster can process work,
+   * aggregated over all physical tenants.
    *
    * <pre>
-   * boolean isHealthy = camundaClient
+   * StatusResponse.Status status = camundaClient
    *  .newStatusRequest()
    *  .send()
    *  .join()
-   *  .isHealthy();
+   *  .getStatus();
    * </pre>
+   *
+   * <p>Being cluster-wide, the status is served outside the per-physical-tenant path. The request
+   * therefore fails against a REST address that is a proxy for a tenant-prefixed URL, unless that
+   * proxy also forwards the cluster-scoped paths — see {@link
+   * CamundaClientBuilder#prefixPhysicalTenantPath(boolean)}.
    *
    * @return the request where you must call {@code send()}
    */
@@ -404,6 +437,27 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
 
   /**
+   * Command to assign a business id to an already running process instance.
+   *
+   * <p>This allows attaching a business id to a process instance that was started without one. The
+   * assignment is rejected if the instance already has a different business id, if it is a child
+   * instance created by a call activity, or if business id uniqueness is enabled for its process
+   * definition.
+   *
+   * <pre>
+   * camundaClient
+   *  .newAssignProcessInstanceBusinessIdCommand(processInstanceKey)
+   *  .businessId("order-4711")
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key of the process instance to assign the business id to
+   * @return a builder for the command
+   */
+  AssignProcessInstanceBusinessIdCommandStep1 newAssignProcessInstanceBusinessIdCommand(
+      long processInstanceKey);
+
+  /**
    * Command to cancel a process instance.
    *
    * <pre>
@@ -416,6 +470,34 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CancelProcessInstanceCommandStep1 newCancelInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to suspend a process instance.
+   *
+   * <pre>
+   * camundaClient
+   *  .newSuspendProcessInstanceCommand(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which identifies the corresponding process instance
+   * @return a builder for the command
+   */
+  SuspendProcessInstanceCommandStep1 newSuspendProcessInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to resume a process instance.
+   *
+   * <pre>
+   * camundaClient
+   *  .newResumeProcessInstanceCommand(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which identifies the corresponding process instance
+   * @return a builder for the command
+   */
+  ResumeProcessInstanceCommandStep1 newResumeProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to delete a process instance history.
@@ -622,6 +704,40 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(ActivatedJob job);
+
+  /**
+   * Command to update the priority of a job.
+   *
+   * <pre>
+   * long jobKey = ..;
+   *
+   * camundaClient
+   *  .newUpdateJobPriorityCommand(jobKey)
+   *  .priority(5)
+   *  .send();
+   * </pre>
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
+  UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(long jobKey);
+
+  /**
+   * Command to update the priority of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   *
+   * camundaClient
+   *  .newUpdateJobPriorityCommand(job)
+   *  .priority(5)
+   *  .send();
+   * </pre>
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(ActivatedJob job);
 
   /**
    * Registers a new job worker for jobs of a given type.
@@ -847,10 +963,35 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   PinClockCommandStep1 newPinClockCommand();
 
   /**
+   * Command to add time to the Zeebe engine's internal clock without pinning it.
+   *
+   * <p>Unlike a <code>pin</code> command, the clock keeps ticking in real time after the time is
+   * added. If the clock is pinned, it stays pinned and moves to the pinned time plus the offset. A
+   * negative offset moves the clock backward. Use a <code>reset</code> command to remove all added
+   * time.
+   *
+   * <pre>{@code
+   * final OffsetDateTime newEngineTime = camundaClient
+   *  .newAddClockCommand()
+   *  .offset(Duration.ofHours(1))
+   *  .send()
+   *  .join()
+   *  .getTimestamp();
+   * }</pre>
+   *
+   * <p>The response holds the new time of the clock. The change reaches all partitions shortly
+   * after it is accepted.
+   *
+   * @return a builder for the command
+   */
+  AddClockCommandStep1 newAddClockCommand();
+
+  /**
    * Command to reset the Zeebe engine's internal clock to the system time.
    *
    * <p>This command allows you to reset the clock to the current system time, effectively undoing
-   * any previous <code>pin</code> command that may have set the clock to a specific, static time.
+   * any previous <code>pin</code> command that may have set the clock to a specific, static time,
+   * and any time added with an <code>add</code> command.
    *
    * <pre>{@code
    * camundaClient
@@ -865,6 +1006,29 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
   ResetClockCommandStep1 newResetClockCommand();
+
+  /**
+   * Request to get the current time of the Zeebe engine's internal clock.
+   *
+   * <p>If the clock is pinned, the response holds the pinned time. Otherwise, it holds the time
+   * that the engine currently uses. This is useful to check the effect of a <code>pin</code>,
+   * <code>add</code>, or <code>reset</code> command.
+   *
+   * <pre>{@code
+   * final OffsetDateTime engineTime = camundaClient
+   *  .newClockGetRequest()
+   *  .send()
+   *  .join()
+   *  .getTimestamp();
+   * }</pre>
+   *
+   * <p>A <code>pin</code>, <code>add</code>, or <code>reset</code> command reaches all partitions
+   * shortly after it is accepted, so a request sent right after it may still return the previous
+   * time.
+   *
+   * @return a builder for the request
+   */
+  ClockGetRequest newClockGetRequest();
 
   /**
    * Gets a process definition by key.
@@ -915,6 +1079,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(long processDefinitionKey);
 
   /**
+   * Gets a Form by key.
+   *
+   * <pre>
+   * long formKey = ...;
+   *
+   * camundaClient
+   *  .newFormGetRequest(formKey)
+   *  .send();
+   * </pre>
+   *
+   * @param formKey the key of the form
+   * @return a builder for the request to get a form
+   */
+  FormGetRequest newFormGetRequest(long formKey);
+
+  /**
    * Executes a search request to query process definitions.
    *
    * <pre>
@@ -931,6 +1111,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process definition search request
    */
   ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest();
+
+  /**
+   * Executes a search request to query deployed resources.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceSearchRequest()
+   *  .filter((f) -> f.resourceKey(resourceKey))
+   *  .sort((s) -> s.resourceName().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the resource search request
+   */
+  ResourceSearchRequest newResourceSearchRequest();
 
   /**
    * Executes a search request to query process definition element statistics.
@@ -963,6 +1161,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process instance statistics request
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
+      final long processInstanceKey);
+
+  /**
+   * Executes a request to query process instance wait state statistics, grouped by element id.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newProcessInstanceWaitStateStatisticsRequest(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process instance wait state statistics request
+   */
+  ProcessInstanceWaitStateStatisticsRequest newProcessInstanceWaitStateStatisticsRequest(
       final long processInstanceKey);
 
   /**
@@ -2021,6 +2235,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
 
   /**
+   * Command to look up an active user task together with the variables visible to it, read from the
+   * engine's state instead of the secondary storage.
+   *
+   * <pre>
+   * long userTaskKey = ...;
+   *
+   * LookupUserTaskResponse userTask = camundaClient
+   *  .newLookupUserTaskCommand(userTaskKey)
+   *  .fetchVariables("recommendation", "applicant")
+   *  .send()
+   *  .join();
+   * </pre>
+   *
+   * <p>Unlike {@link #newUserTaskGetRequest(long)}, the task and its variables reflect every
+   * command the engine has already processed, for example the completion of a previous task, and
+   * are consistent with each other. Only active tasks can be looked up: a completed or canceled
+   * task is not found, use {@link #newUserTaskGetRequest(long)} or the user task search for those.
+   * Each lookup is processed by the engine, so use it when a task is opened, not for polling.
+   *
+   * <p>The response includes the task's lifecycle state: while a change to the task is in progress,
+   * the task fields and variables are the ones from before the change.
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/66211")
+  LookupUserTaskCommandStep1 newLookupUserTaskCommand(long userTaskKey);
+
+  /**
    * Executes a search request to query variables.
    *
    * <pre>
@@ -2237,12 +2483,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       long userTaskKey);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a document.
+   * Command to create a document.
    *
    * <pre>
    *   camundaClient
@@ -2258,12 +2499,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentCommandStep1 newCreateDocumentCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
+   * Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
    * command allows you to create multiple documents in a single request. This can be more efficient
    * than creating each document individually, however, there are multiple limitations to consider.
    * <br>
@@ -2306,12 +2542,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -2326,12 +2557,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
+   * Command to get a document.
    *
    * <pre>
    *   camundaClient
@@ -2346,12 +2572,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2367,12 +2588,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to create a document link.
    *
    * <pre>
    *   camundaClient
@@ -2388,12 +2604,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       DocumentReferenceResponse documentReferenceResponse);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -2408,12 +2619,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
+   * Command to delete a document.
    *
    * <pre>
    *   camundaClient
@@ -2740,6 +2946,26 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the authorizations search request
    */
   AuthorizationsSearchRequest newAuthorizationSearchRequest();
+
+  /**
+   * Search the current authenticated principal's own authorization records. Unlike {@link
+   * #newAuthorizationSearchRequest()}, this endpoint requires no {@code AUTHORIZATION:READ}
+   * permission — it returns only authorizations that apply to the caller (directly or via group,
+   * role, or mapping rule membership).
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newOwnAuthorizationSearchRequest()
+   *  .filter((f) -> f.resourceType("PROCESS_DEFINITION"))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the own authorizations search request
+   */
+  AuthorizationsSearchRequest newOwnAuthorizationSearchRequest();
 
   /**
    * Command to delete an authorization
@@ -3218,6 +3444,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AuditLogSearchRequest newAuditLogSearchRequest();
 
   /**
+   * Executes a search request to query element instance wait states.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newElementInstanceWaitStateSearchRequest()
+   *    .filter((f) -> f.processInstanceKey(myProcessInstanceKey))
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @return a builder for the element instance wait state search request
+   */
+  ElementInstanceWaitStateSearchRequest newElementInstanceWaitStateSearchRequest();
+
+  /**
    * Executes a search request to query audit logs related to a user task.
    *
    * <pre>
@@ -3375,9 +3616,63 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the request to get a resource content
+   * @deprecated since 8.10, use {@link #newResourceContentBinaryGetRequest(long)} instead.
+   * @return a builder for the request to get an RPA resource content as JSON
    */
+  @Deprecated
   ResourceContentGetRequest newResourceContentGetRequest(long resourceKey);
+
+  /**
+   * Retrieves a resource content as binary by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceContentBinaryGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource content as binary
+   */
+  ResourceContentGetRequest newResourceContentBinaryGetRequest(long resourceKey);
+
+  /**
+   * Creates a command to create a new agent instance.
+   *
+   * <pre>
+   *   CreateAgentInstanceResponse response = camundaClient
+   *       .newCreateAgentInstanceCommand()
+   *       .elementInstanceKey(2251799813685248L)
+   *       .jobKey(jobKey)
+   *       .jobLeaseToken(jobLeaseToken)
+   *       .history(List.of(configurationHistoryItem))
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @return a builder for creating an agent instance
+   */
+  CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand();
+
+  /**
+   * Creates a command to update an existing agent instance.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newUpdateAgentInstanceCommand(agentInstanceKey)
+   *       .elementInstanceKey(elementInstanceKey)
+   *       .status(AgentInstanceUpdateStatus.THINKING)
+   *       .jobKey(jobKey)
+   *       .jobLeaseToken(jobLeaseToken)
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance to update
+   * @return a builder for updating the agent instance
+   */
+  UpdateAgentInstanceCommandStep1 newUpdateAgentInstanceCommand(long agentInstanceKey);
 
   /**
    * Creates a request to create a new global task listener.
@@ -3456,4 +3751,117 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching global task listeners
    */
   GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
+
+  /**
+   * Creates a request to fetch an agent definition by its key.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionGetRequest(agentDefinitionKey)
+   *       .send();
+   * </pre>
+   *
+   * @param agentDefinitionKey the key of the agent definition to retrieve
+   * @return a builder for fetching an agent definition
+   */
+  AgentDefinitionGetRequest newAgentDefinitionGetRequest(long agentDefinitionKey);
+
+  /**
+   * Creates a request to search for agent definitions.
+   *
+   * <p>Agent definitions can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentDefinitionSearchRequest()
+   *       .filter(f -> f.agentType(AgentDefinitionType.AI_AGENT_SUB_PROCESS))
+   *       .sort(s -> s.processDefinitionKey().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent definitions
+   */
+  AgentDefinitionSearchRequest newAgentDefinitionSearchRequest();
+
+  /**
+   * Creates a request to fetch an agent instance by its key.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentInstanceGetRequest(agentInstanceKey)
+   *       .send();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance to retrieve
+   * @return a builder for fetching an agent instance
+   */
+  AgentInstanceGetRequest newAgentInstanceGetRequest(long agentInstanceKey);
+
+  /**
+   * Creates a request to search for agent instances.
+   *
+   * <p>Agent instances can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentInstanceSearchRequest()
+   *       .filter(f -> f.status(AgentInstanceStatus.COMPLETED))
+   *       .sort(s -> s.creationDate().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent instances
+   */
+  AgentInstanceSearchRequest newAgentInstanceSearchRequest();
+
+  /**
+   * Creates a request to search the conversation history of an agent instance.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+   *       .filter(f -> f.role(AgentInstanceHistoryRole.USER))
+   *       .sort(s -> s.producedAt().asc())
+   *       .send();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance whose history to search
+   * @return a builder for searching agent instance history
+   */
+  AgentInstanceHistorySearchRequest newAgentInstanceHistorySearchRequest(long agentInstanceKey);
+
+  /**
+   * Command to resolve a batch of secret references in a single round-trip.
+   *
+   * <p>Each reference is authorized and resolved independently, so a reference that cannot be
+   * resolved never fails the others. Such a failure is returned as data on the response, not as an
+   * exception: the resolved references are available on {@link
+   * io.camunda.client.api.response.ResolveSecretsResponse#getResolved()} and the failed ones on
+   * {@link io.camunda.client.api.response.ResolveSecretsResponse#getErrors()}. Only a rejected
+   * request, for example one exceeding the maximum batch size, completes the command exceptionally.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newResolveSecretsCommand()
+   *       .references(List.of("camunda.secrets.token"))
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  ResolveSecretsCommandStep1 newResolveSecretsCommand();
+
+  /**
+   * Command to list the secret reference names the caller is authorized to see. It never returns
+   * secret values, only the reference names.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newListSecretsCommand()
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  ListSecretsCommandStep1 newListSecretsCommand();
 }

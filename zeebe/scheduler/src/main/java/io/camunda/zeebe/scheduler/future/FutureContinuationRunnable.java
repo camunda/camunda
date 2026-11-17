@@ -9,13 +9,14 @@ package io.camunda.zeebe.scheduler.future;
 
 import java.util.function.BiConsumer;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
 
 public final class FutureContinuationRunnable<T> implements Runnable {
   private final ActorFuture<T> future;
-  private final BiConsumer<T, Throwable> consumer;
+  private final BiConsumer<T, @Nullable Throwable> consumer;
 
   public FutureContinuationRunnable(
-      final ActorFuture<T> future, final BiConsumer<T, Throwable> consumer) {
+      final ActorFuture<T> future, final BiConsumer<T, @Nullable Throwable> consumer) {
     this.future = future;
     this.consumer = consumer;
   }

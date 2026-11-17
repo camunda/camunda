@@ -141,6 +141,16 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   @Override
+  public UpdateTimeoutJobCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
+    if (jobLeaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setJobLeaseToken(jobLeaseToken);
+    httpRequestObject.setJobLeaseToken(jobLeaseToken);
+    return this;
+  }
+
+  @Override
   public UpdateTimeoutJobCommandStep1 useRest() {
     useRest = true;
     return this;

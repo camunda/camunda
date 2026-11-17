@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.util;
 
+import static io.camunda.zeebe.util.StringUtil.sanitizeList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class StringUtilListSanitizerTest {
 
@@ -23,7 +24,7 @@ public class StringUtilListSanitizerTest {
     final List<String> expected = Collections.emptyList();
 
     // when
-    final List<String> actual = StringUtil.LIST_SANITIZER.apply(input);
+    final List<String> actual = sanitizeList(input);
 
     // then
     assertThat(actual).isEqualTo(expected);
@@ -36,7 +37,7 @@ public class StringUtilListSanitizerTest {
     final List<String> expected = Arrays.asList("foo");
 
     // when
-    final List<String> actual = StringUtil.LIST_SANITIZER.apply(input);
+    final List<String> actual = sanitizeList(input);
 
     // then
     assertThat(actual).isEqualTo(expected);
@@ -49,7 +50,7 @@ public class StringUtilListSanitizerTest {
     final List<String> expected = Arrays.asList("foo");
 
     // when
-    final List<String> actual = StringUtil.LIST_SANITIZER.apply(input);
+    final List<String> actual = sanitizeList(input);
 
     // then
     assertThat(actual).isEqualTo(expected);
@@ -62,7 +63,7 @@ public class StringUtilListSanitizerTest {
     final List<String> expected = Arrays.asList("foo", "bar");
 
     // when
-    final List<String> actual = StringUtil.LIST_SANITIZER.apply(input);
+    final List<String> actual = sanitizeList(input);
 
     // then
     assertThat(actual).isEqualTo(expected);

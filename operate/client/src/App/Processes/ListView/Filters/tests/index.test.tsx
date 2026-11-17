@@ -73,7 +73,72 @@ describe('Filters', () => {
     );
   });
 
-  it.skip('should load values from the URL', async () => {
+  it('should mark deleted process definitions in the version filter', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess2',
+          name: 'Deleted process',
+          version: 2,
+          state: 'DELETED',
+        }),
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess1',
+          name: 'Deleted process',
+          version: 1,
+          state: 'ACTIVE',
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'deletedProcess',
+          processDefinitionKey: 'deletedProcess2',
+          name: 'Deleted process',
+          version: 2,
+          state: 'DELETED',
+        }),
+      ]),
+    );
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Name'}));
+
+    expect(
+      screen.getByRole('option', {name: 'Deleted process'}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('option', {name: 'Deleted process'}));
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'}),
+      ).toHaveTextContent('2 (Deleted)'),
+    );
+
+    await user.click(screen.getByLabelText('Version', {selector: 'button'}));
+
+    expect(
+      screen.getByRole('option', {name: '2 (Deleted)'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('option', {name: '1'})).toBeInTheDocument();
+  });
+
+  it.todo('should load values from the URL', async () => {
     const MOCK_PARAMS = {
       processDefinitionId: 'bigVarProcess',
       processDefinitionVersion: '1',
@@ -81,7 +146,7 @@ describe('Filters', () => {
       parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'a random error',
       elementId: 'ServiceTask_0kt6c5i',
-      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -126,7 +191,7 @@ describe('Filters', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.batchOperationId),
+      screen.getByDisplayValue(MOCK_PARAMS.batchOperationKey),
     ).toBeInTheDocument();
     expect(screen.getByRole('checkbox', {name: 'Active'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Incidents'})).toBeChecked();
@@ -200,7 +265,8 @@ describe('Filters', () => {
       parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'an error',
       elementId: 'ServiceTask_0kt6c5i',
-      batchOperationId: '90fdfe82-090b-4d84-af31-5db612514191',
+      batchOperationKey: '90fdfe82-090b-4d84-af31-5db612514191',
+      businessId: 'eq_order-12345',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -270,15 +336,19 @@ describe('Filters', () => {
     await selectElement({user, option: 'Service Task 1'});
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
+    await user.click(screen.getByText('Variables'));
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Batch Operation Key'));
     await user.type(
-      screen.getByLabelText(/^operation id$/i),
+      screen.getByLabelText(/^batch operation key$/i),
 
-      MOCK_VALUES.batchOperationId,
+      MOCK_VALUES.batchOperationKey,
     );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Business ID'));
+    await user.type(screen.getByLabelText(/^business id$/i), 'order-12345');
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Failed job but retries left'));
@@ -368,67 +438,33 @@ describe('Filters', () => {
     );
   });
 
-  it('should have JSON editor for variable value filter', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByRole('button', {name: /open json editor/i}));
-
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', {
-        name: /cancel/i,
-      }),
-    ).toBeEnabled();
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', {name: /apply/i}),
-    ).toBeEnabled();
-    expect(
-      await within(screen.getByRole('dialog')).findByTestId('monaco-editor'),
-    ).toBeInTheDocument();
-  });
-
-  it('should have plain editor for variable value filter (multiple values)', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByLabelText('Multiple'));
-    await user.type(screen.getByLabelText(/^values$/i), '1, 2, 3');
-    await user.click(screen.getByRole('button', {name: /open editor modal/i}));
-
-    const withinDialog = within(screen.getByRole('dialog'));
-    expect(await withinDialog.findByText('1, 2, 3')).toBeInTheDocument();
-
-    await user.type(withinDialog.getByRole('textbox'), 'invalid');
-    expect(withinDialog.getByRole('button', {name: /apply/i})).toBeDisabled();
-
-    await user.clear(withinDialog.getByRole('textbox'));
-    await user.type(withinDialog.getByRole('textbox'), '"a", "b", "c"');
-    expect(withinDialog.getByRole('button', {name: /apply/i})).toBeEnabled();
-
-    await user.click(withinDialog.getByRole('button', {name: /apply/i}));
-    expect(screen.getByLabelText(/^values$/i)).toHaveValue('"a", "b", "c"');
-  });
-
   it('should enable the reset button', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&suspended=true&incidents=true'),
+    });
+
+    expect(screen.getByRole('button', {name: /reset filters/i})).toBeDisabled();
+    expect(screen.getByRole('checkbox', {name: 'Suspended'})).toBeChecked();
+
+    await user.click(screen.getByLabelText('Incidents'));
+
+    expect(
+      await screen.findByText('?active=true&suspended=true'),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole('button', {name: /reset filters/i})).toBeEnabled();
+  });
+
+  it('should add the suspended state filter to the URL', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
 
-    expect(screen.getByRole('button', {name: /reset filters/i})).toBeDisabled();
+    await user.click(screen.getByRole('checkbox', {name: 'Suspended'}));
 
-    await user.click(screen.getByLabelText('Incidents'));
-
-    await waitFor(() =>
-      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/),
-    );
-
-    expect(screen.getByRole('button', {name: /reset filters/i})).toBeEnabled();
+    expect(
+      await screen.findByText('?active=true&incidents=true&suspended=true'),
+    ).toBeInTheDocument();
   });
 
   it('should not submit an invalid form after deleting an optional filter', async () => {
@@ -450,8 +486,8 @@ describe('Filters', () => {
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
-    await removeOptionalFilter({user, screen, label: 'Operation Id'});
+    await user.click(screen.getByText('Batch Operation Key'));
+    await removeOptionalFilter({user, screen, label: 'Batch Operation Key'});
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
@@ -507,9 +543,10 @@ describe('Filters', () => {
         name: 'Parent Process Instance Key',
         fields: ['Parent Process Instance Key'],
       },
-      {name: 'Variable', fields: ['Name', 'Value']},
+      {name: 'Variables', fields: ['Variables']},
       {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
-      {name: 'Operation Id', fields: ['Operation Id']},
+      {name: 'Batch Operation Key', fields: ['Batch Operation Key']},
+      {name: 'Business ID', fields: ['Business ID']},
     ];
 
     let fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {
@@ -521,16 +558,14 @@ describe('Filters', () => {
       await user.click(screen.getByText(filter.name));
     }
 
-    let visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
-
-    for (let i = 0; i < visibleOptionalFilters.length; i++) {
-      expect(screen.getByText(fieldLabels[i]!)).toBeInTheDocument();
+    for (const label of fieldLabels) {
+      expect(screen.getByText(label)).toBeInTheDocument();
     }
 
     await user.click(screen.getByRole('button', {name: /reset filters/i}));
 
-    for (let i = 0; i < visibleOptionalFilters.length; i++) {
-      expect(screen.queryByText(fieldLabels[i]!)).not.toBeInTheDocument();
+    for (const label of fieldLabels) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
     }
 
     optionalFilters.reverse();
@@ -543,10 +578,8 @@ describe('Filters', () => {
       await user.click(screen.getByText(filter.name));
     }
 
-    visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
-
-    for (let i = 0; i < visibleOptionalFilters.length; i++) {
-      expect(screen.getByText(fieldLabels[i]!)).toBeInTheDocument();
+    for (const label of fieldLabels) {
+      expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 

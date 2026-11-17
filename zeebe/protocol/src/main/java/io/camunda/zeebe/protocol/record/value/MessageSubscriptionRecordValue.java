@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageSubscriptionRecordValue.Builder.class)
 public interface MessageSubscriptionRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned, WaitStateRelated {
 
   /**
    * @return the process instance key tied to the subscription
@@ -39,6 +39,7 @@ public interface MessageSubscriptionRecordValue
   /**
    * @return the element instance key tied to the subscription
    */
+  @Override
   long getElementInstanceKey();
 
   /**
@@ -71,4 +72,61 @@ public interface MessageSubscriptionRecordValue
    *     returns {@code false} if the event is non-interrupting.
    */
   boolean isInterrupting();
+
+  /**
+   * The business id captured from the subscribing process instance at the time the subscription was
+   * opened. Used as an additional, post-routing local filter on the message partition: when a
+   * published message carries a business id, only subscriptions whose stored business id matches
+   * will correlate. A subscription opened from a process instance without a business id stores an
+   * empty string.
+   *
+   * <p>This value is captured at OPEN time on the process instance partition and shipped to the
+   * message partition with the subscription. It is not retroactively updated if the process
+   * instance's business id is assigned later.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.10
+   */
+  String getBusinessId();
+
+  /**
+   * @return the id of the BPMN element tied to the subscription, or an empty string if not set
+   */
+  @Override
+  String getElementId();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For top-level process instances,
+   * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
+   * call activities), this is the key of the topmost parent process instance.
+   *
+   * <p>Important: This value is only set for process instances (and their subscriptions) created
+   * after version 8.9.0. For older process instances, the method will return -1.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  @Override
+  long getRootProcessInstanceKey();
+
+  /**
+   * @return the BPMN element type of the element tied to the subscription, or {@link
+   *     BpmnElementType#UNSPECIFIED} for subscriptions created before this field was introduced.
+   * @since 8.10
+   */
+  BpmnElementType getElementType();
+
+  /**
+   * Returns the generation key of the message-side subscription, assigned when the subscription is
+   * created on the message partition. Used to guard delete commands against stale races: a delete
+   * that quotes an old key is rejected rather than deleting a freshly re-created subscription.
+   *
+   * <p>This is a per-generation key, not a stable identity. {@code -1} means "unset": a
+   * subscription created before this field was introduced, or a CREATE command record before {@code
+   * MessageSubscriptionCreateProcessor} assigns the key. Do not interpret {@code -1} as
+   * legacy-only.
+   *
+   * @return the subscription key, or {@code -1} if unset
+   * @since 8.10
+   */
+  long getSubscriptionKey();
 }

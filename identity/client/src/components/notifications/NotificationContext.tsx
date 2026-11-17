@@ -12,6 +12,7 @@ export type NotificationOptions = {
   title: string;
   subtitle?: string;
   kind?: "success" | "error" | "info" | "warning";
+  /** @deprecated Property is ignored by redesigned notifications. */
   role?: "alert" | "log" | "status";
 };
 

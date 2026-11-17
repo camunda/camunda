@@ -1,0 +1,25 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
+import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
+import {instancesByProcessInfiniteQuery} from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
+import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
+import {Dashboard} from '#/operate/pages/Dashboard/Dashboard';
+
+export const Route = createFileRoute('/_carbon/_auth/operate/')({
+	loader: ({context: {queryClient}}) => {
+		// Keep prefetches non-blocking so a failed panel cannot blank the Dashboard.
+		queryClient.prefetchQuery(runningInstancesCountQuery());
+		queryClient.prefetchInfiniteQuery(instancesByProcessInfiniteQuery());
+		queryClient.prefetchInfiniteQuery(incidentsByErrorInfiniteQuery());
+	},
+	head: () => ({meta: [{title: t('operate.dashboard.pageTitle')}]}),
+	component: Dashboard,
+});

@@ -11,7 +11,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 import java.util.List;
 
 public interface ProcessInstanceSearchClient {

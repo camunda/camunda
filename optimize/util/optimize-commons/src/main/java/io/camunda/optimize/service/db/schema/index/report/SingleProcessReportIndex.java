@@ -19,6 +19,10 @@ public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportI
   public static final String MANAGEMENT_REPORT = ProcessReportDataDto.Fields.managementReport;
   public static final String INSTANT_PREVIEW_REPORT =
       ProcessReportDataDto.Fields.instantPreviewReport;
+  public static final String AGENTIC_CONTROL_REPORT =
+      ProcessReportDataDto.Fields.agenticControlReport;
+  public static final String BUSINESS_VALUE_REPORT =
+      ProcessReportDataDto.Fields.businessValueReport;
 
   public static final int VERSION = 11;
 
@@ -55,6 +59,8 @@ public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportI
                             Property.of(q -> q.object(k -> k.enabled(false))))
                         .properties(MANAGEMENT_REPORT, Property.of(q -> q.boolean_(k -> k)))
                         .properties(INSTANT_PREVIEW_REPORT, Property.of(q -> q.boolean_(k -> k)))
+                        .properties(AGENTIC_CONTROL_REPORT, Property.of(q -> q.boolean_(k -> k)))
+                        .properties(BUSINESS_VALUE_REPORT, Property.of(q -> q.boolean_(k -> k)))
                         .properties(
                             CONFIGURATION,
                             Property.of(

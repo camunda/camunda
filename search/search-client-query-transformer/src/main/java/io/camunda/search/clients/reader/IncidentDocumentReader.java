@@ -13,7 +13,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 

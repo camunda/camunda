@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -24,13 +27,14 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Optional;
 
 public final class ProcessInstanceCancelProcessor
-    implements TypedRecordProcessor<ProcessInstanceRecord> {
+    implements TypedRecordProcessor<ProcessInstanceRecord>, SuspensionAware<ProcessInstanceRecord> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a process instance with key '%d', but ";
@@ -45,6 +49,9 @@ public final class ProcessInstanceCancelProcessor
   private static final String PROCESS_CANCEL_IN_PROGRESS_MESSAGE =
       MESSAGE_PREFIX + "a cancel request is already in progress";
 
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
+
   private final ElementInstanceState elementInstanceState;
   private final AsyncRequestState asyncRequestState;
   private final TypedResponseWriter responseWriter;
@@ -52,13 +59,13 @@ public final class ProcessInstanceCancelProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public ProcessInstanceCancelProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     asyncRequestState = processingState.getAsyncRequestState();
     responseWriter = writers.response();
@@ -66,7 +73,7 @@ public final class ProcessInstanceCancelProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -77,54 +84,66 @@ public final class ProcessInstanceCancelProcessor
       return;
     }
 
-    asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        command.getKey(), elementInstance.getValue().getStorageOrdinal(), command);
 
     final ProcessInstanceRecord value = elementInstance.getValue();
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.CANCELING, value);
     commandWriter.appendFollowUpCommand(
         command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, value, command);
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null
-        || !elementInstance.canTerminate()
-        || elementInstance.getParentKey() > 0) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
       return false;
     }
 
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CANCEL_PROCESS_INSTANCE)
-            .tenantId(elementInstance.getValue().getTenantId())
-            .addResourceId(elementInstance.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "cancel a process instance",
-                  elementInstance.getValue().getProcessInstanceKey(),
-                  "such process")
-              : rejection.reason();
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.CANCEL_PROCESS_INSTANCE))
+                        .resourceId(elementInstance.getValue().getBpmnProcessId())),
+            elementInstance,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CANCEL_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            elementInstance.getValue().getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey())));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       enrichRejectionCommand(command, elementInstance.getValue());
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return false;
     }
 
@@ -138,7 +157,7 @@ public final class ProcessInstanceCancelProcessor
           command,
           RejectionType.INVALID_STATE,
           String.format(PROCESS_NOT_ROOT_MESSAGE, command.getKey(), rootProcessInstanceKey));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.INVALID_STATE,
           String.format(PROCESS_NOT_ROOT_MESSAGE, command.getKey(), rootProcessInstanceKey));
@@ -152,7 +171,15 @@ public final class ProcessInstanceCancelProcessor
       final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return false;
+    }
+
+    if (elementInstance.isTerminating()) {
+      final String reason = String.format(PROCESS_TERMINATING_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 
@@ -168,6 +195,7 @@ public final class ProcessInstanceCancelProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private long getRootProcessInstanceKey(long instanceKey) {

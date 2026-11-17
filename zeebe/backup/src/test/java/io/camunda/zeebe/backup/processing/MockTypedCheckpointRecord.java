@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.processing;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -96,6 +97,16 @@ record MockTypedCheckpointRecord(
 
   @Override
   public Agent getAgent() {
+    return null;
+  }
+
+  @Override
+  public ChannelType getRequestChannelType() {
+    return null;
+  }
+
+  @Override
+  public String getRequestToolName() {
     return null;
   }
 

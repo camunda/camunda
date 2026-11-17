@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -34,7 +35,8 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.IncidentSelectors;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -62,7 +64,7 @@ public class ResolveIncidentTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
-  @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
 
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
@@ -97,14 +99,17 @@ public class ResolveIncidentTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
-              camundaManagementClient,
+              clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
 
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -229,6 +234,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -272,10 +279,11 @@ public class ResolveIncidentTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
-              camundaManagementClient,
+              clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
     }
 
     @Test
@@ -284,6 +292,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())

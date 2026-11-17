@@ -48,13 +48,16 @@ public class BrokerClientPartitionScalingExecutorTest {
   static final List<Set<Integer>> COMPLETE_PARTITION_LIST =
       List.of(Set.of(1, 2, 3, 4, 5), Set.of(4, 5));
 
+  private static final String PARTITION_GROUP = "tenant-a";
+
   TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
   BrokerClientPartitionScalingExecutor executor;
   @Mock BrokerClient brokerClient;
 
   @BeforeEach
   void setup() {
-    executor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
+    executor =
+        new BrokerClientPartitionScalingExecutor(PARTITION_GROUP, brokerClient, concurrencyControl);
   }
 
   @Test
@@ -130,6 +133,7 @@ public class BrokerClientPartitionScalingExecutorTest {
       assertThat(request).isInstanceOf(GetScaleUpProgress.class);
       final var getScaleUpProgress = (GetScaleUpProgress) request;
       assertThat(request.getPartitionId()).isEqualTo(i);
+      assertThat(request.getPartitionGroup()).isEqualTo(PARTITION_GROUP);
 
       clearInvocations(brokerClient);
       scaleRecord.ifRightOrLeft(
@@ -147,6 +151,7 @@ public class BrokerClientPartitionScalingExecutorTest {
       assertThat(snapshotRequest.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
       assertThat(snapshotRequest.getRequest().partitionId())
           .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+      assertThat(snapshotRequest.getPartitionGroup()).isEqualTo(PARTITION_GROUP);
 
       responseConsumerCaptor.getValue().accept(1L, new DeleteSnapshotForBootstrapResponse(1));
     }

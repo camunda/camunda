@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
-import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
+import static io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_EXTERNAL_ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -18,8 +19,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -29,13 +31,14 @@ import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -62,7 +65,8 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
   // When building the expected error messages including this regex, for some reason the backslashes
   // disappear and have to be doubled to prevent that.
   private static final String TENANT_ID_PATTERN =
@@ -70,6 +74,7 @@ public class TenantControllerTest {
 
   @Nested
   @WebMvcTest(TenantController.class)
+  @Import(ApiFiltersConfiguration.class)
   public class TenantsApiEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
@@ -77,11 +82,17 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     }
 
     @ParameterizedTest
@@ -106,10 +117,11 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new TenantCreateRequest()
+              TenantCreateRequest.Builder.create()
+                  .tenantId(id)
                   .name(tenantName)
                   .description(tenantDescription)
-                  .tenantId(id))
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated();
@@ -141,10 +153,11 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new TenantCreateRequest()
-                  .name(tenantName)
+              TenantCreateRequest.Builder.create()
                   .tenantId(tenantId)
-                  .description(tenantDescription))
+                  .name(tenantName)
+                  .description(tenantDescription)
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated()
@@ -177,7 +190,7 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantCreateRequest().name(tenantName))
+          .bodyValue(Map.of("name", tenantName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -208,7 +221,8 @@ public class TenantControllerTest {
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
       final var tenantName = "Tenant Name";
-      final var request = new TenantCreateRequest().tenantId(id).name(tenantName);
+      final var request =
+          TenantCreateRequest.Builder.create().tenantId(id).name(tenantName).build();
 
       // when
       webClient
@@ -241,7 +255,8 @@ public class TenantControllerTest {
     void shouldRejectTenantWithTooLongId() {
       // given
       final var id = "x".repeat(257);
-      final var request = new TenantCreateRequest().tenantId(id).name("Tenant name");
+      final var request =
+          TenantCreateRequest.Builder.create().tenantId(id).name("Tenant name").build();
 
       // when
       webClient
@@ -291,7 +306,11 @@ public class TenantControllerTest {
           .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
+          .bodyValue(
+              TenantUpdateRequest.Builder.create()
+                  .name(tenantName)
+                  .description(tenantDescription)
+                  .build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -326,7 +345,7 @@ public class TenantControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().description(tenantDescription))
+          .bodyValue(Map.of("description", tenantDescription))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -367,7 +386,11 @@ public class TenantControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
+          .bodyValue(
+              TenantUpdateRequest.Builder.create()
+                  .name(tenantName)
+                  .description(tenantDescription)
+                  .build())
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -493,7 +516,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, SecurityConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(entityIdName, CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -593,7 +616,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, SecurityConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(entityIdName, CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -628,16 +651,22 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     }
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldAssignExternalGroupToTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
@@ -664,7 +693,7 @@ public class TenantControllerTest {
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldUnassignExternalGroupFromTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
@@ -689,12 +718,26 @@ public class TenantControllerTest {
       verify(tenantServices, times(1)).removeMember(eq(request), any());
     }
 
+    @Test
+    void shouldNotBlockPhysicalTenantPrefixedPath() {
+      // given
+      final var uri = "/physical-tenants/default/v2/tenants/tenantId";
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .exchange()
+          .expectStatus()
+          .value(status -> assertThat(status).isNotEqualTo(403));
+    }
+
     @TestConfiguration
     static class AdditionalConfig {
       @Bean
       @Primary
       public IdentifierValidator byogIdentifierValidator() {
-        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
+        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_PATTERN);
       }
     }
   }
@@ -721,7 +764,8 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @ParameterizedTest
     @MethodSource("tenantControllerRequests")
@@ -837,6 +881,78 @@ public class TenantControllerTest {
               (Function<WebTestClient, ResponseSpec>)
                   webClient ->
                       webClient.post().uri("/v2/tenants/tenantId/clients/search").exchange()));
+    }
+
+    @Test
+    void shouldReturnErrorOnPhysicalTenantPrefixedPath() {
+      // given
+      final var uri = "/physical-tenants/acme/v2/tenants/tenantId";
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
+  }
+
+  /**
+   * The tenants API must also be disabled when {@code apiEnabled} is configured in kebab-case.
+   * {@link TenantsApiDisabledTest} covers the camelCase spelling; this pins the relaxed-binding
+   * spelling that {@code dist/src/main/config/defaults.yaml} generates, which previously left the
+   * filter unregistered and the API reachable.
+   */
+  @Nested
+  @WebMvcTest(TenantController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(properties = "camunda.security.multi-tenancy.api-enabled=false")
+  public class TenantsApiDisabledWithKebabCasePropertyTest extends RestControllerTest {
+
+    @MockitoBean private TenantServices tenantServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
+
+    @ParameterizedTest
+    @MethodSource("representativeTenantRequests")
+    void shouldReturnForbiddenWhenTenantsApiIsDisabledInKebabCase(
+        final String uri, final Function<WebTestClient, ResponseSpec> webClientConsumer) {
+      // given the tenants API disabled via the kebab-case property spelling
+
+      // when
+      final var response = webClientConsumer.apply(webClient);
+
+      // then
+      response
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              TenantsApiDisabledTest.FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
+
+    private static Stream<Arguments> representativeTenantRequests() {
+      return Stream.of(
+          Arguments.of(
+              "/v2/tenants",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.post().uri("/v2/tenants").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.get().uri("/v2/tenants/tenantId").exchange()),
+          Arguments.of(
+              "/v2/tenants/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.post().uri("/v2/tenants/search").exchange()));
     }
   }
 }

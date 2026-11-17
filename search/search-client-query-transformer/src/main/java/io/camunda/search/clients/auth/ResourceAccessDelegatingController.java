@@ -10,9 +10,9 @@ package io.camunda.search.clients.auth;
 import static io.camunda.search.exception.ErrorMessages.ERROR_RESOURCE_ACCESS_CONTROLLER_NO_MATCHING_FOUND;
 
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessController;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;

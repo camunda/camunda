@@ -7,14 +7,12 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
-import static io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory.GROUP_NAME;
-
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
+import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.nio.file.Paths;
 
 public final class PartitionDirectoryStep implements StartupStep<PartitionStartupContext> {
 
@@ -32,11 +30,10 @@ public final class PartitionDirectoryStep implements StartupStep<PartitionStartu
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
-    final var dataDirectory = Paths.get(context.brokerConfig().getData().getDirectory());
-    final var partitionId = context.partitionMetadata().id().id();
+    final var dataDirectory = context.brokerConfig().getData().getDirectory();
+    final var partitionId = context.partitionMetadata().id();
     final var partitionDirectory =
-        dataDirectory.resolve(GROUP_NAME).resolve("partitions").resolve(partitionId.toString());
-
+        RaftPartitionFactory.getPartitionDirectory(partitionId, dataDirectory);
     try {
       FileUtil.ensureDirectoryExists(partitionDirectory);
       result.complete(context.partitionDirectory(partitionDirectory));

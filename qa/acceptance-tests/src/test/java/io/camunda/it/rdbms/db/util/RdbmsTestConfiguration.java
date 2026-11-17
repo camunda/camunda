@@ -7,24 +7,35 @@
  */
 package io.camunda.it.rdbms.db.util;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
-import io.camunda.configuration.Camunda;
-import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import javax.sql.DataSource;
-import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @EnableAutoConfiguration
-@Import({RdbmsConfiguration.class})
+@Import({RdbmsConfiguration.class, UnifiedConfigurationModule.class})
+@PropertySource("classpath:rdbms-test-defaults.properties")
 public class RdbmsTestConfiguration {
 
+  @Bean(destroyMethod = "") // DataSource will be closed when closing RdbmsDataSources
+  public DataSource dataSource(final RdbmsDataSources dataSources) {
+    return dataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  /** Support for transactional tests with @RdbmsDataJdbcTest or @DataJdbcTest */
   @Bean
   public PlatformTransactionManager platformTransactionManager(final DataSource dataSource) {
     return new DataSourceTransactionManager(dataSource);
@@ -32,15 +43,11 @@ public class RdbmsTestConfiguration {
 
   @Bean
   public MeterRegistry meterRegistry() {
-    return Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS);
+    return new SimpleMeterRegistry();
   }
 
   @Bean
-  public Camunda camunda() {
-    final var camundaConfig = Mockito.mock(Camunda.class, Mockito.RETURNS_DEEP_STUBS);
-    Mockito.when(
-            camundaConfig.getData().getSecondaryStorage().getRdbms().getQuery().toReaderConfig())
-        .thenReturn(RdbmsReaderConfig.builder().maxTotalHits(100).build());
-    return camundaConfig;
+  public BrokerTopologyManager brokerTopologyManager() {
+    return RdbmsTestTopology.processingTopologyManager();
   }
 }

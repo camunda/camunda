@@ -9,19 +9,20 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import org.jspecify.annotations.Nullable;
 
 public final class ProcessingException extends RuntimeException {
 
   public ProcessingException(
       final String message,
       final LoggedEvent event,
-      final RecordMetadata metadata,
+      final @Nullable RecordMetadata metadata,
       final Throwable cause) {
     super(formatMessage(message, event, metadata), cause);
   }
 
   private static String formatMessage(
-      final String message, final LoggedEvent event, final RecordMetadata metadata) {
+      final String message, final LoggedEvent event, final @Nullable RecordMetadata metadata) {
     return String.format("%s [%s %s]", message, formatEvent(event), formatMetadata(metadata));
   }
 
@@ -32,7 +33,7 @@ public final class ProcessingException extends RuntimeException {
     return event.toString();
   }
 
-  private static String formatMetadata(final RecordMetadata metadata) {
+  private static String formatMetadata(final @Nullable RecordMetadata metadata) {
     if (metadata == null) {
       return "RecordMetadata{null}";
     }

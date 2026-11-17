@@ -11,12 +11,16 @@ import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKP
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -28,6 +32,7 @@ import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
@@ -37,13 +42,18 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerResponse;
@@ -64,11 +74,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class BackupApiRequestHandlerTest {
+class BackupApiRequestHandlerTest {
 
   private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
@@ -84,10 +95,18 @@ final class BackupApiRequestHandlerTest {
   @Mock CheckpointState checkpointState;
   @Mock DbCheckpointMetadataState checkpointMetadataState;
   @Mock DbBackupRangeState backupRangeState;
-
+  @Mock PersistedSnapshotStore snapshotStore;
+  @Mock PersistedSnapshot freshSnapshot;
+  @Mock SnapshotTrigger snapshotTrigger;
   BackupApiRequestHandler handler;
+  private ActorFuture<PersistedSnapshot> takenSnapshot =
+      CompletableActorFuture.completedExceptionally(new IllegalStateException("not configured"));
   private ResponseReader serverOutput;
   private CompletableFuture<Either<ErrorResponse, BufferReader>> responseFuture;
+
+  protected String brokerZone() {
+    return null;
+  }
 
   @BeforeEach
   void setup() {
@@ -99,7 +118,9 @@ final class BackupApiRequestHandlerTest {
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
-            1,
+            snapshotStore,
+            snapshotTrigger,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
@@ -107,9 +128,13 @@ final class BackupApiRequestHandlerTest {
     serverOutput = new ResponseReader();
     responseFuture = new CompletableFuture<>();
 
+    lenient().when(snapshotTrigger.forceSnapshot()).thenAnswer(invocation -> takenSnapshot);
     lenient()
         .when(backupManager.getBackupRangeStatus())
         .thenReturn(CompletableActorFuture.completed(List.of()));
+    lenient()
+        .when(snapshotStore.reserveLatestSnapshot(anyLong()))
+        .thenReturn(CompletableActorFuture.completed(Optional.empty()));
   }
 
   @Test
@@ -175,22 +200,27 @@ final class BackupApiRequestHandlerTest {
   @Test
   void shouldWriteWhenDiskSpaceAvailableAgain() {
     // given
-    final var request =
-        new BackupRequest()
-            .setType(BackupRequestType.TAKE_BACKUP)
-            .setPartitionId(1)
-            .setBackupId(10);
-
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
     handler.onDiskSpaceNotAvailable();
     scheduler.workUntilDone();
-    handler.onDiskSpaceAvailable();
-    scheduler.workUntilDone();
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
+    verify(logStreamWriter, never()).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
 
     // when
-    handleRequest(request);
+    handler.onDiskSpaceAvailable();
+    scheduler.workUntilDone();
+    responseFuture = new CompletableFuture<>();
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
 
-    // then
-    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100));
+    // then - the checkpoint is written; the response is sent once it is processed
+    assertThat(writtenCheckpoint(writtenEntry).getCheckpointId()).isEqualTo(10);
+    assertThat(responseFuture).isNotDone();
   }
 
   @Test
@@ -207,7 +237,7 @@ final class BackupApiRequestHandlerTest {
     final Instant lastModified = Instant.ofEpochMilli(2000);
     final BackupStatus status =
         new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, checkpointId),
+            new BackupIdentifierImpl(1, brokerZone(), 1, checkpointId),
             Optional.of(
                 new BackupDescriptorImpl(
                     "s-id", 100, 3, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)),
@@ -230,6 +260,7 @@ final class BackupApiRequestHandlerTest {
         .returns(checkpointId, BackupStatusResponse::getBackupId)
         .returns(1, BackupStatusResponse::getPartitionId)
         .returns(1, BackupStatusResponse::getBrokerId)
+        .returns(brokerZone(), BackupStatusResponse::getZone)
         .returns(100L, BackupStatusResponse::getCheckpointPosition)
         .returns(3, BackupStatusResponse::getNumberOfPartitions)
         .returns("s-id", BackupStatusResponse::getSnapshotId)
@@ -237,7 +268,7 @@ final class BackupApiRequestHandlerTest {
         .returns("test", BackupStatusResponse::getBrokerVersion)
         .returns(createdAt.toString(), BackupStatusResponse::getCreatedAt)
         .returns(lastModified.toString(), BackupStatusResponse::getLastUpdated)
-        .matches(response -> response.getFailureReason().isEmpty());
+        .matches(response -> response.getFailureReason() == null);
   }
 
   @Test
@@ -252,7 +283,7 @@ final class BackupApiRequestHandlerTest {
 
     final BackupStatus status =
         new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, checkpointId),
+            new BackupIdentifierImpl(1, brokerZone(), 1, checkpointId),
             Optional.empty(),
             io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
             Optional.of("Expected"),
@@ -273,6 +304,7 @@ final class BackupApiRequestHandlerTest {
         .returns(checkpointId, BackupStatusResponse::getBackupId)
         .returns(1, BackupStatusResponse::getPartitionId)
         .returns(1, BackupStatusResponse::getBrokerId)
+        .returns(brokerZone(), BackupStatusResponse::getZone)
         .returns(
             BackupStatusResponseEncoder.backupIdNullValue(),
             BackupStatusResponse::getCheckpointPosition)
@@ -319,7 +351,7 @@ final class BackupApiRequestHandlerTest {
     final Instant lastModified = Instant.ofEpochMilli(2000);
     final BackupStatus status =
         new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, 2),
+            new BackupIdentifierImpl(1, brokerZone(), 1, 2),
             Optional.of(
                 new BackupDescriptorImpl(
                     "s-id", 100, 3, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)),
@@ -355,7 +387,7 @@ final class BackupApiRequestHandlerTest {
                 i ->
                     (BackupStatus)
                         new BackupStatusImpl(
-                            new BackupIdentifierImpl(1, 1, i),
+                            new BackupIdentifierImpl(1, brokerZone(), 1, i),
                             Optional.empty(),
                             io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
                             Optional.empty(),
@@ -640,6 +672,159 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
         .returns("sync failed", error -> BufferUtil.bufferAsString(error.getErrorData()));
+  }
+
+  @Test
+  void shouldWriteCheckpointWithFreshlyTakenSnapshot() {
+    // given
+    givenFreshSnapshot("fresh");
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(CompletableActorFuture.completed());
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then - the snapshot is taken and reserved before the checkpoint is written, so it is strictly
+    // before the checkpoint and still exists when the backup is taken
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("fresh");
+    final var inOrder = inOrder(snapshotTrigger, snapshotStore, logStreamWriter);
+    inOrder.verify(snapshotTrigger).forceSnapshot();
+    inOrder.verify(snapshotStore).reserveSnapshot(10L, "fresh");
+    inOrder.verify(logStreamWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
+    verify(snapshotStore, never()).reserveLatestSnapshot(anyLong());
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenFreshSnapshotIsSkipped() {
+    // given
+    takenSnapshot = CompletableActorFuture.completed(null);
+    givenLatestSnapshot("latest");
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.SCHEDULED_BACKUP));
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("latest");
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenFreshSnapshotFails() {
+    // given
+    takenSnapshot = CompletableActorFuture.completedExceptionally(new RuntimeException("expected"));
+    givenLatestSnapshot("latest");
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("latest");
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenFreshSnapshotCannotBeReserved() {
+    // given
+    givenFreshSnapshot("fresh");
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new SnapshotNotFoundException("expected")));
+    givenLatestSnapshot("latest");
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEqualTo("latest");
+  }
+
+  @Test
+  void shouldWriteCheckpointWithoutSnapshotWhenNoneCanBeReserved() {
+    // given
+    takenSnapshot = CompletableActorFuture.completed(null);
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
+  }
+
+  @Test
+  void shouldReleaseSnapshotReservationWhenCheckpointCannotBeWritten() {
+    // given
+    givenFreshSnapshot("fresh");
+    when(snapshotStore.reserveSnapshot(10L, "fresh"))
+        .thenReturn(CompletableActorFuture.completed());
+    captureWrittenEntry(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isLeft);
+    verify(snapshotStore).releaseReservation(10L, "fresh");
+  }
+
+  @Test
+  void shouldNotReserveSnapshotForMarkerCheckpoint() {
+    // given
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MARKER));
+
+    // then
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
+    verifyNoInteractions(snapshotStore);
+  }
+
+  @Test
+  void shouldNotTakeSnapshotForCheckpointThatIsNotNewer() {
+    // given - a retried request for the latest checkpoint, which the processor ignores
+    when(checkpointState.getLatestCheckpointId()).thenReturn(10L);
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+
+    // when
+    handleRequest(takeBackupRequest(CheckpointType.MANUAL_BACKUP));
+
+    // then - the command is still written, so the processor responds as before
+    assertThat(writtenCheckpoint(writtenEntry).getSnapshotId()).isEmpty();
+    verifyNoInteractions(snapshotTrigger, snapshotStore);
+  }
+
+  private BackupRequest takeBackupRequest(final CheckpointType checkpointType) {
+    return new BackupRequest()
+        .setType(BackupRequestType.TAKE_BACKUP)
+        .setPartitionId(1)
+        .setBackupId(10)
+        .setCheckpointType(checkpointType);
+  }
+
+  private void givenFreshSnapshot(final String snapshotId) {
+    when(freshSnapshot.getId()).thenReturn(snapshotId);
+    takenSnapshot = CompletableActorFuture.completed(freshSnapshot);
+  }
+
+  private void givenLatestSnapshot(final String snapshotId) {
+    when(snapshotStore.reserveLatestSnapshot(10L))
+        .thenReturn(CompletableActorFuture.completed(Optional.of(snapshotId)));
+  }
+
+  private ArgumentCaptor<LogAppendEntry> captureWrittenEntry(
+      final Either<WriteFailure, Long> writeResult) {
+    final var captor = ArgumentCaptor.forClass(LogAppendEntry.class);
+    when(logStreamWriter.tryWrite(any(WriteContext.class), captor.capture()))
+        .thenReturn(writeResult);
+    return captor;
+  }
+
+  private static CheckpointRecord writtenCheckpoint(final ArgumentCaptor<LogAppendEntry> entry) {
+    return (CheckpointRecord) entry.getValue().recordValue();
   }
 
   private static BackupRangeStatus.CheckpointInfo createCheckpointInfo(final long checkpointId) {

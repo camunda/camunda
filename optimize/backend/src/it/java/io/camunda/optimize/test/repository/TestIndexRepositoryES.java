@@ -29,7 +29,7 @@ public class TestIndexRepositoryES implements TestIndexRepository {
   public Set<String> getAllIndexNames() {
     final GetIndexRequest request = GetIndexRequest.of(i -> i.index("*"));
     try {
-      return esClient.elasticsearchClient().indices().get(request).result().keySet();
+      return esClient.elasticsearchClient().indices().get(request).indices().keySet();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

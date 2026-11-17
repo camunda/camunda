@@ -38,11 +38,11 @@ export async function assignRoleToUsers(
   for (let i = 1; i <= numberOfUsers; i++) {
     const user = await createUser(request, state, `${i}`);
     const p = {
-      userId: user.username,
+      username: user.username,
       roleId: roleId,
     };
     const res = await request.put(
-      buildUrl('/roles/{roleId}/users/{userId}', p),
+      buildUrl('/roles/{roleId}/users/{username}', p),
       {headers: jsonHeaders()},
     );
     await assertStatusCode(res, 204);

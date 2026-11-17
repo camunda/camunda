@@ -75,7 +75,7 @@ public class DecisionGroupByMatchedRuleInterpreterOS extends AbstractDecisionGro
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {

@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class GrpcErrorMapperTenantTest {
 
   private final RecordingAppender recorder = new RecordingAppender();
-  private final GrpcErrorMapper errorMapper = new GrpcErrorMapper();
+  private GrpcErrorMapper errorMapper;
 
   private Logger log;
   private Log4jLogger logger;
@@ -42,6 +42,7 @@ public class GrpcErrorMapperTenantTest {
   void beforeEach() {
     log = (Logger) LogManager.getLogger(UUID.randomUUID().toString());
     logger = new Log4jLogger(new Log4jMarkerFactory(), log, log.getName());
+    errorMapper = new GrpcErrorMapper(logger);
 
     recorder.start();
     log.addAppender(recorder);
@@ -70,7 +71,7 @@ public class GrpcErrorMapperTenantTest {
 
       // when
       log.setLevel(Level.DEBUG);
-      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
       // then
       assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
@@ -100,7 +101,7 @@ public class GrpcErrorMapperTenantTest {
 
       // when
       log.setLevel(Level.DEBUG);
-      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
       // then
       assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);

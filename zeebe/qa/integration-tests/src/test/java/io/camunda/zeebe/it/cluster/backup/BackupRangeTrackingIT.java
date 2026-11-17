@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.management.backups.PartitionBackupRange;
 import io.camunda.management.backups.PartitionBackupState;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -128,12 +128,12 @@ final class BackupRangeTrackingIT {
   @Test
   void shouldTrackBackupRangesDuringLeaderChanges() {
     // given
-    final var actuator = BackupActuator.of(cluster.availableGateway());
     executor.scheduleAtFixedRate(this::generateLoad, 0, 100, TimeUnit.MILLISECONDS);
 
     // when
     final var initialLeader = cluster.leaderForPartition(1);
     initialLeader.stop();
+    final var actuator = BackupActuator.of(cluster.availableGateway());
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -148,6 +148,14 @@ final class BackupRangeTrackingIT {
                     .hasLeaderForEachPartition(3);
               }
             });
+
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(actuator.state().getBackupStates())
+                    .describedAs("There should be backup state for partition 1")
+                    .extracting(PartitionBackupState::getPartitionId)
+                    .contains(1));
 
     final var lastBackupBeforeLeaderChange =
         actuator.state().getBackupStates().stream()

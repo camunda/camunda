@@ -26,8 +26,8 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -52,6 +52,7 @@ import org.mockito.ArgumentCaptor;
 
 class DecisionInstanceServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final Long DECISION_INSTANCE_KEY = 1L;
   private static final Long NON_EXISTENT_KEY = 999L;
   private static final String DECISION_INSTANCE_ID = "1-1";
@@ -73,6 +74,7 @@ class DecisionInstanceServiceTest {
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new DecisionInstanceServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             client,
@@ -201,6 +203,7 @@ class DecisionInstanceServiceTest {
     services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
 
     // then
+    assertThat(captor.getValue().getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
     assertThat(brokerRequest.getResourceKey()).isEqualTo(decisionInstanceKey);
     assertThat(brokerRequest.getResourceType()).isEqualTo(HistoryDeletionType.DECISION_INSTANCE);

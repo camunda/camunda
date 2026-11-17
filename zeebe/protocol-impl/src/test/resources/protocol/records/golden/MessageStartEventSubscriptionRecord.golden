@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -33,8 +34,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
@@ -46,12 +49,14 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public MessageStartEventSubscriptionRecord() {
-    super(9);
+    super(11);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
@@ -59,8 +64,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(correlationKeyProp)
+        .declareProperty(businessIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -71,8 +78,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     messageKeyProp.setValue(record.getMessageKey());
     correlationKeyProp.setValue(record.getCorrelationKeyBuffer());
+    businessIdProp.setValue(record.getBusinessIdBuffer());
     variablesProp.setValue(record.getVariablesBuffer());
     tenantIdProp.setValue(record.getTenantId());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
   }
 
   @JsonIgnore
@@ -127,6 +136,21 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
 
   public MessageStartEventSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  public MessageStartEventSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
     return this;
   }
 
@@ -187,6 +211,16 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
 
   public MessageStartEventSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public MessageStartEventSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

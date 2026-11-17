@@ -32,7 +32,8 @@
     TENANT_ID,
     VERSION_TAG,
     VERSION,
-    FORM_ID
+    FORM_ID,
+    STATE
     FROM ${prefix}PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     ) t
@@ -124,23 +125,42 @@
           AND FORM_ID IS NULL
         </if>
       </if>
+      <if test="filter.state != null">
+        <choose>
+          <when test="filter.state.name() == 'ACTIVE'">
+            AND (STATE = #{filter.state} OR STATE IS NULL)
+          </when>
+          <otherwise>
+            AND STATE = #{filter.state}
+          </otherwise>
+        </choose>
+      </if>
     </where>
   </sql>
 
-  <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">
+  <resultMap id="searchResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionEntity">
     <constructor>
-      <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="NAME" javaType="java.lang.String"/>
+      <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="NAME" javaType="java.lang.String" name="name"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="BPMN_XML" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="processDefinitionId"/>
+      <arg column="BPMN_XML" javaType="java.lang.String" name="bpmnXml"/>
       <arg column="RESOURCE_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="VERSION" javaType="java.lang.Integer"/>
-      <arg column="VERSION_TAG" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="resourceName"/>
+      <arg column="VERSION" javaType="java.lang.Integer" name="version"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String" name="versionTag"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="FORM_ID" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
+      <arg column="FORM_ID" javaType="java.lang.String" name="formId"/>
+      <arg
+        column="STATE"
+        javaType="io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState"
+        name="state"/>
     </constructor>
   </resultMap>
 
@@ -222,6 +242,11 @@
           AND pi.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+        <foreach collection="filter.businessIdOperations" item="operation">
+          AND pi.BUSINESS_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.hasIncident != null">
         <if test="filter.hasIncident == true">
           AND pi.NUM_INCIDENTS > 0
@@ -300,12 +325,27 @@
       <!-- Error message filters -->
       <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
         <foreach collection="filter.errorMessageOperations" item="operation">
-          AND EXISTS (
-          SELECT 1
-          FROM ${prefix}INCIDENT i
-          WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-          AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-          )
+          <choose>
+            <when test="operation.operator.name().equals('NOT_EXISTS')">
+              AND NOT EXISTS (
+              SELECT 1
+              FROM ${prefix}INCIDENT i
+              WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+              AND i.ERROR_MESSAGE IS NOT NULL
+              )
+            </when>
+            <otherwise>
+              AND EXISTS (
+              SELECT 1
+              FROM ${prefix}INCIDENT i
+              WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+              AND
+              <include refid="io.camunda.db.rdbms.sql.Commons.errorMessageOperationCondition">
+                <property name="column" value="i.ERROR_MESSAGE"/>
+              </include>
+              )
+            </otherwise>
+          </choose>
         </foreach>
       </if>
       <if test="filter.incidentErrorHashCodeOperations != null and !filter.incidentErrorHashCodeOperations.isEmpty()">
@@ -337,10 +377,26 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel">
     INSERT INTO ${prefix}PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
-                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID)
+                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID, STATE)
     VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
-            #{tenantId}, #{versionTag}, #{version}, #{formId})
+            #{tenantId}, #{versionTag}, #{version}, #{formId}, #{state})
   </insert>
+
+  <update id="markDeleted" parameterType="java.lang.Long">
+    <bind name="state"
+      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@DELETED"/>
+    UPDATE ${prefix}PROCESS_DEFINITION
+    SET STATE = #{state}
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+  </update>
+
+  <update id="markDraining" parameterType="java.lang.Long">
+    <bind name="state"
+      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@DRAINING"/>
+    UPDATE ${prefix}PROCESS_DEFINITION
+    SET STATE = #{state}
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+  </update>
 
   <sql id="processInstanceStatisticsWhere">
     <where>
@@ -376,14 +432,33 @@
     ) t
   </select>
 
+  <resultMap id="processInstanceStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    <constructor>
+      <idArg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        name="processDefinitionId"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="LATEST_PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="latestProcessDefinitionName"/>
+      <arg column="HAS_MULTIPLE_VERSIONS" javaType="java.lang.Boolean"
+        name="hasMultipleVersions"/>
+      <arg column="ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithoutIncidentCount"/>
+      <arg column="ACTIVE_INSTANCES_WITH_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithIncidentCount"/>
+    </constructor>
+  </resultMap>
+
   <select id="processInstanceStatistics" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
-    resultType="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    resultMap="processInstanceStatisticsResultMap">
     SELECT pi.PROCESS_DEFINITION_ID,
     pi.TENANT_ID,
     (SELECT pd.NAME
         FROM ${prefix}PROCESS_DEFINITION pd
         WHERE pd.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID
             AND pd.TENANT_ID = pi.TENANT_ID
+        <!-- keyset-order-by-exempt: picks the highest version for this one row, it does not order
+             the paged result, so it stays DESC in both paging directions -->
         ORDER BY pd.VERSION DESC
       <choose>
         <when test="_databaseId == 'mssql'">
@@ -398,7 +473,12 @@
           LIMIT 1
         </otherwise>
       </choose>) AS LATEST_PROCESS_DEFINITION_NAME,
-    CASE WHEN COUNT(DISTINCT pi.VERSION) > 1 THEN 1 ELSE 0 END AS HAS_MULTIPLE_VERSIONS,
+    CASE WHEN (SELECT COUNT(DISTINCT pd.VERSION)
+                 FROM ${prefix}PROCESS_DEFINITION pd
+                 WHERE pd.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID
+                   AND (pd.TENANT_ID = pi.TENANT_ID OR (pd.TENANT_ID IS NULL AND pi.TENANT_ID IS NULL))
+                   AND (pd.STATE IS NULL OR pd.STATE != 'DELETED')) > 1
+         THEN 1 ELSE 0 END AS HAS_MULTIPLE_VERSIONS,
     SUM(CASE WHEN pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT,
     SUM(CASE WHEN pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITH_INCIDENT_COUNT
     FROM ${prefix}PROCESS_INSTANCE pi
@@ -454,7 +534,26 @@
     ) t
   </select>
 
-  <select id="processInstanceVersionStatistics" resultType="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
+  <resultMap id="processInstanceVersionStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity">
+    <constructor>
+      <idArg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="processDefinitionVersion"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="processDefinitionName"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithoutIncidentCount"/>
+      <arg column="ACTIVE_INSTANCES_WITH_INCIDENT_COUNT" javaType="java.lang.Long"
+        name="activeInstancesWithIncidentCount"/>
+    </constructor>
+  </resultMap>
+
+  <select id="processInstanceVersionStatistics" resultMap="processInstanceVersionStatisticsResultMap" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
     SELECT
     pi.PROCESS_DEFINITION_ID,
     pi.PROCESS_DEFINITION_KEY,

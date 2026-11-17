@@ -11,9 +11,19 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public final class DirectBufferWriter implements BufferWriter {
-  protected DirectBuffer buffer;
-  protected int offset;
-  protected int length;
+  private final DirectBuffer buffer;
+  private final int offset;
+  private final int length;
+
+  public DirectBufferWriter(final DirectBuffer buffer, final int offset, final int length) {
+    this.buffer = buffer;
+    this.offset = offset;
+    this.length = length;
+  }
+
+  public DirectBufferWriter(final DirectBuffer buffer) {
+    this(buffer, 0, buffer.capacity());
+  }
 
   @Override
   public int getLength() {
@@ -24,23 +34,5 @@ public final class DirectBufferWriter implements BufferWriter {
   public int write(final MutableDirectBuffer writeBuffer, final int writeOffset) {
     writeBuffer.putBytes(writeOffset, buffer, offset, length);
     return length;
-  }
-
-  public DirectBufferWriter wrap(final DirectBuffer buffer, final int offset, final int length) {
-    this.buffer = buffer;
-    this.offset = offset;
-    this.length = length;
-
-    return this;
-  }
-
-  public DirectBufferWriter wrap(final DirectBuffer buffer) {
-    return wrap(buffer, 0, buffer.capacity());
-  }
-
-  public void reset() {
-    buffer = null;
-    offset = -1;
-    length = 0;
   }
 }

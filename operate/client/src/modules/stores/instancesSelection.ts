@@ -16,9 +16,12 @@ import {
 
 type Runtime = {
   totalCount: number;
+  hasMoreTotalItems?: boolean;
   visibleIds: string[];
   visibleRunningIds?: string[];
+  visibleSuspendedIds?: string[];
   visibleFinishedIds?: string[];
+  visibleIncidentIds?: string[];
 };
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
@@ -36,9 +39,12 @@ class InstancesSelection {
   state: State = {...DEFAULT_STATE};
   runtime: Runtime = {
     totalCount: 0,
+    hasMoreTotalItems: false,
     visibleIds: [],
     visibleRunningIds: [],
+    visibleSuspendedIds: [],
     visibleFinishedIds: [],
+    visibleIncidentIds: [],
   };
   autorunDisposer: null | IReactionDisposer = null;
 
@@ -68,9 +74,12 @@ class InstancesSelection {
 
     if (
       prev.totalCount === next.totalCount &&
+      !!prev.hasMoreTotalItems === !!next.hasMoreTotalItems &&
       isEqual(prev.visibleIds, next.visibleIds) &&
       isEqual(prev.visibleRunningIds ?? [], next.visibleRunningIds ?? []) &&
-      isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? [])
+      isEqual(prev.visibleSuspendedIds ?? [], next.visibleSuspendedIds ?? []) &&
+      isEqual(prev.visibleFinishedIds ?? [], next.visibleFinishedIds ?? []) &&
+      isEqual(prev.visibleIncidentIds ?? [], next.visibleIncidentIds ?? [])
     ) {
       return;
     }
@@ -160,6 +169,12 @@ class InstancesSelection {
     return this.state.selectionMode === 'ALL';
   }
 
+  get isSelectedCountTruncated(): boolean {
+    return (
+      !!this.runtime.hasMoreTotalItems && this.state.selectionMode !== 'INCLUDE'
+    );
+  }
+
   get hasSelectedRunningInstances() {
     const {
       selectedIds,
@@ -172,6 +187,21 @@ class InstancesSelection {
       isAllChecked ||
       selectionMode === 'EXCLUDE' ||
       visibleRunningIds.some((id) => selectedIds.includes(id))
+    );
+  }
+
+  get hasSelectedSuspendedInstances() {
+    const {
+      selectedIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const visibleSuspendedIds = this.runtime.visibleSuspendedIds ?? [];
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleSuspendedIds.some((id) => selectedIds.includes(id))
     );
   }
 
@@ -190,6 +220,21 @@ class InstancesSelection {
     );
   }
 
+  get hasSelectedInstancesWithIncidents() {
+    const {
+      selectedIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const visibleIncidentIds = this.runtime.visibleIncidentIds ?? [];
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleIncidentIds.some((id) => selectedIds.includes(id))
+    );
+  }
+
   get checkedRunningIds() {
     const {selectionMode, selectedIds} = this.state;
     const visibleRunningIds = this.runtime.visibleRunningIds ?? [];
@@ -199,6 +244,28 @@ class InstancesSelection {
     }
 
     return visibleRunningIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedSuspendedIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleSuspendedIds = this.runtime.visibleSuspendedIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleSuspendedIds.includes(id));
+    }
+
+    return visibleSuspendedIds.filter((id) => !selectedIds.includes(id));
+  }
+
+  get checkedIncidentIds() {
+    const {selectionMode, selectedIds} = this.state;
+    const visibleIncidentIds = this.runtime.visibleIncidentIds ?? [];
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedIds.filter((id) => visibleIncidentIds.includes(id));
+    }
+
+    return visibleIncidentIds.filter((id) => !selectedIds.includes(id));
   }
 
   get checkedFinishedIds() {
@@ -238,9 +305,12 @@ class InstancesSelection {
     this.resetState();
     this.runtime = {
       totalCount: 0,
+      hasMoreTotalItems: false,
       visibleIds: [],
       visibleRunningIds: [],
+      visibleSuspendedIds: [],
       visibleFinishedIds: [],
+      visibleIncidentIds: [],
     };
     this.autorunDisposer?.();
   };

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport;
 
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import org.jspecify.annotations.Nullable;
 
 public interface ClientRequest extends BufferWriter {
 
@@ -20,4 +21,10 @@ public interface ClientRequest extends BufferWriter {
    * @return the type of this request
    */
   RequestType getRequestType();
+
+  /**
+   * @return the partition group (physical tenant) this request targets, or {@code null} when none
+   *     has been configured
+   */
+  @Nullable String getPartitionGroup();
 }

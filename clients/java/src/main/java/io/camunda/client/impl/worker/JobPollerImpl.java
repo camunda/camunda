@@ -41,6 +41,7 @@ public final class JobPollerImpl implements JobPoller {
   private final List<String> fetchVariables;
   private final List<String> tenantIds;
   private final TenantFilter tenantFilter;
+  private final boolean withLease;
 
   private int maxJobsToActivate;
 
@@ -59,7 +60,8 @@ public final class JobPollerImpl implements JobPoller {
       final List<String> fetchVariables,
       final List<String> tenantIds,
       final TenantFilter tenantFilter,
-      final int maxJobsToActivate) {
+      final int maxJobsToActivate,
+      final boolean withLease) {
     this.requestTimeout = requestTimeout;
     this.jobClient = jobClient;
     this.jobType = jobType;
@@ -69,6 +71,7 @@ public final class JobPollerImpl implements JobPoller {
     this.tenantIds = tenantIds;
     this.tenantFilter = tenantFilter;
     this.maxJobsToActivate = maxJobsToActivate;
+    this.withLease = withLease;
   }
 
   private void reset() {
@@ -120,6 +123,11 @@ public final class JobPollerImpl implements JobPoller {
     if (fetchVariables != null) {
       activateCommand.fetchVariables(fetchVariables);
     }
+    // only set when true: an explicit false is still sent over the wire, which would break
+    // rolling upgrades against a gateway that doesn't yet know this field
+    if (withLease) {
+      activateCommand.withLease(true);
+    }
     activateCommand
         .requestTimeout(requestTimeout)
         .send()
@@ -138,7 +146,7 @@ public final class JobPollerImpl implements JobPoller {
             activateJobsResponse -> {
               final List<ActivatedJob> jobs = activateJobsResponse.getJobs();
               activatedJobs += jobs.size();
-              jobs.forEach(jobConsumer);
+              jobs.forEach(this::dispatch);
               if (activatedJobs > 0) {
                 LOG.debug(
                     "Activated {} jobs for worker {} and job type {}",
@@ -153,16 +161,38 @@ public final class JobPollerImpl implements JobPoller {
             });
   }
 
+  /**
+   * Hands one job to the consumer. Never throws: this runs in a stage nobody observes, so a failure
+   * let out of here would go unseen, skip the rest of the response, and keep the done callback from
+   * ever running, which leaves the worker without a poller for good. Checked exceptions are caught
+   * too, since user code written in Kotlin, for example, can throw them without declaring them.
+   */
+  private void dispatch(final ActivatedJob job) {
+    try {
+      jobConsumer.accept(job);
+    } catch (final Throwable e) {
+      LOG.warn(
+          "Failed to dispatch activated job with key {} for worker {} and job type {}",
+          job.getKey(),
+          workerName,
+          jobType,
+          e);
+    }
+  }
+
   private void logFailure(final Throwable throwable) {
     final String errorMsg = "Failed to activate jobs for worker {} and job type {}";
 
     if (throwable instanceof StatusRuntimeException) {
       final StatusRuntimeException statusRuntimeException = (StatusRuntimeException) throwable;
-      if (statusRuntimeException.getStatus().getCode() == Status.RESOURCE_EXHAUSTED.getCode()) {
-        // Log RESOURCE_EXHAUSTED status exceptions only as trace, otherwise it is just too
-        // noisy. Furthermore it is not worth to be a warning since it is expected on a fully
-        // loaded cluster. It should be handled by our backoff mechanism, but if there is an
-        // issue or a configuration mistake the user can turn on trace logging to see this.
+      if (statusRuntimeException.getStatus().getCode() == Status.RESOURCE_EXHAUSTED.getCode()
+          || statusRuntimeException.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode()) {
+        // Log RESOURCE_EXHAUSTED and DEADLINE_EXCEEDED status exceptions only as trace,
+        // otherwise it is just too noisy. RESOURCE_EXHAUSTED is expected on a fully loaded
+        // cluster, and DEADLINE_EXCEEDED is expected during idle long-polling when the
+        // gateway's long-polling timeout exceeds the client's gRPC deadline. Both should be
+        // handled by the backoff mechanism, but if there is an issue or a configuration
+        // mistake the user can turn on trace logging to see this.
         LOG.trace(errorMsg, workerName, jobType, throwable);
         return;
       }

@@ -22,18 +22,16 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogIdentityOperationsIT {
 
   @MultiDbTestApplication
@@ -442,12 +440,11 @@ public class AuditLogIdentityOperationsIT {
 
     // when
     client.newUnassignUserFromGroupCommand().username(username).groupId(groupId).send().join();
-    awaitAuditLogEntry(
-        client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.UNASSIGN, groupId);
+    final var auditLogs =
+        awaitAuditLogEntry(
+            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.UNASSIGN, groupId);
 
     // then
-    final var auditLogs =
-        findAuditLogs(client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.UNASSIGN);
     final var result = findByEntityKey(auditLogs, groupId);
     assertAuditLog(
         result, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.UNASSIGN, groupId);
@@ -513,16 +510,14 @@ public class AuditLogIdentityOperationsIT {
         .claimValue("updated-value")
         .send()
         .join();
-    awaitAuditLogEntry(
-        client,
-        AuditLogEntityTypeEnum.MAPPING_RULE,
-        AuditLogOperationTypeEnum.UPDATE,
-        mappingRuleId);
+    final var auditLogs =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.MAPPING_RULE,
+            AuditLogOperationTypeEnum.UPDATE,
+            mappingRuleId);
 
     // then
-    final var auditLogs =
-        findAuditLogs(
-            client, AuditLogEntityTypeEnum.MAPPING_RULE, AuditLogOperationTypeEnum.UPDATE);
     final var result = findByEntityKey(auditLogs, mappingRuleId);
     assertAuditLog(
         result,
@@ -552,16 +547,14 @@ public class AuditLogIdentityOperationsIT {
 
     // when
     client.newDeleteMappingRuleCommand(mappingRuleId).send().join();
-    awaitAuditLogEntry(
-        client,
-        AuditLogEntityTypeEnum.MAPPING_RULE,
-        AuditLogOperationTypeEnum.DELETE,
-        mappingRuleId);
+    final var auditLogs =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.MAPPING_RULE,
+            AuditLogOperationTypeEnum.DELETE,
+            mappingRuleId);
 
     // then
-    final var auditLogs =
-        findAuditLogs(
-            client, AuditLogEntityTypeEnum.MAPPING_RULE, AuditLogOperationTypeEnum.DELETE);
     assertAuditLog(
         findByEntityKey(auditLogs, mappingRuleId),
         AuditLogEntityTypeEnum.MAPPING_RULE,
@@ -629,16 +622,14 @@ public class AuditLogIdentityOperationsIT {
             PermissionType.READ_DECISION_DEFINITION, PermissionType.READ_DECISION_INSTANCE)
         .send()
         .join();
-    awaitAuditLogEntry(
-        client,
-        AuditLogEntityTypeEnum.AUTHORIZATION,
-        AuditLogOperationTypeEnum.UPDATE,
-        authorizationKey);
+    final var auditLogs =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.AUTHORIZATION,
+            AuditLogOperationTypeEnum.UPDATE,
+            authorizationKey);
 
     // then
-    final var auditLogs =
-        findAuditLogs(
-            client, AuditLogEntityTypeEnum.AUTHORIZATION, AuditLogOperationTypeEnum.UPDATE);
     final var result = findByEntityKey(auditLogs, authorizationKey);
     assertAuditLog(
         result,
@@ -746,7 +737,7 @@ public class AuditLogIdentityOperationsIT {
       final String entityKey) {
     return Awaitility.await("Audit log entry is created")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var logs = findAuditLogs(client, entityType, operationType);
@@ -775,7 +766,7 @@ public class AuditLogIdentityOperationsIT {
     final var authorizationKey = String.valueOf(authorization.getAuthorizationKey());
     Awaitility.await("Audit log entry is created for the authorization")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var logs =

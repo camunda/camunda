@@ -15,11 +15,11 @@ import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -113,7 +113,7 @@ public class TenantTenancyIT {
 
   private static void waitForTenantsBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -123,7 +123,7 @@ public class TenantTenancyIT {
 
   private static void waitForTenantMembershipBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

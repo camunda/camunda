@@ -29,11 +29,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
-import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.api.model.config.headers.PermissionsPolicyConfig;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -46,6 +46,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +70,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
   private static final String CLIENT_AUTHENTICATOR_TYPE = "client-secret";
   private static final String USER_ID_CLAIM_NAME = "sub";
   private static final String EXAMPLE_CLIENT_ID = "example";
-  private static final String EXAMPLE_REDIRECT_URI = "example.com";
+  private static final String EXAMPLE_REDIRECT_URI = "https://example.com/sso-callback";
   private static final String ADMIN_ROLE = "admin";
   private static final String USERS_KEY = "users";
   private static final String USERNAME = "zeebe-service-account";
@@ -105,19 +106,16 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
                       .setUrl("http://" + CONTAINER.getHttpHostAddress()))
           .withSecurityConfig(
               c -> {
+                c.getAuthentication().getOidc().setIssuerUri(buildKeycloakIssuerUri());
+                c.getAuthentication().getOidc().setClientId(EXAMPLE_CLIENT_ID);
+                c.getAuthentication().getOidc().setRedirectUri(EXAMPLE_REDIRECT_URI);
                 c.getAuthorizations().setEnabled(true);
-
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(buildKeycloakIssuerUri());
-                oidcConfig.setClientId(EXAMPLE_CLIENT_ID);
-                oidcConfig.setRedirectUri(EXAMPLE_REDIRECT_URI);
-
                 c.getInitialization()
                     .setMappingRules(
                         List.of(new ConfiguredMappingRule(USER_ID, USER_ID_CLAIM_NAME, USER_ID)));
-                c.getInitialization()
-                    .getDefaultRoles()
-                    .put(ADMIN_ROLE, Map.of(USERS_KEY, List.of(USER_ID)));
+                final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
+                defaultRoles.put(ADMIN_ROLE, Map.of(USERS_KEY, List.of(USER_ID)));
+                c.getInitialization().setDefaultRoles(defaultRoles);
               });
 
   @BeforeAll
@@ -150,7 +148,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
             .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + bearerToken)
             .build();
 
-    return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   @Override

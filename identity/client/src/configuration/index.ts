@@ -16,14 +16,6 @@ import {
   getClientConfigString,
 } from "src/configuration/clientConfig";
 
-const adminPath = "/admin";
-
-const apiBaseUrl = "/v2";
-
-const loginApiUrl = "/login";
-
-const logoutApiUrl = "/logout";
-
 export const isOIDC = getClientConfigBoolean("isOidc", false);
 export const isCamundaGroupsEnabled = getClientConfigBoolean(
   "isCamundaGroupsEnabled",
@@ -33,34 +25,31 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
   "isTenantsApiEnabled",
   false,
 );
+export const isNewDesignSystemEnabled = getClientConfigBoolean(
+  "isNewDesignSystemEnabled",
+  true,
+);
+export const isAdditionalIdpConfigured = getClientConfigBoolean(
+  "isAdditionalIdpConfigured",
+  false,
+);
 
 export const docsUrl = "https://docs.camunda.io/docs/next";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
+
+// Mapping rules can be managed wherever they can be created: outside SaaS, and on SaaS only when
+// an additional IdP is configured. Matches the gating of the mapping rules page in
+// useGlobalRoutes.
+export const canManageMappingRules =
+  isOIDC && (!isSaaS || isAdditionalIdpConfigured);
 
 export const resourcePermissions = getClientConfigObject(
   "resourcePermissions",
   {} as Record<ResourceType, PermissionType[]>,
 ) as Record<ResourceType, PermissionType[]>;
 
-export function getApiBaseUrl() {
-  return getBasePathBeforeAdmin() + apiBaseUrl;
-}
-
-export function getLoginApiUrl() {
-  return getBasePathBeforeAdmin() + loginApiUrl;
-}
-
-export function getLogoutApiUrl() {
-  return getBasePathBeforeAdmin() + logoutApiUrl;
-}
-
-export function getBaseUrl() {
-  return getBasePathBeforeAdmin() + adminPath;
-}
-
-export function getBasePathBeforeAdmin(): string {
-  const uiPath = window.location.pathname;
-  const endIndex = uiPath.indexOf(adminPath);
-  return uiPath.substring(0, endIndex);
-}
+export const defaultRoleIds = getClientConfigObject<string[]>(
+  "defaultRoleIds",
+  [],
+);

@@ -62,7 +62,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     // then
     assertThat(positionBasedHandlers)
-        .hasSize(10)
+        .hasSize(12)
         .allSatisfy(
             handler -> {
               assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
@@ -87,7 +87,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     // when
     startAndUseNewOptimizeInstance();
-    setupZeebeImportAndReloadConfiguration();
+    configureZeebeImport();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
@@ -111,7 +111,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     // when
     startAndUseNewOptimizeInstance();
-    setupZeebeImportAndReloadConfiguration();
+    configureZeebeImport();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
@@ -148,6 +148,60 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   }
 
   @Test
+  public void shouldResumeAgentInstanceImportFromLastPosition() {
+    // given: deploy process and import from scratch
+    deployZeebeData();
+    importAllZeebeEntitiesFromScratch();
+
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final PositionBasedImportIndexHandler agentHandler =
+        embeddedOptimizeExtension.getAllPositionBasedImportHandlers().stream()
+            .filter(
+                h ->
+                    h
+                        instanceof
+                        io.camunda.optimize.service.importing.zeebe.handler
+                            .ZeebeAgentInstanceImportIndexHandler)
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "ZeebeAgentInstanceImportIndexHandler not found — handler was not registered"));
+
+    // deployZeebeData() creates process records, not agent records, so positionBeforeRestart
+    // is 0. The assertions below verify the persistence/restore round-trip is wired correctly
+    // for this handler, not that the position value itself is meaningful.
+    final long positionBeforeRestart = agentHandler.getPersistedPositionOfLastEntity();
+    final OffsetDateTime timestampBeforeRestart = agentHandler.getTimestampOfLastPersistedEntity();
+
+    // when: Optimize restarts
+    startAndUseNewOptimizeInstance();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then: handler restored the persisted position and timestamp from the index document
+    final PositionBasedImportIndexHandler agentHandlerAfterRestart =
+        embeddedOptimizeExtension.getAllPositionBasedImportHandlers().stream()
+            .filter(
+                h ->
+                    h
+                        instanceof
+                        io.camunda.optimize.service.importing.zeebe.handler
+                            .ZeebeAgentInstanceImportIndexHandler)
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "ZeebeAgentInstanceImportIndexHandler not found after restart"));
+
+    assertThat(agentHandlerAfterRestart.getPersistedPositionOfLastEntity())
+        .isEqualTo(positionBeforeRestart);
+    assertThat(agentHandlerAfterRestart.getTimestampOfLastPersistedEntity())
+        .isEqualTo(timestampBeforeRestart);
+  }
+
+  @Test
   public void recordsAreFetchedWithSequenceOrPosition() {
     // given
     embeddedOptimizeExtension
@@ -179,9 +233,8 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
         .singleElement()
         .satisfies(instance -> assertThat(instance.getFlowNodeInstances()).isEmpty());
 
-    // when importing the second and third record based on position (note only records with relevant
+    // when importing the second record based on position (note only records with relevant
     // intent are imported)
-    importAllZeebeEntitiesFromLastIndex(); // process activated - fetched but not imported
     importAllZeebeEntitiesFromLastIndex(); // startEvent activating (first record with sequence) -
     // imported
 
@@ -201,8 +254,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
             + "Zeebe records will now be fetched based on sequence.");
 
     // when
-    importAllZeebeEntitiesFromLastIndex(); // start event activated - fetched but not imported
-    importAllZeebeEntitiesFromLastIndex(); // start event completing - fetched but not imported
     importAllZeebeEntitiesFromLastIndex(); // start event completed - imported
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();

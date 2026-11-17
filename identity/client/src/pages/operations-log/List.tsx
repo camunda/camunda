@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { FC, useCallback, useMemo, useState } from "react";
+import React, { FC, useCallback, useEffect, useMemo, useState } from "react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { useApi, usePagination, SortConfig } from "src/utility/api";
-import { searchAuditLogs } from "src/utility/api/audit-logs";
+import { usePagination, SortConfig } from "src/utility/api";
+import { useQuery } from "@tanstack/react-query";
+import { auditLogQueries } from "src/utility/api/audit-logs/queries";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
 import {
   OperationLogName,
@@ -46,7 +47,6 @@ import {
   auditLogSearchParamsSync,
 } from "src/pages/operations-log/filters";
 import { useSearchParamsFilters } from "src/utility/filters/useSearchParamsFilters";
-import { useUpdateEffect } from "src/utility/hooks/useUpdateEffect";
 import { Select } from "src/components/form/Select";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
@@ -64,14 +64,19 @@ const List: FC = () => {
   const { searchParamsFilters, setSearchParamsFilters } =
     useSearchParamsFilters(auditLogSearchParamsSync);
 
-  const { watch, setValue, reset } = useForm<AuditLogFilters>({
+  const { watch, setValue, reset, subscribe } = useForm<AuditLogFilters>({
     values: searchParamsFilters,
   });
   const filters = watch();
 
-  useUpdateEffect(() => {
-    setSearchParamsFilters(filters);
-  }, [filters]);
+  useEffect(
+    () =>
+      subscribe({
+        formState: { values: true },
+        callback: ({ values }) => setSearchParamsFilters(values),
+      }),
+    [subscribe, setSearchParamsFilters],
+  );
 
   const debounce = useDebounce(500);
   const [debouncedActor, setDebouncedActor] = useState<string>(filters.actor);
@@ -104,36 +109,38 @@ const List: FC = () => {
 
   const {
     data: auditLogs,
-    loading,
-    success,
-    reload,
-  } = useApi(searchAuditLogs, {
-    sort: transformedSort,
-    filter: {
-      category: {
-        $eq: "ADMIN",
-      },
-      result: filters.result,
-      operationType: filters.operationType,
-      entityType: filters.entityType,
-      relatedEntityType: filters.relatedEntityType,
-      relatedEntityKey: debouncedRelatedEntityKey
-        ? debouncedRelatedEntityKey
-        : undefined,
-      actorId: debouncedActor ? debouncedActor : undefined,
-      timestamp:
-        filters.timestampFrom && filters.timestampTo
-          ? {
-              $gte: filters.timestampFrom,
-              $lte: filters.timestampTo,
-            }
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(
+    auditLogQueries.search({
+      sort: transformedSort,
+      filter: {
+        category: {
+          $eq: "ADMIN",
+        },
+        result: filters.result,
+        operationType: filters.operationType,
+        entityType: filters.entityType,
+        relatedEntityType: filters.relatedEntityType,
+        relatedEntityKey: debouncedRelatedEntityKey
+          ? debouncedRelatedEntityKey
           : undefined,
-    },
-    page: {
-      from: pageParams.page.from,
-      limit: pageParams.page.limit,
-    },
-  });
+        actorId: debouncedActor ? debouncedActor : undefined,
+        timestamp:
+          filters.timestampFrom && filters.timestampTo
+            ? {
+                $gte: filters.timestampFrom,
+                $lte: filters.timestampTo,
+              }
+            : undefined,
+      },
+      page: {
+        from: pageParams.page.from,
+        limit: pageParams.page.limit,
+      },
+    }),
+  );
 
   const handleSort = useCallback(
     (sortConfig: SortConfig[] | undefined) => {
@@ -350,7 +357,12 @@ const List: FC = () => {
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("operationsLogCouldNotLoad")}
-          actionButton={{ label: tComponents("retry"), onClick: reload }}
+          actionButton={{
+            label: tComponents("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </Page>

@@ -346,14 +346,11 @@ public class DbMigrationState implements MutableMigrationState {
                 new ProcessMessageSubscriptionRecord();
             exclusiveCopy.wrap(record);
 
+            // The transient state is discarded after the migration; recovery rebuilds it.
             if (processMessageSubscription.isOpening()) {
-              // explicit call to put(..). This has the desired side-effect that the subscription
-              // is added to transient state
               persistentState.updateToOpeningState(exclusiveCopy);
               transientState.onSent(exclusiveCopy, sentTime);
             } else if (processMessageSubscription.isClosing()) {
-              // explicit call to updateToClosingState(..). This has the desired side-effect that
-              // the subscription is added to transient state
               persistentState.updateToClosingState(exclusiveCopy);
               transientState.onSent(exclusiveCopy, sentTime);
             }

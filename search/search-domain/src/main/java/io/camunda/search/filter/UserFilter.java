@@ -19,39 +19,34 @@ import java.util.Objects;
 import java.util.Set;
 
 public record UserFilter(
-    Long key,
     List<Operation<String>> usernameOperations,
     List<Operation<String>> nameOperations,
     List<Operation<String>> emailOperations,
     String tenantId,
     String groupId,
-    String roleId)
+    String roleId,
+    List<UserFilter> orFilters)
     implements FilterBase {
 
   public Builder toBuilder() {
     return new Builder()
-        .key(key)
         .usernameOperations(usernameOperations)
         .nameOperations(nameOperations)
         .emailOperations(emailOperations)
         .tenantId(tenantId)
         .groupId(groupId)
-        .roleId(roleId);
+        .roleId(roleId)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<UserFilter> {
-    private Long key;
     private List<Operation<String>> usernameOperations;
     private List<Operation<String>> nameOperations;
     private List<Operation<String>> emailOperations;
     private String tenantId;
     private String groupId;
     private String roleId;
-
-    public Builder key(final Long value) {
-      key = value;
-      return this;
-    }
+    private List<UserFilter> orFilters;
 
     public Builder usernameOperations(final List<Operation<String>> operations) {
       usernameOperations = addValuesToList(usernameOperations, operations);
@@ -125,16 +120,29 @@ public record UserFilter(
       return this;
     }
 
+    public Builder addOrOperation(final UserFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<UserFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public UserFilter build() {
       return new UserFilter(
-          key,
           Objects.requireNonNullElse(usernameOperations, Collections.emptyList()),
           nameOperations,
           emailOperations,
           tenantId,
           groupId,
-          roleId);
+          roleId,
+          orFilters);
     }
   }
 }

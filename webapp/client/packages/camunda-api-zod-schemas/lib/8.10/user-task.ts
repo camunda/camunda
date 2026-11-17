@@ -13,6 +13,7 @@ import {
 	advancedStringFilterSchema,
 	API_VERSION,
 	getEnumFilterSchema,
+	getOrFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
@@ -63,51 +64,55 @@ const userTaskSchema = z.object({
 	externalFormReference: z.string().nullable(),
 	tags: z.array(z.string()),
 	priority: z.number().int().min(0).max(100),
+	businessId: z.string().nullable(),
 });
 type UserTask = z.infer<typeof userTaskSchema>;
 
-const getUserTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const getUserTask = {
 	method: 'GET',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
 const queryUserTasksRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['creationDate', 'completionDate', 'followUpDate', 'dueDate', 'priority'] as const,
-	filter: userTaskSchema
-		.pick({
-			state: true,
-			elementId: true,
-			tenantId: true,
-			processDefinitionId: true,
-			userTaskKey: true,
-			processDefinitionKey: true,
-			processInstanceKey: true,
-			elementInstanceKey: true,
-		})
-		.extend({
-			assignee: advancedStringFilterSchema,
-			priority: advancedIntegerFilterSchema,
-			candidateGroup: advancedStringFilterSchema,
-			candidateUser: advancedStringFilterSchema,
-			creationDate: advancedDateTimeFilterSchema,
-			completionDate: advancedDateTimeFilterSchema,
-			followUpDate: advancedDateTimeFilterSchema,
-			dueDate: advancedDateTimeFilterSchema,
-			localVariables: z.array(userTaskVariableFilterSchema),
-			processInstanceVariables: z.array(userTaskVariableFilterSchema),
-			state: getEnumFilterSchema(userTaskStateSchema),
-		})
-		.partial(),
+	sortFields: ['creationDate', 'completionDate', 'followUpDate', 'dueDate', 'priority', 'businessId'] as const,
+	filter: getOrFilterSchema(
+		userTaskSchema
+			.pick({
+				state: true,
+				elementId: true,
+				tenantId: true,
+				processDefinitionId: true,
+				userTaskKey: true,
+				processDefinitionKey: true,
+				processInstanceKey: true,
+				elementInstanceKey: true,
+			})
+			.extend({
+				assignee: advancedStringFilterSchema,
+				businessId: advancedStringFilterSchema,
+				priority: advancedIntegerFilterSchema,
+				candidateGroup: advancedStringFilterSchema,
+				candidateUser: advancedStringFilterSchema,
+				creationDate: advancedDateTimeFilterSchema,
+				completionDate: advancedDateTimeFilterSchema,
+				followUpDate: advancedDateTimeFilterSchema,
+				dueDate: advancedDateTimeFilterSchema,
+				localVariables: z.array(userTaskVariableFilterSchema),
+				processInstanceVariables: z.array(userTaskVariableFilterSchema),
+				state: getEnumFilterSchema(userTaskStateSchema),
+			})
+			.partial(),
+	),
 });
 type QueryUserTasksRequestBody = z.infer<typeof queryUserTasksRequestBodySchema>;
 
 const queryUserTasksResponseBodySchema = getQueryResponseBodySchema(userTaskSchema);
 type QueryUserTasksResponseBody = z.infer<typeof queryUserTasksResponseBodySchema>;
 
-const queryUserTasks: Endpoint = {
+const queryUserTasks = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/user-tasks/search`,
-};
+	getUrl: () => `/${API_VERSION}/user-tasks/search` as const,
+} as const satisfies Endpoint;
 
 const formSchema = z.object({
 	formKey: z.string(),
@@ -117,10 +122,10 @@ const formSchema = z.object({
 });
 type Form = z.infer<typeof formSchema>;
 
-const getUserTaskForm: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const getUserTaskForm = {
 	method: 'GET',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/form`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/form` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
 const updateUserTaskRequestBodySchema = z.object({
 	changeset: userTaskSchema
@@ -136,15 +141,15 @@ const updateUserTaskRequestBodySchema = z.object({
 });
 type UpdateUserTaskRequestBody = z.infer<typeof updateUserTaskRequestBodySchema>;
 
-const updateUserTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const updateUserTask = {
 	method: 'PATCH',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
-const getTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const getTask = {
 	method: 'GET',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
 const assignTaskRequestBodySchema = z.object({
 	assignee: z.string(),
@@ -153,20 +158,20 @@ const assignTaskRequestBodySchema = z.object({
 });
 type AssignTaskRequestBody = z.infer<typeof assignTaskRequestBodySchema>;
 
-const assignTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const assignTask = {
 	method: 'POST',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/assignment`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/assignment` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
 const unassignTaskRequestBodySchema = z.object({
 	action: z.string().optional(),
 });
 type UnassignTaskRequestBody = z.infer<typeof unassignTaskRequestBodySchema>;
 
-const unassignTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const unassignTask = {
 	method: 'DELETE',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/assignee`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/assignee` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
 const completeTaskRequestBodySchema = z.object({
 	variables: z.record(z.string(), z.unknown()),
@@ -174,10 +179,10 @@ const completeTaskRequestBodySchema = z.object({
 });
 type CompleteTaskRequestBody = z.infer<typeof completeTaskRequestBodySchema>;
 
-const completeTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
+const completeTask = {
 	method: 'POST',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/completion`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/completion` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'>>;
 
 const queryVariablesByUserTaskRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'value', 'fullValue', 'tenantId', 'variableKey', 'scopeKey', 'processInstanceKey'] as const,
@@ -190,11 +195,11 @@ type QueryVariablesByUserTaskRequestBody = z.infer<typeof queryVariablesByUserTa
 const queryVariablesByUserTaskResponseBodySchema = getQueryResponseBodySchema(variableSchema);
 type QueryVariablesByUserTaskResponseBody = z.infer<typeof queryVariablesByUserTaskResponseBodySchema>;
 
-const queryVariablesByUserTask: Endpoint<Pick<UserTask, 'userTaskKey'> & {truncateValues?: boolean}> = {
+const queryVariablesByUserTask = {
 	method: 'POST',
 	getUrl: ({userTaskKey, truncateValues}) =>
-		`/${API_VERSION}/user-tasks/${userTaskKey}/effective-variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
-};
+		`/${API_VERSION}/user-tasks/${userTaskKey}/effective-variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}` as const,
+} as const satisfies Endpoint<Pick<UserTask, 'userTaskKey'> & {truncateValues?: boolean}>;
 
 export {
 	getUserTask,

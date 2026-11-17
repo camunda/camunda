@@ -10,10 +10,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -26,35 +28,42 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/expression")
 public class ExpressionController {
 
-  private final ExpressionServices expressionServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final MultiTenancyConfiguration multiTenancyCfg;
 
   public ExpressionController(
-      final ExpressionServices expressionServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final MultiTenancyConfiguration multiTenancyCfg) {
-    this.expressionServices = expressionServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateExpression(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ExpressionEvaluationRequest request) {
     return RequestMapper.toExpressionEvaluationRequest(
             request.getExpression(),
             request.getTenantId(),
+            request.getScopeKey(),
             request.getVariables(),
             multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateExpression);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            r -> evaluateExpression(r, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> evaluateExpression(
-      final ExpressionServices.ExpressionEvaluationRequest request) {
+      final ExpressionServices.ExpressionEvaluationRequest request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> expressionServices.evaluateExpression(request, authentication),
+        () ->
+            serviceRegistry
+                .expressionServices(physicalTenantId)
+                .evaluateExpression(request, authentication),
         ResponseMapper::toExpressionEvaluationResult,
         HttpStatus.OK);
   }

@@ -14,7 +14,7 @@ import {
   // searchByProcessInstanceKey,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {processInstanceKey: number};
@@ -60,9 +60,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance History', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
@@ -97,20 +96,17 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(async () => {
-            await operateFiltersPanelPage.selectProcess('IncidentProcess');
-          }).toPass({intervals: [5_000], timeout: 60_000});
+          await operateFiltersPanelPage.selectProcess('IncidentProcess');
+          await operateFiltersPanelPage.selectVersion('1');
         },
         onFailure: async () => {
           await page.reload();
         },
       });
-      await operateFiltersPanelPage.selectVersion('1');
     });
 
     await test.step('Wait for incident to appear', async () => {
       await operateFiltersPanelPage.clickActiveInstancesCheckbox();
-      await page.waitForTimeout(5000);
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
@@ -128,6 +124,9 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess('IncidentProcess');
+          await operateFiltersPanelPage.selectVersion('1');
+          await operateFiltersPanelPage.clickActiveInstancesCheckbox();
           await operateFiltersPanelPage.displayOptionalFilter(
             'Process Instance Key(s)',
           );
@@ -152,9 +151,10 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Variable');
-          await operateFiltersPanelPage.fillVariableNameFilter('wuf');
-          await operateFiltersPanelPage.fillVariableValueFilter('1');
+          await operateFiltersPanelPage.displayOptionalFilter('Variables');
+          await operateFiltersPanelPage.openVariableFilterModal();
+          await operateFiltersPanelPage.fillConditionRow(0, 'wuf', '1');
+          await operateFiltersPanelPage.applyVariableFilter();
         },
       });
 
@@ -183,24 +183,30 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify incident is resolved in Instance History', async () => {
-      await page.waitForTimeout(12000);
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
+          await expect(
+            operateProcessInstancePage.instanceHistory
+              .getByRole('treeitem')
+              .first(),
+          ).toBeVisible();
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            mainProcessName,
+            ['ACTIVE'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            incidentItemName,
+            ['COMPLETED'],
+          );
         },
         onFailure: async () => {
           await page.reload();
         },
+        // Incident resolution is reprocessed asynchronously; the history tree
+        // can lag behind, so allow more reload-and-recheck cycles.
+        maxRetries: 5,
       });
-
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        mainProcessName,
-        ['ACTIVE'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        incidentItemName,
-        ['COMPLETED'],
-      );
     });
   });
 
@@ -248,10 +254,9 @@ test.describe('Process Instance History', () => {
     });
 
     const mainProcessName = 'EmbeddedSubprocess';
-    let expandingElementsInMainProcess;
 
     await test.step('Verify Main process has no nested element', async () => {
-      expandingElementsInMainProcess =
+      const expandingElementsInMainProcess =
         await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
           mainProcessName,
         );
@@ -270,11 +275,17 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify Instance History Tab has 1 nested element', async () => {
-      expandingElementsInMainProcess =
-        await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
-          mainProcessName,
-        );
-      expect(expandingElementsInMainProcess).toBe(1);
+      // The history tree updates asynchronously after the modification is
+      // applied, so poll until the new subprocess node is reflected.
+      await expect
+        .poll(
+          async () =>
+            operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
+              mainProcessName,
+            ),
+          {timeout: 30000},
+        )
+        .toBe(1);
     });
 
     await test.step('Enter modification mode and assert results', async () => {
@@ -296,11 +307,17 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify Instance History Tab has nested subprocess element and verify results', async () => {
-      expandingElementsInMainProcess =
-        await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
-          mainProcessName,
-        );
-      expect(expandingElementsInMainProcess).toBe(2);
+      // The history tree updates asynchronously after the modification is
+      // applied, so poll until the second subprocess node is reflected.
+      await expect
+        .poll(
+          async () =>
+            operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
+              mainProcessName,
+            ),
+          {timeout: 30000},
+        )
+        .toBe(2);
     });
   });
 
@@ -409,7 +426,7 @@ test.describe('Process Instance History', () => {
         await operateProcessInstancePage.getNestedGroupInHistoryLocator(
           nestedParentName,
         );
-      await expect(nestedParentGroupLocator).toBeVisible();
+      await expect(nestedParentGroupLocator).toBeVisible({timeout: 30000});
       await expect(
         nestedParentGroupLocator.getByLabel(activityCollectMoney),
       ).toHaveCount(2);
@@ -455,7 +472,7 @@ test.describe('Process Instance History', () => {
         await operateProcessInstancePage.getNestedGroupInHistoryLocator(
           nestedParentName,
         );
-      await expect(nestedParentGroupLocator).toBeVisible();
+      await expect(nestedParentGroupLocator).toBeVisible({timeout: 30000});
       await expect(
         nestedParentGroupLocator.getByLabel(activitySendItems),
       ).toHaveCount(1);
@@ -499,27 +516,39 @@ test.describe('Process Instance History', () => {
 
     await test.step('Verify First Subprocess history reflects moved tokens accordingly', async () => {
       const nestedParentName = activityFirstSubprocess;
-      await operateProcessInstancePage.ensureElementExpandedInHistory(
-        nestedParentName,
-      );
-      const firstSubprocessLocator =
-        await operateProcessInstancePage.getNestedParentLocatorInHistory(
-          nestedParentName,
-        );
-      await expect(firstSubprocessLocator).toBeVisible();
+      // The applied token move is reprocessed asynchronously, so the first
+      // subprocess can still show as ACTIVE right after apply. Reload and
+      // re-check (re-expanding the node each time) until the terminal statuses
+      // appear.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.ensureElementExpandedInHistory(
+            nestedParentName,
+          );
+          const firstSubprocessLocator =
+            await operateProcessInstancePage.getNestedParentLocatorInHistory(
+              nestedParentName,
+            );
+          await expect(firstSubprocessLocator).toBeVisible();
 
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activityFirstSubprocess,
-        ['COMPLETED'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activityCollectMoney,
-        ['TERMINATED', 'TERMINATED'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        eventEndFirstSubProcess,
-        ['COMPLETED', 'COMPLETED'],
-      );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activityFirstSubprocess,
+            ['COMPLETED'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activityCollectMoney,
+            ['TERMINATED', 'TERMINATED'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            eventEndFirstSubProcess,
+            ['COMPLETED', 'COMPLETED'],
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
     });
 
     await test.step('Verify Second Subprocess history reflects moved tokens accordingly', async () => {
@@ -582,22 +611,33 @@ test.describe('Process Instance History', () => {
 
     await test.step('Verify history changed accordingly', async () => {
       const nestedParentName = activitySecondSubprocess;
-      await operateProcessInstancePage.ensureElementExpandedInHistory(
-        nestedParentName,
-      );
-
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activitySecondSubprocess,
-        ['TERMINATED', 'ACTIVE'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        eventStartSecondSubProcess,
-        ['COMPLETED', 'COMPLETED'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activitySendItems,
-        ['TERMINATED', 'ACTIVE'],
-      );
+      // The applied cancellation is reprocessed asynchronously, so the history
+      // tree can still show the token as ACTIVE right after apply. Reload and
+      // re-check (re-expanding the node each time) until the terminal statuses
+      // appear.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.ensureElementExpandedInHistory(
+            nestedParentName,
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activitySecondSubprocess,
+            ['TERMINATED', 'ACTIVE'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            eventStartSecondSubProcess,
+            ['COMPLETED', 'COMPLETED'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activitySendItems,
+            ['TERMINATED', 'ACTIVE'],
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
     });
 
     await test.step('Move all Send items', async () => {

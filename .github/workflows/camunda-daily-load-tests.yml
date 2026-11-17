@@ -1,6 +1,21 @@
-# description: Runs a daily max-load stress test against main.
+# description: Runs a daily max-load stress test against main, currently in four variants: gRPC
+#              and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and
+#              REST flavors (exporters disabled). After a 45-minute soak (15-minute warmup plus a
+#              30-minute measured window): snapshots the metrics of that window as a GitHub artifact,
+#              profiles each variant via async-profiler, persists metrics and flamegraphs to the
+#              camunda-benchmark-load-test-results-prod GCS bucket for long-term retention, posts a
+#              side-by-side summary table (with flamegraph links) to Slack (the scheduled run always
+#              posts; a manual run only when opted in via the post-to-slack input), then immediately
+#              deletes the namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
-# calls: camunda-load-test.yml (scenario: max)
+#              Each variant's full lifecycle (setup, soak, collect-metrics, profile,
+#              cleanup) is delegated to the reusable stress-load-test.yml workflow via a
+#              matrix: adding a variant is a matrix entry plus its variant-order pair, not a 6-job copy-paste.
+#              The no-secondary-storage variants only run this daily `max` leg; they deliberately
+#              don't get their own multi-week weekly endurance rotation, since that long-horizon
+#              engine coverage is not storage-specific and is already provided by the ES/OS/RDBMS
+#              weekly runs.
+# calls: stress-load-test.yml (per variant), load-test-publish-results.yml
 # type: CI
 # owner: @camunda/reliability-testing
 name: Daily Camunda Platform Load Tests
@@ -12,6 +27,11 @@ on:
         type: string
         default: ""
         required: false
+      post-to-slack:
+        description: 'Post the results to the reliability-testing Slack channel (useful for an end-to-end test run). Always posts on the scheduled run regardless of this input.'
+        type: boolean
+        default: false
+        required: false
   schedule:
     # Runs at 2 am Monday-Friday https://crontab.guru/#0_2_*_*_1-5
     - cron: 0 2 * * 1-5
@@ -22,22 +42,26 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+  REUSE_TAG: ${{ inputs.reuse-tag }}
+
 jobs:
   benchmark-data:
     name: Collect benchmark data
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     outputs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Collect benchmark data
         id: data
         run: |
-          var=${{ inputs.reuse-tag || '' }}
-          # ${#var} will return the length of the string
-          if [[ ${#var} -eq 0 ]]; then
+          if [[ -z "${REUSE_TAG}" ]]; then
             echo "Creating new daily load test benchmark"
             echo "benchmark=medic-daily-$(date --utc "+%Y-%m-%d")-$(git rev-parse --short HEAD)-test" >> "$GITHUB_OUTPUT"
           else
@@ -46,9 +70,8 @@ jobs:
             # medic-daily-2025-12-18-b1bd4006-test-b1bd400
             # $ echo ${tag%-*}
             # medic-daily-2025-12-18-b1bd4006-test
-            tag=${{ inputs.reuse-tag }}
-            var=${tag%-*}
-            echo "Re-creating daily load test, with name: $var and tag: $tag"
+            var=${REUSE_TAG%-*}
+            echo "Re-creating daily load test, with name: $var and tag: $REUSE_TAG"
             echo "benchmark=$var" >> "$GITHUB_OUTPUT"
           fi
       - name: Observe build status
@@ -62,43 +85,85 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
 
-  setup-max-load-test:
-    name: Setup max load test
-    needs:
-      - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
+  run-variant:
+    name: ${{ matrix.variant.label }}
+    needs: benchmark-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each entry fully describes one variant. Adding a variant (e.g. a future RDBMS leg) is
+        # a new entry here, and also needs its "key:label" pair in variant-order of the
+        # publish-results job below (in matrix order), or its metrics will be silently dropped
+        # from the Slack summary and the combined artifact.
+        variant:
+          - key: grpc
+            label: gRPC
+            load-test-load: '--set global.preferRest.enabled=false'
+            load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
+            secondary-storage-type: elasticsearch
+          - key: rest
+            label: REST
+            load-test-load: '--set global.preferRest.enabled=true'
+            load-test-setup-helm-values: '--set elasticsearch.storage.requests=64Gi'
+            secondary-storage-type: elasticsearch
+          - key: none-grpc
+            label: None-gRPC
+            load-test-load: '--set global.preferRest.enabled=false'
+            load-test-setup-helm-values: ''
+            secondary-storage-type: none
+          - key: none-rest
+            label: None-REST
+            load-test-load: '--set global.preferRest.enabled=true'
+            load-test-setup-helm-values: ''
+            secondary-storage-type: none
+    uses: ./.github/workflows/stress-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.benchmark-data.outputs.benchmark }}
-      ttl: 1
-      scenario: max
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-${{ matrix.variant.key }}
       build-frontend: true
+      load-test-load: ${{ matrix.variant.load-test-load }}
+      load-test-setup-helm-values: ${{ matrix.variant.load-test-setup-helm-values }}
+      secondary-storage-type: ${{ matrix.variant.secondary-storage-type }}
 
-  setup-max-grpc-load-test:
-    name: Setup max gRPC load test
-    needs:
-      - benchmark-data
-    uses: ./.github/workflows/camunda-load-test.yml
+  publish-results:
+    name: Publish results
+    needs: [ benchmark-data, run-variant ]
+    # Variant failures still publish what exists, but not without a benchmark name.
+    if: always() && needs.benchmark-data.result == 'success'
+    permissions:
+      actions: read # list run artifacts via API
+      contents: read
+      id-token: write # GCP WIF auth
+    uses: ./.github/workflows/load-test-publish-results.yml
     secrets: inherit
     with:
-      name: ${{ needs.benchmark-data.outputs.benchmark }}-grpc
-      ttl: 1
-      scenario: max
-      build-frontend: true
-      load-test-load: --set global.preferRest.enabled=false
+      benchmark: ${{ needs.benchmark-data.outputs.benchmark }}
+      # Column order of the Slack table, one "key:label" pair per run-variant matrix entry (a leg
+      # missing here is dropped from the results). The key is the -<key> suffix of the leg's name.
+      variant-order: 'grpc:gRPC rest:REST none-grpc:None-gRPC none-rest:None-REST'
+      # resolve-daily.py finds the benchmark by the prefix of this artifact name, keep it stable.
+      metrics-artifact-name: daily-load-test-metrics-${{ needs.benchmark-data.outputs.benchmark }}
+      gcs-path: automated/daily/stress
+      slack-title: Daily Load Test Results
+      post-to-slack: ${{ github.event_name != 'workflow_dispatch' || inputs.post-to-slack }}
 
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-max-load-test, setup-max-grpc-load-test ]
+    needs: [ run-variant, publish-results ]
     if: failure()
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -108,29 +173,20 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":warning: *Daily load test creation failed:*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-                  }
-                }
-              ]
-            }
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":warning: *Daily load test creation failed:*"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
       - name: Observe build status
         if: always()
         continue-on-error: true

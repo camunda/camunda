@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
@@ -17,7 +18,10 @@ import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.encoding.PartitionMigrationStatus;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -46,9 +50,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
@@ -73,7 +79,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
-  private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private LogStreamReader logStreamReader;
@@ -88,13 +93,16 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsSendingSubject;
   private final List<String> exporterPositionsReceivingSubjects;
+  private final String clusterId;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
+  private final int migrationStatusScanMaxRecords;
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
+  private final @Nullable String licenseKey;
   // When idle, exporter director is not exporting any records because no exporters are configured.
   // The actor is still running, but it is not actively doing any work.
   private boolean idle;
@@ -111,9 +119,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ExporterDirectorContext context,
       final ExporterPhase exporterPhase,
       final Function<RecordExporter, RecordExporter> recorderExporter) {
-    name = context.getName();
+    super("Exporter", context.getPartitionId());
     logStream = Objects.requireNonNull(context.getLogStream());
-    partitionId = logStream.getPartitionId();
+    partitionId = context.getPartitionId();
+    clusterId = context.getClusterId();
+    licenseKey = context.getLicenseKey();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
     containers =
@@ -123,32 +133,35 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     new ExporterContainer(
                         descriptorEntry.getKey(),
                         partitionId,
+                        clusterId,
+                        licenseKey,
                         descriptorEntry.getValue(),
                         meterRegistry,
-                        clock))
+                        clock,
+                        this::onReplayRequested))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
     recordExporter =
-        recorderExporter.apply(new RecordExporter(metrics, containers, partitionId, clock));
+        recorderExporter.apply(
+            new RecordExporter(metrics, containers, partitionId.number(), clock));
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
 
     final var exporterPositionsLegacySubject =
-        String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId);
-    final var exporterPositionsSubject =
-        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getEngineName(), partitionId);
+        String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId.number());
     exporterPositionsSendingSubject =
-        context.isSendOnLegacySubject() ? exporterPositionsLegacySubject : exporterPositionsSubject;
+        String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId.group(), partitionId.number());
     exporterPositionsReceivingSubjects =
         context.isReceiveOnLegacySubject()
-            ? List.of(exporterPositionsLegacySubject, exporterPositionsSubject)
-            : List.of(exporterPositionsSubject);
+            ? List.of(exporterPositionsLegacySubject, exporterPositionsSendingSubject)
+            : List.of(exporterPositionsSendingSubject);
 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
+    migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
 
     // needs name to be initialized
@@ -179,6 +192,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     return actor.call(
         () -> {
+          containers.stream().forEach(ExporterContainer::hardPauseExporter);
           metrics.setExporterPaused();
           exporterPhase = ExporterPhase.PAUSED;
         });
@@ -222,9 +236,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     return actor.call(
         () -> {
-          if (exporterPhase == ExporterPhase.SOFT_PAUSED) {
-            containers.stream().forEach(ExporterContainer::undoSoftPauseExporter);
-          }
+          containers.stream().forEach(ExporterContainer::resumeExporter);
           exporterPhase = ExporterPhase.EXPORTING;
           metrics.setExporterActive();
           if (exporterMode == ExporterMode.ACTIVE) {
@@ -260,8 +272,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void removeExporter(final String exporterId, final ExporterContainer container) {
-    container.close();
+    container.remove();
     containers.remove(container);
+    updateEventFilter();
     state.removeExporterState(exporterId);
     // After removing this exporter, the exporter index has changed. Reset it so that we don't
     // miss to export the record to any of the exporters whose index has changed.
@@ -341,7 +354,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
+        new ExporterContainer(
+            descriptor,
+            partitionId,
+            clusterId,
+            licenseKey,
+            initializationInfo,
+            meterRegistry,
+            clock,
+            this::onReplayRequested);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -355,6 +376,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.openExporter();
     }
     containers.add(container);
+    updateEventFilter();
     LOG.debug("Exporter '{}' is enabled.", exporterId);
 
     if (idle) {
@@ -367,18 +389,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExporterPhase.CLOSED);
     }
     return actor.call(() -> exporterPhase);
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return name;
   }
 
   @Override
@@ -444,7 +454,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   protected void handleFailure(final Throwable failure) {
     LOG.error(
         "Actor '{}' failed in phase {} with: {} .",
-        name,
+        getName(),
         actor.getLifecyclePhase(),
         failure,
         failure);
@@ -471,9 +481,26 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final String exporterId,
       final ExporterStateDistributeMessage.ExporterStateEntry exporterState) {
 
+    if (!isExporterConfigured(exporterId)) {
+      // The exporter is not configured (anymore) on this node, e.g. it was disabled or deleted.
+      // Accepting its state would re-introduce a removed exporter into the runtime state, where its
+      // stale position is never advanced and only removed again on the next restart via
+      // clearExporterState(). Since getLowestPosition() is the minimum across all exporter states,
+      // such a stale entry pins the snapshot/compaction position and prevents log compaction.
+      LOG.trace(
+          "Ignoring distributed state for exporter '{}' which is not configured anymore.",
+          exporterId);
+      return;
+    }
+
     if (state.getPosition(exporterId) < exporterState.position()) {
       state.setExporterState(exporterId, exporterState.position(), exporterState.metadata());
+      metrics.setLastUpdatedExportedPosition(exporterId, exporterState.position());
     }
+  }
+
+  private boolean isExporterConfigured(final String exporterId) {
+    return containers.stream().anyMatch(container -> container.getId().equals(exporterId));
   }
 
   private void initContainers() throws Exception {
@@ -482,6 +509,16 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.configureExporter();
     }
 
+    updateEventFilter();
+  }
+
+  /**
+   * Builds the event filter from the currently enabled exporters. Must run whenever an exporter is
+   * added or removed: with the filter of an earlier set of exporters, a newly enabled exporter
+   * would only get the records those accepted, and none at all if there were none, while the
+   * skipped records still advance its position.
+   */
+  private void updateEventFilter() {
     eventFilter = positionsToSkipFilter.and(createEventFilter(containers));
     LOG.debug("Set event filter for exporters: {}", eventFilter);
   }
@@ -608,6 +645,44 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     startActiveExportingFrom(-1);
   }
 
+  /**
+   * Handles a replay request from an exporter container. Seeks the log reader to {@code
+   * lastExportedPosition} so that records from that position onward will be re-exported.
+   *
+   * <p>Replay may be requested at any time once the log stream reader has been created, both during
+   * the initial startup handshake and while exporting is already under way, e.g. when an exporter
+   * reopens after detecting that its secondary storage has fallen behind (an automatic failover to
+   * a lagging async replica). If a request is accepted while a record is currently mid-export
+   * ({@code inExportingPhase == true}), the container's {@link ExporterContainer#exportRecord}
+   * caller abandons that record instead of retrying it in place, so the rewound reader redelivers
+   * it - and everything the requesting exporter missed before it - strictly in order on the next
+   * read.
+   *
+   * @param lastExportedPosition the position to seek the log reader to for replay
+   * @return {@code true} if the seek succeeded, {@code false} if the request was rejected or the
+   *     required log segments are no longer available
+   */
+  private boolean onReplayRequested(final long lastExportedPosition) {
+    if (logStreamReader == null) {
+      LOG.warn(
+          "Cannot process replay request at position {}: log stream reader is not available.",
+          lastExportedPosition);
+      return false;
+    }
+
+    LOG.info("Replay requested: seeking log reader to position {}", lastExportedPosition);
+
+    final boolean sought = logStreamReader.seek(lastExportedPosition);
+    if (!sought) {
+      LOG.warn(
+          "Could not seek log reader to replay position {}. Log segments may have been deleted.",
+          lastExportedPosition);
+      return false;
+    }
+
+    return true;
+  }
+
   private void startActiveExportingFrom(final long snapshotPosition) {
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader) {
@@ -695,8 +770,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return;
     }
 
+    final AtomicReference<ExportOutcome> lastOutcome = new AtomicReference<>();
     final ActorFuture<Boolean> retryFuture =
-        exportingRetryStrategy.runWithRetry(recordExporter::export, this::isClosed);
+        exportingRetryStrategy.runWithRetry(
+            () -> {
+              final ExportOutcome outcome = recordExporter.export();
+              lastOutcome.set(outcome);
+              return outcome != ExportOutcome.RETRY;
+            },
+            this::isClosed);
 
     actor.runOnCompletion(
         retryFuture,
@@ -704,6 +786,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
             onFailure();
+          } else if (lastOutcome.get() == ExportOutcome.ABORT_REPLAY) {
+            // the record was abandoned because a reopened exporter's replay request rewound the
+            // log reader; it will be redelivered, in order, once reading resumes below
+            inExportingPhase = false;
+            actor.submit(this::readNextEvent);
           } else {
             logStream.getFlowControl().onExported(recordExporter.getTypedEvent().getPosition());
             metrics.eventExported(recordExporter.getTypedEvent().getValueType());
@@ -734,7 +821,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   public String componentName() {
-    return name;
+    return getName();
   }
 
   @Override
@@ -762,6 +849,110 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
     }
     return actor.call(() -> state.getLowestPosition());
+  }
+
+  /**
+   * Whether every exporter on this replica has finished exporting and acknowledging every record
+   * written under a previous application version, for the upgrade-readiness endpoint.
+   */
+  public ActorFuture<PartitionMigrationStatus> getExportingMigrationStatus() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(
+          new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition " + partitionId.number() + ": exporter director is closed"));
+    }
+    return actor.call(this::computeExportingMigrationStatus);
+  }
+
+  /**
+   * Gathers the two already-durable facts {@link ExportingMigrationStatusCalculator} needs, reading
+   * the lowest exported position and scanning the not-yet-exported records' versions within a
+   * single, uninterrupted actor job so a compaction pass can't invalidate the position in between.
+   * Reports a failure to read either fact as {@link MigrationStatusCode#UNKNOWN} rather than
+   * letting the exception reach {@link #handleFailure(Throwable)} -- this is a best-effort
+   * diagnostic read for an actuator endpoint, and must not be able to take down the exporter actor
+   * itself.
+   */
+  private PartitionMigrationStatus computeExportingMigrationStatus() {
+    try {
+      final var hasExporters = state.hasExporters();
+      if (!hasExporters) {
+        return ExportingMigrationStatusCalculator.compute(partitionId.number(), false, null);
+      }
+
+      final long lowestExportedPosition = state.getLowestPosition();
+      final var status = scanUnexportedRecordsForPreviousVersion(lowestExportedPosition);
+      return explainIfPaused(status);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to determine partition {}'s exporting migration status", partitionId.number(), e);
+      return new PartitionMigrationStatus(
+          MigrationStatusCode.UNKNOWN,
+          "partition "
+              + partitionId.number()
+              + ": failed to read exporting migration status: "
+              + e.getMessage());
+    }
+  }
+
+  /**
+   * Names a pause as the reason exporting hasn't caught up yet, since the operator's fix for that
+   * ({@code resume exporting}) is different from the fix for a genuine backlog. Left as-is for
+   * MIGRATED/UNKNOWN -- the peek that produced {@code status} already reflects the log's true
+   * content regardless of pause, so a pause never turns an otherwise-safe MIGRATED into something
+   * unsafe, and only naming it when the result is MIGRATION_IN_PROGRESS avoids reporting "not
+   * ready" for a pause that isn't actually blocking anything (e.g. nothing written since is on an
+   * old version).
+   */
+  private PartitionMigrationStatus explainIfPaused(final PartitionMigrationStatus status) {
+    if (status.code() != MigrationStatusCode.MIGRATION_IN_PROGRESS
+        || (exporterPhase != ExporterPhase.PAUSED && exporterPhase != ExporterPhase.SOFT_PAUSED)) {
+      return status;
+    }
+    return new PartitionMigrationStatus(
+        MigrationStatusCode.MIGRATION_IN_PROGRESS,
+        status.detail() + "; exporting is " + exporterPhase + ", resume it to continue");
+  }
+
+  /**
+   * Scans not-yet-exported records after {@code lowestExportedPosition}, looking for one stamped
+   * with a previous application version. Stops the moment it finds a non-current-version record --
+   * already conclusive -- or reaches the log head, having verified every pending record.
+   *
+   * @return {@code null} if every record up to the log head has already been exported
+   */
+  private PartitionMigrationStatus scanUnexportedRecordsForPreviousVersion(
+      final long lowestExportedPosition) {
+    try (final LogStreamReader reader = logStream.newLogStreamReader()) {
+      if (!reader.seekToNextEvent(lowestExportedPosition)) {
+        throw new IllegalStateException(
+            "expected to find an event at or after position " + lowestExportedPosition);
+      }
+      final var metadata = new RecordMetadata();
+      int scanned = 0;
+      while (reader.hasNext()) {
+        if (scanned >= migrationStatusScanMaxRecords) {
+          return new PartitionMigrationStatus(
+              MigrationStatusCode.UNKNOWN,
+              "partition "
+                  + partitionId.number()
+                  + ": more than "
+                  + migrationStatusScanMaxRecords
+                  + " unexported records pending, cannot verify all of them are on the current"
+                  + " version");
+        }
+        reader.next().readMetadata(metadata);
+        scanned++;
+        final var status =
+            ExportingMigrationStatusCalculator.compute(
+                partitionId.number(), true, metadata.getBrokerVersion().toString());
+        if (status.code() != MigrationStatusCode.MIGRATED) {
+          return status;
+        }
+      }
+      return ExportingMigrationStatusCalculator.compute(partitionId.number(), true, null);
+    }
   }
 
   /**

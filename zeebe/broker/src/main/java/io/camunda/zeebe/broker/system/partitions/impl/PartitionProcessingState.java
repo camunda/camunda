@@ -13,21 +13,22 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.Path;
 
 public class PartitionProcessingState {
 
+  public static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
-  private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private boolean isProcessingPaused;
-  private ExporterPhase exporterPhase;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
+  // Transient, not persisted like other pause states - a crash must never leave the partition
+  // durably paused
+  private boolean pausedForTransfer;
 
   public PartitionProcessingState(final RaftPartition raftPartition) {
     this.raftPartition = raftPartition;
     initProcessingStatus();
-    initExportingState();
   }
 
   public boolean isDiskSpaceAvailable() {
@@ -67,87 +68,40 @@ public class PartitionProcessingState {
     isProcessingPaused = getPersistedPauseState(PERSISTED_PAUSE_STATE_FILENAME).exists();
   }
 
+  public boolean isPausedForTransfer() {
+    return pausedForTransfer;
+  }
+
+  public void setPausedForTransfer(final boolean pausedForTransfer) {
+    this.pausedForTransfer = pausedForTransfer;
+  }
+
   public boolean shouldProcess() {
-    return isDiskSpaceAvailable() && !isProcessingPaused();
+    return isDiskSpaceAvailable() && !isProcessingPaused() && !pausedForTransfer;
   }
 
-  public boolean isExportingPaused() {
-    return exporterPhase.equals(ExporterPhase.PAUSED);
-  }
-
-  public ExporterPhase getExporterPhase() {
-    return exporterPhase;
-  }
-
-  @SuppressWarnings({"squid:S899"})
-  /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
-  public boolean pauseExporting() {
+  /**
+   * Reads the exporter phase persisted for a partition, without instantiating the surrounding
+   * state. Callers that only have the partition directory - for example the startup code migrating
+   * the legacy phase into the dynamic cluster configuration, which runs before any partition exists
+   * - use this instead of constructing a {@link PartitionProcessingState}.
+   */
+  public static ExporterPhase readPersistedExporterPhase(final Path partitionDirectory) {
+    final var persistedState = partitionDirectory.resolve(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
     try {
-      setPersistedExporterPhase(ExporterPhase.PAUSED);
-    } catch (final IOException e) {
-      return false;
-    }
-    return true;
-  }
-
-  /** Returns true if soft exporting is paused. This method overrides the effects of hard pause. */
-  public boolean softPauseExporting() {
-    try {
-      setPersistedExporterPhase(ExporterPhase.SOFT_PAUSED);
-    } catch (final IOException e) {
-      return false;
-    }
-    return true;
-  }
-
-  /** Returns true if exporting is resumed. This method resumes both soft and "hard" exporting. */
-  public boolean resumeExporting() {
-    try {
-      setPersistedExporterPhase(ExporterPhase.EXPORTING);
-    } catch (final IOException e) {
-      return false;
-    }
-    return true;
-  }
-
-  void setPersistedExporterPhase(final ExporterPhase state) throws IOException {
-    exporterPhase = state;
-    if (state.equals(ExporterPhase.EXPORTING)) {
-      // since exporting is the default state, we can delete the file
-      Files.deleteIfExists(
-          getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-      return;
-    }
-
-    final File persistedExporterPauseState =
-        getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-    Files.writeString(
-        persistedExporterPauseState.toPath(),
-        state.name(),
-        StandardCharsets.UTF_8,
-        StandardOpenOption.DSYNC,
-        StandardOpenOption.CREATE);
-  }
-
-  private void initExportingState() {
-    try {
-      if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
-        setPersistedExporterPhase(ExporterPhase.EXPORTING);
-        exporterPhase = ExporterPhase.EXPORTING;
-      } else {
-        final var state =
-            Files.readString(
-                getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-        if (state == null || state.isEmpty() || state.isBlank()) {
-          // Backwards compatibility. If the file exists, it is paused.
-          exporterPhase = ExporterPhase.PAUSED;
-          return;
-        }
-        exporterPhase = ExporterPhase.valueOf(state);
+      if (!Files.exists(persistedState)) {
+        // exporting is the default state, so the file is absent while exporting
+        return ExporterPhase.EXPORTING;
       }
+      final var state = Files.readString(persistedState, StandardCharsets.UTF_8).trim();
+      if (state.isBlank()) {
+        // Backwards compatibility. If the file exists, it is paused.
+        return ExporterPhase.PAUSED;
+      }
+      return ExporterPhase.valueOf(state);
     } catch (final IOException e) {
       // exporting is the default state
-      exporterPhase = ExporterPhase.EXPORTING;
+      return ExporterPhase.EXPORTING;
     }
   }
 }

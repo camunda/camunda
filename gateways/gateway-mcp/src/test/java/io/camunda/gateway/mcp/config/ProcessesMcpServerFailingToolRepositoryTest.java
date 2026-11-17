@@ -47,7 +47,7 @@ class ProcessesMcpServerFailingToolRepositoryTest extends ProcessesToolsTest {
   @Test
   void shouldCreateMcpErrorForToolFindException() {
     // when/then
-    assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder().name("anyTool").build()))
+    assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder("anyTool").build()))
         .isInstanceOfSatisfying(
             McpError.class,
             exception ->

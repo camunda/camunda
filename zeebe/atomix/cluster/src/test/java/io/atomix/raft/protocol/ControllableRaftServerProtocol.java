@@ -47,6 +47,13 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
+  private Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> timeoutNowHandler;
+  private Function<
+          LeadershipTransferInitiateRequest, CompletableFuture<LeadershipTransferInitiateResponse>>
+      leadershipTransferInitiateHandler;
+  private Function<
+          LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+      leadershipTransferResultHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -56,6 +63,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private final MemberId localMemberId;
   private final Map<CompletableFuture<?>, Long> timeoutQueue = new HashMap<>();
   private long currentTime = 0;
+  private int receivedInstallRequests = 0;
   private final long requestTimeoutMillis = Duration.ofSeconds(5).toMillis();
 
   public ControllableRaftServerProtocol(
@@ -225,13 +233,20 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     final var responseFuture = new CompletableFuture<InstallResponse>();
     send(
         memberId,
-        () ->
-            getServer(memberId)
-                .thenCompose(listener -> listener.install(request))
-                .thenAccept(
-                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        () -> {
+          server(memberId).receivedInstallRequests++;
+          getServer(memberId)
+              .thenCompose(listener -> listener.install(request))
+              .thenAccept(
+                  response -> send(localMemberId, () -> responseFuture.complete(response), null));
+        },
         responseFuture);
     return responseFuture;
+  }
+
+  /** Returns how many install requests this member received, i.e. were delivered to it. */
+  public int getReceivedInstallRequests() {
+    return receivedInstallRequests;
   }
 
   @Override
@@ -243,6 +258,51 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
         () ->
             getServer(memberId)
                 .thenCompose(listener -> listener.transfer(request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
+  public CompletableFuture<TimeoutNowResponse> timeoutNow(
+      final MemberId memberId, final TimeoutNowRequest request) {
+    final var responseFuture = new CompletableFuture<TimeoutNowResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.timeoutNow(request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final MemberId memberId, final LeadershipTransferInitiateRequest request) {
+    final var responseFuture = new CompletableFuture<LeadershipTransferInitiateResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.leadershipTransferInitiate(request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final MemberId memberId, final LeadershipTransferResultRequest request) {
+    final var responseFuture = new CompletableFuture<LeadershipTransferResultResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.leadershipTransferResult(request))
                 .thenAccept(
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
         responseFuture);
@@ -307,6 +367,44 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterTransferHandler() {
     transferHandler = null;
+  }
+
+  @Override
+  public void registerTimeoutNowHandler(
+      final Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> handler) {
+    timeoutNowHandler = handler;
+  }
+
+  @Override
+  public void unregisterTimeoutNowHandler() {
+    timeoutNowHandler = null;
+  }
+
+  @Override
+  public void registerLeadershipTransferInitiateHandler(
+      final Function<
+              LeadershipTransferInitiateRequest,
+              CompletableFuture<LeadershipTransferInitiateResponse>>
+          handler) {
+    leadershipTransferInitiateHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeadershipTransferInitiateHandler() {
+    leadershipTransferInitiateHandler = null;
+  }
+
+  @Override
+  public void registerLeadershipTransferResultHandler(
+      final Function<
+              LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+          handler) {
+    leadershipTransferResultHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeadershipTransferResultHandler() {
+    leadershipTransferResultHandler = null;
   }
 
   @Override
@@ -448,6 +546,32 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<TransferResponse> transfer(final TransferRequest request) {
     if (transferHandler != null) {
       return transferHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<TimeoutNowResponse> timeoutNow(final TimeoutNowRequest request) {
+    if (timeoutNowHandler != null) {
+      return timeoutNowHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    if (leadershipTransferInitiateHandler != null) {
+      return leadershipTransferInitiateHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final LeadershipTransferResultRequest request) {
+    if (leadershipTransferResultHandler != null) {
+      return leadershipTransferResultHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

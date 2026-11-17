@@ -15,15 +15,15 @@
   <resultMap id="UsageMetricTUStatisticsResultMap"
     type="io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel$UsageMetricTUStatisticsDbModel">
     <constructor>
-      <arg column="TU" javaType="java.lang.Long"/>
+      <arg column="TU" javaType="java.lang.Long" name="tu"/>
     </constructor>
   </resultMap>
 
   <resultMap id="UsageMetricTUStatisticsResultMap2"
     type="io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel$UsageMetricTUTenantStatisticsDbModel">
     <constructor>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="TU" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="TU" javaType="java.lang.Long" name="tu"/>
     </constructor>
   </resultMap>
 

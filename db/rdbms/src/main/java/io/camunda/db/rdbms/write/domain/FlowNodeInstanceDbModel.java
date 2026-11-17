@@ -129,6 +129,10 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
+    public String flowNodeName() {
+      return flowNodeName;
+    }
+
     public FlowNodeInstanceDbModelBuilder flowNodeName(final String flowNodeName) {
       this.flowNodeName = flowNodeName;
       return this;

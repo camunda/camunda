@@ -16,11 +16,10 @@ type Props = {
 };
 
 const ThemeProvider = observer<React.FC<Props>>(({children}) => {
+  const carbonTheme = currentTheme.theme === 'light' ? 'g10' : 'g100';
+
   return (
-    <Theme
-      theme={`${currentTheme.theme === 'light' ? 'g10' : 'g100'}`}
-      className="carbonThemeProvider"
-    >
+    <Theme theme={carbonTheme} className="carbonThemeProvider">
       {children}
     </Theme>
   );

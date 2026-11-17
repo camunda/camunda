@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export type PageSearchParams = {
@@ -32,9 +32,12 @@ export type SortConfig = {
   order: "ASC" | "DESC";
 };
 
+/** A search term, either matched exactly or, wrapped as `{ $like }`, as a substring. */
+export type SearchFilterValue = string | { $like: string };
+
 export type PaginationRequestParams = PageSearchParams & {
   sort?: SortConfig[];
-  filter?: Record<string, string>;
+  filter?: Record<string, SearchFilterValue>;
 };
 
 export type UsePaginationResult = {
@@ -43,23 +46,32 @@ export type UsePaginationResult = {
   setPageNumber: (newPage: number) => void;
   setPageSize: (newPageSize: number) => void;
   setSort: (sort: SortConfig[] | undefined) => void;
-  setSearch: (search: Record<string, string> | undefined) => void;
-  search?: Record<string, string>;
+  setSearch: (search: Record<string, SearchFilterValue> | undefined) => void;
+  search?: Record<string, SearchFilterValue>;
   resetPagination: () => void;
 };
 
 const useSearch = (
   reset = () => {},
 ): [
-  Record<string, string> | undefined,
-  (newSearch: Record<string, string> | undefined) => void,
+  Record<string, SearchFilterValue> | undefined,
+  (newSearch: Record<string, SearchFilterValue> | undefined) => void,
 ] => {
-  const [search, setSearch] = useState<Record<string, string> | undefined>(
-    undefined,
-  );
+  const [search, setSearch] = useState<
+    Record<string, SearchFilterValue> | undefined
+  >(undefined);
+
+  const currentSearch = useRef<string | undefined>(undefined);
 
   const handleSearchChange = useCallback(
-    (newSearch: Record<string, string> | undefined) => {
+    (newSearch: Record<string, SearchFilterValue> | undefined) => {
+      const serialized = JSON.stringify(newSearch);
+
+      if (serialized === currentSearch.current) {
+        return;
+      }
+
+      currentSearch.current = serialized;
       setSearch(newSearch);
       reset();
     },
@@ -86,23 +98,33 @@ const usePagination = (
     setPage(config);
   }, [config]);
 
-  const [sortParams, setSort] = useSorting();
+  const [sortParams, setSortParams] = useSorting();
 
   const [searchParams, setSearch] = useSearch(resetPageState);
 
   const setPageNumber = useCallback((newPage: number) => {
-    setPage((prevState) => ({
-      ...prevState,
-      pageNumber: newPage,
-    }));
+    setPage((prevState) =>
+      prevState.pageNumber === newPage
+        ? prevState
+        : { ...prevState, pageNumber: newPage },
+    );
   }, []);
 
   const setPageSize = useCallback((newPageSize: number) => {
-    setPage((prevState) => ({
-      ...prevState,
-      pageSize: newPageSize,
-    }));
+    setPage((prevState) =>
+      prevState.pageSize === newPageSize
+        ? prevState
+        : { ...prevState, pageSize: newPageSize },
+    );
   }, []);
+
+  const setSort = useCallback(
+    (newSort: SortConfig[] | undefined) => {
+      setSortParams(newSort);
+      setPageNumber(1);
+    },
+    [setSortParams, setPageNumber],
+  );
 
   const pageParams = useMemo(() => {
     const result: PaginationRequestParams = {

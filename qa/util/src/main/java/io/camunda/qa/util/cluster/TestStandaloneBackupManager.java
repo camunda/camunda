@@ -10,19 +10,15 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
+import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantSearchEngineConfigurations;
+import io.camunda.application.commons.search.SearchClientReaderConfiguration;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
-import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
@@ -30,25 +26,17 @@ public class TestStandaloneBackupManager
     extends TestSpringApplication<TestStandaloneBackupManager> {
 
   private Long backupId;
-  private final Camunda unifiedConfig;
+  private boolean skipSchemaCheck;
 
   public TestStandaloneBackupManager() {
     super(
-        // Unified Configuration classes
-        UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class,
-        // ---
+        UnifiedConfigurationModule.class,
         BackupManagerConfiguration.class,
         StandaloneBackupManager.class,
-        NativeSearchClientsConfiguration.class);
-
-    unifiedConfig = new Camunda();
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class);
+        NativeSearchClientsConfiguration.class,
+        PhysicalTenantSearchClientReadersConfiguration.class,
+        PhysicalTenantSearchEngineConfigurations.class,
+        SearchClientReaderConfiguration.class);
   }
 
   @Override
@@ -71,21 +59,15 @@ public class TestStandaloneBackupManager
     return false;
   }
 
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneBackupManager withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
   @Override
   protected String[] commandLineArgs() {
-    return backupId == null ? super.commandLineArgs() : new String[] {String.valueOf(backupId)};
+    if (backupId == null) {
+      return super.commandLineArgs();
+    }
+
+    return skipSchemaCheck
+        ? new String[] {String.valueOf(backupId), "--skip-schema-check"}
+        : new String[] {String.valueOf(backupId)};
   }
 
   @Override
@@ -98,17 +80,19 @@ public class TestStandaloneBackupManager
     return this;
   }
 
+  public TestStandaloneBackupManager withSkipSchemaCheck(final boolean skipSchemaCheck) {
+    this.skipSchemaCheck = skipSchemaCheck;
+    return this;
+  }
+
   /**
    * Convenience method for setting the secondary storage type in the unified configuration.
-   * Additionally, the property camunda.data.secondary-storage.type is set to ensure that
-   * ConditionalOnSecondaryStorageType behaves as expected
    *
    * @param type the secondary storage type
    * @return itself for chaining
    */
   public TestStandaloneBackupManager withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 }

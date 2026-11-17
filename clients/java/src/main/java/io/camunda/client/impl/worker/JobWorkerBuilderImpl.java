@@ -31,6 +31,7 @@ import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import org.slf4j.Logger;
 
 public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
@@ -47,7 +49,12 @@ public final class JobWorkerBuilderImpl
       BackoffSupplier.newBackoffBuilder().build();
   public static final BackoffSupplier DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().maxDelay(Duration.ofMinutes(1).toMillis()).build();
-  public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
+  public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
+  public static final Duration DEFAULT_STREAM_INACTIVITY_TIMEOUT = Duration.ofMinutes(10);
+  private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
+  // Fraction of a streaming worker's capacity kept for its poll path while the push path starves
+  // the poll. See reservedPollCapacity.
+  private static final float RESERVED_POLL_FRACTION = 0.25f;
   private final JobClient jobClient;
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
@@ -60,13 +67,15 @@ public final class JobWorkerBuilderImpl
   private Duration pollInterval;
   private Duration requestTimeout;
   private List<String> fetchVariables;
+  private boolean withLease;
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
   private TenantFilter tenantFilter;
   private BackoffSupplier backoffSupplier;
   private BackoffSupplier streamNoJobsBackoffSupplier;
   private boolean enableStreaming;
-  private Duration streamingTimeout;
+  private Duration streamTimeout;
+  private Duration streamInactivityTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
 
@@ -93,7 +102,8 @@ public final class JobWorkerBuilderImpl
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
-    streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
+    streamTimeout = DEFAULT_STREAM_TIMEOUT;
+    streamInactivityTimeout = DEFAULT_STREAM_INACTIVITY_TIMEOUT;
   }
 
   @Override
@@ -155,6 +165,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 withLease(final boolean withLease) {
+    this.withLease = withLease;
+    return this;
+  }
+
+  @Override
   public JobWorkerBuilderStep3 backoffSupplier(final BackoffSupplier backoffSupplier) {
     this.backoffSupplier = backoffSupplier;
     return this;
@@ -175,7 +191,13 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorkerBuilderStep3 streamTimeout(final Duration timeout) {
-    streamingTimeout = timeout;
+    streamTimeout = timeout;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 streamInactivityTimeout(final Duration timeout) {
+    streamInactivityTimeout = timeout;
     return this;
   }
 
@@ -218,12 +240,22 @@ public final class JobWorkerBuilderImpl
             fetchVariables,
             getTenantIds(),
             tenantFilter,
-            maxJobsActive);
+            maxJobsActive,
+            withLease);
 
-    final Executor jobExecutor;
+    final JobExecutor jobExecutor;
     if (enableStreaming) {
-      if (streamingTimeout != null) {
-        ensurePositive("streamingTimeout", streamingTimeout);
+      if (streamTimeout != null) {
+        ensurePositive("streamTimeout", streamTimeout);
+      }
+      if (streamInactivityTimeout != null) {
+        ensurePositive("streamInactivityTimeout", streamInactivityTimeout);
+        if (streamTimeout != null && streamInactivityTimeout.compareTo(streamTimeout) >= 0) {
+          LOG.info(
+              "streamInactivityTimeout ({}) is not less than streamTimeout ({}); inactivity-based stream recreation will not fire because streamTimeout will always preempt it.",
+              streamInactivityTimeout,
+              streamTimeout);
+        }
       }
 
       jobStreamer =
@@ -235,13 +267,21 @@ public final class JobWorkerBuilderImpl
               fetchVariables,
               getTenantIds(),
               tenantFilter,
-              streamingTimeout,
+              streamTimeout,
+              streamInactivityTimeout,
               backoffSupplier,
-              scheduledExecutor);
-      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
+              scheduledExecutor,
+              System::nanoTime,
+              metrics,
+              withLease);
+      jobExecutor = newJobExecutor(jobHandlingExecutor, maxJobsActive, timeout, true);
     } else {
       jobStreamer = JobStreamer.noop();
-      jobExecutor = jobHandlingExecutor;
+      // A worker without job push still bounds its work through the executor, so its poll sizing
+      // and its close condition read one and the same capacity count as a streaming worker does.
+      // Nothing else takes capacity here, so a poll sized to the free capacity always fits and the
+      // executor never actually refuses a job.
+      jobExecutor = newJobExecutor(jobHandlingExecutor, maxJobsActive, timeout, false);
     }
 
     final JobWorkerImpl jobWorker =
@@ -249,13 +289,16 @@ public final class JobWorkerBuilderImpl
             maxJobsActive,
             scheduledExecutor,
             pollInterval,
+            jobClient,
             jobRunnableFactory,
             jobPoller,
             jobStreamer,
             backoffSupplier,
             streamNoJobsBackoffSupplier,
             metrics,
-            jobExecutor);
+            jobExecutor,
+            System::nanoTime,
+            timeout);
     closeables.add(jobWorker);
     return jobWorker;
   }
@@ -280,5 +323,24 @@ public final class JobWorkerBuilderImpl
 
   private List<String> getTenantIds() {
     return customTenantIds.isEmpty() ? defaultTenantIds : customTenantIds;
+  }
+
+  // A streaming worker's push path reaches a freed slot in microseconds while its poll path only
+  // reacts a network round-trip later, so under sustained push the poll — the only path that drains
+  // the ACTIVATABLE backlog and recovers timed-out jobs — is starved of slots. Reserving a small
+  // share of the capacity for the poll, while the poll is starved, gives the backlog a way in.
+  // Using the floor of the fraction reserves nothing until the worker has enough slots to spare a
+  // whole one. Package-private so builder tests can pin the reservation boundary.
+  static int reservedPollCapacity(final int maxJobsActive) {
+    return (int) Math.floor(maxJobsActive * RESERVED_POLL_FRACTION);
+  }
+
+  private static BlockingExecutor newJobExecutor(
+      final Executor jobHandlingExecutor,
+      final int maxJobsActive,
+      final Duration timeout,
+      final boolean streaming) {
+    final int reserved = streaming ? reservedPollCapacity(maxJobsActive) : 0;
+    return new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout, reserved);
   }
 }

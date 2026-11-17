@@ -80,6 +80,26 @@ public class PublishMessageRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldPublishMessageWithBusinessId() {
+    // given
+    gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .businessId("order-12345")
+        .send()
+        .join();
+
+    // then
+    final MessagePublicationRequest request =
+        gatewayService.getLastRequest(MessagePublicationRequest.class);
+    assertThat(request.getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
   public void shouldPublishMessageWithStringVariables() {
     // given
     gatewayService.onPublishMessageRequest(DUMMY_RESPONSE);

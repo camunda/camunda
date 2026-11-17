@@ -17,18 +17,18 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.time.Duration;
@@ -37,30 +37,32 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DocumentServices extends ApiServices<DocumentServices> {
+public class DocumentServices extends PhysicalTenantScopedApiServices<DocumentServices> {
 
   private static final Logger LOG = LoggerFactory.getLogger(DocumentServices.class);
 
   private final SimpleDocumentStoreRegistry registry;
   private final AuthorizationChecker authorizationChecker;
-  private final SecurityConfiguration securityConfig;
+  private final AuthorizationsConfiguration authorizationsConfig;
 
   public DocumentServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final SimpleDocumentStoreRegistry registry,
       final AuthorizationChecker authorizationChecker,
-      final SecurityConfiguration securityConfig,
+      final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.registry = registry;
     this.authorizationChecker = authorizationChecker;
-    this.securityConfig = securityConfig;
+    this.authorizationsConfig = authorizationsConfig;
   }
 
   /** Will return a failed future for any error returned by the store */
@@ -70,7 +72,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
     final DocumentCreationRequest storeRequest =
@@ -100,7 +102,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
     final List<CompletableFuture<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
@@ -141,7 +143,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.READ, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.READ))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.READ))));
     }
 
     final DocumentStore documentStore = getDocumentStore(storeId).instance();
@@ -168,7 +170,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.DELETE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.DELETE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.DELETE))));
     }
 
     return getDocumentStore(storeId)
@@ -187,7 +189,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
     final long ttl = params.timeToLive().toMillis();
@@ -256,7 +258,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   private boolean hasDocumentPermission(
       final PermissionType permission, final CamundaAuthentication authentication) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!authorizationsConfig.isEnabled()) {
       return true;
     }
 

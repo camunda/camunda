@@ -331,12 +331,15 @@ final class ElasticsearchExporterClientTest {
                       .withValueType(ValueType.PROCESS_INSTANCE));
 
       client.index(firstRecord, new RecordSequence(PARTITION_ID, 1));
-      final int singleRecordSize = localBulkRequest.memoryUsageBytes();
       client.index(secondRecord, new RecordSequence(PARTITION_ID, 2));
+      final int sizeOfFirstTwoRecords = localBulkRequest.memoryUsageBytes();
       client.index(thirdRecord, new RecordSequence(PARTITION_ID, 3));
 
-      // Set memory limit to just over 2x one record size, so 3 records require 2 chunks
-      config.bulk.memoryLimit = singleRecordSize * 2 + 1;
+      // Set the memory limit to the combined size of the first two records: chunk #1 holds
+      // records 1 and 2 (cumulative size equals the limit, so the comparison is not yet
+      // exceeded), and the third record forces chunk #2. Computing the limit from the actual
+      // cumulative size keeps the test robust against per-record size variation.
+      config.bulk.memoryLimit = sizeOfFirstTwoRecords;
 
       // when
       client.flush();

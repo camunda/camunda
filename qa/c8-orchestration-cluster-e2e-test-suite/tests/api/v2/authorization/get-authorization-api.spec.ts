@@ -77,7 +77,9 @@ test.describe.parallel('Get Authorization API', () => {
     await test.step('Get Authorization and assert results', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: userAuthorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -103,7 +105,9 @@ test.describe.parallel('Get Authorization API', () => {
     await test.step('Get Authorization and assert results', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/authorizations/${nonExistentAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: nonExistentAuthorizationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -149,7 +153,9 @@ test.describe.parallel('Get Authorization API', () => {
     await test.step('Get Authorization without authorization header', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: userAuthorizationKey,
+          }),
           {
             headers: {
               'Content-Type': 'application/json',
@@ -220,7 +226,9 @@ test.describe.parallel('Get Authorization API', () => {
 
       await expect(async () => {
         const authRes = await request.get(
-          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: userAuthorizationKey,
+          }),
           {
             headers: jsonHeaders(token), // overrides default demo:demo
           },

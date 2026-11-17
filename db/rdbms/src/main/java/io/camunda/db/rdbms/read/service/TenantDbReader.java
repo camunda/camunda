@@ -19,10 +19,11 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,8 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
   }
 
   @Override
-  public TenantEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable TenantEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(id).orElse(null);
   }
 

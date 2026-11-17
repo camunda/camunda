@@ -19,9 +19,15 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import org.immutables.value.Value;
 
+/**
+ * Represents a request to update the variables of a scope.
+ *
+ * @see StorageOrdinalRelated
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableVariableDocumentRecordValue.Builder.class)
-public interface VariableDocumentRecordValue extends RecordValueWithVariables, TenantOwned {
+public interface VariableDocumentRecordValue
+    extends RecordValueWithVariables, TenantOwned, StorageOrdinalRelated {
 
   /**
    * @return the scope key associated with the variable document

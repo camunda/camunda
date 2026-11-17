@@ -7,13 +7,11 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -25,8 +23,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import io.camunda.zeebe.util.jar.ExternalJarLoadException;
-import io.micrometer.core.instrument.Tag;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.netty.util.NetUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +34,6 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final SystemContext systemContext;
-  private final ExporterRepository exporterRepository;
   private boolean isClosed = false;
 
   private CompletableFuture<Broker> startFuture;
@@ -47,53 +43,45 @@ public final class Broker implements AutoCloseable {
   private final BrokerStartupActor brokerStartupActor;
   private BrokerContext brokerContext;
 
-  // TODO just used by tests ...
   public Broker(
       final SystemContext systemContext,
       final SpringBrokerBridge springBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
-    this(systemContext, springBrokerBridge, additionalPartitionListeners, new ExporterRepository());
-  }
-
-  public Broker(
-      final SystemContext systemContext,
-      final SpringBrokerBridge springBrokerBridge,
-      final List<PartitionListener> additionalPartitionListeners,
-      final ExporterRepository exporterRepository) {
     this.systemContext = systemContext;
-    this.exporterRepository = exporterRepository;
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
-    final var nodeId = MemberId.from(String.valueOf(getConfig().getCluster().getNodeId()));
+    final var cluster = getConfig().getCluster();
+    final var nodeId = BrokerMemberId.from(cluster.getZone(), cluster.getNodeId());
 
     healthCheckService =
         new BrokerHealthCheckService(
-            nodeId,
-            new HealthTreeMetrics(systemContext.getMeterRegistry(), Tag.of("partition", "none")));
+            nodeId.memberId(),
+            new HealthTreeMetrics(
+                systemContext.getMeterRegistry(), PartitionKeyNames.noPartition()),
+            systemContext.getPhysicalTenantIds().known());
 
     final var startupContext =
         new BrokerStartupContextImpl(
             localBroker,
             systemContext.getBrokerConfiguration(),
-            systemContext.getIdentityConfiguration(),
             springBrokerBridge,
             scheduler,
             healthCheckService,
-            buildExporterRepository(getConfig()),
             new ClusterServicesImpl(systemContext.getCluster()),
             systemContext.getBrokerClient(),
             additionalPartitionListeners,
             systemContext.getShutdownTimeout(),
             systemContext.getMeterRegistry(),
-            systemContext.getSecurityConfiguration(),
-            systemContext.getUserServices(),
+            systemContext.getPhysicalTenantContexts(),
+            systemContext.getUserServicesForTenant(),
             systemContext.getPasswordEncoder(),
-            systemContext.getJwtDecoder(),
-            systemContext.getOidcClaimsProvider(),
+            systemContext.getJwtDecoderFactory(),
+            systemContext.getOidcClaimsProviderFactory(),
             systemContext.getSearchClientsProxy(),
-            systemContext.getBrokerRequestAuthorizationConverter(),
-            systemContext.getNodeIdProvider());
+            systemContext.getExportedPositionSuppliers(),
+            systemContext.getNodeIdProvider(),
+            systemContext.getPhysicalTenantIds());
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);
@@ -147,39 +135,20 @@ public final class Broker implements AutoCloseable {
     final BrokerInfo result =
         new BrokerInfo(
             clusterCfg.getNodeId(),
+            clusterCfg.getZone(),
             NetUtil.toSocketAddressString(
                 brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
 
     // initialize this fields from config for the first startup, they will be overwritten with
     // the persisted values once the cluster has bootstrapped
-    result
-        .setClusterSize(clusterCfg.getClusterSize())
-        .setPartitionsCount(clusterCfg.getPartitionsCount())
-        .setReplicationFactor(clusterCfg.getReplicationFactor());
+    result.setClusterSize(clusterCfg.getClusterSize());
 
     final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
       result.setVersion(version);
     }
+
     return result;
-  }
-
-  private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
-    final var exporterEntries = cfg.getExporters().entrySet();
-
-    // load and validate exporters
-    for (final var exporterEntry : exporterEntries) {
-      final var id = exporterEntry.getKey();
-      final var exporterCfg = exporterEntry.getValue();
-      try {
-        exporterRepository.load(id, exporterCfg);
-      } catch (final ExporterLoadException | ExternalJarLoadException e) {
-        throw new IllegalStateException(
-            "Failed to load exporter with configuration: " + exporterCfg, e);
-      }
-    }
-
-    return exporterRepository;
   }
 
   public BrokerCfg getConfig() {
@@ -224,17 +193,10 @@ public final class Broker implements AutoCloseable {
 
     private final BrokerStartupProcess brokerStartupProcess;
 
-    private final int nodeId;
-
     private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
-      nodeId = startupContext.getBrokerInfo().getNodeId();
+      super("Startup");
       startupContext.setConcurrencyControl(actor);
       brokerStartupProcess = new BrokerStartupProcess(startupContext);
-    }
-
-    @Override
-    public String getName() {
-      return "Startup";
     }
 
     private ActorFuture<BrokerContext> start() {

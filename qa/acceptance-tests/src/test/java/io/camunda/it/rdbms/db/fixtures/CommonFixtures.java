@@ -7,11 +7,11 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -92,7 +92,7 @@ public class CommonFixtures {
   public static ResourceAccessChecks resourceAccessChecks(
       List<String> resourceIds, List<String> tenantIds) {
     return ResourceAccessChecks.of(
-        AuthorizationCheck.enabled(Authorization.of(b -> b.resourceIds(resourceIds))),
+        AuthorizationCheck.enabled(RequiredAuthorization.of(b -> b.resourceIds(resourceIds))),
         TenantCheck.enabled(tenantIds));
   }
 
@@ -105,7 +105,7 @@ public class CommonFixtures {
       final AuthorizationResourceType resourceType, final List<String> resourceIds) {
     return ResourceAccessChecks.of(
         AuthorizationCheck.enabled(
-            Authorization.of(b -> b.resourceType(resourceType).resourceIds(resourceIds))),
+            RequiredAuthorization.of(b -> b.resourceType(resourceType).resourceIds(resourceIds))),
         TenantCheck.disabled());
   }
 

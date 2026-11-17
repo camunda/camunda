@@ -53,7 +53,7 @@ test.describe('Job Completion API Tests', () => {
     const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
     const completeRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/completion`),
+      buildUrl('/jobs/{jobKey}/completion', {jobKey}),
       {
         headers: jsonHeaders(),
         data: {},
@@ -68,7 +68,7 @@ test.describe('Job Completion API Tests', () => {
 
     await test.step('Send complete request for non-existing job', async () => {
       const completeRes = await request.post(
-        buildUrl(`/jobs/${jobKey}/completion`),
+        buildUrl('/jobs/{jobKey}/completion', {jobKey}),
         {
           headers: jsonHeaders(),
           data: {},
@@ -86,7 +86,7 @@ test.describe('Job Completion API Tests', () => {
 
     await test.step('Send invalid payload to provoke a bad request', async () => {
       const completeRes = await request.post(
-        buildUrl(`/jobs/${jobKey}/completion`),
+        buildUrl('/jobs/{jobKey}/completion', {jobKey}),
         {
           headers: jsonHeaders(),
           data: {
@@ -110,7 +110,9 @@ test.describe('Job Completion API Tests', () => {
 
     await test.step('First completion (should succeed)', async () => {
       const completeRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/failure`),
+        buildUrl('/jobs/{jobKey}/failure', {
+          jobKey: localState['jobKey'] as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -124,7 +126,9 @@ test.describe('Job Completion API Tests', () => {
 
     await test.step('Second completion (should conflict)', async () => {
       const completeAgainRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/completion`),
+        buildUrl('/jobs/{jobKey}/completion', {
+          jobKey: localState['jobKey'] as string,
+        }),
         {
           headers: jsonHeaders(),
           data: {},

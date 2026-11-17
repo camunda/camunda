@@ -19,6 +19,9 @@ public record ProcessCacheResult(Map<Long, ProcessCacheItem> cachedProcesses) {
   }
 
   public ProcessCacheItem getProcessItem(final Long processDefinitionKey) {
+    if (processDefinitionKey == null) {
+      return ProcessCacheItem.EMPTY;
+    }
     return cachedProcesses.getOrDefault(processDefinitionKey, ProcessCacheItem.EMPTY);
   }
 
@@ -26,11 +29,13 @@ public record ProcessCacheResult(Map<Long, ProcessCacheItem> cachedProcesses) {
       final Long processDefinitionKey,
       final String processName,
       final String elementId,
-      final String cachedName) {
+      final String cachedName,
+      final Integer processDefinitionVersion) {
     return new ProcessCacheResult(
         Map.of(
             processDefinitionKey,
-            new ProcessCacheItem(processName, Map.of(elementId, cachedName))));
+            new ProcessCacheItem(
+                processName, Map.of(elementId, cachedName), processDefinitionVersion)));
   }
 
   public boolean isEmpty() {

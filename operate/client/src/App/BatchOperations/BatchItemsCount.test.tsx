@@ -23,6 +23,20 @@ describe('<BatchItemsCount />', () => {
     expect(screen.getByLabelText('not started')).toBeInTheDocument();
   });
 
+  it('should render no items state when the batch operation has no items', () => {
+    render(
+      <BatchItemsCount
+        operationsCompletedCount={0}
+        operationsFailedCount={0}
+        operationsTotalCount={0}
+      />,
+    );
+
+    expect(screen.getByLabelText('no items')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.queryByLabelText('not started')).not.toBeInTheDocument();
+  });
+
   it('should filter out items with 0 count', () => {
     render(
       <BatchItemsCount

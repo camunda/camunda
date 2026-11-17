@@ -36,11 +36,13 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Long parentElementInstanceKey;
   private final OffsetDateTime startDate;
   private final OffsetDateTime endDate;
+  private final OffsetDateTime suspendedDate;
   private final ProcessInstanceState state;
   private final Boolean hasIncident;
   private final String tenantId;
   private final Set<String> tags;
   private final String businessId;
+  private final Integer storageOrdinal;
 
   public ProcessInstanceImpl(final ProcessInstanceResult item) {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -54,11 +56,13 @@ public class ProcessInstanceImpl implements ProcessInstance {
     parentElementInstanceKey = ParseUtil.parseLongOrNull(item.getParentElementInstanceKey());
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
     endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
+    suspendedDate = ParseUtil.parseOffsetDateTimeOrNull(item.getSuspendedDate());
     state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);
     hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
     tags = item.getTags();
     businessId = item.getBusinessId();
+    storageOrdinal = item.getStorageOrdinal();
   }
 
   @Override
@@ -117,6 +121,11 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
+  public OffsetDateTime getSuspendedDate() {
+    return suspendedDate;
+  }
+
+  @Override
   public ProcessInstanceState getState() {
     return state;
   }
@@ -139,5 +148,10 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
   }
 }

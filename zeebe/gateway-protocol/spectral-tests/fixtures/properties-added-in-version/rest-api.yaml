@@ -1,0 +1,141 @@
+# Test fixture for the `properties-added-in-version-shape` rule.
+# Each schema below isolates one valid or invalid shape so tests can
+# filter violations by schema name (which appears in the JSON path).
+openapi: "3.0.3"
+info:
+  title: Test Fixture — properties-added-in-version-shape
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # A trivial operation so the spec parses as a valid OpenAPI document.
+  /noop:
+    get:
+      operationId: noop
+      summary: Noop
+      description: Noop
+      x-added-in-version: "8.8"
+      tags:
+        - Test
+      responses:
+        '200':
+          description: OK
+
+components:
+  schemas:
+    # ── Valid cases ──────────────────────────────────────────────
+
+    ValidPropsAddedInVersion:
+      description: Valid — single well-formed entry.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - propertyName: foo
+          addedInVersion: "8.8"
+
+    ValidPropsAddedInVersionMultiple:
+      description: Valid — multiple entries with patch-level version.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+        bar:
+          type: string
+          description: Bar.
+      x-properties-added-in-version:
+        - propertyName: foo
+          addedInVersion: "8.8"
+        - propertyName: bar
+          addedInVersion: "8.9.1"
+
+    ValidPropsAddedInVersionDollarOperator:
+      description: Valid — filter operator (e.g. "$eq") is allowed as propertyName.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+
+    # ── Invalid cases ────────────────────────────────────────────
+
+    InvalidPropsAddedInVersionNotArray:
+      description: Invalid — value is an object, not an array.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        propertyName: foo
+        addedInVersion: "8.8"
+
+    InvalidPropsAddedInVersionEmptyArray:
+      description: Invalid — empty array.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version: []
+
+    InvalidPropsAddedInVersionMissingPropertyName:
+      description: Invalid — entry is missing `propertyName`.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - addedInVersion: "8.8"
+
+    InvalidPropsAddedInVersionMissingAddedInVersion:
+      description: Invalid — entry is missing `addedInVersion`.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - propertyName: foo
+
+    InvalidPropsAddedInVersionExtraKey:
+      description: Invalid — entry has an unrecognised extra key.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - propertyName: foo
+          addedInVersion: "8.8"
+          extra: nope
+
+    InvalidPropsAddedInVersionBadVersionFormat:
+      description: Invalid — `addedInVersion` does not match the semver-ish pattern.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - propertyName: foo
+          addedInVersion: bogus
+
+    InvalidPropsAddedInVersionEmptyPropertyName:
+      description: Invalid — `propertyName` is the empty string.
+      type: object
+      properties:
+        foo:
+          type: string
+          description: Foo.
+      x-properties-added-in-version:
+        - propertyName: ""
+          addedInVersion: "8.8"

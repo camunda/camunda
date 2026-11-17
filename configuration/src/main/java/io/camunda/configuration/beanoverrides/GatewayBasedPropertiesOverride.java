@@ -9,16 +9,16 @@ package io.camunda.configuration.beanoverrides;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.Cluster;
-import io.camunda.configuration.Filter;
-import io.camunda.configuration.Grpc;
-import io.camunda.configuration.Interceptor;
-import io.camunda.configuration.InternalApi;
-import io.camunda.configuration.KeyStore;
-import io.camunda.configuration.Membership;
-import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.api.Grpc;
+import io.camunda.configuration.api.grpc.Interceptor;
+import io.camunda.configuration.api.grpc.Ssl;
+import io.camunda.configuration.api.rest.Filter;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
+import io.camunda.configuration.cluster.Membership;
+import io.camunda.configuration.cluster.network.InternalApi;
+import io.camunda.configuration.security.KeyStore;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -105,6 +105,8 @@ public class GatewayBasedPropertiesOverride {
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
+    networkCfg.setMaxConnectionAge(grpc.getMaxConnectionAge());
+    networkCfg.setMaxConnectionAgeGrace(grpc.getMaxConnectionAgeGrace());
 
     final var ucNetwork =
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
@@ -115,6 +117,8 @@ public class GatewayBasedPropertiesOverride {
 
     final ThreadsCfg threadsCfg = override.getThreads();
     threadsCfg.setManagementThreads(grpc.getManagementThreads());
+    threadsCfg.setGrpcMinThreads(grpc.getGrpcMinThreads());
+    threadsCfg.setGrpcMaxThreads(grpc.getGrpcMaxThreads());
   }
 
   private void populateFromSsl(final GatewayBasedProperties override) {
@@ -193,6 +197,7 @@ public class GatewayBasedPropertiesOverride {
     longPollingCfg.setTimeout(longPolling.getTimeout());
     longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
+    longPollingCfg.setNotificationBatchWindow(longPolling.getNotificationBatchWindow());
   }
 
   private void populateFromCluster(final GatewayBasedProperties override) {
@@ -205,7 +210,6 @@ public class GatewayBasedPropertiesOverride {
     override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
     override.getCluster().setClusterName(cluster.getName());
     override.getCluster().setMemberId(cluster.getGatewayId());
-    override.getCluster().setSendOnLegacySubject(cluster.isSendOnLegacySubject());
 
     override
         .getCluster()

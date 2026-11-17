@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -47,10 +48,12 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty compensableActivityInstanceKeyProperty =
       new LongProperty("compensableActivityInstanceKey", -1);
 
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
+
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
-    super(11);
+    super(12);
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -61,6 +64,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(compensationHandlerInstanceKeyProperty)
         .declareProperty(compensableActivityScopeKeyProperty)
         .declareProperty(compensableActivityInstanceKeyProperty)
+        .declareProperty(storageOrdinalProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -75,6 +79,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     compensationHandlerInstanceKeyProperty.setValue(record.getCompensationHandlerInstanceKey());
     compensableActivityScopeKeyProperty.setValue(record.getCompensableActivityScopeKey());
     compensableActivityInstanceKeyProperty.setValue(record.getCompensableActivityInstanceKey());
+    storageOrdinalProperty.setValue(record.getStorageOrdinal());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -141,6 +146,16 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   @Override
   public long getCompensableActivityInstanceKey() {
     return compensableActivityInstanceKeyProperty.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
+  }
+
+  public CompensationSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
+    return this;
   }
 
   @Override

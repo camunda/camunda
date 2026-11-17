@@ -35,6 +35,35 @@ export const AUTHORIZATION_WILDCARD = "*";
 export const isValidResourceId = (id: string): boolean =>
   isValidId(id) || id === AUTHORIZATION_WILDCARD;
 
+/** The prefix every {@link isValidSecretResourceId}-matching reference starts with. */
+export const SECRET_REFERENCE_PREFIX = "camunda.secrets.";
+
+// Keep in sync with
+// `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_NAME_PATTERN`.
+// 240 = SecretServices.MAX_REFERENCE_LENGTH (256) minus SECRET_REFERENCE_PREFIX's own length
+// (16): a name any longer could never fit in a resolvable reference.
+const SECRET_NAME_PATTERN = /^[A-Za-z0-9_-]{1,240}$/;
+
+/**
+ * Pattern for just the `<name>` portion a user types into the Resource ID field — the
+ * `camunda.secrets.` prefix is rendered outside the input, so a message about the full
+ * reference pattern would describe characters the field never lets them type.
+ */
+export const SECRET_NAME_PATTERN_TEXT = SECRET_NAME_PATTERN.toString();
+
+// Keep in sync with
+// `io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator.SECRET_RESOURCE_ID_PATTERN`.
+const SECRET_RESOURCE_ID_PATTERN =
+  /^(\*|camunda\.secrets\.[A-Za-z0-9_-]{1,240})$/;
+
+/**
+ * A SECRET authorization's resource id must be the wildcard or a full
+ * `camunda.secrets.<name>` reference — anything else can never match a secret
+ * reference (camunda/camunda#62736).
+ */
+export const isValidSecretResourceId = (id: string): boolean =>
+  SECRET_RESOURCE_ID_PATTERN.test(id);
+
 /**
  * Because tenant IDs are used widely in the system and also part of many messages and events,
  * they are more heavily restricted than other IDs.

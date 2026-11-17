@@ -119,6 +119,11 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setVersionTag(final String versionTag) {
+    requestDto.setVersionTag(versionTag != null ? versionTag : "");
+    return this;
+  }
+
   @Override
   public ProcessInstanceCreationRecord getRequestWriter() {
     return requestDto;

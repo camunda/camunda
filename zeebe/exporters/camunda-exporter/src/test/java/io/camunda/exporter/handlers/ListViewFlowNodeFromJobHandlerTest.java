@@ -11,6 +11,9 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JO
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
@@ -20,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -98,16 +102,17 @@ public class ListViewFlowNodeFromJobHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<JobRecordValue> jobRecord = factory.generateRecord(ValueType.JOB);
 
-    // when
-    final var idList = underTest.generateIds(jobRecord);
-
-    // then
-    assertThat(idList)
-        .containsExactly(String.valueOf(jobRecord.getValue().getElementInstanceKey()));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, jobRecord))
+        .containsExactly(
+            new IdAndIndex(String.valueOf(jobRecord.getValue().getElementInstanceKey()), index));
   }
 
   @Test
@@ -134,6 +139,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
             .setJobFailedWithRetriesLeft(true);
     inputEntity.getJoinRelation().setParent(66L);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -141,12 +147,12 @@ public class ListViewFlowNodeFromJobHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, true);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,
@@ -299,5 +305,49 @@ public class ListViewFlowNodeFromJobHandlerTest {
     // then
     assertThat(flowNodeInstanceForListViewEntity.getActivityId()).isNull();
     assertThat(flowNodeInstanceForListViewEntity.isJobFailedWithRetriesLeft()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .from(factory.generateObject(JobRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(jobRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .from(factory.generateObject(JobRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(jobRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

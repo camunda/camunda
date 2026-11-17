@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -21,6 +22,17 @@ public final class YieldingJobStreamErrorHandler implements JobStreamErrorHandle
   public void handleError(
       final ActivatedJob job, final Throwable error, final TaskResultBuilder resultBuilder) {
     LOG.trace("Failed to push job {}. Yielding...", job.jobKey(), error);
-    resultBuilder.appendCommandRecord(job.jobKey(), JobIntent.YIELD, job.jobRecord());
+    resultBuilder.appendCommandRecord(job.jobKey(), JobIntent.YIELD, withoutVariables(job));
+  }
+
+  /**
+   * Returns the pushed job without its variables. The pushed variables carry the values of the
+   * job's secret references, which must not reach the log, and the yield processor takes the job it
+   * yields from state, so the command only needs to name the job.
+   */
+  private static JobRecord withoutVariables(final ActivatedJob job) {
+    final var yieldedJob = new JobRecord();
+    yieldedJob.wrapWithoutVariables(job.jobRecord());
+    return yieldedJob;
   }
 }

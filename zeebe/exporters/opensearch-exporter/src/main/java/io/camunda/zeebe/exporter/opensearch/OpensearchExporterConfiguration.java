@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
@@ -105,7 +106,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   public String toString() {
     return "OpensearchExporterConfiguration{"
         + "url='"
-        + url
+        + UrlRedaction.describe(url)
         + '\''
         + ", index="
         + index
@@ -141,6 +142,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case PROCESS_INSTANCE_CREATION -> index.processInstanceCreation;
       case PROCESS_INSTANCE_MIGRATION -> index.processInstanceMigration;
       case PROCESS_INSTANCE_MODIFICATION -> index.processInstanceModification;
+      case PROCESS_INSTANCE_BUSINESS_ID -> index.processInstanceBusinessId;
       case PROCESS_MESSAGE_SUBSCRIPTION -> index.processMessageSubscription;
       case DECISION_REQUIREMENTS -> index.decisionRequirements;
       case DECISION -> index.decision;
@@ -148,6 +150,9 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case CHECKPOINT -> index.checkpoint;
       case TIMER -> index.timer;
       case MESSAGE_START_EVENT_SUBSCRIPTION -> index.messageStartEventSubscription;
+      case MESSAGE_START_PROCESS_INSTANCE_REQUEST -> index.messageStartProcessInstanceRequest;
+      case MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE ->
+          index.messageStartCorrelationKeyLockRelease;
       case PROCESS_EVENT -> index.processEvent;
       case DEPLOYMENT_DISTRIBUTION -> index.deploymentDistribution;
       case ESCALATION -> index.escalation;
@@ -167,14 +172,18 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
       case GLOBAL_LISTENER -> index.globalListener;
+      case AGENT_INSTANCE -> index.agentInstance;
+      case AGENT_HISTORY -> index.agentHistory;
+      case AGENT_DEFINITION -> index.agentDefinition;
       default -> false;
     };
   }
 
   /**
    * Not all value records are required to be exported from 8.8 onward. The following included
-   * records are required by Optimize and Zeebe-Analytics so they must continue to be exported by
-   * the {@link OpensearchExporter}:
+   * records are required by Optimize and Zeebe-Analytics (and {@code AGENT_INSTANCE}/{@code
+   * AGENT_DEFINITION} by ad-hoc sub-process / agent features) so they must continue to be exported
+   * by the {@link OpensearchExporter}:
    *
    * @param valueType the value type of the record
    * @return true if the record should be indexed, false otherwise
@@ -189,6 +198,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case PROCESS_INSTANCE -> index.processInstance;
       case USER_TASK -> index.userTask;
       case JOB -> index.job;
+      case AGENT_INSTANCE -> index.agentInstance;
+      case AGENT_DEFINITION -> index.agentDefinition;
       default -> false;
     };
   }
@@ -229,7 +240,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     public boolean deployment = true;
     public boolean error = true;
     public boolean incident = true;
-    public boolean job = true;
+    public boolean job = false;
     public boolean jobBatch = false;
     public boolean message = true;
     public boolean messageBatch = false;
@@ -240,6 +251,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     public boolean processInstanceCreation = true;
     public boolean processInstanceMigration = true;
     public boolean processInstanceModification = true;
+    public boolean processInstanceBusinessId = true;
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
@@ -248,6 +260,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     public boolean checkpoint = false;
     public boolean timer = true;
     public boolean messageStartEventSubscription = true;
+    public boolean messageStartProcessInstanceRequest = true;
+    public boolean messageStartCorrelationKeyLockRelease = true;
     public boolean processEvent = false;
     public boolean deploymentDistribution = true;
     public boolean escalation = true;
@@ -282,6 +296,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     public boolean globalListenerBatch = true;
     public boolean globalListener = true;
 
+    public boolean agentInstance = true;
+    public boolean agentHistory = true;
+    public boolean agentDefinition = true;
+
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
@@ -299,8 +317,9 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     private List<String> variableValueTypeInclusion = new ArrayList<>();
     private List<String> variableValueTypeExclusion = new ArrayList<>();
 
-    // optimize mode
-    private boolean optimizeModeEnabled = false;
+    // Optimize mode takes precedence over the per-value-type flags above: even with job=true, the
+    // OptimizeModeFilter still rejects JOB records while this is enabled.
+    private boolean optimizeModeEnabled = true;
 
     // export local variables flag
     private boolean exportLocalVariablesEnabled = true;
@@ -671,6 +690,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + processInstanceMigration
           + ", processInstanceModification="
           + processInstanceModification
+          + ", processInstanceBusinessId="
+          + processInstanceBusinessId
           + ", processMessageSubscription="
           + processMessageSubscription
           + ", decisionRequirements="
@@ -685,6 +706,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + timer
           + ", messageStartEventSubscription="
           + messageStartEventSubscription
+          + ", messageStartProcessInstanceRequest="
+          + messageStartProcessInstanceRequest
+          + ", messageStartCorrelationKeyLockRelease="
+          + messageStartCorrelationKeyLockRelease
           + ", processEvent="
           + processEvent
           + ", deploymentDistribution="
@@ -908,6 +933,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     private String minimumAge = "30d";
     private String policyName = "zeebe-record-retention-policy";
     private String policyDescription = "Zeebe record retention policy";
+    private boolean managePolicy = true;
 
     public boolean isEnabled() {
       return enabled;
@@ -941,6 +967,14 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       this.policyDescription = policyDescription;
     }
 
+    public boolean isManagePolicy() {
+      return managePolicy;
+    }
+
+    public void setManagePolicy(final boolean managePolicy) {
+      this.managePolicy = managePolicy;
+    }
+
     @Override
     public String toString() {
       return "RetentionConfiguration{"
@@ -948,11 +982,13 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + enabled
           + ", minimumAge='"
           + minimumAge
-          + ", policyName='"
+          + "', policyName='"
           + policyName
-          + ", policyDescription='"
+          + "', policyDescription='"
           + policyDescription
           + '\''
+          + ", managePolicy="
+          + managePolicy
           + '}';
     }
   }

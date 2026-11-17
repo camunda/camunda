@@ -29,6 +29,8 @@
     di.DECISION_INSTANCE_KEY,
     di.PROCESS_INSTANCE_KEY,
     di.ROOT_PROCESS_INSTANCE_KEY,
+    di.BUSINESS_ID,
+    di.STORAGE_ORDINAL,
     di.FLOW_NODE_INSTANCE_KEY,
     di.PROCESS_DEFINITION_ID,
     di.PROCESS_DEFINITION_KEY,
@@ -37,7 +39,10 @@
     di.STATE,
     di.TYPE, /* TODO really save it there? */
     di.EVALUATION_DATE,
-    di.RESULT,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="di.FULL_RESULT"/>
+      <property name="nonClobColumn" value="di.RESULT"/>
+    </include> AS RESULT,
     di.EVALUATION_FAILURE,
     di.EVALUATION_FAILURE_MESSAGE,
     di.TENANT_ID,
@@ -185,6 +190,12 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+        <foreach collection="filter.businessIdOperations" item="operation">
+          AND di.BUSINESS_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.partitionId != null">
         AND di.PARTITION_ID = #{filter.partitionId}
       </if>
@@ -193,36 +204,51 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionInstanceEntity">
     <constructor>
-      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
-      <arg column="DECISION_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String" name="decisionInstanceId"/>
+      <arg column="DECISION_INSTANCE_KEY" javaType="java.lang.Long" name="decisionInstanceKey"/>
       <arg column="STATE"
-        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionInstanceState"/>
-      <arg column="EVALUATION_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="EVALUATION_FAILURE" javaType="java.lang.String"/>
-      <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionInstanceState"
+        name="state"/>
+      <arg column="EVALUATION_DATE" javaType="java.time.OffsetDateTime" name="evaluationDate"/>
+      <arg column="EVALUATION_FAILURE" javaType="java.lang.String" name="evaluationFailure"/>
+      <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"
+        name="evaluationFailureMessage"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="STORAGE_ORDINAL" javaType="java.lang.Integer" name="storageOrdinal"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"
+        name="flowNodeInstanceKey"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
       <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionDefinitionId"/>
+      <arg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"
+        name="decisionDefinitionKey"/>
       <arg column="DECISION_DEFINITION_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionDefinitionName"/>
+      <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="decisionDefinitionVersion"/>
       <arg column="TYPE"
-        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"/>
-      <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+        javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"
+        name="decisionDefinitionType"/>
+      <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"
+        name="rootDecisionDefinitionKey"/>
       <arg column="RESULT" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="result"/>
       <!-- The list is loaded separately (optional). But we still need a value (NULL) here.
        we use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
       <arg column="EVALUATED_INPUTS" javaType="java.util.List"
-        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+        typeHandler="org.apache.ibatis.type.ObjectTypeHandler" name="evaluatedInputs"/>
       <arg column="EVALUATED_OUTPUTS" javaType="java.util.List"
-        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+        typeHandler="org.apache.ibatis.type.ObjectTypeHandler" name="evaluatedOutputs"/>
     </constructor>
   </resultMap>
 
@@ -231,6 +257,7 @@
                                             DECISION_INSTANCE_KEY,
                                             PROCESS_INSTANCE_KEY,
                                             ROOT_PROCESS_INSTANCE_KEY,
+                                            BUSINESS_ID,
                                             PROCESS_DEFINITION_KEY,
                                             PROCESS_DEFINITION_ID,
                                             DECISION_DEFINITION_KEY,
@@ -243,40 +270,42 @@
                                             TYPE,
                                             STATE,
                                             EVALUATION_DATE,
-                                            RESULT,
+                                            FULL_RESULT,
                                             EVALUATION_FAILURE,
                                             EVALUATION_FAILURE_MESSAGE,
                                             TENANT_ID,
                                             PARTITION_ID,
+                                            STORAGE_ORDINAL,
                                             HISTORY_CLEANUP_DATE)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{rootProcessInstanceKey},
+            #{businessId},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
             #{decisionRequirementsKey}, #{decisionRequirementsId},
             #{flowNodeInstanceKey}, #{flowNodeId},
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
-            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result, jdbcType=CLOB}, #{evaluationFailure},
             #{evaluationFailureMessage},
-            #{tenantId}, #{partitionId},
+            #{tenantId}, #{partitionId}, #{storageOrdinal},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME,
-    INPUT_VALUE)
+    FULL_INPUT_VALUE)
     VALUES
     <foreach collection="evaluatedInputs" item="item" separator=", ">
-      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
+      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB})
     </foreach>
   </insert>
 
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel" databaseId="oracle">
     INSERT ALL
     <foreach collection="evaluatedInputs" item="item">
-      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
-      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
+      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, FULL_INPUT_VALUE)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB})
     </foreach>
     SELECT 1 FROM DUAL
   </insert>
@@ -288,7 +317,10 @@
     DECISION_INSTANCE_ID,
     INPUT_ID,
     INPUT_NAME,
-    INPUT_VALUE
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_INPUT_VALUE"/>
+      <property name="nonClobColumn" value="INPUT_VALUE"/>
+    </include> AS INPUT_VALUE
     FROM ${prefix}DECISION_INSTANCE_INPUT
     WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
     #{id}</foreach>)
@@ -297,19 +329,19 @@
   <resultMap id="evaluatedInputResultMap"
     type="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel$EvaluatedInput">
     <constructor>
-      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
-      <idArg column="INPUT_ID" javaType="java.lang.String"/>
-      <arg column="INPUT_NAME" javaType="java.lang.String"/>
-      <arg column="INPUT_VALUE" javaType="java.lang.String"/>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String" name="decisionInstanceId"/>
+      <idArg column="INPUT_ID" javaType="java.lang.String" name="id"/>
+      <arg column="INPUT_NAME" javaType="java.lang.String" name="name"/>
+      <arg column="INPUT_VALUE" javaType="java.lang.String" name="value"/>
     </constructor>
   </resultMap>
 
   <insert id="insertOutput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_OUTPUT
-    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
+    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
     <foreach collection="evaluatedOutputs" item="item" separator=", ">
-      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
+      (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB}, #{item.ruleId},
       #{item.ruleIndex})
     </foreach>
   </insert>
@@ -319,8 +351,8 @@
     databaseId="oracle">
     INSERT ALL
     <foreach collection="evaluatedOutputs" item="item">
-      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX)
-      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId}, #{item.ruleIndex})
+      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value, jdbcType=CLOB}, #{item.ruleId}, #{item.ruleIndex})
     </foreach>
     SELECT 1 FROM DUAL
   </insert>
@@ -331,7 +363,10 @@
     DECISION_INSTANCE_ID,
     OUTPUT_ID,
     OUTPUT_NAME,
-    OUTPUT_VALUE,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_OUTPUT_VALUE"/>
+      <property name="nonClobColumn" value="OUTPUT_VALUE"/>
+    </include> AS OUTPUT_VALUE,
     RULE_ID,
     RULE_INDEX
     FROM ${prefix}DECISION_INSTANCE_OUTPUT
@@ -342,12 +377,12 @@
   <resultMap id="evaluatedOutputResultMap"
     type="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel$EvaluatedOutput">
     <constructor>
-      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String"/>
-      <idArg column="OUTPUT_ID" javaType="java.lang.String"/>
-      <arg column="OUTPUT_NAME" javaType="java.lang.String"/>
-      <arg column="OUTPUT_VALUE" javaType="java.lang.String"/>
-      <arg column="RULE_ID" javaType="java.lang.String"/>
-      <arg column="RULE_INDEX" javaType="java.lang.Integer"/>
+      <idArg column="DECISION_INSTANCE_ID" javaType="java.lang.String" name="decisionInstanceId"/>
+      <idArg column="OUTPUT_ID" javaType="java.lang.String" name="id"/>
+      <arg column="OUTPUT_NAME" javaType="java.lang.String" name="name"/>
+      <arg column="OUTPUT_VALUE" javaType="java.lang.String" name="value"/>
+      <arg column="RULE_ID" javaType="java.lang.String" name="ruleId"/>
+      <arg column="RULE_INDEX" javaType="java.lang.Integer" name="ruleIndex"/>
     </constructor>
   </resultMap>
 

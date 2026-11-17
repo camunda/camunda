@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
@@ -50,6 +51,15 @@ public class HttpMessageConverterConfiguration {
   }
 
   @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE + 2)
+  public ResourceHttpMessageConverter resourceHttpMessageConverter() {
+    // Must stay ahead of the Jackson converters (@Order 1-3): otherwise the catch-all one claims
+    // document content stored as JSON, tries to serialize the Resource as a bean, and the download
+    // fails with 400. Resources must be streamed as stored.
+    return new ResourceHttpMessageConverter();
+  }
+
+  @Bean
   @Order(1)
   @ConditionalOnRestGatewayEnabled
   public MappingJackson2HttpMessageConverter gatewayRestMappingJackson2HttpMessageConverter(
@@ -73,17 +83,6 @@ public class HttpMessageConverterConfiguration {
 
   @Bean
   @Order(3)
-  @Profile("tasklist")
-  public MappingJackson2HttpMessageConverter tasklistV1MappingJackson2HttpMessageConverter(
-      @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper) {
-    final PackageSpecificJackson2HttpMessageConverter messageConverter =
-        new PackageSpecificJackson2HttpMessageConverter("io.camunda.tasklist");
-    messageConverter.setObjectMapper(objectMapper);
-    return messageConverter;
-  }
-
-  @Bean
-  @Order(4)
   public MappingJackson2HttpMessageConverter defaultRestMappingJackson2HttpMessageConverter(
       final ObjectMapper objectMapper) {
     return new MappingJackson2HttpMessageConverter(objectMapper);

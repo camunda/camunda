@@ -7,6 +7,11 @@ paths:
       tags:
         - License
       operationId: getLicense
+      x-required-permissions: []
+      # Public license-status endpoint — declared unauthenticated at runtime
+      # via SecurityPathAdapter. `security: []` overrides the conditional
+      # enforcement on the global schemes for this operation.
+      security: []
       summary: Get license status
       description: Obtains the status of the current Camunda license.
       responses:
@@ -19,6 +24,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -49,3 +55,8 @@ components:
           description: The date when the Camunda license expires
           type: string
           format: date-time
+      x-properties-added-in-version:
+        - propertyName: isCommercial
+          addedInVersion: "8.8"
+        - propertyName: expiresAt
+          addedInVersion: "8.8"

@@ -103,6 +103,11 @@ public final class PublishMessageClient {
     return this;
   }
 
+  public PublishMessageClient withBusinessId(final String businessId) {
+    messageRecord.setBusinessId(businessId);
+    return this;
+  }
+
   public PublishMessageClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
     return this;

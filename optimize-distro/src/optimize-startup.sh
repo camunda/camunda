@@ -30,6 +30,12 @@ if [ -z "$OPTIMIZE_JAVA_OPTS" ]; then
   OPTIMIZE_JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
 fi
 
+# Load optional JVM options file (e.g. for runtime-specific flags not suited for the general distribution)
+OPTIMIZE_EXTRA_JVM_OPTS=
+if [ -r "${BASEDIR}/config/jvm.options" ]; then
+  OPTIMIZE_EXTRA_JVM_OPTS="@${BASEDIR}/config/jvm.options"
+fi
+
 # check if debug mode should be enabled
 if [ "$1" == "--debug" ]; then
   DEBUG_PORT=9999
@@ -60,4 +66,4 @@ echo
 echo "Starting Camunda Optimize ${project.version}..."
 echo
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp "${OPTIMIZE_CLASSPATH}" ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 io.camunda.optimize.Main
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} ${OPTIMIZE_EXTRA_JVM_OPTS} -cp "${OPTIMIZE_CLASSPATH}" ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 io.camunda.optimize.Main

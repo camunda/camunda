@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.result;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.util.List;
 
 public final class ProcessDefinitionResultConfigTransformer
@@ -21,7 +22,7 @@ public final class ProcessDefinitionResultConfigTransformer
       final var builder = new SearchSourceFilter.Builder();
 
       if (!value.includeXml()) {
-        builder.excludes(List.of("bpmnXml"));
+        builder.excludes(List.of(ProcessIndex.BPMN_XML));
       }
 
       return new SearchSourceConfig(builder.build());

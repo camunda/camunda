@@ -5,7 +5,23 @@ info:
   contact:
     name: Camunda Engineering
     url: https://github.com/camunda/camunda/issues
-  description: API for communicating with a Camunda 8 cluster.
+  description: |
+    API for communicating with a Camunda 8 cluster.
+
+    ## Conventions
+
+    ### Enum value casing
+
+    Server-side, enum-typed request fields accept any casing of a
+    documented value (for example `ACTIVE`, `active`, and `Active` are
+    all accepted on input). Responses always use the canonical casing
+    shown in this specification.
+
+    This permissive request behavior is a server-side convenience and
+    is **not** part of the OpenAPI enum contract — SDKs generated from
+    this specification by strict generators may reject non-canonical
+    casing on the client side. For portability across SDKs, always
+    send the canonical casing shown in this document.
   license:
     name: Camunda License Version 1.0
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
@@ -26,9 +42,12 @@ servers:
         description: The schema of the Orchestration Cluster REST API server.
 tags:
   - name: Ad-hoc sub-process
+  - name: Agent definition
+  - name: Agent instance
   - name: Audit Log
   - name: Authentication
   - name: Authorization
+  - name: Backup
   - name: Batch operation
   - name: Clock
   - name: Cluster
@@ -39,7 +58,9 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
+  - name: Exporting
   - name: Expression
+  - name: Form
   - name: Global listener
   - name: Group
   - name: Incident
@@ -51,8 +72,10 @@ tags:
   - name: Message subscription
   - name: Process definition
   - name: Process instance
+  - name: Recovery
   - name: Resource
   - name: Role
+  - name: Secret
   - name: Setup
   - name: Signal
   - name: System
@@ -62,6 +85,22 @@ tags:
   - name: Variable
 
 paths:
+  # Agent definition endpoints
+  /agent-definitions/{agentDefinitionKey}:
+    $ref: 'agent-definitions.yaml#/paths/~1agent-definitions~1{agentDefinitionKey}'
+  /agent-definitions/search:
+    $ref: 'agent-definitions.yaml#/paths/~1agent-definitions~1search'
+
+  # Agent instance endpoints
+  /agent-instances:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances'
+  /agent-instances/{agentInstanceKey}:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}'
+  /agent-instances/search:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1search'
+  /agent-instances/{agentInstanceKey}/history/search:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}~1history~1search'
+
   # Audit Log endpoints
   /audit-logs/search:
     $ref: 'audit-logs.yaml#/paths/~1audit-logs~1search'
@@ -71,6 +110,8 @@ paths:
   # Authentication endpoints
   /authentication/me:
     $ref: 'authentication.yaml#/paths/~1authentication~1me'
+  /authentication/me/authorizations/search:
+    $ref: 'authentication.yaml#/paths/~1authentication~1me~1authorizations~1search'
 
   # Authorization endpoints
   /authorizations:
@@ -79,6 +120,20 @@ paths:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1search'
   /authorizations/{authorizationKey}:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1{authorizationKey}'
+
+  # Backup endpoints
+  /backups/runtime:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime'
+  /backups/runtime/state:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1state'
+  /backups/runtime/state/sync:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1state~1sync'
+  /backups/runtime/{backupId}:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1{backupId}'
+  /backups/history:
+    $ref: 'backups.yaml#/paths/~1backups~1history'
+  /backups/history/{backupId}:
+    $ref: 'backups.yaml#/paths/~1backups~1history~1{backupId}'
 
   # Batch operation endpoints
   /batch-operation-items/search:
@@ -97,6 +152,8 @@ paths:
   # Clock endpoints
   /clock:
     $ref: 'clock.yaml#/paths/~1clock'
+  /clock/add:
+    $ref: 'clock.yaml#/paths/~1clock~1add'
   /clock/reset:
     $ref: 'clock.yaml#/paths/~1clock~1reset'
 
@@ -165,6 +222,8 @@ paths:
   # Element instance endpoints
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1ad-hoc-activities~1{adHocSubProcessInstanceKey}~1activation'
+  /element-instances/wait-states/search:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1wait-states~1search'
   /element-instances/search:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1search'
   /element-instances/{elementInstanceKey}:
@@ -174,9 +233,21 @@ paths:
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
 
+  # Exporting endpoints
+  /exporting:
+    $ref: 'exporting.yaml#/paths/~1exporting'
+  /exporting/pause:
+    $ref: 'exporting.yaml#/paths/~1exporting~1pause'
+  /exporting/resume:
+    $ref: 'exporting.yaml#/paths/~1exporting~1resume'
+
   # Expression endpoints
   /expression/evaluation:
     $ref: 'expression.yaml#/paths/~1expression~1evaluation'
+
+  # Form endpoints
+  /forms/{formKey}:
+    $ref: 'forms.yaml#/paths/~1forms~1{formKey}'
 
   # Global listeners endpoints
   /global-task-listeners:
@@ -233,6 +304,8 @@ paths:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1error'
   /jobs/{jobKey}/failure:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1failure'
+  /jobs/batch-update:
+    $ref: 'jobs.yaml#/paths/~1jobs~1batch-update'
 
   # Job metrics endpoints
   /jobs/statistics/global:
@@ -279,6 +352,8 @@ paths:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1form'
   /process-definitions/{processDefinitionKey}/statistics/element-instances:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
+  /process-definitions/{processDefinitionKey}/variable-names/search:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1variable-names~1search'
   /process-definitions/{processDefinitionKey}/xml:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1xml'
   /process-definitions/statistics/process-instances-by-version:
@@ -297,10 +372,16 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1migration'
   /process-instances/modification:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1modification'
+  /process-instances/resumption:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1resumption'
   /process-instances/search:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1search'
+  /process-instances/suspension:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1suspension'
   /process-instances/{processInstanceKey}:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}'
+  /process-instances/{processInstanceKey}/business-id-assignment:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1business-id-assignment'
   /process-instances/{processInstanceKey}/call-hierarchy:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1call-hierarchy'
   /process-instances/{processInstanceKey}/cancellation:
@@ -315,16 +396,26 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1migration'
   /process-instances/{processInstanceKey}/modification:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1modification'
+  /process-instances/{processInstanceKey}/resumption:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1resumption'
   /process-instances/{processInstanceKey}/sequence-flows:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1sequence-flows'
   /process-instances/{processInstanceKey}/statistics/element-instances:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
+  /process-instances/{processInstanceKey}/statistics/wait-states:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1wait-states'
+  /process-instances/{processInstanceKey}/suspension:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1suspension'
 
   # Resource endpoints
+  /resources/search:
+    $ref: 'deployments.yaml#/paths/~1resources~1search'
   /resources/{resourceKey}:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}'
   /resources/{resourceKey}/content:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content'
+  /resources/{resourceKey}/content/binary:
+    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content~1binary'
   /resources/{resourceKey}/deletion:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1deletion'
 
@@ -352,6 +443,12 @@ paths:
   /roles/{roleId}/users/{username}:
     $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1{username}'
 
+  # Secret endpoints
+  /secrets/resolve:
+    $ref: 'secrets.yaml#/paths/~1secrets~1resolve'
+  /secrets/list:
+    $ref: 'secrets.yaml#/paths/~1secrets~1list'
+
   # Setup endpoints
   /setup/user:
     $ref: 'setup.yaml#/paths/~1setup~1user'
@@ -360,8 +457,8 @@ paths:
   /signals/broadcast:
     $ref: 'signals.yaml#/paths/~1signals~1broadcast'
 
-  # Cluster endpoints
-  /status:
+  # Cluster status endpoints
+  /status: # Legacy `/status` endpoint that is deprecated and only works for the default physical tenant
     $ref: 'cluster.yaml#/paths/~1status'
 
   # System endpoints
@@ -401,6 +498,42 @@ paths:
   # Cluster endpoints
   /topology:
     $ref: 'cluster.yaml#/paths/~1topology'
+  /mode:
+    $ref: 'cluster.yaml#/paths/~1mode'
+  /restore:
+    $ref: 'cluster.yaml#/paths/~1restore'
+
+  # Cluster-wide endpoints. Path keys must stay absolute — see `cluster-admin.yaml` for why.
+  /cluster/v2/exporting:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting'
+  /cluster/v2/exporting/pause:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1pause'
+  /cluster/v2/exporting/resume:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1exporting~1resume'
+  /cluster/v2/backups/runtime:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime'
+  /cluster/v2/backups/runtime/state:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1state'
+  /cluster/v2/backups/runtime/state/sync:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1state~1sync'
+  /cluster/v2/backups/runtime/{backupId}:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1runtime~1{backupId}'
+  /cluster/v2/backups/history:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1history'
+  /cluster/v2/backups/history/{backupId}:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1backups~1history~1{backupId}'
+  /cluster/v2/mode:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1mode'
+  /cluster/v2/rebalance:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1rebalance'
+  /cluster/v2/restore:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1restore'
+  /cluster/v2/status:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1status'
+  /cluster/v2/status/upgrade:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1status~1upgrade'
+  /cluster/v2/topology:
+    $ref: 'cluster-admin.yaml#/paths/~1cluster~1v2~1topology'
 
   # User endpoints
   /users:
@@ -427,6 +560,8 @@ paths:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1effective-variables~1search'
   /user-tasks/{userTaskKey}/form:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1form'
+  /user-tasks/{userTaskKey}/lookup:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1lookup'
   /user-tasks/{userTaskKey}/variables/search:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1variables~1search'
 
@@ -437,11 +572,25 @@ paths:
     $ref: 'variables.yaml#/paths/~1variables~1{variableKey}'
 
 components:
+  schemas:
+    # No endpoint returns this schema, so it is listed here for clients to generate it.
+    AuthenticatedCamundaUserResult:
+      $ref: 'authentication.yaml#/components/schemas/AuthenticatedCamundaUserResult'
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      # Conditional enforcement. The scheme is enforced when the
+      # Orchestration Cluster REST API server is running in `secured` mode
+      # and bypassed when in `unsecured` mode. `x-enforcement-modes` names
+      # the deployment-mode axis (`auth`) whose values trigger enforcement.
+      x-enforcement: conditional
+      x-enforcement-modes:
+        auth: [secured]
     basicAuth:
       type: http
       scheme: basic
+      x-enforcement: conditional
+      x-enforcement-modes:
+        auth: [secured]

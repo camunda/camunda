@@ -36,7 +36,7 @@ public class ProcessDefinitionCreateIT {
         .addProcessModel(processDefinition, "process.bpmn")
         .execute();
 
-    waitForProcessesToBeDeployed(camundaClient, 1);
+    waitForProcessesToBeDeployed(camundaClient, f -> f.name(name), 1);
 
     final var result =
         camundaClient.newProcessDefinitionSearchRequest().filter(f -> f.name(name)).execute();

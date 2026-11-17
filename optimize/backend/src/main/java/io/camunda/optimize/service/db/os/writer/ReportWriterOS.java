@@ -41,6 +41,8 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import jakarta.json.JsonValue;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -64,6 +66,7 @@ import org.springframework.stereotype.Component;
 public class ReportWriterOS implements ReportWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportWriterOS.class);
+
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
 
@@ -133,6 +136,18 @@ public class ReportWriterOS implements ReportWriter {
       final String reportName,
       final String description,
       final String collectionId) {
+    return createOrUpdateSingleProcessReport(
+        IdGenerator.getNextId(), userId, reportData, reportName, description, collectionId);
+  }
+
+  @Override
+  public IdResponseDto createOrUpdateSingleProcessReport(
+      final String reportId,
+      final String userId,
+      final ProcessReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId) {
     if (reportData == null) {
       throw new OptimizeRuntimeException("reportData is null");
     }
@@ -140,13 +155,12 @@ public class ReportWriterOS implements ReportWriter {
       throw new OptimizeRuntimeException("reportName is null");
     }
 
-    LOG.debug("Writing new single report to OpenSearch");
+    LOG.debug("Writing single process report with id [{}] to OpenSearch", reportId);
 
-    final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         new SingleProcessReportDefinitionRequestDto();
 
-    reportDefinitionDto.setId(id);
+    reportDefinitionDto.setId(reportId);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
@@ -160,23 +174,24 @@ public class ReportWriterOS implements ReportWriter {
     final IndexRequest.Builder<SingleProcessReportDefinitionRequestDto> request =
         new IndexRequest.Builder<SingleProcessReportDefinitionRequestDto>()
             .index(SINGLE_PROCESS_REPORT_INDEX_NAME)
-            .id(id)
+            .id(reportId)
             .document(reportDefinitionDto)
             .refresh(Refresh.True);
 
     final IndexResponse indexResponse = osClient.index(request);
 
-    if (!indexResponse.result().equals(Result.Created)) {
+    if (!indexResponse.result().equals(Result.Created)
+        && !indexResponse.result().equals(Result.Updated)) {
       final String message =
           String.format(
               "Could not write single process report with id [%s] and name [%s] to OpenSearch.",
-              id, reportName);
+              reportId, reportName);
       LOG.error(message);
       throw new OptimizeRuntimeException(message);
     }
 
-    LOG.debug("Single process report with id [{}] has successfully been created.", id);
-    return new IdResponseDto(id);
+    LOG.debug("Single process report with id [{}] has successfully been written.", reportId);
+    return new IdResponseDto(reportId);
   }
 
   @Override
@@ -265,6 +280,29 @@ public class ReportWriterOS implements ReportWriter {
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         QueryDSL.term(PROCESS_DEFINITION_PROPERTY, definitionKey),
         updateDefinitionXmlScript);
+  }
+
+  @Override
+  public void clearReportDefinitionXmlForReportIds(
+      final List<String> reportIds, final String processDefinitionKey, final String tenantId) {
+    if (reportIds.isEmpty()) {
+      return;
+    }
+    final String updateItem =
+        String.format("%d report(s) with cleared definition XML", reportIds.size());
+    LOG.debug("Clearing definition XML for {} in OpenSearch", updateItem);
+
+    final Map<String, JsonData> scriptParams = new HashMap<>();
+    scriptParams.put("key", JsonData.of(processDefinitionKey));
+    scriptParams.put("tenantId", JsonData.of(tenantId));
+    final Script clearDefinitionXmlScript =
+        OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+            CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT, scriptParams);
+
+    // Abort on version conflicts so a report edited concurrently with this write can be retried by
+    // the caller instead of keeping stale XML.
+    osClient.updateByQuery(
+        SINGLE_PROCESS_REPORT_INDEX_NAME, QueryDSL.ids(reportIds), clearDefinitionXmlScript, true);
   }
 
   @Override

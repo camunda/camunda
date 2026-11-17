@@ -7,27 +7,27 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import io.camunda.zeebe.exporter.common.waitstate.WaitStateConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExporterConfiguration {
   public static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
   public static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
-  private static final Logger LOG = LoggerFactory.getLogger(ExporterConfiguration.class);
   // AuditLog
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
+  // WaitState
+  private WaitStateConfiguration waitState = new WaitStateConfiguration();
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
   private int queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
@@ -43,6 +43,8 @@ public class ExporterConfiguration {
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
+  private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
+  private ExtensionPropertyConfiguration extensionProperties = new ExtensionPropertyConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -50,6 +52,14 @@ public class ExporterConfiguration {
 
   public void setAuditLog(final AuditLogConfiguration auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public WaitStateConfiguration getWaitState() {
+    return waitState;
+  }
+
+  public void setWaitState(final WaitStateConfiguration waitState) {
+    this.waitState = waitState;
   }
 
   public HistoryDeletionConfiguration getHistoryDeletion() {
@@ -141,10 +151,27 @@ public class ExporterConfiguration {
     this.insertBatching = insertBatching;
   }
 
+  public ReplicationConfiguration getAsyncReplication() {
+    return asyncReplication;
+  }
+
+  public void setAsyncReplication(final ReplicationConfiguration asyncReplication) {
+    this.asyncReplication = asyncReplication;
+  }
+
+  public ExtensionPropertyConfiguration getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public void setExtensionProperties(final ExtensionPropertyConfiguration extensionProperties) {
+    this.extensionProperties = extensionProperties;
+  }
+
   public void validate() {
 
     final List<String> errors = new ArrayList<>(history.validate());
     errors.addAll(insertBatching.validate());
+    errors.addAll(asyncReplication.validate());
 
     if (flushInterval.isNegative()) {
       errors.add(
@@ -195,9 +222,7 @@ public class ExporterConfiguration {
   }
 
   public RdbmsWriterConfig createRdbmsWriterConfig(
-      final int partitionId,
-      final VendorDatabaseProperties vendorDatabaseProperties,
-      final InstantSource clock) {
+      final int partitionId, final String physicalTenantId, final InstantSource clock) {
     final var historyConfig =
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
@@ -224,50 +249,29 @@ public class ExporterConfiguration {
 
     return new RdbmsWriterConfig.Builder()
         .partitionId(partitionId)
+        .physicalTenantId(physicalTenantId)
         .queueSize(queueSize)
         .queueMemoryLimit(queueMemoryLimit)
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)
-        .insertBatchingConfig(createInsertBatchingConfig(vendorDatabaseProperties))
+        .insertBatchingConfig(createInsertBatchingConfig())
         .clock(clock)
         .build();
   }
 
-  private InsertBatchingConfig createInsertBatchingConfig(
-      final VendorDatabaseProperties vendorDatabaseProperties) {
-    // If the database vendor doesn't support insert batching (e.g., Oracle 19c),
-    // set all batch sizes to 1 to disable batching
-    final int auditLogBatchSize;
-    final int variableBatchSize;
-    final int jobBatchSize;
-    final int flowNodeBatchSize;
-
-    if (!vendorDatabaseProperties.supportsInsertBatching()) {
-      LOG.info(
-          "Insert batching is not supported by the database vendor. Overriding insert batch sizes to 1 to disable batching.");
-      auditLogBatchSize = 1;
-      variableBatchSize = 1;
-      jobBatchSize = 1;
-      flowNodeBatchSize = 1;
-    } else {
-      auditLogBatchSize = insertBatching.getMaxAuditLogInsertBatchSize();
-      variableBatchSize = insertBatching.getMaxVariableInsertBatchSize();
-      jobBatchSize = insertBatching.getMaxJobInsertBatchSize();
-      flowNodeBatchSize = insertBatching.getMaxFlowNodeInsertBatchSize();
-    }
-
+  private InsertBatchingConfig createInsertBatchingConfig() {
     return InsertBatchingConfig.builder()
-        .auditLogInsertBatchSize(auditLogBatchSize)
-        .variableInsertBatchSize(variableBatchSize)
-        .jobInsertBatchSize(jobBatchSize)
-        .flowNodeInsertBatchSize(flowNodeBatchSize)
+        .auditLogInsertBatchSize(insertBatching.getMaxAuditLogInsertBatchSize())
+        .variableInsertBatchSize(insertBatching.getMaxVariableInsertBatchSize())
+        .jobInsertBatchSize(insertBatching.getMaxJobInsertBatchSize())
+        .flowNodeInsertBatchSize(insertBatching.getMaxFlowNodeInsertBatchSize())
         .build();
   }
 
   private static void checkPositiveDuration(
       final Duration duration, final String name, final List<String> errors) {
-    if (duration.isNegative() || duration.isZero()) {
+    if (duration == null || duration.isNegative() || duration.isZero()) {
       errors.add(String.format("%s must be a positive duration but was %s", name, duration));
     }
   }
@@ -295,6 +299,8 @@ public class ExporterConfiguration {
         + decisionRequirementsCache
         + ", batchOperationCache="
         + batchOperationCache
+        + ", asyncReplication="
+        + asyncReplication
         + '}';
   }
 
@@ -608,6 +614,142 @@ public class ExporterConfiguration {
 
     public void setMaxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
       this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
+    }
+  }
+
+  public static class ReplicationConfiguration {
+    public static final boolean DEFAULT_ENABLED = false;
+    public static final ReplicationType DEFAULT_TYPE = ReplicationType.LOG_SEQ;
+    public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
+    public static final Duration DEFAULT_MAX_LAG = Duration.ofMinutes(15);
+    public static final int DEFAULT_MIN_SYNC_REPLICAS = 1;
+    public static final boolean DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED = false;
+    public static final int DEFAULT_QUEUE_CAPACITY = 8192;
+    public static final Duration DEFAULT_QUEUE_DEBOUNCE_TIME = Duration.ofSeconds(5);
+
+    private boolean enabled = DEFAULT_ENABLED;
+    private ReplicationType type = DEFAULT_TYPE;
+    private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
+    private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
+    private Duration maxLag = DEFAULT_MAX_LAG;
+    private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
+    private Duration delay;
+    private Duration queueDebounceTime = DEFAULT_QUEUE_DEBOUNCE_TIME;
+    private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public ReplicationType getType() {
+      return type;
+    }
+
+    public void setType(final ReplicationType type) {
+      this.type = type;
+    }
+
+    public Duration getPollingInterval() {
+      return pollingInterval;
+    }
+
+    public void setPollingInterval(final Duration pollingInterval) {
+      this.pollingInterval = pollingInterval;
+    }
+
+    public int getMinSyncReplicas() {
+      return minSyncReplicas;
+    }
+
+    public void setMinSyncReplicas(final int minSyncReplicas) {
+      this.minSyncReplicas = minSyncReplicas;
+    }
+
+    public Duration getMaxLag() {
+      return maxLag;
+    }
+
+    public void setMaxLag(final Duration maxLag) {
+      this.maxLag = maxLag;
+    }
+
+    public boolean isPauseOnMaxLagExceeded() {
+      return pauseOnMaxLagExceeded;
+    }
+
+    public void setPauseOnMaxLagExceeded(final boolean pauseOnMaxLagExceeded) {
+      this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
+    }
+
+    public Duration getDelay() {
+      return delay;
+    }
+
+    public void setDelay(final Duration delay) {
+      this.delay = delay;
+    }
+
+    public Duration getQueueDebounceTime() {
+      return queueDebounceTime;
+    }
+
+    public void setQueueDebounceTime(final Duration queueDebounceTime) {
+      this.queueDebounceTime = queueDebounceTime;
+    }
+
+    public int getQueueCapacity() {
+      return queueCapacity;
+    }
+
+    public void setQueueCapacity(final int queueCapacity) {
+      this.queueCapacity = queueCapacity;
+    }
+
+    public List<String> validate() {
+      final List<String> errors = new ArrayList<>();
+
+      if (!enabled) {
+        return errors;
+      }
+
+      if (minSyncReplicas <= 0) {
+        errors.add(
+            String.format(
+                "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
+      }
+
+      // queueCapacity, queueDebounceTime, pollingInterval, and maxLag apply to every
+      // replication type, so they are validated unconditionally.
+      checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
+      if (queueCapacity <= 0) {
+        errors.add(
+            String.format(
+                "asyncReplication.queueCapacity must be greater 0 but was %d", queueCapacity));
+      }
+      checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
+      checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
+
+      if (type == ReplicationType.DELAY) {
+        checkPositiveDuration(delay, "asyncReplication.delay", errors);
+      }
+      return errors;
+    }
+
+    private static void checkNonNegativeDuration(
+        final Duration duration, final String name, final List<String> errors) {
+      if (duration == null || duration.isNegative()) {
+        errors.add(String.format("%s must be a non-negative duration but was %s", name, duration));
+      }
+    }
+
+    public enum ReplicationType {
+      LOG_SEQ,
+      TIME_LAG,
+      DELAY
     }
   }
 }

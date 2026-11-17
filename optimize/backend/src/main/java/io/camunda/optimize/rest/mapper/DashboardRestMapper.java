@@ -15,6 +15,7 @@ import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -66,30 +67,37 @@ public class DashboardRestMapper {
 
   private void localizeDashboard(
       final DashboardDefinitionRestDto dashboardDefinition, final String locale) {
-    if (dashboardDefinition.isManagementDashboard()
-        || dashboardDefinition.isInstantPreviewDashboard()) {
-      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      if (dashboardDefinition.isManagementDashboard()) {
-        Optional.ofNullable(
-                localizationService.getLocalizationForManagementDashboardCode(
-                    validLocale, dashboardDefinition.getName()))
-            .ifPresent(dashboardDefinition::setName);
-        Optional.ofNullable(
-                localizationService.getLocalizationForManagementDashboardCode(
-                    validLocale, dashboardDefinition.getDescription()))
-            .ifPresent(dashboardDefinition::setDescription);
-      } else {
-        Optional.ofNullable(
-                localizationService.getLocalizationForInstantPreviewDashboardCode(
-                    validLocale, dashboardDefinition.getName()))
-            .ifPresent(dashboardDefinition::setName);
-        Optional.ofNullable(
-                localizationService.getLocalizationForInstantPreviewDashboardCode(
-                    validLocale, dashboardDefinition.getDescription()))
-            .ifPresent(dashboardDefinition::setDescription);
-        localizeTextsFromTextTiles(dashboardDefinition, validLocale);
-      }
+    if (!dashboardDefinition.isSystemGeneratedDashboard()) {
+      return;
     }
+    final String validLocale = localizationService.validateAndReturnValidLocale(locale);
+    if (dashboardDefinition.isManagementDashboard()) {
+      localizeNameAndDescription(
+          dashboardDefinition,
+          validLocale,
+          localizationService::getLocalizationForManagementDashboardCode);
+    } else if (dashboardDefinition.isAgenticControlDashboard()) {
+      localizeNameAndDescription(
+          dashboardDefinition,
+          validLocale,
+          localizationService::getLocalizationForAgenticControlDashboardCode);
+    } else {
+      localizeNameAndDescription(
+          dashboardDefinition,
+          validLocale,
+          localizationService::getLocalizationForInstantPreviewDashboardCode);
+      localizeTextsFromTextTiles(dashboardDefinition, validLocale);
+    }
+  }
+
+  private void localizeNameAndDescription(
+      final DashboardDefinitionRestDto dashboardDefinition,
+      final String locale,
+      final BiFunction<String, String, String> resolver) {
+    Optional.ofNullable(resolver.apply(locale, dashboardDefinition.getName()))
+        .ifPresent(dashboardDefinition::setName);
+    Optional.ofNullable(resolver.apply(locale, dashboardDefinition.getDescription()))
+        .ifPresent(dashboardDefinition::setDescription);
   }
 
   private void localizeTextsFromTextTiles(

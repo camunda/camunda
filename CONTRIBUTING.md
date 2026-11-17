@@ -160,6 +160,10 @@ This is a small overview of the contents of this repository:
 * **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `./mvnw clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
 * **Full build and test:** To fully build and test the Camunda distribution, run the command: `./mvnw clean install` in the root folder.
 
+The experimental Gradle build is available for local development and focused parity checks. Maven
+remains authoritative; see the [Gradle build guide](gradle/README.md) for supported commands and
+limitations.
+
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 
 ```
@@ -189,6 +193,21 @@ docker build \
   --file ./camunda.Dockerfile \
   .
 ```
+
+#### Branch-scoped local Maven repository
+
+This repository enables the
+[`branch-scoped-local-repository`](https://github.com/lenaschoenburg/branch-scoped-local-repository)
+Maven extension (see [`.mvn/extensions.xml`](.mvn/extensions.xml)). It installs artifacts built
+locally (`./mvnw install`) under a per-branch path — `~/.m2/repository/installed/<branch>/...` —
+so multiple worktrees or branches can be built in parallel without clobbering each other's
+`SNAPSHOT`s. Downloaded (remote) artifacts stay shared, so there is no extra download cost.
+
+Over time that partition accumulates one tree per branch you have built. To prune it, use
+[`scripts/branch-scoped-m2/clean-installed.sh`](scripts/branch-scoped-m2/clean-installed.sh) — it
+removes trees for branches that no longer exist (`--stale-branches`) or that have been idle for a
+while (`--older-than`). It is a dry-run unless you pass `--delete`; see the
+[script README](scripts/branch-scoped-m2/README.md) for details.
 
 #### Build on macOS with an Apple Silicon chip
 
@@ -359,7 +378,7 @@ When this happens and you're still interested in contributing, please feel free 
 
 ## Backporting changes
 
-Some changes need to be copied to other (often older) versions. We use the [backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process. Please follow these steps to port your changes:
+Some changes need to be copied to other (often older) versions. We use the [backport](https://github.com/korthout/backport-action) Github Action to automate this process. Please follow these steps to port your changes:
 
 1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates that we want to port this pull request to the `stable/1.0` branch).
    - if the pull request is _not yet_ merged, it will be automatically ported when it gets merged.
@@ -367,8 +386,8 @@ Some changes need to be copied to other (often older) versions. We use the [back
      `/backport` to trigger the action.
    - a pull request can have multiple backport labels, in which case the action ports the pull request to each of those branches.
 2. The GitHub actions bot comments on the pull request once it finishes:
-   - When _successful_, a new backport pull request was automatically created. A bot will automatically approve and merge it when it passes the CI. If it doesn't, you'll need to fix the problems and request a new review.
-   - If it _fails_, the action provides instructions in a comment that you need to follow. Once ready, please request a new review.
+   - When _successful_, a new backport pull request was automatically created. A bot approves it and enables auto-merge once CI passes — but only when the backport touches Zeebe code (`zeebe/`, `clients/`), a `pom.xml`, shared build or webapps configuration, or CI-relevant files under `.github/`, because that approval job runs inside the Zeebe CI workflow and that workflow is skipped otherwise. A backport touching none of those paths is not auto-approved: review and merge it yourself once CI is green. If CI doesn't pass, you'll need to fix the problems and request a new review.
+   - If the cherry-pick hits **conflicts**, the action still opens the backport pull request, but as a _draft_ with the conflicts committed as-is, and comments with instructions to resolve them. Resolve the conflicts on that branch, mark the pull request ready, and request a new review.
 
 ## Commit message guidelines
 

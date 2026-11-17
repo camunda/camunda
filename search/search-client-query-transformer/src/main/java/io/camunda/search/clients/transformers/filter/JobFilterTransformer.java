@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
@@ -32,16 +33,18 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYP
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LISTENER_EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PARTITION_ID;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.JobFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.search.filter.Operator;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 
@@ -54,43 +57,49 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
   @Override
   public SearchQuery toSearchQuery(final JobFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    of(dateTimeOperations(JOB_DEADLINE, filter.deadlineOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_DENIED_REASON, filter.deniedReasonOperations()))
-        .ifPresent(queries::addAll);
-    of(stringOperations(FLOW_NODE_ID, filter.elementIdOperations())).ifPresent(queries::addAll);
-    of(longOperations(FLOW_NODE_INSTANCE_ID, filter.elementInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(TIME, filter.endTimeOperations())).ifPresent(queries::addAll);
-    of(stringOperations(ERROR_CODE, filter.errorCodeOperations())).ifPresent(queries::addAll);
-    of(stringOperations(ERROR_MESSAGE, filter.errorMessageOperations())).ifPresent(queries::addAll);
-    of(longOperations(JOB_KEY, filter.jobKeyOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_KIND, filter.kindOperations())).ifPresent(queries::addAll);
-    of(stringOperations(LISTENER_EVENT_TYPE, filter.listenerEventTypeOperations()))
-        .ifPresent(queries::addAll);
-    of(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(LAST_UPDATE_TIME, filter.lastUpdateTimeOperations()))
-        .ifPresent(queries::addAll);
-    of(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()))
-        .ifPresent(queries::addAll);
-    of(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    of(intOperations(RETRIES, filter.retriesOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_STATE, filter.stateOperations())).ifPresent(queries::addAll);
-    of(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_TYPE, filter.typeOperations())).ifPresent(queries::addAll);
-    of(stringOperations(JOB_WORKER, filter.workerOperations())).ifPresent(queries::addAll);
+    queries.addAll(dateTimeOperations(JOB_DEADLINE, filter.deadlineOperations()));
+    queries.addAll(stringOperations(JOB_DENIED_REASON, filter.deniedReasonOperations()));
+    queries.addAll(stringOperations(FLOW_NODE_ID, filter.elementIdOperations()));
+    queries.addAll(longOperations(FLOW_NODE_INSTANCE_ID, filter.elementInstanceKeyOperations()));
+    queries.addAll(dateTimeOperations(TIME, filter.endTimeOperations()));
+    queries.addAll(stringOperations(ERROR_CODE, filter.errorCodeOperations()));
+    queries.addAll(stringOperations(ERROR_MESSAGE, filter.errorMessageOperations()));
+    queries.addAll(longOperations(JOB_KEY, filter.jobKeyOperations()));
+    queries.addAll(stringOperations(JOB_KIND, filter.kindOperations()));
+    queries.addAll(stringOperations(LISTENER_EVENT_TYPE, filter.listenerEventTypeOperations()));
+    queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
+    queries.addAll(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()));
+    queries.addAll(dateTimeOperations(LAST_UPDATE_TIME, filter.lastUpdateTimeOperations()));
+    queries.addAll(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()));
+    queries.addAll(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(intOperations(RETRIES, filter.retriesOperations()));
+    final var priorityOps = filter.priorityOperations();
+    if (!priorityOps.isEmpty()) {
+      queries.addAll(intOperations(PRIORITY, priorityOps));
+      // NOT_EQUALS and NOT_IN match absent-field docs in ES/OS, so pre-8.10 jobs (which have no
+      // stored priority) would wrongly appear. Guard with exists() to enforce the API contract:
+      // "Jobs created before 8.10 are excluded from results when this filter is applied."
+      if (priorityOps.stream()
+          .anyMatch(
+              op -> op.operator() == Operator.NOT_EQUALS || op.operator() == Operator.NOT_IN)) {
+        queries.add(exists(PRIORITY));
+      }
+    }
+    queries.addAll(stringOperations(JOB_STATE, filter.stateOperations()));
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    queries.addAll(stringOperations(JOB_TYPE, filter.typeOperations()));
+    queries.addAll(stringOperations(JOB_WORKER, filter.workerOperations()));
     ofNullable(filter.hasFailedWithRetriesLeft())
         .ifPresent(f -> queries.add(term(JOB_FAILED_WITH_RETRIES_LEFT, f)));
     ofNullable(filter.isDenied()).ifPresent(f -> queries.add(term(JOB_DENIED, f)));
+    ofNullable(filter.partitionId()).ifPresent(f -> queries.add(term(PARTITION_ID, f)));
 
     return and(queries);
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

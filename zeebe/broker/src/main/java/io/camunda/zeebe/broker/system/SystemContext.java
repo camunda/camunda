@@ -10,11 +10,12 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -29,14 +30,11 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -64,10 +62,9 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,10 +72,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -127,88 +125,62 @@ public final class SystemContext {
 
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
-  private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final SecurityConfiguration securityConfiguration;
-  private final UserServices userServices;
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts;
+  private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
+  private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
-  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
+  private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
 
+  /**
+   * Creates a {@code SystemContext} where each physical tenant carries its own {@link
+   * EngineSecurityConfig}, {@link BrokerRequestAuthorizationConverter}, and {@link FeatureFlags}.
+   */
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
-      final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration,
-      final UserServices userServices,
+      final Map<String, PhysicalTenantContext> physicalTenantContexts,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers,
+      final NodeIdProvider nodeIdProvider,
+      final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
-    this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
-    this.securityConfiguration = securityConfiguration;
-    this.userServices = userServices;
+
+    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
+    this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider =
-        Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
+    this.jwtDecoderFactory = jwtDecoderFactory;
+    this.oidcClaimsProviderFactory =
+        Objects.requireNonNull(
+            oidcClaimsProviderFactory, "oidcClaimsProviderFactory must not be null");
     this.searchClientsProxy = searchClientsProxy;
-    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+    this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = nodeIdProvider;
+    this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
-  }
-
-  @VisibleForTesting
-  public SystemContext(
-      final BrokerCfg brokerCfg,
-      final ActorScheduler scheduler,
-      final AtomixCluster cluster,
-      final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
-      final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
-    this(
-        DEFAULT_SHUTDOWN_TIMEOUT,
-        brokerCfg,
-        null,
-        scheduler,
-        cluster,
-        brokerClient,
-        new SimpleMeterRegistry(),
-        securityConfiguration,
-        userServices,
-        passwordEncoder,
-        jwtDecoder,
-        oidcClaimsProvider,
-        searchClientsProxy,
-        brokerRequestAuthorizationConverter,
-        nodeIdProvider);
   }
 
   private void initSystemContext() {
@@ -223,12 +195,19 @@ public final class SystemContext {
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
 
-    validateDataConfig(brokerCfg.getData());
+    validateDiskConfig(brokerCfg.getData());
 
     validClusterConfigs(cluster);
-    validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+    validateMaxAppendBatchSize(brokerCfg.getExperimental());
 
-    validateExporters(brokerCfg.getExporters());
+    physicalTenantContexts.forEach(
+        (tenantId, ctx) -> {
+          validateTenantMatchesRootConfig(tenantId, ctx.config());
+          validatePerTenantConfiguration(tenantId, ctx.config());
+        });
+
+    // Exporter configuration is validated by SystemContextLoader before the SystemContext is
+    // constructed, so that per-physical-tenant exporter configs are checked as they are loaded.
 
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
@@ -236,6 +215,56 @@ public final class SystemContext {
     }
 
     validateInitializationConfig();
+  }
+
+  /**
+   * Validates that the properties denied for per-tenant override (see {@code
+   * PhysicalTenantOverridePolicyValidation}) actually carry the same value in the tenant's
+   * effective {@link BrokerCfg} as in the root config. Without this check, an operator
+   * misconfiguring one of these per tenant is silently ignored (the tenant's own value is simply
+   * never read) rather than rejected, defeating the purpose of denying the override.
+   */
+  private void validateTenantMatchesRootConfig(final String tenantId, final BrokerCfg tenantCfg) {
+    final var rootDirectory = brokerCfg.getData().getDirectory();
+    final var tenantDirectory = tenantCfg.getData().getDirectory();
+    if (!Objects.equals(rootDirectory, tenantDirectory)) {
+      throw new IllegalArgumentException(
+          tenantScopedMessage(
+              tenantId,
+              String.format(
+                  "Expected data directory to be '%s' (shared across all physical tenants), but "
+                      + "was overridden to '%s'",
+                  rootDirectory, tenantDirectory)));
+    }
+
+    final var rootReplicationFactor = brokerCfg.getCluster().getReplicationFactor();
+    final var tenantReplicationFactor = tenantCfg.getCluster().getReplicationFactor();
+    if (rootReplicationFactor != tenantReplicationFactor) {
+      throw new IllegalArgumentException(
+          tenantScopedMessage(
+              tenantId,
+              String.format(
+                  "Expected replication factor to be %d (shared across all physical tenants), "
+                      + "but was overridden to %d",
+                  rootReplicationFactor, tenantReplicationFactor)));
+    }
+  }
+
+  /**
+   * Validates the subset of {@link BrokerCfg} that is overridable per physical tenant (see {@code
+   * PhysicalTenantOverridePolicyValidation}), against the given tenant's own effective
+   * configuration. The root-only pass in {@link #validateConfiguration()} covers a disjoint set of
+   * properties, so for the default tenant this method is the only place its overridable settings
+   * (snapshot period, backup, batch operations, listeners, fixed partition coverage) are validated.
+   */
+  private void validatePerTenantConfiguration(final String tenantId, final BrokerCfg tenantCfg) {
+    validatePerTenantDataConfig(tenantId, tenantCfg.getData());
+    validatePerTenantExperimentalConfigs(
+        tenantId, tenantCfg.getCluster(), tenantCfg.getExperimental());
+  }
+
+  private static String tenantScopedMessage(final String tenantId, final String message) {
+    return "%s [physical tenant '%s']".formatted(message, tenantId);
   }
 
   private void validClusterConfigs(final ClusterCfg cluster) {
@@ -274,55 +303,33 @@ public final class SystemContext {
     }
   }
 
-  private void validateExporters(final Map<String, ExporterCfg> exporters) {
-    final Set<Entry<String, ExporterCfg>> entries = exporters.entrySet();
-    final var badExportersNames =
-        entries.stream()
-            .filter(entry -> entry.getValue().getClassName() == null)
-            .map(Entry::getKey)
-            .toList();
-
-    if (!badExportersNames.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters "
-              + badExportersNames);
-    }
-  }
-
-  private void validateExperimentalConfigs(
-      final ClusterCfg cluster, final ExperimentalCfg experimental) {
+  private void validateMaxAppendBatchSize(final ExperimentalCfg experimental) {
     final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
     if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
       throw new IllegalArgumentException(
           String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
     }
+  }
 
+  private void validatePerTenantExperimentalConfigs(
+      final String tenantId, final ClusterCfg tenantCluster, final ExperimentalCfg experimental) {
     final var partitioningConfig = experimental.getPartitioning();
     if (partitioningConfig.getScheme() == Scheme.FIXED) {
-      validateFixedPartitioningScheme(cluster, experimental);
+      validateFixedPartitioningScheme(tenantId, tenantCluster);
     }
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getBatchOperations)
-        .ifPresent(this::validateBatchOperationsConfig);
+        .ifPresent(config -> validateBatchOperationsConfig(tenantId, config));
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
-        .ifPresent(this::validateListenersConfig);
-
-    Optional.of(experimental)
-        .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
+        .ifPresent(listeners -> validateListenersConfig(tenantId, listeners));
   }
 
-  private void validateDataConfig(final DataCfg dataCfg) {
-    final var snapshotPeriod = dataCfg.getSnapshotPeriod();
-    if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
-      throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
-    }
-
+  private void validateDiskConfig(final DataCfg dataCfg) {
     if (dataCfg.getDisk().isEnableMonitoring()) {
       try {
         final FreeSpaceCfg freeSpaceCfg = dataCfg.getDisk().getFreeSpace();
@@ -337,11 +344,20 @@ public final class SystemContext {
         throw new InvalidConfigurationException("Failed to parse disk monitoring configuration", e);
       }
     }
-
-    validateBackupCfg(dataCfg.getBackup());
   }
 
-  private void validateBatchOperationsConfig(final BatchOperationCfg config) {
+  private void validatePerTenantDataConfig(final String tenantId, final DataCfg dataCfg) {
+    final var snapshotPeriod = dataCfg.getSnapshotPeriod();
+    if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
+      throw new IllegalArgumentException(
+          tenantScopedMessage(tenantId, String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod)));
+    }
+
+    validateBackupCfg(tenantId, dataCfg.getBackup());
+  }
+
+  private void validateBatchOperationsConfig(
+      final String tenantId, final BatchOperationCfg config) {
     final var errors = new ArrayList<String>(0);
 
     if (config.getSchedulerInterval().isNegative()) {
@@ -360,7 +376,9 @@ public final class SystemContext {
 
     if (config.getChunkSize() > MAX_CHUNK_SIZE) {
       LOG.warn(
-          "Setting experimental.engine.batchOperations.chunkSize should be lower than {}, but was {}",
+          "[physical tenant '{}'] Setting experimental.engine.batchOperations.chunkSize should be "
+              + "lower than {}, but was {}",
+          tenantId,
           MAX_CHUNK_SIZE,
           config.getChunkSize());
     }
@@ -417,27 +435,40 @@ public final class SystemContext {
 
     if (!errors.isEmpty()) {
       throw new InvalidConfigurationException(
-          "Invalid BatchOperations configuration: " + String.join(", ", errors), null);
+          tenantScopedMessage(
+              tenantId, "Invalid BatchOperations configuration: " + String.join(", ", errors)),
+          null);
     }
   }
 
-  private void validateBackupCfg(final BackupCfg backup) {
+  private void validateBackupCfg(final String tenantId, final BackupCfg backup) {
     if (backup.isRequired() && backup.getStore() == BackupCfg.BackupStoreType.NONE) {
       throw new InvalidConfigurationException(
-          "Backup is required but no backup store is configured. "
-              + "Set zeebe.broker.data.backup.store to one of: S3, GCS, AZURE, FILESYSTEM",
+          tenantScopedMessage(
+              tenantId,
+              "Backup is required but no backup store is configured. "
+                  + "Set zeebe.broker.data.backup.store to one of: S3, GCS, AZURE, FILESYSTEM"),
           null);
     }
 
     try {
       switch (backup.getStore()) {
-        case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
-        case S3 -> S3BackupStore.validateConfig(S3BackupStoreConfig.toStoreConfig(backup.getS3()));
+        case NONE ->
+            LOG.warn(
+                "[physical tenant '{}'] No backup store is configured. Backups will not be taken",
+                tenantId);
+        case S3 ->
+            S3BackupStore.validateConfig(
+                S3BackupStoreConfig.toStoreConfig(
+                    backup.getS3(), backup.getReadTimeout(), backup.getWriteTimeout()));
         case GCS ->
-            GcsBackupStore.validateConfig(GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
+            GcsBackupStore.validateConfig(
+                GcsBackupStoreConfig.toStoreConfig(
+                    backup.getGcs(), backup.getReadTimeout(), backup.getWriteTimeout()));
         case AZURE ->
             AzureBackupStore.validateConfig(
-                AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
+                AzureBackupStoreConfig.toStoreConfig(
+                    backup.getAzure(), backup.getReadTimeout(), backup.getWriteTimeout()));
         case FILESYSTEM ->
             FilesystemBackupStore.validateConfig(
                 FilesystemBackupStoreConfig.toStoreConfig(backup.getFilesystem()));
@@ -448,24 +479,41 @@ public final class SystemContext {
       }
     } catch (final Exception e) {
       throw new InvalidConfigurationException(
-          "Failed configuring backup store %s".formatted(backup.getStore()), e);
+          tenantScopedMessage(
+              tenantId, "Failed configuring backup store %s".formatted(backup.getStore())),
+          e);
     }
 
-    validateBackupSchedulerConfig(backup);
+    validateBackupSchedulerConfig(tenantId, backup);
   }
 
+  /**
+   * Validates the tenant's fixed-partition scheme against the root {@link BrokerCfg}: {@code
+   * cluster.partitioning} (the scheme + fixed member list) and {@code cluster.replication-factor}
+   * are both in the physical-tenant override deny-list, so they are shared across every tenant by
+   * policy and are read from the root config here; only {@code cluster.partition-count} is
+   * overridable per tenant, so the tenant's own partition count is used.
+   */
   private void validateFixedPartitioningScheme(
-      final ClusterCfg cluster, final ExperimentalCfg experimental) {
-    final var partitioning = experimental.getPartitioning();
+      final String tenantId, final ClusterCfg tenantCluster) {
+    final var rootCluster = brokerCfg.getCluster();
+    final var partitioning = brokerCfg.getExperimental().getPartitioning();
     final var partitions = partitioning.getFixed();
-    final var replicationFactor = cluster.getReplicationFactor();
-    final var partitionsCount = cluster.getPartitionsCount();
+    final var replicationFactor = rootCluster.getReplicationFactor();
+    final var partitionsCount = tenantCluster.getPartitionsCount();
 
     final var partitionMembers = new HashMap<Integer, Set<Integer>>();
     for (final var partition : partitions) {
+      if (!tenantId.equals(partition.getPhysicalTenantId())) {
+        continue;
+      }
       final var members =
           validateFixedPartitionMembers(
-              cluster, partition, cluster.getRaft().isEnablePriorityElection());
+              tenantId,
+              rootCluster,
+              partitionsCount,
+              partition,
+              rootCluster.getRaft().isEnablePriorityElection());
       partitionMembers.put(partition.getPartitionId(), members);
     }
 
@@ -473,29 +521,34 @@ public final class SystemContext {
       final var members = partitionMembers.getOrDefault(partitionId, Collections.emptySet());
       if (members.size() < replicationFactor) {
         throw new IllegalArgumentException(
-            String.format(
-                "Expected fixed partition scheme to define configurations for all partitions such "
-                    + "that they have %d replicas, but partition %d has %d configured replicas: %s",
-                replicationFactor, partitionId, members.size(), members));
+            tenantScopedMessage(
+                tenantId,
+                String.format(
+                    "Expected fixed partition scheme to define configurations for all partitions such "
+                        + "that they have %d replicas, but partition %d has %d configured replicas: %s",
+                    replicationFactor, partitionId, members.size(), members)));
       }
     }
   }
 
   private Set<Integer> validateFixedPartitionMembers(
+      final String tenantId,
       final ClusterCfg cluster,
+      final int partitionsCount,
       final FixedPartitionCfg partitionConfig,
       final boolean isPriorityElectionEnabled) {
     final var members = new HashSet<Integer>();
     final var clusterSize = cluster.getClusterSize();
-    final var partitionsCount = cluster.getPartitionsCount();
     final var partitionId = partitionConfig.getPartitionId();
 
     if (partitionId < 1 || partitionId > partitionsCount) {
       throw new IllegalArgumentException(
-          String.format(
-              "Expected fixed partition scheme to define entries with a valid partitionId between 1"
-                  + " and %d, but %d was given",
-              partitionsCount, partitionId));
+          tenantScopedMessage(
+              tenantId,
+              String.format(
+                  "Expected fixed partition scheme to define entries with a valid partitionId between 1"
+                      + " and %d, but %d was given",
+                  partitionsCount, partitionId)));
     }
 
     final var observedPriorities = new HashSet<Integer>();
@@ -503,18 +556,22 @@ public final class SystemContext {
       final var nodeId = node.getNodeId();
       if (nodeId < 0 || nodeId >= clusterSize) {
         throw new IllegalArgumentException(
-            String.format(
-                "Expected fixed partition scheme for partition %d to define nodes with a nodeId "
-                    + "between 0 and %d, but it was %d",
-                partitionId, clusterSize - 1, nodeId));
+            tenantScopedMessage(
+                tenantId,
+                String.format(
+                    "Expected fixed partition scheme for partition %d to define nodes with a nodeId "
+                        + "between 0 and %d, but it was %d",
+                    partitionId, clusterSize - 1, nodeId)));
       }
 
       if (isPriorityElectionEnabled && !observedPriorities.add(node.getPriority())) {
         throw new IllegalArgumentException(
-            String.format(
-                "Expected each node for a partition %d to have a different priority, but at least "
-                    + "two of them have the same priorities: %s",
-                partitionId, partitionConfig.getNodes()));
+            tenantScopedMessage(
+                tenantId,
+                String.format(
+                    "Expected each node for a partition %d to have a different priority, but at least "
+                        + "two of them have the same priorities: %s",
+                    partitionId, partitionConfig.getNodes())));
       }
 
       members.add(nodeId);
@@ -526,10 +583,16 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
+    physicalTenantContexts.forEach(
+        (physicalTenantId, ctx) ->
+            validateInitializationConfigForTenant(physicalTenantId, ctx.securityConfig()));
+  }
+
+  private void validateInitializationConfigForTenant(
+      final String physicalTenantId, final EngineSecurityConfig securityConfig) {
     final IdentifierValidator identifierValidator =
         new IdentifierValidator(
-            securityConfiguration.getCompiledIdValidationPattern(),
-            securityConfiguration.getCompiledGroupIdValidationPattern());
+            securityConfig.getIdValidationPattern(), securityConfig.getGroupIdValidationPattern());
     final AuthorizationConfigurer authorizationConfigurer =
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
@@ -540,40 +603,44 @@ public final class SystemContext {
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(
-            securityConfiguration.getInitialization().getAuthorizations());
+            securityConfig.getInitialization().getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
-        tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
+        tenantConfigurer.configureEntities(securityConfig.getInitialization().getTenants());
     final Either<List<String>, List<GroupRecord>> configuredGroups =
-        groupConfigurer.configureEntities(securityConfiguration.getInitialization().getGroups());
+        groupConfigurer.configureEntities(securityConfig.getInitialization().getGroups());
     final Either<List<String>, List<RoleRecord>> configuredRoles =
-        roleConfigurer.configureEntities(securityConfiguration.getInitialization().getRoles());
+        roleConfigurer.configureEntities(securityConfig.getInitialization().getRoles());
 
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
     configuredAuthorizations.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured authorizations: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured authorizations for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredTenants.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured tenants: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured tenants for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
     configuredRoles.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured roles: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured roles for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
 
     configuredGroups.ifLeft(
         (violations) -> {
           throw new IdentityInitializationException(
-              "Cannot initialize configured groups: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+              "Cannot initialize configured groups for tenant '%s': %n- %s"
+                  .formatted(
+                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
         });
   }
 
@@ -584,7 +651,7 @@ public final class SystemContext {
         security.getKeyStore().getFilePath());
   }
 
-  private void validateListenersConfig(final GlobalListenersCfg listeners) {
+  private void validateListenersConfig(final String tenantId, final GlobalListenersCfg listeners) {
     final String propertyLocation = "camunda.cluster.global-listeners.user-task";
     final List<GlobalListenerCfg> taskListeners = listeners.getUserTask();
 
@@ -601,7 +668,9 @@ public final class SystemContext {
         }
       } catch (final NumberFormatException e) {
         LOG.warn(
-            "Invalid retries for global listener: '{}'; listener will be ignored [{}.retries]",
+            "[physical tenant '{}'] Invalid retries for global listener: '{}'; listener will be "
+                + "ignored [{}.retries]",
+            tenantId,
             listenerCfg.getRetries(),
             propertyPrefix);
         continue;
@@ -614,14 +683,19 @@ public final class SystemContext {
       // Check if id is present
       if (globalListenerValidator.idProvided(listenerRecord).isLeft()) {
         LOG.warn(
-            "Missing id for global listener; listener will be ignored [{}.type]", propertyPrefix);
+            "[physical tenant '{}'] Missing id for global listener; listener will be ignored "
+                + "[{}.type]",
+            tenantId,
+            propertyPrefix);
         continue;
       }
 
       // Check if type is present
       if (globalListenerValidator.typeProvided(listenerRecord).isLeft()) {
         LOG.warn(
-            "Missing job type for global listener; listener will be ignored [{}.type]",
+            "[physical tenant '{}'] Missing job type for global listener; listener will be "
+                + "ignored [{}.type]",
+            tenantId,
             propertyPrefix);
         continue;
       }
@@ -641,7 +715,9 @@ public final class SystemContext {
                       return true;
                     } else {
                       LOG.warn(
-                          "Invalid event type will be ignored: '{}' [{}.eventTypes]",
+                          "[physical tenant '{}'] Invalid event type will be ignored: '{}' "
+                              + "[{}.eventTypes]",
+                          tenantId,
                           eventType,
                           propertyPrefix);
                       return false;
@@ -652,7 +728,9 @@ public final class SystemContext {
                     if (!GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)
                         && containsAllEventsKeyword) {
                       LOG.warn(
-                          "Extra event type defined alongside '{}' will be ignored: '{}' [{}.eventTypes]",
+                          "[physical tenant '{}'] Extra event type defined alongside '{}' will be "
+                              + "ignored: '{}' [{}.eventTypes]",
+                          tenantId,
                           GlobalListenerRecord.ALL_EVENT_TYPES,
                           eventType,
                           propertyPrefix);
@@ -668,7 +746,9 @@ public final class SystemContext {
           eventType -> {
             if (uniqueEventTypes.contains(eventType)) {
               LOG.warn(
-                  "Duplicated event type will be considered only once: '{}' [{}.eventTypes]",
+                  "[physical tenant '{}'] Duplicated event type will be considered only once: "
+                      + "'{}' [{}.eventTypes]",
+                  tenantId,
                   eventType,
                   propertyPrefix);
             } else {
@@ -679,7 +759,9 @@ public final class SystemContext {
       // Check if valid event types have been provided
       if (uniqueEventTypes.isEmpty()) {
         LOG.warn(
-            "Missing event types for global listener; listener will be ignored [{}.eventTypes]",
+            "[physical tenant '{}'] Missing event types for global listener; listener will be "
+                + "ignored [{}.eventTypes]",
+            tenantId,
             propertyPrefix);
         continue;
       }
@@ -691,11 +773,8 @@ public final class SystemContext {
     listeners.setUserTask(validListeners);
   }
 
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    RocksDbSharedCache.validateRocksDbMemory(rocksdbCfg, partitionsCount);
-  }
-
-  private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {
+  private void validateBackupSchedulerConfig(
+      final String tenantId, final BackupCfg backupSchedulerCfg) {
     if (!backupSchedulerCfg.isContinuous() || !backupSchedulerCfg.isRequired()) {
       return;
     }
@@ -703,13 +782,15 @@ public final class SystemContext {
     // will throw IllegalArgumentException if schedule is invalid
     final var schedule = backupSchedulerCfg.getSchedule();
     if (backupSchedulerCfg.isRequired() && schedule instanceof NoneSchedule) {
-      throw new IllegalArgumentException("Backup schedule is mandatory, none provided.");
+      throw new IllegalArgumentException(
+          tenantScopedMessage(tenantId, "Backup schedule is mandatory, none provided."));
     }
     // will throw IllegalArgumentException if schedule is invalid
     Objects.requireNonNull(backupSchedulerCfg.getRetention().getCleanupSchedule());
     final var retentionSchedule = backupSchedulerCfg.getRetention().getCleanupSchedule();
     if (backupSchedulerCfg.isRequired() && retentionSchedule instanceof NoneSchedule) {
-      throw new IllegalArgumentException("Backup retention schedule is mandatory, none provided.");
+      throw new IllegalArgumentException(
+          tenantScopedMessage(tenantId, "Backup retention schedule is mandatory, none provided."));
     }
   }
 
@@ -719,10 +800,6 @@ public final class SystemContext {
 
   public BrokerCfg getBrokerConfiguration() {
     return brokerCfg;
-  }
-
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
   }
 
   public AtomixCluster getCluster() {
@@ -745,35 +822,69 @@ public final class SystemContext {
     return meterRegistry;
   }
 
-  public SecurityConfiguration getSecurityConfiguration() {
-    return securityConfiguration;
+  /** Returns the per-physical-tenant engine context map (unmodifiable). */
+  public Map<String, PhysicalTenantContext> getPhysicalTenantContexts() {
+    return physicalTenantContexts;
   }
 
-  public UserServices getUserServices() {
-    return userServices;
+  /**
+   * Returns the engine context for the given physical tenant.
+   *
+   * @throws IllegalArgumentException if the physical tenant id is unknown
+   */
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    if (!physicalTenantContexts.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return physicalTenantContexts.get(physicalTenantId);
+  }
+
+  /**
+   * Returns the security configuration for the {@code default} physical tenant. Requires a {@value
+   * io.camunda.cluster.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} entry to be registered.
+   *
+   * @throws IllegalStateException if no security configuration is registered for the default
+   *     physical tenant
+   */
+  public EngineSecurityConfig getSecurityConfiguration() {
+    final var ctx = physicalTenantContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    if (ctx == null) {
+      throw new IllegalStateException(
+          "No security configuration registered for the default physical tenant");
+    }
+    return ctx.securityConfig();
+  }
+
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return userServicesForTenant;
   }
 
   public PasswordEncoder getPasswordEncoder() {
     return passwordEncoder;
   }
 
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return oidcClaimsProviderFactory;
   }
 
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return jwtDecoderFactory;
   }
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
   }
 
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
-    return brokerRequestAuthorizationConverter;
+  /** Returns the per-physical-tenant RDBMS exported-position supplier map (unmodifiable). */
+  public Map<String, IntFunction<Long>> getExportedPositionSuppliers() {
+    return exportedPositionSuppliers;
   }
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  public PhysicalTenantIds getPhysicalTenantIds() {
+    return physicalTenantIds;
   }
 }

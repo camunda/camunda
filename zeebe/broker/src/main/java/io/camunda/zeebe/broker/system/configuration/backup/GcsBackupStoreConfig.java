@@ -9,7 +9,10 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
@@ -19,6 +22,11 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
 
   /** Default maximum concurrent transfers (uploads and downloads) */
   private int maxConcurrentTransfers = 8;
+
+  /** Size of the buffer (in bytes) used when uploading files to GCS. */
+  private int bufferSize = 2 * 1024 * 1024;
+
+  private Retry retry = new Retry(Optional.empty(), Optional.empty());
 
   public String getBucketName() {
     return bucketName;
@@ -60,13 +68,37 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     this.maxConcurrentTransfers = maxConcurrentTransfers;
   }
 
-  public static GcsBackupConfig toStoreConfig(final GcsBackupStoreConfig config) {
+  public int getBufferSize() {
+    return bufferSize;
+  }
+
+  public void setBufferSize(final int bufferSize) {
+    this.bufferSize = bufferSize;
+  }
+
+  public Retry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final Retry retry) {
+    this.retry = retry;
+  }
+
+  public static GcsBackupConfig toStoreConfig(
+      final GcsBackupStoreConfig config,
+      final @Nullable Duration readTimeout,
+      final @Nullable Duration writeTimeout) {
     final var storeConfig =
         new GcsBackupConfig.Builder()
+            .withReadTimeout(readTimeout)
+            .withWriteTimeout(writeTimeout)
             .withBucketName(config.getBucketName())
             .withBasePath(config.getBasePath())
             .withHost(config.getHost())
-            .withMaxConcurrentTransfers(config.getMaxConcurrentTransfers());
+            .withMaxConcurrentTransfers(config.getMaxConcurrentTransfers())
+            .withBufferSize(config.getBufferSize())
+            .withRetryTotalTimeout(config.getRetry().totalTimeout())
+            .withRetryMaxAttempts(config.getRetry().maxAttempts());
     final var authenticated =
         switch (config.getAuth()) {
           case NONE -> storeConfig.withoutAuthentication();
@@ -77,7 +109,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(bucketName, basePath, host, auth, maxConcurrentTransfers);
+    return Objects.hash(
+        bucketName, basePath, host, auth, maxConcurrentTransfers, bufferSize, retry);
   }
 
   @Override
@@ -93,7 +126,9 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(host, that.host)
         && auth == that.auth
-        && maxConcurrentTransfers == that.maxConcurrentTransfers;
+        && maxConcurrentTransfers == that.maxConcurrentTransfers
+        && bufferSize == that.bufferSize
+        && Objects.equals(retry, that.retry);
   }
 
   @Override
@@ -112,8 +147,20 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         + auth
         + ", maxConcurrentTransfers="
         + maxConcurrentTransfers
+        + ", bufferSize="
+        + bufferSize
+        + ", retry="
+        + retry
         + '}';
   }
+
+  /**
+   * Optional limits on how the client retries failing requests.
+   *
+   * @param totalTimeout cap on the total time the client retries a failing request
+   * @param maxAttempts cap on the number of attempts the client makes for a failing request
+   */
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {}
 
   public enum GcsBackupStoreAuth {
     NONE,

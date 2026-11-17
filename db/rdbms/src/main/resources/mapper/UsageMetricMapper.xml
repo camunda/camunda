@@ -15,18 +15,18 @@
   <resultMap id="UsageMetricStatisticsResultMap"
     type="io.camunda.db.rdbms.write.domain.UsageMetricDbModel$UsageMetricTenantStatisticsDbModel">
     <constructor>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="RPI" javaType="java.lang.Long"/>
-      <arg column="EDI" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="RPI" javaType="java.lang.Long" name="rpi"/>
+      <arg column="EDI" javaType="java.lang.Long" name="edi"/>
     </constructor>
   </resultMap>
 
   <resultMap id="UsageMetricStatisticsResultMap2"
     type="io.camunda.db.rdbms.write.domain.UsageMetricDbModel$UsageMetricStatisticsDbModel">
     <constructor>
-      <arg column="RPI" javaType="java.lang.Long"/>
-      <arg column="EDI" javaType="java.lang.Long"/>
-      <arg column="AT" javaType="java.lang.Long"/>
+      <arg column="RPI" javaType="java.lang.Long" name="rpi"/>
+      <arg column="EDI" javaType="java.lang.Long" name="edi"/>
+      <arg column="AT" javaType="java.lang.Long" name="at"/>
     </constructor>
   </resultMap>
 

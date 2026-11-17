@@ -1,0 +1,26 @@
+---
+# Source: camunda-platform/templates/service-monitor/identity-service-monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: c8-golden-stable-88-none-camunda-platform-identity
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-88-none
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/component: identity
+  endpoints:
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: metrics
+      interval: 30s

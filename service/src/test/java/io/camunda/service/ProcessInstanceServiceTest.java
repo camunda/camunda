@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -21,10 +23,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
@@ -36,9 +40,10 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.ProcessInstanceServices.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.authorization.Authorizations;
@@ -50,13 +55,16 @@ import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
@@ -74,7 +82,6 @@ import java.util.stream.Stream;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -84,13 +91,15 @@ import org.mockito.ArgumentCaptor;
 
 public final class ProcessInstanceServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient processInstanceSearchClient;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
+  private WaitStateSearchClient waitStateSearchClient;
   private IncidentServices incidentServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
-  private Authorization<BatchOperationCreationRecord> authorizationCheck;
+  private RequiredAuthorization<BatchOperationCreationRecord> authorizationCheck;
   private BrokerClient brokerClient;
   private ApiServicesExecutorProvider executorProvider;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
@@ -99,14 +108,17 @@ public final class ProcessInstanceServiceTest {
   public void before() {
     processInstanceSearchClient = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
+    waitStateSearchClient = mock(WaitStateSearchClient.class);
     authentication = CamundaAuthentication.none();
     authorizationCheck =
-        Authorization.withAuthorization(
-            Authorization.of(a -> a.processDefinition().updateProcessInstance()), "myProcess");
+        RequiredAuthorization.withRequiredAuthorization(
+            RequiredAuthorization.of(a -> a.processDefinition().updateProcessInstance()),
+            "myProcess");
     incidentServices = mock(IncidentServices.class);
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
+    when(waitStateSearchClient.withSecurityContext(any())).thenReturn(waitStateSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     when(brokerClient.getTopologyManager()).thenReturn(new StubbedTopologyManager(3));
@@ -115,10 +127,12 @@ public final class ProcessInstanceServiceTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new ProcessInstanceServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             processInstanceSearchClient,
             sequenceFlowSearchClient,
+            waitStateSearchClient,
             incidentServices,
             executorProvider,
             brokerRequestAuthorizationConverter);
@@ -202,6 +216,50 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  void shouldDelegateWaitStateStatisticsToWaitStateClient() {
+    // given
+    final var processInstanceKey = 42L;
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), processInstanceKey)
+            .create();
+    when(processInstanceSearchClient.getProcessInstance(processInstanceKey)).thenReturn(entity);
+    when(waitStateSearchClient.waitStateStatistics(processInstanceKey))
+        .thenReturn(List.of(new WaitStateStatisticsEntity("task-a", 3L)));
+
+    // when
+    final var result = services.waitStateStatistics(processInstanceKey, authentication);
+
+    // then
+    assertThat(result).containsExactly(new WaitStateStatisticsEntity("task-a", 3L));
+    verify(waitStateSearchClient).waitStateStatistics(processInstanceKey);
+  }
+
+  @Test
+  void shouldThrowNotFoundForUnknownProcessInstanceOnWaitStateStatistics() {
+    // given
+    final var processInstanceKey = 99L;
+    when(processInstanceSearchClient.getProcessInstance(processInstanceKey))
+        .thenThrow(
+            new CamundaSearchException(
+                ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Process Instance", processInstanceKey),
+                Reason.NOT_FOUND));
+
+    // when
+    final ThrowingCallable executeWaitStateStatistics =
+        () -> services.waitStateStatistics(processInstanceKey, authentication);
+
+    // then
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(executeWaitStateStatistics)
+                .isInstanceOf(ServiceException.class)
+                .actual();
+    assertThat(exception.getStatus()).isEqualTo(Status.NOT_FOUND);
+    verify(waitStateSearchClient, never()).waitStateStatistics(anyLong());
+  }
+
+  @Test
   void shouldCancelProcessInstanceBatchOperationWithResult() {
     // given
     final var filter =
@@ -224,6 +282,72 @@ public final class ProcessInstanceServiceTest {
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
     assertThat(result.getBatchOperationType())
         .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldSuspendProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result =
+        services.suspendProcessInstanceBatchOperationWithResult(filter, authentication).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldResumeProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 456L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result =
+        services.resumeProcessInstanceBatchOperationWithResult(filter, authentication).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.RESUME_PROCESS_INSTANCE);
 
     // and our request got enriched
     final var enrichedRecord = captor.getValue().getRequestWriter();
@@ -267,8 +391,15 @@ public final class ProcessInstanceServiceTest {
 
     assertThat(
             MsgPackConverter.convertToObject(
-                enrichedRecord.getAuthorizationCheckBuffer(), Authorization.class))
-        .isEqualTo(authorizationCheck);
+                enrichedRecord.getAuthorizationCheckBuffer(),
+                BatchOperationAuthorizationCheck.class))
+        .isEqualTo(
+            new BatchOperationAuthorizationCheck(
+                authorizationCheck.resourceType(),
+                authorizationCheck.permissionType(),
+                authorizationCheck.resourceIds(),
+                authorizationCheck.resourcePropertyNames(),
+                authorizationCheck.transitive()));
   }
 
   @Test
@@ -289,6 +420,35 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
+
+    // when
+    final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
+    assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+  }
+
+  @Test
+  public void shouldReturnOrderedProcessHierarchyWhenSearchReturnsDuplicateInstance() {
+    // given
+    final var childProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 789L)
+            .set(field(ProcessInstanceEntity::treePath), "PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654")
+            .create();
+
+    final var parentProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
+            .create();
+
+    when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1, false, List.of(childProcess, parentProcess, parentProcess), null, null));
 
     // when
     final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
@@ -496,7 +656,7 @@ public final class ProcessInstanceServiceTest {
     verify(incidentServices).search(incidentQueryCaptor.capture(), any());
     final var incidentQuery = incidentQueryCaptor.getValue();
     assertThat(incidentQuery.filter().treePathOperations())
-        .containsExactly(Operation.like("*" + processInstance.treePath() + "*"));
+        .containsExactly(Operation.like(processInstance.treePath() + "*"));
     assertThat(incidentQuery.page()).isEqualTo(query.page());
     assertThat(incidentQuery.sort()).isEqualTo(query.sort());
   }
@@ -511,7 +671,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey)))
         .thenThrow(
             new ResourceAccessDeniedException(
-                Authorization.of(a -> a.processDefinition().readProcessInstance())));
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance())));
 
     final var query = new IncidentQuery.Builder().build();
 
@@ -589,6 +749,7 @@ public final class ProcessInstanceServiceTest {
     services.deleteProcessInstance(processInstanceKey, null, authentication).join();
 
     // then
+    assertThat(captor.getValue().getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
     assertThat(brokerRequest.getResourceKey()).isEqualTo(processInstanceKey);
     assertThat(brokerRequest.getResourceType()).isEqualTo(HistoryDeletionType.PROCESS_INSTANCE);
@@ -615,6 +776,91 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  void shouldAssignProcessInstanceBusinessId() {
+    // given
+    final long processInstanceKey = 123L;
+    final var businessId = "order-12345";
+
+    final var record =
+        new ProcessInstanceBusinessIdRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setBusinessId(businessId);
+    final var captor = ArgumentCaptor.forClass(BrokerAssignProcessInstanceBusinessIdRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    services
+        .assignProcessInstanceBusinessId(
+            new AssignProcessInstanceBusinessIdRequest(processInstanceKey, businessId),
+            authentication)
+        .join();
+
+    // then
+    final var brokerRequest = captor.getValue();
+    final var enrichedRecord = brokerRequest.getRequestWriter();
+    assertThat(enrichedRecord.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(enrichedRecord.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldForwardVersionTagToBrokerWhenCreatingProcessInstance() {
+    // given
+    final var request = requestWithVersionTag("release-1", false);
+    final var captor = ArgumentCaptor.forClass(BrokerCreateProcessInstanceRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerResponse<>(new ProcessInstanceCreationRecord())));
+
+    // when
+    services.createProcessInstance(request, authentication).join();
+
+    // then
+    final var record = captor.getValue().getRequestWriter();
+    assertThat(record.getVersionTag()).isEqualTo("release-1");
+    assertThat(record.getBpmnProcessId()).isEqualTo("test-process");
+    assertThat(record.getVersion()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldForwardVersionTagToBrokerWhenCreatingProcessInstanceWithResult() {
+    // given
+    final var request = requestWithVersionTag("release-1", true);
+    final var captor = ArgumentCaptor.forClass(BrokerCreateProcessInstanceWithResultRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerResponse<>(new ProcessInstanceResultRecord())));
+
+    // when
+    services.createProcessInstanceWithResult(request, authentication).join();
+
+    // then
+    assertThat(captor.getValue().getRequestWriter().getVersionTag()).isEqualTo("release-1");
+  }
+
+  private static ProcessInstanceServices.ProcessInstanceCreateRequest requestWithVersionTag(
+      final String versionTag, final boolean awaitCompletion) {
+    return new ProcessInstanceServices.ProcessInstanceCreateRequest(
+        -1L, // processDefinitionKey
+        "test-process", // bpmnProcessId
+        -1, // version
+        versionTag, // versionTag
+        null, // variables
+        "<default>", // tenantId
+        awaitCompletion, // awaitCompletion
+        null, // requestTimeout
+        null, // operationReference
+        List.of(), // startInstructions
+        List.of(), // runtimeInstructions
+        List.of(), // fetchVariables
+        null, // tags
+        null // businessId
+        );
+  }
+
+  @Test
   void shouldCreateProcessInstanceWithResultUsingCustomRequestTimeout() {
     // given
     final var request =
@@ -622,6 +868,7 @@ public final class ProcessInstanceServiceTest {
             123L, // processDefinitionKey
             "", // bpmnProcessId
             -1, // version
+            null, // versionTag
             null, // variables
             "<default>", // tenantId
             true, // awaitCompletion
@@ -660,6 +907,7 @@ public final class ProcessInstanceServiceTest {
             123L, // processDefinitionKey
             "", // bpmnProcessId
             -1, // version
+            null, // versionTag
             null, // variables
             "<default>", // tenantId
             true, // awaitCompletion
@@ -699,6 +947,7 @@ public final class ProcessInstanceServiceTest {
             123L, // processDefinitionKey
             "", // bpmnProcessId
             -1, // version
+            null, // versionTag
             null, // variables
             "<default>", // tenantId
             true, // awaitCompletion
@@ -731,7 +980,8 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Nested
-  @DisplayName("Retry on different partitions")
+  // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
+  // @DisplayName("Retry on different partitions")
   class RetryPartitionsTest {
 
     private static Stream<Named<Throwable>> retryableErrors() {
@@ -955,6 +1205,7 @@ public final class ProcessInstanceServiceTest {
           123L, // processDefinitionKey
           "test-process", // bpmnProcessId
           -1, // version
+          null, // versionTag
           null, // variables
           "<default>", // tenantId
           false, // awaitCompletion
@@ -974,6 +1225,7 @@ public final class ProcessInstanceServiceTest {
           123L, // processDefinitionKey
           "test-process", // bpmnProcessId
           -1, // version
+          null, // versionTag
           null, // variables
           "<default>", // tenantId
           true, // awaitCompletion

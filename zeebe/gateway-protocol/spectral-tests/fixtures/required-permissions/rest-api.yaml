@@ -1,0 +1,158 @@
+# Entry point for the x-required-permissions rule tests (camunda/camunda#54727).
+# Inlines every operation so a single-file lint exercises both rules:
+#   - required-permissions-shape  (schema shape of each entry)
+#   - verify-required-permissions (completeness + registry-validity)
+# The fixture-local resource-permissions.json is auto-loaded by helpers.js via
+# SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY, so the registry is small and stable.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — required-permissions
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: static pair ────────────────────────────────────────
+  /valid/static:
+    get:
+      operationId: validStatic
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      responses:
+        '200': { description: OK. }
+
+  # ── Valid: anyOf (OR group) ───────────────────────────────────
+  /valid/any-of:
+    post:
+      operationId: validAnyOf
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_USER_TASK }
+            - { resourceType: USER_TASK, permissionType: UPDATE }
+            - { resourceType: USER_TASK, permissionType: COMPLETE }
+      responses:
+        '204': { description: No content. }
+
+  # ── Valid: dynamic with note ──────────────────────────────────
+  /valid/dynamic:
+    delete:
+      operationId: validDynamic
+      x-required-permissions:
+        - dynamic: true
+          note: Resolved at runtime from the deployed resource type.
+      responses:
+        '204': { description: No content. }
+
+  # ── Valid: explicitly unrestricted (empty array) ────────────────────
+  /valid/unrestricted:
+    get:
+      operationId: validUnrestricted
+      x-required-permissions: []
+      responses:
+        '200': { description: OK. }
+
+  # ── Invalid: missing the extension entirely (gap guard) ───────
+  /invalid/missing:
+    get:
+      operationId: invalidMissing
+      responses:
+        '200': { description: OK. }
+
+  # ── Invalid: unknown resourceType ─────────────────────────────
+  /invalid/unknown-resource:
+    get:
+      operationId: invalidUnknownResource
+      x-required-permissions:
+        - { resourceType: WIDGET, permissionType: READ }
+      responses:
+        '200': { description: OK. }
+
+  # ── Invalid: permissionType not supported by the resource ─────
+  /invalid/unsupported-permission:
+    delete:
+      operationId: invalidUnsupportedPermission
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: DELETE }
+      responses:
+        '204': { description: No content. }
+
+  # ── Invalid: anyOf branch with an unsupported pair ────────────
+  /invalid/any-of-branch:
+    post:
+      operationId: invalidAnyOfBranch
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: USER_TASK, permissionType: READ }
+            - { resourceType: USER_TASK, permissionType: FLY }
+      responses:
+        '204': { description: No content. }
+
+  # ── Invalid shape: dynamic without the required note ──────────
+  /invalid/dynamic-no-note:
+    delete:
+      operationId: invalidDynamicNoNote
+      x-required-permissions:
+        - dynamic: true
+      responses:
+        '204': { description: No content. }
+
+  # ── Invalid shape: unknown extra property ─────────────────────
+  /invalid/extra-property:
+    get:
+      operationId: invalidExtraProperty
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION, scope: extra }
+      responses:
+        '200': { description: OK. }
+
+  # ── Invalid shape: two forms combined in one entry ────────────
+  /invalid/mixed-forms:
+    post:
+      operationId: invalidMixedForms
+      x-required-permissions:
+        - resourceType: PROCESS_DEFINITION
+          permissionType: READ_PROCESS_DEFINITION
+          anyOf:
+            - { resourceType: USER_TASK, permissionType: READ }
+            - { resourceType: USER_TASK, permissionType: UPDATE }
+      responses:
+        '204': { description: No content. }
+
+  # ── Valid: x-permission-enforcement: filter with a permission ──
+  /valid/enforcement-filter:
+    get:
+      operationId: validEnforcementFilter
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      responses:
+        '200': { description: OK. }
+
+  # ── Valid: x-permission-enforcement: reject (explicit default) ─
+  /valid/enforcement-reject:
+    post:
+      operationId: validEnforcementReject
+      x-permission-enforcement: reject
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
+      responses:
+        '204': { description: No content. }
+
+  # ── Invalid shape: unknown enforcement value ──────────────────
+  /invalid/enforcement-value:
+    get:
+      operationId: invalidEnforcementValue
+      x-permission-enforcement: block
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      responses:
+        '200': { description: OK. }
+
+  # ── Invalid: filter on an unrestricted (empty) endpoint ──────────────
+  /invalid/enforcement-unrestricted-filter:
+    get:
+      operationId: invalidEnforcementUnrestrictedFilter
+      x-permission-enforcement: filter
+      x-required-permissions: []
+      responses:
+        '200': { description: OK. }

@@ -10,12 +10,20 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.RESUMED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -30,6 +38,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue.Builder;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -44,6 +53,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.mockito.ArgumentCaptor;
 
 public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
@@ -71,7 +81,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         "ELEMENT_COMPLETED",
         "ELEMENT_TERMINATED",
         "ELEMENT_MIGRATED",
-        "ANCESTOR_MIGRATED"
+        "ANCESTOR_MIGRATED",
+        "SUSPENDED",
+        "RESUMED"
       },
       mode = Mode.INCLUDE)
   public void shouldHandleRecord(final ProcessInstanceIntent intent) {
@@ -90,7 +102,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         "ELEMENT_COMPLETED",
         "ELEMENT_TERMINATED",
         "ELEMENT_MIGRATED",
-        "ANCESTOR_MIGRATED"
+        "ANCESTOR_MIGRATED",
+        "SUSPENDED",
+        "RESUMED"
       },
       mode = Mode.EXCLUDE)
   public void shouldNotHandleRecord(final ProcessInstanceIntent intent) {
@@ -119,8 +133,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long expectedId = 123;
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
@@ -134,11 +151,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r -> r.withIntent(ELEMENT_ACTIVATING).withValue(processInstanceRecordValue));
 
-    // when
-    final var idList = underTest.generateIds(processInstanceRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, processInstanceRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(expectedId), index));
   }
 
   @Test
@@ -170,6 +185,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setTreePath("PI_111")
             .setTags(Set.of("businessKey:123", "priority:high"))
             .setBusinessId("my-business-id");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -184,14 +200,15 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(ListViewTemplate.TAGS, inputEntity.getTags());
     expectedUpdateFields.put(ListViewTemplate.BUSINESS_ID, "my-business-id");
+    expectedUpdateFields.put(ListViewTemplate.SUSPENDED_DATE, null);
     expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, "111", inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -207,6 +224,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setPartitionId(12)
             .setPosition(123L)
             .setState(ProcessInstanceState.ACTIVE);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -215,14 +233,15 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
+    expectedUpdateFields.put(ListViewTemplate.SUSPENDED_DATE, null);
     expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, "111", inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -253,7 +272,13 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     processCache.put(
         processInstanceRecordValue.getProcessDefinitionKey(),
         new CachedProcessEntity(
-            "test-process-name", 1, "test-version-tag", new ArrayList<>(), Map.of(), false));
+            "test-process-name",
+            1,
+            "test-version-tag",
+            new ArrayList<>(),
+            Map.of(),
+            false,
+            Map.of()));
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
@@ -357,11 +382,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of(), false));
+            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of(), false, Map.of()));
 
     processCache.put(
         processDefinitionKey2,
-        new CachedProcessEntity(null, 1, null, List.of("0", callActivityId2), Map.of(), false));
+        new CachedProcessEntity(
+            null, 1, null, List.of("0", callActivityId2), Map.of(), false, Map.of()));
 
     // when called process 3rd level
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =
@@ -445,6 +471,48 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
+  void shouldSetSuspendedOnSuspendedRecord() {
+    // given
+    final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(SUSPENDED)
+                    .withTimestamp(timestamp)
+                    .withValue(processInstanceRecordValue));
+    final ProcessInstanceForListViewEntity piEntity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(processInstanceRecord, piEntity);
+
+    // then
+    assertThat(piEntity.getState()).isEqualTo(ProcessInstanceState.SUSPENDED);
+    assertThat(piEntity.getSuspendedDate())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+  }
+
+  @Test
+  void shouldClearSuspendedOnResumedRecord() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord = createRecord(RESUMED);
+    final ProcessInstanceForListViewEntity piEntity =
+        new ProcessInstanceForListViewEntity().setSuspendedDate(OffsetDateTime.now());
+
+    // when
+    underTest.updateEntity(processInstanceRecord, piEntity);
+
+    // then
+    assertThat(piEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
+    assertThat(piEntity.getSuspendedDate()).isNull();
+  }
+
+  @Test
   void shouldUpdateEndTimeForTerminatedRecord() {
     // given
     final long timestamp = new Date().getTime();
@@ -471,6 +539,94 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
     assertThat(processInstanceForListViewEntity.getState())
         .isEqualTo(ProcessInstanceState.CANCELED);
+  }
+
+  @Test
+  void shouldClearSuspendedDateWhenCancellingSuspendedInstanceAcrossSeparateBatches() {
+    // given - SUSPENDED is exported and flushed in its own batch, as it normally is: the
+    // exporter's accumulator (ExporterBatchWriter#cachedEntities) creates a fresh entity per
+    // batch, so this entity never resurfaces once flushed.
+    final long processInstanceKey = 111L;
+    final Record<ProcessInstanceRecordValue> suspendedRecord =
+        createRecordForKey(SUSPENDED, processInstanceKey);
+    final ProcessInstanceForListViewEntity suspendedBatchEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(suspendedRecord, suspendedBatchEntity);
+
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest suspendFlushRequest = mock(BatchRequest.class);
+    underTest.flush(index, suspendedBatchEntity, suspendFlushRequest);
+
+    final ArgumentCaptor<Map<String, Object>> suspendUpdateFields =
+        ArgumentCaptor.forClass(Map.class);
+    verify(suspendFlushRequest)
+        .upsert(
+            eq(index),
+            eq(String.valueOf(processInstanceKey)),
+            eq(suspendedBatchEntity),
+            suspendUpdateFields.capture());
+    assertThat(suspendUpdateFields.getValue()).containsKey(ListViewTemplate.SUSPENDED_DATE);
+    assertThat(suspendUpdateFields.getValue().get(ListViewTemplate.SUSPENDED_DATE)).isNotNull();
+
+    // when - ELEMENT_TERMINATED is exported in a later, separate batch, for the same process
+    // instance. Its accumulator entity starts fresh (suspendedDate == null) - it never saw the
+    // SUSPENDED record.
+    final Record<ProcessInstanceRecordValue> terminatedRecord =
+        createRecordForKey(ProcessInstanceIntent.ELEMENT_TERMINATED, processInstanceKey);
+    final ProcessInstanceForListViewEntity terminatedBatchEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(terminatedRecord, terminatedBatchEntity);
+
+    final BatchRequest terminateFlushRequest = mock(BatchRequest.class);
+    underTest.flush(index, terminatedBatchEntity, terminateFlushRequest);
+
+    // then - flush() unconditionally writes the (null) suspendedDate whenever state is set, so
+    // this upsert overwrites the previously stored suspension timestamp with null.
+    final ArgumentCaptor<Map<String, Object>> terminateUpdateFields =
+        ArgumentCaptor.forClass(Map.class);
+    verify(terminateFlushRequest)
+        .upsert(
+            eq(index),
+            eq(String.valueOf(processInstanceKey)),
+            eq(terminatedBatchEntity),
+            terminateUpdateFields.capture());
+    assertThat(terminateUpdateFields.getValue())
+        .containsEntry(ListViewTemplate.SUSPENDED_DATE, null);
+    assertThat(terminatedBatchEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
+  }
+
+  @Test
+  void shouldClearSuspendedDateWhenTerminatedAndSuspendedLandInSameBatch() {
+    // given - SUSPENDED and ELEMENT_TERMINATED both land in the same export batch (e.g. a
+    // scripted suspend->cancel sequence within the exporter's bulk.delay window), so both
+    // records are applied to the same accumulator entity before it is flushed.
+    final long processInstanceKey = 111L;
+    final Record<ProcessInstanceRecordValue> suspendedRecord =
+        createRecordForKey(SUSPENDED, processInstanceKey);
+    final Record<ProcessInstanceRecordValue> terminatedRecord =
+        createRecordForKey(ProcessInstanceIntent.ELEMENT_TERMINATED, processInstanceKey);
+    final ProcessInstanceForListViewEntity piEntity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(suspendedRecord, piEntity);
+    underTest.updateEntity(terminatedRecord, piEntity);
+
+    // then
+    assertThat(piEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
+    assertThat(piEntity.getSuspendedDate()).isNull();
+  }
+
+  private Record<ProcessInstanceRecordValue> createRecordForKey(
+      final ProcessInstanceIntent intent, final long processInstanceKey) {
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+    return factory.generateRecord(
+        ValueType.PROCESS_INSTANCE,
+        r -> r.withIntent(intent).withValue(processInstanceRecordValue));
   }
 
   @ParameterizedTest
@@ -513,5 +669,49 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r -> r.withIntent(intent).withValue(processInstanceRecordValue));
     return processInstanceRecord;
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

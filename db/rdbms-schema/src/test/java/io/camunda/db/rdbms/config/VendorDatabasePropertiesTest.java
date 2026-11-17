@@ -10,25 +10,58 @@ package io.camunda.db.rdbms.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import org.junit.jupiter.api.Test;
+import java.util.Properties;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class VendorDatabasePropertiesTest {
 
-  @Test
-  void shouldLoadOraclePropertiesWithInsertBatchingDisabled() throws IOException {
-    // given & when
-    final var properties = VendorDatabasePropertiesLoader.load("oracle");
+  @ParameterizedTest(name = "{0} folds \"Tenant_Process_Instance\" to \"{1}\"")
+  @CsvSource({
+    "postgresql, tenant_process_instance",
+    "oracle, TENANT_PROCESS_INSTANCE",
+    "mysql, TENANT_PROCESS_INSTANCE",
+    "mariadb, TENANT_PROCESS_INSTANCE",
+    "mssql, Tenant_Process_Instance",
+    "h2, Tenant_Process_Instance",
+  })
+  void shouldFoldTableIdentifierPerVendor(final String databaseId, final String expectedFold)
+      throws IOException {
+    // given
+    final var properties = VendorDatabasePropertiesLoader.load(databaseId);
+
+    // when
+    final var folded = properties.foldTableIdentifier("Tenant_Process_Instance");
 
     // then
-    assertThat(properties.supportsInsertBatching()).isFalse();
+    assertThat(folded).isEqualTo(expectedFold);
   }
 
-  @Test
-  void shouldLoadPostgresqlPropertiesWithInsertBatchingEnabled() throws IOException {
-    // given & when
-    final var properties = VendorDatabasePropertiesLoader.load("postgresql");
+  @ParameterizedTest(name = "strategy \"{0}\" means usesCatalogRowCountStatistics = {1}")
+  @CsvSource({
+    "catalog, true",
+    "live, false",
+  })
+  void shouldInterpretTableRowCountStrategy(
+      final String strategy, final boolean expectedUsesCatalogStatistics) {
+    // given
+    final var properties = minimalProperties(strategy, "none");
 
-    // then
-    assertThat(properties.supportsInsertBatching()).isTrue();
+    // when / then
+    assertThat(properties.usesCatalogRowCountStatistics()).isEqualTo(expectedUsesCatalogStatistics);
+  }
+
+  private static VendorDatabaseProperties minimalProperties(
+      final String tableRowCountStrategy, final String tableRowCountIdentifierCase) {
+    final var props = new Properties();
+    props.put(VendorDatabaseProperties.DATABASE_ID, "test-vendor");
+    props.put("variableValue.previewSize", "8191");
+    props.put("userCharColumn.size", "256");
+    props.put("errorMessage.size", "4000");
+    props.put("treePath.size", "8191");
+    props.put("disableFkBeforeTruncate", "false");
+    props.put("tableRowCount.strategy", tableRowCountStrategy);
+    props.put("tableRowCount.identifierCase", tableRowCountIdentifierCase);
+    return new VendorDatabaseProperties(props);
   }
 }

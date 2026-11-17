@@ -48,6 +48,7 @@ function useHandleOperationSuccess() {
         navigate(
           Locations.processes({
             active: true,
+            suspended: true,
             incidents: true,
           }),
           {replace: true},
@@ -76,6 +77,22 @@ function useHandleOperationSuccess() {
       notificationsStore.displayNotification({
         kind: 'info',
         title: 'Incidents are scheduled for retry',
+        isDismissable: true,
+      });
+    }
+
+    if (operationType === 'SUSPEND_PROCESS_INSTANCE') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Instance suspended',
+        isDismissable: true,
+      });
+    }
+
+    if (operationType === 'RESUME_PROCESS_INSTANCE') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Instance resumed',
         isDismissable: true,
       });
     }

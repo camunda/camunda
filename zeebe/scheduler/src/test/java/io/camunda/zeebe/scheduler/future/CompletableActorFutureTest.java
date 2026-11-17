@@ -15,6 +15,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +26,119 @@ import org.junit.jupiter.api.Test;
 public class CompletableActorFutureTest {
 
   @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
+
+  @Nested
+  public class CompletionTimestamp {
+    @Test
+    public void shouldBeSetWhenCreatedCompleted() {
+      // when
+      final var future = CompletableActorFuture.completed();
+
+      // then
+      assertThat(future.getCompletedAt()).isNotZero();
+    }
+
+    @Test
+    public void shouldBeSetWhenCreatedCompletedExceptionally() {
+      // when
+      final var future = CompletableActorFuture.completedExceptionally(new RuntimeException());
+
+      // then
+      assertThat(future.getCompletedAt()).isNotZero();
+    }
+
+    @Test
+    public void shouldBeSetWhenCompletedExceptionally() {
+      // given
+      final var future = new CompletableActorFuture<Void>();
+
+      // when
+      future.completeExceptionally(new RuntimeException());
+
+      // then
+      assertThat(future.getCompletedAt()).isNotZero();
+    }
+  }
+
+  @Nested
+  public class Catching {
+    @Test
+    public void shouldReturnExceptionalFutureWhenSupplierThrows() {
+      // given
+      final Supplier<ActorFuture<Void>> supplier =
+          () -> {
+            throw new RuntimeException("Expected");
+          };
+
+      // when
+      final var future = CompletableActorFuture.catching(supplier);
+
+      assertThat(future.getException()).hasMessage("Expected");
+    }
+
+    @Test
+    public void shouldReturnFutureWhenSupplierCompletes() {
+      // given
+      final Supplier<ActorFuture<String>> supplier =
+          () -> CompletableActorFuture.completed("value");
+
+      // when
+      final var future = CompletableActorFuture.catching(supplier);
+
+      // then
+      assertThat(future.join()).isEqualTo("value");
+    }
+  }
+
+  @Nested
+  class VoidContinuations {
+    @Test
+    public void shouldConsumeFutureResult() {
+      // given
+      final var consumed = new AtomicReference<String>();
+
+      // when
+      final var future =
+          CompletableActorFuture.completed("value").thenAccept(consumed::set, EXECUTOR);
+
+      // then
+      assertThat(future.join()).isNull();
+      assertThat(consumed).hasValue("value");
+    }
+
+    @Test
+    public void shouldRunAfterFutureCompletes() {
+      // given
+      final var ran = new AtomicBoolean();
+
+      // when
+      final var future =
+          CompletableActorFuture.completed("value").thenRun(() -> ran.set(true), EXECUTOR);
+
+      // then
+      assertThat(future.join()).isNull();
+      assertThat(ran).isTrue();
+    }
+
+    @Test
+    public void shouldPropagateFailureWithoutRunningContinuation() {
+      // given
+      final var ran = new AtomicBoolean();
+      final var exception = new RuntimeException("Expected");
+
+      // when
+      final var future =
+          CompletableActorFuture.completedExceptionally(exception)
+              .thenRun(() -> ran.set(true), EXECUTOR);
+
+      // then
+      assertThat(future)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .withMessageContaining("Expected");
+      assertThat(ran).isFalse();
+    }
+  }
 
   @Nested
   class TraverseIgnoring {

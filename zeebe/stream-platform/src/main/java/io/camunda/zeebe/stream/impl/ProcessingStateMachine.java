@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
@@ -22,10 +25,11 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.AbortableDelayedRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
@@ -44,7 +48,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.time.Duration;
@@ -55,6 +59,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -62,11 +67,11 @@ import org.slf4j.Logger;
  *
  * <pre>
  *
- * +------------------+            +--------------------+
- * |                  |            |                    |      exception
+ * +-----------------------+            +--------------------+
+ * |                       |            |                    |      exception
  * | tryToReadNextRecord() |----------->|  processCommand()  |------------------+
- * |                  |            |                    |                  v
- * +------------------+            +--------------------+            +---------------+
+ * |                       |            |                    |                  v
+ * +-----------------------+            +--------------------+       +---------------+
  *           ^                             |                         |               |------+
  *           |                             |         +-------------->|   onError()   |      | exception
  *           |                             |         |  exception    |               |<-----+
@@ -93,7 +98,7 @@ import org.slf4j.Logger;
  *
  * </pre>
  */
-public final class ProcessingStateMachine {
+public final class ProcessingStateMachine implements CloseableSilently {
 
   /**
    * Warn message when the batch processing exceeded the maximum message size. If this message is
@@ -107,8 +112,6 @@ public final class ProcessingStateMachine {
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
       "Expected to roll back the current transaction for record '{} {}' successfully, but exception was thrown.";
-  private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
-      "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE =
@@ -118,8 +121,16 @@ public final class ProcessingStateMachine {
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
+  // Backoff for retrying to write a record when the log stream is backpressured (e.g. by the
+  // exporter). Kept lower than the general exponential backoff default so that a single stalled
+  // write does not add excessive tail latency to processing.
+  private static final Duration WRITE_RETRY_BACKOFF_MAX_DELAY = Duration.ofMillis(10);
+  private static final Duration WRITE_RETRY_BACKOFF_MIN_DELAY = Duration.ofMillis(1);
+  private static final double WRITE_RETRY_BACKOFF_FACTOR = 1.2;
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
+  private static final String RETRY_OPERATION_WRITE = "writeRetry";
+  private static final String RETRY_OPERATION_UPDATE_STATE = "updateStateRetry";
   private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
   private final EventFilter processingFilter;
   private final EventFilter isEventOrRejection =
@@ -131,37 +142,42 @@ public final class ProcessingStateMachine {
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
+  // When comparing partition CPU profiles, use a named reusable task so this path is aggregated
+  // under stable frames instead of being split across synthetic lambda frames.
+  private final ReadNextRecordTask readNextRecordTask = new ReadNextRecordTask();
   private final LogStreamReader logStreamReader;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
-  private final RetryStrategy sideEffectsRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
   private final RecordValues recordValues;
   private final TypedRecordImpl typedCommand;
   private final StreamProcessorListener streamProcessorListener;
+  private final PreviousRecord previousRecord = new PreviousRecord();
   // current iteration
-  private LoggedEvent currentRecord;
-  private ZeebeDbTransaction zeebeDbTransaction;
+  private @Nullable LoggedEvent currentRecord;
+  private @Nullable ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
   private int onErrorRetries;
   // Used for processing duration metrics
-  private CloseableSilently processingTimer;
+  private @Nullable CloseableSilently processingTimer;
   private boolean reachedEnd = true;
   private final StreamProcessorContext context;
   private final List<RecordProcessor> recordProcessors;
-  private ProcessingResult currentProcessingResult;
-  private List<LogAppendEntry> pendingWrites;
-  private Collection<ProcessingResponse> pendingResponses;
-  private RecordProcessor currentProcessor;
+  private @Nullable ProcessingResult currentProcessingResult;
+  private @Nullable List<LogAppendEntry> pendingWrites;
+  private @Nullable Collection<ProcessingResponse> pendingResponses;
+  private @Nullable RecordProcessor currentProcessor;
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
   private final int maxCommandsInBatch;
+  private final int maxPendingSideEffects;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
+  private final SideEffectRunner sideEffectRunner;
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
@@ -177,16 +193,28 @@ public final class ProcessingStateMachine {
     this.scheduledCommandCache = scheduledCommandCache;
     actor = context.getActor();
     recordValues = context.getRecordValues();
-    logStreamReader = context.getLogStreamReader();
+    logStreamReader = context.getProcessingLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
+    maxPendingSideEffects = context.getMaxPendingSideEffects();
 
-    writeRetryStrategy = new AbortableRetryStrategy(actor);
-    sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
-    updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
+    // Waiting between write attempts is safe: processing of the next record is guarded by
+    // `inProcessing`, and no other job on this actor touches the open transaction or writes to
+    // the log stream, so the actor may serve unrelated jobs while backing off.
+    writeRetryStrategy =
+        new AbortableDelayedRetryStrategy(
+            actor,
+            new ExponentialBackoffRetryDelay(
+                WRITE_RETRY_BACKOFF_MAX_DELAY,
+                WRITE_RETRY_BACKOFF_MIN_DELAY,
+                WRITE_RETRY_BACKOFF_FACTOR),
+            RETRY_OPERATION_WRITE);
+    updateStateRetryStrategy =
+        new RecoverableRetryStrategy(
+            actor, context.getMaxRecoverableRetries(), RETRY_OPERATION_UPDATE_STATE);
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = context.getLogStream().getPartitionId();
@@ -194,6 +222,15 @@ public final class ProcessingStateMachine {
 
     streamProcessorListener = context.getStreamProcessorListener();
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
+    sideEffectRunner =
+        new SideEffectRunner(
+            context.getPartitionId(),
+            actor,
+            processingMetrics,
+            context.getCommandResponseWriter(),
+            maxPendingSideEffects,
+            readNextRecordTask);
+    context.getLogStream().registerCommittedPositionListener(sideEffectRunner);
     final EventFilter commandFilter =
         event -> {
           recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
@@ -208,19 +245,24 @@ public final class ProcessingStateMachine {
     return currentStateDescription.toString();
   }
 
+  Runnable getReadNextRecordTask() {
+    return readNextRecordTask;
+  }
+
   private void skipRecord() {
-    notifySkippedListener(currentRecord);
+    notifySkippedListener(requireNonNull(currentRecord));
     markProcessingCompleted();
-    actor.submit(this::tryToReadNextRecord);
+    actor.submit(readNextRecordTask);
     processingMetrics.eventSkipped();
   }
 
   void markProcessingCompleted() {
+    final var currentRecord = requireNonNull(this.currentRecord);
+    final var position = currentRecord.getPosition();
     currentStateDescription.set(
-        "finished processing",
-        currentRecord.getPosition(),
-        metadata.getIntent(),
-        metadata.getValueType());
+        "finished processing", position, metadata.getIntent(), metadata.getValueType());
+    previousRecord.set(position, isEventOrRejection.applies(currentRecord));
+    this.currentRecord = null;
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -229,10 +271,16 @@ public final class ProcessingStateMachine {
   }
 
   void tryToReadNextRecord() {
+    if (inProcessing) {
+      return;
+    }
+
+    // NOTE: hasNext() may advance the underlying storage reader and can switch/close segment
+    // readers. When crossing a segment boundary, the previous segment may be unmapped.
+    // currentRecord cannot be dereferenced until `.next()` is called
     final var hasNext = logStreamReader.hasNext();
 
-    if (currentRecord != null) {
-      final var previousRecord = currentRecord;
+    if (previousRecord.present) {
       // All commands cause a follow-up event or rejection, which means the processor
       // reached the end of the log if:
       //  * the last record was an event or rejection
@@ -240,13 +288,20 @@ public final class ProcessingStateMachine {
       //  * and this was the last record written (records that have been written to the dispatcher
       //    might not be written to the log yet, which means they will appear shortly after this)
       reachedEnd =
-          isEventOrRejection.applies(previousRecord)
+          previousRecord.eventOrRejection
               && !hasNext
-              && lastWrittenPosition <= previousRecord.getPosition();
+              && lastWrittenPosition <= previousRecord.position;
     }
 
-    if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
-      currentRecord = logStreamReader.next();
+    if (shouldProcessNext.getAsBoolean() && hasNext) {
+      if (!sideEffectRunner.hasCapacity()) {
+        // Stop before consuming the record, so no seek is needed once capacity frees up. The
+        // runner wakes us again when it drains an entry.
+        return;
+      }
+
+      final var currentRecord = logStreamReader.next();
+      this.currentRecord = currentRecord;
 
       if (processingFilter.applies(currentRecord)) {
         processCommand(currentRecord);
@@ -277,7 +332,10 @@ public final class ProcessingStateMachine {
     metadata.reset();
     loggedEvent.readMetadata(metadata);
     currentStateDescription.set(
-        "processing", currentRecord.getPosition(), metadata.getIntent(), metadata.getValueType());
+        "processing",
+        requireNonNull(currentRecord).getPosition(),
+        metadata.getIntent(),
+        metadata.getValueType());
 
     try {
       // Here we need to get the current time, since we want to calculate
@@ -288,12 +346,13 @@ public final class ProcessingStateMachine {
           processingMetrics.startProcessingDurationTimer(
               metadata.getValueType(), metadata.getIntent());
 
-      final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+      final var value =
+          requireNonNull(recordValues.readRecordValue(loggedEvent, metadata.getValueType()));
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
-        zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
+        requireNonNull(zeebeDbTransaction).run(() -> batchProcessing(typedCommand));
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
@@ -306,7 +365,8 @@ public final class ProcessingStateMachine {
           loggedEvent,
           metadata,
           recoverableException);
-      actor.schedule(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
+      actor.schedule(
+          PROCESSING_RETRY_DELAY, () -> processCommand(requireNonNull(this.currentRecord)));
     } catch (final UnrecoverableException unrecoverableException) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, loggedEvent, metadata);
       throw unrecoverableException;
@@ -327,7 +387,9 @@ public final class ProcessingStateMachine {
               writeRecords();
             });
       }
-    } catch (final Exception e) {
+    } catch (final Exception | StackOverflowError e) {
+      // the command caused the overflow, so left uncaught it would halt every broker that leads
+      // the partition
       onError(
           e,
           () -> {
@@ -462,7 +524,7 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
-              zeebeDbTransaction.rollback();
+              requireNonNull(zeebeDbTransaction).rollback();
               return true;
             },
             abortCondition);
@@ -485,6 +547,7 @@ public final class ProcessingStateMachine {
   }
 
   private boolean tryExitOutOfErrorLoop(final Throwable error) {
+    final var currentRecord = requireNonNull(this.currentRecord);
     final var rejectionReason =
         """
             Expected to process command %d (%s.%s), but caught an exception. Check broker logs \
@@ -551,13 +614,15 @@ public final class ProcessingStateMachine {
     updateErrorHandlingPhase(nextPhase);
   }
 
-  private void tryRejectingIfUserCommand(final String errorMessage) {
+  private void tryRejectingIfUserCommand(final String errorMessage) throws Exception {
+    final var currentRecord = requireNonNull(this.currentRecord);
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
         newProcessingResultBuilder(typedCommand);
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
+    errorRecord.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     final var recordMetadata =
         new RecordMetadata()
@@ -585,7 +650,8 @@ public final class ProcessingStateMachine {
     pendingWrites = currentProcessingResult.getRecordBatch().entries();
     pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
 
-    finalizeCommandProcessing();
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
+    requireNonNull(zeebeDbTransaction).run(this::finalizeCommandProcessing);
     writeRecords();
   }
 
@@ -597,8 +663,8 @@ public final class ProcessingStateMachine {
           final ProcessingResultBuilder processingResultBuilder =
               newProcessingResultBuilder(typedCommand);
           currentProcessingResult =
-              currentProcessor.onProcessingError(
-                  processingException, typedCommand, processingResultBuilder);
+              requireNonNull(currentProcessor)
+                  .onProcessingError(processingException, typedCommand, processingResultBuilder);
           pendingWrites = currentProcessingResult.getRecordBatch().entries();
           pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
           // we need to mark the command as processed, even if the processing failed
@@ -612,16 +678,18 @@ public final class ProcessingStateMachine {
     final var sourceRecordPosition = typedCommand.getPosition();
 
     final ActorFuture<Boolean> writeFuture;
-    if (currentProcessingResult.isEmpty()) {
+    if (requireNonNull(currentProcessingResult).isEmpty()) {
       // we skipped the processing entirely; we have no results
-      notifySkippedListener(currentRecord);
+      notifySkippedListener(requireNonNull(currentRecord));
       processingMetrics.eventSkipped();
       writeFuture = CompletableActorFuture.completed(true);
-    } else if (pendingWrites.isEmpty()) {
+    } else if (requireNonNull(pendingWrites).isEmpty()) {
       // we might have nothing to write but likely something to send as response
       // means we will not mark the record as skipped
       writeFuture = CompletableActorFuture.completed(true);
     } else {
+      final var currentRecord = requireNonNull(this.currentRecord);
+      final var pendingWrites = requireNonNull(this.pendingWrites);
       writeFuture =
           writeRetryStrategy.runWithRetry(
               () -> {
@@ -633,9 +701,16 @@ public final class ProcessingStateMachine {
                 if (writeResult.isRight()) {
                   writtenPosition = writeResult.get();
                   return true;
-                } else {
-                  return false;
                 }
+                final var failure = writeResult.getLeft();
+                if (failure == WriteFailure.INVALID_ARGUMENT) {
+                  // deterministic failure, retrying would never succeed - escalate to onError
+                  // instead so the regular error handling can reject the command
+                  throw new IllegalArgumentException(
+                      "Expected to write %d processing results for record '%s %s', but the writer rejected them as invalid"
+                          .formatted(pendingWrites.size(), currentRecord, metadata));
+                }
+                return false;
               },
               abortCondition);
     }
@@ -667,11 +742,13 @@ public final class ProcessingStateMachine {
   }
 
   private void updateState() {
+    final var zeebeDbTransaction = requireNonNull(this.zeebeDbTransaction);
+    final var currentRecord = requireNonNull(this.currentRecord);
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.commit();
-              lastSuccessfulProcessedRecordPosition = currentRecord.getPosition();
+              lastSuccessfulProcessedRecordPosition = requireNonNull(currentRecord).getPosition();
               processingMetrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
               return true;
@@ -688,69 +765,32 @@ public final class ProcessingStateMachine {
             // This will bubble up to `StreamProcessor#onFailure` and result in a dead partition.
             throw new UncommittedStateException(throwable);
           } else {
-            scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
-            executeSideEffects();
+            scheduledCommandCache.remove(
+                metadata.getIntent(), requireNonNull(currentRecord).getKey());
+            registerSideEffects();
+            markProcessingCompleted();
+            actor.submit(readNextRecordTask);
           }
         });
   }
 
-  private void executeSideEffects() {
-    final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(
-            () -> {
-              // TODO refactor this into two parallel tasks, which are then combined, and on the
-              // completion of which the process continues
-              for (final var processingResponse : pendingResponses) {
-                final var responseWriter = context.getCommandResponseWriter();
-
-                final var responseValue = processingResponse.responseValue();
-                final var recordMetadata = responseValue.recordMetadata();
-                responseWriter
-                    .intent(recordMetadata.getIntent())
-                    .key(responseValue.key())
-                    .recordType(recordMetadata.getRecordType())
-                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                    .rejectionType(recordMetadata.getRejectionType())
-                    .partitionId(context.getPartitionId())
-                    .valueType(recordMetadata.getValueType())
-                    .valueWriter(responseValue.recordValue())
-                    .tryWriteResponse(
-                        processingResponse.requestStreamId(), processingResponse.requestId());
-              }
-              return executePostCommitTasks();
-            },
-            abortCondition);
-
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          if (throwable != null) {
-            LOG.error(
-                ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentRecord, metadata, throwable);
-          }
-
-          notifyProcessedListener(typedCommand);
-
-          // observe the processing duration
-          processingTimer.close();
-
-          // continue with next record
-          markProcessingCompleted();
-          actor.submit(this::tryToReadNextRecord);
-        });
+  private void registerSideEffects() {
+    final var processedPosition = requireNonNull(currentRecord).getPosition();
+    final var sideEffectPosition =
+        requireNonNull(pendingWrites).isEmpty() ? processedPosition : writtenPosition;
+    sideEffectRunner.addSideEffects(
+        sideEffectPosition,
+        requireNonNull(pendingResponses),
+        requireNonNull(currentProcessingResult).getPostCommitTasks(),
+        () -> notifyProcessedListener(processedPosition));
+    requireNonNull(processingTimer).close();
   }
 
-  private boolean executePostCommitTasks() {
-    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
-      return currentProcessingResult.executePostCommitTasks();
-    }
-  }
-
-  private void notifyProcessedListener(final TypedRecord processedRecord) {
+  private void notifyProcessedListener(final long processedPosition) {
     try {
-      streamProcessorListener.onProcessed(processedRecord);
+      streamProcessorListener.onProcessed(processedPosition);
     } catch (final Exception e) {
-      LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedRecord, e);
+      LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedPosition, e);
     }
   }
 
@@ -774,6 +814,16 @@ public final class ProcessingStateMachine {
     return errorHandlingPhase != ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
   }
 
+  /**
+   * How long processing has been continuously stopped because pending side effects filled the
+   * queue, or {@link Duration#ZERO} if it currently has room to read more. Lets the stream
+   * processor tell a stall that has outlasted a normal commit round trip from the brief, expected
+   * waits of healthy operation.
+   */
+  public Duration getPendingSideEffectsBlockedDuration() {
+    return sideEffectRunner.capacityExhaustedDuration();
+  }
+
   public void startProcessing(final LastProcessingPositions lastProcessingPositions) {
     // Replay ends at the end of the log and returns the lastSourceRecordPosition
     // which is equal to the last processed position
@@ -789,14 +839,20 @@ public final class ProcessingStateMachine {
       lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
     }
 
-    actor.submit(this::tryToReadNextRecord);
+    sideEffectRunner.onCommittedPosition(lastProcessingPositions.getLastWrittenPosition());
+    actor.submit(readNextRecordTask);
+  }
+
+  @Override
+  public void close() {
+    context.getLogStream().removeCommittedPositionListener(sideEffectRunner);
   }
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {
     if (errorHandlingPhase != ErrorHandlingPhase.NO_ERROR) {
       currentStateDescription.set(
           "in error handling phase " + errorHandlingPhase,
-          currentRecord.getPosition(),
+          requireNonNull(currentRecord).getPosition(),
           metadata.getIntent(),
           metadata.getValueType());
     }
@@ -820,11 +876,29 @@ public final class ProcessingStateMachine {
     // e.g. to have the full agent trail in the audit log
     builder.appendAgentInfoToFollowUps(command.getAgent());
 
+    // Ensure request source is forwarded to all follow-up commands & events
+    // so the inbound channel and tool name are visible in the audit log for each record
+    builder.appendRequestSourceToFollowUps(
+        command.getRequestChannelType(), command.getRequestToolName());
+
     return builder;
   }
 
   private record BatchProcessingStepResult(
       List<TypedRecord<?>> toProcess, List<LogAppendEntry> toWrite) {}
+
+  private static final class PreviousRecord {
+
+    private long position;
+    private boolean eventOrRejection;
+    private boolean present;
+
+    private void set(final long position, final boolean eventOrRejection) {
+      this.position = position;
+      this.eventOrRejection = eventOrRejection;
+      present = true;
+    }
+  }
 
   @FunctionalInterface
   private interface NextProcessingStep {
@@ -847,5 +921,12 @@ public final class ProcessingStateMachine {
     USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED,
     // All attempted error handling failed.
     ENDLESS_ERROR_LOOP
+  }
+
+  private final class ReadNextRecordTask implements Runnable {
+    @Override
+    public void run() {
+      tryToReadNextRecord();
+    }
   }
 }

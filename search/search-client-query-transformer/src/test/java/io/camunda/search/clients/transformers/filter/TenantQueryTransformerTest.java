@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
@@ -17,38 +17,16 @@ import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class TenantQueryTransformerTest extends AbstractTransformerTest {
-
-  @Test
-  public void shouldQueryByTenantKey() {
-    // given
-    final var filter = FilterBuilders.tenant((f) -> f.key(12345L));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    assertThat(searchRequest)
-        .isEqualTo(
-            SearchQuery.of(
-                q ->
-                    q.bool(
-                        b ->
-                            b.must(
-                                List.of(
-                                    SearchQuery.of(q1 -> q.term(t -> t.field("key").value(12345L))),
-                                    SearchQuery.of(
-                                        q1 -> q.term(t -> t.field("join").value("tenant"))))))));
-  }
 
   @Test
   public void shouldQueryByTenantId() {
@@ -126,8 +104,7 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByMultipleTenantFields() {
     // given
-    final var filter =
-        FilterBuilders.tenant((f) -> f.key(12345L).tenantId("tenant1").name("TestTenant"));
+    final var filter = FilterBuilders.tenant((f) -> f.tenantId("tenant1").name("TestTenant"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -141,7 +118,6 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                         b ->
                             b.must(
                                 List.of(
-                                    SearchQuery.of(q -> q.term(t -> t.field("key").value(12345L))),
                                     SearchQuery.of(
                                         q -> q.term(t -> t.field("tenantId").value("tenant1"))),
                                     SearchQuery.of(
@@ -154,7 +130,7 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.tenant().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.tenant().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -219,7 +195,7 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.tenant().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.tenant().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
@@ -237,7 +213,7 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.tenant().read());
+    final var authorization = RequiredAuthorization.of(a -> a.tenant().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());

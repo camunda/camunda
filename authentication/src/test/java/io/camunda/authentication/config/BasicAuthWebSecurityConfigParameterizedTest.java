@@ -10,6 +10,8 @@ package io.camunda.authentication.config;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.UserServices;
 import java.util.HashMap;
@@ -71,7 +73,13 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
         getProperties("camunda.security.authentication.oidc.assertion.kidSource", "certificate"),
         getProperties("camunda.security.authentication.oidc.assertion.kidDigestAlgorithm", "sha1"),
         getProperties("camunda.security.authentication.oidc.assertion.kidEncoding", "hex"),
-        getProperties("camunda.security.authentication.oidc.assertion.kidCase", "upper"),
+        // kidCase requires kidEncoding=hex to pass CSL's property-level validation; combine both
+        // so the BASIC-auth incompatibility check is reached before the encoding validation fires.
+        getProperties(
+            "camunda.security.authentication.oidc.assertion.kidEncoding",
+            "hex",
+            "camunda.security.authentication.oidc.assertion.kidCase",
+            "upper"),
         getProperties(
             "camunda.security.authentication.oidc.client-authentication-method", "private_key_jwt"),
         getProperties(
@@ -88,6 +96,13 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   private Map<String, Object> getProperties(final String property, final String value) {
     final Map<String, Object> properties = getBasicProperties();
     properties.put(property, value);
+    return properties;
+  }
+
+  private Map<String, Object> getProperties(
+      final String property1, final String value1, final String property2, final String value2) {
+    final Map<String, Object> properties = getProperties(property1, value1);
+    properties.put(property2, value2);
     return properties;
   }
 
@@ -109,6 +124,8 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*OidcFlowTestContext")
       })
   public static class TestApplication {
+    // CSL's default JsonProblemDetailAuthFailureHandler requires an ObjectMapper; slice tests don't
+    // pull JacksonAutoConfiguration so we provide one explicitly.
     @Bean
     public ObjectMapper objectMapper() {
       return new ObjectMapper();
@@ -117,12 +134,69 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
     @Bean
     public UserServices userServices() {
       return new UserServices(
-          null, null, null, null, new ApiServicesExecutorProvider(ForkJoinPool.commonPool()), null);
+          "default",
+          null,
+          null,
+          null,
+          null,
+          new ApiServicesExecutorProvider(ForkJoinPool.commonPool()),
+          null);
     }
 
     @Bean
     public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
       return new HandlerMappingIntrospector();
+    }
+
+    /**
+     * CSL's {@code CamundaAuthenticationBeansConfiguration} provides a {@code
+     * requestContextBasedAuthenticationHolder} that injects {@link
+     * jakarta.servlet.http.HttpServletRequest}. That bean is unavailable in a {@link
+     * org.springframework.boot.WebApplicationType#NONE} context. Providing a no-op bean here
+     * satisfies the {@code @ConditionalOnMissingBean} condition so the CSL default is skipped. The
+     * proper fix is {@code @ConditionalOnWebApplication(type=SERVLET)} in CSL
+     * (camunda-security-library#271).
+     */
+    @Bean(name = "requestContextBasedAuthenticationHolder")
+    public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder() {
+      return noOpAuthenticationHolder();
+    }
+
+    /**
+     * Same rationale as {@link #requestContextBasedAuthenticationHolder()} above: CSL's default
+     * {@code httpSessionBasedAuthenticationHolder} also injects {@link
+     * jakarta.servlet.http.HttpServletRequest}, unavailable in this {@link
+     * org.springframework.boot.WebApplicationType#NONE} context. A no-op override satisfies
+     * {@code @ConditionalOnMissingBean} so the CSL default is skipped, without resorting to
+     * {@code @RequestScope} on the bean itself — that would defer construction enough to dodge this
+     * context's missing {@code HttpServletRequest}, but at the cost of giving every concurrent
+     * request its own independent holder instance (and thus its own empty refresh-dedup cache),
+     * defeating the JVM-local guard {@code HttpSessionBasedAuthenticationHolder} relies on (see its
+     * class Javadoc and camunda-security-library#510).
+     */
+    @Bean(name = "httpSessionBasedAuthenticationHolder")
+    public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder() {
+      return noOpAuthenticationHolder();
+    }
+
+    private static CamundaAuthenticationHolder noOpAuthenticationHolder() {
+      return new CamundaAuthenticationHolder() {
+        @Override
+        public boolean supports() {
+          return false;
+        }
+
+        @Override
+        public void set(final CamundaAuthentication authentication) {}
+
+        @Override
+        public CamundaAuthentication get() {
+          return null;
+        }
+
+        @Override
+        public void clear() {}
+      };
     }
   }
 }

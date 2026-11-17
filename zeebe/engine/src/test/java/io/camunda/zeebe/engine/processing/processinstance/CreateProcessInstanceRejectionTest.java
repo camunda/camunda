@@ -70,6 +70,152 @@ public class CreateProcessInstanceRejectionTest {
   }
 
   @Test
+  public void shouldRejectCommandIfAfterElementIdIsUnknown() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask("task-A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withRuntimeTerminateInstruction("does-not-exist")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with runtime instructions but no element found with id 'does-not-exist' in process definition '"
+                + PROCESS_ID
+                + "'.");
+  }
+
+  @Test
+  public void shouldRejectCommandIfAnyAfterElementIdIsUnknown() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask("task-A")
+                .manualTask("task-B")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withRuntimeTerminateInstruction("task-A")
+        .withRuntimeTerminateInstruction("does-not-exist")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with runtime instructions but no element found with id 'does-not-exist' in process definition '"
+                + PROCESS_ID
+                + "'.");
+  }
+
+  @Test
+  public void shouldRejectCommandWithMultipleUnknownAfterElementIds() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask("task-A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withRuntimeTerminateInstruction("X")
+        .withRuntimeTerminateInstruction("Y")
+        .withRuntimeTerminateInstruction("Z")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with runtime instructions but no element found with id 'X', 'Y', 'Z' in process definition '"
+                + PROCESS_ID
+                + "'.");
+  }
+
+  @Test
+  public void shouldTruncateRejectionWhenManyUnknownAfterElementIds() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask("task-A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withRuntimeTerminateInstruction("X1")
+        .withRuntimeTerminateInstruction("X2")
+        .withRuntimeTerminateInstruction("X3")
+        .withRuntimeTerminateInstruction("X4")
+        .withRuntimeTerminateInstruction("X5")
+        .withRuntimeTerminateInstruction("X6")
+        .withRuntimeTerminateInstruction("X7")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with runtime instructions but no element found with id 'X1', 'X2', 'X3', 'X4', 'X5' and 2 more in process definition '"
+                + PROCESS_ID
+                + "'.");
+  }
+
+  @Test
   public void shouldRejectCommandIfElementIsInsideMultiInstance() {
     // given
     engine

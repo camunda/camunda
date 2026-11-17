@@ -8,20 +8,18 @@
 package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -32,6 +30,7 @@ import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,22 +45,22 @@ final class SegmentsManager implements AutoCloseable {
 
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
-  private CompletableFuture<UninitializedSegment> nextSegment = null;
+  private @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
 
   private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
-  private final File directory;
+  private final Path directory;
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
 
-  private volatile Segment currentSegment;
+  private volatile @Nullable Segment currentSegment;
 
   SegmentsManager(
       final JournalIndex journalIndex,
       final int maxSegmentSize,
-      final File directory,
+      final Path directory,
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
@@ -98,16 +97,16 @@ final class SegmentsManager implements AutoCloseable {
     currentSegment = null;
   }
 
-  Segment getCurrentSegment() {
+  @Nullable Segment getCurrentSegment() {
     return currentSegment;
   }
 
-  Segment getFirstSegment() {
+  @Nullable Segment getFirstSegment() {
     final Map.Entry<Long, Segment> segment = segments.firstEntry();
     return segment != null ? segment.getValue() : null;
   }
 
-  Segment getLastSegment() {
+  @Nullable Segment getLastSegment() {
     final Map.Entry<Long, Segment> segment = segments.lastEntry();
     return segment != null ? segment.getValue() : null;
   }
@@ -119,11 +118,11 @@ final class SegmentsManager implements AutoCloseable {
    * @throws IllegalStateException if the segment manager is not open
    */
   Segment getNextSegment() {
-
-    final Segment lastSegment = getLastSegment();
+    final var lastSegment = getLastSegment();
     final var lastWrittenAsqn = lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN;
-    final var nextSegmentIndex = currentSegment.lastIndex() + 1;
-    final SegmentDescriptor descriptor =
+    final var nextSegmentIndex =
+        requireNonNull(currentSegment, "currentSegment is null").lastIndex() + 1;
+    final var descriptor =
         SegmentDescriptor.builder()
             .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : 1)
             .withIndex(nextSegmentIndex)
@@ -148,12 +147,12 @@ final class SegmentsManager implements AutoCloseable {
     return currentSegment;
   }
 
-  Segment getNextSegment(final long index) {
+  @Nullable Segment getNextSegment(final long index) {
     final Map.Entry<Long, Segment> nextSegment = segments.higherEntry(index);
     return nextSegment != null ? nextSegment.getValue() : null;
   }
 
-  Segment getSegment(final long index) {
+  @Nullable Segment getSegment(final long index) {
     // Check if the current segment contains the given index first in order to prevent an
     // unnecessary map lookup.
     if (currentSegment != null && index > currentSegment.index()) {
@@ -193,7 +192,7 @@ final class SegmentsManager implements AutoCloseable {
         "{} - Deleting log up from {} up to {} (removing {} segments)",
         name,
         getFirstIndex(),
-        compactSegments.get(compactSegments.lastKey()).index(),
+        requireNonNull(compactSegments.get(compactSegments.lastKey())).index(),
         compactSegments.size());
     for (final Segment segment : compactSegments.values()) {
       LOG.trace("{} - Deleting segment: {}", name, segment);
@@ -319,7 +318,7 @@ final class SegmentsManager implements AutoCloseable {
   private void prepareNextSegment() {
     final var descriptor =
         SegmentDescriptor.builder()
-            .withId(currentSegment.id() + 1)
+            .withId(requireNonNull(currentSegment, "current segment is null").id() + 1)
             .withIndex(INITIAL_INDEX)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
@@ -339,13 +338,12 @@ final class SegmentsManager implements AutoCloseable {
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
-    return segmentLoader.createUninitializedSegment(segmentFile.toPath(), descriptor, journalIndex);
+    return segmentLoader.createUninitializedSegment(segmentFile, descriptor, journalIndex);
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
-    return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenAsqn, journalIndex);
+    return segmentLoader.createSegment(segmentFile, descriptor, lastWrittenAsqn, journalIndex);
   }
 
   /**
@@ -353,24 +351,29 @@ final class SegmentsManager implements AutoCloseable {
    *
    * @return A collection of segments for the log.
    */
-  private Collection<Segment> loadSegments() {
+  private List<Segment> loadSegments() {
     final var lastFlushedIndex = metaStore.loadLastFlushedIndex();
 
     // Ensure log directories are created.
-    //noinspection ResultOfMethodCallIgnored
-    directory.mkdirs();
+    try {
+      Files.createDirectories(directory);
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to create journal directory '%s'", directory), e);
+    }
+
     final List<Segment> segments = new ArrayList<>();
 
-    final List<File> files = getSortedLogSegments();
+    final List<Path> files = getSortedLogSegments();
     Segment previousSegment = null;
     for (int i = 0; i < files.size(); i++) {
-      final File file = files.get(i);
+      final Path file = files.get(i);
 
       try {
-        LOG.debug("Found segment file: {}", file.getName());
+        LOG.debug("Found segment file: {}", file.getFileName());
         final Segment segment =
             segmentLoader.loadExistingSegment(
-                file.toPath(),
+                file,
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
 
@@ -411,7 +414,7 @@ final class SegmentsManager implements AutoCloseable {
 
   /** Returns true if segments after corrupted segment were deleted; false, otherwise */
   private boolean handleSegmentCorruption(
-      final List<File> files,
+      final List<Path> files,
       final List<Segment> segments,
       final int failedIndex,
       final long lastFlushedIndex) {
@@ -435,53 +438,58 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   private void deleteUnflushedSegments(
-      final List<File> files, final int failedIndex, final long lastFlushedIndex) {
+      final List<Path> files, final int failedIndex, final long lastFlushedIndex) {
     LOG.debug(
         "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
         lastFlushedIndex,
-        files.get(failedIndex).getName(),
-        files.get(files.size() - 1).getName());
+        files.get(failedIndex).getFileName(),
+        files.get(files.size() - 1).getFileName());
 
     for (int i = failedIndex; i < files.size(); i++) {
-      final File file = files.get(i);
+      final Path file = files.get(i);
       try {
-        Files.delete(file.toPath());
+        Files.delete(file);
       } catch (final IOException e) {
         throw new JournalException(
             String.format(
-                "Failed to delete log segment '%s' when handling corruption.", file.getName()),
+                "Failed to delete log segment '%s' when handling corruption.", file.getFileName()),
             e);
       }
     }
   }
 
-  /** Returns an array of valid log segments sorted by their id which may be empty but not null. */
-  private List<File> getSortedLogSegments() {
-    final File[] files =
-        directory.listFiles(file -> file.isFile() && SegmentFile.isSegmentFile(name, file));
-
-    if (files == null) {
+  /** Returns a list of valid log segments sorted by their id which may be empty but not null. */
+  private List<Path> getSortedLogSegments() {
+    if (!Files.isDirectory(directory)) {
       throw new IllegalStateException(
           String.format(
               "Could not list files in directory '%s'. Either the path doesn't point to a directory or an I/O error occurred.",
               directory));
     }
 
-    Arrays.sort(files, Comparator.comparingInt(f -> SegmentFile.getSegmentIdFromPath(f.getName())));
-
-    return Arrays.asList(files);
+    try (final var stream = Files.list(directory)) {
+      return stream
+          .filter(p -> Files.isRegularFile(p) && SegmentFile.isSegmentFile(name, p))
+          .sorted(
+              Comparator.comparingInt(
+                  p -> SegmentFile.getSegmentIdFromPath(p.getFileName().toString())))
+          .toList();
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to list segment files in directory '%s'", directory), e);
+    }
   }
 
   private void deleteDeferredFiles() {
     try (final DirectoryStream<Path> segmentsToDelete =
         Files.newDirectoryStream(
-            directory.toPath(),
+            directory,
             path -> SegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
       segmentsToDelete.forEach(this::deleteDeferredFile);
     } catch (final IOException e) {
       LOG.warn(
           "Could not delete segment files marked for deletion in {}. This can result in unnecessary disk usage.",
-          directory.toPath(),
+          directory,
           e);
     }
   }

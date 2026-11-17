@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {createInstances, deploy} from 'utils/zeebeClient';
 import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -53,7 +53,8 @@ test.describe('HTO User Flow Tests', () => {
     },
   });
 
-  test('User Task Editing Variables Flow', async ({
+  // Skipped due to bug #66364: https://github.com/camunda/camunda/issues/66364
+  test.skip('User Task Editing Variables Flow', async ({
     page,
     operateHomePage,
     operateProcessesPage,
@@ -97,7 +98,11 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
 
-      await taskPanelPage.openTask('Variable_Process');
+      // After cross-app navigation + variable update, the task list can take
+      // longer than the default 10s to populate on slow runners. openTask()
+      // itself now retries with a page reload until the task appears, so no
+      // separate pre-check is needed here.
+      await taskPanelPage.openTask('Variable_Process', {timeout: 30000});
       await taskDetailsPage.clickAssignToMeButton();
       await expect(page.getByText('Assigning...')).not.toBeVisible({
         timeout: 90000,
@@ -138,7 +143,11 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      // 90s was still hit by the Jul 7 nightly under load in profiles mode;
+      // give the async task completion a wider budget before the banner shows.
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 120000,
+      });
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
@@ -186,9 +195,9 @@ test.describe('HTO User Flow Tests', () => {
     await test.step('Complete User Task in Tasklist & assert process complete in Operate', async () => {
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-      await expect(
-        page.getByText('Zeebe_Priority_User_Task_Process').first(),
-      ).toBeVisible({timeout: 60000});
+      // completeTaskWithRetry() calls openTask(), which retries with a page
+      // reload until the just-created task appears, so no separate pre-check
+      // for the task's process name is needed here.
       await completeTaskWithRetry(
         taskPanelPage,
         taskDetailsPage,

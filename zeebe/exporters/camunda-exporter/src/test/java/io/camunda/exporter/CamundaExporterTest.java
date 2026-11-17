@@ -21,6 +21,7 @@ import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -53,6 +54,7 @@ final class CamundaExporterTest {
   private final MockedStatic<ClientAdapter> mockedClientAdapterFactory =
       Mockito.mockStatic(ClientAdapter.class);
 
+  private final TargetIndexLocator targetIndexLocator = new TargetIndexLocator();
   private final ExporterResourceProvider resourceProvider =
       spy(new DefaultExporterResourceProvider());
   private final ExporterConfiguration configuration = new ExporterConfiguration();
@@ -137,18 +139,20 @@ final class CamundaExporterTest {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName) {
-      return k -> null;
-    }
-
-    @Override
-    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+        final String processIndexName,
+        final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
+            extensionPropertiesConfiguration) {
       return k -> null;
     }
 
     @Override
     public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
         final String decisionIndexName) {
+      return k -> null;
+    }
+
+    @Override
+    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
       return k -> null;
     }
   }
@@ -209,7 +213,7 @@ final class CamundaExporterTest {
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
       final var metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
-      exporter = new CamundaExporter(resourceProvider, metadata);
+      exporter = new CamundaExporter(targetIndexLocator, resourceProvider, metadata);
       expected.setLastIncidentUpdatePosition(3);
       expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 5);
       expected.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 5);
@@ -239,7 +243,7 @@ final class CamundaExporterTest {
 
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
-      exporter = new CamundaExporter(resourceProvider, expected);
+      exporter = new CamundaExporter(targetIndexLocator, resourceProvider, expected);
 
       expected.setLastIncidentUpdatePosition(5);
       expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 10);
@@ -278,7 +282,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(5);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
 
       // when
       exporter.configure(testContext);
@@ -301,7 +307,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -330,7 +338,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -376,7 +386,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1); // 1 second
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -406,7 +418,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1); // 1 second
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -419,6 +433,25 @@ final class CamundaExporterTest {
         final var tasks = testController.getScheduledTasks();
         assertThat(tasks.getLast().getDelay()).isEqualTo(Duration.ofMillis(1000));
       }
+    }
+
+    @Test
+    void shouldCancelScheduledFlushTaskOnClose() {
+      exporter =
+          new CamundaExporter(
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      final var tasks = testController.getScheduledTasks();
+      final var flushTask = tasks.getLast();
+      assertThat(flushTask.isCanceled()).isEqualTo(false);
+
+      exporter.close();
+
+      assertThat(flushTask.isCanceled()).isEqualTo(true);
     }
   }
 }

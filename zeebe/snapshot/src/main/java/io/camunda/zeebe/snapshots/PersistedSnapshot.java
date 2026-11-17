@@ -92,6 +92,13 @@ public interface PersistedSnapshot {
   SnapshotMetadata getMetadata();
 
   /**
+   * Returns the total size in bytes of the snapshot's files, including metadata.
+   *
+   * @return the total size in bytes.
+   */
+  long getTotalSizeInBytes();
+
+  /**
    * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.
    * The reservation status is not persisted. After a restart the snapshot will be in state
    * released.
@@ -106,7 +113,7 @@ public interface PersistedSnapshot {
   ActorFuture<SnapshotReservation> reserve();
 
   default boolean isBootstrap() {
-    return getMetadata() != null && getMetadata().isBootstrap();
+    return getMetadata().isBootstrap();
   }
 
   @VisibleForTesting

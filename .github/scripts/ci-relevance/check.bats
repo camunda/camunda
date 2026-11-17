@@ -29,14 +29,6 @@ check() {
   [ "$status" -eq 1 ]
 }
 
-@test "should not be CI-relevant when only a benchmark workflow changed" {
-  # given a PR that only changes a benchmark workflow
-  # when checking CI relevance
-  run check ".github/workflows/zeebe-update-long-running-migrating-benchmark.yaml"
-  # then CI should not be triggered
-  [ "$status" -eq 1 ]
-}
-
 @test "should not be CI-relevant when only a testbench workflow changed" {
   # given a PR that only changes a testbench workflow
   # when checking CI relevance
@@ -71,6 +63,39 @@ check() {
 }
 
 # ── CI-relevant paths: should trigger CI ─────────────────────────────────────
+
+@test "should not be CI-relevant when only the coverage-plan workflow changed" {
+  # given a PR that only changes the coverage-plan validation workflow
+  # when checking CI relevance
+  run check ".github/workflows/check-coverage-plans.yml"
+  # then CI should not be triggered
+  [ "$status" -eq 1 ]
+}
+
+@test "should not be CI-relevant when only the coverage write-back workflow changed" {
+  # given a PR that only changes the coverage plan write-back workflow
+  # when checking CI relevance
+  run check ".github/workflows/coverage-writeback.yml"
+  # then CI should not be triggered
+  [ "$status" -eq 1 ]
+}
+
+@test "should not be CI-relevant when only a nested coverage-plan-check file changed" {
+  # given a PR that only changes a file nested under the validator directory
+  # when checking CI relevance
+  run check ".github/scripts/coverage-plan-check/coverage-plan.mjs"
+  # then CI should not be triggered
+  [ "$status" -eq 1 ]
+}
+
+@test "should be CI-relevant when a coverage-plan file and a CI workflow both changed" {
+  # given a PR that changes the validator alongside a CI-relevant workflow
+  # when checking CI relevance
+  run check ".github/scripts/coverage-plan-check/package.json
+.github/workflows/ci.yml"
+  # then CI should be triggered
+  [ "$status" -eq 0 ]
+}
 
 @test "should be CI-relevant when a CI workflow changed" {
   # given a PR that changes the main CI workflow
@@ -116,3 +141,30 @@ check() {
   [ "$status" -eq 0 ]
 }
 
+
+# ── Scoped E2E run ───────────────────────────────────────────────────────────
+
+@test "should not be CI-relevant when only the scoped E2E run workflow changed" {
+  # given a PR that changes only the dispatch-only scoped E2E run workflow
+  # when checking CI relevance
+  run check ".github/workflows/c8-orchestration-cluster-e2e-scoped-run.yml"
+  # then CI should be skipped — it runs an existing test, it builds nothing
+  [ "$status" -eq 1 ]
+}
+
+@test "should not be CI-relevant when only the scoped E2E verdict script changed" {
+  # given a PR that changes only the verdict reader for that workflow
+  # when checking CI relevance
+  run check ".github/scripts/e2e-scoped-verdict.mjs"
+  # then CI should be skipped
+  [ "$status" -eq 1 ]
+}
+
+@test "should be CI-relevant when the scoped E2E run workflow and a CI workflow both changed" {
+  # given a PR that changes the scoped E2E run workflow and the CI workflow
+  # when checking CI relevance
+  run check ".github/workflows/c8-orchestration-cluster-e2e-scoped-run.yml" \
+            ".github/workflows/ci.yml"
+  # then CI should be triggered (non-excluded file wins)
+  [ "$status" -eq 0 ]
+}

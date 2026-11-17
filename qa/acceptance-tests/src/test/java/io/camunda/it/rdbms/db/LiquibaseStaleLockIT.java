@@ -62,11 +62,7 @@ class LiquibaseStaleLockIT {
         new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
             .withH2()
             // override URL so that the app connects to the same pre-seeded H2 database
-            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setUrl(H2_URL))
-            // explicitly configure Spring's datasource to match the unified config URL
-            .withProperty("spring.datasource.url", H2_URL)
-            .withProperty("spring.datasource.username", "sa")
-            .withProperty("spring.datasource.password", "");
+            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setUrl(H2_URL));
     app.start();
 
     // then - the application started successfully, meaning migrations ran without deadlock

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
@@ -16,6 +17,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -35,9 +37,11 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -48,8 +52,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -85,9 +91,9 @@ final class StreamIntegrationTest {
     client.start();
 
     client.streamService.onServerJoined(
-        server1.cluster.getMembershipService().getLocalMember().id());
+        server1.cluster.getMembershipService().getLocalMember().id(), DEFAULT_PHYSICAL_TENANT_ID);
     client.streamService.onServerJoined(
-        server2.cluster.getMembershipService().getLocalMember().id());
+        server2.cluster.getMembershipService().getLocalMember().id(), DEFAULT_PHYSICAL_TENANT_ID);
     clientStreamer = client.streamService.streamer();
   }
 
@@ -113,7 +119,8 @@ final class StreamIntegrationTest {
                   payloads.get().add(payload.data());
                   latch.countDown();
                   return CompletableActorFuture.completed(null);
-                })
+                },
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
             .join();
     awaitStreamAdded(streamType, streamId, server1, server2);
 
@@ -135,7 +142,11 @@ final class StreamIntegrationTest {
     final var streamType = BufferUtil.wrapString("foo");
     final var clientStreamId =
         clientStreamer
-            .add(streamType, metadata, p -> CompletableActorFuture.completed(null))
+            .add(
+                streamType,
+                metadata,
+                p -> CompletableActorFuture.completed(null),
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
             .join();
     awaitStreamAdded(streamType, clientStreamId, server1, server2);
     final var serverStream = server1.streamer.streamFor(streamType).orElseThrow();
@@ -216,7 +227,11 @@ final class StreamIntegrationTest {
     final var properties = new TestSerializableData();
     final var streamId =
         clientStreamer
-            .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+            .add(
+                streamType,
+                properties,
+                p -> CompletableActorFuture.completed(null),
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
             .join();
     final var member = client.cluster.getMembershipService().getLocalMember();
     final var memberRemovedEvent = new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
@@ -245,7 +260,11 @@ final class StreamIntegrationTest {
       // when
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
               .join();
 
       // then
@@ -259,7 +278,11 @@ final class StreamIntegrationTest {
       final var properties = new TestSerializableData();
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
               .join();
 
       // must wait until the stream is connected everywhere before removal, as otherwise there is a
@@ -283,12 +306,16 @@ final class StreamIntegrationTest {
       final var properties = new TestSerializableData();
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
               .join();
       awaitStreamAdded(streamType, streamId, server1, server2);
 
       // when
-      client.streamService.onServerRemoved(server1.memberId());
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
       // then
       awaitStreamOnClient(
@@ -304,10 +331,14 @@ final class StreamIntegrationTest {
       // given
       final var streamType = BufferUtil.wrapString("foo");
       final var properties = new TestSerializableData();
-      client.streamService.onServerRemoved(server1.memberId());
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
               .join();
       awaitStreamOnServer(streamType, server2, stream -> assertThat(stream).isPresent());
       awaitStreamOnClient(
@@ -318,7 +349,7 @@ final class StreamIntegrationTest {
                   .hasValue(Set.of(server2.memberId())));
 
       // when
-      client.streamService.onServerJoined(server1.memberId());
+      client.streamService.onServerJoined(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
       // then
       awaitStreamAdded(streamType, streamId, server1, server2);
@@ -337,7 +368,14 @@ final class StreamIntegrationTest {
       final ClientStreamConsumer consumer = p -> CompletableActorFuture.completed(null);
       streamTypes.forEach(
           streamType -> {
-            final var id = clientStreamer.add(streamType, properties, consumer).join();
+            final var id =
+                clientStreamer
+                    .add(
+                        streamType,
+                        properties,
+                        consumer,
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                    .join();
             awaitStreamAdded(streamType, id, server1, server2);
           });
 
@@ -360,11 +398,15 @@ final class StreamIntegrationTest {
       final var properties = new TestSerializableData();
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
               .join();
       awaitStreamAdded(streamType, streamId, server1, server2);
       server1.close();
-      client.streamService.onServerRemoved(server1.memberId());
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
       awaitStreamOnClient(
           streamId,
           stream ->
@@ -376,7 +418,52 @@ final class StreamIntegrationTest {
       try (final var restartedServer =
           new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes))) {
         restartedServer.start();
-        client.streamService.onServerJoined(restartedServer.memberId());
+        client.streamService.onServerJoined(restartedServer.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+
+        // then
+        awaitStreamAdded(streamType, streamId, restartedServer, server2);
+      }
+    }
+
+    @Test
+    void shouldAddStreamAgainOnLegacyRestartRequest() {
+      // given
+      final var streamType = BufferUtil.wrapString("foo");
+      final var properties = new TestSerializableData();
+      final var streamId =
+          clientStreamer
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .join();
+      assertThat(streamId).isNotNull();
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      server1.close();
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+      awaitStreamOnClient(
+          streamId,
+          stream ->
+              assertThat(stream)
+                  .map(ClientStream::liveConnections)
+                  .hasValue(Set.of(server2.memberId())));
+
+      // when
+      try (final var restartedServer =
+          new TestServer(createClusterNode(clusterNodes.getFirst(), clusterNodes))) {
+        restartedServer.start();
+        restartedServer
+            .cluster
+            .getCommunicationService()
+            .send(
+                StreamTopics.RESTART_STREAMS.legacyTopic(),
+                ArrayUtil.EMPTY_BYTE_ARRAY,
+                Function.identity(),
+                Function.identity(),
+                client.cluster.getMembershipService().getLocalMember().id(),
+                Duration.ofSeconds(5))
+            .join();
 
         // then
         awaitStreamAdded(streamType, streamId, restartedServer, server2);
@@ -408,7 +495,8 @@ final class StreamIntegrationTest {
                 return data;
               },
               dynamicErrorHandler,
-              RemoteStreamMetrics.noop());
+              RemoteStreamMetrics.noop(),
+              DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     private void start() {
@@ -444,7 +532,7 @@ final class StreamIntegrationTest {
       final var factory = new TransportFactory(actorScheduler);
       streamService =
           factory.createRemoteStreamClient(
-              cluster.getCommunicationService(), ClientStreamMetrics.noop());
+              cluster.getCommunicationService(), physicalTenantId -> ClientStreamMetrics.noop());
     }
 
     private void start() {

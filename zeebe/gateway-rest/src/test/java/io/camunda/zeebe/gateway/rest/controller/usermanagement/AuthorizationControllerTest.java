@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
@@ -22,19 +23,21 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -44,22 +47,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(AuthorizationController.class)
-@Import(SecurityConfiguration.class)
+@EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.authorizationServices(any())).thenReturn(authorizationServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -87,7 +92,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isCreated()
         .expectBody(AuthorizationCreateResult.class)
         .isEqualTo(
-            new AuthorizationCreateResult().authorizationKey(String.valueOf(authorizationKey)));
+            AuthorizationCreateResult.Builder.create()
+                .authorizationKey(String.valueOf(authorizationKey))
+                .build());
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices).createAuthorization(captor.capture(), any());
@@ -98,7 +105,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidAuthorizationRequests")
   public void createAuthorizationShouldReturnBadRequest(
-      final AuthorizationRequest request, final String errorMessage) {
+      final Object request, final String errorMessage) {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
@@ -234,7 +241,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidAuthorizationRequests")
   public void updateAuthorizationShouldReturnBadRequest(
-      final AuthorizationRequest request, final String errorMessage) {
+      final Object request, final String errorMessage) {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/1"));
@@ -322,12 +329,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
     return Stream.of(
         Arguments.of(
             // Id request
-            new AuthorizationIdBasedRequest()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+                .permissionTypes(permissionEnums)
+                .build(),
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
@@ -338,12 +346,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Id (ANY) request
-            new AuthorizationIdBasedRequest()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("*")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+                .permissionTypes(permissionEnums)
+                .build(),
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
@@ -354,12 +363,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Property request
-            new AuthorizationPropertyBasedRequest()
+            AuthorizationPropertyBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
-                .resourceType(ResourceTypeEnum.USER_TASK)
                 .resourcePropertyName("assignee")
-                .permissionTypes(permissionEnums),
+                .resourceType(ResourceTypeEnum.USER_TASK)
+                .permissionTypes(permissionEnums)
+                .build(),
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
@@ -367,7 +377,76 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "",
                 "assignee",
                 AuthorizationResourceType.USER_TASK,
-                permissions)));
+                permissions)),
+        Arguments.of(
+            // SECRET resourceId (ANY) request
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("*")
+                .resourceType(ResourceTypeEnum.SECRET)
+                .permissionTypes(permissionEnums)
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ANY,
+                "*",
+                "",
+                AuthorizationResourceType.SECRET,
+                permissions)),
+        Arguments.of(
+            // SECRET resourceId as a full "camunda.secrets.<name>" reference is the one shape
+            // that can ever match, so it must keep working (camunda/camunda#62736)
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("camunda.secrets.MY_SECRET")
+                .resourceType(ResourceTypeEnum.SECRET)
+                .permissionTypes(permissionEnums)
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ID,
+                "camunda.secrets.MY_SECRET",
+                "",
+                AuthorizationResourceType.SECRET,
+                permissions)),
+        Arguments.of(
+            // PROBE resourceId (ANY) request
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("*")
+                .resourceType(ResourceTypeEnum.PROBE)
+                .permissionTypes(List.of(PermissionTypeEnum.ANSWER))
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ANY,
+                "*",
+                "",
+                AuthorizationResourceType.PROBE,
+                Set.of(PermissionType.ANSWER))),
+        Arguments.of(
+            // PROBE resourceId as a probe ID, with characters the generic ID pattern rejects
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("validate-configuration/io.camunda:aws-credential:1")
+                .resourceType(ResourceTypeEnum.PROBE)
+                .permissionTypes(List.of(PermissionTypeEnum.CREATE))
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ID,
+                "validate-configuration/io.camunda:aws-credential:1",
+                "",
+                AuthorizationResourceType.PROBE,
+                Set.of(PermissionType.CREATE))));
   }
 
   private static Stream<Arguments> provideValidUpdateAuthorizationRequests() {
@@ -377,12 +456,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
     return Stream.of(
         Arguments.of(
             // Id request
-            new AuthorizationIdBasedRequest()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+                .permissionTypes(permissionEnums)
+                .build(),
             new UpdateAuthorizationRequest(
                 100,
                 "ownerId",
@@ -394,12 +474,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Id (ANY) request
-            new AuthorizationIdBasedRequest()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("*")
                 .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissionEnums),
+                .permissionTypes(permissionEnums)
+                .build(),
             new UpdateAuthorizationRequest(
                 200,
                 "ownerId",
@@ -411,12 +492,13 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Property request
-            new AuthorizationPropertyBasedRequest()
+            AuthorizationPropertyBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
-                .resourceType(ResourceTypeEnum.USER_TASK)
                 .resourcePropertyName("assignee")
-                .permissionTypes(permissionEnums),
+                .resourceType(ResourceTypeEnum.USER_TASK)
+                .permissionTypes(permissionEnums)
+                .build(),
             new UpdateAuthorizationRequest(
                 300,
                 "ownerId",
@@ -429,150 +511,238 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideInvalidAuthorizationRequests() {
-    final var permissions = List.of(PermissionTypeEnum.CREATE);
+    final var permissions = List.of("CREATE");
 
     return Stream.of(
         // AuthorizationIdBasedRequest tests
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // missing ownerId
+            Map.of(
+                "ownerType", "USER",
+                "resourceId", "resourceId",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "No ownerId provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // empty ownerId
+            Map.of(
+                "ownerId", "",
+                "ownerType", "USER",
+                "resourceId", "resourceId",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "No ownerId provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // missing ownerType
+            Map.of(
+                "ownerId", "ownerId",
+                "resourceId", "resourceId",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "No ownerType provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // empty resourceId
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "Either resourceId or resourcePropertyName must be provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .permissionTypes(permissions),
+            // missing resourceType
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "resourceId",
+                "permissionTypes", permissions),
             "No resourceType provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE),
+            // missing permissionTypes
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "resourceId",
+                "resourceType", "RESOURCE"),
             "No permissionTypes provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("resourceId")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(List.of()),
+            // empty permissionTypes
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "resourceId",
+                "resourceType", "RESOURCE",
+                "permissionTypes", List.of()),
             "No permissionTypes provided."),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("foo!!")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // illegal chars in resourceId
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "foo!!",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "The provided resourceId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
         Arguments.of(
-            new AuthorizationIdBasedRequest()
-                .ownerId("ownerId!!")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceId("foo")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // illegal chars in ownerId
+            Map.of(
+                "ownerId", "ownerId!!",
+                "ownerType", "USER",
+                "resourceId", "foo",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
+        Arguments.of(
+            // SECRET resourceId missing the "camunda.secrets." prefix can never match a
+            // reference (camunda/camunda#62736)
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "MY_SECRET",
+                "resourceType", "SECRET",
+                "permissionTypes", permissions),
+            "The provided resourceId 'MY_SECRET' cannot match any secret reference. It must be "
+                + "'*' or the full reference in the form 'camunda.secrets.<name>', where <name> "
+                + "matches the pattern '%s'."
+                    .formatted(AuthorizationRequestValidator.SECRET_NAME_PATTERN)),
+        Arguments.of(
+            // SECRET resourceId with a dot cannot ever match a reference either, since a dot
+            // is not a valid secret-name character (camunda/camunda#62736)
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "camunda.secrets.tls.crt",
+                "resourceType", "SECRET",
+                "permissionTypes", permissions),
+            "The provided resourceId 'camunda.secrets.tls.crt' cannot match any secret reference. "
+                + "It must be '*' or the full reference in the form 'camunda.secrets.<name>', "
+                + "where <name> matches the pattern '%s'."
+                    .formatted(AuthorizationRequestValidator.SECRET_NAME_PATTERN)),
+        Arguments.of(
+            // PROBE resourceId with whitespace can never be a probe ID
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "validate configuration",
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId 'validate configuration' is not a valid probe ID. It must be "
+                + "'*' or 1 to 256 characters without whitespace."),
+        Arguments.of(
+            // PROBE resourceId longer than a probe ID can be
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "p".repeat(257),
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId '"
+                + "p".repeat(257)
+                + "' is not a valid probe ID. It must be '*' or 1 to 256 characters without "
+                + "whitespace."),
+        Arguments.of(
+            // PROBE resourceId with Unicode whitespace, which the engine rejects as a probe ID
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "validate\u2003configuration",
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId 'validate\u2003configuration' is not a valid probe ID. It must "
+                + "be '*' or 1 to 256 characters without whitespace."),
+        Arguments.of(
+            // PROBE resourceId of 256 code points but 512 chars, longer than the engine accepts
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "\uD83D\uDE00".repeat(256),
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId '"
+                + "\uD83D\uDE00".repeat(256)
+                + "' is not a valid probe ID. It must be '*' or 1 to 256 characters without "
+                + "whitespace."),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // missing ownerId
+            Map.of(
+                "ownerType", "USER",
+                "resourcePropertyName", "resourcePropertyName",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "No ownerId provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // empty ownerId
+            Map.of(
+                "ownerId", "",
+                "ownerType", "USER",
+                "resourcePropertyName", "resourcePropertyName",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "No ownerId provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // missing ownerType
+            Map.of(
+                "ownerId", "ownerId",
+                "resourcePropertyName", "resourcePropertyName",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "No ownerType provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .permissionTypes(permissions),
+            // missing resourceType
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourcePropertyName", "resourcePropertyName",
+                "permissionTypes", permissions),
             "No resourceType provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE),
+            // missing permissionTypes
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourcePropertyName", "resourcePropertyName",
+                "resourceType", "RESOURCE"),
             "No permissionTypes provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(List.of()),
+            // empty permissionTypes
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourcePropertyName", "resourcePropertyName",
+                "resourceType", "RESOURCE",
+                "permissionTypes", List.of()),
             "No permissionTypes provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId!!")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("resourcePropertyName")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // illegal chars in ownerId
+            Map.of(
+                "ownerId", "ownerId!!",
+                "ownerType", "USER",
+                "resourcePropertyName", "resourcePropertyName",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // empty resourcePropertyName
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourcePropertyName", "",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "Either resourceId or resourcePropertyName must be provided."),
         Arguments.of(
-            new AuthorizationPropertyBasedRequest()
-                .ownerId("ownerId")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("property!!")
-                .resourceType(ResourceTypeEnum.RESOURCE)
-                .permissionTypes(permissions),
+            // illegal chars in resourcePropertyName
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourcePropertyName", "property!!",
+                "resourceType", "RESOURCE",
+                "permissionTypes", permissions),
             "The provided resourcePropertyName contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)));
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)));
   }
 }

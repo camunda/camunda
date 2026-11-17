@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForIncidents} from 'utils/incidentsHelper';
 
 type ProcessInstance = {
@@ -51,9 +51,8 @@ test.beforeAll(async ({request}) => {
 
 test.describe('Multi Instance Flow Node Selection', () => {
   test.beforeEach(
-    async ({page, loginPage, operateHomePage, operateProcessInstancePage}) => {
-      await navigateToApp(page, 'operate');
-      await loginPage.login('demo', 'demo');
+    async ({page, operateHomePage, operateProcessInstancePage}) => {
+      await navigateToAppHome(page, 'operate');
       await expect(operateHomePage.operateBanner).toBeVisible();
 
       await operateProcessInstancePage.gotoProcessInstancePage({
@@ -71,11 +70,16 @@ test.describe('Multi Instance Flow Node Selection', () => {
     operateProcessInstancePage,
   }) => {
     await test.step('Verify that the process instance is selected by default', async () => {
+      // This instance carries 25 waited-for incidents (see beforeAll), which
+      // can make the instance-history tree's initial selection state take
+      // longer than the default 10s to settle under CI load.
       await expect(
         operateProcessInstancePage.getSelectedTreeItemsInHistory(
           /multiInstanceProcess/,
         ),
-      ).toHaveAttribute('aria-label', 'multiInstanceProcess');
+      ).toHaveAttribute('aria-label', 'multiInstanceProcess', {
+        timeout: 30000,
+      });
     });
 
     await test.step('Unfold 2x Task B (Multi Instance)', async () => {

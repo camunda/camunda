@@ -8,12 +8,18 @@
 package io.camunda.zeebe.backup.common;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import org.jspecify.annotations.Nullable;
 
-public record BackupIdentifierImpl(int nodeId, int partitionId, long checkpointId)
+public record BackupIdentifierImpl(
+    int nodeId, @Nullable String zone, int partitionId, long checkpointId)
     implements BackupIdentifier {
 
+  public BackupIdentifierImpl(final int nodeId, final int partitionId, final long checkpointId) {
+    this(nodeId, null, partitionId, checkpointId);
+  }
+
   public static BackupIdentifierImpl from(final BackupIdentifier id) {
-    return new BackupIdentifierImpl(id.nodeId(), id.partitionId(), id.checkpointId());
+    return new BackupIdentifierImpl(id.nodeId(), id.zone(), id.partitionId(), id.checkpointId());
   }
 
   @Override
@@ -21,6 +27,8 @@ public record BackupIdentifierImpl(int nodeId, int partitionId, long checkpointI
     return "BackupId{"
         + "node="
         + nodeId
+        + ", zone="
+        + zone
         + ", partition="
         + partitionId
         + ", checkpoint="

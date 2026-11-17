@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 import org.agrona.IoUtil;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Supports building individual CRCs compatible with SFV file format and also supports backward
@@ -45,10 +46,16 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
   private static final Pattern FILE_CRC_PATTERN =
       Pattern.compile("(.*)" + FILE_CRC_SEPARATOR_REGEX + "([0-9a-fA-F]{1,16})");
-  private final SortedMap<String, Long> checksums = new TreeMap<>();
-  private String snapshotDirectoryComment;
+  private final SortedMap<String, Long> checksums;
+  private @Nullable String snapshotDirectoryComment;
 
-  public SfvChecksumImpl() {}
+  public SfvChecksumImpl() {
+    checksums = new TreeMap<>();
+  }
+
+  public SfvChecksumImpl(final SortedMap<String, Long> checksums) {
+    this.checksums = checksums;
+  }
 
   @Override
   public void write(final OutputStream stream) throws IOException {

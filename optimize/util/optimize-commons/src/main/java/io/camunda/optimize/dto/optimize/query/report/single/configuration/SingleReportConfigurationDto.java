@@ -48,6 +48,12 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonProperty("xLabel")
   private String xLabel = "";
 
+  // Optional subtitle override for single-value (Number) visualizations. When set, it replaces the
+  // auto-derived subtitle. For system-generated reports it holds a localization key that is
+  // resolved server-side (see ReportRestMapper#localizeReportData), mirroring xLabel/yLabel.
+  @JsonProperty("subtitle")
+  private String subtitle = "";
+
   private Boolean alwaysShowRelative = false;
   private Boolean alwaysShowAbsolute = false;
   private Boolean showGradientBars = true;
@@ -65,6 +71,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private Boolean stackedBar = false;
   private Boolean horizontalBar = false;
   private Boolean logScale = false;
+  private String valueFormat = null;
 
   public SingleReportConfigurationDto(
       final String color,
@@ -77,6 +84,7 @@ public class SingleReportConfigurationDto implements Combinable {
       final Boolean hideAbsoluteValue,
       final String yLabel,
       final String xLabel,
+      final String subtitle,
       final Boolean alwaysShowRelative,
       final Boolean alwaysShowAbsolute,
       final Boolean showGradientBars,
@@ -93,7 +101,8 @@ public class SingleReportConfigurationDto implements Combinable {
       final MeasureVisualizationsDto measureVisualizations,
       final Boolean stackedBar,
       final Boolean horizontalBar,
-      final Boolean logScale) {
+      final Boolean logScale,
+      final String valueFormat) {
     if (groupByDateVariableUnit == null) {
       throw new IllegalArgumentException("groupByDateVariableUnit must not be null");
     }
@@ -112,6 +121,7 @@ public class SingleReportConfigurationDto implements Combinable {
     this.hideAbsoluteValue = hideAbsoluteValue;
     this.yLabel = yLabel;
     this.xLabel = xLabel;
+    this.subtitle = subtitle;
     this.alwaysShowRelative = alwaysShowRelative;
     this.alwaysShowAbsolute = alwaysShowAbsolute;
     this.showGradientBars = showGradientBars;
@@ -129,6 +139,7 @@ public class SingleReportConfigurationDto implements Combinable {
     this.stackedBar = stackedBar;
     this.horizontalBar = horizontalBar;
     this.logScale = logScale;
+    this.valueFormat = valueFormat;
   }
 
   public SingleReportConfigurationDto() {}
@@ -250,6 +261,15 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonProperty("xLabel")
   public void setXLabel(final String xLabel) {
     this.xLabel = xLabel;
+  }
+
+  public String getSubtitle() {
+    return subtitle;
+  }
+
+  @JsonProperty("subtitle")
+  public void setSubtitle(final String subtitle) {
+    this.subtitle = subtitle;
   }
 
   public Boolean getAlwaysShowRelative() {
@@ -381,6 +401,14 @@ public class SingleReportConfigurationDto implements Combinable {
     this.logScale = logScale;
   }
 
+  public String getValueFormat() {
+    return valueFormat;
+  }
+
+  public void setValueFormat(final String valueFormat) {
+    this.valueFormat = valueFormat;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof SingleReportConfigurationDto;
   }
@@ -401,6 +429,7 @@ public class SingleReportConfigurationDto implements Combinable {
         && Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue)
         && Objects.equals(yLabel, that.yLabel)
         && Objects.equals(xLabel, that.xLabel)
+        && Objects.equals(subtitle, that.subtitle)
         && Objects.equals(alwaysShowRelative, that.alwaysShowRelative)
         && Objects.equals(alwaysShowAbsolute, that.alwaysShowAbsolute)
         && Objects.equals(showGradientBars, that.showGradientBars)
@@ -417,7 +446,8 @@ public class SingleReportConfigurationDto implements Combinable {
         && Objects.equals(measureVisualizations, that.measureVisualizations)
         && Objects.equals(stackedBar, that.stackedBar)
         && Objects.equals(horizontalBar, that.horizontalBar)
-        && Objects.equals(logScale, that.logScale);
+        && Objects.equals(logScale, that.logScale)
+        && Objects.equals(valueFormat, that.valueFormat);
   }
 
   @Override
@@ -433,6 +463,7 @@ public class SingleReportConfigurationDto implements Combinable {
         hideAbsoluteValue,
         yLabel,
         xLabel,
+        subtitle,
         alwaysShowRelative,
         alwaysShowAbsolute,
         showGradientBars,
@@ -449,7 +480,8 @@ public class SingleReportConfigurationDto implements Combinable {
         measureVisualizations,
         stackedBar,
         horizontalBar,
-        logScale);
+        logScale,
+        valueFormat);
   }
 
   @Override
@@ -474,6 +506,8 @@ public class SingleReportConfigurationDto implements Combinable {
         + getYLabel()
         + ", xLabel="
         + getXLabel()
+        + ", subtitle="
+        + getSubtitle()
         + ", alwaysShowRelative="
         + getAlwaysShowRelative()
         + ", alwaysShowAbsolute="
@@ -508,6 +542,8 @@ public class SingleReportConfigurationDto implements Combinable {
         + getHorizontalBar()
         + ", logScale="
         + getLogScale()
+        + ", valueFormat="
+        + getValueFormat()
         + ")";
   }
 
@@ -549,6 +585,10 @@ public class SingleReportConfigurationDto implements Combinable {
   }
 
   private static String defaultXLabel() {
+    return "";
+  }
+
+  private static String defaultSubtitle() {
     return "";
   }
 
@@ -620,6 +660,10 @@ public class SingleReportConfigurationDto implements Combinable {
     return false;
   }
 
+  private static String defaultValueFormat() {
+    return null;
+  }
+
   public static SingleReportConfigurationDtoBuilder builder() {
     return new SingleReportConfigurationDtoBuilder();
   }
@@ -637,6 +681,7 @@ public class SingleReportConfigurationDto implements Combinable {
     public static final String hideAbsoluteValue = "hideAbsoluteValue";
     public static final String yLabel = "yLabel";
     public static final String xLabel = "xLabel";
+    public static final String subtitle = "subtitle";
     public static final String alwaysShowRelative = "alwaysShowRelative";
     public static final String alwaysShowAbsolute = "alwaysShowAbsolute";
     public static final String showGradientBars = "showGradientBars";
@@ -654,6 +699,7 @@ public class SingleReportConfigurationDto implements Combinable {
     public static final String stackedBar = "stackedBar";
     public static final String horizontalBar = "horizontalBar";
     public static final String logScale = "logScale";
+    public static final String valueFormat = "valueFormat";
   }
 
   public static class SingleReportConfigurationDtoBuilder {
@@ -678,6 +724,8 @@ public class SingleReportConfigurationDto implements Combinable {
     private boolean yLabelSet;
     private String xLabelValue;
     private boolean xLabelSet;
+    private String subtitleValue;
+    private boolean subtitleSet;
     private Boolean alwaysShowRelativeValue;
     private boolean alwaysShowRelativeSet;
     private Boolean alwaysShowAbsoluteValue;
@@ -712,6 +760,8 @@ public class SingleReportConfigurationDto implements Combinable {
     private boolean horizontalBarSet;
     private Boolean logScaleValue;
     private boolean logScaleSet;
+    private String valueFormatValue;
+    private boolean valueFormatSet;
 
     SingleReportConfigurationDtoBuilder() {}
 
@@ -776,6 +826,13 @@ public class SingleReportConfigurationDto implements Combinable {
     public SingleReportConfigurationDtoBuilder xLabel(final String xLabel) {
       xLabelValue = xLabel;
       xLabelSet = true;
+      return this;
+    }
+
+    @JsonProperty("subtitle")
+    public SingleReportConfigurationDtoBuilder subtitle(final String subtitle) {
+      subtitleValue = subtitle;
+      subtitleSet = true;
       return this;
     }
 
@@ -897,6 +954,12 @@ public class SingleReportConfigurationDto implements Combinable {
       return this;
     }
 
+    public SingleReportConfigurationDtoBuilder valueFormat(final String valueFormat) {
+      valueFormatValue = valueFormat;
+      valueFormatSet = true;
+      return this;
+    }
+
     public SingleReportConfigurationDto build() {
       String colorValue = this.colorValue;
       if (!colorSet) {
@@ -937,6 +1000,10 @@ public class SingleReportConfigurationDto implements Combinable {
       String xLabelValue = this.xLabelValue;
       if (!xLabelSet) {
         xLabelValue = SingleReportConfigurationDto.defaultXLabel();
+      }
+      String subtitleValue = this.subtitleValue;
+      if (!subtitleSet) {
+        subtitleValue = SingleReportConfigurationDto.defaultSubtitle();
       }
       Boolean alwaysShowRelativeValue = this.alwaysShowRelativeValue;
       if (!alwaysShowRelativeSet) {
@@ -1010,6 +1077,10 @@ public class SingleReportConfigurationDto implements Combinable {
       if (!logScaleSet) {
         logScaleValue = SingleReportConfigurationDto.defaultLogScale();
       }
+      String valueFormatValue = this.valueFormatValue;
+      if (!valueFormatSet) {
+        valueFormatValue = SingleReportConfigurationDto.defaultValueFormat();
+      }
       return new SingleReportConfigurationDto(
           colorValue,
           aggregationTypesValue,
@@ -1021,6 +1092,7 @@ public class SingleReportConfigurationDto implements Combinable {
           hideAbsoluteValueValue,
           yLabelValue,
           xLabelValue,
+          subtitleValue,
           alwaysShowRelativeValue,
           alwaysShowAbsoluteValue,
           showGradientBarsValue,
@@ -1037,7 +1109,8 @@ public class SingleReportConfigurationDto implements Combinable {
           measureVisualizationsValue,
           stackedBarValue,
           horizontalBarValue,
-          logScaleValue);
+          logScaleValue,
+          valueFormatValue);
     }
 
     @Override
@@ -1062,6 +1135,8 @@ public class SingleReportConfigurationDto implements Combinable {
           + yLabelValue
           + ", xLabelValue="
           + xLabelValue
+          + ", subtitleValue="
+          + subtitleValue
           + ", alwaysShowRelativeValue="
           + alwaysShowRelativeValue
           + ", alwaysShowAbsoluteValue="
@@ -1096,6 +1171,8 @@ public class SingleReportConfigurationDto implements Combinable {
           + horizontalBarValue
           + ", logScaleValue="
           + logScaleValue
+          + ", valueFormatValue="
+          + valueFormatValue
           + ")";
     }
   }

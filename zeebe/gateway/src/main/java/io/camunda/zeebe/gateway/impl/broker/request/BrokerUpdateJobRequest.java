@@ -20,7 +20,8 @@ public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerUpdateJobRequest(final long jobKey, final Integer retries, final Long timeout) {
+  public BrokerUpdateJobRequest(
+      final long jobKey, final Integer retries, final Long timeout, final Integer priority) {
     super(ValueType.JOB, JobIntent.UPDATE);
     request.setKey(jobKey);
     final Set<String> changedAttributes = new HashSet<>();
@@ -32,7 +33,16 @@ public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
       requestDto.setTimeout(timeout);
       changedAttributes.add(JobRecord.TIMEOUT);
     }
+    if (priority != null) {
+      requestDto.setPriority(priority);
+      changedAttributes.add(JobRecord.PRIORITY);
+    }
     requestDto.setChangedAttributes(changedAttributes);
+  }
+
+  public BrokerUpdateJobRequest setJobLeaseToken(final String jobLeaseToken) {
+    requestDto.setJobLeaseToken(jobLeaseToken);
+    return this;
   }
 
   @Override

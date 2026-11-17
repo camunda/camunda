@@ -56,6 +56,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     const hasVersionTags = processInstances.some(
       ({processDefinitionVersionTag}) => !!processDefinitionVersionTag,
     );
+    const hasBusinessIds = processInstances.some(
+      ({businessId}) => !!businessId,
+    );
 
     const filters = useFilters();
     const location = useLocation();
@@ -71,15 +74,16 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       clientConfig.multiTenancyEnabled &&
       (tenantId === undefined || tenantId === 'all');
 
-    const batchOperationId = searchParams.get('batchOperationId') ?? undefined;
-    const isOperationStateColumnVisible = !!batchOperationId;
+    const batchOperationKey =
+      searchParams.get('batchOperationKey') ?? undefined;
+    const isOperationStateColumnVisible = !!batchOperationKey;
 
     const processInstanceKeys = processInstances.map(
       (instance) => instance.processInstanceKey,
     );
 
     const {data: operationItemsData, isLoading: isLoadingOperationItems} =
-      useOperationItemsForInstances(batchOperationId, processInstanceKeys);
+      useOperationItemsForInstances(batchOperationKey, processInstanceKeys);
 
     const operationItemsMap = new Map<string, BatchOperationItem>();
     operationItemsData?.items.forEach((item) => {
@@ -117,10 +121,15 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
         />
         <Toolbar
           selectedInstancesCount={processInstancesSelectionStore.selectedCount}
+          isSelectedCountTruncated={
+            processInstancesSelectionStore.isSelectedCountTruncated
+          }
         />
         <SortableTable
           state={state}
+          stickyHeader
           columnsWithNoContentPadding={['operations']}
+          stickyRightColumn="operations"
           selectionType="checkbox"
           onSelectAll={processInstancesSelectionStore.selectAll}
           onSelect={(rowId) => {
@@ -149,7 +158,11 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           rows={processInstances.map((instance) => {
             const instanceState: ProcessInstanceState | 'INCIDENT' =
-              instance.hasIncident ? 'INCIDENT' : instance.state;
+              instance.state === 'SUSPENDED'
+                ? 'SUSPENDED'
+                : instance.hasIncident
+                  ? 'INCIDENT'
+                  : instance.state;
 
             const operationItem = operationItemsMap.get(
               instance.processInstanceKey,
@@ -185,6 +198,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               ),
               processVersion: instance.processDefinitionVersion,
               versionTag: instance.processDefinitionVersionTag ?? '--',
+              businessId: instance.businessId ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
               ...(isOperationStateColumnVisible && {
                 instanceOperationState: isLoadingOperationItems ? (
@@ -220,11 +234,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               ),
               operations: (
                 <InstanceOperations
-                  processInstanceKey={instance.processInstanceKey}
-                  isInstanceActive={
-                    instance.state === 'ACTIVE' || instance.hasIncident
-                  }
-                  hasIncident={instance.hasIncident}
+                  processInstance={instance}
                   activeOperations={
                     activeOperationsMap.get(instance.processInstanceKey) ?? []
                   }
@@ -265,6 +275,15 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                   },
                 ]
               : []),
+            ...(hasBusinessIds
+              ? [
+                  {
+                    header: 'Business ID',
+                    key: 'businessId',
+                    sortKey: 'businessId',
+                  },
+                ]
+              : []),
             ...(isTenantColumnVisible
               ? [
                   {
@@ -296,7 +315,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               isDisabled: true,
             },
           ]}
-          batchOperationId={batchOperationId}
+          batchOperationKey={batchOperationKey}
         />
         {batchModificationStore.state.isEnabled && <BatchModificationFooter />}
       </Container>

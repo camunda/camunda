@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="orderProcessV1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="e2e-order-process" name="Order process" isExecutable="true">
+    <bpmn:startEvent id="orderReceived" name="Order received">
+      <bpmn:outgoing>toCheckStock</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="checkStock" name="Check stock">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="e2e-check-stock" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>toCheckStock</bpmn:incoming>
+      <bpmn:outgoing>toInStock</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="inStockGateway" name="In stock?" default="notInStock">
+      <bpmn:incoming>toInStock</bpmn:incoming>
+      <bpmn:outgoing>inStock</bpmn:outgoing>
+      <bpmn:outgoing>notInStock</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="approveOrder" name="Approve order">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>inStock</bpmn:incoming>
+      <bpmn:outgoing>toOrderShipped</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="orderShipped" name="Order shipped">
+      <bpmn:incoming>toOrderShipped</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="orderRejected" name="Order rejected">
+      <bpmn:incoming>notInStock</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="toCheckStock" sourceRef="orderReceived" targetRef="checkStock" />
+    <bpmn:sequenceFlow id="toInStock" sourceRef="checkStock" targetRef="inStockGateway" />
+    <bpmn:sequenceFlow id="inStock" name="Yes" sourceRef="inStockGateway" targetRef="approveOrder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=inStock</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="notInStock" name="No" sourceRef="inStockGateway" targetRef="orderRejected" />
+    <bpmn:sequenceFlow id="toOrderShipped" sourceRef="approveOrder" targetRef="orderShipped" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="diagram">
+    <bpmndi:BPMNPlane id="plane" bpmnElement="e2e-order-process">
+      <bpmndi:BPMNShape id="orderReceived_di" bpmnElement="orderReceived">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="checkStock_di" bpmnElement="checkStock">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="inStockGateway_di" bpmnElement="inStockGateway" isMarkerVisible="true">
+        <dc:Bounds x="395" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="approveOrder_di" bpmnElement="approveOrder">
+        <dc:Bounds x="500" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="orderShipped_di" bpmnElement="orderShipped">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="orderRejected_di" bpmnElement="orderRejected">
+        <dc:Bounds x="532" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="toCheckStock_di" bpmnElement="toCheckStock">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="toInStock_di" bpmnElement="toInStock">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="395" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="inStock_di" bpmnElement="inStock">
+        <di:waypoint x="445" y="120" />
+        <di:waypoint x="500" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="notInStock_di" bpmnElement="notInStock">
+        <di:waypoint x="420" y="145" />
+        <di:waypoint x="420" y="250" />
+        <di:waypoint x="532" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="toOrderShipped_di" bpmnElement="toOrderShipped">
+        <di:waypoint x="600" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

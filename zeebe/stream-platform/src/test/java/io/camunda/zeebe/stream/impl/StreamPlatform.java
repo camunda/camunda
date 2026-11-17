@@ -79,6 +79,7 @@ public final class StreamPlatform {
   private final StreamProcessorListener mockStreamProcessorListener;
   private TestCommandCache scheduledCommandCache;
   private final InstantSource clock;
+  private MeterRegistry processorMeterRegistry;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -127,6 +128,11 @@ public final class StreamPlatform {
 
   public CommandResponseWriter getMockCommandResponseWriter() {
     return mockCommandResponseWriter;
+  }
+
+  /** The registry of the stream processor built last, holding its processing metrics. */
+  public MeterRegistry getProcessorMeterRegistry() {
+    return processorMeterRegistry;
   }
 
   public void resetLogContext() {
@@ -290,9 +296,10 @@ public final class StreamPlatform {
       zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     }
 
+    processorMeterRegistry = new SimpleMeterRegistry();
     final var builder =
         StreamProcessor.builder()
-            .meterRegistry(new SimpleMeterRegistry())
+            .meterRegistry(processorMeterRegistry)
             .clock(StreamClock.controllable(clock))
             .logStream(stream)
             .zeebeDb(zeebeDb)
@@ -313,7 +320,17 @@ public final class StreamPlatform {
     if (awaitOpening) { // and recovery
       verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
     }
-    openFuture.join(15, TimeUnit.SECONDS);
+    try {
+      openFuture.join(15, TimeUnit.SECONDS);
+    } catch (final RuntimeException e) {
+      // Only an opened processor is registered for cleanup below, so close its database here.
+      try {
+        zeebeDb.close();
+      } catch (final Exception closeError) {
+        e.addSuppressed(closeError);
+      }
+      throw e;
+    }
 
     processorContext = new ProcessorContext(streamProcessor, zeebeDb, storage, snapshot);
     closeables.add(processorContext);

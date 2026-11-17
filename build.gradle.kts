@@ -1,0 +1,40 @@
+import org.gradle.api.DefaultTask
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
+
+abstract class PrintGradleProjectInventoryTask : DefaultTask() {
+  @get:Input abstract val projectInventory: ListProperty<String>
+
+  @TaskAction
+  fun printInventory() {
+    projectInventory.get().forEach(::println)
+  }
+}
+
+plugins { id("buildlogic.root-conventions") }
+
+val gradleProjectInventory =
+  subprojects
+    .map { project ->
+      "${project.name}\t${rootDir.toPath().relativize(project.projectDir.toPath())}"
+    }
+    .sorted()
+
+tasks.register<PrintGradleProjectInventoryTask>("printGradleProjectInventory") {
+  group = "help"
+  description = "Prints active Gradle projects and their source directories as TSV."
+  projectInventory.set(gradleProjectInventory)
+}
+
+tasks.register("buildDistball") {
+  group = "distribution"
+  description = "Builds the distribution tar (-Pdist.tar.gzip=true: tar.gz), with frontend assets."
+  dependsOn(":camunda-zeebe:distTar")
+}
+
+tasks.register("buildDistballZip") {
+  group = "distribution"
+  description = "Builds the distribution zip, including frontend assets."
+  dependsOn(":camunda-zeebe:distZip")
+}

@@ -135,6 +135,9 @@ public abstract class DatabaseTestService {
 
   public abstract void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix);
 
+  /** Physically deletes all indices matching the prefix. Call only from {@code @AfterAll}. */
+  public abstract void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix);
+
   public abstract void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep);
 
@@ -173,6 +176,12 @@ public abstract class DatabaseTestService {
       final TermsQueryContainer queryForZeebeRecords,
       final Class<T> zeebeRecordClass);
 
+  /**
+   * Indexes an entry into the given raw index name (no Optimize prefix applied). Used to seed Zeebe
+   * test data.
+   */
+  public abstract void addEntryWithRawIndex(String rawIndexName, String id, Object entry);
+
   public abstract void deleteProcessInstancesFromIndex(final String indexName, final String id);
 
   public abstract DatabaseType getDatabaseVendor();
@@ -183,8 +192,6 @@ public abstract class DatabaseTestService {
   public abstract void createRepoSnapshot(final String snapshotRepositoryName);
 
   public abstract void cleanSnapshots(final String snapshotRepositoryName);
-
-  public abstract List<String> getImportIndices();
 
   protected abstract <T extends OptimizeDto> List<T> getInstancesById(
       final String indexName,

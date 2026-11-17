@@ -17,6 +17,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
@@ -40,7 +41,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getProcessDefinitionKeysQuery(filter.processDefinitionKeys()))
         .ifPresent(queries::add);
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
+    queries.addAll(getBusinessIdQuery(filter.businessIdOperations()));
     queries.addAll(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()));
     queries.addAll(getFlowNodeInstanceKeysQuery(filter.flowNodeInstanceKeyOperations()));
     ofNullable(getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds()))
@@ -86,7 +88,8 @@ public final class DecisionInstanceFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(DECISION_ID, authorization.resourceIds());
   }
 
@@ -119,6 +122,10 @@ public final class DecisionInstanceFilterTransformer
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
     return longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys);
+  }
+
+  private List<SearchQuery> getBusinessIdQuery(final List<Operation<String>> businessIdOperations) {
+    return stringOperations(BUSINESS_ID, businessIdOperations);
   }
 
   private List<SearchQuery> getDecisionDefinitionKeysQuery(

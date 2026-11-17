@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -22,17 +25,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public final class StreamProcessorBuilder {
 
   private final StreamProcessorContext streamProcessorContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-  private ActorSchedulingService actorSchedulingService;
-  private ZeebeDb zeebeDb;
-  private int nodeId;
+  private @Nullable ActorSchedulingService actorSchedulingService;
+  private @Nullable ZeebeDb zeebeDb;
 
-  private List<RecordProcessor> recordProcessors;
+  private @Nullable List<RecordProcessor> recordProcessors;
   private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
 
   public StreamProcessorBuilder() {
@@ -50,13 +52,13 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder nodeId(final int nodeId) {
-    this.nodeId = nodeId;
+  public StreamProcessorBuilder logStream(final LogStream stream) {
+    streamProcessorContext.logStream(stream);
     return this;
   }
 
-  public StreamProcessorBuilder logStream(final LogStream stream) {
-    streamProcessorContext.logStream(stream);
+  public StreamProcessorBuilder partitionId(final PartitionId partitionId) {
+    streamProcessorContext.partitionId(partitionId);
     return this;
   }
 
@@ -92,7 +94,7 @@ public final class StreamProcessorBuilder {
   }
 
   public ActorSchedulingService getActorSchedulingService() {
-    return actorSchedulingService;
+    return requireNonNull(actorSchedulingService);
   }
 
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
@@ -105,16 +107,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public ZeebeDb getZeebeDb() {
-    return zeebeDb;
-  }
-
-  public int getNodeId() {
-    return nodeId;
+  public ZeebeDb<?> getZeebeDb() {
+    return requireNonNull(zeebeDb);
   }
 
   public List<RecordProcessor> getRecordProcessors() {
-    return recordProcessors;
+    return requireNonNull(recordProcessors);
   }
 
   public StreamProcessorBuilder scheduledCommandCache(
@@ -134,11 +132,12 @@ public final class StreamProcessorBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
-    Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
-    Objects.requireNonNull(zeebeDb, "No database provided.");
+    requireNonNull(actorSchedulingService, "No task scheduler provided.");
+    requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
+    requireNonNull(zeebeDb, "No database provided.");
+    requireNonNull(recordProcessors, "Record processors cannot be empty.");
     if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
-      Objects.requireNonNull(
+      requireNonNull(
           streamProcessorContext.getPartitionCommandSender(),
           "No partition command sender provided");
     }
@@ -147,6 +146,16 @@ public final class StreamProcessorBuilder {
           "Batch processing limit must be >= 1 but was %s"
               .formatted(streamProcessorContext.getMaxCommandsInBatch()));
     }
+    if (streamProcessorContext.getMaxPendingSideEffects() < 1) {
+      throw new IllegalArgumentException(
+          "maxPendingSideEffects must be >= 1 but was %s"
+              .formatted(streamProcessorContext.getMaxPendingSideEffects()));
+    }
+    if (streamProcessorContext.getMaxRecoverableRetries() < 1) {
+      throw new IllegalArgumentException(
+          "maxRecoverableRetries must be >= 1 but was %s"
+              .formatted(streamProcessorContext.getMaxRecoverableRetries()));
+    }
   }
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
@@ -154,8 +163,13 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder setEnableAsyncScheduledTasks(final boolean enabled) {
-    streamProcessorContext.setEnableAsyncScheduledTasks(enabled);
+  public StreamProcessorBuilder maxPendingSideEffects(final int maxPendingSideEffects) {
+    streamProcessorContext.maxPendingSideEffects(maxPendingSideEffects);
+    return this;
+  }
+
+  public StreamProcessorBuilder maxRecoverableRetries(final int maxRecoverableRetries) {
+    streamProcessorContext.maxRecoverableRetries(maxRecoverableRetries);
     return this;
   }
 

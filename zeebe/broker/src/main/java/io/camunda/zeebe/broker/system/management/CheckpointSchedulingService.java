@@ -13,122 +13,102 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
-import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.retention.BackupRetention;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.CheckpointScheduler;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Owns the scheduled checkpoint/backup and backup retention jobs of every physical tenant this
+ * broker runs. Each tenant brings its own backup configuration, so it gets its own {@link
+ * CheckpointScheduler} and {@link BackupRetention} actors, targeting only that tenant's partitions
+ * and writing to only that tenant's backup store.
+ *
+ * <p>The jobs are cluster-wide singletons: they run on the member with the lowest id, and all
+ * tenants' jobs are started and stopped together as membership changes.
+ */
 public class CheckpointSchedulingService extends Actor implements ClusterMembershipEventListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointSchedulingService.class);
 
   private final ClusterMembershipService membershipService;
-  private final BackupCfg backupCfg;
+  private final Map<String, BackupCfg> backupCfgByPhysicalTenant;
   private final ActorSchedulingService actorScheduler;
   private final MeterRegistry meterRegistry;
   private final BrokerClient brokerClient;
-  private CheckpointScheduler checkpointScheduler;
-  private final BackupRequestHandler backupRequestHandler;
-  private BackupRetention backupRetentionJob;
+  private final List<PhysicalTenantSchedulers> tenantSchedulers = new ArrayList<>();
 
   public CheckpointSchedulingService(
       final ClusterMembershipService membershipService,
       final ActorSchedulingService actorScheduler,
-      final BackupCfg backupCfg,
+      final Map<String, BackupCfg> backupCfgByPhysicalTenant,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry) {
     this.membershipService = membershipService;
     this.actorScheduler = actorScheduler;
-    this.backupCfg = backupCfg;
+    this.backupCfgByPhysicalTenant = new LinkedHashMap<>(backupCfgByPhysicalTenant);
     this.meterRegistry = meterRegistry;
     this.brokerClient = brokerClient;
-    backupRequestHandler =
-        new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
   }
 
   @Override
   protected void onActorStarting() {
     membershipService.addListener(this);
-    Schedule checkpointSchedule = null;
-    Schedule backupSchedule = null;
-    if (backupCfg.getCheckpointInterval() != null && !backupCfg.getCheckpointInterval().isZero()) {
-      checkpointSchedule = new IntervalSchedule(backupCfg.getCheckpointInterval());
-      LOG.info("Checkpoint scheduler initialized with interval {}", checkpointSchedule);
-    }
-    if (backupCfg.getSchedule() != null && !(backupCfg.getSchedule() instanceof NoneSchedule)) {
-      backupSchedule = backupCfg.getSchedule();
-      LOG.info("Backup scheduler initialized with interval {}", backupSchedule);
-    }
-
-    final var retentionCfg = backupCfg.getRetention();
-    if (shouldRegisterRetentionJob()) {
-      final var backupStore = buildBackupStore(backupCfg);
-      backupRetentionJob =
-          new BackupRetention(
-              backupStore,
-              brokerClient,
-              retentionCfg.getCleanupSchedule(),
-              retentionCfg.getWindow(),
-              brokerClient.getTopologyManager(),
-              meterRegistry);
-      LOG.info(
-          "Backup retention initialized with cleanup schedule {}",
-          retentionCfg.getCleanupSchedule());
-    }
-
-    if (checkpointSchedule != null || backupSchedule != null) {
-      checkpointScheduler =
-          new CheckpointScheduler(
-              checkpointSchedule, backupSchedule, backupRequestHandler, meterRegistry);
-    }
+    backupCfgByPhysicalTenant.forEach(
+        (physicalTenantId, backupCfg) -> {
+          final var schedulers = createSchedulers(physicalTenantId, backupCfg);
+          if (schedulers != null) {
+            tenantSchedulers.add(schedulers);
+          }
+        });
   }
 
   @Override
   protected void onActorStarted() {
-    checkedStartScheduler();
+    checkedStartSchedulers();
   }
 
   @Override
   protected void onActorCloseRequested() {
     membershipService.removeListener(this);
-    if (isSchedulerActive()) {
-      final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
-      shutdownFutures.add(checkpointScheduler.closeAsync());
-      if (backupRetentionJob != null) {
-        shutdownFutures.add(backupRetentionJob.closeAsync());
-      }
-      actor.runOnCompletion(
-          shutdownFutures,
-          (error) -> {
-            if (error != null) {
-              LOG.error("Failed to close checkpoint creator actor", error);
-            }
-          });
-    }
+    final List<ActorFuture<Void>> shutdownFutures =
+        schedulerActors().stream()
+            .filter(actor -> !actor.isActorClosed())
+            .map(Actor::closeAsync)
+            .collect(Collectors.toCollection(ArrayList::new));
+
+    actor.runOnCompletion(
+        shutdownFutures,
+        (error) -> {
+          if (error != null) {
+            LOG.error("Failed to close checkpoint scheduling actors", error);
+          }
+          closeMeterRegistries();
+        });
   }
 
   @Override
@@ -140,38 +120,97 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   public void event(final ClusterMembershipEvent event) {
     switch (event.type()) {
       case MEMBER_ADDED -> {
-        checkedStopScheduler();
-        checkedStartScheduler();
+        checkedStopSchedulers();
+        checkedStartSchedulers();
       }
-      case MEMBER_REMOVED -> checkedStartScheduler();
+      case MEMBER_REMOVED -> checkedStartSchedulers();
       default -> {}
     }
   }
 
-  private void checkedStopScheduler() {
-    if (shouldStopSchedulers() && isSchedulerActive()) {
-      checkpointScheduler.close();
-      if (backupRetentionJob != null) {
-        backupRetentionJob.close();
-      }
+  private @Nullable PhysicalTenantSchedulers createSchedulers(
+      final String physicalTenantId, final BackupCfg backupCfg) {
+    Schedule checkpointSchedule = null;
+    Schedule backupSchedule = null;
+    if (backupCfg.getCheckpointInterval() != null && !backupCfg.getCheckpointInterval().isZero()) {
+      checkpointSchedule = new IntervalSchedule(backupCfg.getCheckpointInterval());
     }
-  }
-
-  private void checkedStartScheduler() {
-    if (shouldStartSchedulers() && isSchedulerInactive()) {
-      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.ioBound());
-      if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.ioBound());
-      }
+    if (!(backupCfg.getSchedule() instanceof NoneSchedule)) {
+      backupSchedule = backupCfg.getSchedule();
     }
+    final var withRetention = shouldRegisterRetentionJob(backupCfg);
+
+    if (checkpointSchedule == null && backupSchedule == null && !withRetention) {
+      return null;
+    }
+
+    // Every tenant reports its metrics under the same names, so they are told apart by the tenant
+    // tag that this wrapped registry stamps on all of them.
+    final var tenantMeterRegistry =
+        MicrometerUtil.wrap(
+            meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
+
+    CheckpointScheduler checkpointScheduler = null;
+    if (checkpointSchedule != null || backupSchedule != null) {
+      final var backupRequestHandler =
+          new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
+      checkpointScheduler =
+          new CheckpointScheduler(
+              physicalTenantId,
+              checkpointSchedule,
+              backupSchedule,
+              backupRequestHandler,
+              brokerClient.getTopologyManager(),
+              tenantMeterRegistry);
+    }
+
+    BackupRetention backupRetentionJob = null;
+    if (withRetention) {
+      final var retentionCfg = backupCfg.getRetention();
+      final var backupStore = BackupStoreFactory.createStore(backupCfg);
+      if (backupStore == null) {
+        throw new IllegalStateException(
+            "No backup store configured for physical tenant " + physicalTenantId);
+      }
+      backupRetentionJob =
+          new BackupRetention(
+              physicalTenantId,
+              () -> backupStore,
+              brokerClient,
+              retentionCfg.getCleanupSchedule(),
+              retentionCfg.getWindow(),
+              brokerClient.getTopologyManager(),
+              tenantMeterRegistry);
+    }
+
+    return new PhysicalTenantSchedulers(
+        physicalTenantId, tenantMeterRegistry, checkpointScheduler, backupRetentionJob);
   }
 
-  private boolean isSchedulerActive() {
-    return checkpointScheduler != null && !checkpointScheduler.isActorClosed();
+  private void checkedStopSchedulers() {
+    if (!shouldStopSchedulers()) {
+      return;
+    }
+    schedulerActors().stream().filter(actor -> !actor.isActorClosed()).forEach(Actor::close);
   }
 
-  private boolean isSchedulerInactive() {
-    return checkpointScheduler != null && checkpointScheduler.isActorClosed();
+  private void checkedStartSchedulers() {
+    if (!shouldStartSchedulers()) {
+      return;
+    }
+    schedulerActors().stream()
+        .filter(Actor::isActorClosed)
+        .forEach(actor -> actorScheduler.submitActor(actor, SchedulingHints.ioBound()));
+  }
+
+  /** All physical tenants' scheduling actors, in configuration order. */
+  @VisibleForTesting
+  List<Actor> schedulerActors() {
+    return tenantSchedulers.stream().flatMap(schedulers -> schedulers.actors().stream()).toList();
+  }
+
+  private void closeMeterRegistries() {
+    tenantSchedulers.forEach(schedulers -> MicrometerUtil.close(schedulers.meterRegistry()));
   }
 
   private boolean shouldStartSchedulers() {
@@ -190,7 +229,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
         .orElse(false);
   }
 
-  private boolean shouldRegisterRetentionJob() {
+  private boolean shouldRegisterRetentionJob(final BackupCfg backupCfg) {
     final var retentionCfg = backupCfg.getRetention();
     return retentionCfg.getWindow() != null
         && !retentionCfg.getWindow().isZero()
@@ -198,36 +237,25 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
         && !(retentionCfg.getCleanupSchedule() instanceof NoneSchedule);
   }
 
-  private BackupStore buildBackupStore(final BackupCfg backupCfg) {
-    final var store = backupCfg.getStore();
-    return switch (store) {
-      case S3 -> buildS3BackupStore(backupCfg);
-      case GCS -> buildGcsBackupStore(backupCfg);
-      case AZURE -> buildAzureBackupStore(backupCfg);
-      case FILESYSTEM -> buildFilesystemBackupStore(backupCfg);
-      case NONE ->
-          throw new IllegalArgumentException(
-              "No backup store configured, cannot restore from backup.");
-    };
-  }
+  /**
+   * The scheduling actors of a single physical tenant, along with the registry they report to. A
+   * tenant may have only one of the two, depending on what its backup configuration asks for.
+   */
+  private record PhysicalTenantSchedulers(
+      String physicalTenantId,
+      MeterRegistry meterRegistry,
+      @Nullable CheckpointScheduler checkpointScheduler,
+      @Nullable BackupRetention backupRetentionJob) {
 
-  private static BackupStore buildS3BackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
-    return S3BackupStore.of(storeConfig);
-  }
-
-  private static BackupStore buildGcsBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs());
-    return GcsBackupStore.of(storeConfig);
-  }
-
-  private static BackupStore buildAzureBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure());
-    return AzureBackupStore.of(storeConfig);
-  }
-
-  private static BackupStore buildFilesystemBackupStore(final BackupCfg backupCfg) {
-    final var storeConfig = FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem());
-    return FilesystemBackupStore.of(storeConfig);
+    List<Actor> actors() {
+      final List<Actor> actors = new ArrayList<>(2);
+      if (checkpointScheduler != null) {
+        actors.add(checkpointScheduler);
+      }
+      if (backupRetentionJob != null) {
+        actors.add(backupRetentionJob);
+      }
+      return actors;
+    }
   }
 }

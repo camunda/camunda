@@ -9,12 +9,12 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
+import static io.camunda.zeebe.util.Unit.unit;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -23,7 +23,10 @@ import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.util.Either;
@@ -34,6 +37,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,6 +48,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,26 +68,29 @@ public final class FileBasedSnapshotStoreImpl {
   // keeps track of all snapshot modification listeners
   private final Set<PersistedSnapshotListener> listeners = new CopyOnWriteArraySet<>();
   private final SnapshotMetrics metrics;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider fileInfoProvider;
   private final ConcurrencyControl actor;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
-  private final AtomicReference<FileBasedSnapshot> currentSnapshot = new AtomicReference<>();
-  private final AtomicReference<FileBasedSnapshot> bootstrapSnapshot = new AtomicReference<>();
+  private final AtomicReference<@Nullable FileBasedSnapshot> currentSnapshot =
+      new AtomicReference<>();
+  private final AtomicReference<@Nullable FileBasedSnapshot> bootstrapSnapshot =
+      new AtomicReference<>();
 
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+  private final CheckpointReservations checkpointReservations = new CheckpointReservations();
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
       final Path root,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final ConcurrencyControl actor,
       final SnapshotMetrics metrics) {
     this.brokerId = brokerId;
     this.actor = Objects.requireNonNull(actor);
     this.metrics = Objects.requireNonNull(metrics);
-    this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.fileInfoProvider = Objects.requireNonNull(fileInfoProvider);
 
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     bootstrapSnapshotsDirectory = root.resolve(SNAPSHOTS_BOOTSTRAP_DIRECTORY);
@@ -95,7 +103,31 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public void start() {
+    deleteLeftoverBootstrapSnapshots();
     setLatestSnapshot(loadLatestSnapshot(snapshotsDirectory));
+  }
+
+  /**
+   * A bootstrap snapshot is only tracked in memory, so one found on disk at startup was left behind
+   * by a previous process (e.g. a crash during or after the copy). It is never reused, and if kept
+   * it would block every later {@link #copyForBootstrap}.
+   */
+  private void deleteLeftoverBootstrapSnapshots() {
+    try {
+      if (isEmptyDirectory(bootstrapSnapshotsDirectory)) {
+        return;
+      }
+      LOGGER.info("Deleting leftover bootstrap snapshots in {}", bootstrapSnapshotsDirectory);
+      FileUtil.deleteFolderContents(bootstrapSnapshotsDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete leftover bootstrap snapshots", e);
+    }
+  }
+
+  private static boolean isEmptyDirectory(final Path directory) throws IOException {
+    try (final var stream = Files.list(directory)) {
+      return stream.findAny().isEmpty();
+    }
   }
 
   public void close() {
@@ -104,7 +136,7 @@ public final class FileBasedSnapshotStoreImpl {
     deleteBootstrapSnapshotsInternal();
   }
 
-  private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
+  private @Nullable FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
     try (final var stream = Files.newDirectoryStream(snapshotDirectory, Files::isDirectory)) {
       for (final var path : stream) {
@@ -150,7 +182,7 @@ public final class FileBasedSnapshotStoreImpl {
   // TODO(npepinpe): using Either here would improve readability and observability, as validation
   //  can have better error messages, and the return type better expresses what we attempt to do,
   //  i.e. either it failed (with an error) or it succeeded
-  private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
+  private @Nullable FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
     final var optionalMeta = FileBasedSnapshotId.ofPath(path);
     if (optionalMeta instanceof Invalid(final var cause)) {
       LOGGER.warn("Failed to parse snapshot id", cause);
@@ -177,9 +209,15 @@ public final class FileBasedSnapshotStoreImpl {
     }
 
     try {
-      final var expectedChecksum = SnapshotChecksum.read(checksumPath);
-      final var actualChecksum =
-          SnapshotChecksum.calculateWithProvidedChecksums(path, checksumProvider);
+      final var metadataBytes = readMetadataFile(path);
+      final var persistedMetadata = FileBasedSnapshotMetadata.decode(metadataBytes);
+      final var metadataHasTotalSize = persistedMetadata.totalSizeBytes() != 0;
+
+      final var snapshotInfoResult =
+          SnapshotInfos.of(path, fileInfoProvider, !metadataHasTotalSize);
+
+      final var expectedChecksum = SnapshotInfos.read(checksumPath);
+      final var actualChecksum = snapshotInfoResult.checksum();
       if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksums {}, but the actual checksums are {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
@@ -189,31 +227,37 @@ public final class FileBasedSnapshotStoreImpl {
         return null;
       }
 
-      final var metadata = collectMetadata(path, snapshotId);
+      // Snapshots written before the totalSizeBytes field existed carry metadata but no size, so
+      // fall back to the size we just computed from the snapshot's files.
+      final SnapshotMetadata metadata;
+      if (metadataHasTotalSize) {
+        metadata = persistedMetadata;
+      } else {
+        metadata = persistedMetadata.withTotalSizeBytes(snapshotInfoResult.totalSizeInBytes());
+      }
+
       return new FileBasedSnapshot(
-          path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
+          path,
+          checksumPath,
+          actualChecksum,
+          snapshotId,
+          metadata,
+          metadataBytes.length,
+          this::onSnapshotDeleted,
+          actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
     }
   }
 
-  private FileBasedSnapshotMetadata collectMetadata(
-      final Path path, final FileBasedSnapshotId snapshotId) throws IOException {
+  private byte[] readMetadataFile(final Path path) throws IOException {
     final var metadataPath = path.resolve(METADATA_FILE_NAME);
-    if (metadataPath.toFile().exists()) {
-      final var encodedMetadata = Files.readAllBytes(metadataPath);
-      return FileBasedSnapshotMetadata.decode(encodedMetadata);
-    } else {
-      // backward compatibility mode
-      return new FileBasedSnapshotMetadata(
-          VERSION,
-          snapshotId.getProcessedPosition(),
-          snapshotId.getExportedPosition(),
-          Long.MAX_VALUE,
-          Long.MAX_VALUE,
-          false);
+    if (!metadataPath.toFile().exists()) {
+      throw new IllegalStateException(
+          "Expected snapshot %s to contain a metadata file, but none was found".formatted(path));
     }
+    return Files.readAllBytes(metadataPath);
   }
 
   public boolean hasSnapshotId(final String id) {
@@ -230,7 +274,7 @@ public final class FileBasedSnapshotStoreImpl {
     return Optional.ofNullable(currentSnapshot.get());
   }
 
-  private void setLatestSnapshot(final FileBasedSnapshot snapshot) {
+  private void setLatestSnapshot(final @Nullable FileBasedSnapshot snapshot) {
     currentSnapshot.set(snapshot);
     if (snapshot != null) {
       availableSnapshots.add(snapshot);
@@ -240,6 +284,44 @@ public final class FileBasedSnapshotStoreImpl {
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
     // return a new set so that caller cannot modify availableSnapshot
     return actor.call(() -> Collections.unmodifiableSet(availableSnapshots));
+  }
+
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
+    return actor.call(
+        () ->
+            availableSnapshots.stream()
+                .max(Comparator.comparing(FileBasedSnapshot::getSnapshotId))
+                .filter(snapshot -> checkpointReservations.reserve(checkpointId, snapshot))
+                .map(FileBasedSnapshot::getId));
+  }
+
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
+    return actor.call(
+        () -> {
+          final var reserved =
+              availableSnapshots.stream()
+                  .filter(snapshot -> snapshot.getId().equals(snapshotId))
+                  .findFirst()
+                  .filter(snapshot -> checkpointReservations.reserve(checkpointId, snapshot));
+          if (reserved.isEmpty()) {
+            throw new SnapshotNotFoundException(
+                "Expected to reserve snapshot %s, but it does not exist".formatted(snapshotId));
+          }
+          return unit();
+        });
+  }
+
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
+    return actor.call(() -> checkpointReservations.get(checkpointId, snapshotId));
+  }
+
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    actor.run(() -> checkpointReservations.release(checkpointId, snapshotId));
+  }
+
+  public void releaseAllReservations() {
+    actor.run(checkpointReservations::releaseAll);
   }
 
   public ActorFuture<Long> getCompactionBound() {
@@ -260,7 +342,7 @@ public final class FileBasedSnapshotStoreImpl {
               abortedAll,
               error -> {
                 if (error == null) {
-                  abortFuture.complete(null);
+                  abortFuture.complete(unit());
                 } else {
                   abortFuture.completeExceptionally(error);
                 }
@@ -293,7 +375,7 @@ public final class FileBasedSnapshotStoreImpl {
             throw new UncheckedIOException(e);
           }
 
-          return null;
+          return unit();
         });
   }
 
@@ -381,7 +463,7 @@ public final class FileBasedSnapshotStoreImpl {
     } while (Files.exists(directory));
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(
-            newSnapshotId, directory, this, actor, checksumProvider, false);
+            newSnapshotId, directory, this, actor, fileInfoProvider, false);
     addPendingSnapshot(newPendingSnapshot);
     return Either.right(newPendingSnapshot);
   }
@@ -436,11 +518,12 @@ public final class FileBasedSnapshotStoreImpl {
       final Path destination,
       final FileBasedSnapshotId snapshotId,
       final ImmutableChecksumsSFV immutableChecksumsSFV,
-      final FileBasedSnapshotMetadata metadata) {
+      final FileBasedSnapshotMetadata metadata,
+      final long metadataSizeBytes) {
     final var isBootstrap = metadata.isBootstrap();
     final var currentPersistedSnapshot = currentSnapshot.get();
 
-    if (!isBootstrap && isCurrentSnapshotNewer(snapshotId)) {
+    if (!isBootstrap && currentPersistedSnapshot != null && isCurrentSnapshotNewer(snapshotId)) {
       final var currentPersistedSnapshotId = currentPersistedSnapshot.getSnapshotId();
 
       LOGGER.debug(
@@ -465,21 +548,29 @@ public final class FileBasedSnapshotStoreImpl {
               immutableChecksumsSFV,
               snapshotId,
               metadata,
+              metadataSizeBytes,
               this::onSnapshotDeleted,
               actor);
-      final var failed =
-          !currentSnapshot.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
-      if (failed) {
-        // we moved already the snapshot but we expected that this will be cleaned up by the next
-        // successful snapshot
-        final var errorMessage =
-            "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
-        throw new ConcurrentModificationException(
-            String.format(
-                errorMessage,
-                currentPersistedSnapshot,
-                newPersistedSnapshot.getSnapshotId(),
-                currentSnapshot.get()));
+
+      // a copy for bootstrap must never become the latest snapshot: it only contains part of the
+      // state and is deleted independently, e.g. when the partition leader steps down. A received
+      // snapshot with bootstrap metadata is the full state of a scaled up partition, so it must.
+      final var isCopyForBootstrap = destination.startsWith(bootstrapSnapshotsDirectory);
+      if (!isCopyForBootstrap) {
+        final var failed =
+            !currentSnapshot.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
+        if (failed) {
+          // we moved already the snapshot but we expected that this will be cleaned up by the next
+          // successful snapshot
+          final var errorMessage =
+              "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
+          throw new ConcurrentModificationException(
+              String.format(
+                  errorMessage,
+                  currentPersistedSnapshot,
+                  newPersistedSnapshot.getSnapshotId(),
+                  currentSnapshot.get()));
+        }
       }
 
       if (!isBootstrap) {
@@ -513,7 +604,7 @@ public final class FileBasedSnapshotStoreImpl {
     final var tmpChecksumPath =
         checksumPath.resolveSibling(checksumPath.getFileName().toString() + ".tmp");
     try {
-      SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
+      SnapshotInfos.persist(tmpChecksumPath, immutableChecksumsSFV);
       FileUtil.moveDurably(tmpChecksumPath, checksumPath);
       return checksumPath;
     } catch (final IOException e) {
@@ -558,7 +649,8 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   private Path buildSnapshotsChecksumPath(final Path snapshotPath, final SnapshotId snapshotId) {
-    return snapshotPath.getParent().resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
+    return FileUtil.requireParent(snapshotPath)
+        .resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
   private boolean isChecksumFile(final String name) {
@@ -600,7 +692,13 @@ public final class FileBasedSnapshotStoreImpl {
     final var snapshotFileNames = snapshotFiles.keySet();
     snapshotFileNames.stream()
         .filter(name -> !isChecksumFile(name))
-        .forEach(name -> moveNamedFileToDirectory(name, snapshotFiles.get(name), snapshotPath));
+        .forEach(
+            name ->
+                moveNamedFileToDirectory(
+                    name,
+                    Objects.requireNonNull(
+                        snapshotFiles.get(name), () -> "snapshotFiles(" + name + ")"),
+                    snapshotPath));
 
     final var checksumFile =
         snapshotFileNames.stream()
@@ -631,7 +729,7 @@ public final class FileBasedSnapshotStoreImpl {
     return actor.call(
         () -> {
           restore(snapshot.getId(), snapshot.files());
-          return null;
+          return unit();
         });
   }
 
@@ -693,7 +791,7 @@ public final class FileBasedSnapshotStoreImpl {
               ignored -> {
                 final var transientSnapshot =
                     new FileBasedTransientSnapshot(
-                        zeroedSnapshotId, destinationFolder, this, actor, checksumProvider, true);
+                        zeroedSnapshotId, destinationFolder, this, actor, fileInfoProvider, true);
                 return transientSnapshot
                     .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
                     .andThen(ignore -> transientSnapshot.persistInternal(), actor);
@@ -718,7 +816,7 @@ public final class FileBasedSnapshotStoreImpl {
     return actor.call(
         () -> {
           deleteBootstrapSnapshotsInternal();
-          return null;
+          return unit();
         });
   }
 

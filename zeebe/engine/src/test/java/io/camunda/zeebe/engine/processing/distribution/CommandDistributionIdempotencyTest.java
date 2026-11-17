@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycle
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementSuspendProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleCompletePartitionProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleFailPartitionProcessor;
+import io.camunda.zeebe.engine.processing.clock.ClockOffsetProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockPinProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
@@ -49,6 +50,8 @@ import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommitVersionProcessor;
+import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScaleMarkPartitionBootstrappedProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScaleScaleUpProcessor;
@@ -63,12 +66,16 @@ import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -83,6 +90,8 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -100,8 +109,10 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -364,6 +375,20 @@ public class CommandDistributionIdempotencyTest {
             ClockPinProcessor.class
           },
           {
+            "Clock.OFFSET is idempotent",
+            new Scenario(
+                ValueType.CLOCK,
+                ClockIntent.OFFSET,
+                () -> {
+                  // a small offset, so the reset below does not delay scheduled tasks like the
+                  // retry of this distribution
+                  final var record = ENGINE.clock().offsetBy(Duration.ofMillis(1));
+                  ENGINE.clock().reset(); // reset immediately to avoid timing issues
+                  return record;
+                }),
+            ClockOffsetProcessor.class
+          },
+          {
             "Clock.RESET is idempotent",
             new Scenario(ValueType.CLOCK, ClockIntent.RESET, () -> ENGINE.clock().reset()),
             ClockResetProcessor.class
@@ -374,6 +399,14 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.DEPLOYMENT,
                 DeploymentIntent.CREATE,
                 CommandDistributionIdempotencyTest::deployProcess),
+            DeploymentCreateProcessor.class
+          },
+          {
+            "Deployment.CREATE is idempotent (with agent definition)",
+            new Scenario(
+                ValueType.DEPLOYMENT,
+                DeploymentIntent.CREATE,
+                CommandDistributionIdempotencyTest::deployProcessWithAgentDefinition),
             DeploymentCreateProcessor.class
           },
           {
@@ -494,6 +527,14 @@ public class CommandDistributionIdempotencyTest {
             MappingRuleDeleteProcessor.class
           },
           {
+            "PolicyUpdate.COMMIT_VERSION is idempotent",
+            new Scenario(
+                ValueType.POLICY_UPDATE,
+                PolicyUpdateIntent.COMMIT_VERSION,
+                CommandDistributionIdempotencyTest::commitPolicyVersion),
+            PolicyUpdateCommitVersionProcessor.class
+          },
+          {
             "ResourceDeletion.DELETE is idempotent",
             new Scenario(
                 ValueType.RESOURCE_DELETION,
@@ -511,6 +552,58 @@ public class CommandDistributionIdempotencyTest {
                       .delete();
                 }),
             ResourceDeletionDeleteProcessor.class
+          },
+          {
+            "ResourceDeletion.DELETE is idempotent (with agent definition)",
+            new Scenario(
+                ValueType.RESOURCE_DELETION,
+                ResourceDeletionIntent.DELETE,
+                () -> {
+                  final var process = deployProcessWithAgentDefinition();
+                  return ENGINE
+                      .resourceDeletion()
+                      .withResourceKey(
+                          process
+                              .getValue()
+                              .getProcessesMetadata()
+                              .getFirst()
+                              .getProcessDefinitionKey())
+                      .delete();
+                }),
+            ResourceDeletionDeleteProcessor.class
+          },
+          {
+            "Process.DELETE_COMPLETE is idempotent",
+            new Scenario(
+                ValueType.PROCESS,
+                ProcessIntent.DELETE_COMPLETE,
+                () -> {
+                  // A follower partition (2) reports it has finished draining a definition by
+                  // distributing DELETE_COMPLETE to the deployment partition (1). Write the report
+                  // command directly onto partition 2 so ProcessDeleteCompleteProcessor distributes
+                  // it. The drain set is empty (seeding is out of this change's scope), so the
+                  // receiver only acknowledges - a no-op report is still distributed idempotently.
+                  final long reportKey = Protocol.encodePartitionId(2, 1L);
+                  final var process =
+                      new ProcessRecord()
+                          .setBpmnProcessId("process")
+                          .setVersion(1)
+                          .setKey(Protocol.encodePartitionId(1, 100L))
+                          .setResourceName("process.bpmn")
+                          .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                          .setDeploymentKey(Protocol.encodePartitionId(1, 99L));
+                  ENGINE.writeCommandOnPartition(
+                      2, reportKey, ProcessIntent.DELETE_COMPLETE, process);
+                  return RecordingExporter.commandDistributionRecords(
+                          CommandDistributionIntent.STARTED)
+                      .withPartitionId(2)
+                      .withRecordKey(reportKey)
+                      .getFirst();
+                },
+                true,
+                2,
+                1),
+            ProcessDeleteCompleteProcessor.class
           },
           {
             "Role.CREATE is idempotent",
@@ -880,7 +973,8 @@ public class CommandDistributionIdempotencyTest {
               // Make sure we have two records on the target partition
               assertThat(
                       RecordingExporter.records()
-                          .withPartitionId(2)
+                          .onlyCommands()
+                          .withPartitionId(scenario.targetPartition())
                           .withValueType(distributionCommand.getValue().getValueType())
                           .withIntent(distributionCommand.getValue().getIntent())
                           .withRecordKey(distributionCommand.getKey())
@@ -892,7 +986,7 @@ public class CommandDistributionIdempotencyTest {
     if (scenario.assertDistributionFinishes) {
       assertThat(
               RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                  .withPartitionId(1)
+                  .withPartitionId(scenario.sourcePartition())
                   .withRecordKey(distributionCommand.getKey())
                   .exists())
           .isTrue();
@@ -969,11 +1063,49 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
+  /**
+   * Writes the commit like the apply processor does, as a new command without request metadata on
+   * partition 1, because a policy update cannot be sent through the command API.
+   */
+  private static Record<PolicyUpdateRecordValue> commitPolicyVersion() {
+    final var update =
+        new PolicyUpdateRecord()
+            .setPolicyId("policy-" + UUID.randomUUID())
+            .setPolicyVersion(1)
+            .setUpdateId("update-" + UUID.randomUUID())
+            .setChunkIndex(0)
+            .setChunkCount(1);
+    ENGINE.writeRecords(
+        RecordToWrite.commandWithoutClaims()
+            .key(-1L)
+            .policyUpdate(PolicyUpdateIntent.COMMIT_VERSION, update));
+    return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.VERSION_COMMITTED)
+        .withPartitionId(1)
+        .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))
+        .getFirst();
+  }
+
   private static Record<DeploymentRecordValue> deployProcess() {
     return ENGINE
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess().startEvent().endEvent().done())
+        .expectCreated()
+        .deploy();
+  }
+
+  private static Record<DeploymentRecordValue> deployProcessWithAgentDefinition() {
+    return ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess()
+                .startEvent()
+                .serviceTask(
+                    "agent-task",
+                    t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
         .expectCreated()
         .deploy();
   }
@@ -1038,11 +1170,22 @@ public class CommandDistributionIdempotencyTest {
       ValueType valueType,
       Intent intent,
       CommandSender commandSender,
-      boolean assertDistributionFinishes) {
+      boolean assertDistributionFinishes,
+      int sourcePartition,
+      int targetPartition) {
 
     public Scenario(
         final ValueType valueType, final Intent intent, final CommandSender commandSender) {
       this(valueType, intent, commandSender, true);
+    }
+
+    public Scenario(
+        final ValueType valueType,
+        final Intent intent,
+        final CommandSender commandSender,
+        final boolean assertDistributionFinishes) {
+      // by default a command originates on partition 1 and is distributed to partition 2
+      this(valueType, intent, commandSender, assertDistributionFinishes, 1, 2);
     }
 
     public boolean matches(final CommandDistributionRecordValue record) {

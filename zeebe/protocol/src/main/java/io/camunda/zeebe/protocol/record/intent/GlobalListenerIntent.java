@@ -40,4 +40,23 @@ public enum GlobalListenerIntent implements Intent {
   public boolean isEvent() {
     return event;
   }
+
+  public static Intent from(final short value) {
+    switch (value) {
+      case 0:
+        return CREATE;
+      case 1:
+        return CREATED;
+      case 2:
+        return UPDATE;
+      case 3:
+        return UPDATED;
+      case 4:
+        return DELETE;
+      case 5:
+        return DELETED;
+      default:
+        return UNKNOWN;
+    }
+  }
 }

@@ -8,6 +8,8 @@
 
 import React, {lazy, Suspense, useLayoutEffect, useRef} from 'react';
 import {observer} from 'mobx-react';
+import {useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from 'modules/queries/queryKeys';
 import {
   TruncatedValueContainer,
   TruncatedValue,
@@ -42,15 +44,15 @@ const OPERATION_DISPLAY_NAME = {
   EDIT_VARIABLE: 'Edit',
 };
 
-const JSONEditor = lazy(async () => {
-  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+const RichTextEditor = lazy(async () => {
+  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
     import('modules/loadMonaco'),
-    import('modules/components/JSONEditor'),
+    import('modules/components/RichTextEditor'),
   ]);
 
   loadMonaco();
 
-  return {default: JSONEditor};
+  return {default: RichTextEditor};
 });
 
 const DiffEditor = lazy(async () => {
@@ -69,6 +71,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
     const willAllElementsBeCanceled = useWillAllElementsBeCanceled();
     const modificationsByElement = useModificationsByElement();
     const {data: processInstance} = useProcessInstance();
+    const queryClient = useQueryClient();
     const elementModificationsTableRef = useRef<HTMLDivElement>(null);
     const variableModificationsTableRef = useRef<HTMLDivElement>(null);
 
@@ -151,6 +154,10 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             processInstanceId,
             onSuccess: () => {
               tracking.track({eventName: 'modification-successful'});
+
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.elementInstanceInspection.base(),
+              });
 
               notificationsStore.displayNotification({
                 kind: 'success',
@@ -305,7 +312,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                 [`${scopeId}/${id}`]: (
                   <Suspense>
                     {operation === 'ADD_VARIABLE' ? (
-                      <JSONEditor
+                      <RichTextEditor
                         value={beautifyJSON(newValue)}
                         readOnly
                         height="10vh"

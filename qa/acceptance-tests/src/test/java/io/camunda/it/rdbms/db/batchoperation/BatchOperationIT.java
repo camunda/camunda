@@ -14,7 +14,6 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createSaveR
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatchOperationsItems;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +24,7 @@ import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
+import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -54,28 +54,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationIT {
-  @TestTemplate
-  public void shouldReturnTrueForExists(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-
-    final var batchOperation =
-        createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b).getLast();
-
-    final var searchResult =
-        rdbmsService.getBatchOperationReader().exists(batchOperation.batchOperationKey());
-
-    assertThat(searchResult).isTrue();
-  }
 
   @TestTemplate
-  public void shouldReturnFalseForExists(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldNotFailOnSecondCreate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0);
 
-    createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b);
+    final var batchOperation = BatchOperationFixtures.createRandomized(b -> b);
 
-    final var searchResult = rdbmsService.getBatchOperationReader().exists(nextStringKey());
+    rdbmsWriters.getBatchOperationWriter().create(batchOperation);
+    rdbmsWriters.flush();
 
-    assertThat(searchResult).isFalse();
+    rdbmsWriters.getBatchOperationWriter().create(batchOperation);
+    rdbmsWriters.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+    assertThat(updatedBatchOperation).isNotNull();
   }
 
   @TestTemplate
@@ -747,7 +742,10 @@ public class BatchOperationIT {
                         .states(BatchOperationState.ACTIVE.name())
                         .build(),
                     BatchOperationSort.of(b -> b),
-                    SearchQueryPage.of(b -> b.from(0).size(10))));
+                    // need to make sure we request a large enough page size otherwise we might not
+                    // get the batch operation we just created if there are many other batch
+                    // operations in the database (created by the other tests)
+                    SearchQueryPage.of(b -> b.from(0).size(1000))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items()).isNotEmpty();
@@ -791,22 +789,29 @@ public class BatchOperationIT {
   public void shouldFindAllBatchOperationsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final BatchOperationType operationType = randomEnum(BatchOperationType.class);
-    createAndSaveRandomBatchOperations(
-        rdbmsService.createWriter(0), b -> b.operationType(operationType));
+    final var batchOperationKeys =
+        createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b).stream()
+            .map(BatchOperationDbModel::batchOperationKey)
+            .toList();
 
     final var searchResult =
         rdbmsService
             .getBatchOperationReader()
             .search(
                 new BatchOperationQuery(
-                    new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
+                    new BatchOperationFilter.Builder()
+                        .batchOperationKeyOperations(
+                            List.of(mapDefaultToOperation(batchOperationKeys)))
+                        .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
-    assertThat(searchResult.items()).hasSize(5);
+    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.items())
+        .hasSize(5)
+        .extracting(BatchOperationEntity::batchOperationKey)
+        .isSubsetOf(batchOperationKeys);
   }
 
   @TestTemplate

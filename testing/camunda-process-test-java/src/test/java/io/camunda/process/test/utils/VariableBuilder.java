@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.utils;
 
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Variable;
 
 public class VariableBuilder implements Variable {
@@ -27,6 +28,7 @@ public class VariableBuilder implements Variable {
   private Long rootProcessInstanceKey;
   private String tenantId;
   private Boolean isTruncated;
+  private JsonMapper jsonMapper;
 
   @Override
   public Long getVariableKey() {
@@ -68,6 +70,18 @@ public class VariableBuilder implements Variable {
     return isTruncated;
   }
 
+  @Override
+  public <T> T getValueAsType(final Class<T> type) {
+    if (Boolean.TRUE.equals(isTruncated)) {
+      throw new IllegalStateException("Cannot return truncated value as type " + type);
+    }
+    if (jsonMapper == null) {
+      throw new IllegalStateException(
+          "jsonMapper not set on VariableBuilder. Please set it using setJsonMapper() before calling getValueAsType().");
+    }
+    return jsonMapper.fromJson(value, type);
+  }
+
   public VariableBuilder setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
@@ -105,6 +119,11 @@ public class VariableBuilder implements Variable {
 
   public VariableBuilder setTruncated(final Boolean truncated) {
     isTruncated = truncated;
+    return this;
+  }
+
+  public VariableBuilder setJsonMapper(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
     return this;
   }
 

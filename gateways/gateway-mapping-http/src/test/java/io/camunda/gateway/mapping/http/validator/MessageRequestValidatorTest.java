@@ -23,9 +23,10 @@ class MessageRequestValidatorTest {
   void shouldRejectCorrelationRequestWhenCorrelationKeyExceedsMaxLength() {
     // given
     final var request =
-        new MessageCorrelationRequest()
+        MessageCorrelationRequest.Builder.create()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .build();
 
     // when
     final var validationResult = validateMessageCorrelationRequest(request, MAX_NAME_FIELD_LENGTH);
@@ -41,9 +42,10 @@ class MessageRequestValidatorTest {
   void shouldRejectPublicationRequestWhenCorrelationKeyExceedsMaxLength() {
     // given
     final var request =
-        new MessagePublicationRequest()
+        MessagePublicationRequest.Builder.create()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .build();
 
     // when
     final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
@@ -59,9 +61,43 @@ class MessageRequestValidatorTest {
   void shouldAcceptCorrelationRequestWhenCorrelationKeyAtMaxLength() {
     // given
     final var request =
-        new MessageCorrelationRequest()
+        MessageCorrelationRequest.Builder.create()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH))
+            .build();
+
+    // when
+    final var validationResult = validateMessageCorrelationRequest(request, MAX_NAME_FIELD_LENGTH);
+
+    // then
+    assertThat(validationResult).isEmpty();
+  }
+
+  @Test
+  void shouldRejectCorrelationRequestWhenBusinessIdExceedsMaxLength() {
+    // given
+    final var request =
+        MessageCorrelationRequest.Builder.create()
+            .name("message-name")
+            .businessId("a".repeat(257))
+            .build();
+
+    // when
+    final var validationResult = validateMessageCorrelationRequest(request, MAX_NAME_FIELD_LENGTH);
+
+    // then
+    assertThat(validationResult).isPresent();
+    assertThat(validationResult.get().getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  void shouldAcceptCorrelationRequestWhenBusinessIdAtMaxLength() {
+    // given
+    final var request =
+        MessageCorrelationRequest.Builder.create()
+            .name("message-name")
+            .businessId("a".repeat(256))
+            .build();
 
     // when
     final var validationResult = validateMessageCorrelationRequest(request, MAX_NAME_FIELD_LENGTH);
@@ -74,9 +110,43 @@ class MessageRequestValidatorTest {
   void shouldAcceptPublicationRequestWhenCorrelationKeyAtMaxLength() {
     // given
     final var request =
-        new MessagePublicationRequest()
+        MessagePublicationRequest.Builder.create()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH))
+            .build();
+
+    // when
+    final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
+
+    // then
+    assertThat(validationResult).isEmpty();
+  }
+
+  @Test
+  void shouldRejectPublicationRequestWhenBusinessIdExceedsMaxLength() {
+    // given
+    final var request =
+        MessagePublicationRequest.Builder.create()
+            .name("message-name")
+            .businessId("a".repeat(257))
+            .build();
+
+    // when
+    final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
+
+    // then
+    assertThat(validationResult).isPresent();
+    assertThat(validationResult.get().getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  void shouldAcceptPublicationRequestWhenBusinessIdAtMaxLength() {
+    // given
+    final var request =
+        MessagePublicationRequest.Builder.create()
+            .name("message-name")
+            .businessId("a".repeat(256))
+            .build();
 
     // when
     final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);

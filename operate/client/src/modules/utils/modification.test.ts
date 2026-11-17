@@ -8,36 +8,8 @@
 
 import {cancelAllTokens, finishMovingToken} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
-import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-
-vi.mock('modules/stores/modifications', () => ({
-  modificationsStore: {
-    state: {
-      sourceElementIdForMoveOperation: null,
-      sourceElementInstanceKeyForMoveOperation: null,
-      status: 'disabled',
-    },
-    addCancelModification: vi.fn(),
-    addMoveModification: vi.fn(),
-    setStatus: vi.fn(),
-    setSourceElementIdForMoveOperation: vi.fn(),
-    setSourceElementInstanceKeyForMoveOperation: vi.fn(),
-  },
-}));
-
-const mockedIsMultiInstance = vi.mocked(isMultiInstance);
-
-vi.mock('modules/bpmn-js/utils/isMultiInstance', () => ({
-  isMultiInstance: vi.fn(),
-}));
-
-vi.mock('modules/tracking', () => ({
-  tracking: {
-    track: vi.fn(),
-  },
-}));
 
 describe('cancelAllTokens', () => {
   it('should add a cancel modification with the correct parameters', () => {
@@ -52,12 +24,14 @@ describe('cancelAllTokens', () => {
       {},
     );
 
-    expect(modificationsStore.addCancelModification).toHaveBeenCalledWith({
-      elementId,
-      affectedTokenCount: totalRunningInstancesForElement,
-      visibleAffectedTokenCount: totalRunningInstancesVisibleForElement,
-      businessObjects: {},
-    });
+    expect(modificationsStore.elementModifications).toEqual([
+      expect.objectContaining({
+        operation: 'CANCEL_TOKEN',
+        element: {id: 'node1', name: 'node1'},
+        affectedTokenCount: 10,
+        visibleAffectedTokenCount: 5,
+      }),
+    ]);
   });
 });
 
@@ -83,65 +57,86 @@ describe('finishMovingToken', () => {
         name: 'Process 1',
       },
     },
+    sourceNode: {
+      $type: 'bpmn:ServiceTask',
+      id: 'sourceNode',
+      name: 'Source Node',
+    },
   };
 
   beforeEach(() => {
-    modificationsStore.state.sourceElementIdForMoveOperation = 'sourceNode';
-    modificationsStore.state.sourceElementInstanceKeyForMoveOperation = null;
+    modificationsStore.setSourceElementIdForMoveOperation('sourceNode');
   });
 
   it('should track the move-token event', () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
+
     finishMovingToken(5, 3, businessObjects, 'targetNode');
 
-    expect(tracking.track).toHaveBeenCalledWith({
+    expect(trackSpy).toHaveBeenCalledWith({
       eventName: 'move-token',
     });
   });
 
   it('should add a move modification when targetElementId is provided', () => {
-    mockedIsMultiInstance.mockReturnValue(false);
-
     finishMovingToken(5, 3, businessObjects, 'some-process-id', 'targetNode');
 
-    expect(modificationsStore.addMoveModification).toHaveBeenCalledWith({
-      sourceElementId: 'sourceNode',
-      sourceElementInstanceKey: undefined,
-      targetElementId: 'targetNode',
-      affectedTokenCount: 5,
-      visibleAffectedTokenCount: 3,
-      newScopeCount: 5,
-      businessObjects,
-      bpmnProcessId: 'some-process-id',
-    });
+    const moveModifications = modificationsStore.elementModifications.filter(
+      (m) => m.operation === 'MOVE_TOKEN',
+    );
+
+    expect(moveModifications).toHaveLength(1);
+    expect(moveModifications[0]).toEqual(
+      expect.objectContaining({
+        operation: 'MOVE_TOKEN',
+        element: {id: 'sourceNode', name: 'Source Node'},
+        targetElement: {id: 'targetNode', name: 'targetNode'},
+        affectedTokenCount: 5,
+        visibleAffectedTokenCount: 3,
+      }),
+    );
+    expect(moveModifications[0]!.scopeIds).toHaveLength(5);
   });
 
   it('should set newScopeCount to 1 for multi-instance source nodes', () => {
-    mockedIsMultiInstance.mockReturnValue(true);
+    const multiInstanceBusinessObjects: BusinessObjects = {
+      ...businessObjects,
+      sourceNode: {
+        ...businessObjects['sourceNode']!,
+        loopCharacteristics: {
+          $type: 'bpmn:MultiInstanceLoopCharacteristics',
+          isSequential: false,
+        },
+      },
+    };
 
-    finishMovingToken(5, 3, businessObjects, '', 'targetNode');
+    finishMovingToken(5, 3, multiInstanceBusinessObjects, '', 'targetNode');
 
-    expect(modificationsStore.addMoveModification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        newScopeCount: 1,
-      }),
+    const moveModifications = modificationsStore.elementModifications.filter(
+      (m) => m.operation === 'MOVE_TOKEN',
     );
+
+    expect(moveModifications).toHaveLength(1);
+    expect(moveModifications[0]!.scopeIds).toHaveLength(1);
   });
 
   it('should not add a move modification if targetElementId is undefined', () => {
     finishMovingToken(5, 3, businessObjects, '');
 
-    expect(modificationsStore.addMoveModification).not.toHaveBeenCalled();
+    const moveModifications = modificationsStore.elementModifications.filter(
+      (m) => m.operation === 'MOVE_TOKEN',
+    );
+
+    expect(moveModifications).toHaveLength(0);
   });
 
   it('should reset the modification state after finishing the move', () => {
     finishMovingToken(5, 3, businessObjects, 'targetNode');
 
-    expect(modificationsStore.setStatus).toHaveBeenCalledWith('enabled');
+    expect(modificationsStore.state.status).toBe('enabled');
+    expect(modificationsStore.state.sourceElementIdForMoveOperation).toBeNull();
     expect(
-      modificationsStore.setSourceElementIdForMoveOperation,
-    ).toHaveBeenCalledWith(null);
-    expect(
-      modificationsStore.setSourceElementInstanceKeyForMoveOperation,
-    ).toHaveBeenCalledWith(null);
+      modificationsStore.state.sourceElementInstanceKeyForMoveOperation,
+    ).toBeNull();
   });
 });

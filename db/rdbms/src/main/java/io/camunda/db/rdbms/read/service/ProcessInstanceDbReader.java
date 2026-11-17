@@ -17,11 +17,12 @@ import io.camunda.search.clients.reader.ProcessInstanceReader;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
   }
 
   @Override
-  public ProcessInstanceEntity getByKey(
+  public @Nullable ProcessInstanceEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
@@ -88,6 +89,6 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
       final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
     return processInstanceMapper.selectExpiredRootProcessInstances(
         new SelectExpiredRootProcessInstancesDto(
-            partitionId, cleanupDate, new DbQueryPage(limit, null, null, null)));
+            partitionId, cleanupDate, new DbQueryPage(limit, null, null, null, false)));
   }
 }

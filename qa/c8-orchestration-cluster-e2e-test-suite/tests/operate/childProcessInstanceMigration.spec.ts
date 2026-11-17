@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {ProcessDeployment as ProcessDeploymentDTO} from '@camunda8/sdk/dist/c8/lib/C8Dto';
@@ -93,9 +93,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Child Process Instance Migration', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
@@ -109,7 +108,6 @@ test.describe('Child Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateProcessInstancePage,
     operateProcessMigrationModePage,
   }) => {
     test.slow();
@@ -138,24 +136,19 @@ test.describe('Child Process Instance Migration', () => {
         },
       });
 
-      const instanceLink =
-        operateProcessesPage.processInstanceLinkByKey(parentInstanceKey);
-
-      await expect(instanceLink).toBeVisible({timeout: 15000});
-      await instanceLink.click();
-
-      await operateProcessInstancePage.clickViewAllChildProcesses();
-
-      const childVersion = await operateProcessesPage.versionCell
-        .first()
-        .innerText();
-
-      await expect(
-        operateProcessesPage.parentInstanceCell(parentInstanceKey),
-      ).toBeVisible();
-
+      // The instance header's "View all" called-instances link only renders
+      // above Carbon's `xlg` (1312px) breakpoint, which Playwright's default
+      // viewport sits below. Filter by Parent Process Instance Key directly
+      // instead so navigating to the child instance list doesn't depend on
+      // viewport width.
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(childVersion);
+      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Parent Process Instance Key',
+      );
+      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+        parentInstanceKey,
+      );
 
       await waitForAssertion({
         assertion: async () => {
@@ -175,9 +168,18 @@ test.describe('Child Process Instance Migration', () => {
           );
         },
       });
+
+      await expect(
+        operateProcessesPage.parentInstanceCell(parentInstanceKey),
+      ).toBeVisible();
     });
 
     await test.step('Select child process instance for migration', async () => {
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the row-selection
+      // checkbox renders.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+
       await operateProcessesPage.selectProcessInstances(1);
 
       await operateProcessesPage.startMigration();
@@ -189,7 +191,7 @@ test.describe('Child Process Instance Migration', () => {
         .getOptionByName(targetBpmnProcessId)
         .click();
 
-      await operateProcessMigrationModePage.targetVersionDropdown.click();
+      await operateProcessMigrationModePage.clickTargetVersionDropdown();
       await operateProcessMigrationModePage
         .getOptionByName(targetVersion)
         .click();

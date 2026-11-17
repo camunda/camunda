@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -108,6 +109,24 @@ final class ElasticsearchExporterTest {
     verify(client).close();
   }
 
+  @Test
+  void shouldCancelScheduledFlushTaskOnClose() {
+    // given
+    final var exporter = new ElasticsearchExporter();
+    exporter.configure(context);
+    exporter.open(controller);
+
+    final var tasks = controller.getScheduledTasks();
+    final var flushTask = tasks.getLast();
+    assertThat(flushTask.isCanceled()).isEqualTo(false);
+
+    // when
+    exporter.close();
+
+    // then
+    assertThat(flushTask.isCanceled()).isEqualTo(true);
+  }
+
   @Nested
   final class RecordFilterTest {
 
@@ -143,6 +162,21 @@ final class ElasticsearchExporterTest {
       assertThat(filter.acceptValue(valueType))
           .as("record filter should accept value type based on configuration")
           .isTrue();
+    }
+
+    @Test
+    void shouldNeverAcceptUserTaskLookup() {
+      // given
+      TestSupport.provideValueTypes()
+          .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
+
+      // when
+      exporter.configure(context);
+
+      // then
+      assertThat(context.getRecordFilter().acceptValue(ValueType.USER_TASK_LOOKUP))
+          .as("user task lookups change no state and are never exported")
+          .isFalse();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -286,7 +320,9 @@ final class ElasticsearchExporterTest {
           || valueType == ValueType.INCIDENT
           || valueType == ValueType.USER_TASK
           || valueType == ValueType.DEPLOYMENT
-          || valueType == ValueType.JOB) {
+          || valueType == ValueType.JOB
+          || valueType == ValueType.AGENT_INSTANCE
+          || valueType == ValueType.AGENT_DEFINITION) {
         verify(client, times(1)).putIndexTemplate(valueType, version);
       } else {
         verify(client, never()).putIndexTemplate(any(), any());
@@ -433,10 +469,96 @@ final class ElasticsearchExporterTest {
   @Nested
   final class ValidationTest {
 
-    @Test
-    void shouldNotAllowUnderscoreInIndexPrefix() {
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
       // given
-      config.index.prefix = "i_am_invalid";
+      config.index.prefix = "test-prefix" + testCharacter;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    void shouldNotAllowInvalidCharactersAtBeginningOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", ",", "#", ":"})
+    void shouldNotAllowInvalidCharactersInMiddleOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = "test" + testCharacter + "prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {".", "+", "-", "_"})
+    void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
+      // given
+      config.index.prefix = testCharacter + "test-prefix";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowEmptyIndexPrefix() {
+      // given
+      config.index.prefix = "";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowNullIndexPrefix() {
+      // given
+      config.index.prefix = null;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Prefix", "Test-Prefix", "TEST-PREFIX", "test-Prefix"})
+    void shouldNotAllowUppercaseCharactersInIndexPrefix(final String testPrefix) {
+      // given
+      config.index.prefix = testPrefix;
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldNotAllowIndexPrefixExceedingMaxLength() {
+      // given
+      config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH + 1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldAllowIndexPrefixAtMaxLength() {
+      // given
+      config.index.prefix = "a".repeat(IndexPrefixValidation.MAX_PREFIX_LENGTH);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotAllowMultibyteIndexPrefixExceedingMaxLengthInBytes() {
+      // given - each 'é' is 2 UTF-8 bytes, so this has string length 120 but 240 bytes
+      config.index.prefix = "é".repeat(120);
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);

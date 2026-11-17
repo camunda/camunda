@@ -97,6 +97,12 @@ final class RemoteStreamPusher<P extends BufferWriter> {
               payload.getLength(),
               streamId,
               e);
+      case null ->
+          pushErrorLogger.error(
+              "Failed to push (size = {}) to stream {}, unknown error code",
+              payload.getLength(),
+              streamId,
+              e);
       default ->
           pushWarnLogger.warn(
               "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, e);
@@ -111,7 +117,9 @@ final class RemoteStreamPusher<P extends BufferWriter> {
           .send(request, streamId.receiver())
           .whenCompleteAsync(
               (response, error) -> onPush(payload, errorHandler, response, error), executor);
-      LOG.trace("Pushed {} to stream {}", payload, streamId);
+      // the payload is not rendered: a pushed job carries the resolved values of its secret
+      // references, and those must not reach the log, not even at trace level
+      LOG.trace("Pushed (size = {}) to stream {}", payload.getLength(), streamId);
     } catch (final Exception e) {
       errorHandler.handleError(e, payload);
     }

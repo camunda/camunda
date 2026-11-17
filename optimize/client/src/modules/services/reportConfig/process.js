@@ -81,6 +81,16 @@ export const view = [
       return {view: {entity: 'variable'}};
     },
   },
+  {
+    // System-generated entity not shown in the user-facing report builder.
+    key: 'agentInstance',
+    label: () => t('report.view.agentInstance'),
+    visible: ({view}) => view?.entity === 'agentInstance',
+    enabled: () => false,
+    requiresDefinition: false,
+    matcher: ({view}) => view?.entity === 'agentInstance',
+    payload: ({view}) => ({view: {entity: 'agentInstance', properties: view?.properties ?? []}}),
+  },
 ];
 
 export const group = [

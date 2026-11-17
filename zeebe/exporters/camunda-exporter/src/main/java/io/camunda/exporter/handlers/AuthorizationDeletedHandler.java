@@ -8,17 +8,18 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import java.util.HashSet;
 import java.util.List;
 
 public class AuthorizationDeletedHandler
-    implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+    implements MainIndexExporterHandler<AuthorizationEntity, AuthorizationRecordValue> {
   private final String indexName;
 
   public AuthorizationDeletedHandler(final String indexName) {
@@ -63,13 +64,15 @@ public class AuthorizationDeletedHandler
         .setResourceMatcher(value.getResourceMatcher().value())
         .setResourceId(value.getResourceId())
         .setResourcePropertyName(value.getResourcePropertyName())
-        .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
+        .setPermissionTypes(
+            AuthzModelMapper.fromProtocolPermissionTypes(value.getPermissionTypes()));
   }
 
   @Override
-  public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(getIndexName(), entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

@@ -29,6 +29,11 @@ public class UpsertMerger<T extends Copyable<T>> implements QueueItemMerger {
     this.mergeFunction = (Function<ObjectBuilder<T>, ObjectBuilder<T>>) mergeFunction;
   }
 
+  /**
+   * Ignores {@code statementId} by design, so two {@link QueueItem}s sharing {@code contextType} +
+   * {@code id} must not both be instances of {@code clazz} unless either is a valid merge target
+   * (see issue #58968).
+   */
   @Override
   public boolean canBeMerged(final QueueItem queueItem) {
     return queueItem.id().equals(id)

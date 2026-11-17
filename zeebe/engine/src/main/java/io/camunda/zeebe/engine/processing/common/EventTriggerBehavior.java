@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.common;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -50,7 +49,7 @@ public class EventTriggerBehavior {
       final Writers writers,
       final ProcessingState processingState,
       final BpmnStateBehavior stateBehavior,
-      final BpmnConditionalBehavior conditionalBehavior) {
+      final VariableBehavior variableBehavior) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
@@ -59,9 +58,7 @@ public class EventTriggerBehavior {
     elementInstanceState = processingState.getElementInstanceState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
 
-    variableBehavior =
-        new VariableBehavior(
-            processingState.getVariableState(), writers.state(), conditionalBehavior, keyGenerator);
+    this.variableBehavior = variableBehavior;
     this.stateBehavior = stateBehavior;
   }
 
@@ -146,6 +143,8 @@ public class EventTriggerBehavior {
    *
    * @param processDefinitionKey the event's corresponding process definition key
    * @param processInstanceKey the event's corresponding process instance key
+   * @param storageOrdinal the storage ordinal of the event trigger
+   * @param tenantId the tenant ID of the event trigger
    * @param eventScopeKey the event's scope key, which used to index the trigger in {@link
    *     io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState}
    * @param catchEventId the ID of the element which should be triggered by the event
@@ -155,6 +154,7 @@ public class EventTriggerBehavior {
   public long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinal,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
@@ -167,6 +167,7 @@ public class EventTriggerBehavior {
         .setVariablesBuffer(variables)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
     return eventKey;
@@ -178,6 +179,8 @@ public class EventTriggerBehavior {
    *
    * @param processInstanceKey the process instance key of the event trigger
    * @param processDefinitionKey the process instance key of the event trigger
+   * @param storageOrdinal the storage ordinal of the event trigger
+   * @param tenantId the tenant ID of the event trigger
    * @param eventScopeKey the event's scope key, which is used as identifier for the event trigger
    * @param catchEventId the ID of the element which was triggered by the event
    */
@@ -185,6 +188,7 @@ public class EventTriggerBehavior {
       final long eventTriggerKey,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final int storageOrdinal,
       final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId) {
@@ -194,6 +198,7 @@ public class EventTriggerBehavior {
         .setTargetElementIdBuffer(catchEventId)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinal(storageOrdinal)
         .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(
         eventTriggerKey, ProcessEventIntent.TRIGGERED, processEventRecord);
@@ -231,6 +236,7 @@ public class EventTriggerBehavior {
         processEventKey,
         elementRecord.getProcessDefinitionKey(),
         elementRecord.getProcessInstanceKey(),
+        elementRecord.getStorageOrdinal(),
         elementRecord.getTenantId(),
         eventScopeKey,
         triggeredEvent.getId());
@@ -256,16 +262,25 @@ public class EventTriggerBehavior {
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
 
     if (variables.capacity() > 0) {
-      // set as local variables of the element instance to use them for the variable output
-      // mapping
-      variableBehavior.mergeLocalDocument(
-          eventInstanceKey,
-          elementRecord.getProcessDefinitionKey(),
-          elementRecord.getProcessInstanceKey(),
-          elementRecord.getRootProcessInstanceKey(),
-          elementRecord.getBpmnProcessIdBuffer(),
-          elementRecord.getTenantId(),
-          variables);
+      try {
+        // set as local variables of the element instance to use them for the variable output
+        // mapping
+        variableBehavior.mergeLocalDocument(
+            eventInstanceKey,
+            elementRecord.getProcessDefinitionKey(),
+            elementRecord.getProcessInstanceKey(),
+            elementRecord.getRootProcessInstanceKey(),
+            elementRecord.getStorageOrdinal(),
+            elementRecord.getBpmnProcessIdBuffer(),
+            elementRecord.getTenantId(),
+            variables);
+      } catch (final ValidationException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Variable validation failed for triggered event '%s' with key '%d': %s",
+                triggeredEvent.getId(), eventInstanceKey, e.getMessage()),
+            e);
+      }
     }
 
     commandWriter.appendFollowUpCommand(

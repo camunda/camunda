@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -34,12 +36,14 @@ import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ReplayMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /** Represents the state machine to replay events and rebuild the state. */
-public final class ReplayStateMachine implements LogRecordAwaiter {
+public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSilently {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
@@ -48,6 +52,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
   private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
       "Expected to read the metadata for the record '%s', but an exception was thrown.";
+  private static final String RETRY_OPERATION_REPLAY = "replayRetry";
 
   private final RecordMetadata metadata = new RecordMetadata();
   private final KeyGeneratorControls keyGeneratorControls;
@@ -78,8 +83,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
 
-  private ActorFuture<LastProcessingPositions> recoveryFuture;
-  private ZeebeDbTransaction zeebeDbTransaction;
+  private @Nullable ActorFuture<LastProcessingPositions> recoveryFuture;
+  private @Nullable ZeebeDbTransaction zeebeDbTransaction;
   private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
 
@@ -105,7 +110,9 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     lastProcessedPositionState = context.getLastProcessedPositionState();
 
     typedEvent = new TypedRecordImpl(context.getLogStream().getPartitionId());
-    replayStrategy = new RecoverableRetryStrategy(actor);
+    replayStrategy =
+        new RecoverableRetryStrategy(
+            actor, context.getMaxRecoverableRetries(), RETRY_OPERATION_REPLAY);
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
     logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());
@@ -196,29 +203,30 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
           String.format(
               "Failed to replay records. [snapshot-position: %d, last-read-record-position: %d, last-replayed-event-position: %d]",
               snapshotPosition, lastReadRecordPosition, lastReplayedEventPosition);
-      recoveryFuture.completeExceptionally(new RuntimeException(message, e));
+      requireNonNull(recoveryFuture).completeExceptionally(new RuntimeException(message, e));
     }
   }
 
   private boolean tryToReplayBatch(final Batch batch) throws Exception {
     final boolean onRetry = zeebeDbTransaction != null;
     if (onRetry) {
-      zeebeDbTransaction.rollback();
+      requireNonNull(zeebeDbTransaction).rollback();
       // reading the whole batch from the beginning again
       batch.head();
     }
 
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
-    zeebeDbTransaction.run(
-        () -> {
-          batch.forEachRemaining(this::replayEvent);
+    requireNonNull(zeebeDbTransaction)
+        .run(
+            () -> {
+              batch.forEachRemaining(this::replayEvent);
 
-          if (batchSourceEventPosition > snapshotPosition) {
-            lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
-          }
-        });
+              if (batchSourceEventPosition > snapshotPosition) {
+                lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
+              }
+            });
 
-    zeebeDbTransaction.commit();
+    requireNonNull(zeebeDbTransaction).commit();
     zeebeDbTransaction = null;
 
     return true;
@@ -230,7 +238,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
             || currentEvent.getSourceEventPosition()
                 < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
-      final var currentTypedEvent = readRecordValue(currentEvent);
+      final var currentTypedEvent = requireNonNull(readRecordValue(currentEvent));
       LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
       currentStateDescription.set(
           "replaying event",
@@ -248,7 +256,28 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       lastReplayedEventPosition = currentTypedEvent.getPosition();
     }
 
+    // Advance the key counter for engine-authored records. EVENT records are always
+    // engine-authored. Follow-up COMMAND records with sourceEventPosition >= 0 are also
+    // engine-authored and may carry a nextKey()-allocated key with no corresponding event
+    // (e.g. the command is rejected before any event is written for its key).
+    // External COMMAND records (sourceEventPosition < 0) are excluded: they carry client-supplied
+    // keys that may be anomalously large (root cause of issue #55571).
+    // COMMAND_REJECTION records are excluded: they echo the originating command's key.
+    if (Protocol.decodePartitionId(currentEvent.getKey()) == partitionId
+        && isEngineAuthoredKeyRecord(currentEvent)) {
+      keyGeneratorControls.setKeyIfHigher(currentEvent.getKey());
+    }
+
     onRecordReplayed(currentEvent);
+  }
+
+  private boolean isEngineAuthoredKeyRecord(final LoggedEvent event) {
+    // read the metadata explicitly. metadata object is updated only if the event was replayed. Not
+    // for commands.
+    recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
+    final var recordType = recordTypeDecoder.recordType();
+    return recordType == RecordType.EVENT
+        || (recordType == RecordType.COMMAND && event.getSourceEventPosition() >= 0);
   }
 
   /**
@@ -270,7 +299,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
         new LastProcessingPositions(lastProcessedPosition, lastWrittenPosition);
 
     LOG.info(LOG_STMT_REPLAY_FINISHED, lastProcessingPositions);
-    recoveryFuture.complete(lastProcessingPositions);
+    requireNonNull(recoveryFuture).complete(lastProcessingPositions);
   }
 
   /**
@@ -285,7 +314,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     currentStateDescription.status("awaiting record to replay");
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
-    final var currentRecordKey = currentEvent.getKey();
 
     // positions should always increase
     // if this is not the case we have some inconsistency in our log
@@ -298,11 +326,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     // we need to keep track of the last source event position to know where to start with
     // processing after replay
     batchSourceEventPosition = sourceEventPosition;
-
-    // records from other partitions should not influence the key generator of this partition
-    if (Protocol.decodePartitionId(currentRecordKey) == partitionId) {
-      keyGeneratorControls.setKeyIfHigher(currentRecordKey);
-    }
   }
 
   /**
@@ -322,7 +345,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private TypedRecord<?> readRecordValue(final LoggedEvent currentEvent) {
     final UnifiedRecordValue value =
-        recordValues.readRecordValue(currentEvent, metadata.getValueType());
+        requireNonNull(recordValues.readRecordValue(currentEvent, metadata.getValueType()));
     typedEvent.wrap(currentEvent, metadata, value);
     return typedEvent;
   }
@@ -339,6 +362,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     return currentStateDescription.toString();
   }
 
+  @Override
   public void close() {
     logStream.removeRecordAvailableListener(this);
   }

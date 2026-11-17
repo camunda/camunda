@@ -18,10 +18,10 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ class ProcessInstanceStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(a -> a.processDefinition().readProcessInstance())),
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance())),
             TenantCheck.disabled());
 
     final var result = reader.aggregate(query, resourceAccessChecks);
@@ -77,7 +77,7 @@ class ProcessInstanceStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.processDefinition()
                             .readProcessInstance()
@@ -103,7 +103,7 @@ class ProcessInstanceStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.processDefinition()
                             .readProcessInstance()
@@ -129,7 +129,7 @@ class ProcessInstanceStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.processDefinition()
                             .readProcessInstance()
@@ -146,7 +146,7 @@ class ProcessInstanceStatisticsDbReaderTest {
   void shouldReturnStatistics() {
     final ProcessInstanceFlowNodeStatisticsQuery query =
         new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
-    final var dbQuery = new ProcessInstanceStatisticsDbQuery(query.filter(), List.of(), null);
+    final var dbQuery = new ProcessInstanceStatisticsDbQuery(query.filter(), List.of(), List.of());
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),

@@ -8,15 +8,16 @@
 package io.camunda.zeebe.journal;
 
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public sealed class CheckedJournalException extends Exception {
 
-  public CheckedJournalException(final String message, final Throwable cause) {
+  public CheckedJournalException(final String message, @Nullable final Throwable cause) {
     super(message, cause);
   }
 
   public static final class FlushException extends CheckedJournalException {
-    public FlushException(final IOException cause) {
+    public FlushException(@Nullable final IOException cause) {
       super("Error when flushing", cause);
     }
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,9 +31,10 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -167,7 +169,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2023-05-17T00:00:00Z"),
           IncidentEntity.IncidentState.ACTIVE,
           99L,
-          "tenant1");
+          "tenant1",
+          1001);
 
   static final String EXPECTED_INCIDENT_SEARCH_RESPONSE =
       """
@@ -186,7 +189,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             "creationTime": "2023-05-17T00:00:00.000Z",
             "state": "ACTIVE",
             "jobKey": "99",
-            "tenantId": "tenant1"
+            "tenantId": "tenant1",
+            "storageOrdinal": 1001
           }
         ],
         "page": {
@@ -219,7 +223,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId"
+                  "tenantId": "tenantId",
+                  "storageOrdinal": 1001
                 }
               ],
               "page": {
@@ -248,7 +253,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-01-02T00:00:00.000Z"),
                       IncidentState.ACTIVE,
                       567L,
-                      "tenantId")))
+                      "tenantId",
+                      1001)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -257,6 +263,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
   @Captor ArgumentCaptor<IncidentQuery> incidentQueryCaptor;
 
@@ -273,6 +280,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
+    lenient()
+        .when(serviceRegistry.elementInstanceServices(any()))
+        .thenReturn(elementInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -384,6 +394,58 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             .endDateOperations(
                                 Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
                             .elementInstanceScopeKeys(2251799813685979L)
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldSearchElementInstancesWithOrFilter() {
+    // given
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    final var request =
+        """
+            {
+              "filter":{
+                "processInstanceKey": "2251799813685989",
+                "$or": [
+                  { "elementName": { "$like": "*Order*" } },
+                  { "elementId":   { "$like": "*Order*" } }
+                ]
+              }
+            }
+            """;
+    webClient
+        .post()
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(elementInstanceServices)
+        .search(
+            eq(
+                new FlowNodeInstanceQuery.Builder()
+                    .filter(
+                        new FlowNodeInstanceFilter.Builder()
+                            .processInstanceKeys(2251799813685989L)
+                            .addOrOperation(
+                                new FlowNodeInstanceFilter.Builder()
+                                    .flowNodeNameOperations(Operation.like("*Order*"))
+                                    .build())
+                            .addOrOperation(
+                                new FlowNodeInstanceFilter.Builder()
+                                    .flowNodeIdOperations(Operation.like("*Order*"))
+                                    .build())
                             .build())
                     .build()),
             any());

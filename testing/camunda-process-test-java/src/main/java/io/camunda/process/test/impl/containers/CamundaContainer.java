@@ -17,18 +17,13 @@ package io.camunda.process.test.impl.containers;
 
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.*;
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.DATABASE_TYPE;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_DATABASE_URL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_PASSWORD;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_TYPE;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_USERNAME;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_USERNAME;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME;
-import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE;
 
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
@@ -36,12 +31,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
@@ -54,9 +51,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth,security";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
-
-  private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
-  private static final String CAMUNDA_EXPORTER_BULK_SIZE = "1";
+  private static final String CLUSTER_SECRETS_DIRECTORY = "/tmp/camunda-cluster-secrets";
+  private static final int SECRET_FILE_MODE = 0644;
 
   public CamundaContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
@@ -67,7 +63,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     withNetwork(Network.SHARED)
         .waitingFor(newDefaultWaitStrategy())
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
@@ -121,46 +116,61 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     return this;
   }
 
+  /**
+   * Provides the given secrets to the cluster's file secret store, so that they can be referenced
+   * as {@code =camunda.secrets.<NAME>}. Each secret is copied into the container as a file named
+   * after the secret, and the store is pointed at the containing directory.
+   *
+   * @param secrets the secrets by name; does nothing if empty
+   * @return this container
+   * @throws IllegalArgumentException if a secret name is not a single visible path segment
+   */
+  public CamundaContainer withClusterSecrets(final Map<String, String> secrets) {
+    if (secrets.isEmpty()) {
+      return this;
+    }
+
+    secrets.keySet().forEach(CamundaContainer::validateSecretName);
+
+    secrets.forEach(
+        (name, value) ->
+            withCopyToContainer(
+                Transferable.of(value.getBytes(StandardCharsets.UTF_8), SECRET_FILE_MODE),
+                CLUSTER_SECRETS_DIRECTORY + "/" + name));
+
+    return withEnv(
+        ContainerRuntimeEnvs.CAMUNDA_ENV_SECRETS_STORES_FILE_DEFAULT_PATH,
+        CLUSTER_SECRETS_DIRECTORY);
+  }
+
+  /**
+   * The name becomes a file name in the container, so it must not be able to address any other
+   * path. Hidden names are rejected as the file store does not read them.
+   */
+  private static void validateSecretName(final String name) {
+    if (name == null
+        || name.chars().allMatch(Character::isWhitespace)
+        || name.startsWith(".")
+        || name.contains("/")
+        || name.contains("\\")
+        || name.indexOf('\0') >= 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Invalid cluster secret name '%s': it must be a single visible path segment "
+                  + "without path separators and must not start with a dot.",
+              name));
+    }
+  }
+
   public CamundaContainer withH2() {
-    withEnv(CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
-        .withEnv(UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
-        .withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, databaseUrL(UUID.randomUUID()))
-        .withEnv(CAMUNDA_ENV_DATABASE_USERNAME, DATABASE_USERNAME)
-        .withEnv(CAMUNDA_ENV_DATABASE_PASSWORD, DATABASE_PASSWORD)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL)
-        .withEnv(
-            CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL,
-            ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL)
+    withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE, DATABASE_TYPE)
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL, databaseUrL(UUID.randomUUID()))
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_USERNAME, DATABASE_USERNAME)
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD, DATABASE_PASSWORD)
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL, RDBMS_FLUSH_INTERVAL)
         .withEnv(CAMUNDA_ENV_LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS, LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS)
         .withEnv(CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS, LOGGING_LEVEL_ORG_MYBATIS);
 
-    return this;
-  }
-
-  public CamundaContainer withElasticsearchUrl(final String url) {
-    withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_CLASSNAME, CAMUNDA_EXPORTER_CLASSNAME);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_CONNECT_URL, url);
-    withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_BULK_SIZE,
-        CAMUNDA_EXPORTER_BULK_SIZE);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
-
-    withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, url);
     return this;
   }
 
@@ -247,14 +257,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     public static final String DATABASE_TYPE = "rdbms";
     public static final String DATABASE_USERNAME = "sa";
     public static final String DATABASE_PASSWORD = "";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME =
-        "io.camunda.exporter.rdbms.RdbmsExporter";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL = "PT0S";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL = "PT2S";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL =
-        "PT2S";
-    public static final String ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL =
-        "PT5S";
+    public static final String RDBMS_FLUSH_INTERVAL = "PT0S";
     public static final String LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS = "DEBUG";
     public static final String LOGGING_LEVEL_ORG_MYBATIS = "DEBUG";
 
@@ -275,7 +278,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     public static final String CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI = "false";
     public static final String CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED = "true";
     /*
-     * Although the {@see io.camunda.security.configuration.InitializationConfiguration} creates a
+     * Although the {@see io.camunda.security.api.model.config.initialization.InitializationConfiguration} creates a
      * demo user by default, the user is explicity defined here in case the demo user, for whatever
      * reason, should change in the future.
      */

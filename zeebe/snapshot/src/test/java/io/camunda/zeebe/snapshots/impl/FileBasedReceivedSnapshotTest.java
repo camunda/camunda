@@ -18,11 +18,13 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkWrapper;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -166,7 +168,8 @@ public class FileBasedReceivedSnapshotTest {
             persistedSnapshot.getChecksumPath(),
             new SfvChecksumImpl(),
             persistedSnapshot.getSnapshotId(),
-            null,
+            persistedSnapshot.getMetadata(),
+            0,
             s -> {},
             null);
 
@@ -177,6 +180,25 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(didPersist)
         .as("The snapshot should persist with mis-match in combined checksums")
         .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
+  }
+
+  @Test
+  public void shouldFailToPersistAbortedSnapshotWithIllegalState() {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      receivedSnapshot.apply(snapshotChunkReader.next()).join();
+    }
+    receivedSnapshot.abort().join();
+
+    // when - then
+    assertThatThrownBy(() -> receivedSnapshot.persist().join())
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseMessage(
+            "Cannot persist snapshot '%s': directory %s is missing or unreadable (the snapshot was aborted, no chunk was applied yet, or an I/O error occurred)"
+                .formatted(persistedSnapshot.getId(), receivedSnapshot.getPath()));
   }
 
   @Test
@@ -347,6 +369,97 @@ public class FileBasedReceivedSnapshotTest {
     }
   }
 
+  @Test
+  public void shouldReceiveSnapshotWhenChunkContentIsBackedByDirectBuffer() throws IOException {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+
+    // when the content is only available as a direct, read-only buffer, as it is when it aliases
+    // the bytes of the received message
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      snapshotChunkReader.setMaximumChunkSize(2);
+
+      while (snapshotChunkReader.hasNext()) {
+        receivedSnapshot.apply(withDirectContentBuffer(snapshotChunkReader.next())).join();
+      }
+    }
+    receivedSnapshot.persist().join();
+
+    // then
+    try (final var files = Files.list(receivedSnapshot.getPath())) {
+      for (final var filePath : files.toList()) {
+        final var fileName = filePath.getFileName().toString();
+        assertThat(filePath)
+            .hasBinaryContent(Files.readAllBytes(persistedSnapshot.getPath().resolve(fileName)));
+      }
+    }
+  }
+
+  @Test
+  public void shouldCalculateSizeWhenReceivedMetadataDoesNotContainSize() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    rewriteMetadataSize(senderSnapshot, 0L);
+    final var metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
+
+    // when
+    final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
+
+    receiverSnapshotStore.close();
+    receiverSnapshotStore = createStore(receiverSnapshotsDir.getParent());
+    assertThat(receiverSnapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
+  }
+
+  @Test
+  public void shouldRejectDuplicatedChunks() {
+    // given
+    final var senderSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(senderSnapshot.getId()).join();
+
+    try (final var reader = senderSnapshot.newChunkReader()) {
+      final var chunk = reader.next();
+      receivedSnapshot.apply(chunk).join();
+
+      // when/then
+      assertThatThrownBy(() -> receivedSnapshot.apply(chunk).join())
+          .hasCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected next chunk at offset");
+    }
+  }
+
+  @Test
+  public void shouldPreserveSizeFromReceivedMetadata() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    final long advertisedSize = 123_456_789L;
+    rewriteMetadataSize(senderSnapshot, advertisedSize);
+    final long metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
+
+    // when
+    final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(advertisedSize + metadataSizeBytes);
+  }
+
+  private void rewriteMetadataSize(final FileBasedSnapshot snapshot, final long totalSizeBytes)
+      throws IOException {
+    final var metadata =
+        ((FileBasedSnapshotMetadata) snapshot.getMetadata()).withTotalSizeBytes(totalSizeBytes);
+    Files.write(
+        snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME),
+        metadata.encode());
+  }
+
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
@@ -358,6 +471,67 @@ public class FileBasedReceivedSnapshotTest {
     }
 
     return receivedSnapshot;
+  }
+
+  private static SnapshotChunk withDirectContentBuffer(final SnapshotChunk chunk) {
+    final var content = chunk.getContent();
+
+    return new SnapshotChunk() {
+      @Override
+      public String getSnapshotId() {
+        return chunk.getSnapshotId();
+      }
+
+      @Override
+      public int getTotalCount() {
+        return chunk.getTotalCount();
+      }
+
+      @Override
+      public String getChunkName() {
+        return chunk.getChunkName();
+      }
+
+      @Override
+      public long getChecksum() {
+        return chunk.getChecksum();
+      }
+
+      @Override
+      public byte[] getContent() {
+        return content;
+      }
+
+      @Override
+      public ByteBuffer getContentBuffer() {
+        return ByteBuffer.allocateDirect(content.length).put(content).flip().asReadOnlyBuffer();
+      }
+
+      @Override
+      public long getFileBlockPosition() {
+        return chunk.getFileBlockPosition();
+      }
+
+      @Override
+      public long getTotalFileSize() {
+        return chunk.getTotalFileSize();
+      }
+
+      @Override
+      public long getContentLength() {
+        return chunk.getContentLength();
+      }
+    };
+  }
+
+  private long expectedTotalDataSize() {
+    return SNAPSHOT_FILE_CONTENTS.values().stream()
+        .mapToLong(content -> content.getBytes(StandardCharsets.UTF_8).length)
+        .sum();
+  }
+
+  private long expectedMetadataSizeBytes(final FileBasedSnapshot snapshot) throws IOException {
+    return Files.size(snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   private PersistedSnapshot takePersistedSnapshot(final long index) {
@@ -385,8 +559,12 @@ public class FileBasedReceivedSnapshotTest {
   private FileBasedSnapshotStore createStore(final Path root) {
     final var store =
         new FileBasedSnapshotStore(
-            0, PARTITION_ID, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
-    scheduler.submitActor(store);
+            0,
+            PARTITION_ID,
+            root,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
+    scheduler.submitActor(store).join();
 
     return store;
   }

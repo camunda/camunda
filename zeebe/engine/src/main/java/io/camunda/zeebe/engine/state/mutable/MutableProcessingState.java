@@ -32,6 +32,12 @@ public interface MutableProcessingState extends ProcessingState {
   MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
   @Override
+  MutableMessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState();
+
+  @Override
+  MutableMessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState();
+
+  @Override
   MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   @Override
@@ -44,10 +50,22 @@ public interface MutableProcessingState extends ProcessingState {
   MutableBannedInstanceState getBannedInstanceState();
 
   @Override
+  MutableSuspensionState getSuspensionState();
+
+  @Override
   MutableVariableState getVariableState();
 
   @Override
   MutableClusterVariableState getClusterVariableState();
+
+  @Override
+  MutableAgentHistoryState getAgentHistoryState();
+
+  @Override
+  MutableAgentInstanceState getAgentInstanceState();
+
+  @Override
+  MutableAgentDefinitionState getAgentDefinitionState();
 
   @Override
   MutableTimerInstanceState getTimerState();
@@ -95,6 +113,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableClockState getClockState();
 
   @Override
+  MutablePolicyState getPolicyState();
+
+  @Override
   MutableRoleState getRoleState();
 
   @Override
@@ -129,6 +150,15 @@ public interface MutableProcessingState extends ProcessingState {
 
   @Override
   MutableJobMetricsState getJobMetricsState();
+
+  @Override
+  MutableSecretReferenceState getSecretReferenceState();
+
+  @Override
+  MutablePolicyUpdateState getPolicyUpdateState();
+
+  @Override
+  MutableProbeState getProbeState();
 
   KeyGenerator getKeyGenerator();
 }

@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -25,8 +26,9 @@ public final class AuthorizationProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final SecurityConfiguration securityConfig) {
+      final CslAuthorizationCheck cslCheck,
+      final EngineSecurityConfig securityConfig,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.CREATE,
@@ -35,13 +37,19 @@ public final class AuthorizationProcessors {
             keyGenerator,
             processingState,
             distributionBehavior,
-            authCheckBehavior,
-            securityConfig));
+            cslCheck,
+            securityConfig,
+            authorizationScopeStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.DELETE,
         new AuthorizationDeleteProcessor(
-            writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
+            writers,
+            keyGenerator,
+            processingState,
+            distributionBehavior,
+            cslCheck,
+            authorizationScopeStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.UPDATE,
@@ -50,7 +58,8 @@ public final class AuthorizationProcessors {
             keyGenerator,
             processingState,
             distributionBehavior,
-            authCheckBehavior,
-            securityConfig));
+            cslCheck,
+            securityConfig,
+            authorizationScopeStateAdapter));
   }
 }

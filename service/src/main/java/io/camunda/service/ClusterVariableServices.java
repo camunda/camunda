@@ -7,15 +7,15 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.CLUSTER_VARIABLE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.ClusterVariableSearchClient;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -24,9 +24,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteClusterVariableR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateClusterVariableRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterVariableServices
     extends SearchQueryService<
@@ -35,12 +38,14 @@ public final class ClusterVariableServices
   private final ClusterVariableSearchClient clusterVariableSearchClient;
 
   public ClusterVariableServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ClusterVariableSearchClient clusterVariableSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -54,6 +59,8 @@ public final class ClusterVariableServices
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
+            .setMetadata(toDirectBufferMetadata(request.metadata()))
+            .setKind(request.kind())
             .setGlobalScope(),
         authentication);
   }
@@ -64,6 +71,8 @@ public final class ClusterVariableServices
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
+            .setMetadata(toDirectBufferMetadata(request.metadata()))
+            .setKind(request.kind())
             .setTenantScope(request.tenantId()),
         authentication);
   }
@@ -90,6 +99,7 @@ public final class ClusterVariableServices
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
+            .setMetadata(toDirectBufferMetadata(request.metadata()))
             .setGlobalScope(),
         authentication);
   }
@@ -100,6 +110,7 @@ public final class ClusterVariableServices
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
+            .setMetadata(toDirectBufferMetadata(request.metadata()))
             .setTenantScope(request.tenantId()),
         authentication);
   }
@@ -112,7 +123,7 @@ public final class ClusterVariableServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
                 .getClusterVariable(request.name()));
   }
@@ -125,7 +136,7 @@ public final class ClusterVariableServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
                 .getClusterVariable(request.name(), request.tenantId()));
   }
@@ -146,5 +157,14 @@ public final class ClusterVariableServices
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
   }
 
-  public record ClusterVariableRequest(String name, Object value, String tenantId) {}
+  private DirectBuffer toDirectBufferMetadata(final Map<String, Object> metadata) {
+    return toDirectBufferValue(metadata != null ? metadata : Map.of());
+  }
+
+  public record ClusterVariableRequest(
+      String name,
+      Object value,
+      String tenantId,
+      Map<String, Object> metadata,
+      @Nullable ClusterVariableKind kind) {}
 }

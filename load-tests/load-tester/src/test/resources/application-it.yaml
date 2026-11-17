@@ -1,4 +1,10 @@
 # Integration test configuration — overrides application.yaml to enable the Camunda client
+logging:
+  level:
+    # surface container-side broker/exporter stdout (Slf4jLogConsumer); root stays WARN
+    # (from application.yaml) to keep client retry noise down
+    camunda.container: INFO
+
 camunda:
   client:
     enabled: true

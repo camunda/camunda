@@ -16,6 +16,8 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.ClientRequest;
@@ -25,14 +27,13 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -48,6 +49,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -65,9 +67,6 @@ public class AtomixTransportTest {
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
   private static final Duration REQUEST_TIMEOUT_NO_SUCCESS = Duration.ofMillis(200);
-  private static final String TOPIC_PREFIX = "default";
-  private static final List<TopicSupplier> TOPIC_SUPPLIERS =
-      List.of(TopicSupplier.withLegacyTopicName(), TopicSupplier.withPrefix(TOPIC_PREFIX));
 
   private static Supplier<String> nodeAddressSupplier;
   private static AtomixCluster cluster;
@@ -75,6 +74,7 @@ public class AtomixTransportTest {
   private static TransportFactory transportFactory;
   private static NettyMessagingService nettyMessagingService;
   @AutoClose private static MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private static final String MESSAGE_CONTENT = "messageABC";
 
   @Parameter(0)
   public String testName;
@@ -85,8 +85,13 @@ public class AtomixTransportTest {
   @Parameter(2)
   public Function<AtomixCluster, ServerTransport> serverTransportFunction;
 
+  @Parameter(3)
+  public String topicPrefix;
+
   private ClientTransport clientTransport;
   private ServerTransport serverTransport;
+  private PartitionId partitionId;
+  private Request request;
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
@@ -94,7 +99,7 @@ public class AtomixTransportTest {
     return Arrays.asList(
         new Object[][] {
           {
-            "use same messaging service",
+            "use same messaging service (default group)",
             (Function<AtomixCluster, ClientTransport>)
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
@@ -104,26 +109,27 @@ public class AtomixTransportTest {
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
                   return transportFactory.createServerTransport(
-                      messagingService, requestIdGenerator, TOPIC_SUPPLIERS);
-                }
+                      messagingService, requestIdGenerator, true);
+                },
+            "default"
           },
           {
-            "use default-{topic}-prefixed topics in client requests",
+            "use same messaging service (non-default group)",
             (Function<AtomixCluster, ClientTransport>)
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
-                  return transportFactory.createClientTransport(
-                      messagingService, TopicSupplier.withPrefix(TOPIC_PREFIX));
+                  return transportFactory.createClientTransport(messagingService);
                 },
             (Function<AtomixCluster, ServerTransport>)
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
                   return transportFactory.createServerTransport(
-                      messagingService, requestIdGenerator, TOPIC_SUPPLIERS);
-                }
+                      messagingService, requestIdGenerator, true);
+                },
+            "tenant1"
           },
           {
-            "use different messaging service",
+            "use different messaging service (default group)",
             (Function<AtomixCluster, ClientTransport>)
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
@@ -133,23 +139,24 @@ public class AtomixTransportTest {
                 (cluster) -> {
                   createNettyMessagingServiceIfNull();
                   return transportFactory.createServerTransport(
-                      nettyMessagingService, requestIdGenerator, TOPIC_SUPPLIERS);
-                }
+                      nettyMessagingService, requestIdGenerator, true);
+                },
+            "default"
           },
           {
-            "use different messaging service and prefixed client requests",
+            "use different messaging service (non-default group)",
             (Function<AtomixCluster, ClientTransport>)
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
-                  return transportFactory.createClientTransport(
-                      messagingService, TopicSupplier.withPrefix(TOPIC_PREFIX));
+                  return transportFactory.createClientTransport(messagingService);
                 },
             (Function<AtomixCluster, ServerTransport>)
                 (cluster) -> {
                   createNettyMessagingServiceIfNull();
                   return transportFactory.createServerTransport(
-                      nettyMessagingService, requestIdGenerator, TOPIC_SUPPLIERS);
-                }
+                      nettyMessagingService, requestIdGenerator, true);
+                },
+            "tenant1"
           }
         });
   }
@@ -187,6 +194,8 @@ public class AtomixTransportTest {
   public void beforeTest() {
     clientTransport = clientTransportFunction.apply(cluster);
     serverTransport = serverTransportFunction.apply(cluster);
+    partitionId = new PartitionId(topicPrefix, 0);
+    request = new Request(MESSAGE_CONTENT).withPartitionGroup(topicPrefix);
   }
 
   @After
@@ -210,18 +219,20 @@ public class AtomixTransportTest {
     // given
     final var incomingRequestFuture = new CompletableFuture<byte[]>();
     serverTransport
-        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(incomingRequestFuture::complete))
+        .subscribe(
+            partitionId,
+            RequestType.COMMAND,
+            new DirectlyResponder(incomingRequestFuture::complete))
         .join();
 
     // when
     final var requestFuture =
-        clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
+        clientTransport.sendRequestWithRetry(nodeAddressSupplier, request, REQUEST_TIMEOUT);
 
     // then
     final var response = requestFuture.join();
-    assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
-    assertThat(incomingRequestFuture.join()).isEqualTo("messageABC".getBytes());
+    assertThat(response.byteArray()).isEqualTo(MESSAGE_CONTENT.getBytes());
+    assertThat(incomingRequestFuture.join()).isEqualTo(MESSAGE_CONTENT.getBytes());
   }
 
   @Test
@@ -229,12 +240,15 @@ public class AtomixTransportTest {
     // given
     final var retryLatch = new CountDownLatch(2);
     serverTransport
-        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(bytes -> retryLatch.countDown()))
+        .subscribe(
+            partitionId,
+            RequestType.COMMAND,
+            new DirectlyResponder(bytes -> retryLatch.countDown()))
         .join();
 
     // when
     clientTransport.sendRequestWithRetry(
-        nodeAddressSupplier, (response) -> false, new Request("messageABC"), REQUEST_TIMEOUT);
+        nodeAddressSupplier, (response) -> false, request, REQUEST_TIMEOUT);
 
     // then
     final var success = retryLatch.await(REQUEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
@@ -247,7 +261,7 @@ public class AtomixTransportTest {
     // given
     serverTransport
         .subscribe(
-            0,
+            partitionId,
             RequestType.COMMAND,
             new DirectlyResponder(
                 bytes -> {
@@ -257,8 +271,7 @@ public class AtomixTransportTest {
 
     // when
     final var requestFuture =
-        clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
+        clientTransport.sendRequestWithRetry(nodeAddressSupplier, request, REQUEST_TIMEOUT);
 
     // then
     assertThatThrownBy(requestFuture::join)
@@ -271,19 +284,91 @@ public class AtomixTransportTest {
     // given
     final var incomingRequestFuture = new CompletableFuture<byte[]>();
     serverTransport
-        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(incomingRequestFuture::complete))
+        .subscribe(
+            partitionId,
+            RequestType.COMMAND,
+            new DirectlyResponder(incomingRequestFuture::complete))
         .join();
 
     // when
-    serverTransport.unsubscribe(0, RequestType.COMMAND).join();
+    serverTransport.unsubscribe(partitionId, RequestType.COMMAND).join();
 
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
+            nodeAddressSupplier, request, REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
     assertThat(incomingRequestFuture).isNotCompleted();
+  }
+
+  @Test
+  public void shouldReceiveRequestOnLegacyTopicForDefaultGroup() {
+    // given
+    Assume.assumeTrue(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
+
+    // when -- requests are sent on the legacy, non-prefixed topic
+    final var responseFuture =
+        cluster
+            .getMessagingService()
+            .sendAndReceive(
+                Address.from(serverAddress), "command-api-0", MESSAGE_CONTENT.getBytes());
+
+    // then
+    assertThat(responseFuture.join()).isEqualTo(MESSAGE_CONTENT.getBytes());
+  }
+
+  @Test
+  public void shouldNotReceiveRequestOnLegacyTopicForNonDefaultGroup() {
+    // given
+    Assume.assumeFalse(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(topicPrefix));
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
+
+    // when -- requests are sent on the legacy, non-prefixed topic
+    final var responseFuture =
+        cluster
+            .getMessagingService()
+            .sendAndReceive(
+                Address.from(serverAddress), "command-api-0", MESSAGE_CONTENT.getBytes());
+
+    // then
+    assertThatThrownBy(responseFuture::join)
+        .hasCauseInstanceOf(MessagingException.NoRemoteHandler.class);
+  }
+
+  @Test
+  public void shouldNotReceiveRequestOnLegacyTopicWhenLegacyReceiveIsDisabled() {
+    // given -- a server transport that doesn't receive on legacy subjects
+    final var transport =
+        transportFactory.createServerTransport(
+            cluster.getMessagingService(), new SnowflakeIdGenerator(1), false);
+    try {
+      final var partition = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 5);
+      transport.subscribe(partition, RequestType.COMMAND, new DirectlyResponder()).join();
+      final var serverAddress = cluster.getMessagingService().address();
+
+      // when -- requests are sent on the legacy and the prefixed topic
+      final var legacyResponseFuture =
+          cluster
+              .getMessagingService()
+              .sendAndReceive(serverAddress, "command-api-5", MESSAGE_CONTENT.getBytes());
+      final var prefixedResponseFuture =
+          cluster
+              .getMessagingService()
+              .sendAndReceive(serverAddress, "default-command-api-5", MESSAGE_CONTENT.getBytes());
+
+      // then -- only the prefixed topic is handled
+      assertThatThrownBy(legacyResponseFuture::join)
+          .hasCauseInstanceOf(MessagingException.NoRemoteHandler.class);
+      assertThat(prefixedResponseFuture.join()).isEqualTo(MESSAGE_CONTENT.getBytes());
+    } finally {
+      try {
+        transport.close();
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   @Test
@@ -293,7 +378,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26499", new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
+            () -> "0.0.0.0:26499", request, REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -304,8 +389,7 @@ public class AtomixTransportTest {
     // given
 
     // when
-    final var requestFuture =
-        clientTransport.sendRequest(() -> null, new Request("messageABC"), REQUEST_TIMEOUT);
+    final var requestFuture = clientTransport.sendRequest(() -> null, request, REQUEST_TIMEOUT);
 
     // then
     assertThatThrownBy(requestFuture::join)
@@ -318,7 +402,7 @@ public class AtomixTransportTest {
     // given
     final var nodeAddressRef = new AtomicReference<String>();
     final var retryLatch = new CountDownLatch(3);
-    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
@@ -326,7 +410,7 @@ public class AtomixTransportTest {
               retryLatch.countDown();
               return nodeAddressRef.get();
             },
-            new Request("messageABC"),
+            request,
             REQUEST_TIMEOUT);
 
     // when
@@ -343,7 +427,10 @@ public class AtomixTransportTest {
     // given
     final var retryLatch = new CountDownLatch(2);
     serverTransport
-        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(bytes -> retryLatch.countDown()))
+        .subscribe(
+            partitionId,
+            RequestType.COMMAND,
+            new DirectlyResponder(bytes -> retryLatch.countDown()))
         .join();
 
     final var responseValidation = new AtomicBoolean(false);
@@ -351,7 +438,7 @@ public class AtomixTransportTest {
         clientTransport.sendRequestWithRetry(
             nodeAddressSupplier,
             (responseToValidate) -> responseValidation.get(),
-            new Request("messageABC"),
+            request,
             REQUEST_TIMEOUT);
 
     // when
@@ -360,7 +447,7 @@ public class AtomixTransportTest {
 
     // then
     final var response = requestFuture.join();
-    assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
+    assertThat(response.byteArray()).isEqualTo(MESSAGE_CONTENT.getBytes());
   }
 
   @Test
@@ -370,7 +457,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26499", new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
+            () -> "0.0.0.0:26499", request, REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -386,50 +473,47 @@ public class AtomixTransportTest {
               retryLatch.countDown();
               return serverAddress;
             },
-            new Request("messageABC"),
+            request,
             REQUEST_TIMEOUT);
 
     // when
     retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
-    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // then
     final var response = requestFuture.join();
-    assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
+    assertThat(response.byteArray()).isEqualTo(MESSAGE_CONTENT.getBytes());
   }
 
   @Test
   public void shouldOnlyHandleRequestsOfSubscribedTypes() {
     // given
-    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
-    serverTransport.subscribe(0, RequestType.UNKNOWN, new FailingResponder()).join();
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, new DirectlyResponder()).join();
+    serverTransport.subscribe(partitionId, RequestType.UNKNOWN, new FailingResponder()).join();
 
     // when
     final var requestFuture =
-        clientTransport.sendRequest(
-            () -> serverAddress, new Request("messageABC"), REQUEST_TIMEOUT);
+        clientTransport.sendRequest(() -> serverAddress, request, REQUEST_TIMEOUT);
 
     // then
     final var response = requestFuture.join();
-    assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
+    assertThat(response.byteArray()).isEqualTo(MESSAGE_CONTENT.getBytes());
   }
 
   @Test
   public void shouldCreateUniqueRequestsIds() {
     final DirectlyResponder directlyResponder = new DirectlyResponder();
 
-    serverTransport.subscribe(0, RequestType.COMMAND, directlyResponder).join();
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, directlyResponder).join();
 
     // when
     final var requestFuture1 =
-        clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
+        clientTransport.sendRequestWithRetry(nodeAddressSupplier, request, REQUEST_TIMEOUT);
     requestFuture1.join();
     final long requestId1 = directlyResponder.serverResponse.getRequestId();
 
     final var requestFuture2 =
-        clientTransport.sendRequestWithRetry(
-            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
+        clientTransport.sendRequestWithRetry(nodeAddressSupplier, request, REQUEST_TIMEOUT);
     requestFuture2.join();
     final long requestId2 = directlyResponder.serverResponse.getRequestId();
 
@@ -440,9 +524,15 @@ public class AtomixTransportTest {
   private static final class Request implements ClientRequest {
 
     private final String msg;
+    private String partitionGroup = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
     public Request(final String msg) {
       this.msg = msg;
+    }
+
+    public Request withPartitionGroup(final String partitionGroup) {
+      this.partitionGroup = partitionGroup;
+      return this;
     }
 
     @Override
@@ -453,6 +543,11 @@ public class AtomixTransportTest {
     @Override
     public RequestType getRequestType() {
       return RequestType.COMMAND;
+    }
+
+    @Override
+    public String getPartitionGroup() {
+      return partitionGroup;
     }
 
     @Override
@@ -489,9 +584,10 @@ public class AtomixTransportTest {
         final DirectBuffer buffer,
         final int offset,
         final int length) {
+      final var writer = new DirectBufferWriter(buffer, offset, length);
       serverResponse =
           new ServerResponseImpl()
-              .buffer(buffer, 0, length)
+              .writer(writer)
               .setRequestId(requestId)
               .setPartitionId(partitionId);
       requestConsumer.accept(buffer.byteArray());

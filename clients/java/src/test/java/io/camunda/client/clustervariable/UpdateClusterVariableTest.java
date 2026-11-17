@@ -24,9 +24,12 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.UpdateClusterVariableRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import java.util.HashMap;
+import java.util.Map;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -77,6 +80,55 @@ public class UpdateClusterVariableTest extends ClientRestTest {
     assertThat(request.getUrl())
         .isEqualTo(RestGatewayPaths.getClusterVariablesUpdateTenantUrl(TENANT_ID, VARIABLE_NAME));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.PUT);
+  }
+
+  @Test
+  void shouldUpdateGlobalClusterVariableWithMetadata() {
+    // given
+    final Map<String, Object> metadata = new HashMap<>();
+    metadata.put("kind", "CREDENTIAL");
+    metadata.put("schemaVersion", 3);
+    gatewayService.onUpdateGlobalClusterVariableRequest(
+        VARIABLE_NAME,
+        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.GLOBAL));
+
+    // when
+    client
+        .newGloballyScopedClusterVariableUpdateRequest()
+        .update(VARIABLE_NAME, VARIABLE_VALUE)
+        .metadata(metadata)
+        .send()
+        .join();
+
+    // then
+    final UpdateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(UpdateClusterVariableRequest.class);
+    assertThat(sentRequest.getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
+  }
+
+  @Test
+  void shouldUpdateTenantClusterVariableWithMetadata() {
+    // given
+    final Map<String, Object> metadata = new HashMap<>();
+    metadata.put("kind", "CREDENTIAL");
+    metadata.put("schemaVersion", 3);
+    gatewayService.onUpdateTenantClusterVariableRequest(
+        TENANT_ID,
+        VARIABLE_NAME,
+        Instancio.create(ClusterVariableResult.class).scope(ClusterVariableScopeEnum.TENANT));
+
+    // when
+    client
+        .newTenantScopedClusterVariableUpdateRequest(TENANT_ID)
+        .update(VARIABLE_NAME, VARIABLE_VALUE)
+        .metadata(metadata)
+        .send()
+        .join();
+
+    // then
+    final UpdateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(UpdateClusterVariableRequest.class);
+    assertThat(sentRequest.getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 
   @Test

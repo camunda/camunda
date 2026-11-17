@@ -35,6 +35,7 @@ public class JobEntityMapperTest {
             .kind(JobKind.BPMN_ELEMENT)
             .listenerEventType(ListenerEventType.START)
             .retries(3)
+            .priority(5)
             .isDenied(true)
             .deniedReason("testDeniedReason")
             .hasFailedWithRetriesLeft(false)
@@ -49,6 +50,10 @@ public class JobEntityMapperTest {
             .elementId("elementBpmnId")
             .elementInstanceKey(1L)
             .tenantId("tenantId")
+            .businessId("testBusinessId")
+            .storageOrdinal(1001)
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
 
     // When
@@ -79,6 +84,7 @@ public class JobEntityMapperTest {
             .kind(JobKind.BPMN_ELEMENT)
             .listenerEventType(ListenerEventType.START)
             .retries(0)
+            .priority(null)
             .isDenied(false)
             .deniedReason(null)
             .hasFailedWithRetriesLeft(false)
@@ -119,9 +125,12 @@ public class JobEntityMapperTest {
     assertThat(entity.endTime()).isNull();
     assertThat(entity.processDefinitionId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
-    assertThat(entity.elementId()).isNull();
+    assertThat(entity.elementId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.tenantId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.businessId()).isNull();
+    assertThat(entity.storageOrdinal()).isNull();
     assertThat(entity.creationTime()).isNotNull();
     assertThat(entity.lastUpdateTime()).isNotNull();
   }

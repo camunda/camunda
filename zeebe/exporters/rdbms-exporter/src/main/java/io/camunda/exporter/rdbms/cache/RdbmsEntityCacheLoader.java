@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,8 +82,11 @@ public final class RdbmsEntityCacheLoader<K, Entity, CachedEntity, Query>
     return toCachedEntities(search.apply(query));
   }
 
-  private Map<K, CachedEntity> toCachedEntities(final Iterable<Entity> entities) {
-    return java.util.stream.StreamSupport.stream(entities.spliterator(), false)
-        .collect(Collectors.toMap(keyExtractor, mapper));
+  private @NotNull Map<K, CachedEntity> toCachedEntities(final Iterable<Entity> entities) {
+    final Map<K, CachedEntity> cachedEntities = new HashMap<>();
+    for (final Entity entity : entities) {
+      cachedEntities.put(keyExtractor.apply(entity), mapper.apply(entity));
+    }
+    return cachedEntities;
   }
 }

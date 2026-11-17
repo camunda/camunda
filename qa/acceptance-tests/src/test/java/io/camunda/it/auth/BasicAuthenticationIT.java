@@ -94,6 +94,11 @@ public class BasicAuthenticationIT {
 
   private static URI createUri(final CamundaClient client, final String path)
       throws URISyntaxException {
-    return new URI("%s%s".formatted(client.getConfiguration().getRestAddress(), path));
+    // The configured REST address already carries the /physical-tenants/<id> prefix when the
+    // client is bound to a physical tenant, but it has no trailing slash. Join with a single
+    // separator so the path resolves under the tenant instead of mangling into 404s.
+    final String base = client.getConfiguration().getRestAddress().toString();
+    final String separator = base.endsWith("/") ? "" : "/";
+    return new URI(base + separator + path);
   }
 }

@@ -1,7 +1,7 @@
 # description: Tracks stale backport PRs and notifies authors via GitHub comments and Slack.
 # Runs every hours on weekdays, on manual dispatch, and can be called by other workflows.
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Stale Backport Tracker
 
@@ -35,7 +35,7 @@ on:
       stale_hours_threshold:
         description: 'Hours after which a backport PR is considered stale'
         required: false
-        default: '6'
+        default: '24'
         type: string
       slack_channel_id:
         description: 'Slack channel ID to post the report to. Required for manual runs — the default #top-monorepo-ci channel is only used by the scheduled cron trigger.'
@@ -67,7 +67,7 @@ on:
       stale_hours_threshold:
         description: 'Hours after which a backport PR is considered stale'
         required: false
-        default: '6'
+        default: '24'
         type: string
       slack_channel_id:
         description: 'Slack channel ID to post the report to. Required when notify_slack is true — the default #top-monorepo-ci channel is only used by the scheduled cron trigger.'
@@ -81,6 +81,9 @@ defaults:
 
 permissions: {}
 
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+
 jobs:
   collect-stale-backports:
     name: Collect stale backport PRs
@@ -92,10 +95,11 @@ jobs:
       stale_data: ${{ steps.collect.outputs.stale_data }}
       has_stale: ${{ steps.collect.outputs.has_stale }}
       total_stale: ${{ steps.collect.outputs.total_stale }}
+      job_id: ${{ job.check_run_id }}
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -107,14 +111,16 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Collect stale backport PRs
         id: collect
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
-          STALE_HOURS_THRESHOLD: ${{ inputs.stale_hours_threshold || '6' }}
+          STALE_HOURS_THRESHOLD: ${{ inputs.stale_hours_threshold || '24' }}
           TARGET_BRANCH: ${{ inputs.target_branch || '' }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/collect-stale-backports.sh
@@ -137,6 +143,44 @@ jobs:
 
           echo "📊 Summary: $total_stale stale backport PR(s) found"
 
+  # CI health observation for the collect job runs in a SEPARATE downstream job to
+  # avoid registering Vault secrets in the collect job's scope. When Vault secrets
+  # are masked in the same job that emits `stale_data` via `outputs:`, GHA's
+  # cross-job output guard does a substring match against every registered secret
+  # value. The Vault URL (VAULT_ADDR) contains the substring "camunda", which is
+  # also present in every PR URL (github.com/camunda/camunda/pull/N) inside
+  # stale_data — causing the entire output to be silently dropped with the warning:
+  #   "Skip output 'stale_data' since it may contain secret."
+  # That regression was introduced by commit d300af0b on 2026-06-03 and broke the
+  # tracker (Slack posted false "no stale backports" while the collect job had
+  # found 5). Keeping the Observe step in its own job isolates the Vault secret
+  # registration to a scope that does not emit cross-job outputs.
+  observe-collect-status:
+    name: Observe Collect job status
+    needs: collect-stale-backports
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: collect-stale-backports
+          job_id: ${{ needs.collect-stale-backports.outputs.job_id }}
+          build_status: ${{ needs.collect-stale-backports.result }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   notify-github:
     name: Notify on GitHub PRs
     needs: collect-stale-backports
@@ -154,7 +198,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -165,10 +209,12 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           repositories: "camunda,zeebe-process-test"
-  
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-  
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Notify stale backport PRs
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -176,9 +222,10 @@ jobs:
           NOTIFY_ORIGINAL: "false"
           TARGET_BACKPORT_PR: ${{ inputs.target_backport_pr || '' }}
           WORKFLOW_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STALE_DATA: ${{ needs.collect-stale-backports.outputs.stale_data }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
-          stale_data='${{ needs.collect-stale-backports.outputs.stale_data }}'
+          stale_data="$STALE_DATA"
           if [[ -n "$TARGET_BACKPORT_PR" ]]; then
             echo "🎯 Filtering to backport PR #${TARGET_BACKPORT_PR} only"
             stale_data=$(printf '%s' "$stale_data" | jq --arg pr "$TARGET_BACKPORT_PR" '
@@ -187,6 +234,15 @@ jobs:
           fi
           printf '%s' "$stale_data" | \
             .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   notify-slack:
     name: Post Slack report
@@ -201,7 +257,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -214,11 +270,13 @@ jobs:
           repositories: "monorepo-ci-data"
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Get Slack secrets from Vault
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -257,16 +315,19 @@ jobs:
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
           SLACK_USER_MAP_FILE: /tmp/slack-user-map.json
           SLACK_USER_MAP_FALLBACK: ${{ env.SLACK_USER_MAP_FALLBACK }}
+          STALE_DATA: ${{ needs.collect-stale-backports.outputs.stale_data }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
-          payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
+          payload=$(printf '%s' "$STALE_DATA" | \
             .ci/scripts/stale-backport-scripts/format-slack-report.sh)
 
-          {
-            echo "payload<<PAYLOAD_EOF"
-            echo "$payload"
-            echo "PAYLOAD_EOF"
-          } >> "$GITHUB_OUTPUT"
+          # Compact single-line JSON: slack-github-action v4's strict YAML parser rejects multi-line toJSON() output.
+          blocks=$(printf '%s' "$payload" | jq -ce '.blocks | select(type == "array")') || {
+            echo "::error::format-slack-report.sh did not produce a .blocks array — aborting before posting an invalid Slack payload" >&2
+            exit 1
+          }
+
+          echo "blocks=$blocks" >> "$GITHUB_OUTPUT"
 
       - name: Find existing Slack message to update
         id: find-message
@@ -290,7 +351,7 @@ jobs:
           message_ts=$(echo "$response" | jq -r '
             [(.messages // [])[] | select(
               .bot_id != null and
-              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"; "i"))
             )] | first | .ts // ""')
 
           if [[ -n "$message_ts" ]]; then
@@ -322,7 +383,7 @@ jobs:
 
       - name: Update existing Slack message
         if: steps.find-message.outputs.found == 'true'
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         continue-on-error: true
         with:
           method: chat.update
@@ -331,7 +392,7 @@ jobs:
             channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             ts: "${{ steps.find-message.outputs.message_ts }}"
             text: "Stale backport report"
-            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+            blocks: ${{ steps.format.outputs.blocks }}
 
       - name: Pin existing Slack message if not already pinned
         if: steps.find-message.outputs.found == 'true' && steps.find-message.outputs.is_pinned == 'false'
@@ -344,7 +405,7 @@ jobs:
           response=$(curl -s -X POST "https://slack.com/api/pins.add" \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}") 
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}")
           ok=$(echo "$response" | jq -r '.ok')
           err=$(echo "$response" | jq -r '.error // "none"')
           echo "pins.add ok: $ok, error: $err" >&2
@@ -370,20 +431,20 @@ jobs:
             [(.items // [])[] | select(
               .type == "message" and
               .message.bot_id != null and
-              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"; "i"))
             ) | .message.ts] | .[]' | while read -r ts; do
             echo "Unpinning old message: $ts" >&2
             resp=$(curl -s -X POST "https://slack.com/api/pins.remove" \
               -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}") 
+              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}")
             echo "pins.remove ok: $(echo "$resp" | jq -r '.ok'), error: $(echo "$resp" | jq -r '.error // "none"')" >&2
           done
 
       - name: Post new Slack message
         if: steps.find-message.outputs.found != 'true'
         id: post-message
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         continue-on-error: true
         with:
           method: chat.postMessage
@@ -391,7 +452,7 @@ jobs:
           payload: |
             channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             text: "Stale backport report"
-            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+            blocks: ${{ steps.format.outputs.blocks }}
 
       - name: Pin new Slack message
         if: steps.find-message.outputs.found != 'true'
@@ -409,7 +470,7 @@ jobs:
           response=$(curl -s -X POST "https://slack.com/api/pins.add" \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}") 
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}")
           ok=$(echo "$response" | jq -r '.ok')
           err=$(echo "$response" | jq -r '.error // "none"')
           echo "pins.add ok: $ok, error: $err" >&2
@@ -465,3 +526,17 @@ jobs:
               ] | join("\n"))
             '
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
-public record FilesystemBackupConfig(String basePath) {
+import org.jspecify.annotations.Nullable;
+
+public record FilesystemBackupConfig(@Nullable String basePath) {
 
   public static class Builder {
 
-    private String basePath;
+    private @Nullable String basePath;
 
     /**
      * The base path to store all related backup files in.
@@ -25,7 +27,6 @@ public record FilesystemBackupConfig(String basePath) {
     }
 
     public FilesystemBackupConfig build() {
-
       return new FilesystemBackupConfig(basePath);
     }
   }

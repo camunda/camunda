@@ -9,24 +9,42 @@ package io.camunda.zeebe.backup.gcs;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
+import java.time.Duration;
+import java.util.Optional;
 
 public record GcsBackupConfig(
     String bucketName,
     String basePath,
     GcsConnectionConfig connection,
-    int maxConcurrentTransfers) {
+    int maxConcurrentTransfers,
+    int bufferSize,
+    Optional<Duration> readTimeout,
+    Optional<Duration> writeTimeout,
+    Retry retry) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
       final GcsConnectionConfig connection,
-      final int maxConcurrentTransfers) {
+      final int maxConcurrentTransfers,
+      final int bufferSize,
+      final Optional<Duration> readTimeout,
+      final Optional<Duration> writeTimeout,
+      final Retry retry) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
     this.maxConcurrentTransfers = maxConcurrentTransfers;
+    if (bufferSize <= 0) {
+      throw new ConfigurationException("Expected bufferSize to be > 0, but got " + bufferSize);
+    }
+    this.bufferSize = bufferSize;
+    this.readTimeout = readTimeout;
+    this.writeTimeout = writeTimeout;
+    this.retry = requireNonNull(retry);
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -37,29 +55,28 @@ public record GcsBackupConfig(
   }
 
   private static String sanitizeBasePath(final String basePath) {
-    if (basePath == null) {
-      return null;
+    try {
+      return BackupStorePaths.sanitizeBasePath(basePath).orElse(null);
+    } catch (final IllegalArgumentException e) {
+      throw new ConfigurationException(e.getMessage(), e);
     }
+  }
 
-    var sanitized = basePath.trim();
-    if (sanitized.isEmpty() || sanitized.equals("/")) {
-      return null;
+  /**
+   * Optional limits on how the client retries failing requests. Empty values leave the library
+   * defaults in place.
+   */
+  public record Retry(Optional<Duration> totalTimeout, Optional<Integer> maxAttempts) {
+    public Retry {
+      // gax treats 0 as "no limit on attempts", which would silently not bound the retries
+      maxAttempts.ifPresent(
+          attempts -> {
+            if (attempts <= 0) {
+              throw new ConfigurationException(
+                  "Expected retry maxAttempts to be > 0, but got " + attempts);
+            }
+          });
     }
-
-    // Remove one leading and one trailing slash if present.
-    while (sanitized.startsWith("/")) {
-      sanitized = sanitized.substring(1);
-    }
-    while (sanitized.endsWith("/")) {
-      sanitized = sanitized.substring(0, sanitized.length() - 1);
-    }
-
-    if (sanitized.isBlank()) {
-      throw new ConfigurationException(
-          "After removing leading and trailing '/' characters from basePath '%s', the remainder is empty and not a valid base path"
-              .formatted(basePath));
-    }
-    return sanitized;
   }
 
   public static final class Builder {
@@ -67,6 +84,12 @@ public record GcsBackupConfig(
     private String basePath;
     private String host;
     private GcsConnectionConfig.Authentication auth;
+    private Duration readTimeout;
+    private Duration writeTimeout;
+    private Optional<Duration> retryTotalTimeout = Optional.empty();
+    private Optional<Integer> retryMaxAttempts = Optional.empty();
+    // 2MiB matches the default used by the GCS library's Path-based upload
+    private int bufferSize = 2 * 1024 * 1024;
 
     /** Default parallelism for file transfers (uploads and downloads) using virtual threads */
     private int maxConcurrentTransfers = 50;
@@ -102,9 +125,41 @@ public record GcsBackupConfig(
       return this;
     }
 
+    public Builder withBufferSize(final int bufferSize) {
+      this.bufferSize = bufferSize;
+      return this;
+    }
+
+    public Builder withReadTimeout(final Duration readTimeout) {
+      this.readTimeout = readTimeout;
+      return this;
+    }
+
+    public Builder withWriteTimeout(final Duration writeTimeout) {
+      this.writeTimeout = writeTimeout;
+      return this;
+    }
+
+    public Builder withRetryTotalTimeout(final Optional<Duration> retryTotalTimeout) {
+      this.retryTotalTimeout = retryTotalTimeout;
+      return this;
+    }
+
+    public Builder withRetryMaxAttempts(final Optional<Integer> retryMaxAttempts) {
+      this.retryMaxAttempts = retryMaxAttempts;
+      return this;
+    }
+
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
-          bucketName, basePath, new GcsConnectionConfig(host, auth), maxConcurrentTransfers);
+          bucketName,
+          basePath,
+          new GcsConnectionConfig(host, auth),
+          maxConcurrentTransfers,
+          bufferSize,
+          Optional.ofNullable(readTimeout),
+          Optional.ofNullable(writeTimeout),
+          new Retry(retryTotalTimeout, retryMaxAttempts));
     }
   }
 }

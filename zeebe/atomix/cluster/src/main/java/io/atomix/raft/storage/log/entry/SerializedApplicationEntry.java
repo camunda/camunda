@@ -45,6 +45,6 @@ public record SerializedApplicationEntry(
 
   @Override
   public BufferWriter dataWriter() {
-    return new DirectBufferWriter().wrap(data);
+    return new DirectBufferWriter(data);
   }
 }

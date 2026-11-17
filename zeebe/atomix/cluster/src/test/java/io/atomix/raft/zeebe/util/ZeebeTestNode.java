@@ -22,7 +22,6 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.NoopSnapshotStore;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
@@ -30,6 +29,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import io.camunda.cluster.PartitionId;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collection;
@@ -65,7 +65,7 @@ public class ZeebeTestNode {
   }
 
   RaftPartition getPartition(final int id) {
-    return partitions.stream().filter(p -> p.id().id() == id).findFirst().orElse(null);
+    return partitions.stream().filter(p -> p.id().number() == id).findFirst().orElse(null);
   }
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
@@ -74,7 +74,7 @@ public class ZeebeTestNode {
         nodes.stream().map(ZeebeTestNode::getMember).map(Member::id).collect(Collectors.toSet());
     members.add(member.id());
 
-    final PartitionId partitionId = PartitionId.from("test", 1);
+    final PartitionId partitionId = new PartitionId("test", 1);
     final var priorityMap =
         members.stream()
             .collect(

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
@@ -28,10 +29,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -52,6 +55,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
@@ -71,6 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.StringUtils;
@@ -128,6 +133,10 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerPublishMessageRequest toPublishMessageRequest(
       final PublishMessageRequest grpcRequest) {
+    if (StringUtils.isBlank(grpcRequest.getName())) {
+      throw new IllegalArgumentException(
+          "Expected to publish message with a non-empty name, but no name was provided");
+    }
     final BrokerPublishMessageRequest brokerRequest =
         new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey());
 
@@ -135,7 +144,8 @@ public final class RequestMapper extends RequestUtil {
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()))
+        .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
     return brokerRequest;
   }
@@ -144,6 +154,9 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobRetriesRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -154,6 +167,26 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobTimeoutRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
+  }
+
+  public static BrokerUpdateJobRequest toUpdateJobPriorityRequest(
+      final UpdateJobPriorityRequest grpcRequest) {
+    if (!grpcRequest.hasPriority()) {
+      throw new IllegalArgumentException(
+          "Expected to update job priority, but priority must be provided");
+    }
+    final var brokerRequest =
+        new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority());
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -161,26 +194,44 @@ public final class RequestMapper extends RequestUtil {
   }
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
-    return new BrokerFailJobRequest(
-            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
-        .setErrorMessage(grpcRequest.getErrorMessage())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    final var brokerRequest =
+        new BrokerFailJobRequest(
+                grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
+            .setErrorMessage(grpcRequest.getErrorMessage())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
+    return brokerRequest;
   }
 
   public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
-    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
-        .setErrorMessage(grpcRequest.getErrorMessage())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    final var brokerRequest =
+        new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
+            .setErrorMessage(grpcRequest.getErrorMessage())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
+    return brokerRequest;
   }
 
   public static BrokerCompleteJobRequest toCompleteJobRequest(
       final CompleteJobRequest grpcRequest) {
 
-    return new BrokerCompleteJobRequest(
-        grpcRequest.getJobKey(),
-        ensureJsonSet(grpcRequest.getVariables()),
-        getJobResultOrDefault(grpcRequest),
-        maxVariableNameLength);
+    final var brokerRequest =
+        new BrokerCompleteJobRequest(
+            grpcRequest.getJobKey(),
+            ensureJsonSet(grpcRequest.getVariables()),
+            getJobResultOrDefault(grpcRequest),
+            maxVariableNameLength);
+    if (grpcRequest.hasJobLeaseToken()) {
+      brokerRequest.setJobLeaseToken(grpcRequest.getJobLeaseToken());
+    }
+    if (grpcRequest.hasBusinessId()) {
+      brokerRequest.setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+    }
+    return brokerRequest;
   }
 
   private static JobResult getJobResultOrDefault(final CompleteJobRequest request) {
@@ -280,6 +331,11 @@ public final class RequestMapper extends RequestUtil {
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
+    if (grpcRequest.hasVersionTag()) {
+      brokerRequest
+          .setVersionTag(ensureVersionTagValid(grpcRequest.getVersionTag()))
+          .setVersion(versionOrLatestIfUnset(grpcRequest.getVersion()));
+    }
 
     return brokerRequest;
   }
@@ -306,6 +362,11 @@ public final class RequestMapper extends RequestUtil {
 
     if (request.hasOperationReference()) {
       brokerRequest.setOperationReference(request.getOperationReference());
+    }
+    if (request.hasVersionTag()) {
+      brokerRequest
+          .setVersionTag(ensureVersionTagValid(request.getVersionTag()))
+          .setVersion(versionOrLatestIfUnset(request.getVersion()));
     }
     return brokerRequest;
   }
@@ -377,7 +438,8 @@ public final class RequestMapper extends RequestUtil {
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList())
         .setTenantIds(tenantIds)
-        .setTenantFilter(tenantFilter);
+        .setTenantFilter(tenantFilter)
+        .setWithLease(grpcRequest.getWithLease());
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -419,6 +481,14 @@ public final class RequestMapper extends RequestUtil {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
     return brokerRequest;
+  }
+
+  public static BrokerAssignProcessInstanceBusinessIdRequest
+      toAssignProcessInstanceBusinessIdRequest(
+          final AssignProcessInstanceBusinessIdRequest grpcRequest) {
+    return new BrokerAssignProcessInstanceBusinessIdRequest()
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
   }
 
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
@@ -475,12 +545,30 @@ public final class RequestMapper extends RequestUtil {
     jobActivationProperties
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())
-        .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
+        .setFetchVariables(
+            request.getFetchVariableList().stream()
+                .map(StringValue::new)
+                .collect(Collectors.toUnmodifiableSet()))
         .setTenantIds(tenantIds)
         .setTenantFilter(tenantFilter)
-        .setClaims(claims);
+        .setClaims(claims)
+        .setWithLease(request.getWithLease());
 
     return jobActivationProperties;
+  }
+
+  private static String ensureVersionTagValid(final String versionTag) {
+    if (StringUtils.isBlank(versionTag)) {
+      throw new IllegalArgumentException(
+          "Expected to create process instance with a non-empty version tag, but no version tag was provided");
+    }
+    return versionTag;
+  }
+
+  // proto3 can't leave the version unset, so a request with only a version tag arrives with
+  // version 0, which is never a deployed version; treat it as not set instead of conflicting
+  private static int versionOrLatestIfUnset(final int version) {
+    return version == 0 ? -1 : version;
   }
 
   public static String ensureBusinessIdValid(final String businessId) {
@@ -490,6 +578,13 @@ public final class RequestMapper extends RequestUtil {
           "business id exceeds the limit of %d characters".formatted(MAX_BUSINESS_ID_LENGTH));
     }
     return businessId;
+  }
+
+  public static String ensureRequiredBusinessIdValid(final String businessId) {
+    if (StringUtils.isBlank(businessId)) {
+      throw new InvalidBusinessIdException(businessId, "no business id was provided");
+    }
+    return ensureBusinessIdValid(businessId);
   }
 
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {

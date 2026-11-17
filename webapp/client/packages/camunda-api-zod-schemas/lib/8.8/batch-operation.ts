@@ -101,35 +101,35 @@ type QueryBatchOperationItemsRequestBody = z.infer<typeof queryBatchOperationIte
 const queryBatchOperationItemsResponseBodySchema = getQueryResponseBodySchema(batchOperationItemSchema);
 type QueryBatchOperationItemsResponseBody = z.infer<typeof queryBatchOperationItemsResponseBodySchema>;
 
-const getBatchOperation: Endpoint<{batchOperationKey: string}> = {
+const getBatchOperation = {
 	method: 'GET',
-	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}`,
-};
+	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}` as const,
+} as const satisfies Endpoint<{batchOperationKey: string}>;
 
-const queryBatchOperations: Endpoint = {
+const queryBatchOperations = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/batch-operations/search`,
-};
+	getUrl: () => `/${API_VERSION}/batch-operations/search` as const,
+} as const satisfies Endpoint;
 
-const cancelBatchOperation: Endpoint<{batchOperationKey: string}> = {
+const cancelBatchOperation = {
 	method: 'POST',
-	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/cancellation`,
-};
+	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/cancellation` as const,
+} as const satisfies Endpoint<{batchOperationKey: string}>;
 
-const suspendBatchOperation: Endpoint<{batchOperationKey: string}> = {
+const suspendBatchOperation = {
 	method: 'POST',
-	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/suspension`,
-};
+	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/suspension` as const,
+} as const satisfies Endpoint<{batchOperationKey: string}>;
 
-const resumeBatchOperation: Endpoint<{batchOperationKey: string}> = {
+const resumeBatchOperation = {
 	method: 'POST',
-	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/resumption`,
-};
+	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/resumption` as const,
+} as const satisfies Endpoint<{batchOperationKey: string}>;
 
-const queryBatchOperationItems: Endpoint = {
+const queryBatchOperationItems = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/batch-operation-items/search`,
-};
+	getUrl: () => `/${API_VERSION}/batch-operation-items/search` as const,
+} as const satisfies Endpoint;
 
 export {
 	batchOperationTypeSchema,

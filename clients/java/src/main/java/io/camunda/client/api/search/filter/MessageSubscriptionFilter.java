@@ -30,6 +30,23 @@ import java.util.function.Consumer;
 public interface MessageSubscriptionFilter extends SearchRequestFilter {
 
   /**
+   * Filter by business id.
+   *
+   * @param businessId the business id inherited from the subscribing process instance
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter businessId(String businessId);
+
+  /**
+   * Filter by business id using a {@link StringProperty} consumer. Supports advanced string
+   * operators including {@code $like} with wildcards.
+   *
+   * @param fn the business id {@link StringProperty} consumer for the message subscription
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter businessId(Consumer<StringProperty> fn);
+
+  /**
    * Filter by message subscription key.
    *
    * @param messageSubscriptionKey key of the message subscription
@@ -258,4 +275,36 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter processDefinitionVersion(Consumer<IntegerProperty> fn);
+
+  /**
+   * Filter by tool name.
+   *
+   * @param toolName the tool name
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter toolName(String toolName);
+
+  /**
+   * Filter by tool name using a {@link StringProperty} consumer.
+   *
+   * @param fn the tool name {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter toolName(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by inbound connector type.
+   *
+   * @param inboundConnectorType the inbound connector type
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter inboundConnectorType(String inboundConnectorType);
+
+  /**
+   * Filter by inbound connector type using a {@link StringProperty} consumer.
+   *
+   * @param fn the inbound connector type {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter inboundConnectorType(Consumer<StringProperty> fn);
 }

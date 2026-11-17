@@ -1,0 +1,500 @@
+# description: Reusable workflow — one fix attempt of the OC flakiness fix agent.
+#              Claude Code reads the flaky test and the failures of the previous
+#              validation pass and edits the suite in a job that holds no
+#              GitHub write credential; a separate publish job checks the
+#              resulting patch, lints, commits and pushes it to the flaky-fix
+#              branch. It opens no PR: that
+#              is decided by c8-orchestration-cluster-flakiness-fix.yml once the
+#              fix has been validated.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster - Flakiness Agent
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      target_ref:
+        description: "stable/<version> or main"
+        required: true
+        type: string
+      branch:
+        description: "flaky-fix branch to push to"
+        required: true
+        type: string
+      base:
+        description: "target: start from target_ref; iter1: build on the branch as pushed"
+        required: true
+        type: string
+      iteration:
+        required: true
+        type: number
+      spec:
+        required: true
+        type: string
+      title_path:
+        required: true
+        type: string
+      project:
+        required: true
+        type: string
+      cells:
+        required: true
+        type: string
+      evidence:
+        description: 'JSON array of earlier pass labels whose artifacts the agent reads, e.g. ["baseline","iter1"]'
+        required: true
+        type: string
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
+    outputs:
+      changed:
+        description: "true when a commit was pushed"
+        value: ${{ jobs.publish.outputs.changed }}
+      sha:
+        value: ${{ jobs.publish.outputs.sha }}
+      rejected:
+        description: "true when the patch failed the publish checks or lint; any other failure is the infrastructure's"
+        value: ${{ jobs.publish.outputs.rejected }}
+
+permissions:
+  contents: read
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
+jobs:
+  fix:
+    name: Fix attempt ${{ inputs.iteration }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    outputs:
+      start_sha: ${{ steps.ws.outputs.start_sha }}
+      has_patch: ${{ steps.patch.outputs.has_patch }}
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - name: Record job start time
+        id: job_start
+        run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the workflow's commit for tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+            qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+            secret/data/products/qa/ci/common GH_TOKEN | GH_PAT ;
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27'
+          cache: false
+
+      - name: Install workspace-cli
+        env:
+          GOPRIVATE: github.com/camunda/*
+          GOTOOLCHAIN: auto
+          GH_PAT: ${{ steps.secrets.outputs.GH_PAT }}
+        run: |
+          # workspace-cli is private; this credential is removed again before the
+          # agent runs.
+          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli-v2".insteadOf "https://github.com/camunda/workspace-cli-v2"
+          go install github.com/camunda/workspace-cli-v2/cmd/workspace@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.156
+          claude --version
+
+      - name: Create workspace on the starting point
+        id: ws
+        env:
+          TARGET_REF: ${{ inputs.target_ref }}
+          BRANCH: ${{ inputs.branch }}
+          BASE: ${{ inputs.base }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.workspace-templates"
+          cp "$SUITE_PATH"/workspace-templates/camunda-orchestration-cluster-nightly.yaml \
+             "$SUITE_PATH"/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
+             "$HOME/.workspace-templates/"
+          cp "$SUITE_PATH/AGENTS.md" /tmp/flaky-agent-manual.md
+
+          name="flaky-oc-${VERSION}-$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
+          workspace create "$name" --manifest camunda-orchestration-cluster-nightly
+          ws_dir="$HOME/workspaces/${name}/camunda"
+
+          if [[ "$BASE" == "iter1" ]]; then
+            git -C "$ws_dir" fetch --depth 50 origin "$BRANCH"
+            git -C "$ws_dir" checkout -B "$BRANCH" FETCH_HEAD
+          else
+            git -C "$ws_dir" fetch --depth 50 origin "$TARGET_REF"
+            git -C "$ws_dir" checkout -B "$BRANCH" FETCH_HEAD
+          fi
+          {
+            echo "dir=${ws_dir}"
+            echo "start_sha=$(git -C "$ws_dir" rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+      # The agent runs arbitrary commands, so nothing it can read may grant
+      # write access: the PAT used to install workspace-cli lives in the global
+      # git config. Publishing happens in the separate publish job.
+      - name: Drop GitHub credentials before the agent runs
+        env:
+          WS_DIR: ${{ steps.ws.outputs.dir }}
+        run: |
+          set -euo pipefail
+          rm -f "$HOME/.gitconfig"
+          git -C "$WS_DIR" remote set-url origin https://github.com/camunda/camunda.git
+          if grep -rqs 'x-access-token' "$HOME/.gitconfig" "$WS_DIR/.git/config"; then
+            echo "::error::a credential is still configured"
+            exit 1
+          fi
+
+      - name: Download the scores of earlier passes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-score-*
+          path: /tmp/flaky-evidence
+          merge-multiple: true
+
+      # One bundle per pass with only the shards where the target failed;
+      # each unpacks to flaky-evidence-<pass>/, moved up to keep the layout
+      # flaky-<pass>-<cell>-s<n>/ the prompt describes.
+      - name: Download the shard reports of earlier passes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-evidence-*
+          path: /tmp/flaky-evidence
+          merge-multiple: true
+
+      - name: Unpack the shard report bundles
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          cd /tmp/flaky-evidence
+          for bundle in flaky-evidence-*/; do
+            for dir in "$bundle"*/; do mv "$dir" .; done
+            rmdir "$bundle"
+          done
+          ls
+
+      - name: Keep only the requested passes
+        env:
+          EVIDENCE: ${{ inputs.evidence }}
+        run: |
+          set -euo pipefail
+          cd /tmp/flaky-evidence
+          for dir in */; do
+            dir="${dir%/}"
+            keep=false
+            for label in $(jq -r '.[]' <<< "$EVIDENCE"); do
+              [[ "$dir" == "flaky-${label}-"* || "$dir" == "flaky-score-${label}" ]] && keep=true
+            done
+            [[ "$keep" == "true" ]] || rm -rf "$dir"
+          done
+          ls
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Install suite dependencies for lint
+        working-directory: ${{ steps.ws.outputs.dir }}/${{ env.SUITE_PATH }}
+        run: npm ci
+
+      - name: Run Claude Code fix agent
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          WS_DIR: ${{ steps.ws.outputs.dir }}
+          VERSION: ${{ inputs.version }}
+          TARGET_REF: ${{ inputs.target_ref }}
+          ITERATION: ${{ inputs.iteration }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          PROJECT: ${{ inputs.project }}
+          CELLS: ${{ inputs.cells }}
+          BASE: ${{ inputs.base }}
+          JOB_START_EPOCH: ${{ steps.job_start.outputs.epoch }}
+        run: |
+          set -euo pipefail
+          deadline=$(( JOB_START_EPOCH + 55 * 60 ))
+          title=$(jq -r 'join(" › ")' <<< "$TITLE_PATH")
+          scores=$(shopt -s nullglob
+                   for f in /tmp/flaky-evidence/flaky-score-*/score.json; do
+                     printf '%s: %s\n' "$(basename "$(dirname "$f")")" "$(cat "$f")"
+                   done)
+          [[ -n "$scores" ]] || { echo "::error::no scores downloaded"; exit 1; }
+          if [[ "$BASE" == "iter1" ]]; then
+            start="Your branch already holds fix attempt 1. It helped but did not remove every failure; refine it."
+          elif [[ "$ITERATION" -gt 1 ]]; then
+            start="Fix attempt 1 made the test worse and was dropped. You start again from ${TARGET_REF}; take a different approach."
+          else
+            start="You start from ${TARGET_REF}."
+          fi
+
+          prompt=$(cat <<PROMPT
+          You are stabilising ONE flaky test in the C8 Orchestration Cluster E2E/API suite.
+          Repository: ${WS_DIR} (camunda/camunda, checked out at ${TARGET_REF}, version ${VERSION}).
+          Suite: ${WS_DIR}/${SUITE_PATH}
+
+          Test: ${SPEC} › ${title}   (Playwright project: ${PROJECT})
+          Flaky in nightly cells: ${CELLS}
+          ${start}
+
+          Each shard just ran the nightly's whole test selection (the other tests run
+          alongside it, as in the nightly) on its own fresh docker-compose stack. A run
+          counts as failed when the test's first attempt failed. The per-pass scores (pass rate per cell and the most common
+          failure messages) are:
+          ${scores}
+
+          The reports of the shards where it failed are under
+          /tmp/flaky-evidence/flaky-<pass>-<cell>-s<n>/:
+          json-report/results.json for every run, test-results/ for traces, screenshots and
+          videos of the failed runs (open trace.zip with unzip -l / unzip -p). Read them.
+
+          Rules, in order of precedence:
+          1. Read /tmp/flaky-agent-manual.md: "Product-Bug Escalation" and the constraints of
+             "Nightly Fix Agent" apply. Never mask a failure, never weaken or delete an
+             assertion, never add test.skip / test.fixme / .only, never raise retries.
+          2. Find the ROOT CAUSE of the intermittent failure (race, missing wait on the
+             right condition, shared data between parallel workers, eventual consistency
+             of search/exporter, order dependence) and fix that. A longer timeout alone is
+             acceptable only when the evidence shows the operation is slow, not stuck.
+          3. Edit files under ${SUITE_PATH}/ only. Keep the diff minimal.
+          4. Do NOT commit, push, open a PR, or file issues: the workflow does that after
+             it re-validates your change. Do not run Playwright; there is no stack here.
+             Only files under tests/, pages/, utils/, resources/ and fixtures.ts /
+             test-setup.ts of the suite are accepted; config and package files are not.
+          5. If the failure is a product bug and no test-side fix is legitimate, make no
+             change and say so.
+          6. Finish before $(date -u -d "@${deadline}" +%H:%MZ).
+
+          When done, write /tmp/flaky-fix-summary.md: root cause (with the evidence you used),
+          what you changed and why it removes the race, or why you changed nothing.
+          PROMPT
+          )
+          cd "$WS_DIR"
+          timeout $(( deadline - $(date -u +%s) )) \
+            claude -p "$prompt" --dangerously-skip-permissions 2>&1 | tee /tmp/flaky-agent-output.md || true
+
+      # The full change since the starting commit, so a commit the agent made
+      # itself is included and checked like everything else.
+      - name: Export the change as a patch
+        id: patch
+        env:
+          WS_DIR: ${{ steps.ws.outputs.dir }}
+          START_SHA: ${{ steps.ws.outputs.start_sha }}
+        run: |
+          set -euo pipefail
+          git -C "$WS_DIR" add -A
+          git -C "$WS_DIR" diff --cached --binary "$START_SHA" > /tmp/flaky-fix.patch
+          if [[ -s /tmp/flaky-fix.patch ]]; then
+            echo "has_patch=true" >> "$GITHUB_OUTPUT"
+            git -C "$WS_DIR" diff --cached --stat "$START_SHA"
+          else
+            echo "The agent made no change."
+            echo "has_patch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wrap the agent output in its artifact folder
+        if: always()
+        env:
+          ARTIFACT: flaky-agent-iter${{ inputs.iteration }}
+        run: |
+          mkdir -p "/tmp/agent-artifact/${ARTIFACT}"
+          cp /tmp/flaky-agent-output.md /tmp/flaky-fix-summary.md /tmp/flaky-fix.patch \
+            "/tmp/agent-artifact/${ARTIFACT}/" 2>/dev/null || true
+
+      - name: Upload agent output
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: flaky-agent-iter${{ inputs.iteration }}
+          path: /tmp/agent-artifact/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # A fresh runner: nothing the agent ran can reach it (GITHUB_ENV/GITHUB_PATH
+  # writes, git hooks or config in the agent's checkout). The patch is checked
+  # against an allowlist before it is applied, so linting executes no code
+  # from it, and the write token is minted only after that.
+  publish:
+    name: Publish attempt ${{ inputs.iteration }}
+    needs: [fix]
+    if: needs.fix.outputs.has_patch == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      changed: ${{ steps.push.outputs.changed }}
+      sha: ${{ steps.push.outputs.sha }}
+      rejected: ${{ steps.apply.outcome == 'failure' || steps.lint.outcome == 'failure' }}
+    env:
+      ITERATION: ${{ inputs.iteration }}
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - name: Checkout the starting commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.fix.outputs.start_sha }}
+          persist-credentials: false
+
+      - name: Download the patch
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flaky-agent-iter${{ inputs.iteration }}
+          path: ${{ runner.temp }}/agent
+
+      - name: Check and apply the patch
+        id: apply
+        run: |
+          set -euo pipefail
+          patch="$RUNNER_TEMP/agent/flaky-agent-iter${ITERATION}/flaky-fix.patch"
+          allowed="^${SUITE_PATH}/(tests|pages|utils|resources)/|^${SUITE_PATH}/(fixtures|test-setup)\.ts$"
+          mapfile -t files < <(git apply --numstat "$patch" | cut -f3)
+          # Renames show as "old => new"; both sides must be allowed.
+          # Tool configuration is looked up per directory (a tests/.prettierrc.cjs
+          # or tests/package.json would be executed by the lint step below), so
+          # no dotfile, package.json, *.config.* or JavaScript file is accepted
+          # anywhere, even inside the allowed directories.
+          tool_config='(^|/)(\.[^/]*|package\.json|[^/]*\.config\.[cm]?[jt]s|[^/]*\.[cm]?js)$'
+          for entry in "${files[@]}"; do
+            for f in ${entry//=>/ }; do
+              if ! [[ "$f" =~ $allowed ]] || [[ "$f" =~ $tool_config ]]; then
+                echo "::error::the patch touches $f, which the agent may not change"
+                exit 1
+              fi
+            done
+          done
+          added=$(grep -E '^\+' "$patch" | grep -vE '^\+\+\+ ' || true)
+          # Any modifier chain: test.only, test.describe.serial.only, describe.parallel.skip, ...
+          if grep -qE '\b(test|it|describe)(\.[A-Za-z]+)*\.(skip|fixme|only)\b' <<< "$added"; then
+            echo "::error::the patch adds test.skip, test.fixme or .only"
+            exit 1
+          fi
+          if grep -qE '^(new file|new|old) mode 120000' "$patch"; then
+            echo "::error::the patch adds a symlink"
+            exit 1
+          fi
+          # Playwright retries can only come from test.describe.configure here,
+          # the config files being outside the allowlist. A bare `retries:` is
+          # not enough to reject: Zeebe job payloads carry that field too.
+          if grep -qE 'configure\([^)]*retries' <<< "$added" \
+              || { grep -qE 'configure\(' <<< "$added" \
+                   && grep -qE '^\+\s*retries\s*:' <<< "$added"; }; then
+            echo "::error::the patch sets Playwright retries"
+            exit 1
+          fi
+          git apply --index "$patch"
+          git diff --cached --name-only --diff-filter=d -- "$SUITE_PATH" \
+            | grep -E '\.ts$' | sed "s#^${SUITE_PATH}/##" > "$RUNNER_TEMP/ts-files.txt" || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: ${{ env.SUITE_PATH }}/package-lock.json
+
+      # Separate from the lint step: an install failure is the registry's,
+      # not a rejection of the patch.
+      - name: Install suite dependencies for lint
+        working-directory: ${{ env.SUITE_PATH }}
+        run: npm ci
+
+      - name: Lint the change
+        id: lint
+        working-directory: ${{ env.SUITE_PATH }}
+        run: |
+          set -euo pipefail
+          mapfile -t ts_files < "$RUNNER_TEMP/ts-files.txt"
+          if [[ "${#ts_files[@]}" -gt 0 ]]; then
+            # Pinned to the suite-root configs from the starting commit, so no
+            # config lookup can reach a file the patch added.
+            npx prettier --config .prettierrc --no-editorconfig --write "${ts_files[@]}"
+            npx eslint --config eslint.config.js "${ts_files[@]}"
+          fi
+          npx tsc --noEmit
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Commit and push
+        id: push
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ inputs.branch }}
+          BASE: ${{ inputs.base }}
+          ITERATION: ${{ inputs.iteration }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git add -A -- "$SUITE_PATH"
+          title=$(jq -r '.[-1]' <<< "$TITLE_PATH" | cut -c1-70)
+          summary="$RUNNER_TEMP/agent/flaky-agent-iter${ITERATION}/flaky-fix-summary.md"
+          {
+            echo "test: stabilize flaky \"${title}\" (${VERSION}, attempt ${ITERATION})"
+            echo
+            if [[ -s "$summary" ]]; then
+              fold -s -w 72 "$summary"
+            else
+              echo "Fix attempt ${ITERATION} by the OC flakiness fix agent."
+            fi
+            echo
+            echo "Run: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+          } > "$RUNNER_TEMP/commit-msg.txt"
+          git -c core.hooksPath=/dev/null \
+              -c user.name="qa-processes[bot]" \
+              -c user.email="qa-processes[bot]@users.noreply.github.com" \
+              commit -q -F "$RUNNER_TEMP/commit-msg.txt"
+
+          force=()
+          # Attempt 2 after a regression starts over from the target branch and
+          # replaces attempt 1 on this bot-owned branch.
+          [[ "$BASE" == "iter1" ]] || force=(--force)
+          git -c core.hooksPath=/dev/null push "${force[@]}" \
+            "https://x-access-token:${TOKEN}@github.com/${REPO}.git" "HEAD:refs/heads/${BRANCH}"
+          { echo "changed=true"; echo "sha=$(git rev-parse HEAD)"; } >> "$GITHUB_OUTPUT"

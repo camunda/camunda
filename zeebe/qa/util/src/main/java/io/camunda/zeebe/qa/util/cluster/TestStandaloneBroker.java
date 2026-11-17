@@ -11,30 +11,19 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.StandaloneCamunda;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.EngineJob;
-import io.camunda.configuration.NodeIdProvider.Type;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
+import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.processing.engine.EngineJob;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -43,8 +32,14 @@ import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
@@ -63,84 +60,66 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final Camunda unifiedConfig;
-  private final CamundaSecurityProperties securityConfig;
+
+  // the only store ID a camunda.secrets.<name> reference can address, and the only one the broker
+  // accepts at startup — a store under any other ID makes it refuse to boot. Mirrors
+  // io.camunda.secretstore.SecretStoreRegistry#DEFAULT_STORE_ID, which this module only sees
+  // transitively; declaring that dependency to read one constant is not worth it, and getting the
+  // value wrong here fails loudly at broker startup rather than silently.
+  private static final String SECRET_STORE_ID = "default";
+  private static final String OWNER_ONLY = "rwx------";
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneBroker.class);
+
   private boolean isGatewayEnabled = true;
   private final Map<String, Consumer<Map<String, Object>>> exporterMutators = new HashMap<>();
+  private Path secretStoreDirectory;
+  private SecretsWriter secretsWriter;
 
   public TestStandaloneBroker() {
     super(
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
-        PrimaryStorageBackupPropertiesOverride.class,
-        NodeIdProviderConfiguration.class,
-        BrokerBasedPropertiesOverride.class,
-        GatewayBasedPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class);
-
-    unifiedConfig = new Camunda();
+        NodeIdProviderConfiguration.class);
 
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
 
-    StandaloneCamunda.getDefaultProperties(false)
-        .forEach(
-            (key, value) -> {
-              withProperty(key, value);
-            });
+    StandaloneCamunda.getDefaultProperties(false).forEach(this::withProperty);
 
-    // this is required to prevent default spring boot 4.0 security setup to kick in
-    withProperty(
-        "spring.autoconfigure.exclude",
-        "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
-            + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
+    withAdditionalProfile(Profile.BROKER);
 
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);
-
-    securityConfig = new CamundaSecurityProperties();
-    securityConfig.getAuthorizations().setEnabled(false);
-    securityConfig.getAuthentication().setUnprotectedApi(true);
-    securityConfig
+    unifiedConfig.getSecurity().getAuthorizations().setEnabled(false);
+    unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
-        .getUsers()
-        .add(
-            new ConfiguredUser(
-                InitializationConfiguration.DEFAULT_USER_USERNAME,
-                InitializationConfiguration.DEFAULT_USER_PASSWORD,
-                InitializationConfiguration.DEFAULT_USER_NAME,
-                InitializationConfiguration.DEFAULT_USER_EMAIL));
-    securityConfig
+        .setUsers(
+            List.of(
+                new ConfiguredUser(
+                    InitializationConfiguration.DEFAULT_USER_USERNAME,
+                    InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                    InitializationConfiguration.DEFAULT_USER_NAME,
+                    InitializationConfiguration.DEFAULT_USER_EMAIL)));
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
-        .getMappingRules()
-        .add(
-            new ConfiguredMappingRule(
-                DEFAULT_MAPPING_RULE_ID,
-                DEFAULT_MAPPING_RULE_CLAIM_NAME,
-                DEFAULT_MAPPING_RULE_CLAIM_VALUE));
-    securityConfig
+        .setMappingRules(
+            List.of(
+                new ConfiguredMappingRule(
+                    DEFAULT_MAPPING_RULE_ID,
+                    DEFAULT_MAPPING_RULE_CLAIM_NAME,
+                    DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
-        .getDefaultRoles()
-        .put(
-            "admin",
+        .setDefaultRoles(
             Map.of(
-                "users",
-                List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
-                "mappingRules",
-                List.of(DEFAULT_MAPPING_RULE_ID)));
-
-    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
-    withProperty(
-        AuthenticationProperties.API_UNPROTECTED,
-        securityConfig.getAuthentication().getUnprotectedApi());
-    withProperty(
-        "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
+                "admin",
+                Map.of(
+                    "users",
+                    List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
+                    "mappingRules",
+                    List.of(DEFAULT_MAPPING_RULE_ID))));
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -157,21 +136,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   @Override
-  public TestStandaloneBroker withProperty(final String key, final Object value) {
-    // Since the security config is not constructed from the properties, we need to manually update
-    // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
-    return super.withProperty(key, value);
-  }
-
-  @Override
   public TestStandaloneBroker withAuthenticationMethod(
       final AuthenticationMethod authenticationMethod) {
     // as mode is OIDC, and we have a user created by default in `TestStandaloneBroker`
     // we need to reset the list of users to empty list as having pre-configured user in
     // OIDC is not allowed
     if (authenticationMethod == AuthenticationMethod.OIDC) {
-      securityConfig.getInitialization().setUsers(new ArrayList<>());
+      unifiedConfig.getSecurity().getInitialization().setUsers(new ArrayList<>());
     }
     return super.withAuthenticationMethod(authenticationMethod);
   }
@@ -190,7 +161,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
-    withProperty("camunda.security.authorizations.enabled", true);
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
@@ -199,57 +169,16 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(false));
   }
 
-  @Override
-  public TestStandaloneBroker self() {
-    return this;
-  }
-
-  @Override
-  public MemberId nodeId() {
-    if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
-      // Get nodeId from BrokerBasedProperties instead of unified configuration when using S3 node
-      // id provider. If the broker is not started yet, return "null" as node id
-      if (isStarted()) {
-        return MemberId.from(
-            String.valueOf(bean(BrokerBasedProperties.class).getCluster().getNodeId()));
-      } else {
-        return MemberId.from("null");
-      }
-    }
-    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
-  }
-
-  @Override
-  public String host() {
-    final var host = unifiedConfig.getCluster().getNetwork().getHost();
-    return host != null ? host : "0.0.0.0";
-  }
-
-  @Override
-  public HealthActuator healthActuator() {
-    return brokerHealth();
-  }
-
-  @Override
-  public boolean isGateway() {
-    // Gateway enable flag is set via property (not fully in unified config yet)
-    return isGatewayEnabled;
-  }
-
   /**
-   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
-   * configure test brokers going forward.
-   *
-   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
-   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
+   * Returns true if the given host is blank, or a wildcard/bind-any address (e.g. {@code 0.0.0.0}
+   * or {@code ::}) that a client cannot connect to.
    */
-  @Override
-  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
+  private static boolean isWildcardAddress(final String host) {
+    return host == null
+        || host.isBlank()
+        || "0.0.0.0".equals(host)
+        || "::".equals(host)
+        || "0:0:0:0:0:0:0:0".equals(host);
   }
 
   public TestStandaloneBroker withGatewayEnabled(final boolean enabled) {
@@ -274,21 +203,173 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     throw new UnsupportedOperationException("Brokers do not support the gateway health indicators");
   }
 
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure and is the primary way to read/configure the test broker.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  public Camunda unifiedConfig() {
-    return unifiedConfig;
-  }
-
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
-    withProperty("camunda.security.multiTenancy.checksEnabled", "true");
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
+  }
+
+  /**
+   * Configures a file-based secret store on a temporary directory and lets {@code secrets} write
+   * the store's content into it, one file per secret named after the secret:
+   *
+   * <pre>{@code
+   * new TestStandaloneBroker()
+   *     .withFileBasedSecretStore(
+   *         directory -> Files.writeString(directory.resolve("token"), "token-value"));
+   * }</pre>
+   *
+   * <p>The directory is written now, so its secrets are in place before the broker starts, and
+   * deleted when this broker is closed. Should this broker be started again after that, it is
+   * written a second time, so every start reads the store configured here. A test that has to reach
+   * the directory gets it from {@link #getFileBasedSecretStoreDirectory()}.
+   *
+   * @param secrets writes the store's secrets into the directory it is handed
+   * @return itself for chaining
+   */
+  public TestStandaloneBroker withFileBasedSecretStore(final SecretsWriter secrets) {
+    try {
+      secretStoreDirectory = Files.createTempDirectory("secret-store-");
+      secretsWriter = secrets;
+      secrets.writeTo(secretStoreDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to write the file-based secret store", e);
+    }
+
+    final var store = new FileStore();
+    store.setPath(secretStoreDirectory.toString());
+    unifiedConfig.getSecrets().getStores().getFile().put(SECRET_STORE_ID, store);
+    return this;
+  }
+
+  @Override
+  public TestStandaloneBroker start() {
+    recreateSecretStoreDirectoryIfMissing();
+    return super.start();
+  }
+
+  /**
+   * Re-creates the secret store directory when a previous {@link #close()} has deleted it, so this
+   * broker starts against the secrets it was configured with however often it is restarted. A
+   * directory that is still there is left exactly as it is, contents included.
+   *
+   * <p>Without this, only the first start of a given instance has a store to read. A test class
+   * that is re-run in the same JVM — Surefire's {@code rerunFailingTestsCount}, which CI sets — has
+   * its static initializer run only once, so the rerun restarts this same instance rather than
+   * building a new one. The configuration still names the directory the first run deleted, and
+   * every secret lookup fails the whole request with "Failed to read the configured secret store"
+   * instead of retrying whatever actually flaked.
+   */
+  private void recreateSecretStoreDirectoryIfMissing() {
+    // only on a start that actually boots the broker: start() is idempotent, and a test that has
+    // taken the directory away to exercise an unavailable store (SecretStoreUnavailableIT) must
+    // not have it handed back by an incidental start() call on the running broker
+    if (isStarted() || secretsWriter == null || Files.isDirectory(secretStoreDirectory)) {
+      return;
+    }
+    try {
+      createSecretStoreDirectory(secretStoreDirectory);
+      secretsWriter.writeTo(secretStoreDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to recreate the file-based secret store", e);
+    }
+    // logged because this only happens on a restart of an instance whose directory was already
+    // deleted, which in practice means a rerun of a failed test: whoever is reading those logs is
+    // triaging the first failure and needs to know the store was rebuilt between the attempts
+    LOGGER.info(
+        "Recreated the deleted secret store directory {} before restarting the broker",
+        secretStoreDirectory);
+  }
+
+  /**
+   * Creates the secret store directory with the owner-only permissions {@code
+   * Files.createTempDirectory} gave it the first time. Creating it plainly would hand the rewritten
+   * store whatever the umask allows, so a restarted broker would keep its secrets more openly than
+   * a freshly built one. The permissions are set as the directory is created, so it is never
+   * readable by anyone else in between.
+   */
+  private static void createSecretStoreDirectory(final Path directory) throws IOException {
+    if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      Files.createDirectories(
+          directory,
+          PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString(OWNER_ONLY)));
+    } else {
+      Files.createDirectories(directory);
+    }
+  }
+
+  /**
+   * Returns the directory backing the file-based secret store, or null if none was configured with
+   * {@link #withFileBasedSecretStore(SecretsWriter)}.
+   */
+  public Path getFileBasedSecretStoreDirectory() {
+    return secretStoreDirectory;
+  }
+
+  @Override
+  public void close() {
+    try {
+      super.close();
+    } finally {
+      deleteSecretStoreDirectory();
+    }
+  }
+
+  @Override
+  public TestStandaloneBroker self() {
+    return this;
+  }
+
+  @Override
+  public MemberId nodeId() {
+    final var zone = unifiedConfig.getCluster().getZone();
+    if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
+      // Get nodeId from BrokerBasedProperties instead of unified configuration when using S3 node
+      // id provider. If the broker is not started yet, return "null" as node id
+      if (isStarted()) {
+        final var cluster = bean(BrokerBasedProperties.class).getCluster();
+        return MemberId.from(zone, cluster.getNodeId());
+      } else {
+        return MemberId.from("null");
+      }
+    }
+    return MemberId.from(zone, unifiedConfig.getCluster().getNodeId());
+  }
+
+  @Override
+  public String host() {
+    // camunda.cluster.network.host controls the address the broker *binds* to, and defaults to a
+    // wildcard/bind-any address (e.g. 0.0.0.0) when left unset or explicitly configured as such.
+    // That is not a valid target for clients: TestApplication#host() must return an address that
+    // is actually connectable (e.g. by the actuator/monitoring HTTP client used to probe
+    // health/ready/startup), so fall back to the same "localhost" default as
+    // TestApplication#host() instead of any bind-any address.
+    final var host = unifiedConfig.getCluster().getNetwork().getHost();
+    return isWildcardAddress(host) ? "localhost" : host;
+  }
+
+  @Override
+  public HealthActuator healthActuator() {
+    return brokerHealth();
+  }
+
+  @Override
+  public boolean isGateway() {
+    // Gateway enable flag is set via property (not fully in unified config yet)
+    return isGatewayEnabled;
+  }
+
+  private void deleteSecretStoreDirectory() {
+    if (secretStoreDirectory == null) {
+      return;
+    }
+    try {
+      FileUtil.deleteFolderIfExists(secretStoreDirectory);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete the secret store directory {}", secretStoreDirectory, e);
+    }
+    // the path itself is kept, unlike the directory: the configuration still names it, and a
+    // restart of this instance rebuilds the directory there. See
+    // recreateSecretStoreDirectoryIfMissing().
   }
 
   /**
@@ -318,7 +399,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           final var exporter =
               data.getExporters()
                   .computeIfAbsent(
-                      RECORDING_EXPORTER_ID, ignored -> new io.camunda.configuration.Exporter());
+                      RECORDING_EXPORTER_ID,
+                      ignored -> new io.camunda.configuration.data.Exporter());
           exporter.setClassName(RecordingExporter.class.getName());
         });
   }
@@ -344,7 +426,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         data -> {
           final var unifiedExporter =
               data.getExporters()
-                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
+                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.data.Exporter());
           unifiedExporter.setClassName(tempExporterCfg.getClassName());
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
           if (exporterMutators.containsKey(id)) {
@@ -359,8 +441,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /**
    * Convenience method for setting the secondary storage type in the unified configuration.
-   * Additionally, the environment variable camunda.data.secondary-storage.type is set to ensure
-   * that ConditionalOnSecondaryStorageType behaves as expected
    *
    * @param type the secondary storage type
    * @return itself for chaining
@@ -368,7 +448,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public TestStandaloneBroker withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 
@@ -442,8 +521,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   @Override
   public TestStandaloneBroker withSecurityConfig(
-      final Consumer<CamundaSecurityProperties> modifier) {
-    modifier.accept(securityConfig);
+      final Consumer<CamundaSecurityLibraryProperties> modifier) {
+    modifier.accept(unifiedConfig.getSecurity());
     return this;
   }
 
@@ -494,10 +573,16 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     final var metadata = unifiedConfig.getCluster().getMetadata();
     metadata.setSyncInitializerDelay(Duration.ofMillis(500));
     metadata.setSyncDelay(Duration.ofMillis(500));
+    metadata.setSyncRequestTimeout(Duration.ofMillis(500));
+    metadata.setBootstrapTimeout(Duration.ofSeconds(5));
 
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
     unifiedConfig.getCluster().getRaft().setFlushDelay(Duration.ZERO);
+    // the first leader is only elected after a randomized timeout in [electionTimeout, 2 *
+    // electionTimeout], so the 2.5s default adds 2.5-5s to every cluster start; the heartbeat
+    // interval (250ms by default) still leaves several heartbeats per timeout
+    unifiedConfig.getCluster().getRaft().setElectionTimeout(Duration.ofSeconds(1));
 
     // Set data defaults - smaller segments for tests
     unifiedConfig.getData().setSnapshotPeriod(Duration.ofMinutes(5));
@@ -530,18 +615,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
     unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
 
+    // Default delay is 10s, which can make some tests
+    // waiting for deployment flaky
+    unifiedConfig
+        .getProcessing()
+        .getEngine()
+        .getDistribution()
+        .setRedistributionInterval(Duration.ofSeconds(1));
+
     // Set dynamic ports via properties (these aren't in unified config yet)
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
 
     withSecondaryStorageType(SecondaryStorageType.none);
   }
@@ -558,6 +643,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     if (retentionPolicyName != null) {
       exporterConfigArgs.put("retention", Map.of("enabled", true, "policyName", "test-policy"));
     }
+    // this manually-declared exporter and the secondary-storage-driven autoconfigured
+    // 'camundaexporter' both write to the same location whenever secondary storage is also
+    // ES/OS; disable autoconfiguration to avoid the two colliding
+    unifiedConfig.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
     withExporter(
         "CamundaExporter",
         cfg -> {
@@ -583,5 +672,15 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
     return this;
+  }
+
+  /**
+   * Writes the content of a file-based secret store into the directory backing it. Declared with
+   * {@code throws IOException} so a test can call {@link Files} directly.
+   */
+  @FunctionalInterface
+  public interface SecretsWriter {
+
+    void writeTo(Path directory) throws IOException;
   }
 }

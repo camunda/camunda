@@ -11,10 +11,10 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
 import io.camunda.gateway.protocol.model.RoleCreateRequest;
 import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.Either;
 import org.springframework.http.ProblemDetail;
 

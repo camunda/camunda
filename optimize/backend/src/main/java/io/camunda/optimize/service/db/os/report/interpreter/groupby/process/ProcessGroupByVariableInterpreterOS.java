@@ -109,11 +109,11 @@ public class ProcessGroupByVariableInterpreterOS
         variable.getName(), variable.getType());
   }
 
-  public VariableAggregationServiceOS getVariableAggregationService() {
+  protected VariableAggregationServiceOS getVariableAggregationService() {
     return this.variableAggregationService;
   }
 
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return this.definitionService;
   }
 

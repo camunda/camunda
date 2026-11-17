@@ -8,10 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
@@ -31,10 +40,14 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DecisionEvaluationHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -63,14 +76,16 @@ public class DecisionEvaluationHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final ImmutableEvaluatedDecisionValue decisionValue =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionEvaluationInstanceKey("123-1")
             .build();
-    final long expectedId = 123;
     final DecisionEvaluationRecordValue decisionRecordValue =
         ImmutableDecisionEvaluationRecordValue.builder()
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
@@ -85,11 +100,9 @@ public class DecisionEvaluationHandlerTest {
                     .withValue(decisionRecordValue)
                     .withKey(123L));
 
-    // when
-    final var idList = underTest.generateIds(decisionRecord);
-
-    // then
-    assertThat(idList).containsExactly(expectedId + "-" + 1);
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, decisionRecord))
+        .containsExactly(new IdAndIndex("123-1", index));
   }
 
   @Test
@@ -106,13 +119,14 @@ public class DecisionEvaluationHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final DecisionInstanceEntity inputEntity = new DecisionInstanceEntity().setId("111");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index, inputEntity);
   }
 
   @ParameterizedTest
@@ -142,6 +156,8 @@ public class DecisionEvaluationHandlerTest {
         ImmutableDecisionEvaluationRecordValue.builder()
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
             .withEvaluatedDecisions(List.of(evaluatedDecision))
+            .withBusinessId("order-123")
+            .withStorageOrdinal(1001)
             .build();
 
     final Record<DecisionEvaluationRecordValue> decisionRecord =
@@ -242,6 +258,42 @@ public class DecisionEvaluationHandlerTest {
     assertThat(decisionInstanceEntity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(decisionRecordValue.getRootProcessInstanceKey());
+    assertThat(decisionInstanceEntity.getBusinessId())
+        .isEqualTo(decisionRecordValue.getBusinessId());
+    assertThat(decisionInstanceEntity.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalWhenDefault() {
+    // given
+    final long recordKey = 123L;
+    final ImmutableEvaluatedDecisionValue evaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .build();
+
+    final DecisionEvaluationRecordValue decisionRecordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withEvaluatedDecisions(List.of(evaluatedDecision))
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionRecordValue)
+                    .withKey(recordKey));
+
+    // when
+    final DecisionInstanceEntity decisionInstanceEntity =
+        new DecisionInstanceEntity().setId(recordKey + "-1");
+    underTest.updateEntity(decisionRecord, decisionInstanceEntity);
+
+    // then
+    assertThat(decisionInstanceEntity.getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -276,6 +328,40 @@ public class DecisionEvaluationHandlerTest {
 
     // then
     assertThat(decisionInstanceEntity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldNotSetBusinessIdWhenEmpty() {
+    // given
+    final long recordKey = 123L;
+    final ImmutableEvaluatedDecisionValue evaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .build();
+
+    final DecisionEvaluationRecordValue decisionRecordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withEvaluatedDecisions(List.of(evaluatedDecision))
+            .withBusinessId("")
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionRecordValue)
+                    .withKey(recordKey));
+
+    // when
+    final DecisionInstanceEntity decisionInstanceEntity =
+        new DecisionInstanceEntity().setId(recordKey + "-1");
+    underTest.updateEntity(decisionRecord, decisionInstanceEntity);
+
+    // then
+    assertThat(decisionInstanceEntity.getBusinessId()).isNull();
   }
 
   @Test
@@ -436,6 +522,183 @@ public class DecisionEvaluationHandlerTest {
         .isEqualTo(evaluatedDecision.getEvaluatedInputs().getFirst().getInputName());
     assertThat(decisionInstanceEntity.getEvaluatedInputs().getFirst().getValue())
         .isEqualTo(largePayload);
+  }
+
+  @Test
+  void shouldReadEvaluatedDecisionsOncePerRecord() {
+    // given - getEvaluatedDecisions() copies every decision on each call in the broker, and the
+    // batch writer calls generateIds once plus updateEntity once per decision of the same record
+    final long recordKey = 123L;
+    final DecisionEvaluationRecordValue value =
+        mock(
+            DecisionEvaluationRecordValue.class,
+            delegatesTo(decisionEvaluationValue(recordKey, "d1", "d2", "d3")));
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.FAILED).withValue(value).withKey(recordKey));
+
+    // when
+    final List<DecisionInstanceEntity> entities =
+        underTest.generateIds(decisionRecord).stream()
+            .map(
+                id -> {
+                  final var entity = underTest.createNewEntity(id);
+                  underTest.updateEntity(decisionRecord, entity);
+                  return entity;
+                })
+            .toList();
+
+    // then
+    assertThat(entities)
+        .extracting(
+            DecisionInstanceEntity::getDecisionId,
+            DecisionInstanceEntity::getExecutionIndex,
+            DecisionInstanceEntity::getState)
+        .containsExactly(
+            tuple("d1", 1, DecisionInstanceState.EVALUATED),
+            tuple("d2", 2, DecisionInstanceState.EVALUATED),
+            tuple("d3", 3, DecisionInstanceState.FAILED));
+    verify(value, times(1)).getEvaluatedDecisions();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"3 2 1", "3 1 2", "1 3 3 2"})
+  void shouldReleaseEvaluatedDecisionsOnceAllAreExportedInAnyOrder(final String exportOrder) {
+    // given - the batch writer may update the entities out of order or more than once on retry
+    final long recordKey = 123L;
+    final DecisionEvaluationRecordValue value =
+        mock(
+            DecisionEvaluationRecordValue.class,
+            delegatesTo(decisionEvaluationValue(recordKey, "d1", "d2", "d3")));
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(value)
+                    .withKey(recordKey));
+
+    // when
+    for (final String index : exportOrder.split(" ")) {
+      final var entity = underTest.createNewEntity(recordKey + "-" + index);
+      underTest.updateEntity(decisionRecord, entity);
+
+      assertThat(entity.getDecisionId()).isEqualTo("d" + index);
+    }
+
+    // then - the decisions were read once, and released after the last of them was exported
+    verify(value, times(1)).getEvaluatedDecisions();
+    underTest.updateEntity(decisionRecord, underTest.createNewEntity(recordKey + "-1"));
+    verify(value, times(2)).getEvaluatedDecisions();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"2, 10, 123", "1, 11, 123", "1, 10, 124"})
+  void shouldNotReuseEvaluatedDecisionsOfPreviousRecord(
+      final int partitionId, final long position, final long recordKey) {
+    // given - the first record keeps its decisions cached because only one of two is exported
+    final Record<DecisionEvaluationRecordValue> firstRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionEvaluationValue(123L, "first", "other"))
+                    .withKey(123L)
+                    .withPartitionId(1)
+                    .withPosition(10L));
+    final Record<DecisionEvaluationRecordValue> secondRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionEvaluationValue(recordKey, "second", "other"))
+                    .withKey(recordKey)
+                    .withPartitionId(partitionId)
+                    .withPosition(position));
+    underTest.updateEntity(firstRecord, new DecisionInstanceEntity().setId("123-1"));
+
+    // when
+    final DecisionInstanceEntity entity = new DecisionInstanceEntity().setId(recordKey + "-1");
+    underTest.updateEntity(secondRecord, entity);
+
+    // then
+    assertThat(entity.getDecisionId()).isEqualTo("second");
+  }
+
+  @Test
+  void shouldGenerateLegacyIdsWhenDecisionEvaluationInstanceKeyIsMissing() {
+    // given - records written by older Zeebe versions have no decisionEvaluationInstanceKey
+    final long recordKey = 123L;
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(legacyDecisionEvaluationValue("d1", "d2"))
+                    .withKey(recordKey));
+
+    // when
+    final List<DecisionInstanceEntity> entities =
+        underTest.generateIds(decisionRecord).stream()
+            .map(
+                id -> {
+                  final var entity = underTest.createNewEntity(id);
+                  underTest.updateEntity(decisionRecord, entity);
+                  return entity;
+                })
+            .toList();
+
+    // then
+    assertThat(entities)
+        .extracting(DecisionInstanceEntity::getId, DecisionInstanceEntity::getDecisionId)
+        .containsExactly(tuple("123-1", "d1"), tuple("123-2", "d2"));
+  }
+
+  @Test
+  void shouldRejectIdNotMatchingAnyEvaluatedDecision() {
+    // given
+    final long recordKey = 123L;
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionEvaluationValue(recordKey, "d1"))
+                    .withKey(recordKey));
+    final DecisionInstanceEntity entity = new DecisionInstanceEntity().setId(recordKey + "-01");
+
+    // when - then
+    assertThatThrownBy(() -> underTest.updateEntity(decisionRecord, entity))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("123-01");
+  }
+
+  private DecisionEvaluationRecordValue legacyDecisionEvaluationValue(final String... decisionIds) {
+    return decisionEvaluationValue(index -> "", decisionIds);
+  }
+
+  private DecisionEvaluationRecordValue decisionEvaluationValue(
+      final long recordKey, final String... decisionIds) {
+    return decisionEvaluationValue(index -> recordKey + "-" + index, decisionIds);
+  }
+
+  private DecisionEvaluationRecordValue decisionEvaluationValue(
+      final IntFunction<String> instanceKeyOfIndex, final String... decisionIds) {
+    final var decisions = new ArrayList<EvaluatedDecisionValue>();
+    for (int i = 0; i < decisionIds.length; i++) {
+      decisions.add(
+          ImmutableEvaluatedDecisionValue.builder()
+              .from(factory.generateObject(EvaluatedDecisionValue.class))
+              .withDecisionId(decisionIds[i])
+              .withDecisionType(DecisionType.DECISION_TABLE.name())
+              .withDecisionEvaluationInstanceKey(instanceKeyOfIndex.apply(i + 1))
+              .build());
+    }
+    return ImmutableDecisionEvaluationRecordValue.builder()
+        .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+        .withEvaluatedDecisions(decisions)
+        .build();
   }
 
   private static String generateLargePayload() {

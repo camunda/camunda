@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -27,7 +28,8 @@ import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public class ConditionalSubscriptionTriggerProcessor
-    implements TypedRecordProcessor<ConditionalSubscriptionRecord> {
+    implements TypedRecordProcessor<ConditionalSubscriptionRecord>,
+        SuspensionAware<ConditionalSubscriptionRecord> {
 
   private static final String NO_CONDITIONAL_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to trigger condition subscription with key '%d', but no such subscription was found "
@@ -61,7 +63,8 @@ public class ConditionalSubscriptionTriggerProcessor
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
   }
 
   @Override
@@ -107,5 +110,15 @@ public class ConditionalSubscriptionTriggerProcessor
             catchEventIdBuffer,
             ExecutableCatchEvent.class);
     eventHandle.activateElement(catchEvent, elementInstanceKey, elementInstance.getValue());
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<ConditionalSubscriptionRecord> record) {
+    return SuspensionAction.BUFFER;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ConditionalSubscriptionRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceInputCollectionBehavior;
@@ -67,6 +68,7 @@ public final class MultiInstanceBodyProcessor
   private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public MultiInstanceBodyProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -79,6 +81,7 @@ public final class MultiInstanceBodyProcessor
     multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -130,6 +133,10 @@ public final class MultiInstanceBodyProcessor
   public TransitionOutcome onTerminate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
+
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
     if (noActiveChildInstances) {

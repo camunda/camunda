@@ -108,6 +108,7 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
     innerActivity.setFlowScope(multiInstanceBody);
 
     attachEventsToMultiInstanceBody(innerActivity, multiInstanceBody);
+    moveBeforeAllExecutionListenersToMultiInstanceBody(innerActivity, multiInstanceBody);
     connectSequenceFlowsToMultiInstanceBody(innerActivity, multiInstanceBody);
     replaceCompensationHandlerWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
     replaceAdHocActivityWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
@@ -128,6 +129,18 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
     innerActivity.getInterruptingElementIds().clear();
     innerActivity.getBoundaryEvents().clear();
+  }
+
+  /**
+   * Moves {@code beforeAll} execution listeners from the inner activity to the multi-instance body.
+   * {@code beforeAll} listeners are scoped to the body so they fire once before the input
+   * collection is evaluated and before any inner instance is activated.
+   */
+  private static void moveBeforeAllExecutionListenersToMultiInstanceBody(
+      final ExecutableActivity innerActivity, final ExecutableMultiInstanceBody multiInstanceBody) {
+    innerActivity
+        .removeBeforeAllExecutionListeners()
+        .forEach(multiInstanceBody::addExecutionListener);
   }
 
   private static void connectSequenceFlowsToMultiInstanceBody(

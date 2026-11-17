@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 
 final class FrameUtil {
@@ -26,6 +27,10 @@ final class FrameUtil {
   private FrameUtil() {}
 
   static void writeVersion(final ByteBuffer buffer, final int offset) {
+    // The version is what makes a record visible to readers, and a reader may run on another
+    // thread than the writer. Without this fence, such a reader can observe the version before the
+    // record it belongs to, and read a record that is still being written.
+    VarHandle.releaseFence();
     write(buffer, offset, VERSION);
   }
 
@@ -48,7 +53,13 @@ final class FrameUtil {
     if (buffer.capacity() < buffer.position() + LENGTH) {
       return false;
     }
-    return buffer.get(buffer.position()) != IGNORE;
+    if (buffer.get(buffer.position()) == IGNORE) {
+      return false;
+    }
+    // Pairs with the release fence in writeVersion: having seen the version, we may now read the
+    // record it publishes.
+    VarHandle.acquireFence();
+    return true;
   }
 
   static int getLength() {

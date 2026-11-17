@@ -12,12 +12,14 @@ import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements RunnableTask {
+  private static final long ERROR_DELAY_MS = 10_000L;
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
@@ -45,7 +47,14 @@ public final class ReschedulingTask implements RunnableTask {
 
     periodicLogger = new ReschedulingTaskLogger(logger, true);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
-    errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
+    // some tasks have a really long delayBetweenRunsMs, so we need to tweak
+    // those delays for the error backoff.
+    errorStrategy =
+        new ExponentialBackoff(
+            Math.max(ERROR_DELAY_MS, delayBetweenRunsMs),
+            Math.min(ERROR_DELAY_MS, delayBetweenRunsMs),
+            1.2,
+            0);
   }
 
   @Override
@@ -71,7 +80,22 @@ public final class ReschedulingTask implements RunnableTask {
         .thenApplyAsync(this::onWorkPerformed, executor)
         .exceptionallyAsync(this::onError, executor)
         .thenAcceptAsync(this::reschedule, executor)
-        .thenAccept(unused -> executionCounter.incrementAndGet());
+        .thenAccept(unused -> executionCounter.incrementAndGet())
+        .exceptionally(
+            error -> {
+              final var cause = error.getCause() != null ? error.getCause() : error;
+              if (closed && cause instanceof RejectedExecutionException) {
+                logger.debug(
+                    "Task {} was rejected because executor is shutting down; not retrying", task);
+                return null;
+              }
+              logger.error(
+                  "Unexpected error occurred while rescheduling task {} (bug in error handling code?);"
+                      + " task will NOT be retried",
+                  task,
+                  error);
+              return null;
+            });
   }
 
   @Override
@@ -108,11 +132,13 @@ public final class ReschedulingTask implements RunnableTask {
   }
 
   private void logError(final Throwable error) {
+    final var cause = error.getCause();
+    final var msg = cause != null ? cause.getMessage() : error.getMessage();
     periodicLogger.logError(
         "Error occurred while performing a background task {}; error message {}; operation will be retried",
         error,
         task.getCaption(),
-        error.getCause().getMessage());
+        msg);
   }
 
   private void reschedule(final long delay) {

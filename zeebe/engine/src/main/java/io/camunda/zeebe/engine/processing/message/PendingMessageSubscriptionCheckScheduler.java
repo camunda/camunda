@@ -46,6 +46,11 @@ public final class PendingMessageSubscriptionCheckScheduler
   }
 
   private boolean sendCommand(final MessageSubscription subscription) {
+    // The entry may be stale; only re-send while the row still waits for the ack.
+    if (!subscription.isCorrelating()) {
+      return true;
+    }
+
     final var record = subscription.getRecord();
 
     commandSender.sendDirectCorrelateProcessMessageSubscription(
@@ -57,7 +62,9 @@ public final class PendingMessageSubscriptionCheckScheduler
         record.getMessageKey(),
         record.getVariablesBuffer(),
         record.getCorrelationKeyBuffer(),
-        record.getTenantId());
+        record.getTenantId(),
+        record.getSubscriptionKey(),
+        record.getStorageOrdinal());
 
     // Update the sent time for the subscription to avoid it being considered for resending too soon
     final var sentTime = clock.millis();

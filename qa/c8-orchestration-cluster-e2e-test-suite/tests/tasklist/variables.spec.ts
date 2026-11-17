@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
@@ -88,7 +88,7 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toHaveValue('"something"');
     await taskDetailsPage.replaceExistingVariableValue({
       name: 'testData value',
@@ -127,10 +127,10 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toBeVisible();
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toHaveValue('"something"');
 
     await taskDetailsPage.replaceExistingVariableValue({
@@ -139,10 +139,10 @@ test.describe('variables page', () => {
     });
     await page.reload();
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).toHaveValue('"something"');
     await expect(
-      taskDetailsPage.variablesTable.getByTitle('testData value'),
+      taskDetailsPage.variablesTable.getByLabel('testData value'),
     ).not.toHaveValue('"updatedValue"');
   });
 
@@ -154,7 +154,7 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('usertask_with_variables');
 
-    await expect(taskDetailsPage.addVariableButton).toBeHidden();
+    await expect(taskDetailsPage.addVariableButton).toBeDisabled();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -178,14 +178,14 @@ test.describe('variables page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks
-          .getByText('usertask_with_many_variables')
-          .first(),
-      ).toBeVisible();
-    }).toPass();
-    await taskPanelPage.openTask('usertask_with_many_variables');
+    // No separate wait for the card before opening it: the available-tasks
+    // list is virtualized, so a task that has been pushed below the rendered
+    // window is only reachable by scrolling the list -- which is exactly what
+    // openTask() does. Asserting visibility first just burned the whole test
+    // timeout on a card that was never going to render on its own.
+    await taskPanelPage.openTask('usertask_with_many_variables', {
+      timeout: 60000,
+    });
 
     await expect(
       taskDetailsPage.variablesTable
@@ -196,15 +196,22 @@ test.describe('variables page', () => {
         .first(),
     ).toBeVisible({timeout: 30000});
 
-    const scrollContainer = taskDetailsPage.variablesTable.locator('..');
+    // Use mouse-wheel scroll (the pattern used in operateProcessesPage's
+    // scrollUntilElementIsVisible). Setting `scrollTop = scrollHeight` on
+    // `variablesTable.locator('..')` works locally but doesn't reliably
+    // trigger the lazy loader on slow CI runners — only ~13 of 60 cells end
+    // up rendered. Wheel events dispatch real scroll events, which the
+    // virtual list's intersection observer responds to consistently.
+    const targetCell = taskDetailsPage.variablesTable.getByRole('cell', {
+      name: 'variable_59',
+    });
+    await taskDetailsPage.variablesTable.hover();
     await expect(async () => {
-      await scrollContainer.evaluate((el) => {
-        el.scrollTop = el.scrollHeight;
-      });
-      await expect(
-        taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
-      ).toBeVisible();
-    }).toPass({timeout: 30000});
+      if (!(await targetCell.isVisible())) {
+        await taskDetailsPage.variablesTable.page().mouse.wheel(0, 600);
+      }
+      await expect(targetCell).toBeVisible();
+    }).toPass({timeout: 60000});
   });
 
   test('new variable still exists after refresh if task is completed', async ({
@@ -216,7 +223,7 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('usertask_with_variables2');
 
-    await expect(taskDetailsPage.addVariableButton).toBeHidden();
+    await expect(taskDetailsPage.addVariableButton).toBeDisabled();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
     });
@@ -232,7 +239,7 @@ test.describe('variables page', () => {
       value: '"newVariableValue"',
     });
 
-    await taskDetailsPage.completeTaskButton.click();
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 

@@ -7,9 +7,12 @@
  */
 
 export * from './element-instance-requestHelpers';
+export * from './decision-version-tag-requestHelpers';
 export * from './resource-requestHelpers';
+export * from './form-requestHelpers';
 export * from './user-task-requestHelpers';
 export * from './process-instance-requestHelpers';
+export * from './process-definition-requestHelpers';
 export * from './get-value-from-state-requestHelpers';
 export * from './batch-operation-requestHelpers';
 export {createRoleAndStoreResponseFields} from './role-requestHelpers';
@@ -52,13 +55,30 @@ export {
   type Authorization,
   expectAuthorizationCanNotBeFound,
 } from './authorization-requestHelpers';
+export {
+  searchVariableByNameAndProcessInstanceKey,
+  expectVariableValue,
+  expectVariableValues,
+} from './variable-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {
   setupProcessInstanceForTests,
   activateJobToObtainAValidJobKey,
+  activateJobAndGetHeaders,
+  activateJobsByType,
+  activateSingleJob,
+  activateFirstJobVariables,
+  activateJobWithLease,
+  completeJob,
+  countJobsByType,
+  expectJobsByType,
   getLast24HoursRange,
+  updateJobRetries,
   type StatisticsJobItem,
+  type ActivatedJob,
+  type ActivatedJobWithVars,
+  type LeasedJob,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,
@@ -68,8 +88,11 @@ export {
   deleteTenantClusterVariable,
   assertClusterVariableInResponse,
   assertClusterVariableUpdate,
+  assertNoMetadataLeak,
 } from './cluster-variable-requestHelpers';
 export {
+  searchIncidentByPIK,
+  expectNoIncidents,
   createProcessInstanceWithAJob,
   createSingleIncidentProcessInstance,
   createTwoIncidentsInOneProcess,
@@ -82,6 +105,7 @@ export {
 } from './decision-requirement-requestHelper';
 export {
   createMammalProcessInstanceAndDeployMammalDecision,
+  searchDecisionInstancesByProcessInstanceKey,
   type DecisionInstance,
 } from './decision-instance-requestHelpers';
 export {createProcessInstanceAndRetrieveTimeStamp} from './clock-requestHelpers';
@@ -89,6 +113,10 @@ export {
   type CorrelatedMessageSubscription,
   searchCorrelatedMessageSubscriptions,
   CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+  type StartEventMessageSubscription,
+  expectStartSubscriptionPresent,
+  expectStartSubscriptionAbsent,
+  MESSAGE_SUBSCRIPTIONS_SEARCH_ENDPOINT,
 } from './message-requestHelpers';
 export {
   createGlobalTaskListener,
@@ -96,6 +124,12 @@ export {
 } from './global-task-listener-requestHelpers';
 export {type AuditLog} from './audit-log-requestHelpers';
 export {evaluateExpression, EXPRESSION_URL} from './expression-requestHelpers';
+export {
+  seedUniqueProcessDefinitions,
+  seedUniqueDecisionDefinitions,
+  walkLatestVersionCursor,
+  waitForLatestVersionTotalItems,
+} from './latest-version-test-helpers';
 export {
   type VariableRecord,
   isRootScope,
@@ -107,3 +141,17 @@ export {
   getVariablesByName,
   getVariablesByPatterns,
 } from './optimize-variable-requestHelpers';
+export {
+  WAIT_STATES_SEARCH_ENDPOINT,
+  type WaitStateItem,
+  type WaitStateSearchResponse,
+  searchWaitStatesByFilter,
+  waitForWaitState,
+  createProcessInstanceWaitingOnJob,
+  createProcessInstanceWaitingOnMessage,
+  createProcessInstanceWaitingOnSignal,
+  createProcessInstanceWaitingOnUserTask,
+  createProcessInstanceWaitingOnTimer,
+  createProcessInstanceWaitingOnCondition,
+  createProcessInstanceWithManyWaitingTokens,
+} from './wait-state-requestHelpers';

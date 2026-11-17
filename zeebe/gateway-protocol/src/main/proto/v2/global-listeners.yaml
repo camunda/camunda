@@ -7,8 +7,17 @@ paths:
       tags:
         - Global listener
       operationId: createGlobalTaskListener
+      x-required-permissions:
+        - { resourceType: GLOBAL_LISTENER, permissionType: CREATE_TASK_LISTENER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create global user task listener
       description: Create a new global user task listener.
+      x-semantic-establishes:
+        kind: GlobalTaskListener
+        identifiedBy:
+          - { in: body, name: id, semanticType: GlobalListenerId }
       requestBody:
         content:
           application/json:
@@ -39,6 +48,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /global-task-listeners/{id}:
     get:
@@ -46,8 +56,17 @@ paths:
       tags:
         - Global listener
       operationId: getGlobalTaskListener
+      x-required-permissions:
+        - { resourceType: GLOBAL_LISTENER, permissionType: READ_TASK_LISTENER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get global user task listener
       description: Get a global user task listener by its id.
+      x-semantic-requires:
+        kind: GlobalTaskListener
+        bind:
+          id: { from: path, name: id }
       parameters:
         - name: id
           in: path
@@ -75,14 +94,24 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
     put:
       x-eventually-consistent: false
       tags:
         - Global listener
       operationId: updateGlobalTaskListener
+      x-required-permissions:
+        - { resourceType: GLOBAL_LISTENER, permissionType: UPDATE_TASK_LISTENER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update global user task listener
       description: Updates a global user task listener.
+      x-semantic-requires:
+        kind: GlobalTaskListener
+        bind:
+          id: { from: path, name: id }
       parameters:
         - name: id
           in: path
@@ -120,14 +149,24 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Global listener
       operationId: deleteGlobalTaskListener
+      x-required-permissions:
+        - { resourceType: GLOBAL_LISTENER, permissionType: DELETE_TASK_LISTENER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete global user task listener
       description: Deletes a global user task listener.
+      x-semantic-requires:
+        kind: GlobalTaskListener
+        bind:
+          id: { from: path, name: id }
       parameters:
         - name: id
           in: path
@@ -155,6 +194,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /global-task-listeners/search:
     post:
@@ -162,6 +202,12 @@ paths:
       tags:
         - Global listener
       operationId: searchGlobalTaskListeners
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: GLOBAL_LISTENER, permissionType: READ_TASK_LISTENER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search global user task listeners
       description: Search for global user task listeners based on given criteria.
       requestBody:
@@ -185,6 +231,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 ## Schema definitions
 

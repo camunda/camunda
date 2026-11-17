@@ -9,6 +9,8 @@ zeebe:
           drgCacheCapacity: 2000
           formCacheCapacity: 2000
           processCacheCapacity: 2000
+          groupNameCacheCapacity: 2000
+          candidateGroupNameResolution: false
         jobs:
           timeoutCheckerPollingInterval: 15s
           timeoutCheckerBatchLimit: 1000
@@ -44,3 +46,9 @@ zeebe:
           timeout: 2s
         processInstanceCreation:
           businessIdUniquenessEnabled: true
+        startup:
+          rpaReexportMigrationEnabled: false
+          processDefinitionRestoreEnabled: false
+        storageOrdinals:
+          enableArchiverless: true
+          fixedStorageOrdinals: 1001,1002

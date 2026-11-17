@@ -10,12 +10,13 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import org.jspecify.annotations.Nullable;
 
 public interface GlobalListenerReader
     extends SearchEntityReader<GlobalListenerEntity, GlobalListenerQuery> {
 
-  GlobalListenerEntity getGlobalListener(
+  @Nullable GlobalListenerEntity getGlobalListener(
       String listenerId,
       GlobalListenerType listenerType,
       ResourceAccessChecks resourceAccessChecks);

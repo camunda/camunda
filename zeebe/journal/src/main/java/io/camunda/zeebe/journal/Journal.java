@@ -123,11 +123,26 @@ public interface Journal extends AutoCloseable {
   void flush() throws FlushException;
 
   /**
-   * Opens a new {@link JournalReader}
+   * Opens a new {@link JournalReader} for a consumer that reads on the same thread that writes to
+   * this journal. Records it returns point directly into the journal, and stay valid until the next
+   * call on the reader.
    *
    * @return a journal reader
    */
   JournalReader openReader();
+
+  /**
+   * Opens a new {@link JournalReader} for a consumer that reads on another thread than the one that
+   * writes to this journal. Records such a reader returned stay valid until the next call on the
+   * reader, even if they are deleted in the meantime: deleting them does not overwrite them, and
+   * does not unmap the segment they are in.
+   *
+   * <p>This costs a new segment per deletion that leaves records this reader read behind, so only
+   * use it for consumers that really do read on another thread.
+   *
+   * @return a journal reader
+   */
+  JournalReader openConcurrentReader();
 
   /**
    * Check if the journal is open

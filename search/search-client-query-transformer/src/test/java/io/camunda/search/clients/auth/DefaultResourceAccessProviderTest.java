@@ -17,10 +17,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.core.authz.DisabledResourceAccessProvider;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,10 +48,11 @@ class DefaultResourceAccessProviderTest {
     final var authScopeBar = AuthorizationScope.of("bar");
     final var authScopeBaz = AuthorizationScope.of("baz");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of(authScopeBar, authScopeBaz));
 
     // when
@@ -68,10 +71,11 @@ class DefaultResourceAccessProviderTest {
   void shouldAllowWildcardResourceAccess() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of(AuthorizationScope.WILDCARD));
 
     // when
@@ -90,10 +94,11 @@ class DefaultResourceAccessProviderTest {
   void shouldDenyResourceAccessWhenNoResourceIdsRetrieved() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of());
 
     // when
@@ -111,14 +116,14 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourcePropertyNames(Set.of("propA", "propB", "propC")));
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(
             List.of(
                 AuthorizationScope.property("propA"),
@@ -143,14 +148,14 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourcePropertyNames(Set.of("propA", "propB", "propC")));
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of(AuthorizationScope.property("propB")));
 
     // when
@@ -168,11 +173,11 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessDefinition().authorizedByProperty("propB"));
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of());
 
     // when
@@ -191,13 +196,14 @@ class DefaultResourceAccessProviderTest {
     final var authScopeInvoice = AuthorizationScope.id("invoice");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(
+            eq(authScopeInvoice), any(), any(RequiredAuthorization.class)))
         .thenReturn(true);
 
     // when
@@ -218,13 +224,14 @@ class DefaultResourceAccessProviderTest {
     final var authScopeInvoice = AuthorizationScope.id("invoice");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(
+            eq(authScopeInvoice), any(), any(RequiredAuthorization.class)))
         .thenReturn(false);
 
     // when
@@ -247,13 +254,14 @@ class DefaultResourceAccessProviderTest {
     final var authScopeOrder = AuthorizationScope.id("order");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
-            (Authorization.Builder<TestResource> a) ->
+        RequiredAuthorization.of(
+            (RequiredAuthorization.Builder<TestResource> a) ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourceIdSupplier(TestResource::anotherValue));
 
-    when(authorizationChecker.isAuthorized(eq(authScopeOrder), any(), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(
+            eq(authScopeOrder), any(), any(RequiredAuthorization.class)))
         .thenReturn(true);
 
     // when
@@ -274,13 +282,14 @@ class DefaultResourceAccessProviderTest {
     final var authScopeOrder = AuthorizationScope.id("order");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
-            (Authorization.Builder<TestResource> a) ->
+        RequiredAuthorization.of(
+            (RequiredAuthorization.Builder<TestResource> a) ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourceIdSupplier(TestResource::anotherValue));
 
-    when(authorizationChecker.isAuthorized(eq(authScopeOrder), any(), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(
+            eq(authScopeOrder), any(), any(RequiredAuthorization.class)))
         .thenReturn(false);
 
     // when
@@ -300,7 +309,7 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
@@ -318,7 +327,8 @@ class DefaultResourceAccessProviderTest {
   void shouldThrowExceptionIfNoResourceIdsProvided() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
 
     // when
     assertThatThrownBy(
@@ -334,7 +344,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication =
         CamundaAuthentication.of(a -> a.user("trevor").groupIds(List.of("managers")));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.userTask()
                     .readUserTask()
@@ -345,12 +355,12 @@ class DefaultResourceAccessProviderTest {
     final var userTask = createUserTask("trevor");
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(
             List.of(
-                AuthorizationScope.property(Authorization.PROP_ASSIGNEE),
-                AuthorizationScope.property(Authorization.PROP_CANDIDATE_USERS),
-                AuthorizationScope.property(Authorization.PROP_CANDIDATE_GROUPS)));
+                AuthorizationScope.property(RequiredAuthorization.PROP_ASSIGNEE),
+                AuthorizationScope.property(RequiredAuthorization.PROP_CANDIDATE_USERS),
+                AuthorizationScope.property(RequiredAuthorization.PROP_CANDIDATE_GROUPS)));
 
     // when
     final var result =
@@ -362,7 +372,7 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization().resourcePropertyNames())
         .containsExactlyInAnyOrder(
-            Authorization.PROP_ASSIGNEE, Authorization.PROP_CANDIDATE_GROUPS);
+            RequiredAuthorization.PROP_ASSIGNEE, RequiredAuthorization.PROP_CANDIDATE_GROUPS);
   }
 
   @Test
@@ -370,12 +380,12 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("jimmy").groupIds(List.of()));
     final var authorization =
-        Authorization.of(a -> a.userTask().readUserTask().authorizedByAssignee());
+        RequiredAuthorization.of(a -> a.userTask().readUserTask().authorizedByAssignee());
 
     final var userTask = createUserTask("jimmy");
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of());
 
     // when
@@ -395,14 +405,14 @@ class DefaultResourceAccessProviderTest {
     final var authentication =
         CamundaAuthentication.of(a -> a.user("franklin").groupIds(List.of()));
     final var authorization =
-        Authorization.of(a -> a.userTask().readUserTask().authorizedByAssignee());
+        RequiredAuthorization.of(a -> a.userTask().readUserTask().authorizedByAssignee());
 
     // User task is assigned to someone else
     final var userTask = createUserTask("michael");
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
-        .thenReturn(List.of(AuthorizationScope.property(Authorization.PROP_ASSIGNEE)));
+            any(), any(RequiredAuthorization.class)))
+        .thenReturn(List.of(AuthorizationScope.property(RequiredAuthorization.PROP_ASSIGNEE)));
 
     // when
     final var result =
@@ -413,7 +423,7 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.allowed()).isFalse();
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization().resourcePropertyNames())
-        .containsExactly(Authorization.PROP_ASSIGNEE);
+        .containsExactly(RequiredAuthorization.PROP_ASSIGNEE);
   }
 
   @Test
@@ -421,7 +431,7 @@ class DefaultResourceAccessProviderTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("martin"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
@@ -432,7 +442,7 @@ class DefaultResourceAccessProviderTest {
     final var resource = new TestResource("id123", "value456");
 
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), any(Authorization.class)))
+            any(), any(RequiredAuthorization.class)))
         .thenReturn(List.of(AuthorizationScope.property("anotherValue")));
 
     // when
@@ -452,13 +462,14 @@ class DefaultResourceAccessProviderTest {
     final var authScopeInvoice = AuthorizationScope.id("invoice");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(
+            eq(authScopeInvoice), any(), any(RequiredAuthorization.class)))
         .thenReturn(true);
 
     // when
@@ -479,13 +490,14 @@ class DefaultResourceAccessProviderTest {
     final var authScopeInvoice = AuthorizationScope.id("invoice");
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.processDefinition()
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(
+            eq(authScopeInvoice), any(), any(RequiredAuthorization.class)))
         .thenReturn(false);
 
     // when
@@ -498,6 +510,38 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.allowed()).isFalse();
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  @Test
+  void shouldBuildDefaultProviderForScopeRepositoryWhenAuthorizationsEnabled() {
+    // given
+    final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
+    when(scopeRepository.findAuthorizedScopes(any(), any(), any()))
+        .thenReturn(List.of(AuthorizationScope.of("bar")));
+
+    // when
+    final var provider = DefaultResourceAccessProvider.forScopeRepository(scopeRepository, true);
+    final var result = provider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(provider).isInstanceOf(DefaultResourceAccessProvider.class);
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.authorization().resourceIds()).containsExactly("bar");
+  }
+
+  @Test
+  void shouldBuildDisabledProviderForScopeRepositoryWhenAuthorizationsDisabled() {
+    // given
+    final var scopeRepository = mock(AuthorizationScopeRepositoryPort.class);
+
+    // when
+    final var provider = DefaultResourceAccessProvider.forScopeRepository(scopeRepository, false);
+
+    // then
+    assertThat(provider).isInstanceOf(DisabledResourceAccessProvider.class);
   }
 
   private UserTaskEntity createUserTask(final String assignee) {

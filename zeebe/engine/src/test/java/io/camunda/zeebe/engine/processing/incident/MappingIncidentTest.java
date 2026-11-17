@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -38,6 +40,19 @@ import org.junit.Test;
 public final class MappingIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  // Pinned to ORDERED: the test below verifies that ORDERED evaluates failing sources on
+  // superseded duplicate targets, which is ORDERED-specific behavior (COMBINED resolves
+  // duplicates at expression-build time and never evaluates the superseded source). Input mappings
+  // are pinned too, so the mapping failure messages can be asserted with their target variable.
+  @ClassRule
+  public static final EngineRule ENGINE_ORDERED =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              c ->
+                  c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED)
+                      .setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
+
   private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
@@ -105,7 +120,78 @@ public final class MappingIncidentTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEventValue.getErrorMessage())
-        .contains("Assertion failure on evaluate the expression");
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression of target variable 'foo')");
+  }
+
+  @Test
+  public void shouldOnlyNameKindOfCombinedInputMappingsWithSeveralTargets() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "failingTask",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeInputExpression("assert(foo, foo != null)", "foo")
+                        .zeebeInputExpression("\"bar\"", "baz"))
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression)");
+  }
+
+  @Test
+  public void shouldNameTargetVariableOfFailingOrderedInputMapping() {
+    // given
+    ENGINE_ORDERED.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression of target variable 'foo')");
+  }
+
+  @Test
+  public void shouldNameTargetVariableOfFailingOrderedOutputMapping() {
+    // given
+    ENGINE_ORDERED.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
+    final long processInstanceKey =
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    ENGINE_ORDERED.job().withType("test").ofInstance(processInstanceKey).complete();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(output mapping expression of target variable 'foo')");
   }
 
   @Test
@@ -159,6 +245,180 @@ public final class MappingIncidentTest {
 
     assertThat(incidentEvent.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
+  }
+
+  @Test
+  public void shouldNotApplyAnyInputMappingIfOneFails() {
+    // given: the second of two input mappings has a genuinely failing source expression (an
+    // unresolved variable alone is NOT sufficient to trigger a failure — see "Investigation
+    // finding" earlier in this plan; assert() forces a real FEEL evaluation failure, matching the
+    // trigger already used by every other case in this test class)
+    final var process =
+        Bpmn.createExecutableProcess("process-atomic")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeInputExpression("1", "first")
+                        .zeebeInputExpression("assert(foo, foo != null)", "second"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-atomic").create();
+
+    // then: an incident is raised for the failing mapping ...
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.IO_MAPPING_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression");
+
+    // ... and the successful first mapping produced no variable (bounded absence check — a bare
+    // `.exists()` on a stream with nothing to find blocks for the default wait time and then
+    // throws; expectNoMatchingRecords shortens that wait and lets `.exists()` return false)
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("first")
+                        .exists()))
+        .isFalse();
+
+    // when: the missing variable is provided and the incident is resolved
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("foo", "bar")).update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then: all mappings are re-evaluated from the start
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("first")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("second")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldNotApplyAnyOutputMappingIfOneFails() {
+    // given: three output mappings where the second one fails
+    final var process =
+        Bpmn.createExecutableProcess("process-atomic-output")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeOutputExpression("1", "first")
+                        .zeebeOutputExpression("assert(missing, missing != null)", "second")
+                        .zeebeOutputExpression("2", "third"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-atomic-output").create();
+    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
+
+    // then: an incident is raised for the failing mapping and NO variable is created —
+    // neither 'first' (before the failing one) nor 'third' (after it)
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.IO_MAPPING_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression");
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("first")
+                        .exists()))
+        .isFalse();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("third")
+                        .exists()))
+        .isFalse();
+
+    // when: the missing variable is provided and the incident is resolved
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("missing", 1)).update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then: all mappings are re-evaluated from the start and applied
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("first")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("second")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("third")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRaiseIncidentForPreviouslyDroppedDuplicateOutputMappingSource() {
+    // given: two output mappings targeting the same key; under COMBINED mode the first
+    // (an always-failing assert) is silently dropped at expression-build time and never evaluated.
+    // Under ORDERED mode every source is evaluated in modeling order, so it fails and raises an
+    // incident — this test pins that ORDERED-specific behavior.
+    final var process =
+        Bpmn.createExecutableProcess("process-duplicate-target-fail")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeOutputExpression("assert(missing, missing != null)", "x")
+                        .zeebeOutputExpression("2", "x"))
+            .endEvent()
+            .done();
+    ENGINE_ORDERED.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process-duplicate-target-fail").create();
+    ENGINE_ORDERED.job().ofInstance(processInstanceKey).withType("test").complete();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.IO_MAPPING_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression");
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("x")
+                        .exists()))
+        .isFalse();
   }
 
   @Test
@@ -396,6 +656,42 @@ public final class MappingIncidentTest {
 
     assertThat(secondResolvedIncident.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
+  }
+
+  @Test
+  public void shouldNotCreateIncidentWhenOutputMappingSourceIsMissing() {
+    // given: no assert() - a missing source is lenient and resolves to null
+    final var process =
+        Bpmn.createExecutableProcess("process-missing-output-source")
+            .startEvent()
+            .serviceTask(
+                "task", t -> t.zeebeJobType("test").zeebeOutputExpression("missing", "bar"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-missing-output-source").create();
+    ENGINE.job().withType("test").ofInstance(processInstanceKey).complete();
+
+    // then
+    final var variable =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("bar")
+            .getFirst();
+    Assertions.assertThat(variable.getValue()).hasValue("null");
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
   }
 
   @Test

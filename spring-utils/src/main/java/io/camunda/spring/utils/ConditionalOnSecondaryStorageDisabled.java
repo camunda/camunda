@@ -22,7 +22,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
  * Conditional annotation that activates beans only when secondary storage is disabled
- * (camunda.database.type=none).
+ * (camunda.data.secondary-storage.type=none).
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})

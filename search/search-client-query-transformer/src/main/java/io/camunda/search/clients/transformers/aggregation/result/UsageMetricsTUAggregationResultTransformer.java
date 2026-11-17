@@ -25,10 +25,19 @@ public class UsageMetricsTUAggregationResultTransformer
   @Override
   public UsageMetricsTUAggregationResult apply(final Map<String, AggregationResult> aggregations) {
 
+    if (aggregations == null || aggregations.isEmpty()) {
+      return new UsageMetricsTUAggregationResult(new UsageMetricTUStatisticsEntity(0, null));
+    }
+
     final boolean withTenants = aggregations.containsKey(AGGREGATION_TERMS_TENANT_ID);
     final UsageMetricTUStatisticsEntity res;
 
-    final var totalTu = aggregations.get(AGGREGATION_TERMS_ASSIGNEE_HASH).docCount();
+    final var assigneeHashAgg = aggregations.get(AGGREGATION_TERMS_ASSIGNEE_HASH);
+    if (assigneeHashAgg == null) {
+      return new UsageMetricsTUAggregationResult(new UsageMetricTUStatisticsEntity(0, null));
+    }
+
+    final var totalTu = assigneeHashAgg.docCount();
 
     if (withTenants) {
       final var tenantsAgg = aggregations.get(AGGREGATION_TERMS_TENANT_ID);

@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -36,22 +38,26 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineConfiguration config;
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final TransientPendingMessageStartProcessInstanceAskState transientAskState;
   private final ControllableStreamClock clock;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final MeterRegistry meterRegistry;
+  private final SuspensionMetrics suspensionMetrics;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
       final Writers writers,
       final EngineConfiguration config,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     partitionId = context.getPartitionId();
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
+    transientAskState = new TransientPendingMessageStartProcessInstanceAskState();
     clock = Objects.requireNonNull(context.getClock());
     meterRegistry = context.getMeterRegistry();
+    suspensionMetrics = new SuspensionMetrics(meterRegistry);
     processingState =
         new ProcessingDbState(
             partitionId,
@@ -60,6 +66,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
+            transientAskState,
             config,
             clock,
             new ExpressionLanguageMetricsImpl(meterRegistry));
@@ -103,6 +110,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             partitionId,
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
+            transientAskState,
             clock);
   }
 
@@ -112,7 +120,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfig() {
+  public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
   }
 
@@ -129,5 +137,10 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  @Override
+  public SuspensionMetrics getSuspensionMetrics() {
+    return suspensionMetrics;
   }
 }

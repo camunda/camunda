@@ -11,13 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.Status;
 
@@ -27,7 +28,7 @@ public class LivenessPartitionLeaderAwarenessHealthIndicatorAutoConfigurationTes
 
   private PartitionLeaderAwarenessHealthIndicatorAutoConfiguration sutAutoConfig;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     helperGatewayBridge = new SpringGatewayBridge();
     sutAutoConfig = new PartitionLeaderAwarenessHealthIndicatorAutoConfiguration();
@@ -45,19 +46,19 @@ public class LivenessPartitionLeaderAwarenessHealthIndicatorAutoConfigurationTes
 
   @Test
   public void
-      shouldCreateHealthIndicatorThatReportsHealthBasedOnResultOfRegisteredClusterStateSupplier() {
+      shouldCreateHealthIndicatorThatReportsHealthBasedOnResultOfRegisteredClusterStatesSupplier() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(42));
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", mockClusterState);
     final var healthIndicator =
         sutAutoConfig.gatewayPartitionLeaderAwarenessHealthIndicator(helperGatewayBridge);
 
     // when
-    helperGatewayBridge.registerClusterStateSupplier(stateSupplier);
+    helperGatewayBridge.registerClusterStatesSupplier(statesSupplier);
     final Health actualHealth = healthIndicator.health();
 
     // then

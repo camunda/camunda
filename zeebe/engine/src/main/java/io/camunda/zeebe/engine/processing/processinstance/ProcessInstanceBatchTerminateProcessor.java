@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -24,7 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceBatchTerminateProcessor
-    implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
+    implements TypedRecordProcessor<ProcessInstanceBatchRecord>,
+        SuspensionAware<ProcessInstanceBatchRecord> {
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -63,6 +65,16 @@ public final class ProcessInstanceBatchTerminateProcessor
     }
   }
 
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBatchRecord> record) {
+    return SuspensionAction.PROCESS;
+  }
+
   private List<ElementInstance> getChildInstances(
       final ProcessInstanceBatchRecord recordValue, final int limit) {
     final CopyOnWriteArrayList<ElementInstance> elementInstances = new CopyOnWriteArrayList<>();
@@ -82,6 +94,7 @@ public final class ProcessInstanceBatchTerminateProcessor
     final var nextBatchRecord =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setStorageOrdinal(recordValue.getStorageOrdinal())
             .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
             .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
             .setIndex(childInstance.getKey());

@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -19,8 +19,6 @@
   </modules>
 
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
   </properties>
@@ -67,8 +65,6 @@
           <ignoreAllNonTestScoped>true</ignoreAllNonTestScoped>
           <ignoreUnusedRuntime>true</ignoreUnusedRuntime>
           <ignoredUnusedDeclaredDependencies combine.children="append">
-            <dep>org.apache.maven.surefire:surefire-junit4</dep>
-            <dep>org.apache.maven.surefire:surefire-junit47</dep>
             <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
             <dep>org.codehaus.plexus:plexus-utils</dep>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>

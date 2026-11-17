@@ -8,12 +8,14 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {notificationsStore} from 'modules/stores/notifications';
+import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
 import {adHocSubProcessInnerInstance, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
-  Wrapper,
+  getWrapper,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
+  parseBusinessObjects,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -21,17 +23,13 @@ import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementI
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 import {
   endpoints,
   queryElementInstancesRequestBodySchema,
+  type ElementInstance,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-
-const diagramModel = await parseDiagramXML(adHocSubProcessInnerInstance);
-const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   beforeEach(async () => {
@@ -54,13 +52,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should select inner instance with first child as anchor when node is expanded and has children', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -68,6 +69,8 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
+    // Two one-time handlers needed: JSDOM fires an implicit node selection on the arrow-key
+    // press (triggering a child fetch), then the manual reset-click triggers another fetch.
     mockSearchElementInstances().withSuccess(
       adHocSubProcessInnerInstanceElementInstances.level2,
     );
@@ -98,13 +101,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should fetch first child and select with anchor when clicking collapsed inner instance', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -157,13 +163,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should display warning notification when inner instance has no children', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const originalSearch = screen.getByTestId('search').textContent;
@@ -196,13 +205,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should display warning notification when fetching first child fails', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const originalSearch = screen.getByTestId('search').textContent;
@@ -232,5 +244,160 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     });
 
     expect(screen.getByTestId('search')).toHaveTextContent(originalSearch);
+  });
+
+  describe('anchor selection follows the displayed sort order', () => {
+    // Clicking the inner instance row anchors on its first child *as displayed*,
+    // so two children with distinct element ids are needed to tell the orders
+    // apart - the level2 fixture is the earlier one, the second is the later.
+    const [earliestChild] =
+      adHocSubProcessInnerInstanceElementInstances.level2.items;
+    const innerChildren: ElementInstance[] = [
+      earliestChild!,
+      {
+        ...earliestChild!,
+        elementInstanceKey: 'inner-child-latest',
+        type: 'SERVICE_TASK',
+        elementId: 'service_task_in_ad_hoc_subprocess',
+        elementName: 'Service Task',
+        startDate: '2020-08-18T12:07:36.500+0000',
+      },
+    ];
+
+    /**
+     * Answers the inner-instance child query the way the server would: applies the
+     * requested order and honours the page limit, so the assertion below only
+     * passes when the request actually carried the displayed sort order.
+     */
+    const mockSortAwareChildQuery = (
+      onSortRequested: (sort: unknown) => void,
+    ) => {
+      mockServer.use(
+        http.post(
+          endpoints.queryElementInstances.getUrl(),
+          async ({request}) => {
+            const body = await request.json();
+            const result =
+              queryElementInstancesRequestBodySchema.safeParse(body);
+
+            if (
+              !result.success ||
+              result.data?.filter?.elementInstanceScopeKey !== 'inner-1'
+            ) {
+              return HttpResponse.json(
+                {error: 'Unexpected request'},
+                {status: 400},
+              );
+            }
+
+            onSortRequested(result.data.sort);
+
+            const isDescending = result.data.sort?.[0]?.order === 'desc';
+            const sorted = isDescending
+              ? [...innerChildren].reverse()
+              : innerChildren;
+
+            return HttpResponse.json({
+              items: sorted.slice(0, result.data.page?.limit ?? sorted.length),
+              page: {
+                totalItems: innerChildren.length,
+                startCursor: null,
+                endCursor: null,
+                hasMoreTotalItems: false,
+              },
+            });
+          },
+          {once: true},
+        ),
+      );
+    };
+
+    const clickCollapsedInnerInstance = async (
+      onSortRequested: (sort: unknown) => void,
+    ) => {
+      const {businessObjects} = await parseBusinessObjects(
+        adHocSubProcessInnerInstance,
+      );
+      const {user} = render(
+        <ElementInstancesTree
+          processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
+          businessObjects={businessObjects}
+        />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
+
+      expect(
+        await screen.findByText('Ad Hoc Inner Subprocess Test'),
+      ).toBeInTheDocument();
+
+      // Installed only once the root tree has loaded, so it answers the child
+      // query rather than the root's own query.
+      mockSortAwareChildQuery(onSortRequested);
+
+      await user.click(screen.getByText('Ad Hoc Inner Subprocess Test'));
+
+      await user.click(
+        await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
+          selector: "[aria-expanded='false']",
+        }),
+      );
+    };
+
+    afterEach(() => {
+      instanceHistorySortOrderStore.reset();
+    });
+
+    it('should anchor on the latest child when the history is latest-first', async () => {
+      // given the default latest-first order
+      expect(instanceHistorySortOrderStore.order).toBe('desc');
+
+      let requestedSort: unknown;
+
+      // when the collapsed inner instance is clicked
+      await clickCollapsedInnerInstance((sort) => {
+        requestedSort = sort;
+      });
+
+      // then the newest child anchors the selection
+      await waitFor(() => {
+        expect(screen.getByTestId('search')).toHaveTextContent(
+          '?elementId=ad_hoc_subprocess&elementInstanceKey=inner-1&anchorElementId=service_task_in_ad_hoc_subprocess',
+        );
+      });
+
+      expect(requestedSort).toEqual([
+        {field: 'startDate', order: 'desc'},
+        {field: 'elementInstanceKey', order: 'desc'},
+      ]);
+      expect(notificationsStore.notifications).toEqual([]);
+    });
+
+    it('should anchor on the earliest child when the history is oldest-first', async () => {
+      // given the user switched the history back to oldest-first
+      instanceHistorySortOrderStore.toggle();
+      expect(instanceHistorySortOrderStore.order).toBe('asc');
+
+      let requestedSort: unknown;
+
+      // when the collapsed inner instance is clicked
+      await clickCollapsedInnerInstance((sort) => {
+        requestedSort = sort;
+      });
+
+      // then the oldest child anchors the selection instead
+      await waitFor(() => {
+        expect(screen.getByTestId('search')).toHaveTextContent(
+          '?elementId=ad_hoc_subprocess&elementInstanceKey=inner-1&anchorElementId=user_task_in_ad_hoc_subprocess',
+        );
+      });
+
+      expect(requestedSort).toEqual([
+        {field: 'startDate', order: 'asc'},
+        {field: 'elementInstanceKey', order: 'asc'},
+      ]);
+      expect(notificationsStore.notifications).toEqual([]);
+    });
   });
 });

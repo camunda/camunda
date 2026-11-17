@@ -28,7 +28,10 @@ import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -40,6 +43,8 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -51,6 +56,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -840,9 +847,425 @@ public final class ExporterDirectorTest {
     assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2)).isEqualTo(-1);
   }
 
+  @Test
+  public void shouldReplayRecordsFromRequestedPositionOnward() throws Exception {
+    // given - write and export 4 events
+    rule.startExporterDirector(exporterDescriptors);
+
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 4);
+
+    exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition4);
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition4);
+
+    rule.closeExporterDirector();
+    exporters.get(0).getExportedRecords().clear();
+    exporters.get(1).getExportedRecords().clear();
+    final var replayAccepted = new AtomicBoolean(false);
+
+    // Simulate: exporter 0's DB was restored to eventPosition2 — records 3 and 4 are missing
+    exporters
+        .getFirst()
+        .onOpen(controller -> replayAccepted.set(controller.requestReplay(eventPosition2)))
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    // when
+    rule.startExporterDirector(exporterDescriptors);
+
+    // then - only records 3 and 4 are re-exported; records 1 and 2 must NOT appear
+    Awaitility.await("exporter 0 re-exports exactly the missing records")
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> exporters.get(0).getExportedRecords().size() >= 2);
+
+    assertThat(replayAccepted.get()).isTrue();
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactlyInAnyOrder(eventPosition3, eventPosition4)
+        .doesNotContain(eventPosition1, eventPosition2);
+
+    // exporter 1 should not re-export anything
+    assertThat(exporters.get(1).getExportedRecords()).isEmpty();
+  }
+
+  @Test
+  public void shouldReplayAndRedeliverGapRecordsWhenReopenedDuringExporting() throws Exception {
+    // given - write and export 4 events; both exporters auto-acknowledge their position after
+    // each export, exactly like a real exporter that updates its position per record
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    final var openCount = new AtomicInteger(0);
+    final var replayAccepted = new AtomicBoolean(false);
+    final var shouldThrow = new AtomicBoolean(false);
+
+    exporters
+        .getFirst()
+        .onOpen(
+            controller -> {
+              if (openCount.incrementAndGet() > 1) {
+                // Simulate: exporter 0 detected a position mismatch and is re-syncing from
+                // eventPosition2, i.e. records 3 and 4 were never durably persisted downstream.
+                replayAccepted.set(controller.requestReplay(eventPosition2));
+              }
+            })
+        .onExport(
+            r -> {
+              if (shouldThrow.compareAndSet(true, false)) {
+                throw new ExporterException(
+                    "position mismatch", ExporterException.Compensation.REOPEN);
+              }
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    rule.startExporterDirector(exporterDescriptors);
+    waitUntil(() -> exporters.getFirst().getExportedRecords().size() == 4);
+
+    // when - simulate the downstream storage falling behind: records 3 and 4 were never really
+    // persisted (clear them here), then trigger a REOPEN on the next record
+    exporters.getFirst().getExportedRecords().clear();
+    shouldThrow.set(true);
+    final long eventPosition5 = writeEvent();
+
+    // then - reopen is triggered, replay from eventPosition2 is accepted, and the record that
+    // triggered the REOPEN is abandoned (not retried immediately) so the rewound log redelivers
+    // records 3, 4 and 5 in order - proving no record is leapfrogged/skipped by an immediate retry
+    Awaitility.await("gap records are redelivered in order after a mid-run replay")
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> exporters.getFirst().getExportedRecords().size() >= 3);
+
+    assertThat(replayAccepted.get()).isTrue();
+    assertThat(openCount.get())
+        .describedAs("exporter was opened twice: once on startup, once on reopen")
+        .isEqualTo(2);
+    assertThat(exporters.getFirst().getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition3, eventPosition4, eventPosition5);
+
+    // exporter 1 never requested replay; its own progress is unaffected by exporter 0's rewind
+    Awaitility.await("exporter 1 exports the new record")
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> exporters.get(1).getExportedRecords().size() == 5);
+    assertThat(exporters.get(1).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(
+            eventPosition1, eventPosition2, eventPosition3, eventPosition4, eventPosition5);
+  }
+
+  @Test
+  public void shouldRejectReplayRequestWhenRequestedPositionDoesNotExist() throws Exception {
+    // given - write and export 2 events
+    rule.startExporterDirector(exporterDescriptors);
+
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 2);
+
+    exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition2);
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition2);
+
+    rule.closeExporterDirector();
+    exporters.get(0).getExportedRecords().clear();
+    exporters.get(1).getExportedRecords().clear();
+    final var replayAccepted = new AtomicBoolean(true);
+
+    // Request replay from a position which is not present in the log; seek should fail.
+    exporters
+        .get(0)
+        .onOpen(controller -> replayAccepted.set(controller.requestReplay(eventPosition2 + 1)))
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    // when
+    rule.startExporterDirector(exporterDescriptors);
+
+    // then
+    Awaitility.await("replay request is rejected")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(replayAccepted.get()).isFalse());
+
+    Awaitility.await("no records are replayed after rejected request")
+        .during(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              assertThat(exporters.get(0).getExportedRecords()).isEmpty();
+              assertThat(exporters.get(1).getExportedRecords()).isEmpty();
+            });
+  }
+
+  @Test
+  public void shouldReopenExporterAndContinueExportingAfterReopenCompensation() {
+    // given
+    final ControlledTestExporter exporter0 = exporters.get(0);
+
+    final AtomicInteger openCount = new AtomicInteger(0);
+    final AtomicBoolean wasClosed = new AtomicBoolean(false);
+    final AtomicBoolean shouldThrow = new AtomicBoolean(false);
+
+    exporter0
+        .onOpen(controller -> openCount.incrementAndGet())
+        .onClose(() -> wasClosed.set(true))
+        .onExport(
+            record -> {
+              if (shouldThrow.compareAndSet(true, false)) {
+                throw new ExporterException(
+                    "position mismatch", ExporterException.Compensation.REOPEN);
+              }
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    startExporterDirector(exporterDescriptors);
+
+    // when — export one record successfully, then trigger a REOPEN exception on the next
+    final long eventPosition1 = writeEvent();
+    waitUntil(() -> exporter0.getExportedRecords().size() >= 1);
+
+    shouldThrow.set(true);
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+
+    // then — advance the clock to drive back-off retries and wait for all records to appear
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until(
+            r ->
+                exporter0.getExportedRecords().stream()
+                    .map(Record::getPosition)
+                    .anyMatch(pos -> pos == eventPosition3));
+
+    assertThat(wasClosed.get())
+        .describedAs("exporter was closed as part of REOPEN compensation")
+        .isTrue();
+    assertThat(openCount.get())
+        .describedAs("exporter was opened twice: once on startup, once on reopen")
+        .isEqualTo(2);
+    assertThat(exporter0.getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+  }
+
+  @Test
+  public void shouldReportExportingMigratedWhenNoExportersConfigured() {
+    // given - no exporters registered at all
+    startExporterDirector(Collections.emptyList());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigratedWhenEveryExporterIsCaughtUpToLogHead() {
+    // given - both exporters acknowledge the only record written
+    startExporterDirector(exporterDescriptors);
+    final long eventPosition = writeEvent();
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 1);
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() == 1);
+    exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition);
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition);
+    Awaitility.await("both exporters' positions are durably persisted")
+        .untilAsserted(
+            () -> {
+              assertThat(rule.getExportersState().getPosition(EXPORTER_ID_1))
+                  .isEqualTo(eventPosition);
+              assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2))
+                  .isEqualTo(eventPosition);
+            });
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then - nothing remains unexported at all, so trivially no old-version backlog either
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigratedWhenNextUnexportedRecordIsAlreadyOnTheCurrentVersion() {
+    // given - a record on the current version is written but never acknowledged by either
+    // exporter; only a PREVIOUS-version backlog counts, so this must still report MIGRATED
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void
+      shouldReportExportingMigrationInProgressWhenNextUnexportedRecordIsOnAPreviousVersion() {
+    // given - a record stamped with a version one minor behind the one actually running is
+    // written and never acknowledged
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldReportExportingMigrationUnknownWhenNextUnexportedRecordVersionIsIncompatible() {
+    // given - a record stamped with a version far ahead of the one actually running (as if this
+    // broker had been downgraded), never acknowledged
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), new VersionInfo(99, 0, 0));
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+  }
+
+  @Test
+  public void
+      shouldReportExportingMigrationInProgressWhenAPreviousVersionRecordIsQueuedBehindACurrentVersionRecord() {
+    // given - the immediate next unexported record is already on the current version, but a
+    // second one further back in the backlog is on a previous version (e.g. from a briefly
+    // re-elected not-yet-upgraded broker); a single-record peek would have missed this entirely
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldReportUnknownWhenTheBacklogExceedsTheConfiguredScanLimit() {
+    // given - two unexported records, both on the current version, but the scan budget only
+    // allows looking at one of them -- we cannot honestly claim the rest is fine without looking
+    rule.withExporterDirectorContextConfigurator(
+        context -> context.migrationStatusScanMaxRecords(1));
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+    writeEvent();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+    assertThat(status.detail()).contains("more than 1 unexported records pending");
+  }
+
+  @Test
+  public void shouldReportMigratedWhenScanLimitIsZeroButNothingIsPending() {
+    // given - a scan budget of zero must not itself cause UNKNOWN when there is truly nothing to
+    // scan; the log head must be checked before the budget is
+    rule.withExporterDirectorContextConfigurator(
+        context -> context.migrationStatusScanMaxRecords(0));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigrationInProgressWithDetailWhenSoftPausedAndBehind() {
+    // given - soft-paused exporting keeps running but never persists its position, freezing a
+    // genuine previous-version backlog behind it -- the operator needs to know pausing, not an
+    // ongoing migration, is what's actually blocking progress
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+    rule.getDirector().softPauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("SOFT_PAUSED").contains("resume it");
+  }
+
+  @Test
+  public void shouldReportExportingMigrationInProgressWithDetailWhenHardPausedAndBehind() {
+    // given - hard-paused exporting stops the export loop outright, freezing the same kind of
+    // backlog behind it as soft-pausing does, for the same reason: the operator needs to know why
+    startExporterDirector(exporterDescriptors);
+    rule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), oneMinorBehindTheCurrentVersion());
+    rule.getDirector().pauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATION_IN_PROGRESS);
+    assertThat(status.detail()).contains("PAUSED").contains("resume it");
+  }
+
+  @Test
+  public void shouldReportMigratedWhenPausedButNothingIsBehind() {
+    // given - pausing alone doesn't create a previous-version backlog; the peek that decides
+    // MIGRATED still reflects the log's true content, so a pause with nothing actually behind must
+    // not be reported as blocking readiness
+    startExporterDirector(exporterDescriptors);
+    writeEvent();
+    rule.getDirector().softPauseExporting().join();
+
+    // when
+    final var status = rule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.MIGRATED);
+  }
+
+  @Test
+  public void shouldReportExportingMigrationStatusInPassiveModeUsingItsOwnFreshReader() {
+    // given - passive mode never opens the shared, ACTIVE-only logStreamReader field; this must
+    // still answer correctly using its own throwaway reader over the same log
+    passiveExporterRule.startExporterDirector(exporterDescriptors);
+    passiveExporterRule.writeEventWithBrokerVersion(
+        DeploymentIntent.CREATED, new DeploymentRecord(), new VersionInfo(99, 0, 0));
+
+    // when
+    final var status = passiveExporterRule.getDirector().getExportingMigrationStatus().join();
+
+    // then
+    assertThat(status.code()).isEqualTo(MigrationStatusCode.UNKNOWN);
+  }
+
   private long writeEvent() {
     final DeploymentRecord event = new DeploymentRecord();
     return rule.writeEvent(DeploymentIntent.CREATED, event);
+  }
+
+  /**
+   * A version exactly one minor behind whatever is actually running -- {@link
+   * VersionUtil#getPreviousSemanticVersion()} is a separately-configured backwards-compatibility
+   * baseline that only coincidentally stays one minor behind {@link VersionUtil#getVersion()}, so
+   * relying on it here would make this test depend on the two staying in lockstep.
+   */
+  private static VersionInfo oneMinorBehindTheCurrentVersion() {
+    final var current = SemanticVersion.parse(VersionUtil.getVersion()).orElseThrow();
+    return new VersionInfo(current.major(), current.minor() - 1, 0);
   }
 
   private Consumer<Context> withFilter(

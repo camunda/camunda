@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Allows consumers of this API to specify error handling logic when a payload cannot be pushed out.
  *
@@ -21,5 +23,5 @@ public interface RemoteStreamErrorHandler<P> {
    * @param error the associated failure
    * @param data the data we attempted to push
    */
-  void handleError(final Throwable error, P data);
+  void handleError(final @Nullable Throwable error, P data);
 }

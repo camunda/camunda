@@ -34,9 +34,17 @@ const pickDateTimeRange = async ({
   const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
 
   await user.click(screen.getByLabelText('From date'));
-  await user.click(screen.getByLabelText(`${monthName} ${fromDay}, ${year}`));
+  await user.click(
+    screen.getByRole('button', {
+      name: new RegExp(`${monthName} ${fromDay}, ${year}`),
+    }),
+  );
   await user.click(screen.getByLabelText('To date'));
-  await user.click(screen.getByLabelText(`${monthName} ${toDay}, ${year}`));
+  await user.click(
+    screen.getByRole('button', {
+      name: new RegExp(`${monthName} ${toDay}, ${year}`),
+    }),
+  );
 
   if (fromTime !== undefined) {
     await user.clear(screen.getByTestId('fromTime'));

@@ -12,10 +12,10 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedReceivedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -35,7 +34,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.zip.CRC32C;
 
 public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
 
@@ -50,7 +48,7 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
         new FileBasedSnapshotStoreImpl(
             nodeId,
             root,
-            new TestChecksumProvider(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             concurrencyControl,
             new SnapshotMetrics(meterRegistry));
     snapshotStore.start();
@@ -74,6 +72,32 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public ActorFuture<Long> getCompactionBound() {
     return snapshotStore.getCompactionBound();
+  }
+
+  @Override
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
+    return snapshotStore.reserveLatestSnapshot(checkpointId);
+  }
+
+  @Override
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
+    return snapshotStore.reserveSnapshot(checkpointId, snapshotId);
+  }
+
+  @Override
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
+    return snapshotStore.getReservedSnapshot(checkpointId, snapshotId);
+  }
+
+  @Override
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
+  }
+
+  @Override
+  public void releaseAllReservations() {
+    snapshotStore.releaseAllReservations();
   }
 
   @Override
@@ -117,13 +141,25 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   }
 
   public void newSnapshot(final long index, final long term, final int size, final Random random) {
+    newSnapshot(index, term, index, index, size, random);
+  }
+
+  public void newSnapshot(
+      final long index,
+      final long term,
+      final long processedPosition,
+      final long exportedPosition,
+      final int size,
+      final Random random) {
     final var chunks =
         IntStream.range(0, size)
             .boxed()
             .map(i -> "chunk-" + i)
             .collect(Collectors.toMap(k -> k, v -> String.valueOf(random.nextLong())));
     final var transientSnapshot =
-        snapshotStore.newTransientSnapshot(index, term, index, index, false).get();
+        snapshotStore
+            .newTransientSnapshot(index, term, processedPosition, exportedPosition, false)
+            .get();
     transientSnapshot.take(p -> writeSnapshot(p, chunks)).join();
     transientSnapshot.persist().join();
   }
@@ -157,31 +193,5 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public ActorFuture<Void> deleteBootstrapSnapshots() {
     return CompletableActorFuture.completed();
-  }
-
-  private static final class TestChecksumProvider implements CRC32CChecksumProvider {
-
-    @Override
-    public Map<String, Long> getSnapshotChecksums(final Path snapshotPath) {
-      final HashMap<String, Long> checksums = new HashMap<>();
-      try (final var files =
-          Files.newDirectoryStream(
-              snapshotPath, p -> p.getFileName().toString().startsWith("chunk"))) {
-        files.forEach(
-            file -> {
-              try {
-                final var fileContentChecksum = new CRC32C();
-                fileContentChecksum.update(Files.readAllBytes(file));
-                checksums.put(file.getFileName().toString(), fileContentChecksum.getValue());
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            });
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-
-      return checksums;
-    }
   }
 }

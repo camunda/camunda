@@ -21,9 +21,11 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -52,9 +54,13 @@ public class UsageMetricsIT {
           .withBasicAuth()
           .withMultiTenancyEnabled()
           .withAuthenticatedAccess()
-          // set exportInterval via properties because it is not yet supported in unified config
-          .withProperty(
-              "zeebe.broker.experimental.engine.usageMetrics.exportInterval", EXPORT_INTERVAL);
+          .withUnifiedConfig(
+              cfg ->
+                  cfg.getMonitoring()
+                      .getMetrics()
+                      .getUsageMetrics()
+                      .setExportInterval(EXPORT_INTERVAL))
+          .withProperty("zeebe.clock.controlled", "true");
 
   private static final String ADMIN = "admin";
   private static final String ASSIGNEE = "bar2";
@@ -69,6 +75,21 @@ public class UsageMetricsIT {
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
 
   private static OffsetDateTime exportedTime;
+
+  /**
+   * Returns the broker's current (possibly clock-advanced) time, falling back to wall-clock time
+   * when the actuator is not reachable. Metric record timestamps follow the broker clock, so
+   * interval assertions must use it as well.
+   */
+  private static OffsetDateTime currentBrokerTime() {
+    try {
+      return OffsetDateTime.ofInstant(
+          ActorClockActuator.of(BROKER.actuatorUri("clock").toString()).getCurrentClock().instant(),
+          ZoneOffset.UTC);
+    } catch (final Exception e) {
+      return OffsetDateTime.now();
+    }
+  }
 
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient,
@@ -110,7 +131,7 @@ public class UsageMetricsIT {
         });
 
     // Store first export time & wait 2 export intervals
-    exportedTime = OffsetDateTime.now();
+    exportedTime = currentBrokerTime();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // Create second batch of metrics
@@ -143,7 +164,6 @@ public class UsageMetricsIT {
     assertTaskReassigned(adminClient);
     assertDecisionsInstantiated(adminClient);
 
-    // Wait for all metrics to be exported
     waitForUsageMetrics(
         adminClient,
         NOW.minusDays(1),

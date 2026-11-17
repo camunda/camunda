@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
@@ -28,9 +29,11 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.util.unit.DataSize;
 
 class StreamProcessorTransitionStepTest {
 
@@ -145,6 +148,19 @@ class StreamProcessorTransitionStepTest {
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
     verify(streamProcessorFromPrevRole).closeAsync();
+  }
+
+  @Test
+  void shouldPassMaxMessageSizeToEngineAsMaxResponseMessageSize() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(7));
+
+    // when
+    final var engineCfg = StreamProcessorTransitionStep.createEngineConfiguration(brokerCfg);
+
+    // then
+    assertThat(engineCfg.getMaxResponseMessageSize()).isEqualTo(7 * 1024 * 1024);
   }
 
   private void transitionTo(final Role role) {

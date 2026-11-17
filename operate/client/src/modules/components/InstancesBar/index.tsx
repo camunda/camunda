@@ -12,10 +12,15 @@ import {
   IncidentsCount,
   Label,
   BarContainer,
+  RightControls,
   ActiveInstancesBar,
   ActiveCount,
   IncidentsBar,
+  DrainingIndicator,
 } from './styled';
+import {Timer} from '@carbon/react/icons';
+import {Tooltip} from '@carbon/react';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 type Props = {
   label?: {
@@ -25,6 +30,8 @@ type Props = {
   };
   activeInstancesCount?: number;
   incidentsCount: number;
+  isDraining?: boolean;
+  drainingDescription?: string;
   size: 'small' | 'medium' | 'large';
   className?: string;
 };
@@ -33,6 +40,8 @@ const InstancesBar: React.FC<Props> = ({
   label,
   activeInstancesCount,
   incidentsCount,
+  isDraining = false,
+  drainingDescription,
   size,
   className,
 }) => {
@@ -42,12 +51,16 @@ const InstancesBar: React.FC<Props> = ({
   const hasIncidents = incidentsCount > 0;
   const hasActiveInstances = (activeInstancesCount ?? 0) > 0;
   const showIncidentsBar = activeInstancesCount !== undefined;
+  const showActiveInstancesCount =
+    activeInstancesCount !== undefined && activeInstancesCount >= 0;
 
   return (
     <div className={className}>
       <Wrapper $size={size}>
         <IncidentsCount
           data-testid="incident-instances-badge"
+          role="img"
+          aria-label={`${pluralSuffix(incidentsCount, 'instance')} with incidents`}
           $hasIncidents={hasIncidents}
         >
           {incidentsCount}
@@ -60,14 +73,34 @@ const InstancesBar: React.FC<Props> = ({
             {label.text}
           </Label>
         )}
+        {(isDraining || showActiveInstancesCount) && (
+          <RightControls>
+            {isDraining && (
+              <Tooltip
+                label={drainingDescription ?? 'Draining'}
+                align="top"
+                autoAlign
+              >
+                <DrainingIndicator data-testid="draining-indicator">
+                  <Timer size={16} />
+                </DrainingIndicator>
+              </Tooltip>
+            )}
 
-        {activeInstancesCount !== undefined && activeInstancesCount >= 0 && (
-          <ActiveCount
-            data-testid="active-instances-badge"
-            $hasActiveInstances={hasActiveInstances}
-          >
-            {activeInstancesCount}
-          </ActiveCount>
+            {showActiveInstancesCount && (
+              <ActiveCount
+                data-testid="active-instances-badge"
+                role="img"
+                aria-label={pluralSuffix(
+                  activeInstancesCount,
+                  'active instance',
+                )}
+                $hasActiveInstances={hasActiveInstances}
+              >
+                {activeInstancesCount}
+              </ActiveCount>
+            )}
+          </RightControls>
         )}
       </Wrapper>
       {showIncidentsBar && (

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,7 +32,23 @@ public class BrokerExpressionEvaluationRequest extends BrokerExecuteCommand<Expr
   }
 
   public BrokerExpressionEvaluationRequest setTenantId(final String tenantId) {
+    if (tenantId == null) {
+      return this;
+    }
     requestDto.setTenantId(tenantId);
+    return this;
+  }
+
+  /**
+   * Routes this request to the partition that owns the given scope and propagates the key to the
+   * engine so the expression evaluates in that scope's visible variables.
+   */
+  public BrokerExpressionEvaluationRequest setScopeKey(final Long scopeKey) {
+    if (scopeKey == null) {
+      return this;
+    }
+    requestDto.setScopeKey(scopeKey);
+    setPartitionId(Protocol.decodePartitionId(scopeKey));
     return this;
   }
 

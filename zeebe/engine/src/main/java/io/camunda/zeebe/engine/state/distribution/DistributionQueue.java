@@ -12,7 +12,8 @@ public enum DistributionQueue {
   DEPLOYMENT("DEPLOYMENT"),
   SCALING("SCALING"),
   BATCH_OPERATION("BATCH_OPERATION"),
-  GLOBAL_LISTENERS("GLOBAL_LISTENERS");
+  GLOBAL_LISTENERS("GLOBAL_LISTENERS"),
+  CLOCK("CLOCK");
 
   private static final DistributionQueue[] VALUES = DistributionQueue.values();
   private final String queueId;

@@ -14,9 +14,9 @@ import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -32,12 +32,14 @@ public final class UsageMetricsServices
   private final UsageMetricsSearchClient usageMetricsSearchClient;
 
   public UsageMetricsServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UsageMetricsSearchClient usageMetricsSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -54,16 +56,18 @@ public final class UsageMetricsServices
     final UsageMetricsSearchClient authUsageMetricsSearchClient =
         usageMetricsSearchClient.withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.system().readUsageMetric())));
+                authentication, RequiredAuthorization.of(a -> a.system().readUsageMetric())));
 
     final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
         CompletableFuture.supplyAsync(
-            () -> authUsageMetricsSearchClient.usageMetricStatistics(query));
+            () -> authUsageMetricsSearchClient.usageMetricStatistics(query),
+            executorProvider.getExecutor());
     final CompletableFuture<UsageMetricTUStatisticsEntity> tuStatsFuture =
         CompletableFuture.supplyAsync(
             () ->
                 authUsageMetricsSearchClient.usageMetricTUStatistics(
-                    mapToUsageMetricsTUQuery(query)));
+                    mapToUsageMetricsTUQuery(query)),
+            executorProvider.getExecutor());
 
     return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
   }

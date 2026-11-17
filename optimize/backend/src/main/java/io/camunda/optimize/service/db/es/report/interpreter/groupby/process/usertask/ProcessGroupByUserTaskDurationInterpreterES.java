@@ -101,7 +101,7 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
@@ -147,12 +147,12 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 
   @Override
-  public ProcessGroupByUserTaskInterpreterHelper getHelper() {
+  protected ProcessGroupByUserTaskInterpreterHelper getHelper() {
     return helper;
   }
 }

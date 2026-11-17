@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -153,6 +154,12 @@ public final class VersionManager {
     tenantIdKey.wrapString(tenantId);
     idKey.wrapString(resourceId);
     return getVersionInfo().findVersionBefore(version);
+  }
+
+  public List<Long> getKnownResourceVersions(final String resourceId, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    idKey.wrapString(resourceId);
+    return getVersionInfo().getKnownVersions();
   }
 
   public void forEachResource(final ResourceVisitor resourceVisitor) {

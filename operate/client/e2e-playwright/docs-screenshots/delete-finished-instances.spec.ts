@@ -186,15 +186,13 @@ test.describe('delete finished instances', () => {
 
     await deleteInstanceButton.click();
 
-    await expect(
-      page.getByRole('button', {name: /danger delete/i}),
-    ).toBeVisible();
+    await expect(page.getByRole('button', {name: /^delete$/i})).toBeVisible();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-detail-delete-operation-confirm.png',
     });
 
-    await page.getByRole('button', {name: /danger delete/i}).click();
+    await page.getByRole('button', {name: /^delete$/i}).click();
 
     await page.route(URL_API_PATTERN, (route) => {
       if (route.request().url().includes('call-hierarchy')) {

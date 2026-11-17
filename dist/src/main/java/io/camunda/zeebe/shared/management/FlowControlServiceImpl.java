@@ -9,25 +9,34 @@ package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitSerializer;
 import io.camunda.zeebe.shared.management.FlowControlEndpoint.FlowControlService;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.agrona.collections.IntHashSet;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * Every operation targets a single physical tenant (partition group). The {@code physicalTenantId}
+ * selects the partition set the operation enumerates and is stamped on every outgoing broker
+ * request so that routing resolves leaders from that group's topology: a bare partition id aliases
+ * across groups and would otherwise always resolve against the default one.
+ */
 @Component
+@NullMarked
 public class FlowControlServiceImpl implements FlowControlService {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControlServiceImpl.class);
   private final BrokerClient client;
@@ -38,11 +47,11 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<Map<Integer, JsonNode>> get() {
-    final var topology = client.getTopologyManager().getTopology();
+  public CompletableFuture<Map<Integer, JsonNode>> get(final String physicalTenantId) {
+    final var topology = client.getTopologyManager().getTopology(physicalTenantId);
     final var futures =
         topology.getPartitions().stream()
-            .map(partition -> fetchFlowConfigOnPartition(topology, partition))
+            .map(partition -> fetchFlowConfigOnPartition(physicalTenantId, topology, partition))
             .toList();
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
         .thenApply(
@@ -55,8 +64,12 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<Map<Integer, JsonNode>> set(final FlowControlCfg flowControlCfg) {
-    LOG.info("Setting flow control configuration to {}", flowControlCfg);
+  public CompletableFuture<Map<Integer, JsonNode>> set(
+      final FlowControlCfg flowControlCfg, final String physicalTenantId) {
+    LOG.info(
+        "Setting flow control configuration of physical tenant {} to {}",
+        physicalTenantId,
+        flowControlCfg);
 
     final byte[] configuration;
     try {
@@ -65,20 +78,22 @@ public class FlowControlServiceImpl implements FlowControlService {
       return CompletableFuture.failedFuture(e);
     }
 
-    final var topology = client.getTopologyManager().getTopology();
+    final var topology = client.getTopologyManager().getTopology(physicalTenantId);
     final var results =
         topology.getPartitions().stream()
             .map(
                 partition ->
                     broadcastOnPartition(
+                        physicalTenantId,
                         topology,
                         partition,
                         request -> request.setFlowControlConfiguration(configuration)))
             .toArray(CompletableFuture<?>[]::new);
-    return CompletableFuture.allOf(results).thenCompose(ignored -> get());
+    return CompletableFuture.allOf(results).thenCompose(ignored -> get(physicalTenantId));
   }
 
   private CompletableFuture<Void> broadcastOnPartition(
+      final String physicalTenantId,
       final BrokerClusterState topology,
       final Integer partitionId,
       final Consumer<BrokerAdminRequest> configureRequest) {
@@ -90,19 +105,29 @@ public class FlowControlServiceImpl implements FlowControlService {
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();
+                  request.setPartitionGroup(physicalTenantId);
                   request.setBrokerId(brokerId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
-                  return client.sendRequest(request);
+                  return client
+                      .sendRequest(request)
+                      .thenApply(response -> response.getResponseOrThrow());
                 })
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);
   }
 
   private CompletableFuture<FlowControlStatus> fetchFlowConfigOnPartition(
-      final BrokerClusterState topology, final Integer partitionId) {
+      final String physicalTenantId, final BrokerClusterState topology, final Integer partitionId) {
     final var brokerId = topology.getLeaderForPartition(partitionId);
+    if (brokerId == null) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException(
+              "No leader for partition %s of physical tenant %s"
+                  .formatted(partitionId, physicalTenantId)));
+    }
     final var request = new BrokerAdminRequest();
+    request.setPartitionGroup(physicalTenantId);
     request.setBrokerId(brokerId);
     request.setPartitionId(partitionId);
     request.getFLowControlConfiguration();
@@ -110,20 +135,23 @@ public class FlowControlServiceImpl implements FlowControlService {
     return client
         .sendRequest(request)
         .thenApply(
-            response ->
-                new FlowControlStatus(
-                    partitionId, LimitSerializer.deserialize(response.getResponse().getPayload())));
+            response -> {
+              final var payload = response.getResponseOrThrow().getPayload();
+              return new FlowControlStatus(partitionId, LimitSerializer.deserialize(payload));
+            });
   }
 
-  private IntHashSet getMembers(final BrokerClusterState topology, final Integer partitionId) {
-    final var leader = topology.getLeaderForPartition(partitionId);
+  private HashSet<BrokerMemberId> getMembers(
+      final BrokerClusterState topology, final Integer partitionId) {
+    final var leader = Optional.ofNullable(topology.getLeaderForPartition(partitionId));
     final var followers =
         Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
-    final var members = new IntHashSet(topology.getReplicationFactor());
-    members.add(leader);
+    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
+    leader.ifPresent(members::add);
+
     members.addAll(followers);
     members.addAll(inactive);
     return members;

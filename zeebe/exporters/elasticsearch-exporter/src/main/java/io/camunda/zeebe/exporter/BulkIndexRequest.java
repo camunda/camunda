@@ -13,8 +13,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -33,6 +40,8 @@ final class BulkIndexRequest {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(StorageOrdinalRelated.class, StorageOrdinalMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
@@ -40,15 +49,35 @@ final class BulkIndexRequest {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(JobRecordValue.class, JobMixin.class)
+          .addMixIn(JobBatchRecordValue.class, JobBatchMixin.class)
+          .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
+          .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
+          .addMixIn(ClusterVariableRecordValue.class, ClusterVariableMixin.class)
+          .addMixIn(StorageOrdinalRelated.class, StorageOrdinalMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
   private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
   private static final String RECORD_AGENT_PROPERTY = "agent";
+  private static final String RECORD_REQUEST_CHANNEL_TYPE_PROPERTY = "requestChannelType";
+  private static final String RECORD_REQUEST_TOOL_NAME_PROPERTY = "requestToolName";
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
+  private static final String PRIORITY_PROPERTY = "priority";
+  private static final String ELEMENT_TYPE_PROPERTY = "elementType";
+  private static final String BUSINESS_ID_PROPERTY = "businessId";
+  private static final String JOB_LEASE_TOKEN_PROPERTY = "jobLeaseToken";
+  private static final String SECRET_REFERENCES_PROPERTY = "secretReferences";
+  private static final String WITH_LEASE_PROPERTY = "withLease";
+  private static final String METADATA_PROPERTY = "metadata";
+  private static final String KIND_PROPERTY = "kind";
+  private static final String STORAGE_ORDINAL_PROPERTY = "storageOrdinal";
+  private static final String RESUME_FROM_JOB_KEY_PROPERTY = "resumeFromJobKey";
+  private static final String RESUME_FROM_USER_TASK_KEY_PROPERTY = "resumeFromUserTaskKey";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -154,7 +183,12 @@ final class BulkIndexRequest {
   record IndexOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
-  @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY, RECORD_AGENT_PROPERTY})
+  @JsonIgnoreProperties({
+    RECORD_AUTHORIZATIONS_PROPERTY,
+    RECORD_AGENT_PROPERTY,
+    RECORD_REQUEST_CHANNEL_TYPE_PROPERTY,
+    RECORD_REQUEST_TOOL_NAME_PROPERTY
+  })
   private static final class RecordSequenceMixin {}
 
   @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})
@@ -162,4 +196,47 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
+
+  @JsonIgnoreProperties({
+    PRIORITY_PROPERTY,
+    ELEMENT_TYPE_PROPERTY,
+    BUSINESS_ID_PROPERTY,
+    JOB_LEASE_TOKEN_PROPERTY,
+    SECRET_REFERENCES_PROPERTY,
+    STORAGE_ORDINAL_PROPERTY
+  })
+  private static final class JobMixin {}
+
+  @JsonIgnoreProperties({WITH_LEASE_PROPERTY})
+  private static final class JobBatchMixin {}
+
+  /**
+   * Shared by record values that need to strip {@code businessId} and {@code storageOrdinal} for
+   * previous versions.
+   */
+  @JsonIgnoreProperties({BUSINESS_ID_PROPERTY, STORAGE_ORDINAL_PROPERTY})
+  private static final class BusinessIdMixin {}
+
+  @JsonIgnoreProperties({METADATA_PROPERTY, KIND_PROPERTY, SECRET_REFERENCES_PROPERTY})
+  private static final class ClusterVariableMixin {}
+
+  /**
+   * The storage ordinal is only used to route a record's document to its storage location; it must
+   * not be stored in the document itself.
+   */
+  @JsonIgnoreProperties({STORAGE_ORDINAL_PROPERTY})
+  private static final class StorageOrdinalMixin {}
+
+  /**
+   * The resume-from cursors are transient values carried on RESUME_JOBS and RESUME_USER_TASKS
+   * commands to drive the resume; they must not be stored in the exported document. This mix-in is
+   * the most specific one for a process-instance value, so it shadows {@link StorageOrdinalMixin}
+   * and must also repeat the {@code storageOrdinal} ignoral it would otherwise inherit.
+   */
+  @JsonIgnoreProperties({
+    STORAGE_ORDINAL_PROPERTY,
+    RESUME_FROM_JOB_KEY_PROPERTY,
+    RESUME_FROM_USER_TASK_KEY_PROPERTY
+  })
+  private static final class ProcessInstanceMixin {}
 }

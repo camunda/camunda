@@ -78,6 +78,7 @@ public class MessageSubscriptionMigrateProcessor
         MessageSubscriptionIntent.MIGRATED,
         messageSubscriptionRecord
             .setBpmnProcessId(value.getBpmnProcessIdBuffer())
-            .setInterrupting(value.isInterrupting()));
+            .setInterrupting(value.isInterrupting())
+            .setElementId(value.getElementIdBuffer()));
   }
 }

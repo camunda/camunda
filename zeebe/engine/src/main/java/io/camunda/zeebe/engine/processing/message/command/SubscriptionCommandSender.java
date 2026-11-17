@@ -10,12 +10,19 @@ package io.camunda.zeebe.engine.processing.message.command;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
 
@@ -60,7 +67,12 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
-      final String tenantId) {
+      final String tenantId,
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final BpmnElementType elementType) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -74,7 +86,12 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setBusinessId(businessId)
+            .setElementId(elementId)
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
+            .setStorageOrdinal(storageOrdinal)
+            .setElementType(elementType));
   }
 
   /**
@@ -90,6 +107,13 @@ public class SubscriptionCommandSender {
    * @param correlationKey the correlation key for which the message should be correlated
    * @param closeOnCorrelate indicates whether the subscription should be closed after correlation
    * @param tenantId the tenant id the message subscription is created for
+   * @param businessId the business id captured from the subscribing process instance at open time;
+   *     used as a post-routing local filter on the subscription partition. May be an empty buffer
+   *     when the process instance has no business id.
+   * @param elementId the BPMN element id of the catch element that opened the subscription
+   * @param rootProcessInstanceKey the key of the root process instance in the hierarchy
+   * @param storageOrdinal the storage ordinal for the subscription
+   * @param elementType the BPMN element type of the catch element that opened the subscription
    */
   public void sendDirectOpenMessageSubscription(
       final int subscriptionPartitionId,
@@ -100,7 +124,12 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
-      final String tenantId) {
+      final String tenantId,
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal,
+      final BpmnElementType elementType) {
     interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -114,7 +143,12 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setBusinessId(businessId)
+            .setElementId(elementId)
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
+            .setStorageOrdinal(storageOrdinal)
+            .setElementType(elementType));
   }
 
   public boolean openProcessMessageSubscription(
@@ -123,7 +157,10 @@ public class SubscriptionCommandSender {
       final long processDefinitionKey,
       final DirectBuffer messageName,
       final boolean closeOnCorrelate,
-      final String tenantId) {
+      final String tenantId,
+      final DirectBuffer businessId,
+      final long subscriptionKey,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -131,12 +168,15 @@ public class SubscriptionCommandSender {
         new ProcessMessageSubscriptionRecord()
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
+            .setStorageOrdinal(storageOrdinal)
             .setElementInstanceKey(elementInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1)
             .setMessageName(messageName)
             .setInterrupting(closeOnCorrelate)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setBusinessId(businessId)
+            .setSubscriptionKey(subscriptionKey));
   }
 
   public boolean correlateProcessMessageSubscription(
@@ -148,7 +188,9 @@ public class SubscriptionCommandSender {
       final long messageKey,
       final DirectBuffer variables,
       final DirectBuffer correlationKey,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -156,6 +198,7 @@ public class SubscriptionCommandSender {
         new ProcessMessageSubscriptionRecord()
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
+            .setStorageOrdinal(storageOrdinal)
             .setElementInstanceKey(elementInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
@@ -163,7 +206,8 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setVariables(variables)
             .setCorrelationKey(correlationKey)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setSubscriptionKey(subscriptionKey));
   }
 
   /**
@@ -179,6 +223,9 @@ public class SubscriptionCommandSender {
    * @param variables the variables of the message
    * @param correlationKey the correlation key for which the message should be correlated
    * @param tenantId the tenant the message subscription is correlated for
+   * @param subscriptionKey the message-side subscription key, propagated so the PI side stores it
+   *     for staleness detection on later delete commands
+   * @param storageOrdinal the storage ordinal for the subscription
    */
   public void sendDirectCorrelateProcessMessageSubscription(
       final long processInstanceKey,
@@ -189,7 +236,9 @@ public class SubscriptionCommandSender {
       final long messageKey,
       final DirectBuffer variables,
       final DirectBuffer correlationKey,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey,
+      final int storageOrdinal) {
     interPartitionCommandSender.sendCommand(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -197,6 +246,7 @@ public class SubscriptionCommandSender {
         new ProcessMessageSubscriptionRecord()
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
+            .setStorageOrdinal(storageOrdinal)
             .setElementInstanceKey(elementInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
@@ -204,7 +254,8 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setVariables(variables)
             .setCorrelationKey(correlationKey)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setSubscriptionKey(subscriptionKey));
   }
 
   public boolean correlateMessageSubscription(
@@ -215,7 +266,8 @@ public class SubscriptionCommandSender {
       final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -227,7 +279,8 @@ public class SubscriptionCommandSender {
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(messageKey)
             .setMessageName(messageName)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setStorageOrdinal(storageOrdinal));
   }
 
   public boolean closeMessageSubscription(
@@ -236,7 +289,9 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -247,7 +302,9 @@ public class SubscriptionCommandSender {
             .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1L)
             .setMessageName(messageName)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setSubscriptionKey(subscriptionKey)
+            .setStorageOrdinal(storageOrdinal));
   }
 
   /**
@@ -260,6 +317,7 @@ public class SubscriptionCommandSender {
    * @param elementInstanceKey the related element instance key
    * @param messageName the name of the message for which the subscription should be closed
    * @param tenantId the tenant for which the subscription should be closed
+   * @param storageOrdinal the storage ordinal for the subscription
    */
   public void sendDirectCloseMessageSubscription(
       final int subscriptionPartitionId,
@@ -267,7 +325,9 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey,
+      final int storageOrdinal) {
     interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -278,7 +338,9 @@ public class SubscriptionCommandSender {
             .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1L)
             .setMessageName(messageName)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setSubscriptionKey(subscriptionKey)
+            .setStorageOrdinal(storageOrdinal));
   }
 
   public boolean closeProcessMessageSubscription(
@@ -286,7 +348,8 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -298,7 +361,8 @@ public class SubscriptionCommandSender {
             .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1)
             .setMessageName(messageName)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setStorageOrdinal(storageOrdinal));
   }
 
   public boolean rejectCorrelateMessageSubscription(
@@ -310,7 +374,9 @@ public class SubscriptionCommandSender {
       final long messageKey,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
-      final String tenantId) {
+      final String tenantId,
+      final long subscriptionKey,
+      final int storageOrdinal) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -324,7 +390,255 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey)
             .setMessageKey(messageKey)
             .setInterrupting(false)
-            .setTenantId(tenantId));
+            .setTenantId(tenantId)
+            .setSubscriptionKey(subscriptionKey)
+            .setStorageOrdinal(storageOrdinal));
+  }
+
+  /**
+   * Sends a cross-partition request from {@code P_K = hash(correlationKey)} to {@code P_B =
+   * hash(businessId)} asking {@code P_B} to create a message-start process instance under its
+   * businessId uniqueness invariant. The reply is one of {@link
+   * MessageStartProcessInstanceRequestIntent#STARTED}, {@link
+   * MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED}, or {@link
+   * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED}; the routing flip that
+   * dispatches this request from the publish path lands later.
+   *
+   * <p>The wire payload mirrors the originating publish: {@code messageKey} additionally encodes
+   * the source partition (via Zeebe's key-partitioning), so the reply target on {@code P_B} is
+   * derivable without a separate field.
+   */
+  public boolean sendStartProcessInstanceRequest(
+      final int targetPartitionId,
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer startEventId,
+      final long messageStartEventSubscriptionKey,
+      final DirectBuffer variables,
+      final long messageDeadline,
+      final long messageTtl,
+      final String tenantId) {
+    return handleFollowUpCommandBasedOnPartition(
+        targetPartitionId,
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.REQUEST,
+        buildStartProcessInstanceRequest(
+            messageKey,
+            messageName,
+            correlationKey,
+            businessId,
+            processDefinitionKey,
+            bpmnProcessId,
+            startEventId,
+            messageStartEventSubscriptionKey,
+            variables,
+            messageDeadline,
+            messageTtl,
+            tenantId));
+  }
+
+  /**
+   * Sends the start-process-instance ask directly to {@code P_B} bypassing the writers' post-commit
+   * task. Mirrors {@link #sendDirectOpenMessageSubscription} and exists for the scheduled retry
+   * task on {@code P_K} that drains the pending-ask state ({@link
+   * io.camunda.zeebe.engine.processing.message.PendingMessageStartAskCheckScheduler}).
+   */
+  public void sendDirectStartProcessInstanceRequest(
+      final int targetPartitionId,
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer startEventId,
+      final long messageStartEventSubscriptionKey,
+      final DirectBuffer variables,
+      final long messageDeadline,
+      final long messageTtl,
+      final String tenantId) {
+    interPartitionCommandSender.sendCommand(
+        targetPartitionId,
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.REQUEST,
+        buildStartProcessInstanceRequest(
+            messageKey,
+            messageName,
+            correlationKey,
+            businessId,
+            processDefinitionKey,
+            bpmnProcessId,
+            startEventId,
+            messageStartEventSubscriptionKey,
+            variables,
+            messageDeadline,
+            messageTtl,
+            tenantId));
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#STARTED} reply from {@code P_B} back
+   * to {@code P_K}. The target partition is derived from {@code request.getMessageKey()} — the
+   * source partition is encoded in the message key by Zeebe's key-partitioning.
+   *
+   * <p>The reply replays the request payload so the {@code P_K} handler has every field it needs to
+   * commit the correlation locally (subscription-correlated event, local correlationKey lock entry,
+   * buffered-message removal) without any further cross-partition lookup; the {@code
+   * processInstanceKey} of the newly created instance is added on top.
+   */
+  public boolean sendStartProcessInstanceStarted(
+      final MessageStartProcessInstanceRequestRecord request,
+      final long processInstanceKey,
+      final int storageOrdinal) {
+    final MessageStartProcessInstanceRequestRecord reply =
+        new MessageStartProcessInstanceRequestRecord();
+    reply.wrap(request);
+    reply.setProcessInstanceKey(processInstanceKey);
+    reply.setStorageOrdinal(storageOrdinal);
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(request.getMessageKey()),
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.START,
+        reply);
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED} reply from
+   * {@code P_B} back to {@code P_K} after the businessId uniqueness check on {@code P_B} found an
+   * active holder. {@code P_K} keeps the message buffered (TTL continues) and waits for the
+   * cross-partition lock release — pushed by {@code P_B} when the holder completes, reconciled by a
+   * coarse {@code P_K} poll as a backstop.
+   */
+  public boolean sendStartProcessInstanceUniquenessRejected(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return sendStartProcessInstanceRejection(
+        request, MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS);
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} reply from
+   * {@code P_B} back to {@code P_K} when {@code P_B} has no message-start-event subscription for
+   * the requested definition yet (deployment-distribution race). {@code P_K} keeps the message
+   * buffered, matching its local "no subscription right now" semantics; this is deliberately not a
+   * discard.
+   */
+  public boolean sendStartProcessInstanceNoSubscriptionRejected(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return sendStartProcessInstanceRejection(
+        request, MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#REJECT_EXPIRED} reply from {@code
+   * P_B} back to {@code P_K} when the deterministic TTL-gated expiry guard refused a past-deadline
+   * request ({@code messageDeadline <= now} and {@code messageTtl > 0}). {@code P_K} keeps the
+   * message buffered; the {@code EXPIRED_REJECTED} applier backs the pending ask off (identical
+   * semantics to the other two rejections), and the ask is finally removed only by {@code P_K}'s
+   * own message-expiry path — never by this reply.
+   */
+  public boolean sendStartProcessInstanceExpiredRejected(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return sendStartProcessInstanceRejection(
+        request, MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED);
+  }
+
+  private boolean sendStartProcessInstanceRejection(
+      final MessageStartProcessInstanceRequestRecord request,
+      final MessageStartProcessInstanceRequestIntent intent) {
+    final MessageStartProcessInstanceRequestRecord reply =
+        new MessageStartProcessInstanceRequestRecord();
+    reply.wrap(request);
+    // processInstanceKey stays at -1 for rejection replies; defaults are kept by wrap. A
+    // rejection belongs to no instance, so the ordinal is forced regardless of the request.
+    reply.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(request.getMessageKey()),
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        intent,
+        reply);
+  }
+
+  /**
+   * Dispatches a batched holder-liveness {@link MessageStartCorrelationKeyLockReleaseIntent#QUERY}
+   * from {@code P_K} to {@code P_B}. Sent directly (bypassing the writers' post-commit task)
+   * because it originates from the scheduled poll task on {@code P_K} that walks the
+   * cross-partition lock entries; mirrors {@link #sendDirectStartProcessInstanceRequest}.
+   *
+   * <p>Every holder in {@code query} targets the same {@code targetPartitionId} (each holder
+   * instance key's partition bits identify {@code P_B}), so one command covers all of {@code P_K}'s
+   * locks for that partition. The {@code requestKey} on {@code query} encodes {@code P_K} so {@code
+   * P_B} can route each {@code RELEASE} reply back.
+   */
+  public void sendDirectCorrelationKeyLockReleaseQuery(
+      final int targetPartitionId, final MessageStartCorrelationKeyLockReleaseRecord query) {
+    interPartitionCommandSender.sendCommand(
+        targetPartitionId,
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.QUERY,
+        query);
+  }
+
+  /**
+   * Sends the {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} reply from {@code P_B}
+   * back to {@code P_K} after a holder-liveness query found {@code holder}'s instance is no longer
+   * active. The target partition is derived from {@code requestKey} — the originating partition
+   * {@code P_K} is encoded in it by Zeebe's key-partitioning.
+   *
+   * <p>The reply carries the single gone {@code holder} so the {@code P_K} handler can locate the
+   * correlation-key lock entry to release (via {@code bpmnProcessId} + {@code correlationKey}) and
+   * scope the buffered-message rescan (via {@code tenantId}) without any further cross-partition
+   * lookup. {@code P_B} sends this reply only for holders that are gone; for ones still active it
+   * stays silent and {@code P_K} re-polls.
+   */
+  public boolean sendCorrelationKeyLockRelease(
+      final long requestKey, final MessageStartLockReleaseHolderValue holder) {
+    final MessageStartCorrelationKeyLockReleaseRecord reply =
+        new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(requestKey);
+    reply
+        .addHolder()
+        .setProcessInstanceKey(holder.getProcessInstanceKey())
+        .setBpmnProcessId(holder.getBpmnProcessId())
+        .setCorrelationKey(holder.getCorrelationKey())
+        .setTenantId(holder.getTenantId())
+        .setStorageOrdinal(holder.getStorageOrdinal());
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(requestKey),
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
+        reply);
+  }
+
+  private MessageStartProcessInstanceRequestRecord buildStartProcessInstanceRequest(
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer startEventId,
+      final long messageStartEventSubscriptionKey,
+      final DirectBuffer variables,
+      final long messageDeadline,
+      final long messageTtl,
+      final String tenantId) {
+    return new MessageStartProcessInstanceRequestRecord()
+        .setMessageKey(messageKey)
+        .setMessageName(messageName)
+        .setCorrelationKey(correlationKey)
+        .setBusinessId(businessId)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setBpmnProcessId(bpmnProcessId)
+        .setStartEventId(startEventId)
+        .setMessageStartEventSubscriptionKey(messageStartEventSubscriptionKey)
+        .setVariables(variables)
+        .setMessageDeadline(messageDeadline)
+        .setMessageTtl(messageTtl)
+        .setTenantId(tenantId)
+        .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   /**
@@ -354,7 +668,6 @@ public class SubscriptionCommandSender {
               () -> {
                 interPartitionCommandSender.sendCommand(
                     receiverPartitionId, valueType, intent, record);
-                return true;
               });
     }
     return true;

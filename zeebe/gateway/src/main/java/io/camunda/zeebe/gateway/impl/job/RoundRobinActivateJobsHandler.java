@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -74,7 +75,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final ResponseObserver<T> responseObserver,
       final Consumer<Runnable> setCancelHandler,
       final long requestTimeout) {
-    final var topology = topologyManager.getTopology();
+    final var topology = topologyManager.getTopology(request.getPartitionGroup());
     if (topology != null) {
       final var inflightRequest =
           new InflightActivateJobsRequest<>(
@@ -97,7 +98,9 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final BiConsumer<Integer, Boolean> onCompleted) {
     final var jobType = request.getType();
     final var maxJobsToActivate = request.getMaxJobsToActivate();
-    final var partitionIterator = partitionIdIteratorForType(jobType, partitionsCount);
+    final var partitionIterator =
+        partitionIdIteratorForType(
+            jobType, partitionsCount, request.getRequest().getPartitionGroup());
 
     final var requestState =
         new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
@@ -113,6 +116,8 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     actor.run(
         () -> {
           if (!request.isOpen()) {
+            delegate.onCompleted(
+                requestState.getRemainingAmount(), requestState.wasResourceExhaustedPresent());
             return;
           }
 
@@ -143,8 +148,10 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
     return (brokerResponse, error) -> {
-      if (error == null) {
+      if (error == null && brokerResponse.isResponse()) {
         handleResponseSuccess(request, requestState, delegate, brokerResponse);
+      } else if (error == null) {
+        handleBrokerErrorResponse(request, requestState, delegate, brokerResponse);
       } else {
         handleResponseError(request, requestState, delegate, error);
       }
@@ -161,8 +168,13 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
           final var response = brokerResponse.getResponse();
           final JobActivationResult<T> jobActivationResult =
               activationResultMapper.apply(
-                  new JobActivationResponse(brokerResponse.getKey(), response, maxMessageSize));
+                  new JobActivationResponse(
+                      brokerResponse.getKey(),
+                      response,
+                      maxMessageSize,
+                      request.getRequest().getPartitionGroup()));
 
+          final var partitionGroup = request.getRequest().getPartitionGroup();
           final List<ActivatedJob> jobsToDefer = jobActivationResult.getJobsToDefer();
           if (!jobsToDefer.isEmpty()) {
             final var jobKeys = jobsToDefer.stream().map(ActivatedJob::key).toList();
@@ -170,7 +182,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, maxMessageSize);
 
             logResponseNotSent(jobType, jobKeys, reason);
-            reactivateJobs(jobsToDefer, reason);
+            reactivateJobs(jobsToDefer, reason, partitionGroup);
           }
 
           final T activateJobsResponse = jobActivationResult.getActivateJobsResponse();
@@ -187,7 +199,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
               final var reason = createReasonMessage(result);
 
               logResponseNotSent(jobType, jobKeys, reason);
-              reactivateJobs(activatedJobsToReactivate, reason);
+              reactivateJobs(activatedJobsToReactivate, reason, partitionGroup);
               cancelActivateJobsRequest(reason, delegate);
               return;
             }
@@ -213,14 +225,16 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     return errorMessage;
   }
 
-  private void reactivateJobs(final List<ActivatedJob> activateJobs, final String message) {
+  private void reactivateJobs(
+      final List<ActivatedJob> activateJobs, final String message, final String partitionGroup) {
     if (activateJobs != null) {
-      activateJobs.forEach(j -> tryToReactivateJob(j, message));
+      activateJobs.forEach(j -> tryToReactivateJob(j, message, partitionGroup));
     }
   }
 
-  private void tryToReactivateJob(final ActivatedJob job, final String message) {
-    final var request = toFailJobRequest(job, message);
+  private void tryToReactivateJob(
+      final ActivatedJob job, final String message, final String partitionGroup) {
+    final var request = toFailJobRequest(job, message, partitionGroup);
     brokerClient
         .sendRequestWithRetry(request)
         .whenCompleteAsync(
@@ -228,13 +242,25 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
               if (error != null) {
                 Loggers.GATEWAY_LOGGER.info(
                     "Failed to reactivate job {} due to {}", job.key(), error.getMessage());
+              } else if (!response.isResponse()) {
+                Loggers.GATEWAY_LOGGER.info(
+                    "Failed to reactivate job {} due to broker response {}", job.key(), response);
               }
             },
             actor);
   }
 
-  private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {
-    return new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
+  private BrokerFailJobRequest toFailJobRequest(
+      final ActivatedJob job, final String errorMessage, final String partitionGroup) {
+    final BrokerFailJobRequest brokerFailJobRequest =
+        new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
+    final var leaseToken = job.jobLeaseToken();
+    if (leaseToken != null && !leaseToken.isEmpty()) {
+      brokerFailJobRequest.setJobLeaseToken(leaseToken);
+    }
+    brokerFailJobRequest.setAuthorization(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    brokerFailJobRequest.setPartitionGroup(partitionGroup);
+    return brokerFailJobRequest;
   }
 
   private void cancelActivateJobsRequest(
@@ -261,6 +287,14 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
           state.setPollPrevPartition(false);
           activateJobs(request, state, delegate);
         });
+  }
+
+  private void handleBrokerErrorResponse(
+      final InflightActivateJobsRequest<T> request,
+      final InflightActivateJobsRequestState state,
+      final ResponseObserverDelegate delegate,
+      final BrokerResponse<JobBatchRecord> response) {
+    handleResponseError(request, state, delegate, response.toException());
   }
 
   private boolean isRejection(final Throwable error) {
@@ -291,13 +325,14 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
-      final String jobType, final int partitionsCount) {
+      final String jobType, final int partitionsCount, final String partitionGroup) {
     final var nextPartitionSupplier =
         jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
     return new PartitionIdIterator(
-        nextPartitionSupplier.determinePartition(topologyManager),
+        nextPartitionSupplier.determinePartition(topologyManager, partitionGroup),
         partitionsCount,
-        topologyManager);
+        topologyManager,
+        partitionGroup);
   }
 
   private record ResponseObserverDelegate(

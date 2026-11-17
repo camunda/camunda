@@ -33,7 +33,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.exception.ServiceException;
@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,6 +89,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           "tenant",
           "PI_123",
           Set.of("tag1", "tag2"),
+          null,
+          null,
           null);
 
   static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
@@ -105,6 +108,11 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.processInstanceServices(any())).thenReturn(processInstanceServices);
+  }
 
   private void assertExampleProcessInstance(final ProcessInstanceResult processInstance) {
     assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");
@@ -134,8 +142,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessInstance")
+              CallToolRequest.builder("getProcessInstance")
                   .arguments(Map.of("processInstanceKey", 123L))
                   .build());
 
@@ -161,8 +168,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessInstance")
+              CallToolRequest.builder("getProcessInstance")
                   .arguments(Map.of("processInstanceKey", 123L))
                   .build());
 
@@ -184,7 +190,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getProcessInstance").arguments(Map.of()).build());
+              CallToolRequest.builder("getProcessInstance").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -206,7 +212,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       arguments.put("processInstanceKey", null);
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getProcessInstance").arguments(arguments).build());
+              CallToolRequest.builder("getProcessInstance").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -226,8 +232,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessInstance")
+              CallToolRequest.builder("getProcessInstance")
                   .arguments(Map.of("processInstanceKey", -3L))
                   .build());
 
@@ -258,8 +263,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchProcessInstances")
+              CallToolRequest.builder("searchProcessInstances")
                   .arguments(
                       Map.of(
                           "filter",
@@ -347,8 +351,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       // when (tenantId passed in arguments should be ignored by MCP filter schema)
       mcpClient.callTool(
-          CallToolRequest.builder()
-              .name("searchProcessInstances")
+          CallToolRequest.builder("searchProcessInstances")
               .arguments(Map.of("filter", Map.of("tenantId", "tenantId")))
               .build());
 
@@ -367,7 +370,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("searchProcessInstances").arguments(Map.of()).build());
+              CallToolRequest.builder("searchProcessInstances").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -386,8 +389,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchProcessInstances")
+              CallToolRequest.builder("searchProcessInstances")
                   .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
                   .build());
 
@@ -410,8 +412,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchProcessInstances")
+              CallToolRequest.builder("searchProcessInstances")
                   .arguments(Map.of("filter", Map.of("startDate", Map.of("from", "not-a-date"))))
                   .build());
 
@@ -434,8 +435,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchProcessInstances")
+              CallToolRequest.builder("searchProcessInstances")
                   .arguments(
                       Map.of(
                           "filter",
@@ -486,8 +486,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of(
                           "processDefinitionKey",
@@ -543,8 +542,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of(
                           "processDefinitionId",
@@ -605,8 +603,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of(
                           "processDefinitionId",
@@ -669,8 +666,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of(
                           "processDefinitionId",
@@ -722,8 +718,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(Map.of("processDefinitionId", "invalidProcessId"))
                   .build());
 
@@ -744,7 +739,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("createProcessInstance").arguments(Map.of()).build());
+              CallToolRequest.builder("createProcessInstance").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -764,8 +759,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of("processDefinitionKey", "123", "processDefinitionId", "testProcessId"))
                   .build());
@@ -804,8 +798,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of(
                           "processDefinitionKey",
@@ -863,8 +856,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(
                       Map.of(
                           "processDefinitionId",
@@ -914,8 +906,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(Map.of("processDefinitionKey", "123", "tenantId", tenantId))
                   .build());
 
@@ -929,7 +920,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("tenantId: must match \"^(<default>|[A-Za-z0-9_@.+-]+)$\""));
+                      .contains("tenantId: must match \"^(<default>|[\\w\\.\\-]{1,31})$\""));
     }
 
     @Test
@@ -941,8 +932,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(Map.of("processDefinitionKey", "123"))
                   .build());
 
@@ -983,8 +973,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createProcessInstance")
+              CallToolRequest.builder("createProcessInstance")
                   .arguments(Map.of("processDefinitionKey", "123", "businessId", businessId))
                   .build());
 
@@ -1003,6 +992,46 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(actualResult.getBusinessId()).isEqualTo(businessId);
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldCreateProcessInstanceWithVersionTag() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(3)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of());
+
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionId",
+                          "testProcessId",
+                          "processDefinitionVersionTag",
+                          "release-1"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.bpmnProcessId()).isEqualTo("testProcessId");
+      assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+      assertThat(capturedRequest.version()).isEqualTo(-1);
     }
   }
 }

@@ -10,17 +10,12 @@ global:
     app: monorepo
     camunda.cloud/managed-by: Helm
     camunda.cloud/source: argocd
-    team: monorepo-devops
+    team: engineering-operations
 
   image:
     pullSecrets:
     - name: dockerhub-registry
     - name: registry-camunda-cloud
-
-  # still required by some subcharts (e.g. elasticsearch)
-  imagePullSecrets:
-  - name: dockerhub-registry
-  - name: registry-camunda-cloud
 
   # Preview environment configurations
   preview:
@@ -32,25 +27,34 @@ global:
     ingress:
       # The domain name under which to expose the preview environment
       domain: camunda.camunda.cloud
-      # WARNING: When enabled, this bypasses Vouch/Okta authentication for all
-      # requests originating from the 10.0.0.0/8 internal IP range, granting
-      # unauthenticated access to any client within that network. This is
-      # intended only for tightly controlled CI/testing scenarios (for example,
-      # CI access via a Teleport TCP tunnel).
+      # WARNING: When enabled, requests from the `sourceRange` networks (the
+      # in-cluster / Teleport tunnel network) bypass Vouch/Okta authentication
+      # ENTIRELY via a high-priority Traefik IngressRoute
+      # (templates/internal-bypass-ingressroute.yml) — the nginx-era
+      # `satisfy: any` + `whitelist-source-range` semantics. This deliberately
+      # covers browser-internal requests (service-worker script fetches and
+      # service-worker-issued requests) that a header-based bypass can never
+      # reach, which Management Identity depends on. External traffic never
+      # matches and keeps the Vouch flow. Intended only for tightly controlled
+      # CI/testing scenarios (for example, CI access via a Teleport TCP tunnel).
       internalAuthBypass:
         enabled: false
+        # Source ranges permitted to skip Vouch. This is where security is
+        # enforced: nothing a client sends (headers, cookies) grants access —
+        # only the network it connects from.
+        sourceRange:
+        - 10.0.0.0/8
     secrets:
       name: camunda-credentials
 
-  # Camunda 8 Self-Managed global configurations
-  elasticsearch:
-    # Required so the orchestration chart renders the `camunda.data.secondary-storage.elasticsearch`
-    # block (url, credentials, etc.). Without this, embedded Operate/Tasklist may fall back
-    # to their defaults (e.g. `http://localhost:9200`).
+  # Drives the chart's external URLs (Console links, Web Modeler websocket client).
+  # external=true keeps them derived while leaving routing to the Gateway API HTTPRoutes.
+  host: '{{ include "ingress.domain" . }}'
+  ingress:
     enabled: true
-    # necessary due to name override bugs
-    url:
-      host: elasticsearch
+    external: true
+    tls:
+      enabled: true
 
   identity:
     auth:
@@ -63,13 +67,6 @@ global:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-admin-client-token
-      console:
-        redirectUrl: https://{{ include "ingress.domain" . }}/console
-        secret:
-          existingSecret: camunda-credentials
-          existingSecretKey: identity-console-client-token
-      orchestration:
-        redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
       optimize:
         redirectUrl: https://{{ include "ingress.domain" . }}/optimize
         secret:
@@ -79,6 +76,21 @@ global:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
       contextPath: /auth
+      # Keycloak is operator-managed in the shared keycloak-operator namespace
+      # (templates/keycloak.yml). internal=true makes the chart render an in-cluster
+      # ExternalName Service in the preview namespace pointing at it, so the /auth
+      # HTTPRoute backend stays a local name (no cross-namespace backendRef needed).
+      # host is tpl-rendered by the chart; the operator Service is <cr-name>-service.
+      internal: true
+      url:
+        protocol: http
+        host: '{{ .Release.Name }}-kc-service.keycloak-operator'
+        port: "8080"
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-keycloak-admin-password
 
   zeebeClusterName: zeebe-cluster
 
@@ -106,10 +118,10 @@ camunda-platform:
       value: "-Xms512m -Xmx512m"
     resources:
       limits:
-        cpu: 1
+        cpu: "1"
         memory: 1Gi
       requests:
-        cpu: 0.5
+        cpu: "0.5"
         memory: 512Mi
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -129,7 +141,7 @@ camunda-platform:
     #   registry: camunda/console
     # Overrides the default service URL because the preview environment
     # is exposed through its own (separate)ingress controller.
-    overrideConfiguration: |
+    configuration: |
       camunda:
         console:
           managed:
@@ -137,26 +149,44 @@ camunda-platform:
             releases:
             - name: {{ .Release.Name }}
               namespace: {{ .Release.Namespace }}
+              version: 8.10.0-alphax
               components:
               - id: console
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.console.contextPath }}
+                readiness: http://{{ .Values.console.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.console.service.managementPort }}{{ .Values.console.readinessProbe.probePath }}
               - id: keycloak
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.global.identity.keycloak.contextPath }}
               - id: identity
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
+                readiness: http://{{ .Values.identity.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.identity.service.metricsPort }}{{ .Values.identity.readinessProbe.probePath }}
               - id: webModelerWebApp
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.webModeler.contextPath }}
+                readiness: http://{{ .Values.webModeler.fullnameOverride }}-restapi.{{ .Release.Namespace }}:{{ .Values.webModeler.restapi.service.managementPort }}{{ .Values.webModeler.contextPath }}{{ .Values.webModeler.restapi.readinessProbe.probePath }}
               - id: optimize
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.optimize.contextPath }}
+                readiness: http://{{ .Values.optimize.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.optimize.service.port }}{{ .Values.optimize.contextPath }}{{ .Values.optimize.readinessProbe.probePath }}
               - id: operate
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/operate
+                readiness: http://{{ .Values.orchestration.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}{{ .Values.orchestration.readinessProbe.probePath }}
               - id: tasklist
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/tasklist
+                readiness: http://{{ .Values.orchestration.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}{{ .Values.orchestration.readinessProbe.probePath }}
               - id: coreIdentity
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/identity
               - id: connectors
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.connectors.contextPath }}
+                readiness: http://{{ .Values.connectors.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.connectors.service.serverPort }}{{ .Values.connectors.contextPath }}{{ .Values.connectors.readinessProbe.probePath }}
               - id: core
+                version: 8.10.0-alphax
                 urls:
                   http: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}
     env:
@@ -164,10 +194,10 @@ camunda-platform:
       value: "-Xms512m -Xmx512m"
     resources:
       limits:
-        cpu: 1
+        cpu: "1"
         memory: 1Gi
       requests:
-        cpu: 0.5
+        cpu: "0.5"
         memory: 512Mi
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -186,6 +216,11 @@ camunda-platform:
     clusterSize: "1"
     partitionCount: "1"
     replicationFactor: "1"
+    # Single-node ECK Elasticsearch (templates/elasticsearch.yml): index replicas
+    # would stay unassigned and keep the ES cluster status Yellow forever, which
+    # blocks the ArgoCD app from ever reporting Healthy.
+    index:
+      replicas: 0
     persistenceType: disk
     pvcSize: 1Gi
     javaOpts: >-
@@ -198,6 +233,7 @@ camunda-platform:
       authentication:
         method: oidc
         oidc:
+          redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
           secret:
             existingSecret: camunda-credentials
             existingSecretKey: identity-orchestration-client-token
@@ -210,7 +246,8 @@ camunda-platform:
       secondaryStorage:
         type: elasticsearch
         elasticsearch:
-          url: http://elasticsearch:9200
+          # ECK Service name (templates/elasticsearch.yml), not the old Bitnami "elasticsearch".
+          url: http://elasticsearch-es-http:9200
     resources:
       limits:
         cpu: "1"
@@ -225,40 +262,16 @@ camunda-platform:
       operator: "Exists"
       effect: "NoSchedule"
 
-  elasticsearch:
-    enabled: true
-    fullnameOverride: elasticsearch
-    # image:
-    #   repository: bitnami/elasticsearch
-    #   tag: latest
-    master:
-      fullnameOverride: elasticsearch-master
-      replicaCount: 1
-      heapSize: 512m
-      persistence:
-        enabled: true
-        size: 1Gi
-      resources:
-        limits:
-          cpu: 1
-          memory: 1Gi
-        requests:
-          cpu: 0.5
-          memory: 512Mi
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+  # NOTE: Elasticsearch, identityKeycloak and webModelerPostgresql Bitnami subcharts
+  # were removed in camunda-platform 15.0.0-alpha2. Secondary storage, Keycloak and
+  # the databases are now provided out-of-chart via operator CRs — see
+  # templates/{elasticsearch,keycloak,databases}.yml and the external* wiring above.
 
   identity:
     enabled: true
     fullnameOverride: identity
     contextPath: /identity
     fullURL: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
-    # image:
-    #     repository: camunda/identity
     firstUser:
       enabled: true
       username: demo
@@ -282,51 +295,21 @@ camunda-platform:
       operator: "Exists"
       effect: "NoSchedule"
 
-  identityKeycloak:
-    enabled: true
-    fullnameOverride: identity-keycloak
-    extraEnvVars:
-    # Required as TLS is enabled
-    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-      value: "true"
-    resources:
-      limits:
-        cpu: "1"
-        memory: 1Gi
-      requests:
-        cpu: 500m
-        memory: 512Mi
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-    - key: "previews"
-      operator: "Exists"
-      effect: "NoSchedule"
-    postgresql:
-      fullnameOverride: identity-keycloak-postgresql
-      primary:
-        persistence:
-          enabled: true
-          size: 1Gi
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 250m
-            memory: 256Mi
-        nodeSelector:
-          cloud.google.com/gke-nodepool: previews
-        tolerations:
-        - key: "previews"
-          operator: "Exists"
-          effect: "NoSchedule"
-
   optimize:
     enabled: true
     fullnameOverride: optimize
     contextPath: /optimize
     partitionCount: "1"
+    database:
+      elasticsearch:
+        # Optimize's datastore and the legacy Zeebe exporter resolve from this
+        # component-scoped block (global.elasticsearch was removed in
+        # camunda-platform 15.x). Secondary storage is an ECK-managed
+        # Elasticsearch CR (templates/elasticsearch.yml); the ECK operator
+        # names the Service <cr-name>-es-http.
+        enabled: true
+        url:
+          host: elasticsearch-es-http
     image:
       registry: registry.camunda.cloud
       repository: team-camunda/optimize
@@ -340,6 +323,11 @@ camunda-platform:
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
+    # Optimize manages its own indices with a separate replica default (1); on the
+    # single-node preview Elasticsearch that keeps the cluster Yellow forever
+    # (orchestration indices are covered by orchestration.index.replicas above).
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS
+      value: "0"
     resources:
       limits:
         cpu: "1"
@@ -361,27 +349,26 @@ camunda-platform:
     enabled: true
     fullnameOverride: web-modeler
     contextPath: /modeler
+    # Without this the chart-generated cluster entry falls back to BASIC.
+    security:
+      authentication:
+        method: oidc
     restapi:
       # image:
       #   repository: camunda/web-modeler-restapi
+      # Database is a CloudNativePG Cluster in the preview namespace
+      # (templates/databases.yml); CNPG exposes the primary at <cluster>-rw.
+      externalDatabase:
+        host: web-modeler-postgresql-rw
+        port: 5432
+        database: web-modeler
+        username: web-modeler
+        secret:
+          existingSecret: web-modeler-postgresql-db
+          existingSecretKey: password
       mail:
         # This value is required, otherwise, the restapi pod won't start.
         fromAddress: noreply@example.com
-      # Override cluster configuration to provide valid version and complete config
-      # The Helm chart would auto-generate cluster config but uses the image tag as version
-      # which fails validation for PR builds (e.g., "pr-abc123...")
-      # When providing clusters override, ALL fields must be specified
-      clusters:
-        - id: "default-cluster"
-          name: "Default Cluster"
-          version: "8.9.0"
-          authentication: "BEARER_TOKEN"
-          authorizations:
-            enabled: true
-          url:
-            grpc: "grpc://orchestration-gateway:26500"
-            rest: "http://orchestration-gateway:8080/orchestration"
-            web-app: "https://{{ include \"ingress.domain\" . }}/orchestration"
       resources:
         limits:
           cpu: "1"
@@ -412,27 +399,18 @@ camunda-platform:
         operator: "Exists"
         effect: "NoSchedule"
 
-  # WebModeler PostgreSQL
-  webModelerPostgresql:
-    enabled: true
-    fullnameOverride: web-modeler-postgresql
-    auth:
-      # fixed secret, to avoid generating a random password each time
-      existingSecret: camunda-credentials
-    primary:
-      persistence:
-        enabled: true
-        size: 1Gi
-      resources:
-        limits:
-          cpu: 500m
-          memory: 512Mi
-        requests:
-          cpu: 250m
-          memory: 256Mi
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+# Infra-managed Gateway API plumbing (Gateway + Vouch Middleware + wildcard-cert
+# TLS termination) rendered into the preview namespace. Replaces the former
+# `infra-preview-environments-ingress` dependency. The HTTPRoutes are
+# hand-written in templates/httproute.yml, so the chart's values-driven route is
+# disabled.
+infra-preview-environments-gateway-api:
+  baseDomain: camunda.camunda.cloud
+  # Releases are named "camunda-<branch>"; strip the prefix to derive
+  # "<branch>.camunda.camunda.cloud" (mirrors the ingress.domain helper).
+  namePrefix: "camunda-"
+  gateway:
+    # Stable name so the hand-written HTTPRoutes can attach to this Gateway.
+    name: preview-gateway
+    tls:
+      secretName: camunda-wildcard-certificate-tls

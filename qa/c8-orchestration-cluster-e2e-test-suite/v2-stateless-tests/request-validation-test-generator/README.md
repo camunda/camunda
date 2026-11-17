@@ -26,7 +26,7 @@ If you are not deep into the codebase, here is the 30‑second view:
 | `body-top-type-mismatch`           | Entire body wrong JSON type                        |
 | `missing-body`                     | Body omitted where object expected/allowed         |
 | `union`                            | Hybrid body mixing two `oneOf` variant shapes      |
-| `oneof-ambiguous`                  | Body valid for multiple `oneOf` variants           |
+| `oneof-ambiguous`                  | Two `oneOf` variants mixed; none or several match  |
 | `oneof-none-match`                 | Body matching zero variants                        |
 | `oneof-multi-ambiguous`            | (deep) Multi-variant ambiguity stress              |
 | `oneof-cross-bleed`                | Required set of one variant + fields from another  |

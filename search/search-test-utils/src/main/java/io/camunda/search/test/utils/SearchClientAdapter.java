@@ -17,9 +17,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,6 +31,9 @@ import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.IndexState;
 
 public class SearchClientAdapter {
+
+  private static final String REFRESH_NULL_SHARDS_ERROR_MESSAGE = "No shards stats returned";
+  private static final String REFRESH_ERROR_MESSAGE = "Index refresh failed with shard failures: ";
 
   private final ElasticsearchClient elsClient;
   private final OpenSearchClient osClient;
@@ -128,7 +133,7 @@ public class SearchClientAdapter {
   public Map<String, JsonNode> getAllIndicesAsNode(final String indexPrefix) throws IOException {
     if (elsClient != null) {
       final var indices = elsClient.indices().get(req -> req.index(indexPrefix + "*"));
-      return indices.result().entrySet().stream()
+      return indices.indices().entrySet().stream()
           .collect(Collectors.toMap(Entry::getKey, e -> elsIndexToNode(e.getValue())));
     } else if (osClient != null) {
       final var indices = osClient.indices().get(req -> req.index(indexPrefix + "*"));
@@ -141,7 +146,7 @@ public class SearchClientAdapter {
   public JsonNode getPolicyAsNode(final String policyName) throws IOException {
     if (elsClient != null) {
       final var policy =
-          elsClient.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+          elsClient.ilm().getLifecycle(req -> req.name(policyName)).lifecycles().get(policyName);
 
       return elsPolicyToNode(policy);
     } else if (osClient != null) {
@@ -149,6 +154,41 @@ public class SearchClientAdapter {
           Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
 
       return objectMapper.readTree(osClient.generic().execute(request).getBody().get().body());
+    }
+    return null;
+  }
+
+  public String getLifecyclePolicyNameForIndex(final String indexName) throws IOException {
+    if (elsClient != null) {
+      final var response = elsClient.indices().getSettings(req -> req.index(indexName));
+
+      final var state = response.settings().get(indexName);
+      return Optional.ofNullable(state)
+          .map(co.elastic.clients.elasticsearch.indices.IndexState::settings)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettings::index)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettings::lifecycle)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle::name)
+          .orElse(null);
+    } else if (osClient != null) {
+      final var request =
+          Requests.builder()
+              .method("GET")
+              .endpoint("_plugins/_ism/explain/" + indexName)
+              .query(Map.of("show_policy", "true"))
+              .build();
+
+      try (final var response = osClient.generic().execute(request)) {
+        final var json = objectMapper.readTree(response.getBody().get().body());
+        return Optional.ofNullable(json.get(indexName))
+            .filter(
+                explain -> {
+                  final var enabled = explain.get("enabled");
+                  return enabled != null && enabled.asBoolean();
+                })
+            .map(explain -> explain.get("policy_id"))
+            .map(JsonNode::asText)
+            .orElse(null);
+      }
     }
     return null;
   }
@@ -175,22 +215,99 @@ public class SearchClientAdapter {
     return null;
   }
 
+  /** Returns up to 10,000 documents from {@code index}. Suitable for test use only. */
+  public <T> List<T> searchAll(final String index, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(r -> r.index(index).size(10_000).query(q -> q.matchAll(m -> m)), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(r -> r.index(index).size(10_000).query(q -> q.matchAll(m -> m)), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+    return List.of();
+  }
+
+  public <T> List<T> searchByIds(
+      final String index, final List<String> ids, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(
+              r -> r.index(index).size(ids.size()).query(q -> q.ids(i -> i.values(ids))), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(
+              r -> r.index(index).size(ids.size()).query(q -> q.ids(i -> i.values(ids))), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+    return List.of();
+  }
+
   public <T> T get(final String id, final String index, final Class<T> classType)
       throws IOException {
+    return get(id, null, index, classType);
+  }
+
+  public <T> T get(
+      final String id, final String routing, final String index, final Class<T> classType)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.get(r -> r.id(id).index(index), classType).source();
+      return elsClient
+          .get(
+              r -> {
+                r.id(id).index(index);
+                // a null or empty routing is sent by the ES 9 client as an empty routing= parameter
+                // instead of being omitted
+                return routing == null || routing.isEmpty() ? r : r.routing(routing);
+              },
+              classType)
+          .source();
     } else if (osClient != null) {
-      return osClient.get(r -> r.id(id).index(index), classType).source();
+      return osClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     }
     return null;
   }
 
   public String index(final String id, final String index, final Object document)
       throws IOException {
+    return index(id, null, index, document);
+  }
+
+  public String index(
+      final String id, final String routing, final String index, final Object document)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return elsClient
+          .index(
+              i -> {
+                i.index(index).id(id).document(document);
+                return routing == null || routing.isEmpty() ? i : i.routing(routing);
+              })
+          .result()
+          .jsonValue();
     } else if (osClient != null) {
-      return osClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return osClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     }
     return "";
   }
@@ -219,6 +336,41 @@ public class SearchClientAdapter {
     }
   }
 
+  /**
+   * Creates a single-shard index whose documents cannot be written ({@code index.blocks.write}).
+   *
+   * <p>Writing to such an index does not throw at the request level: a bulk/reindex request against
+   * it returns HTTP 200 with a populated {@code failures[]} array (a per-item {@code
+   * cluster_block_exception}).
+   */
+  public void createIndexWithWriteBlock(final String indexName) throws IOException {
+    if (elsClient != null) {
+      elsClient
+          .indices()
+          .create(
+              c ->
+                  c.index(indexName)
+                      .settings(
+                          settings ->
+                              settings
+                                  .numberOfShards("1")
+                                  .numberOfReplicas("0")
+                                  .blocks(b -> b.write(true))));
+    } else if (osClient != null) {
+      osClient
+          .indices()
+          .create(
+              c ->
+                  c.index(indexName)
+                      .settings(
+                          settings ->
+                              settings
+                                  .numberOfShards(1)
+                                  .numberOfReplicas(0)
+                                  .blocks(b -> b.write(true))));
+    }
+  }
+
   public void deleteIndex(final String indexName) throws IOException {
     if (elsClient != null) {
       elsClient.indices().delete(d -> d.index(indexName));
@@ -236,10 +388,54 @@ public class SearchClientAdapter {
   }
 
   public void refresh() throws IOException {
+    refresh(null);
+  }
+
+  public void refresh(final String prefix) throws IOException {
+    final boolean usePrefix = prefix != null && !prefix.isEmpty();
+
     if (elsClient != null) {
-      elsClient.indices().refresh();
+      final var response =
+          usePrefix
+              ? elsClient.indices().refresh(r -> r.index(prefix + "*"))
+              : elsClient.indices().refresh();
+      if (response.shards() == null) {
+        throw new RuntimeException(REFRESH_NULL_SHARDS_ERROR_MESSAGE);
+      }
+
+      final var failures = response.shards().failures();
+      if (failures != null && !failures.isEmpty()) {
+        throw new RuntimeException(REFRESH_ERROR_MESSAGE + failures);
+      }
     } else if (osClient != null) {
-      osClient.indices().refresh();
+      final var response =
+          usePrefix
+              ? osClient.indices().refresh(r -> r.index(prefix + "*"))
+              : osClient.indices().refresh();
+      final var failures = response.shards().failures();
+      if (!failures.isEmpty()) {
+        throw new RuntimeException(REFRESH_ERROR_MESSAGE + failures);
+      }
+    }
+  }
+
+  /**
+   * Deletes all documents from indices whose names start with {@code indexPrefix}. Scoped
+   * deliberately to avoid affecting indices outside the prefix; never pass {@code "*"} here.
+   */
+  public void deleteAllDocuments(final String indexPrefix) throws IOException {
+    if (elsClient != null) {
+      elsClient.deleteByQuery(
+          d ->
+              d.index(indexPrefix + "*")
+                  .query(q -> q.matchAll(m -> m))
+                  .conflicts(co.elastic.clients.elasticsearch._types.Conflicts.Proceed));
+    } else if (osClient != null) {
+      osClient.deleteByQuery(
+          d ->
+              d.index(indexPrefix + "*")
+                  .query(q -> q.matchAll(m -> m))
+                  .conflicts(org.opensearch.client.opensearch._types.Conflicts.Proceed));
     }
   }
 

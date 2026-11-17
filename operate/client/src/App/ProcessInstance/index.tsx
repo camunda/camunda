@@ -18,6 +18,8 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {reaction} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
+import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {elementInstancesTreeStore} from './ElementInstanceLog/ElementInstancesTree/elementInstancesTreeStore';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {
@@ -40,11 +42,12 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {INSTANCE_HISTORY_MIN_WIDTH} from 'modules/constants';
 import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate, matchPath, type Location} from 'react-router-dom';
 import {Locations, Paths} from 'modules/Routes';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {BottomPanelTabs} from './BottomPanelTabs';
 import {
   ResizablePanel,
@@ -86,6 +89,7 @@ const BottomPanelContent: React.FC = () => {
 
   if (isDesktop) {
     const panelMinWidth =
+      // eslint-disable-next-line react-hooks/refs
       (containerRef.current?.clientWidth ?? 0) / 4 || undefined;
 
     return (
@@ -95,7 +99,10 @@ const BottomPanelContent: React.FC = () => {
           direction={SplitDirection.Horizontal}
           minWidths={
             panelMinWidth !== undefined
-              ? [panelMinWidth, panelMinWidth]
+              ? [
+                  Math.max(panelMinWidth, INSTANCE_HISTORY_MIN_WIDTH),
+                  panelMinWidth,
+                ]
               : undefined
           }
         >
@@ -123,7 +130,7 @@ const ProcessInstance: React.FC = observer(() => {
   );
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
-  const {clearSelection} = useProcessInstanceElementSelection();
+  const {clearSelection} = useProcessInstanceElementSelectActions();
 
   const [isInfoModalOpen, setInfoModalOpen] = useState(
     () => !getStateLocally()?.hideProcessInstanceHelperModal,
@@ -148,6 +155,7 @@ const ProcessInstance: React.FC = observer(() => {
       navigate(
         Locations.processes({
           active: true,
+          suspended: true,
           incidents: true,
         }),
         {replace: true},
@@ -176,6 +184,8 @@ const ProcessInstance: React.FC = observer(() => {
       instanceHistoryModificationStore.reset();
       elementTimeStampStore.reset();
       modificationsStore.reset();
+      elementInstancesTreeStore.reset();
+      executionCountToggleStore.reset();
     };
   }, [processInstanceId]);
 

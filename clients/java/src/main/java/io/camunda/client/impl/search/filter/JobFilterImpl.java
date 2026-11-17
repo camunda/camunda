@@ -144,6 +144,20 @@ public class JobFilterImpl
   }
 
   @Override
+  public JobFilter priority(final Integer priority) {
+    priority(b -> b.eq(priority));
+    return this;
+  }
+
+  @Override
+  public JobFilter priority(final Consumer<IntegerProperty> fn) {
+    final IntegerProperty property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setPriority(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public JobFilter jobKey(final Long value) {
     jobKey(b -> b.eq(value));
     return this;

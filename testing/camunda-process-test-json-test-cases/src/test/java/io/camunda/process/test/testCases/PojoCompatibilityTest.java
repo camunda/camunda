@@ -18,14 +18,15 @@ package io.camunda.process.test.testCases;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.dialect.Dialects;
 import io.camunda.process.test.api.testCases.ImmutableDecisionDefinitionSelector;
 import io.camunda.process.test.api.testCases.ImmutableDecisionSelector;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
@@ -37,37 +38,45 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
+import io.camunda.process.test.api.testCases.ImmutableVariablesTableRow;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElementInstancesInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableBroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobUserTaskListenerInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableConditionalBehaviorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCorrections;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableEvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableEvaluateDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableIncreaseTimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableJudgeAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstances.ElementInstancesState;
+import io.camunda.process.test.api.testCases.instructions.assertIncident.IncidentErrorType;
+import io.camunda.process.test.api.testCases.instructions.assertIncident.IncidentState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
@@ -78,7 +87,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,7 +98,7 @@ public class PojoCompatibilityTest {
 
   private static final String JSON_SCHEMA_PATH = "/schema/cpt-test-cases/schema.json";
 
-  private static JsonSchema jsonSchema;
+  private static Schema jsonSchema;
 
   private final ObjectMapper objectMapper =
       new ObjectMapper()
@@ -98,19 +107,20 @@ public class PojoCompatibilityTest {
 
   @BeforeAll
   static void setup() {
-    final JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4);
+    final SchemaRegistry schemaRegistry = SchemaRegistry.withDialect(Dialects.getDraft7());
     jsonSchema =
-        factory.getSchema(PojoCompatibilityTest.class.getResourceAsStream(JSON_SCHEMA_PATH));
+        schemaRegistry.getSchema(PojoCompatibilityTest.class.getResourceAsStream(JSON_SCHEMA_PATH));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("testCases")
-  void shouldBeValidTestCases(final String name, final TestCases testCases) {
+  void shouldBeValidTestCases(final String name, final TestCases testCases)
+      throws JsonProcessingException {
     // given
-    final JsonNode json = objectMapper.valueToTree(testCases);
+    final String json = objectMapper.writeValueAsString(testCases);
 
     // when
-    final Set<ValidationMessage> errors = jsonSchema.validate(json);
+    final List<Error> errors = jsonSchema.validate(json, InputFormat.JSON);
 
     // then
     assertThat(errors)
@@ -254,7 +264,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .state(UserTaskState.IS_CREATED)
                     .assignee("me")
-                    .candidateGroups(Arrays.asList("manager"))
+                    .candidateGroups(Collections.singletonList("manager"))
                     .priority(100)
                     .elementId("task1")
                     .name("Review")
@@ -362,6 +372,28 @@ public class PojoCompatibilityTest {
                         ImmutableElementSelector.builder().elementId("task2").build())
                     .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())),
+        // ===== ASSERT_INCIDENT =====
+        Arguments.of(
+            "assert incident: minimal",
+            singleTestCase(
+                ImmutableAssertIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "assert incident: full",
+            singleTestCase(
+                ImmutableAssertIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .state(IncidentState.IS_ACTIVE)
+                    .errorType(IncidentErrorType.JOB_NO_RETRIES)
+                    .errorMessage("No retries left")
+                    .elementId("task1")
+                    .build())),
         // ===== COMPLETE_USER_TASK =====
         Arguments.of(
             "complete user task: minimal",
@@ -460,6 +492,13 @@ public class PojoCompatibilityTest {
                     .putVariables("amount", 100.0)
                     .putVariables("currency", "USD")
                     .build())),
+        Arguments.of(
+            "mock child process: with version tag",
+            singleTestCase(
+                ImmutableMockChildProcessInstruction.builder()
+                    .processDefinitionId("lunar-lander")
+                    .versionTag("1.7.1")
+                    .build())),
         // ===== MOCK_JOB_WORKER_COMPLETE_JOB =====
         Arguments.of(
             "mock job worker complete job: minimal",
@@ -481,6 +520,28 @@ public class PojoCompatibilityTest {
                     .jobType("fetch-weather-data")
                     .useExampleData(true)
                     .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables expression",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .variablesExpression("={status: \"sent\"}")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables table",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("pick-sample")
+                    .addVariablesTable(
+                        ImmutableVariablesTableRow.builder()
+                            .putWhen("loopCounter", 1)
+                            .putVariables("sampleType", "regolith")
+                            .build())
+                    .addVariablesTable(
+                        ImmutableVariablesTableRow.builder()
+                            .putVariables("sampleType", "basalt")
+                            .build())
+                    .build())),
         // ===== MOCK_DMN_DECISION =====
         Arguments.of(
             "mock dmn decision: minimal",
@@ -495,6 +556,13 @@ public class PojoCompatibilityTest {
                     .decisionDefinitionId("credit-check-decision")
                     .putVariables("approved", true)
                     .putVariables("score", 750)
+                    .build())),
+        Arguments.of(
+            "mock dmn decision: with decision output",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .decisionOutput(15)
                     .build())),
         // ===== ASSERT_VARIABLES =====
         Arguments.of(
@@ -518,6 +586,95 @@ public class PojoCompatibilityTest {
                     .addVariableNames("var1", "var2")
                     .putVariables("x", 3)
                     .putVariables("y", "okay")
+                    .build())),
+        // ===== ASSERT_VARIABLE =====
+        Arguments.of(
+            "assert variable: satisfies judge with expectation",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("ai-agent-process")
+                            .build())
+                    .variableName("agentResponse")
+                    .satisfiesJudge(
+                        ImmutableJudgeAssertion.builder()
+                            .expectation("should contain a valid summary of the data report")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variable: satisfies judge with expectation, threshold, prompt, attachDocuments",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("ai-agent-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("ai-subprocess").build())
+                    .variableName("localResult")
+                    .satisfiesJudge(
+                        ImmutableJudgeAssertion.builder()
+                            .expectation("should be a properly formatted JSON response")
+                            .threshold(0.8)
+                            .customPrompt("You are evaluating data accuracy")
+                            .attachDocuments(true)
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variable: satisfies expression global",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .variableName("order")
+                    .satisfiesExpression("order.status = \"approved\" and count(order.items) = 3")
+                    .build())),
+        Arguments.of(
+            "assert variable: satisfies expression local",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
+                    .variableName("status")
+                    .satisfiesExpression("status = \"approved\"")
+                    .build())),
+        // ===== ASSERT_VARIABLE with similarTo =====
+        Arguments.of(
+            "assert variable similar to: minimal",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .variableName("result")
+                    .similarTo(
+                        ImmutableSemanticSimilarityAssertion.builder()
+                            .expectedValue("The order was processed successfully.")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variable similar to: complete",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("review-task").build())
+                    .variableName("reviewComment")
+                    .similarTo(
+                        ImmutableSemanticSimilarityAssertion.builder()
+                            .expectedValue("The product quality meets the required standards.")
+                            .threshold(0.85)
+                            .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
         Arguments.of(
@@ -708,12 +865,81 @@ public class PojoCompatibilityTest {
                     .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .putVariables("localVar", "localValue")
                     .build())),
+        Arguments.of(
+            "update variables: create local",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .putVariables("localVar", "localValue")
+                    .createLocalVariables(true)
+                    .build())),
         // ===== SET_TIME =====
         Arguments.of(
             "set time",
             singleTestCase(
                 ImmutableSetTimeInstruction.builder()
                     .time(Instant.parse("2025-12-01T10:00:00Z"))
+                    .build())),
+        // ===== CONDITIONAL_BEHAVIOR =====
+        Arguments.of(
+            "conditional behavior: minimal",
+            singleTestCase(
+                ImmutableConditionalBehaviorInstruction.builder()
+                    .addConditions(
+                        ImmutableAssertElementInstanceInstruction.builder()
+                            .processInstanceSelector(
+                                ImmutableProcessInstanceSelector.builder()
+                                    .processDefinitionId("my-process")
+                                    .build())
+                            .elementSelector(
+                                ImmutableElementSelector.builder().elementId("task1").build())
+                            .state(ElementInstanceState.IS_ACTIVE)
+                            .build())
+                    .addActions(
+                        ImmutableCompleteUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().elementId("task1").build())
+                            .build())
+                    .build())),
+        Arguments.of(
+            "conditional behavior: chained conditions with action chain and name",
+            singleTestCase(
+                ImmutableConditionalBehaviorInstruction.builder()
+                    .name("auto-complete-review-task")
+                    .addConditions(
+                        ImmutableAssertElementInstancesInstruction.builder()
+                            .processInstanceSelector(
+                                ImmutableProcessInstanceSelector.builder()
+                                    .processDefinitionId("my-process")
+                                    .build())
+                            .addElementSelectors(
+                                ImmutableElementSelector.builder()
+                                    .elementId("Export_Happiness")
+                                    .build())
+                            .state(ElementInstancesState.IS_ACTIVE)
+                            .build())
+                    .addConditions(
+                        ImmutableAssertUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().elementId("task1").build())
+                            .state(UserTaskState.IS_CREATED)
+                            .build())
+                    .addActions(
+                        ImmutableCompleteUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().taskName("Review Task").build())
+                            .putVariables("approved", false)
+                            .build())
+                    .addActions(
+                        ImmutableCompleteUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().taskName("Review Task").build())
+                            .putVariables("approved", true)
+                            .build())
                     .build()))
         // add new instructions here
         );

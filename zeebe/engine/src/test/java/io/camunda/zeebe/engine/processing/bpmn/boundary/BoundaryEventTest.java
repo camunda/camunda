@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
@@ -216,6 +218,119 @@ public final class BoundaryEventTest {
   }
 
   @Test
+  public void shouldResolveOutputMappingSourceToNullWithoutIncidentOnPayloadlessBoundaryEvent() {
+    // given: a bare timer boundary event carries no event-trigger payload at all, so an output
+    // mapping referencing a name that would only exist as event-trigger data must resolve the
+    // same way a missing source normally does - null with a warning, not an incident
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .boundaryEvent("timer")
+            .cancelActivity(false)
+            .timerWithDuration("PT1S")
+            .zeebeOutputExpression("payload", "result")
+            .endEvent("endTimer")
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    RecordingExporter.timerRecords()
+        .withHandlerNodeId("timer")
+        .withIntent(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("result")
+            .getFirst();
+    Assertions.assertThat(variableEvent.getValue()).hasValue("null");
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .incidentRecords()
+                        .withIntent(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .describedAs("a missing event-trigger source must not raise an incident")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldSkipOutputMappingWhenTaskIsTerminatedByInterruptingBoundaryEvent() {
+    // given: the service task has an output mapping, but its job never completes before the
+    // interrupting boundary event terminates it
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task", b -> b.zeebeJobType("type").zeebeOutputExpression("score", "result"))
+            .boundaryEvent("timer")
+            .cancelActivity(true)
+            .timerWithDuration("PT0.1S")
+            .endEvent("endTimer")
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType("type")
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    // when: the job is left outstanding and the interrupting boundary event fires
+    RecordingExporter.timerRecords()
+        .withHandlerNodeId("timer")
+        .withIntent(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then: the task is terminated, never completed, and its output mapping never ran
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("task")
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .processInstanceRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withElementId("task")
+                        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                        .exists()))
+        .describedAs("a terminated task must never reach COMPLETED")
+        .isFalse();
+
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .variableRecords()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withName("result")
+                        .exists()))
+        .describedAs("the output mapping must never have run, so 'result' was never created")
+        .isFalse();
+  }
+
+  @Test
   public void shouldTerminateSubProcessBeforeTriggeringBoundaryEvent() {
     // given
     final BpmnModelInstance process =
@@ -314,9 +429,9 @@ public final class BoundaryEventTest {
   }
 
   @Test
-  public void shouldUseScopeToExtractCorrelationKeys() {
+  public void shouldEvaluateCorrelationKeyInActivityScope() {
     // given
-    final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
+    final String processId = "boundaryCorrelationScope";
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -337,17 +452,13 @@ public final class BoundaryEventTest {
             .ofBpmnProcessId(processId)
             .withVariables("{'foo':1,'bar':2}")
             .create();
-    ENGINE.message().withName("message").withCorrelationKey("1").publish();
 
     // then
-    // if correlation key was extracted from the task, then foo in the task scope would be 2 and
-    // the boundary event would not be triggered
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.BOUNDARY_EVENT)
-                .getFirst())
-        .isNotNull();
+    final Record<MessageSubscriptionRecordValue> subscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscription.getValue().getCorrelationKey()).isEqualTo("2");
   }
 
   @Test
@@ -388,7 +499,47 @@ public final class BoundaryEventTest {
         .hasElementId("task")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
-        .hasVariableScopeKey(processInstanceKey);
+        .hasVariableScopeKey(failureEvent.getKey());
+  }
+
+  @Test
+  public void shouldEvaluateBoundaryEventCorrelationKeyInSubProcessScope() {
+    // given
+    final String processId = "boundarySubProcessCorrelationScope";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sub",
+                sub ->
+                    sub.zeebeInputExpression("bar", "foo")
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("task", task -> task.zeebeJobType("type"))
+                        .endEvent())
+            .boundaryEvent(
+                "event",
+                b -> b.message(m -> m.zeebeCorrelationKeyExpression("foo").name("message")))
+            .endEvent()
+            .moveToActivity("sub")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables("{'foo':1,'bar':2}")
+            .create();
+
+    // then
+    final Record<MessageSubscriptionRecordValue> subscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscription.getValue().getCorrelationKey()).isEqualTo("2");
   }
 
   @Test

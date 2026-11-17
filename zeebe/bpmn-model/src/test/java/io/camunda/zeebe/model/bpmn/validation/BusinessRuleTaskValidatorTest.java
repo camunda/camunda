@@ -177,6 +177,34 @@ class BusinessRuleTaskValidatorTest {
             "Must have either one 'zeebe:calledDecision' or one 'zeebe:taskDefinition' extension element"));
   }
 
+  @Test
+  void jobPriorityDefinitionNotAllowedWithCalledDecision() {
+    // given / when
+    final BpmnModelInstance process =
+        process(
+            task ->
+                task.zeebeCalledDecisionId("decisionId")
+                    .zeebeResultVariable("result")
+                    .zeebeJobPriority("42"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            BusinessRuleTask.class,
+            "'zeebe:jobPriorityDefinition' is only allowed in job-worker mode ('zeebe:taskDefinition')"));
+  }
+
+  @Test
+  void jobPriorityDefinitionAllowedWithTaskDefinition() {
+    // given / when
+    final BpmnModelInstance process =
+        process(task -> task.zeebeJobType("type").zeebeJobPriority("42"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
   private BpmnModelInstance process(final Consumer<BusinessRuleTaskBuilder> taskBuilder) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()

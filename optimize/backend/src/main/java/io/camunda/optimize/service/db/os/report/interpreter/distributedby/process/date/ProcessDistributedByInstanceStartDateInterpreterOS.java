@@ -55,15 +55,15 @@ public class ProcessDistributedByInstanceStartDateInterpreterOS
     return this.viewInterpreter;
   }
 
-  public DateAggregationServiceOS getDateAggregationService() {
+  protected DateAggregationServiceOS getDateAggregationService() {
     return this.dateAggregationService;
   }
 
-  public ProcessQueryFilterEnhancerOS getQueryFilterEnhancer() {
+  protected ProcessQueryFilterEnhancerOS getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
   }
 
-  public MinMaxStatsServiceOS getMinMaxStatsService() {
+  protected MinMaxStatsServiceOS getMinMaxStatsService() {
     return this.minMaxStatsService;
   }
 }

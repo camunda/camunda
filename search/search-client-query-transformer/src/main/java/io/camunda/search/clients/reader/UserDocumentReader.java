@@ -7,13 +7,13 @@
  */
 package io.camunda.search.clients.reader;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class UserDocumentReader extends DocumentBasedReader implements UserReader {

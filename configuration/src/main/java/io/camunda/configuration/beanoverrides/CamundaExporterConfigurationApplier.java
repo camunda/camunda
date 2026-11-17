@@ -7,12 +7,13 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.InterceptorPlugin;
-import io.camunda.configuration.Opensearch;
-import io.camunda.configuration.Retention;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.data.ExtensionProperties;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.secondarystorage.Opensearch;
+import io.camunda.configuration.data.secondarystorage.Retention;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.data.secondarystorage.documentbased.InterceptorPlugin;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -21,6 +22,7 @@ import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,29 +34,26 @@ public final class CamundaExporterConfigurationApplier {
   private CamundaExporterConfigurationApplier() {}
 
   public static void applyRetention(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
     final RetentionConfiguration target = exporterConfiguration.getHistory().getRetention();
 
-    final Retention source =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getRetention();
+    final Retention source = camunda.getData().getSecondaryStorage().getRetention();
 
     target.setEnabled(source.isEnabled());
     target.setMinimumAge(source.getMinimumAge());
+    target.setUsageMetricsMinimumAge(source.getUsageMetricsMinimumAge());
   }
 
   public static void applyConnect(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
     final ConnectConfiguration target = exporterConfiguration.getConnect();
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     target.setType(secondaryStorage.getType().name());
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -71,6 +70,17 @@ public final class CamundaExporterConfigurationApplier {
         source.getConnectionTimeout() != null
             ? Math.toIntExact(source.getConnectionTimeout().toMillis())
             : null);
+    // Unlike the fields above, these two do not list the exporter args among their legacy
+    // properties: 'zeebe.broker.exporters.camundaexporter.args.connect.maxConnections[PerRoute]'
+    // binds onto this same target, so copy only when set — an unset unified value must not wipe it.
+    final var maxConnections = source.getMaxConnections();
+    if (maxConnections != null) {
+      target.setMaxConnections(maxConnections);
+    }
+    final var maxConnectionsPerRoute = source.getMaxConnectionsPerRoute();
+    if (maxConnectionsPerRoute != null) {
+      target.setMaxConnectionsPerRoute(maxConnectionsPerRoute);
+    }
     target.setUsername(source.getUsername());
     target.setPassword(source.getPassword());
     target.setIndexPrefix(source.getIndexPrefix());
@@ -112,10 +122,9 @@ public final class CamundaExporterConfigurationApplier {
   }
 
   public static void applyIndex(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -131,8 +140,9 @@ public final class CamundaExporterConfigurationApplier {
     if (!source.getNumberOfReplicasPerIndex().isEmpty()) {
       target.setReplicasByIndexName(source.getNumberOfReplicasPerIndex());
     }
-    if (!source.getNumberOfShardsPerIndex().isEmpty()) {
-      target.setShardsByIndexName(source.getNumberOfShardsPerIndex());
+    final var shardsByIndexName = source.getNumberOfShardsPerIndex().toIndexNameMap();
+    if (!shardsByIndexName.isEmpty()) {
+      target.setShardsByIndexName(shardsByIndexName);
     }
     if (!source.getRefreshIntervalByIndexName().isEmpty()) {
       target.setRefreshIntervalByIndexName(source.getRefreshIntervalByIndexName());
@@ -140,10 +150,9 @@ public final class CamundaExporterConfigurationApplier {
   }
 
   public static void applyHistory(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -151,24 +160,28 @@ public final class CamundaExporterConfigurationApplier {
     final HistoryConfiguration target = exporterConfiguration.getHistory();
     target.setProcessInstanceEnabled(source.getHistory().isProcessInstanceEnabled());
     target.setProcessInstanceRetentionMode(source.getHistory().getProcessInstanceRetentionMode());
-    target.setArchiveByIdEnabled(source.getHistory().isArchiveByIdEnabled());
     target.getRetention().setPolicyName(source.getHistory().getPolicyName());
+    target
+        .getRetention()
+        .setUsageMetricsPolicyName(source.getHistory().getUsageMetricsPolicyName());
+    target.setUsageMetricsRolloverInterval(source.getHistory().getUsageMetricsRolloverInterval());
     target.setElsRolloverDateFormat(source.getHistory().getElsRolloverDateFormat());
     target.setRolloverInterval(source.getHistory().getRolloverInterval());
     target.setRolloverBatchSize(source.getHistory().getRolloverBatchSize());
     target.setReindexBatchSize(source.getHistory().getReindexBatchSize());
     target.setWaitPeriodBeforeArchiving(source.getHistory().getWaitPeriodBeforeArchiving());
+    target.setArchiveByIdRetryDelayMs(source.getHistory().getArchiveByIdRetryDelayMs());
     target.setDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getDelayBetweenRuns().toMillis()));
     target.setMaxDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getMaxDelayBetweenRuns().toMillis()));
+    target.setArchiveByIdMaxRetryAttempts(source.getHistory().getArchiveByIdMaxRetryAttempts());
   }
 
   public static void applyPostExportConfiguration(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -183,10 +196,9 @@ public final class CamundaExporterConfigurationApplier {
   }
 
   public static void applyBulk(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -198,10 +210,9 @@ public final class CamundaExporterConfigurationApplier {
   }
 
   public static void applyIncidentNotifier(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -216,15 +227,14 @@ public final class CamundaExporterConfigurationApplier {
   }
 
   public static void applyMisc(
-      final ExporterConfiguration exporterConfiguration,
-      final UnifiedConfiguration unifiedConfiguration) {
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
 
-    exporterConfiguration.setAuditLog(
-        unifiedConfiguration.getCamunda().getData().getAuditLog().toConfiguration());
+    exporterConfiguration.setAuditLog(camunda.getData().getAuditLog().toConfiguration());
+    exporterConfiguration.setWaitState(camunda.getData().getWaitStates().toConfiguration());
     exporterConfiguration.setHistoryDeletion(
-        unifiedConfiguration.getCamunda().getData().getHistoryDeletion().toConfiguration());
+        camunda.getData().getHistoryDeletion().toConfiguration());
 
-    final var source = getDocumentBasedDatabase(unifiedConfiguration);
+    final var source = getDocumentBasedDatabase(camunda);
     if (source == null) {
       return;
     }
@@ -243,12 +253,19 @@ public final class CamundaExporterConfigurationApplier {
     exporterConfiguration.getFormCache().setMaxCacheSize(source.getFormCache().getMaxSize());
   }
 
+  public static void applyExtensionProperties(
+      final ExporterConfiguration exporterConfiguration, final Camunda camunda) {
+
+    final ExtensionProperties source = camunda.getData().getExtensionProperties();
+    final ExtensionPropertyConfiguration target = exporterConfiguration.getExtensionProperties();
+
+    target.setToolNameProperty(source.getToolNameProperty());
+    target.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    target.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
+  }
+
   private static DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase(
-      final UnifiedConfiguration unifiedConfiguration) {
-    return unifiedConfiguration
-        .getCamunda()
-        .getData()
-        .getSecondaryStorage()
-        .getDocumentBasedDatabase();
+      final Camunda camunda) {
+    return camunda.getData().getSecondaryStorage().getDocumentBasedDatabase();
   }
 }

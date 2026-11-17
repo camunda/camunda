@@ -57,4 +57,15 @@ public interface MessageRecordValue extends RecordValueWithVariables, TenantOwne
    *     set, it returns -1 instead.
    */
   long getDeadline();
+
+  /**
+   * The optional business id associated with the published message. When set, it acts as an
+   * additional correlation constraint: the message only correlates to subscriptions whose stored
+   * business id matches. A message published without a business id correlates to any subscription
+   * regardless of the subscription's stored business id.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.10
+   */
+  String getBusinessId();
 }

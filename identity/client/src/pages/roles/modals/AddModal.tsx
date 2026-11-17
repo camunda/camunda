@@ -8,11 +8,11 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
-import { createRole } from "src/utility/api/roles";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import { useNotifications } from "src/components/notifications";
 import { isValidId, getIdPattern } from "src/utility/validate";
 
@@ -25,9 +25,12 @@ type FormData = {
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
-  const [callAddRole, { loading, error }] = useApiCall(createRole, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(roleMutations.create(qc));
 
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {
@@ -38,23 +41,26 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callAddRole({
-      name: data.roleName,
-      description: data.description,
-      roleId: data.roleId,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("roleCreated"),
-        subtitle: t("createRoleSuccess", {
-          roleName: data.roleName,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.roleName,
+        description: data.description,
+        roleId: data.roleId,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("roleCreated"),
+            subtitle: t("createRoleSuccess", {
+              roleName: data.roleName,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

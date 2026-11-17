@@ -18,6 +18,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.util.ValueTypeUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -258,6 +259,19 @@ public final class SearchQueryBuilders {
     return hasChild(q -> q.query(query).type(type)).toSearchQuery();
   }
 
+  public static SearchNestedQuery.Builder nested() {
+    return new SearchNestedQuery.Builder();
+  }
+
+  public static SearchNestedQuery nested(
+      final Function<SearchNestedQuery.Builder, ObjectBuilder<SearchNestedQuery>> fn) {
+    return fn.apply(nested()).build();
+  }
+
+  public static SearchQuery nestedQuery(final String path, final SearchQuery query) {
+    return nested(q -> q.path(path).query(query)).toSearchQuery();
+  }
+
   public static SearchTermQuery.Builder term() {
     return new SearchTermQuery.Builder();
   }
@@ -328,6 +342,17 @@ public final class SearchQueryBuilders {
     }
   }
 
+  public static SearchQuery doubleTerms(final String field, final Collection<Double> values) {
+    final var fieldValues = withoutNull(values);
+    if (fieldValues == null || fieldValues.isEmpty()) {
+      return null;
+    } else if (fieldValues.size() == 1) {
+      return term(field, fieldValues.getFirst());
+    } else {
+      return SearchTermsQuery.of(q -> q.field(field).doubleTerms(fieldValues)).toSearchQuery();
+    }
+  }
+
   public static SearchQuery stringTerms(final String field, final Collection<String> values) {
     final var fieldValues = withoutNull(values);
     if (fieldValues == null || fieldValues.isEmpty()) {
@@ -339,7 +364,7 @@ public final class SearchQueryBuilders {
     }
   }
 
-  public static SearchQuery objectTerms(final String field, final Collection<Object> values) {
+  public static SearchQuery objectTerms(final String field, final Collection<?> values) {
     final var fieldValues = withoutNull(values);
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
@@ -430,6 +455,43 @@ public final class SearchQueryBuilders {
     }
   }
 
+  public static <C extends List<Operation<Double>>> List<SearchQuery> doubleOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return List.of();
+    } else {
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+
+      for (final Operation<Double> op : operations) {
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, op.value()));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, op.value())));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(op.value()));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(op.value()));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(op.value()));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(op.value()));
+          case IN -> queries.add(doubleTerms(field, op.values()));
+          case NOT_IN -> queries.add(mustNot(doubleTerms(field, op.values())));
+          default -> throw unexpectedOperation("Double", op.operator());
+        }
+      }
+
+      // Add the consolidated range query if any range operations were processed
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+
+      return queries;
+    }
+  }
+
   public static <C extends List<Operation<String>>> List<SearchQuery> stringOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
@@ -471,6 +533,12 @@ public final class SearchQueryBuilders {
                   case NOT_EXISTS -> mustNot(exists(field));
                   case IN ->
                       or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
+                  case NOT_IN ->
+                      mustNot(
+                          or(
+                              op.values().stream()
+                                  .map(value -> matchPhrase(field, value))
+                                  .toList()));
                   case LIKE ->
                       wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase());
                   default -> throw unexpectedOperation("String", op.operator());
@@ -478,54 +546,54 @@ public final class SearchQueryBuilders {
         .toList();
   }
 
+  /**
+   * Matches the given field against all operations, either on a single child document of the given
+   * type or on the document itself.
+   *
+   * <p>The document itself is included because a value is not always carried by a child: an
+   * incident error message, for instance, lives on the flow node child document, unless the
+   * incident was raised at the process level (e.g. by a process level execution listener), in which
+   * case it lives on the process instance document.
+   */
   public static <C extends List<Operation<String>>>
-      List<SearchQuery> stringMatchPhraseWithHasChildOperations(
+      SearchQuery stringMatchPhraseInSingleHasChildOrSelf(
           final String field, final C operations, final String childType) {
 
     if (operations == null || operations.isEmpty()) {
-      return List.of();
+      return null;
     }
 
-    return operations.stream()
-        .map(
-            op ->
-                switch (op.operator()) {
-                  case EQUALS -> hasChildQuery(childType, matchPhrase(field, op.value()));
+    final List<SearchQuery> innerClauses = new ArrayList<>();
+    final List<SearchQuery> allClauses = new ArrayList<>();
 
-                  case NOT_EQUALS ->
-                      hasChildQuery(
-                          childType,
-                          bool(b ->
-                                  b.must(List.of(exists(field)))
-                                      .mustNot(List.of(matchPhrase(field, op.value()))))
-                              .toSearchQuery());
+    for (final var op : operations) {
+      switch (op.operator()) {
+        case EQUALS -> innerClauses.add(matchPhrase(field, op.value()));
+        case NOT_EQUALS ->
+            innerClauses.add(
+                bool(b ->
+                        b.must(List.of(exists(field)))
+                            .mustNot(List.of(matchPhrase(field, op.value()))))
+                    .toSearchQuery());
+        case EXISTS -> innerClauses.add(bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
+        case NOT_EXISTS ->
+            allClauses.add(and(not(hasChildQuery(childType, exists(field))), not(exists(field))));
+        case IN ->
+            innerClauses.add(
+                or(op.values().stream().map(value -> matchPhrase(field, value)).toList()));
+        case LIKE ->
+            innerClauses.add(
+                wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
+        default -> throw unexpectedOperation("String", op.operator());
+      }
+    }
 
-                  case EXISTS ->
-                      hasChildQuery(
-                          childType, bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
+    if (!innerClauses.isEmpty()) {
+      final var matchingClauses = bool(b -> b.must(innerClauses)).toSearchQuery();
+      allClauses.add(or(hasChildQuery(childType, matchingClauses), matchingClauses));
+    }
 
-                  case NOT_EXISTS ->
-                      hasChildQuery(
-                          childType,
-                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
-                              .toSearchQuery());
-
-                  case IN ->
-                      hasChildQuery(
-                          childType,
-                          or(
-                              op.values().stream()
-                                  .map(value -> matchPhrase(field, value))
-                                  .toList()));
-
-                  case LIKE ->
-                      hasChildQuery(
-                          childType,
-                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
-
-                  default -> throw unexpectedOperation("String", op.operator());
-                })
-        .toList();
+    return and(allClauses);
   }
 
   private static String formatDate(final OffsetDateTime dateTime) {
@@ -578,17 +646,77 @@ public final class SearchQueryBuilders {
     }
   }
 
+  /**
+   * Zeebe serializes whole numbers as doubles (e.g. "356.0"), so each value is expanded to both its
+   * plain integer and its double string representation to match either form on the keyword field.
+   */
+  private static List<Object> expandLongValuesForKeywordMatch(final List<Object> values) {
+    final var expandedValues = new ArrayList<>();
+    for (final var value : values) {
+      expandedValues.add(String.valueOf(value));
+      expandedValues.add(value + ".0");
+    }
+    return expandedValues;
+  }
+
   public static <C extends UntypedOperation> SearchQuery variableOperation(
       final String field, final C operation) {
     // Handle common operations
     final var res =
         switch (operation.operator()) {
-          case EQUALS -> term(field, TypedValue.toTypedValue(operation.value()));
-          case NOT_EQUALS -> mustNot(term(field, TypedValue.toTypedValue(operation.value())));
+          case EQUALS -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              // A JSON null variable is stored as the literal string "null" (not as an absent
+              // field), so match that literal.
+              yield term(field, TypedValue.of(ValueTypeUtil.JSON_NULL));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              // Zeebe serializes whole numbers as doubles (e.g. "356.0"), so match both the
+              // integer and double string representations on the keyword field.
+              yield or(
+                  term(field, TypedValue.of(String.valueOf(operation.value()))),
+                  term(field, TypedValue.of(operation.value() + ".0")));
+            }
+            yield term(field, TypedValue.toTypedValue(operation.value()));
+          }
+          case NOT_EQUALS -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              yield mustNot(term(field, TypedValue.of(ValueTypeUtil.JSON_NULL)));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              yield mustNot(
+                  or(
+                      term(field, TypedValue.of(String.valueOf(operation.value()))),
+                      term(field, TypedValue.of(operation.value() + ".0"))));
+            }
+            yield mustNot(term(field, TypedValue.toTypedValue(operation.value())));
+          }
           case EXISTS -> exists(field);
           case NOT_EXISTS -> mustNot(exists(field));
-          case IN -> objectTerms(field, operation.values());
-          default -> null;
+          case IN -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              // A JSON null variable is stored as the literal string "null", so match that literal.
+              yield term(field, TypedValue.of(ValueTypeUtil.JSON_NULL));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              yield objectTerms(field, expandLongValuesForKeywordMatch(operation.values()));
+            }
+            yield objectTerms(field, operation.values());
+          }
+          case NOT_IN -> {
+            if (operation.type().equals(ValueTypeEnum.NULL)) {
+              // A JSON null variable is stored as the literal string "null", so match that literal.
+              yield mustNot(term(field, TypedValue.of(ValueTypeUtil.JSON_NULL)));
+            }
+            if (operation.type().equals(ValueTypeEnum.LONG)) {
+              yield mustNot(
+                  objectTerms(field, expandLongValuesForKeywordMatch(operation.values())));
+            }
+            yield mustNot(objectTerms(field, operation.values()));
+          }
+          // Handled by the numeric-range and string-specific blocks below; listed explicitly
+          // (not via a default) so a new Operator constant fails to compile here until handled.
+          case GREATER_THAN, GREATER_THAN_EQUALS, LOWER_THAN, LOWER_THAN_EQUALS, LIKE -> null;
         };
     if (res != null) {
       return res;
@@ -597,21 +725,17 @@ public final class SearchQueryBuilders {
     // Consolidate range operations for numeric types
     final var type = operation.type();
     if (type.equals(ValueTypeEnum.LONG) || type.equals(ValueTypeEnum.DOUBLE)) {
-      SearchRangeQuery.Builder rangeQueryBuilder = null;
+      final SearchRangeQuery.Builder rangeQueryBuilder;
 
       switch (operation.operator()) {
         case GREATER_THAN ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.gt(operation.value()));
         case GREATER_THAN_EQUALS ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.gte(operation.value()));
         case LOWER_THAN ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.lt(operation.value()));
         case LOWER_THAN_EQUALS ->
-            rangeQueryBuilder =
-                buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(operation.value()));
+            rangeQueryBuilder = buildRangeQuery(null, field, b -> b.lte(operation.value()));
         default -> throw unexpectedOperation("Variable (numeric)", operation.operator());
       }
 

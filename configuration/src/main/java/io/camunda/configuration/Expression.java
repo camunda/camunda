@@ -34,7 +34,7 @@ public class Expression {
   private Duration timeout = EngineConfiguration.DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
 
   public Duration getTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".timeout",
         timeout,
         Duration.class,

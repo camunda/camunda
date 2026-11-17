@@ -11,12 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
@@ -61,7 +63,9 @@ public class TenantEntityAddedHandlerTest {
     assertThat(idList)
         .containsExactly(
             TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getTenantId(), value.getEntityId(), value.getEntityType()));
+                value.getTenantId(),
+                value.getEntityId(),
+                AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Test
@@ -80,13 +84,14 @@ public class TenantEntityAddedHandlerTest {
     final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild("111");
     final var inputEntity =
         new TenantMemberEntity().setId("111").setMemberId("member-id-2").setJoin(joinRelation);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
-        .addWithRouting(indexName, inputEntity, String.valueOf(joinRelation.parent()));
+        .addWithRouting(index, inputEntity, String.valueOf(joinRelation.parent()));
   }
 }

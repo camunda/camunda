@@ -7,6 +7,12 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstances
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search element instances
       description: Search for element instances based on given criteria.
       requestBody:
@@ -31,6 +37,46 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
+
+  /element-instances/wait-states/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Element instance
+      operationId: searchElementInstanceWaitStates
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search element instance wait states
+      description: >
+        Returns the wait states for element instances matching the given filter.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInstanceWaitStateQuery'
+      responses:
+        "200":
+          description: The element instance wait state search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceWaitStateQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}:
     get:
@@ -38,6 +84,11 @@ paths:
       tags:
         - Element instance
       operationId: getElementInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get element instance
       description: Returns element instance as JSON.
       parameters:
@@ -71,6 +122,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}/variables:
     put:
@@ -78,6 +130,11 @@ paths:
       tags:
         - Element instance
       operationId: createElementInstanceVariables
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update element instance variables
       description: |
         Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
@@ -114,6 +171,8 @@ paths:
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-added-in-version: "8.6"
+      x-added-in-version-override: "8.6"
+      x-scope: physical-tenant
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:
@@ -121,6 +180,11 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceIncidents
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search for incidents of a specific element instance
       description: |
         Search for incidents caused by the specified element instance, including incidents of any child instances created from this element instance.
@@ -165,6 +229,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
@@ -172,6 +237,11 @@ paths:
       tags:
         - Ad-hoc sub-process
       operationId: activateAdHocSubProcessActivities
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Activate activities within an ad-hoc sub-process
       description: |
         Activates selected activities within an ad-hoc sub-process identified by element ID.
@@ -211,6 +281,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -240,6 +311,22 @@ components:
       required:
         - field
 
+    ElementInstanceWaitStateQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - elementInstanceKey
+            - processInstanceKey
+            - rootProcessInstanceKey
+            - elementId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
     ElementInstanceSearchQuery:
       description: Element instance search request.
       type: object
@@ -258,7 +345,45 @@ components:
             - $ref: '#/components/schemas/ElementInstanceFilter'
 
     ElementInstanceFilter:
-      description: Element instance filter.
+      description: Element instance search filter.
+      allOf:
+        - $ref: '#/components/schemas/ElementInstanceFilterFields'
+        - type: object
+          x-properties-added-in-version:
+            - propertyName: "$or"
+              addedInVersion: "8.10"
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "processInstanceKey": "2251799813685323",
+                  "$or": [
+                    { "elementName": { "$like": "*Order*" } },
+                    { "elementId":   { "$like": "*Order*" } }
+                  ]
+                }
+                ```
+                This matches element instances scoped to the given process instance whose:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;"><code>elementName</code> contains <em>Order</em>, or</li>
+                  <li style="list-style-type: disc;"><code>elementId</code> contains <em>Order</em></li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: '#/components/schemas/ElementInstanceFilterFields'
+
+    ElementInstanceFilterFields:
+      description: Element instance filter fields.
       type: object
       properties:
         processDefinitionId:
@@ -416,7 +541,10 @@ components:
         - incidentKey
       properties:
         processDefinitionId:
-          description: The process definition ID associated to this element instance.
+          description: |
+            The process definition ID associated to this element instance. This field is not
+            present for element instances imported by Operate 8.1 or earlier.
+          nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
         startDate:
@@ -496,12 +624,18 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
-          description: The process definition key associated to this element instance.
+          description: |
+            The process definition key associated to this element instance. This field is not
+            present for element instances imported by Operate 8.1.7 or earlier.
+          nullable: true
         incidentKey:
           allOf:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
           nullable: true
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
 
     ElementInstanceStateEnum:
       description: Element states
@@ -525,6 +659,370 @@ components:
           default: false
       required:
         - elements
+
+    ElementInstanceWaitStateQuery:
+      description: Element instance inspection request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceWaitStateQuerySortRequest'
+        filter:
+          description: Filter criteria for the inspection.
+          allOf:
+            - $ref: '#/components/schemas/ElementInstanceWaitStateFilter'
+
+    ElementInstanceWaitStateFilter:
+      description: Filters for the element instance inspection.
+      type: object
+      properties:
+        elementInstanceKey:
+          description: Filter by element instance key.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        processInstanceKey:
+          description: Filter by process instance key.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        rootProcessInstanceKey:
+          description: Filter by root process instance key.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        elementId:
+          description: Filter by element ID.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
+        elementType:
+          description: Filter by element type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeFilterProperty'
+        waitStateType:
+          description: Filter by wait state type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeFilterProperty'
+
+    WaitStateElementTypeFilterProperty:
+      description: Element type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        - $ref: '#/components/schemas/AdvancedWaitStateElementTypeFilter'
+
+    AdvancedWaitStateElementTypeFilter:
+      title: Advanced filter
+      description: Advanced element type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    WaitStateElementTypeEnum:
+      description: The BPMN element type of a waiting element instance.
+      type: string
+      enum:
+        - AD_HOC_SUB_PROCESS
+        - AD_HOC_SUB_PROCESS_INNER_INSTANCE
+        - BOUNDARY_EVENT
+        - BUSINESS_RULE_TASK
+        - CALL_ACTIVITY
+        - END_EVENT
+        - EVENT_BASED_GATEWAY
+        - EVENT_SUB_PROCESS
+        - EXCLUSIVE_GATEWAY
+        - INCLUSIVE_GATEWAY
+        - INTERMEDIATE_CATCH_EVENT
+        - INTERMEDIATE_THROW_EVENT
+        - MANUAL_TASK
+        - MULTI_INSTANCE_BODY
+        - PARALLEL_GATEWAY
+        - PROCESS
+        - RECEIVE_TASK
+        - SCRIPT_TASK
+        - SEND_TASK
+        - SEQUENCE_FLOW
+        - SERVICE_TASK
+        - START_EVENT
+        - SUB_PROCESS
+        - TASK
+        - UNKNOWN
+        - UNSPECIFIED
+        - USER_TASK
+
+    WaitStateTypeFilterProperty:
+      description: Wait state type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        - $ref: '#/components/schemas/AdvancedWaitStateTypeFilter'
+
+    AdvancedWaitStateTypeFilter:
+      title: Advanced filter
+      description: Advanced wait state type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitStateTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    ElementInstanceWaitStateQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching waiting states.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceWaitStateResult'
+
+    ElementInstanceWaitStateResult:
+      description: An element instance waiting state.
+      type: object
+      required:
+        - processInstanceKey
+        - elementInstanceKey
+        - elementId
+        - elementType
+        - tenantId
+        - rootProcessInstanceKey
+        - bpmnProcessId
+        - details
+      properties:
+        rootProcessInstanceKey:
+          description: Key of the root process instance.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The process instance key associated to this element instance.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The element instance key associated to this element instance.
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID for this element instance.
+        elementType:
+          description: The BPMN element type of this element instance.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        tenantId:
+          description: The tenant ID of the element instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        bpmnProcessId:
+          description: The BPMN process ID of the process definition associated to this element instance.
+          type: string
+        details:
+          description: Wait-state-specific details, resolved by waitStateType.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateDetails'
+
+    WaitStateDetails:
+      x-polymorphic-schema: true
+      description: Wait-state-specific details of an element instance.
+      discriminator:
+        propertyName: waitStateType
+        mapping:
+          JOB: '#/components/schemas/JobWaitStateDetails'
+          MESSAGE: '#/components/schemas/MessageWaitStateDetails'
+          USER_TASK: '#/components/schemas/UserTaskWaitStateDetails'
+          TIMER: '#/components/schemas/TimerWaitStateDetails'
+          SIGNAL: '#/components/schemas/SignalWaitStateDetails'
+          CONDITION: '#/components/schemas/ConditionWaitStateDetails'
+      oneOf:
+        - $ref: '#/components/schemas/JobWaitStateDetails'
+        - $ref: '#/components/schemas/MessageWaitStateDetails'
+        - $ref: '#/components/schemas/UserTaskWaitStateDetails'
+        - $ref: '#/components/schemas/TimerWaitStateDetails'
+        - $ref: '#/components/schemas/SignalWaitStateDetails'
+        - $ref: '#/components/schemas/ConditionWaitStateDetails'
+
+    WaitStateTypeEnum:
+      description: The type of waiting state an element instance is in.
+      type: string
+      enum:
+        - JOB
+        - MESSAGE
+        - USER_TASK
+        - TIMER
+        - SIGNAL
+        - CONDITION
+
+    BaseWaitStateDetails:
+      description: Common fields shared by all wait-state details variants.
+      type: object
+      required:
+        - waitStateType
+      properties:
+        waitStateType:
+          description: The wait state type discriminator.
+          type: string
+
+    JobWaitStateDetails:
+      type: object
+      required:
+        - jobKey
+        - jobType
+        - jobKind
+        - listenerEventType
+        - retries
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        jobKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+          description: The key of the job.
+        jobType:
+          description: The job type (worker subscription identifier).
+          type: string
+        jobKind:
+          description: The kind of job.
+          allOf:
+            - $ref: 'jobs.yaml#/components/schemas/JobKindEnum'
+        listenerEventType:
+          description: The listener event type of the job (only set for execution listener and task listener jobs).
+          nullable: true
+          allOf:
+            - $ref: 'jobs.yaml#/components/schemas/JobListenerEventTypeEnum'
+        retries:
+          description: The number of retries remaining for the job.
+          nullable: true
+          type: integer
+          format: int32
+
+    MessageWaitStateDetails:
+      type: object
+      required:
+        - messageName
+        - correlationKey
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        messageName:
+          description: The name of the message being awaited.
+          type: string
+        correlationKey:
+          description: The correlation key for the message subscription (null for start events).
+          nullable: true
+          type: string
+
+    UserTaskWaitStateDetails:
+      type: object
+      required:
+        - taskKey
+        - dueDate
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        taskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key of the user task.
+        dueDate:
+          description: The due date of the user task, if set.
+          nullable: true
+          type: string
+          format: date-time
+
+    TimerWaitStateDetails:
+      type: object
+      required:
+        - dueDate
+        - repetitions
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        dueDate:
+          description: When the timer is due, as a UNIX epoch timestamp in milliseconds.
+          nullable: true
+          type: integer
+          format: int64
+        repetitions:
+          description: The number of remaining timer repetitions (-1 for infinite, 0 for non-repeating).
+          nullable: true
+          type: integer
+          format: int32
+
+    SignalWaitStateDetails:
+      type: object
+      required:
+        - signalName
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        signalName:
+          description: The name of the signal being awaited.
+          type: string
+      x-added-in-version: "8.10"
+
+    ConditionWaitStateDetails:
+      type: object
+      required:
+        - expression
+        - events
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        expression:
+          description: The condition expression that must evaluate to true to proceed.
+          type: string
+        events:
+          description: The variable events that trigger condition re-evaluation. Empty means all events.
+          type: array
+          items:
+            type: string
+            enum:
+              - create
+              - update
 
     AdHocSubProcessActivateActivityReference:
       type: object

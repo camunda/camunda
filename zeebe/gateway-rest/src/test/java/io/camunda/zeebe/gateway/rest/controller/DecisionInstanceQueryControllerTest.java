@@ -25,10 +25,11 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -60,6 +61,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "processDefinitionKey": "2251799813688736",
                        "processInstanceKey": "6755399441058457",
                        "rootProcessInstanceKey": "3755399441058437",
+                       "businessId": "business-1",
+                       "storageOrdinal": 1001,
                        "elementInstanceKey": "6755399441058465",
                        "decisionDefinitionKey": "123456",
                        "decisionDefinitionId": "ddi",
@@ -95,6 +98,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       2251799813688736L,
                       6755399441058457L,
                       3755399441058437L,
+                      "business-1",
+                      1001,
                       6755399441058465L,
                       "tenantId",
                       "ddi",
@@ -112,9 +117,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private DecisionInstanceServices decisionInstanceServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.decisionInstanceServices(any())).thenReturn(decisionInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -196,7 +203,18 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 }
           ]
       }""",
-            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())));
+            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())),
+        new TestArguments(
+            """
+      {
+          "sort": [
+                {
+                    "field": "businessId",
+                    "order": "DESC"
+                }
+          ]
+      }""",
+            q -> q.sort(s -> s.businessId().desc())));
   }
 
   @ParameterizedTest
@@ -255,6 +273,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             2251799813688736L,
             6755399441058457L,
             3755399441058437L,
+            "business-1",
+            1001,
             6755399441058465L,
             "tenantId",
             "ddi",
@@ -289,6 +309,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "processDefinitionKey": "2251799813688736",
                      "processInstanceKey": "6755399441058457",
                      "rootProcessInstanceKey": "3755399441058437",
+                     "businessId": "business-1",
+                     "storageOrdinal": 1001,
                      "elementInstanceKey": "6755399441058465",
                      "decisionDefinitionKey": "123456",
                      "decisionDefinitionId": "ddi",
@@ -315,8 +337,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputId": "3",
                                      "outputName": "name3",
                                      "outputValue": "value3",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId2",
+                                     "ruleIndex": 2
                                  }
                              ]
                          },
@@ -328,15 +350,15 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputId": "1",
                                      "outputName": "name1",
                                      "outputValue": "value1",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId1",
+                                     "ruleIndex": 1
                                  },
                                  {
                                      "outputId": "2",
                                      "outputName": "name2",
                                      "outputValue": "value2",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId1",
+                                     "ruleIndex": 1
                                  }
                              ]
                          }
@@ -412,7 +434,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
-                Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
+                RequiredAuthorization.of(a -> a.decisionDefinition().readDecisionInstance())));
     // when
     webClient
         .get()
@@ -433,6 +455,37 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "instance": "/v2/decision-instances/123-1"
                 }""",
             JsonCompareMode.STRICT);
+  }
+
+  private static Stream<Arguments> provideInvalidDecisionEvaluationInstanceKeys() {
+    return Stream.of(
+        Arguments.of("+++"),
+        Arguments.of("abc"),
+        Arguments.of("123"),
+        Arguments.of("-1-2"),
+        Arguments.of("1-"),
+        Arguments.of("-1"),
+        Arguments.of("1--1"),
+        Arguments.of("1-2-3"),
+        Arguments.of("1-a"),
+        Arguments.of("a-1"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidDecisionEvaluationInstanceKeys")
+  void shouldReturn400ForInvalidDecisionEvaluationInstanceKeyFormat(final String invalidKey) {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/decision-instances/{decisionInstanceId}", invalidKey)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+    // then - the service must not be invoked when validation fails
+    verify(decisionInstanceServices, never()).getById(eq(invalidKey), any());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -459,6 +512,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionEvaluationInstanceKey",
         ops -> new DecisionInstanceFilter.Builder().decisionInstanceIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "businessId",
+        ops -> new DecisionInstanceFilter.Builder().businessIdOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

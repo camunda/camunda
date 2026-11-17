@@ -17,11 +17,13 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedResource extends UnpackedObject implements DbValue {
+public class PersistedResource extends UnpackedObject
+    implements DbValue, ProjectionOf<ResourceRecord, PersistedResource> {
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
@@ -56,7 +58,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
     copy.versionTagProp.setValue(getVersionTag());
-    copy.resourceProp.setValue(getResource());
+    copy.resourceProp.setValue(BufferUtil.cloneBuffer(resourceProp.getValue()));
     return copy;
   }
 
@@ -92,11 +94,12 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     return deploymentKeyProp.getValue();
   }
 
-  public String getResource() {
-    return bufferAsString(resourceProp.getValue());
+  public DirectBuffer getResourceBuffer() {
+    return resourceProp.getValue();
   }
 
-  public void wrap(final ResourceRecord record) {
+  @Override
+  public PersistedResource wrap(final ResourceRecord record) {
     resourceIdProp.setValue(record.getResourceId());
     versionProp.setValue(record.getVersion());
     resourceKeyProp.setValue(record.getResourceKey());
@@ -105,7 +108,8 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
-    resourceProp.setValue(record.getResourceProp());
+    resourceProp.setValue(record.getResourceBuffer());
+    return this;
   }
 
   public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {

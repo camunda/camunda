@@ -318,7 +318,7 @@ public class UpdateJobTest {
   }
 
   @Test
-  public void shouldRejectIfBothFieldsAreNull(final TestInfo testInfo) {
+  public void shouldRejectIfAllFieldsAreNull(final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     createProcessInstance(jobType);
@@ -326,7 +326,7 @@ public class UpdateJobTest {
     final long jobKey = job.getKey();
 
     // then
-    final var expectedMessage = "At least one of [retries, timeout] is required";
+    final var expectedMessage = "At least one of [retries, timeout, priority] is required";
 
     assertThatThrownBy(() -> client.newUpdateJobCommand(jobKey).update(null, null).send().join())
         .hasMessageContaining(expectedMessage);
@@ -341,10 +341,130 @@ public class UpdateJobTest {
     final long jobKey = job.getKey();
 
     // then
-    final var expectedMessage = "At least one of [retries, timeout] is required";
+    final var expectedMessage = "At least one of [retries, timeout, priority] is required";
 
     assertThatThrownBy(() -> client.newUpdateJobCommand(jobKey).update(null).send().join())
         .hasMessageContaining(expectedMessage);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldUpdateTimeoutOfLeasedJobWithoutJobLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getJobLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+    final long initialDeadline = job.getDeadline();
+    final long timeout = Duration.ofMinutes(15).toMillis();
+
+    // when
+    // property-update commands validate the lease only if one is supplied; an absent token
+    // must proceed even on a leased job (operator/bulk paths)
+    getTimeoutCommand(client, useRest, jobKey).timeout(timeout).send().join();
+
+    // then
+    assertTimeoutIncreased(initialDeadline, jobKey, useRest);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectUpdateTimeoutOfLeasedJobWithWrongJobLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getJobLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+    final long timeout = Duration.ofMinutes(15).toMillis();
+
+    // when / then
+    final var expectedMessage =
+        String.format(
+            "Expected to process job with key '%d', but the supplied lease token does not match. "
+                + "The job may have been re-activated by another worker.",
+            jobKey);
+    assertThatThrownBy(
+            () ->
+                getTimeoutCommand(client, useRest, jobKey)
+                    .timeout(timeout)
+                    .withJobLeaseToken("wrong-lease-token")
+                    .send()
+                    .join())
+        .hasMessageContaining(expectedMessage);
+  }
+
+  @Test
+  public void shouldUpdateRetriesOfLeasedJobWithoutJobLeaseToken(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, false, jobType);
+    assertThat(job.getJobLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+    final int retries = 10;
+
+    // when
+    // property-update commands validate the lease only if one is supplied; an absent token
+    // must proceed even on a leased job (operator/bulk paths)
+    getRetriesCommand(client, false, jobKey).retries(retries).send().join();
+
+    // then
+    assertRetriesUpdated(jobKey, false, retries);
+  }
+
+  @Test
+  public void shouldRejectUpdateRetriesOfLeasedJobWithWrongJobLeaseToken(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, false, jobType);
+    assertThat(job.getJobLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+
+    // when / then
+    final var expectedMessage =
+        String.format(
+            "Expected to process job with key '%d', but the supplied lease token does not match. "
+                + "The job may have been re-activated by another worker.",
+            jobKey);
+    assertThatThrownBy(
+            () ->
+                getRetriesCommand(client, false, jobKey)
+                    .retries(10)
+                    .withJobLeaseToken("wrong-lease-token")
+                    .send()
+                    .join())
+        .hasMessageContaining(expectedMessage);
+  }
+
+  private ActivatedJob activateLeasedJob(
+      final CamundaClient client, final boolean useRest, final String jobType) {
+    final var activateResponse =
+        getActivateCommand(client, useRest)
+            .jobType(jobType)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(14))
+            .withLease(true)
+            .send()
+            .join();
+
+    assertThat(activateResponse.getJobs())
+        .describedAs("Expected one job to be activated")
+        .hasSize(1);
+
+    return activateResponse.getJobs().get(0);
   }
 
   private void assertTimeoutIncreased(

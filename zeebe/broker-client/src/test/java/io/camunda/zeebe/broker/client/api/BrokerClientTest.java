@@ -7,23 +7,31 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import static io.camunda.zeebe.broker.client.BrokerMemberIds.ONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -37,7 +45,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -57,12 +64,10 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
-
   private final StubBroker broker = new StubBroker().start();
   private BrokerClient client;
   private AtomixCluster atomixCluster;
@@ -108,13 +113,12 @@ public final class BrokerClientTest {
                 broker.member().id(),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, null))));
 
-    topologyManager.onClusterConfigurationUpdated(clusterTopology);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopology));
     topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
-            () ->
-                assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                    .isNotEqualTo(BrokerClusterState.NODE_ID_NULL));
+            () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isNotNull());
 
     client =
         new BrokerClientImpl(
@@ -123,8 +127,7 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry),
-            TopicSupplier.withLegacyTopicName());
+            new BrokerClientRequestMetrics(meterRegistry));
     client.start().forEach(ActorFuture::join);
   }
 
@@ -134,14 +137,14 @@ public final class BrokerClientTest {
     registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
 
     // when
-    final Future<?> result = client.sendRequestWithRetry(new TestCommand());
+    final var result = client.sendRequestWithRetry(new TestCommand());
 
     // then
     final var receivedCommandRequests = broker.getReceivedCommandRequests();
     assertThat(result)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getError)
+        .isEqualTo(new BrokerError(ErrorCode.INTERNAL_ERROR, "test"));
     assertThat(receivedCommandRequests).hasSize(1);
     receivedCommandRequests.forEach(
         request -> {
@@ -202,14 +205,13 @@ public final class BrokerClientTest {
     registerError(broker, ErrorCode.PARTITION_LEADER_MISMATCH, "");
 
     // when
-    final Future<?> response = client.sendRequest(new TestCommand());
+    final var response = client.sendRequest(new TestCommand());
 
     // then
     assertThat(response)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(
-            new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getError)
+        .isEqualTo(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, ""));
   }
 
   @Test
@@ -258,27 +260,26 @@ public final class BrokerClientTest {
   }
 
   @Test
-  void shouldIncludeCallingFrameInExceptionStacktraceOnAsyncRootCause(final TestInfo testInfo) {
+  void shouldRouteBrokerRejectionToCallbackThrowableConsumer() {
     // given
+    final AtomicReference<Throwable> errorRef = new AtomicReference<>();
     broker
         .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
         .respondWith()
-        .rejection();
+        .rejection(RejectionType.INVALID_ARGUMENT, "foo")
+        .value(null)
+        .register();
 
     // when
-    try {
-      client.sendRequestWithRetry(new TestCommand()).join();
-      fail("should throw exception");
-    } catch (final Exception e) {
-      // then
-      assertThat(e.getStackTrace())
-          .anySatisfy(
-              frame -> {
-                assertThat(frame.getClassName()).isEqualTo(getClass().getName());
-                assertThat(frame.getMethodName())
-                    .isEqualTo(testInfo.getTestMethod().orElseThrow().getName());
-              });
-    }
+    client.sendRequestWithRetry(
+        new TestCommand(), (key, response) -> fail("should reject"), errorRef::set);
+
+    // then
+    Awaitility.await("callback throwable received")
+        .untilAsserted(
+            () -> {
+              assertThat(errorRef.get()).isInstanceOf(BrokerRejectionException.class);
+            });
   }
 
   @Test
@@ -302,11 +303,10 @@ public final class BrokerClientTest {
 
     // then
     assertThat(responseFuture)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(
-            new BrokerRejectionException(
-                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getRejection)
+        .isEqualTo(
+            new BrokerRejection(TestCommand.INTENT, -1, RejectionType.INVALID_ARGUMENT, "foo"));
   }
 
   @Test
@@ -328,11 +328,10 @@ public final class BrokerClientTest {
 
     // then
     assertThat(responseFuture)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableThat()
-        .withCause(
-            new BrokerRejectionException(
-                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+        .succeedsWithin(Duration.ofSeconds(10))
+        .extracting(BrokerResponse::getRejection)
+        .isEqualTo(
+            new BrokerRejection(TestCommand.INTENT, -1, RejectionType.INVALID_ARGUMENT, "foo"));
   }
 
   @Test
@@ -342,7 +341,7 @@ public final class BrokerClientTest {
     final var request =
         new TestCommand(
             1L,
-            topologyManager -> {
+            (topologyManager, partitionGroup) -> {
               managerRef.set(topologyManager);
               return 1;
             });
@@ -356,10 +355,61 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldPassPartitionGroupToDispatchStrategy() {
+    // given
+    final AtomicReference<String> groupRef = new AtomicReference<>();
+    final var request =
+        new TestCommand(
+            1L,
+            (topologyManager, partitionGroup) -> {
+              groupRef.set(partitionGroup);
+              return 1;
+            });
+    request.setPartitionGroup("tenant-b");
+
+    // when
+    final var responseFuture = client.sendRequest(request);
+
+    // then
+    assertThat(responseFuture).failsWithin(Duration.ofSeconds(10));
+    assertThat(groupRef).hasValue("tenant-b");
+  }
+
+  @Test
+  void shouldRejectRequestWithoutPartitionGroup() {
+    // given - a request whose partition group (physical tenant) was never set
+    final var request = TestCommand.withUnsetPartitionGroup();
+
+    // when / then - the request fails instead of being routed to the default tenant
+    assertThatThrownBy(() -> client.sendRequest(request))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no partition group (physical tenant) was set")
+        .hasMessageContaining(request.getType());
+    assertThat(broker.getReceivedCommandRequests()).isEmpty();
+  }
+
+  @Test
+  void shouldFailRequestAddressingPartitionOfUnknownGroup() {
+    // given - a request addressing a partition that only exists in the default group
+    final var request = new TestCommand();
+    request.setPartitionId(1);
+    request.setPartitionGroup("unknown-group");
+
+    // when
+    final Future<?> response = client.sendRequest(request);
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(PartitionNotFoundException.class);
+  }
+
+  @Test
   void shouldReceiveJobAvailableNotification() {
     // given
     final AtomicReference<String> messageRef = new AtomicReference<>();
-    client.subscribeJobAvailableNotification("foo", messageRef::set);
+    client.subscribeJobAvailableNotification("foo", new Object(), messageRef::set);
 
     // when
     atomixCluster.getEventService().broadcast("foo", "bar");
@@ -370,10 +420,71 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldSubscribeToJobAvailableTopicOnlyOnceOnRepeatedCallsFromSameSubscriber() {
+    // given — a repeated subscribe for the same topic from the same subscriber, as happens when a
+    // physical-tenant-aware caller lazily (re-)subscribes on every request rather than tracking
+    // subscriptions itself
+    final var subscriber = new Object();
+    client.subscribeJobAvailableNotification("foo", subscriber, ignored -> {});
+    client.subscribeJobAvailableNotification("foo", subscriber, ignored -> {});
+
+    // then — only one subscription was registered with the event service, not two
+    Awaitility.await("subscription is registered")
+        .untilAsserted(
+            () -> assertThat(atomixCluster.getEventService().getSubscriptions("foo")).hasSize(1));
+  }
+
+  @Test
+  void shouldSubscribeIndependentlyPerSubscriberForTheSameTopic() {
+    // given — two distinct callers (e.g. the gRPC and REST gateways) subscribing to the same
+    // topic; neither should silently drop the other's handler
+    final AtomicReference<String> firstMessage = new AtomicReference<>();
+    final AtomicReference<String> secondMessage = new AtomicReference<>();
+    client.subscribeJobAvailableNotification("foo", new Object(), firstMessage::set);
+    client.subscribeJobAvailableNotification("foo", new Object(), secondMessage::set);
+
+    // when
+    atomixCluster.getEventService().broadcast("foo", "bar");
+
+    // then — both subscribers were registered and both were notified
+    Awaitility.await("both subscriptions are registered")
+        .untilAsserted(
+            () -> assertThat(atomixCluster.getEventService().getSubscriptions("foo")).hasSize(2));
+    Awaitility.await("first subscriber received notification")
+        .untilAtomic(firstMessage, Matchers.equalTo("bar"));
+    Awaitility.await("second subscriber received notification")
+        .untilAtomic(secondMessage, Matchers.equalTo("bar"));
+  }
+
+  @Test
+  void shouldCloseAllJobAvailableSubscriptionsOnClose() {
+    // given
+    client.subscribeJobAvailableNotification("foo", new Object(), ignored -> {});
+    client.subscribeJobAvailableNotification("bar", new Object(), ignored -> {});
+    Awaitility.await("both subscriptions are registered")
+        .untilAsserted(
+            () -> {
+              assertThat(atomixCluster.getEventService().getSubscriptions("foo")).isNotEmpty();
+              assertThat(atomixCluster.getEventService().getSubscriptions("bar")).isNotEmpty();
+            });
+
+    // when
+    client.close();
+
+    // then — every subscription is closed, not just the most recently registered one
+    Awaitility.await("both subscriptions are unregistered")
+        .untilAsserted(
+            () -> {
+              assertThat(atomixCluster.getEventService().getSubscriptions("foo")).isEmpty();
+              assertThat(atomixCluster.getEventService().getSubscriptions("bar")).isEmpty();
+            });
+  }
+
+  @Test
   public void shouldThrowCorrectErrorForInactivePartitionAndNoLeaderRequest() {
     // given
     final var partitionId = 1;
-    final var request = new TestCommand(1, topologyManager -> partitionId);
+    final var request = new TestCommand(1, (topologyManager, partitionGroup) -> partitionId);
 
     // when
     broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
@@ -391,11 +502,68 @@ public final class BrokerClientTest {
   }
 
   @Test
+  public void shouldRejectRequestWhenPartitionIsInRecoveryMode() {
+    // given -- the only replica of partition 1 is inactive and flagged as RECOVERING in the
+    // cluster configuration
+    final var partitionId = 1;
+    final var request = new TestCommand(1, (topologyManager, partitionGroup) -> partitionId);
+    makeBrokerRecoverForPartition(partitionId);
+
+    // then -- a request that is not recovery-routable fails fast with a dedicated error instead
+    // of timing out against a leaderless partition
+    assertThatCode(() -> client.sendRequest(request).join())
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(PartitionInRecoveryException.class)
+        .hasMessageContaining("recovery mode");
+  }
+
+  @Test
+  public void shouldRouteRecoveryRoutableRequestToRecoveringNode() {
+    // given
+    final var partitionId = 1;
+    final var request =
+        new TestCommand(1L) {
+          @Override
+          public boolean shouldRouteToRecovery() {
+            return true;
+          }
+        };
+    request.setPartitionId(partitionId);
+    registerSuccessResponse(broker);
+    makeBrokerRecoverForPartition(partitionId);
+
+    // when
+    final var response = client.sendRequest(request).join();
+
+    // then
+    assertThat(response.isResponse()).isTrue();
+  }
+
+  private void makeBrokerRecoverForPartition(final int partitionId) {
+    topologyManager.onClusterConfigurationUpdated(
+        topologyManager
+            .getClusterConfiguration()
+            .updatePartitionGroupConfig(
+                CurrentClusterConfiguration.DEFAULT_GROUP,
+                group ->
+                    group.updateMember(
+                        broker.member().id(), member -> member.setMode(Mode.RECOVERING))));
+
+    broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
+    topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+    Awaitility.await("Partition is inactive.")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partitionId))
+                    .isNotEmpty());
+  }
+
+  @Test
   public void shouldSendRequestToLeaderIfSomePartitionReplicasInactive() {
     // given
     final var partitionId = 1;
     final var leaderBrokerId = 2;
-    final var request = new TestCommand(1, topologyManager -> partitionId);
+    final var request = new TestCommand(1, (topologyManager, partitionGroup) -> partitionId);
 
     // when
     broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
@@ -420,7 +588,7 @@ public final class BrokerClientTest {
           .untilAsserted(
               () ->
                   assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                      .isEqualTo(leaderBrokerId));
+                      .isEqualTo(BrokerMemberId.from(leaderBrokerId)));
 
       response = client.sendRequest(request).join();
     }
@@ -483,10 +651,26 @@ public final class BrokerClientTest {
         final UnifiedRecordValue record,
         final long key,
         final RequestDispatchStrategy dispatchStrategy) {
+      this(record, key, dispatchStrategy, true);
+    }
+
+    private TestCommand(
+        final UnifiedRecordValue record,
+        final long key,
+        final RequestDispatchStrategy dispatchStrategy,
+        final boolean stampDefaultPartitionGroup) {
       super(VALUE_TYPE, INTENT);
       this.record = record;
       this.key = key;
       this.dispatchStrategy = dispatchStrategy;
+      if (stampDefaultPartitionGroup) {
+        setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      }
+    }
+
+    private static TestCommand withUnsetPartitionGroup() {
+      return new TestCommand(
+          new UnifiedRecordValue(10), Protocol.encodePartitionId(1, 1), null, false);
     }
 
     @Override
@@ -533,7 +717,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                        .isEqualTo(ONE));
 
         // when
         response = client.sendRequest(request).join();
@@ -555,14 +741,24 @@ public final class BrokerClientTest {
         final var updatedClusterConfiguration =
             topologyManager
                 .getClusterConfiguration()
-                .addMember(
-                    otherBroker.member().id(),
-                    MemberState.initializeAsActive(Map.of(2, PartitionState.active(2, null))));
+                .updateGlobalConfiguration(
+                    globalConfig ->
+                        globalConfig.addMember(
+                            otherBroker.member().id(), BrokerState.initializeAsActive()))
+                .updatePartitionGroupConfig(
+                    CurrentClusterConfiguration.DEFAULT_GROUP,
+                    group ->
+                        group.addMember(
+                            otherBroker.member().id(),
+                            BrokerPartitionState.initialize(
+                                Map.of(2, PartitionState.active(2, null)))));
         topologyManager.onClusterConfigurationUpdated(updatedClusterConfiguration);
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(2))
+                        .isEqualTo(ONE));
 
         // when
         response = client.sendRequest(request).join();
@@ -576,14 +772,16 @@ public final class BrokerClientTest {
     void shouldRouteRequestBasedOnDispatchStrategy() {
       // given - a second broker (1), which respond successfully for partition 2
       final BrokerResponse<?> response;
-      final var request = new TestCommand(1L, ignored -> 2);
+      final var request = new TestCommand(1L, (ignored, partitionGroup) -> 2);
 
       try (final var otherBroker = new StubBroker(1, 2).start()) {
         registerSuccessResponse(otherBroker);
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(2))
+                        .isEqualTo(ONE));
 
         // when
         response = client.sendRequest(request).join();
@@ -597,7 +795,8 @@ public final class BrokerClientTest {
     void shouldRouteToDeploymentPartitionAsFallback() {
       // given - a dispatch strategy which returns "null"
       final BrokerResponse<?> response;
-      final var request = new TestCommand(1L, ignored -> BrokerClusterState.PARTITION_ID_NULL);
+      final var request =
+          new TestCommand(1L, (ignored, partitionGroup) -> BrokerClusterState.PARTITION_ID_NULL);
       registerSuccessResponse(broker);
 
       // when

@@ -1,5 +1,5 @@
 # type: Release
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Camunda Platform Release Workflow
 
@@ -89,6 +89,7 @@ jobs:
     runs-on: gcp-core-32-release
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
+      releaseTagCommitSha: ${{ steps.maven-perform-release.outputs.tagCommitSha }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
@@ -96,11 +97,23 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
-        # This step generates a GitHub App token to be used in Git operations as a workaround  for
-        # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+      - name: Parse Release Version
+        run: |
+          if [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            {
+              echo "RELEASE_MAJOR=${BASH_REMATCH[1]}"
+              echo "RELEASE_MINOR=${BASH_REMATCH[2]}"
+              echo "RELEASE_PATCH=${BASH_REMATCH[3]}"
+              echo "IS_STABLE_VERSION=true"
+            } >> "$GITHUB_ENV"
+          else
+            echo "IS_STABLE_VERSION=false" >> "$GITHUB_ENV"
+          fi
+      # This step generates a GitHub App token to be used in Git operations as a workaround  for
+      # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -110,7 +123,9 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: maven release:prepare/perform push commits and tags.
+        # zizmor: ignore[artipacked]
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -121,7 +136,7 @@ jobs:
           token: ${{ steps.github-token.outputs.token }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -215,7 +230,15 @@ jobs:
           # User property: waitMaxTime
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
-          CENTRAL_WAIT_MAX_TIME: "3600"
+          CENTRAL_WAIT_MAX_TIME: "10800"
+          # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
+          # ScmException from the URL alone), so a failed ls-remote reports nothing
+          # but "unbale to execute ls-remote". A file path routes git's own
+          # diagnostics past maven; NO_DATA keeps packfile bodies out of the trace.
+          GIT_TRACE: ${{ runner.temp }}/git-trace.log
+          GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
+          GIT_TRACE_CURL_NO_DATA: "1"
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -236,7 +259,19 @@ jobs:
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
 
-          # shellcheck disable=SC2016
+          # release:perform clones into target/ and runs `git ls-remote` from
+          # java.io.tmpdir. actions/checkout's credentials only apply inside the work
+          # tree, and the scm.url that prepare recorded in release.properties carries
+          # no usable credentials, so both calls go out anonymously -- and fail
+          # whenever GitHub's edge refuses anonymous git requests. Authenticate every
+          # git call of this step instead.
+          git_auth=$(printf 'x-access-token:%s' "${APP_TOKEN}" | base64 -w0)
+          echo "::add-mask::${git_auth}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${git_auth}"
+          unset APP_TOKEN
+
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
@@ -250,9 +285,71 @@ jobs:
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
           pushd target/checkout
           TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
+          TAG_COMMIT_SHA=$(git rev-parse HEAD)
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
+          echo "Release tag ${RELEASE_TAG} points to commit ${TAG_COMMIT_SHA}"
+          echo "tagCommitSha=${TAG_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           popd
+
+      # release:perform's `git ls-remote` (run from java.io.tmpdir) has failed
+      # intermittently on 8.10.0-alpha5-rc2, 8.9.19, 8.8.39 and 8.10.0-rc1 -- always
+      # in under a second, always after the clone and every push in the same job had
+      # succeeded against the same URL. That is an answer, not a timeout, but maven
+      # swallowed it every time. These failure-only steps record whether the remote
+      # rejected us (HTTP status) or the runner never reached it (DNS/connect). All
+      # are best-effort: a release is never failed by its own diagnostics.
+      - name: Probe git remote access
+        id: probe-git-remote
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
+          PROBE_LOG: ${{ runner.temp }}/git-remote-probe.log
+          REF_ADVERTISEMENT: https://github.com/camunda/camunda.git/info/refs?service=git-upload-pack
+        run: .github/scripts/probe-git-remote.sh
+
+      # GIT_TRACE_CURL records request headers, Authorization included. Scrub before
+      # the traces leave the runner.
+      - name: Redact git traces
+        id: redact-git-traces
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        env:
+          DIAGNOSTICS_DIR: ${{ runner.temp }}/git-remote-diagnostics
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${DIAGNOSTICS_DIR}"
+
+          for source in \
+            "${{ runner.temp }}/git-trace.log" \
+            "${{ runner.temp }}/git-trace-curl.log" \
+            "${{ runner.temp }}/git-remote-probe.log"; do
+            [ -f "${source}" ] || continue
+            destination="${DIAGNOSTICS_DIR}/$(basename "${source}")"
+            # Keep only the last 5 MB: the failure is at the end of the trace, and
+            # the artifact stays bounded however verbose git gets.
+            tail -c 5M "${source}" | sed -E \
+              -e 's#//[^@/[:space:]]*@#//***@#g' \
+              -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
+              -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
+              > "${destination}"
+          done
+
+      - name: Upload git remote diagnostics
+        if: >-
+          failure() &&
+          steps.maven-perform-release.outcome == 'failure' &&
+          steps.redact-git-traces.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: git-remote-diagnostics-${{ env.RELEASE_VERSION }}
+          path: ${{ runner.temp }}/git-remote-diagnostics/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
@@ -291,22 +388,38 @@ jobs:
 
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
           retention-days: 5
       - name: Update Compat Version
         run: |
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+          if [[ "$IS_STABLE_VERSION" != "true" ]]; then
+            echo "Skipping: ${RELEASE_VERSION} is not a stable version"
             exit 0
           fi
 
-          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -P\!include-optimize
+          if [[ "$RELEASE_PATCH" == "0" ]]; then
+            PREV_MINOR=$((RELEASE_MINOR - 1))
+            if [[ "$PREV_MINOR" -lt 0 ]]; then
+              echo "ERROR: Cannot compute previous minor for ${RELEASE_VERSION} (MINOR=0). Please set 'backwards.compat.version' in parent/pom.xml to the last stable release from the previous release line (e.g. 8.<minor>.<patch> for a 9.0.0 release), then re-run the workflow."
+              exit 1
+            fi
+            COMPAT_VERSION="${RELEASE_MAJOR}.${PREV_MINOR}.0"
+            ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${COMPAT_VERSION}" -P\!include-optimize
+          else
+            echo "Patch release: backwards.compat.version not updated (stays at minor baseline)"
+          fi
+
           FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
-          git commit -am "build(project): update java compat versions"
+          git diff --quiet HEAD || git commit -am "build(project): update java compat versions"
+      - name: Debug Compat Version
+        if: ${{ inputs.dryRun }}
+        run: |
+          echo "=== Compat Version after Update Compat Version step ==="
+          ./mvnw -B help:evaluate -Dexpression=backwards.compat.version -q -DforceStdout -P\!include-optimize
       - name: Delete version-specific allowed API breaking changes
         run: |
           IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
@@ -331,7 +444,14 @@ jobs:
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
       - name: Push Changes to Release branch
-        run: git push ${{ inputs.dryRun && '--dry-run' || '' }} origin "${RELEASE_BRANCH}"
+        # retry is needed because the new token propagation is not instantaneous and can lead to a 403 error on the first push attempt
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          retry_on: error
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: git push ${{ inputs.dryRun && '--dry-run' || '' }} origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
@@ -352,327 +472,6 @@ jobs:
   # - With dryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
   # - With releaseProcessDryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
   # - Uses local registry (localhost:5000) for verification before pushing to remote registry
-  zeebe-docker:
-    needs: release
-    name: Zeebe docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
-      DOCKER_IMAGE: camunda/zeebe
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Logs on to Minimus
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Zeebe Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Zeebe Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-zeebe-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-      - name: Sync Zeebe Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-zeebe-docker.outputs.image }}
-      - name: Sync Zeebe Latest Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-zeebe-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  operate-docker:
-    needs: release
-    name: Operate Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
-      DOCKER_IMAGE: camunda/operate
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Login to Minimus
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Operate Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: operate.Dockerfile
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Operate Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-operate-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: operate.Dockerfile
-          goldenfile: operate-docker-labels.golden.json
-      - name: Sync Operate Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-operate-docker.outputs.image }}
-      - name: Sync Latest Operate Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-operate-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  tasklist-docker:
-    needs: release
-    name: Tasklist Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      DOCKER_IMAGE: camunda/tasklist
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Login to Minimus
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Tasklist Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-tasklist-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Tasklist Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-tasklist-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-          goldenfile: tasklist-docker-labels.golden.json
-      - name: Sync Tasklist Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-tasklist-docker.outputs.image }}
-      - name: Sync Latest Tasklist Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-tasklist-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   optimize-docker:
     needs: release
     name: Optimize Docker Image Release
@@ -695,12 +494,13 @@ jobs:
       DOCKER_IMAGE: camunda/optimize
       DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.RELEASE_BRANCH }}
+          persist-credentials: false
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -711,12 +511,12 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: reg.mini.dev
           username: minimus
@@ -729,13 +529,13 @@ jobs:
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
       - name: Login to infosec registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Optimize Docker Image
@@ -829,12 +629,13 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.RELEASE_BRANCH }}
+          persist-credentials: false
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -845,18 +646,18 @@ jobs:
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Logs on to Minimus
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Camunda Docker Image
@@ -928,12 +729,13 @@ jobs:
   # Uses concurrency control to prevent multiple Snyk jobs from running simultaneously for the same version
   snyk:
     name: Snyk Monitor
-    needs: [ zeebe-docker, release ]
+    needs: [camunda-docker, release ]
     # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
     if: ${{ !contains(inputs.releaseVersion, '-') }}
     concurrency:
       group: release-snyk-${{ inputs.releaseVersion }}
       cancel-in-progress: false
+      queue: max
     uses: ./.github/workflows/zeebe-snyk.yml
     with:
       # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
@@ -944,8 +746,89 @@ jobs:
       monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
       build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
-      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/camunda:{0}', inputs.releaseVersion) }}
     secrets: inherit
+
+  # Shadow run of the new release-notes generator (#57713), beside the legacy
+  # zcl changelog the `github` job builds. Read-only, non-blocking, its own
+  # job so the token stays read-only unlike `github`'s. Runs after `github`
+  # (shared GITHUB_TOKEN, avoids tripping the secondary rate limit) and is
+  # skipped for patches/alphas only where the walked tag can't yet resolve
+  # (dry runs) or the comparison isn't useful (minors, candidates). Kill
+  # switch: repo variable RELEASE_NOTES_SHADOW_DISABLED=true. Full rationale
+  # and the version-shape rules: GENERATOR.md.
+  release-notes-shadow:
+    needs: [release, github]
+    name: Release Notes (shadow run)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    continue-on-error: true
+    timeout-minutes: 60 # A minor walks thousands of commits; give it headroom.
+    if: ${{ always() && !cancelled() &&
+      needs.release.result == 'success' && needs.github.result == 'success' &&
+      vars.RELEASE_NOTES_SHADOW_DISABLED != 'true' &&
+      !inputs.dryRun && !inputs.releaseProcessDryRun && !contains(inputs.releaseVersion, 'dryrun') &&
+      !contains(inputs.releaseVersion, '-rc') && !endsWith(inputs.releaseVersion, '.0') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 0 # Tags and full history — the range walk needs both.
+          persist-credentials: false
+      - name: Generate Changelog (new generator, shadow run)
+        id: gen-changelog-shadow
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/generate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-version: ${{ inputs.releaseVersion }}
+          release-branch: ${{ env.RELEASE_BRANCH }}
+          allow-unattributed: 'true'
+          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
+          output-dir: release-notes-shadow
+      # Read-only comparison of the generator's label/comment plan with the
+      # version:<tag> labels zcl applied in the github job (#57714). Writes
+      # nothing to GitHub; the report lands in this job's summary.
+      - name: Compare label and comment plan with zcl (apply dry run)
+        id: apply-dry-run-shadow
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/apply
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          input-dir: release-notes-shadow
+          generate-outcome: ${{ steps.gen-changelog-shadow.outcome }}
+      - name: Upload apply divergence report
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: apply-divergence-${{ inputs.releaseVersion }}-${{ github.run_attempt }}
+          path: release-notes-shadow/apply-divergence.json
+          if-no-files-found: ignore
+          retention-days: 30
+      # continue-on-error above hides a timeout or crash from the job's own
+      # status; surface it here so a swallowed failure still shows up.
+      - name: Report shadow-run outcome
+        if: always()
+        env:
+          GENERATE_OUTCOME: ${{ steps.gen-changelog-shadow.outcome }}
+          APPLY_OUTCOME: ${{ steps.apply-dry-run-shadow.outcome }}
+          APPLY_COMPARED: ${{ steps.apply-dry-run-shadow.outputs.compared }}
+        run: |
+          echo "### Release Notes shadow run: ${GENERATE_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${APPLY_OUTCOME}" = "success" ] && [ "${APPLY_COMPARED}" = "true" ]; then
+            echo "### Release Notes apply dry run: compared" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${APPLY_OUTCOME}" = "success" ]; then
+            echo "### Release Notes apply dry run: no comparison (see its summary above)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run produced no comparison."
+          else
+            echo "### Release Notes apply dry run: ${APPLY_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run ${APPLY_OUTCOME}, so no label/comment comparison was produced."
+          fi
 
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
@@ -954,7 +837,7 @@ jobs:
   # - Uses RELEASE_TAG for versioning (prefixed with 'dryrun-' when releaseProcessDryRun=true)
   # The job generates changelog, checksums artifacts, and determines pre-release status
   github:
-    needs: [release, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
+    needs: [release, optimize-docker, camunda-docker]
     name: Github Release
     runs-on: ubuntu-latest
     outputs:
@@ -963,25 +846,31 @@ jobs:
     timeout-minutes: 30
     if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
-      needs.zeebe-docker.result == 'success' &&
-      needs.operate-docker.result == 'success' &&
-      needs.tasklist-docker.result == 'success' &&
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
+          persist-credentials: false
       - name: Install Zeebe changelog tool
-        run: |
-          gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
-          tar -xzvf zeebe-changelog_*
-          chmod +x zcl
+        # retry to tolerate transient GitHub API failures (e.g. TLS handshake timeouts)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          retry_on: any
+          timeout_minutes: 2
+          max_attempts: 3
+          retry_wait_seconds: 10
+          # --clobber so a partial download from a timed-out attempt does not block the retry
+          command: |
+            gh release download --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz' --clobber
+            tar -xzvf zeebe-changelog_*
+            chmod +x zcl
       - name: Identify previous release version
         id: prev_version
         if: ${{ !inputs.dryRun }}
-        uses: camunda/infra-global-github-actions/previous-version@main
+        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version-1.0.0
         with:
           version: "${{ inputs.releaseVersion }}"
           verbose: 'false'
@@ -1029,7 +918,7 @@ jobs:
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
       - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
@@ -1115,54 +1004,73 @@ jobs:
   fossa-release:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
+    needs: [release, github, optimize-docker, camunda-docker]
     if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
-      needs.zeebe-docker.result == 'success' &&
-      needs.operate-docker.result == 'success' &&
-      needs.tasklist-docker.result == 'success' &&
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
-      - name: Get FOSSA context
-        id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
-      - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@fc4fa13813cbc1835129967f10a12f24aa7a393c
-        with:
-          api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.fossa-context.outputs.head-ref }}
-          project-id: "custom+50756/camunda/camunda@single-app"
-          revision-id: ${{ steps.fossa-context.outputs.head-revision }}
-          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          persist-credentials: false
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@fc4fa13813cbc1835129967f10a12f24aa7a393c
+        uses: ./.github/actions/fossa-release-project
         with:
-          api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.fossa-context.outputs.head-ref }}
           project-id: "custom+50756/camunda/camunda@single-app"
           attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
           sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
           release-number: ${{ env.RELEASE_VERSION }}
-          revision-id: ${{ steps.fossa-context.outputs.head-revision }}
-          attribution-format: "TXT"
-          sbom-format: "CYCLONEDX_JSON"
+          revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Same as fossa-release, for the Optimize FOSSA project (separate scan from single-app).
+  # Flags impact:
+  # - includeOptimize=false: Skipped
+  # - With dryRun=true or releaseProcessDryRun=true: Runs in dry-run mode (no actual release creation)
+  fossa-release-optimize:
+    name: Create FOSSA releases and generate attribution/SBOM reports for Optimize
+    runs-on: ubuntu-latest
+    needs: [release, github, optimize-docker, camunda-docker]
+    if: ${{ always() && !cancelled() &&
+      inputs.includeOptimize &&
+      needs.release.result == 'success' &&
+      needs.github.result == 'success' &&
+      needs.optimize-docker.result == 'success' &&
+      needs.camunda-docker.result == 'success' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          persist-credentials: false
+      - name: Create FOSSA releases and generate reports
+        uses: ./.github/actions/fossa-release-project
+        with:
+          project-id: "custom+50756/camunda/camunda@optimize"
+          attribution-release-group-id: "11294" # https://app.fossa.com/projects/group/11294
+          sbom-release-group-id: "11295"        # https://app.fossa.com/projects/group/11295
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
+          fossa-api-key-vault-key: FOSSA_API_KEY_OPTIMIZE
+          release-number: ${{ env.RELEASE_VERSION }}
+          revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1183,26 +1091,26 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release, fossa-release-optimize]
     # Report release result to C8 always (including dry-runs)
     # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
-      needs.zeebe-docker.result == 'success' &&
-      needs.operate-docker.result == 'success' &&
-      needs.tasklist-docker.result == 'success' &&
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
-      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
+      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped') &&
+      (needs.fossa-release-optimize.result == 'success' || needs.fossa-release-optimize.result == 'skipped')
       ) }}
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # needed to fetch the release job's logs to extract the Maven Central deployment ID
+      contents: read  # needed to check out the extraction script
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -1212,7 +1120,28 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .github/actions/mask-camunda-client-config
+            .github/scripts/extract-maven-central-deployment-id.sh
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
+      - name: Extract Maven Central deployment ID
+        id: extract-deployment-id
+        # Never block notifications on extraction failure — the deployment ID is
+        # for downstream automation only; manual recovery is always possible.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+        run: .github/scripts/extract-maven-central-deployment-id.sh
       - name: Report release success to C8
+        if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -1224,11 +1153,15 @@ jobs:
             {
               "is_camunda_release_successful": "true",
               "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1248,7 +1181,7 @@ jobs:
 
       - name: Send success Slack notification with manual follow-up
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1276,26 +1209,26 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release, fossa-release-optimize]
     # Report release result to C8 always (including dry-runs)
     # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
         needs.release.result == 'failure' ||
         needs.github.result == 'failure' ||
-        needs.zeebe-docker.result == 'failure' ||
-        needs.operate-docker.result == 'failure' ||
-        needs.tasklist-docker.result == 'failure' ||
         needs.optimize-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
-        needs.fossa-release.result == 'failure'
+        needs.fossa-release.result == 'failure' ||
+        needs.fossa-release-optimize.result == 'failure'
         ) }}
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # needed to fetch the release job's logs to extract the Maven Central deployment ID
+      contents: read  # needed to check out the extraction script
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -1306,7 +1239,30 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
 
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .github/actions/mask-camunda-client-config
+            .github/scripts/extract-maven-central-deployment-id.sh
+
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
+
+      - name: Extract Maven Central deployment ID
+        id: extract-deployment-id
+        # Best-effort: the release job may have failed before publishing to Maven Central,
+        # in which case there will be no deployment ID to extract. Never block notifications.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+        run: .github/scripts/extract-maven-central-deployment-id.sh
       - name: Report release failure to C8
+        if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -1318,11 +1274,15 @@ jobs:
             {
               "is_camunda_release_successful": "false",
               "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1346,5 +1306,4 @@ jobs:
                 }
               ]
             }
-
 

@@ -7,14 +7,12 @@
  */
 
 import { FC } from "react";
-import { searchUser } from "src/utility/api/users";
-import { searchGroups } from "src/utility/api/groups";
-import { searchMappingRule } from "src/utility/api/mapping-rules";
-import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
-import OwnerSelection from "./OwnerSelection";
 import TextField from "src/components/form/TextField";
-import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
+import { UserSingleSelect } from "src/components/form/entitySelection/UserSelection";
+import { GroupSingleSelect } from "src/components/form/entitySelection/GroupSelection";
+import { RoleSingleSelect } from "src/components/form/entitySelection/RoleSelection";
+import { MappingRuleSingleSelect } from "src/components/form/entitySelection/MappingRuleSelection";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
@@ -27,6 +25,8 @@ type SelectionProps = {
   onBlur: () => void;
   isEmpty?: boolean;
   isInvalidId?: boolean;
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
 };
 
 const Selection: FC<SelectionProps> = ({
@@ -36,8 +36,16 @@ const Selection: FC<SelectionProps> = ({
   onBlur,
   isEmpty = false,
   isInvalidId = false,
+  isOIDC,
+  isCamundaGroupsEnabled,
 }) => {
   const { t, Translate } = useTranslate("authorizations");
+
+  const labels = {
+    label: t("owner"),
+    placeholder: t("searchByOwnerId"),
+    requiredText: t("ownerRequired"),
+  };
 
   switch (type) {
     case "USER":
@@ -77,28 +85,26 @@ const Selection: FC<SelectionProps> = ({
         );
       }
       return (
-        <OwnerSelection
-          id="userSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchUser}
-          getId={(user) => user.username}
-          itemToString={(user) => user.name || user.username}
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <UserSingleSelect
+            {...labels}
+            onChange={onChange}
+            value={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "GROUP":
       if (isCamundaGroupsEnabled) {
         return (
-          <OwnerSelection
-            id="groupSelection"
-            onChange={onChange}
-            onBlur={onBlur}
-            searchFn={searchGroups}
-            getId={(group) => group.groupId}
-            itemToString={(group) => group.name || group.groupId}
-            isEmpty={isEmpty}
-          />
+          <div onBlur={onBlur}>
+            <GroupSingleSelect
+              {...labels}
+              onChange={onChange}
+              value={ownerId}
+              isEmpty={isEmpty}
+            />
+          </div>
         );
       }
       return (
@@ -122,29 +128,25 @@ const Selection: FC<SelectionProps> = ({
       );
     case "MAPPING_RULE":
       return (
-        <OwnerSelection
-          id="mappingRuleSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchMappingRule}
-          getId={(mappingRule) => mappingRule.mappingRuleId}
-          itemToString={(mappingRule) =>
-            mappingRule.name || mappingRule.mappingRuleId
-          }
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <MappingRuleSingleSelect
+            {...labels}
+            onChange={onChange}
+            value={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "ROLE":
       return (
-        <OwnerSelection
-          id="roleSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchRoles}
-          getId={(role) => role.roleId}
-          itemToString={(role) => role.name || role.roleId}
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <RoleSingleSelect
+            {...labels}
+            onChange={onChange}
+            value={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "CLIENT":
       return (

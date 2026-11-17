@@ -19,12 +19,16 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAI
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.JobEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -36,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
+public class JobHandler implements OrdinalIndexExportHandler<JobEntity, JobRecordValue> {
   protected static final Set<JobIntent> JOB_EVENTS =
       Set.of(
           JobIntent.CREATED,
@@ -46,9 +50,13 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
           JobIntent.RETRIES_UPDATED,
           JobIntent.CANCELED,
           JobIntent.ERROR_THROWN,
-          JobIntent.MIGRATED);
+          JobIntent.MIGRATED,
+          JobIntent.PRIORITY_UPDATED,
+          JobIntent.TIMEOUT_UPDATED);
   private static final Set<JobIntent> FAILED_JOB_EVENTS =
       Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
+  private static final Set<JobIntent> INTENTS_RETAINING_ELEMENT_ID =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN, JobIntent.RETRIES_UPDATED);
 
   protected final String indexName;
 
@@ -100,14 +108,27 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setWorker(recordValue.getWorker())
         .setState(record.getIntent().name())
         .setRetries(recordValue.getRetries())
+        .setPriority(recordValue.getPriority())
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
         .setCustomHeaders(recordValue.getCustomHeaders())
         .setJobKind(recordValue.getJobKind().name())
-        .setFlowNodeId(recordValue.getElementId());
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
+
+    // Skip setting flowNodeId for intents that may contain NO_CATCH_EVENT_FOUND sentinel
+    // to preserve the existing value in ES (partial update pattern)
+    if (!INTENTS_RETAINING_ELEMENT_ID.contains(record.getIntent())) {
+      entity.setFlowNodeId(recordValue.getElementId());
+    }
 
     if (record.getIntent().equals(JobIntent.CREATED)) {
       entity.setCreationTime(recordTimestampAsOffsetDateTime);
+      entity.setFlowNodeType(recordValue.getElementType().name());
+      // businessId is immutable and inherited at creation; never updated by later events
+      final String businessId = recordValue.getBusinessId();
+      if (!ExporterUtil.isEmpty(businessId)) {
+        entity.setBusinessId(businessId);
+      }
     }
     entity.setLastUpdateTime(recordTimestampAsOffsetDateTime);
 
@@ -131,8 +152,6 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     }
 
     if (FAILED_JOB_EVENTS.contains(record.getIntent())) {
-      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
-      entity.setFlowNodeId(null);
       if (recordValue.getRetries() > 0) {
         entity.setJobFailedWithRetriesLeft(true);
       } else {
@@ -146,7 +165,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
   }
 
   @Override
-  public void flush(final JobEntity jobEntity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final JobEntity jobEntity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     if (jobEntity.getFlowNodeId() != null) {
       updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
@@ -160,6 +180,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
     updateFields.put(RETRIES, jobEntity.getRetries());
+    updateFields.put(PRIORITY, jobEntity.getPriority());
     updateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     updateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     updateFields.put(TIME, jobEntity.getEndTime());
@@ -171,7 +192,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     if (FAILED_JOB_EVENTS.stream().anyMatch(i -> jobEntity.getState().equals(i.name()))) {
       updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
     }
-    batchRequest.upsert(indexName, jobEntity.getId(), jobEntity, updateFields);
+    batchRequest.upsert(index, jobEntity.getId(), jobEntity, updateFields);
   }
 
   @Override

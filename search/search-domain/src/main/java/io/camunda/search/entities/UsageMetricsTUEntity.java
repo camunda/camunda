@@ -8,6 +8,14 @@
 package io.camunda.search.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public record UsageMetricsTUEntity(
-    String id, String tenantId, OffsetDateTime eventTime, long assigneeHash) {}
+    String id, String tenantId, OffsetDateTime eventTime, long assigneeHash) {
+
+  public UsageMetricsTUEntity {
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(eventTime, "eventTime");
+  }
+}

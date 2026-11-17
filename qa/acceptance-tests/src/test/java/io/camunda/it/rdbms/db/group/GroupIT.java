@@ -214,7 +214,7 @@ public class GroupIT {
     final var searchResult =
         groupReader.search(
             new GroupQuery(
-                new GroupFilter.Builder().groupKey(group.groupKey()).name(group.name()).build(),
+                new GroupFilter.Builder().name(group.name()).build(),
                 GroupSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 

@@ -7,15 +7,15 @@
  */
 package io.camunda.it.logout;
 
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.CsrfConfiguration;
+import io.camunda.security.api.model.config.CsrfConfiguration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

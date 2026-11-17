@@ -4,7 +4,7 @@ name: Setup AWS OpenSearch env
 # owner: @camunda/data-layer
 
 description: |
-  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected 
+  Imports OpenSearch endpoints from Vault, resolves OS URL for a selected
   version, and configures AWS credentials.
 
 inputs:
@@ -18,7 +18,7 @@ inputs:
     description: Vault Secret ID to use
     required: true
   opensearch-version:
-    description: OpenSearch version to configure (2.19 or 3.3)
+    description: OpenSearch version to configure (2.19 or 3.7)
     required: true
 
 outputs:
@@ -31,7 +31,7 @@ runs:
   steps:
     - name: Import secrets from Vault
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ inputs.vault-address }}
         method: approle
@@ -39,7 +39,7 @@ runs:
         secretId: ${{ inputs.vault-secret-id }}
         secrets: |
           secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
-          secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_3_URL;
+          secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_7_URL;
 
     - name: Resolve OpenSearch URL and export env
       id: resolve-os-url
@@ -57,12 +57,12 @@ runs:
         then
           echo "Using OS 2.19"
           OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }}"
-        elif [[ "${{ inputs.opensearch-version }}" = "3.3" ]]
+        elif [[ "${{ inputs.opensearch-version }}" = "3.7" ]]
         then
-          echo "Using OS 3.3"
-          OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }}"
+          echo "Using OS 3.7"
+          OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_7_URL }}"
         else
-          echo "Unsupported OpenSearch version"
+          echo "Unsupported OpenSearch version: '${{ inputs.opensearch-version }}'. Supported versions: 2.19, 3.7."
           exit 1
         fi
 
@@ -70,8 +70,12 @@ runs:
         echo "opensearch-url=$OS_URL" >> "$GITHUB_OUTPUT"
 
     - name: Pre-login to AWS
-      uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
       with:
         aws-region: ${{ env.AWS_REGION }}
         web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
         role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        # AWS OpenSearch tests take longer because we opted out of parallelizing them to avoid
+        # overloading the underlying infrastructure. Keep this credential live longer to avoid
+        # token expiry errors (set TTL to 6 hours).
+        role-duration-seconds: 21600

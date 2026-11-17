@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignGroupMappingRule } from "src/utility/api/groups";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveGroupMappingRuleModalProps = UseEntityModalCustomProps<
@@ -34,24 +34,25 @@ const DeleteModal: FC<RemoveGroupMappingRuleModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMappingRule, { loading }] = useApiCall(
-    unassignGroupMappingRule,
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    groupMutations.unassignMappingRule(qc),
   );
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (groupId && mappingRule) {
-      const { success } = await callUnassignMappingRule({
-        groupId,
-        mappingRuleId: mappingRule.mappingRuleId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("groupMappingRuleRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { groupId, mappingRuleId: mappingRule.mappingRuleId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("groupMappingRuleRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

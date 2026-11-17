@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util;
 
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -34,7 +35,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -153,6 +153,22 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
         partitionId, factory, streamProcessorListenerOpt, processorConfiguration, awaitOpening);
   }
 
+  public StreamProcessor startTypedStreamProcessor(
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening,
+      final EngineSecurityConfig securityConfig) {
+    return streamProcessingComposite.startTypedStreamProcessor(
+        partitionId,
+        factory,
+        streamProcessorListenerOpt,
+        processorConfiguration,
+        awaitOpening,
+        securityConfig);
+  }
+
   public void pauseProcessing(final int partitionId) {
     streamProcessingComposite.pauseProcessing(partitionId);
   }
@@ -193,12 +209,12 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return clock;
   }
 
-  public MutableProcessingState getProcessingState() {
+  /**
+   * Only for reads that do not go through the stream processor's transaction, as that is not safe
+   * from another thread. Tests read through the {@link EngineRule} methods built on it.
+   */
+  MutableProcessingState getProcessingState() {
     return streamProcessingComposite.getProcessingState();
-  }
-
-  public MutableProcessingState getProcessingState(final int partitionId) {
-    return streamProcessingComposite.getProcessingState(getLogName(partitionId));
   }
 
   public StreamProcessorMode getStreamProcessorMode() {
@@ -219,6 +235,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   public long writeBatch(final RecordToWrite... recordToWrites) {
     return streamProcessingComposite.writeBatch(recordToWrites);
+  }
+
+  public long writeBatch(final int partitionId, final RecordToWrite... recordToWrites) {
+    return streamProcessingComposite.writeBatch(partitionId, recordToWrites);
   }
 
   @Override
@@ -310,6 +330,18 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   @Override
   public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final AuthInfo authorizations,
+      final UnifiedRecordValue recordValue) {
+    return streamProcessingComposite.writeCommand(
+        key, requestStreamId, requestId, intent, authorizations, recordValue);
+  }
+
+  @Override
+  public long writeCommand(
       final int requestStreamId,
       final long requestId,
       final Intent intent,
@@ -391,7 +423,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   public void snapshot() {
-    final var partitionId = startPartitionId;
+    snapshot(startPartitionId);
+  }
+
+  public void snapshot(final int partitionId) {
     streamProcessingComposite.snapshot(partitionId);
   }
 
@@ -459,13 +494,6 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       try {
         LOG.debug("Clean up test files on path {}", root);
         FileUtil.deleteFolder(root.toPath());
-
-        final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
-        if (allocatedMemoryInKb > 0) {
-          LOG.warn(
-              "There are still allocated direct buffers of a total size of {}kB.",
-              allocatedMemoryInKb);
-        }
       } catch (final IOException e) {
         LOG.error("Error on deleting root test folder", e);
       }

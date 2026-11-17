@@ -38,11 +38,13 @@ public class JobWorkerValue {
   private SourceAware<Boolean> forceFetchAllVariables = new Empty<>();
   private SourceAware<Boolean> streamEnabled = new Empty<>();
   private SourceAware<Duration> streamTimeout = new Empty<>();
+  private SourceAware<Duration> streamInactivityTimeout = new Empty<>();
   private SourceAware<Integer> maxRetries = new Empty<>();
   private SourceAware<Duration> retryBackoff = new Empty<>();
   private SourceAware<TenantFilter> tenantFilter = new Empty<>();
-  // cannot be changed from change set
+  // autoComplete and withLease cannot be changed from change set
   private SourceAware<Boolean> autoComplete = new Empty<>();
+  private SourceAware<Boolean> withLease = new Empty<>();
 
   @Deprecated(forRemoval = true)
   @JsonIgnore
@@ -64,9 +66,11 @@ public class JobWorkerValue {
       final SourceAware<Boolean> forceFetchAllVariables,
       final SourceAware<Boolean> streamEnabled,
       final SourceAware<Duration> streamTimeout,
+      final SourceAware<Duration> streamInactivityTimeout,
       final SourceAware<Integer> maxRetries,
       final SourceAware<Duration> retryBackoff,
-      final SourceAware<TenantFilter> tenantFilter) {
+      final SourceAware<TenantFilter> tenantFilter,
+      final SourceAware<Boolean> withLease) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -80,9 +84,11 @@ public class JobWorkerValue {
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
+    this.streamInactivityTimeout = streamInactivityTimeout;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
     this.tenantFilter = tenantFilter;
+    this.withLease = withLease;
   }
 
   public SourceAware<String> getType() {
@@ -181,6 +187,14 @@ public class JobWorkerValue {
     this.streamTimeout = streamTimeout;
   }
 
+  public SourceAware<Duration> getStreamInactivityTimeout() {
+    return streamInactivityTimeout;
+  }
+
+  public void setStreamInactivityTimeout(final SourceAware<Duration> streamInactivityTimeout) {
+    this.streamInactivityTimeout = streamInactivityTimeout;
+  }
+
   public SourceAware<Integer> getMaxRetries() {
     return maxRetries;
   }
@@ -195,6 +209,14 @@ public class JobWorkerValue {
 
   public void setAutoComplete(final SourceAware<Boolean> autoComplete) {
     this.autoComplete = autoComplete;
+  }
+
+  public SourceAware<Boolean> getWithLease() {
+    return withLease;
+  }
+
+  public void setWithLease(final SourceAware<Boolean> withLease) {
+    this.withLease = withLease;
   }
 
   public SourceAware<Duration> getRetryBackoff() {
@@ -238,10 +260,12 @@ public class JobWorkerValue {
         forceFetchAllVariables,
         streamEnabled,
         streamTimeout,
+        streamInactivityTimeout,
         maxRetries,
         retryBackoff,
         tenantFilter,
-        autoComplete);
+        autoComplete,
+        withLease);
   }
 
   @Override
@@ -262,10 +286,12 @@ public class JobWorkerValue {
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
         && Objects.equals(streamTimeout, that.streamTimeout)
+        && Objects.equals(streamInactivityTimeout, that.streamInactivityTimeout)
         && Objects.equals(maxRetries, that.maxRetries)
         && Objects.equals(retryBackoff, that.retryBackoff)
         && Objects.equals(tenantFilter, that.tenantFilter)
-        && Objects.equals(autoComplete, that.autoComplete);
+        && Objects.equals(autoComplete, that.autoComplete)
+        && Objects.equals(withLease, that.withLease);
   }
 
   @Override
@@ -273,12 +299,16 @@ public class JobWorkerValue {
     return "JobWorkerValue{"
         + "autoComplete="
         + autoComplete
+        + ", withLease="
+        + withLease
         + ", tenantFilter="
         + tenantFilter
         + ", retryBackoff="
         + retryBackoff
         + ", maxRetries="
         + maxRetries
+        + ", streamInactivityTimeout="
+        + streamInactivityTimeout
         + ", streamTimeout="
         + streamTimeout
         + ", streamEnabled="

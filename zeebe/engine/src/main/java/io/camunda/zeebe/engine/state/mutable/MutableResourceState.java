@@ -80,4 +80,6 @@ public interface MutableResourceState extends ResourceState {
    * @param record the record of the resource that is deleted
    */
   void deleteResourceInResourceKeyByResourceIdAndVersionTagColumnFamily(ResourceRecord record);
+
+  void markRpaReexportMigrationAsRan();
 }

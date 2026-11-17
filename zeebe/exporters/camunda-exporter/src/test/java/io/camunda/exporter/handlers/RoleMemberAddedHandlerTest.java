@@ -13,12 +13,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
@@ -62,7 +64,9 @@ public class RoleMemberAddedHandlerTest {
     assertThat(idList)
         .containsExactly(
             RoleIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getRoleId(), value.getEntityId(), value.getEntityType()));
+                value.getRoleId(),
+                value.getEntityId(),
+                AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Test
@@ -81,13 +85,14 @@ public class RoleMemberAddedHandlerTest {
     final var joinRelation = RoleIndex.JOIN_RELATION_FACTORY.createChild("111");
     final var inputEntity =
         new RoleMemberEntity().setId("111").setMemberId("member-id-2").setJoin(joinRelation);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
-        .addWithRouting(indexName, inputEntity, String.valueOf(joinRelation.parent()));
+        .addWithRouting(index, inputEntity, String.valueOf(joinRelation.parent()));
   }
 }

@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
@@ -115,6 +116,12 @@ public final class BatchOperationClient {
     public BatchOperationCreationClient withModificationPlan(
         final BatchOperationProcessInstanceModificationPlan modificationPlan) {
       batchOperationCreationRecord.setModificationPlan(modificationPlan);
+      return this;
+    }
+
+    public BatchOperationCreationClient withJobUpdatePlan(
+        final BatchOperationJobUpdatePlan jobUpdatePlan) {
+      batchOperationCreationRecord.setJobUpdatePlan(jobUpdatePlan);
       return this;
     }
 

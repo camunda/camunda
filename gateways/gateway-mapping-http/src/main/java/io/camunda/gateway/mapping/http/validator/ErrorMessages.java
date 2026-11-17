@@ -32,6 +32,8 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_MISSING_TENANT =
       "Expected to handle request %s with multi-tenancy enabled, but no tenant identifier was provided";
   public static final String ERROR_MESSAGE_ONLY_ONE_FIELD = "Only one of %s is allowed";
+  public static final String ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID =
+      "processDefinitionVersionTag can only be set when using processDefinitionId";
   public static final String ERROR_MESSAGE_INVALID_EMAIL = "The provided email '%s' is not valid";
   public static final String ERROR_MESSAGE_ALL_REQUIRED_FIELD = "All %s are required";
   public static final String ERROR_MESSAGE_TOO_MANY_CHARACTERS =
@@ -42,6 +44,8 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_NULL_VARIABLE_VALUE = "Variable value must not be null";
   public static final String ERROR_MESSAGE_INVALID_KEY_FORMAT =
       "The provided %s '%s' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?";
+  public static final String ERROR_MESSAGE_INVALID_DECISION_EVALUATION_INSTANCE_KEY_FORMAT =
+      "The provided %s '%s' is not a valid decision evaluation instance key. Expected a value matching the pattern '%s' (e.g. '2251799813684367-1').";
   public static final String ERROR_MESSAGE_INVALID_TAG_FORMAT =
       "The provided tag '%s' is not valid. %s";
   public static final String ERROR_MESSAGE_INVALID_TAGS_COUNT =
@@ -50,4 +54,20 @@ public final class ErrorMessages {
       "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field '%s' is not supported.";
   public static final String ERROR_MESSAGE_UNSUPPORTED_SORT_FIELD_WITH_IS_LATEST_VERSION =
       "When using isLatestVersion filter, sorting is limited to 'processDefinitionId' and 'tenantId' fields only. The field '%s' is not supported.";
+  public static final String ERROR_MESSAGE_INVALID_METADATA_VALUE_TYPE =
+      "The metadata value for key '%s' is of type '%s' but must be a string or a number";
+  public static final String ERROR_MESSAGE_NULL_METADATA_KEY =
+      "The provided metadata must not contain a null key";
+  public static final String ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES =
+      "The provided metadata has %d entries but must not exceed %d entries";
+  public static final String ERROR_MESSAGE_METADATA_TOO_LARGE =
+      "The provided metadata exceeds the maximum serialized size of %d bytes";
+  public static final String ERROR_MESSAGE_HISTORY_MISSING_CONFIGURATION_ATTRIBUTE =
+      "No CONFIGURATION history item sets '%s'; add a CONFIGURATION history item that sets it";
+  public static final String ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID =
+      "The provided resourceId '%s' cannot match any secret reference. It must be '*' or the full "
+          + "reference in the form 'camunda.secrets.<name>', where <name> matches the pattern '%s'";
+  public static final String ERROR_MESSAGE_INVALID_PROBE_RESOURCE_ID =
+      "The provided resourceId '%s' is not a valid probe ID. It must be '*' or 1 to 256 "
+          + "characters without whitespace";
 }

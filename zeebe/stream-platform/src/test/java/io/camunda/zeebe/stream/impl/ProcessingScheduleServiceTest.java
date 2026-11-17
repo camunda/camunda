@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -24,8 +25,9 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.RegeneratingTask;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -50,7 +52,10 @@ import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ProcessingScheduleServiceTest {
 
@@ -60,12 +65,13 @@ class ProcessingScheduleServiceTest {
   private final TestCommandCache commandCache = new TestCommandCache();
   private LifecycleSupplier lifecycleSupplier;
   private final TestWriter testWriter = new TestWriter();
+  private ProcessingScheduleServiceImpl processingScheduleService;
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
   void before() {
     lifecycleSupplier = new LifecycleSupplier();
-    final var processingScheduleService =
+    processingScheduleService =
         new ProcessingScheduleServiceImpl(
             lifecycleSupplier,
             lifecycleSupplier,
@@ -297,6 +303,118 @@ class ProcessingScheduleServiceTest {
   }
 
   @Test
+  @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+  void shouldRunSelfReschedulingRegeneratingTaskOncePerPeriodWhenRateLimited() {
+    // given a task that schedules its next execution itself, while the write stays rate limited
+    testWriter.acceptWrites.set(() -> false);
+    final var executions = new AtomicInteger(0);
+    final var task =
+        new RegeneratingTask() {
+          @Override
+          public TaskResult execute(final TaskResultBuilder builder) {
+            // unique key, as the test cache shares one staged cache between results
+            builder.appendCommandRecord(
+                executions.incrementAndGet(), ACTIVATE_ELEMENT, Records.processInstance(1));
+            processingScheduleService.runDelayed(Duration.ofSeconds(1), this);
+            return builder.build();
+          }
+
+          @Override
+          public void onResultAbandoned() {}
+        };
+
+    // when
+    scheduleService.runDelayed(Duration.ofSeconds(1), task);
+    actorScheduler.workUntilDone();
+    for (int period = 0; period < 5; period++) {
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+    }
+
+    // then
+    assertThat(executions)
+        .describedAs("abandoning a result does not schedule a second execution")
+        .hasValue(5);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = LogStreamWriter.WriteFailure.class,
+      names = {"WRITE_LIMIT_EXHAUSTED", "REQUEST_LIMIT_EXHAUSTED"})
+  void shouldKeepRetryingPlainTaskInPlaceWhenRateLimited(
+      final LogStreamWriter.WriteFailure rateLimited) {
+    // given a rate limit that is lifted after more attempts than a regenerating task gets
+    final var attempts = new AtomicInteger(0);
+    final var executions = new AtomicInteger(0);
+    testWriter.failure = rateLimited;
+    testWriter.acceptWrites.set(() -> attempts.incrementAndGet() > 5);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        builder -> {
+          executions.incrementAndGet();
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(executions).describedAs("the task is not run again").hasValue(1);
+    assertThat(attempts).describedAs("the same result is retried until accepted").hasValue(6);
+    assertThat(testWriter.entries).hasSize(1);
+  }
+
+  @Test
+  void shouldScheduleRunnableOnFixedRate() {
+    // given
+    final var mockedTask = mock(Runnable.class);
+
+    // when
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 5; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+    }
+
+    // then
+    verify(mockedTask, times(5)).run();
+  }
+
+  @Test
+  void shouldNotExecuteFixedRateRunnableIfAborted() {
+    // given
+    lifecycleSupplier.isAborted = true;
+    final var mockedTask = mock(Runnable.class);
+
+    // when
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(mockedTask, never()).run();
+  }
+
+  @Test
+  void shouldNotExecuteFixedRateRunnableIfNotInProcessingPhase() {
+    // given
+    lifecycleSupplier.currentPhase = Phase.PAUSED;
+    final var mockedTask = mock(Runnable.class);
+
+    // when
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(mockedTask, never()).run();
+  }
+
+  @Test
   void shouldNotRunScheduledTasksAfterClosed() {
     // given
     final var mockedTask = spy(new DummyTask());
@@ -371,6 +489,78 @@ class ProcessingScheduleServiceTest {
     assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isFalse();
     assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = LogStreamWriter.WriteFailure.class,
+      names = {"WRITE_LIMIT_EXHAUSTED", "REQUEST_LIMIT_EXHAUSTED"})
+  void shouldAbandonResultOfRegeneratingTaskWhenRateLimitStaysExhausted(
+      final LogStreamWriter.WriteFailure rateLimited) {
+    // given
+    final var attempts = new AtomicInteger(0);
+    final var executions = new AtomicInteger(0);
+    testWriter.failure = rateLimited;
+    testWriter.acceptWrites.set(() -> attempts.incrementAndGet() > 1);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        new RegeneratingTask() {
+          @Override
+          public TaskResult execute(final TaskResultBuilder builder) {
+            executions.incrementAndGet();
+            builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+            return builder.build();
+          }
+
+          @Override
+          public void onResultAbandoned() {
+            processingScheduleService.runDelayed(Duration.ofSeconds(1), this);
+          }
+        });
+    actorScheduler.workUntilDone();
+
+    // then - the first attempt fails, and the result is abandoned: nothing is written
+    assertThat(attempts).hasValue(1);
+    assertThat(executions).hasValue(1);
+    assertThat(testWriter.entries).isEmpty();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1))
+        .describedAs("the result is removed from the scheduled command cache")
+        .isFalse();
+
+    // when the task runs again, because it rescheduled itself when its result was abandoned
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(executions).hasValue(2);
+    assertThat(testWriter.entries).hasSize(1);
+  }
+
+  @Test
+  void shouldNotCacheWrittenCommandsIfWriteIsAborted() {
+    // given - the write keeps failing and the stream processor closes during the retry
+    testWriter.acceptWrites.set(
+        () -> {
+          lifecycleSupplier.isAborted = true;
+          return false;
+        });
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - write was staged for caching, but rolled back since it was never written
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isFalse();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
+    assertThat(testWriter.entries).isEmpty();
   }
 
   @Test
@@ -483,8 +673,7 @@ class ProcessingScheduleServiceTest {
    * <p>Note: This is an actor scheduler limitation, since the used way how we schedule timers are
    * not thread safe, so this need to happen on the same thread, meaning on the same actor.
    */
-  private static final class TestScheduleServiceActorDecorator extends Actor
-      implements SimpleProcessingScheduleService {
+  private static final class TestScheduleServiceActorDecorator extends Actor {
     private final ProcessingScheduleServiceImpl processingScheduleService;
 
     public TestScheduleServiceActorDecorator(
@@ -504,7 +693,6 @@ class ProcessingScheduleServiceTest {
           });
     }
 
-    @Override
     public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runDelayed(delay, task));
@@ -520,7 +708,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runDelayed(final Duration delay, final Task task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runDelayed(delay, task));
@@ -536,7 +723,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runAt(final long timestamp, final Task task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
@@ -552,7 +738,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runAt(final long timestamp, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
@@ -568,7 +753,12 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
+    // Not named runAtFixedRate: that signature is taken by Actor (ConcurrencyControl) and returns a
+    // timer.
+    public void runRunnableAtFixedRate(final Duration delay, final Runnable task) {
+      actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
+    }
+
     public void runAtFixedRate(final Duration delay, final Task task) {
       actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }
@@ -600,6 +790,7 @@ class ProcessingScheduleServiceTest {
   private static final class TestWriter implements LogStreamWriter {
     private final List<LogAppendEntry> entries = new CopyOnWriteArrayList<>();
     private final AtomicReference<BooleanSupplier> acceptWrites = new AtomicReference<>(() -> true);
+    private volatile WriteFailure failure = WriteFailure.WRITE_LIMIT_EXHAUSTED;
 
     @Override
     public boolean canWriteEvents(final int eventCount, final int batchSize) {
@@ -612,7 +803,7 @@ class ProcessingScheduleServiceTest {
         final List<LogAppendEntry> appendEntries,
         final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
+        return Either.left(failure);
       }
 
       entries.addAll(appendEntries);
@@ -670,6 +861,31 @@ class ProcessingScheduleServiceTest {
       inOrder.verify(mockedTask2).execute(any());
       inOrder.verify(mockedTask).execute(any());
       inOrder.verifyNoMoreInteractions();
+    }
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/13880")
+    void shouldExecuteScheduledTaskFarInTheFuture() {
+      // given
+      // about 317 years, which overflows a long of nanoseconds (about 292 years)
+      final var delay = Duration.ofSeconds(9_999_999_990L);
+      final var mockedTask = spy(new DummyTask());
+      scheduleService.runAt(100 + delay.toMillis(), mockedTask);
+      actorScheduler.workUntilDone();
+
+      // when
+      // the service checks for due tasks every second, so step by that interval
+      actorScheduler.updateClock(delay.minusSeconds(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+
+      // when
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask).execute(any());
     }
 
     @Test

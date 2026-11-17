@@ -58,6 +58,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue VARIABLES_VALUE = new StringValue(VARIABLES);
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_VALUE =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_VALUE = new StringValue("storageOrdinal");
 
   /**
    * Defines the mapping between names of attributes that may be modified (updated or corrected) and
@@ -111,6 +112,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_VALUE, -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_VALUE, 0);
+  private final StringProperty businessIdProp = new StringProperty("businessId", EMPTY_STRING);
 
   /**
    * Tracks the names of user task attributes that are intended to be modified (e.g. on `UPDATE`),
@@ -155,7 +158,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
 
   public UserTaskRecord() {
-    super(25);
+    super(27);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -180,7 +183,9 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(deniedReasonProp)
         .declareProperty(tagsProp)
         .declareProperty(listenersConfigKeyProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalProp)
+        .declareProperty(businessIdProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -210,6 +215,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setTags(record.getTags());
     listenersConfigKeyProp.setValue(record.getListenersConfigKey());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
+    businessIdProp.setValue(record.getBusinessIdBuffer());
   }
 
   /**
@@ -461,6 +468,26 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public UserTaskRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
     rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public UserTaskRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public UserTaskRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
   }
 
   public UserTaskRecord setProcessDefinitionVersion(final int version) {
@@ -788,6 +815,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord resetChangedAttributes() {
     changedAttributesProp.reset();
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public UserTaskRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

@@ -15,13 +15,22 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.intent.CaseIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterBehaviorIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -32,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
@@ -50,11 +60,19 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -64,8 +82,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -73,11 +93,16 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -86,7 +111,10 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue
 import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterBehaviorRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -95,6 +123,7 @@ import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -111,11 +140,18 @@ import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -125,12 +161,14 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -138,14 +176,15 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessDefinitionRestoreRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -223,9 +262,26 @@ public final class ValueTypeMapping {
             MessageStartEventSubscriptionRecordValue.class,
             MessageStartEventSubscriptionIntent.class));
     mapping.put(
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        new Mapping<>(
+            MessageStartProcessInstanceRequestRecordValue.class,
+            MessageStartProcessInstanceRequestIntent.class));
+    mapping.put(
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        new Mapping<>(
+            MessageStartCorrelationKeyLockReleaseRecordValue.class,
+            MessageStartCorrelationKeyLockReleaseIntent.class));
+    mapping.put(
         ValueType.MESSAGE_SUBSCRIPTION,
         new Mapping<>(MessageSubscriptionRecordValue.class, MessageSubscriptionIntent.class));
+    mapping.put(ValueType.PROBE, new Mapping<>(ProbeRecordValue.class, ProbeIntent.class));
+    mapping.put(
+        ValueType.PROBE_BATCH, new Mapping<>(ProbeBatchRecordValue.class, ProbeBatchIntent.class));
     mapping.put(ValueType.PROCESS, new Mapping<>(Process.class, ProcessIntent.class));
+    mapping.put(
+        ValueType.PROCESS_DEFINITION_RESTORE,
+        new Mapping<>(
+            ProcessDefinitionRestoreRecordValue.class, ProcessDefinitionRestoreIntent.class));
     mapping.put(
         ValueType.PROCESS_EVENT,
         new Mapping<>(ProcessEventRecordValue.class, ProcessEventIntent.class));
@@ -264,11 +320,24 @@ public final class ValueTypeMapping {
         ValueType.RESOURCE_DELETION,
         new Mapping<>(ResourceDeletionRecordValue.class, ResourceDeletionIntent.class));
     mapping.put(
+        ValueType.RESOURCE_REEXPORT,
+        new Mapping<>(ResourceReexportRecordValue.class, ResourceReexportIntent.class));
+    mapping.put(
         ValueType.COMMAND_DISTRIBUTION,
         new Mapping<>(CommandDistributionRecordValue.class, CommandDistributionIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_BATCH,
         new Mapping<>(ProcessInstanceBatchRecordValue.class, ProcessInstanceBatchIntent.class));
+    mapping.put(
+        ValueType.ELEMENT_INSTANCE_WALK,
+        new Mapping<>(ElementInstanceWalkRecordValue.class, ElementInstanceWalkIntent.class));
+    mapping.put(
+        ValueType.POLICY_UPDATE,
+        new Mapping<>(PolicyUpdateRecordValue.class, PolicyUpdateIntent.class));
+    mapping.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        new Mapping<>(
+            ProcessDefinitionSuspensionRecordValue.class, ProcessDefinitionSuspensionIntent.class));
     mapping.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         new Mapping<>(
@@ -277,6 +346,10 @@ public final class ValueTypeMapping {
     mapping.put(ValueType.RESOURCE, new Mapping<>(Resource.class, ResourceIntent.class));
     mapping.put(
         ValueType.USER_TASK, new Mapping<>(UserTaskRecordValue.class, UserTaskIntent.class));
+    mapping.put(
+        ValueType.USER_TASK_LOOKUP,
+        new Mapping<>(UserTaskLookupRecordValue.class, UserTaskLookupIntent.class));
+    mapping.put(ValueType.CASE, new Mapping<>(CaseRecordValue.class, CaseIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         new Mapping<>(
@@ -360,6 +433,31 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.GLOBAL_LISTENER,
         new Mapping<>(GlobalListenerRecordValue.class, GlobalListenerIntent.class));
+    mapping.put(
+        ValueType.AGENT_INSTANCE,
+        new Mapping<>(AgentInstanceRecordValue.class, AgentInstanceIntent.class));
+    mapping.put(
+        ValueType.AGENT_HISTORY,
+        new Mapping<>(AgentHistoryRecordValue.class, AgentHistoryIntent.class));
+    mapping.put(
+        ValueType.AGENT_DEFINITION,
+        new Mapping<>(AgentDefinitionRecordValue.class, AgentDefinitionIntent.class));
+    mapping.put(
+        ValueType.AGENT_HISTORY_BATCH,
+        new Mapping<>(AgentHistoryBatchRecordValue.class, AgentHistoryBatchIntent.class));
+    mapping.put(
+        ValueType.SECRET_REFERENCE,
+        new Mapping<>(SecretReferenceRecordValue.class, SecretReferenceIntent.class));
+    mapping.put(
+        ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+        new Mapping<>(
+            ProcessInstanceBusinessIdRecordValue.class, ProcessInstanceBusinessIdIntent.class));
+    mapping.put(
+        ValueType.BUFFERED_COMMAND,
+        new Mapping<>(BufferedCommandRecordValue.class, BufferedCommandIntent.class));
+    mapping.put(
+        ValueType.CLUSTER_BEHAVIOR,
+        new Mapping<>(ClusterBehaviorRecordValue.class, ClusterBehaviorIntent.class));
     return mapping;
   }
 
@@ -375,8 +473,8 @@ public final class ValueTypeMapping {
     private final Class<I> intentClass;
 
     private Mapping(final Class<T> valueClass, final Class<I> intentClass) {
-      this.valueClass = Objects.requireNonNull(valueClass, "must specify a value class");
-      this.intentClass = Objects.requireNonNull(intentClass, "must specify an intent");
+      this.valueClass = requireNonNull(valueClass, "must specify a value class");
+      this.intentClass = requireNonNull(intentClass, "must specify an intent");
     }
 
     public Class<? extends T> getValueClass() {

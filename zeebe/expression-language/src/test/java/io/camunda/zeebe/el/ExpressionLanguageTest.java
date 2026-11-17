@@ -8,6 +8,7 @@
 package io.camunda.zeebe.el;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -171,6 +172,74 @@ public class ExpressionLanguageTest {
     assertThat(expression.getVariableName()).contains("x");
     assertThat(evaluationResult.getFailureMessage()).isNull();
     assertThat(evaluationResult.getWarnings()).isEmpty();
+  }
+
+  @Test
+  public void shouldEvaluateNestedObjects() {
+    final var expressionString = "{\"a\": {\"b\": [[1, 2], 3] }, \"c\": { \"d\": \"e\" } }";
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), expressionString);
+  }
+
+  @Test
+  public void shouldEvaluateNestedArray() {
+    final var expressionString = "[[{\"a\": [1]}, {\"b\": \"c\"}], 3]";
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), expressionString);
+  }
+
+  @Test
+  public void shouldEvaluateEmptyList() {
+    final var expression = expressionLanguage.parseExpression("=[]");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), "[]");
+  }
+
+  @Test
+  public void shouldEvaluateEmptyContext() {
+    final var expression = expressionLanguage.parseExpression("={}");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), "{}");
+  }
+
+  @Test
+  public void shouldEvaluateVeryDeeplyNestedContextWithoutStackOverflow() {
+    // a "for" loop wraps the previous result in a new object on every iteration, building a list
+    // nested `depth` levels deep without a correspondingly deep parse tree or source string
+    final var depth = 3_000;
+    final var expressionString =
+        String.format(
+            "(for i in 1..%s return if i = 1 then {\"a\": 1} else {\"a\": partial[-1]})[-1]",
+            depth);
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.toBuffer().capacity()).isPositive();
+  }
+
+  @Test
+  public void shouldEvaluateVeryDeeplyNestedAlternatingListsAndContextsWithoutStackOverflow() {
+    // given
+    final var depth = 3_000;
+    final var expressionString =
+        String.format(
+            "(for i in 1..%s return if i = 1 then {\"a\": 1} else if modulo(i,2) = 0 then [partial[-1]] else {\"a\": partial[-1]})[-1]",
+            depth);
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.toBuffer().capacity()).isPositive();
   }
 
   @Test

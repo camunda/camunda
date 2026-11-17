@@ -30,6 +30,7 @@ public final class MessageSubscriptionFixtures extends CommonFixtures {
         new Builder()
             .messageName("messageName-" + UUID.randomUUID())
             .correlationKey("correlationKey-" + UUID.randomUUID())
+            .businessId("businessId-" + UUID.randomUUID())
             .tenantId("tenant-" + UUID.randomUUID())
             .partitionId((int) (Math.random() * 10))
             .flowNodeId("flowNode-" + UUID.randomUUID())
@@ -41,7 +42,7 @@ public final class MessageSubscriptionFixtures extends CommonFixtures {
             .processDefinitionVersion((int) (Math.random() * 50))
             .messageSubscriptionType(randomEnum(MessageSubscriptionType.class))
             .messageSubscriptionState(randomEnum(MessageSubscriptionState.class))
-            .extensionProperties(Map.of("key-" + UUID.randomUUID(), "value-" + UUID.randomUUID()));
+            .toolProperties(Map.of("key-" + UUID.randomUUID(), "value-" + UUID.randomUUID()));
 
     return builderFunction.apply(builder).build();
   }

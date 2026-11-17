@@ -12,15 +12,23 @@ import io.camunda.webapps.backup.Metadata;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Names the Orchestration Cluster's snapshots. The {@value #SNAPSHOT_NAME_PREFIX} prefix separates
+ * them from foreign snapshots a repository may legitimately hold — Optimize writes {@code
+ * camunda_optimize_} snapshots into the very same repository.
+ *
+ * <p>Physical tenants are <em>not</em> encoded in the name: each tenant owns a snapshot repository
+ * of its own, enforced at boot by {@code SnapshotRepositoryIsolationValidation}.
+ */
 public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
   public static final String SNAPSHOT_NAME_PREFIX = "camunda_webapps_";
   private static final String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
   private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
-  private static final Pattern BACKUPID_PATTERN =
-      Pattern.compile(SNAPSHOT_NAME_PREFIX + "(\\d*)_.*");
+  private static final Pattern BACKUP_ID_PATTERN =
+      Pattern.compile(Pattern.quote(SNAPSHOT_NAME_PREFIX) + "(\\d*)_.*");
   private static final Pattern METADATA_PATTERN =
       Pattern.compile(
-          SNAPSHOT_NAME_PREFIX
+          Pattern.quote(SNAPSHOT_NAME_PREFIX)
               + "(?<backupId>\\d+)_(?<version>[^_]+)_part_(?<index>\\d+)_of_(?<count>\\d+)");
 
   @Override
@@ -39,7 +47,7 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
 
   @Override
   public Long extractBackupId(final String snapshotName) {
-    final Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
+    final Matcher matcher = BACKUP_ID_PATTERN.matcher(snapshotName);
     if (matcher.matches()) {
       return Long.valueOf(matcher.group(1));
     } else {

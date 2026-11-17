@@ -1,0 +1,27 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "schemaVersion": 16,
+  "id": "user_task_suspension",
+  "components": [
+    {
+      "type": "textfield",
+      "id": "Textfield_Name",
+      "label": "Name",
+      "key": "customer"
+    },
+    {
+      "type": "number",
+      "id": "Number_Quantity",
+      "label": "Number",
+      "key": "quantity"
+    },
+    {
+      "type": "checkbox",
+      "id": "Checkbox_Approved",
+      "label": "Checkbox",
+      "key": "approved"
+    }
+  ],
+  "type": "default"
+}

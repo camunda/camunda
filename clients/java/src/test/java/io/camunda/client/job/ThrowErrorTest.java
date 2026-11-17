@@ -86,6 +86,73 @@ public final class ThrowErrorTest extends ClientTest {
   }
 
   @Test
+  public void shouldThrowErrorWithJobLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    final String jobLeaseToken = "lease-token";
+
+    // when
+    client
+        .newThrowErrorCommand(jobKey)
+        .errorCode(errorCode)
+        .withJobLeaseToken(jobLeaseToken)
+        .send()
+        .join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldCarryJobLeaseTokenFromActivatedJob() {
+    // given
+    final String errorCode = "errorCode";
+    final String jobLeaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(jobLeaseToken);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryJobLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final String errorCode = "errorCode";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(null);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryJobLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+
+    // when
+    client.newThrowErrorCommand(jobKey).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEmpty();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

@@ -79,10 +79,10 @@ To get a shell with a jdk on a node you can use the following command:
 > [!Note]
 >
 > You need to replace `<broker-0>` with the pod name you want to profile below.
-
-```sh
-kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=zeebe <broker-0> -- /bin/bash
-```
+>
+> ```sh
+> kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=zeebe <broker-0> -- /bin/bash
+> ```
 
 ## Thread dump
 

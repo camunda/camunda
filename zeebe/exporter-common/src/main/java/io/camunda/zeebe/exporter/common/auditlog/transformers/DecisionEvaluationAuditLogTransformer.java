@@ -21,6 +21,11 @@ public class DecisionEvaluationAuditLogTransformer
   }
 
   @Override
+  public Class<DecisionEvaluationRecordValue> getRecordValueType() {
+    return DecisionEvaluationRecordValue.class;
+  }
+
+  @Override
   public void transform(
       final Record<DecisionEvaluationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
@@ -29,8 +34,9 @@ public class DecisionEvaluationAuditLogTransformer
         .setDecisionRequirementsId(value.getDecisionRequirementsId())
         .setDecisionRequirementsKey(value.getDecisionRequirementsKey());
 
-    if (value.getEvaluatedDecisions() != null) {
-      value.getEvaluatedDecisions().stream()
+    final var evaluatedDecisions = value.getEvaluatedDecisions();
+    if (evaluatedDecisions != null) {
+      evaluatedDecisions.stream()
           .filter(
               ed ->
                   ed.getDecisionEvaluationInstanceKey() != null

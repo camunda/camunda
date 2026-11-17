@@ -16,10 +16,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +33,7 @@ class UserTaskDbReaderTest {
     final UserTaskQuery query = UserTaskQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.readUserTask().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.readUserTask().read())),
             TenantCheck.disabled());
 
     final var items = userTaskDbReader.search(query, resourceAccessChecks).items();

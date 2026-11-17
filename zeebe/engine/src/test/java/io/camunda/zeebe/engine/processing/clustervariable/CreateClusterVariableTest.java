@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -204,6 +205,28 @@ public final class CreateClusterVariableTest {
     final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
     // then
     assertThat(result.getLeft().reason()).isEqualTo(rejectionReason);
+  }
+
+  @Test
+  public void shouldCarryMetadataThroughCreateEvent() {
+    // given
+    final var metadata = Map.<String, Object>of("type", "OAUTH2");
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_META_CREATE")
+            .setGlobalScope()
+            .withValue("\"VALUE\"")
+            .withMetadata(metadata)
+            .create();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.CREATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 
   static Stream<Arguments> retrieveInvalidClusterVariableName() {

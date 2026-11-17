@@ -11,6 +11,7 @@ import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.buildOpenSe
 import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.buildOpenSearchClientFromConfig;
 
 import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataStartupValidator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -49,7 +50,13 @@ public final class OptimizeOpenSearchClientFactory {
     final OptimizeOpenSearchClient osClient =
         new OptimizeOpenSearchClient(
             openSearchClient, openSearchAsyncClient, optimizeIndexNameService);
-    openSearchSchemaManager.validateDatabaseMetadata(osClient);
+    new DatabaseMetadataStartupValidator(
+            backoffCalculator,
+            configurationService
+                .getOpenSearchConfiguration()
+                .getConnection()
+                .getMetadataReadMaxWaitInSeconds())
+        .validate(() -> openSearchSchemaManager.validateDatabaseMetadata(osClient));
     openSearchSchemaManager.initializeSchema(osClient);
 
     return osClient;

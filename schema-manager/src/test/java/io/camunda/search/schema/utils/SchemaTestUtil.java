@@ -21,10 +21,12 @@ import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -32,6 +34,21 @@ import java.util.Map;
 public final class SchemaTestUtil {
 
   private SchemaTestUtil() {}
+
+  /**
+   * Applies the schema, retrying with exponential backoff until it succeeds or the configured
+   * attempts run out — the loop {@code SchemaManager} used to own before production moved it into
+   * the per-physical-tenant initialization. Tests that race several managers against one cluster
+   * need it: they converge on the retry.
+   */
+  public static void startupWithRetry(
+      final SchemaManager schemaManager, final SearchEngineConfiguration config) {
+    new RetryDecorator(config.schemaManager().getRetry())
+        .withRetryOnException(e -> !(e instanceof IncompatibleVersionException))
+        // initializeSchema does not declare any exception, but it may still sneaky-throw, and only
+        // io.github.resilience4j.retry.Retry.decorateCheckedRunnable retries those
+        .decorateCheckedRunnable("init schema", schemaManager::startupOnce);
+  }
 
   public static TestTemplateDescriptor createTestTemplateDescriptor(
       final String indexName, final String mappingsFileName) {
@@ -124,11 +141,12 @@ public final class SchemaTestUtil {
   }
 
   public static SchemaManager createSchemaManager(
+      final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> templateDescriptors,
       final SearchEngineConfiguration config) {
     return new SchemaManager(
-        searchEngineClientFromConfig(config),
+        searchEngineClient,
         indexDescriptors,
         templateDescriptors,
         config,

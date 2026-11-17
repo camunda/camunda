@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -91,7 +92,8 @@ public class CommandDistributionScalingTest {
             1,
             RoutingInfo.dynamic(state.getRoutingState(), RoutingInfo.forStaticPartitions(2)),
             mockInterpartitionCommandSender,
-            mock(DistributionMetrics.class));
+            mock(DistributionMetrics.class),
+            mock(ControllableStreamClock.class));
   }
 
   @Test

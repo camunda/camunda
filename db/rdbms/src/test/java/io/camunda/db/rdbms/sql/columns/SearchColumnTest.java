@@ -10,6 +10,8 @@ package io.camunda.db.rdbms.sql.columns;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.search.entities.AgentDefinitionEntity.AgentType;
+import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -19,6 +21,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
@@ -34,7 +37,7 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -149,6 +152,11 @@ public class SearchColumnTest {
                   Tuple.of(ClusterVariableScope.GLOBAL, ClusterVariableScope.GLOBAL),
                   Tuple.of(ClusterVariableScope.GLOBAL, "GLOBAL"))),
           Map.entry(
+              ClusterVariableKind.class,
+              List.of(
+                  Tuple.of(ClusterVariableKind.JSON, ClusterVariableKind.JSON),
+                  Tuple.of(ClusterVariableKind.JSON, "JSON"))),
+          Map.entry(
               AuditLogActorType.class,
               List.of(
                   Tuple.of(AuditLogActorType.USER, AuditLogActorType.USER),
@@ -188,7 +196,17 @@ public class SearchColumnTest {
               GlobalListenerType.class,
               List.of(
                   Tuple.of(GlobalListenerType.USER_TASK, GlobalListenerType.USER_TASK),
-                  Tuple.of(GlobalListenerType.USER_TASK, "USER_TASK"))));
+                  Tuple.of(GlobalListenerType.USER_TASK, "USER_TASK"))),
+          Map.entry(
+              AgentInstanceStatus.class,
+              List.of(
+                  Tuple.of(AgentInstanceStatus.IDLE, AgentInstanceStatus.IDLE),
+                  Tuple.of(AgentInstanceStatus.IDLE, "IDLE"))),
+          Map.entry(
+              AgentType.class,
+              List.of(
+                  Tuple.of(AgentType.AI_AGENT_TASK, AgentType.AI_AGENT_TASK),
+                  Tuple.of(AgentType.AI_AGENT_TASK, "AI_AGENT_TASK"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()

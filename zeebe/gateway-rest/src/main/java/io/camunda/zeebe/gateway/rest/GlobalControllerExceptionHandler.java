@@ -15,6 +15,8 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -116,7 +118,12 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       @NonNull final HttpHeaders headers,
       @NonNull final HttpStatusCode statusCode,
       @NonNull final WebRequest request) {
-    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
+    if (statusCode.is4xxClientError()) {
+      // Client errors already include details in the response, so log only the message.
+      Loggers.REST_LOGGER.debug(ex.getMessage());
+    } else {
+      Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
+    }
     final var response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
     if (response != null && response.getBody() instanceof final ProblemDetail pd) {
       return new ResponseEntity<>(
@@ -128,10 +135,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   private boolean isRequestBodyMissing(final Exception ex) {
     if (ex instanceof final HttpMessageNotReadableException exception) {
       final var exceptionMessage = exception.getMessage();
-      if (exceptionMessage != null
-          && exceptionMessage.startsWith(REQUEST_BODY_MISSING_EXCEPTION_MESSAGE)) {
-        return true;
-      }
+      return exceptionMessage != null
+          && exceptionMessage.startsWith(REQUEST_BODY_MISSING_EXCEPTION_MESSAGE);
     }
 
     return false;
@@ -185,6 +190,12 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   public ResponseEntity<ProblemDetail> handleServiceException(
       final ServiceException ex, final HttpServletRequest request) {
     return getProblemDetailResponseEntity(ex, request);
+  }
+
+  @ExceptionHandler(CamundaSearchException.class)
+  public ResponseEntity<ProblemDetail> handleSearchException(
+      final CamundaSearchException ex, final HttpServletRequest request) {
+    return getProblemDetailResponseEntity(ErrorMapper.mapSearchError(ex), request);
   }
 
   @ExceptionHandler(CompletionException.class)

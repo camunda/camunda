@@ -72,7 +72,7 @@ runs:
         sudo killall xsp4 || true
 
     - if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
         repository: ${{ inputs.repository }}
@@ -80,24 +80,30 @@ runs:
 
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ inputs.vault-address }}
         method: approle
         roleId: ${{ inputs.vault-role-id }}
         secretId: ${{ inputs.vault-secret-id }}
         secrets: |
-          secret/data/products/distribution/ci NEXUS_USERNAME;
-          secret/data/products/distribution/ci NEXUS_PASSWORD;
+          secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
+          secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
 
     - name: print architecture
       run: arch
       shell: bash
 
-    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
-        go-version: ">=1.23.1"
+        go-version-file: c8run/go.mod
         cache: false # disabling since not working anyways without a cache-dependency-path specified
+
+    - name: Setup Java 21
+      uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+      with:
+        distribution: "temurin"
+        java-version: "21"
 
     - uses: ./.github/actions/setup-build
       if: ${{ inputs.source-build == 'true' }}
@@ -107,15 +113,9 @@ runs:
         vault-role-id: ${{ inputs.vault-role-id }}
 
     - name: Setup Node
-      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
-        node-version: 24
-
-    - name: Install node dependencies
-      if: ${{ inputs.source-build == 'true' }}
-      working-directory: ./tasklist/client
-      shell: bash
-      run: npm ci
+        node-version: 26
 
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       if: ${{ inputs.source-build == 'true' }}
@@ -124,15 +124,15 @@ runs:
 
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}
-      working-directory: ./operate/client
-      shell: bash
-      run: npm ci
+      uses: ./.github/actions/npm-ci-with-retry
+      with:
+        directory: ./operate/client
 
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}
-      working-directory: ./identity/client
-      shell: bash
-      run: npm ci
+      uses: ./.github/actions/npm-ci-with-retry
+      with:
+        directory: ./identity/client
 
     - uses: ./.github/actions/build-zeebe
       if: ${{ inputs.source-build == 'true' }}
@@ -149,16 +149,24 @@ runs:
 
     - name: Get version number from zeebe archive
       if: ${{ inputs.source-build == 'true' }}
-      run: echo CAMUNDA_VERSION=$( echo $distball | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+      id: source-version
+      run: echo version=$( echo $distball | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_OUTPUT
       shell: bash
       env:
         distball: ${{ steps.build-zeebe.outputs.distball }}
 
     - name: Get version of camunda-dist
       if: ${{ inputs.local-archive-build == 'true' }}
-      run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+      id: archive-version
+      run: echo version=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ./c8run
+
+    - name: Set up Java 25 for C8Run packaging
+      uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+      with:
+        distribution: "temurin"
+        java-version: "25"
 
     - name: Build c8run
       run: go build -o c8run ./cmd/c8run
@@ -171,41 +179,58 @@ runs:
       working-directory: ./c8run
 
     - name: make a package
-      run: ./packager package
+      run: |
+        if [[ -n "$DIST_VERSION" ]]; then
+          export CAMUNDA_VERSION="$DIST_VERSION"
+        fi
+        ./packager package
       shell: bash
       working-directory: ./c8run
       env:
+        DIST_VERSION: ${{ steps.source-version.outputs.version || steps.archive-version.outputs.version }}
         JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
         JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+    - name: Extract packaged C8Run for E2E
+      run: |
+        mkdir e2e-distribution
+        case "${{ inputs.os }}" in
+          ubuntu-latest) tar -xzf camunda8-run-*.tar.gz -C e2e-distribution ;;
+          macos*) unzip -q camunda8-run-*.zip -d e2e-distribution ;;
+        esac
+        shopt -s nullglob
+        distributions=("$PWD"/e2e-distribution/c8run-*)
+        if [[ ${#distributions[@]} -ne 1 || ! -d "${distributions[0]}" ]]; then
+          echo "Expected exactly one extracted c8run distribution, found ${#distributions[@]}" >&2
+          exit 1
+        fi
+        echo "C8RUN_E2E_DIR=${distributions[0]}" >> "$GITHUB_ENV"
+      shell: bash
+      working-directory: ./c8run
+
+    - name: Configure packaged C8Run E2E secret
+      run: printf '%s' 'c8run-centralized-secret-test-value' | ./c8run secrets set C8RUN_E2E_SECRET --stdin
+      shell: bash
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
 
     - name: ls
       run: ls
       shell: bash
-      working-directory: ./c8run
-
-    - if: ${{ inputs.os == 'macos-15-intel' }}
-      name: Set env
-      shell: bash
-      run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
 
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
-      run: ./c8run start --config e2e_tests/prefix-config.yaml
+      run: ./c8run start --config ../../e2e_tests/config-flag.yaml
       shell: bash
-      working-directory: ./c8run
-      env:
-        JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-        JAVA_VERSION: 21.0.3
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
 
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
       shell: bash
-      run: ./c8run start --config e2e_tests/prefix-config.yaml
-      working-directory: ./c8run
-      env:
-        JAVA_VERSION: 21.0.3
+      run: ./c8run start --config ../../e2e_tests/config-flag.yaml
+      working-directory: ${{ env.C8RUN_E2E_DIR }}
 
-    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: camunda8-run-build-${{ inputs.os }}
         path: ./c8run/camunda8-run*

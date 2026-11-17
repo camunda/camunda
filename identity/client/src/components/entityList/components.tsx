@@ -8,10 +8,9 @@
 
 import styled from "styled-components";
 import { TableContainer } from "@carbon/react";
-import { spacing04 } from "@carbon/elements";
 
 export const DocumentationDescription = styled.p`
-  margin-top: ${spacing04};
+  margin-top: var(--cds-spacing-04);
   max-width: none;
   text-align: left;
 `;

@@ -7,8 +7,10 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.DeployedResourceDbQuery;
 import io.camunda.db.rdbms.write.domain.DeployedResourceDbModel;
 import io.camunda.search.entities.DeployedResourceEntity;
+import java.util.List;
 
 public interface DeployedResourceMapper {
 
@@ -20,4 +22,8 @@ public interface DeployedResourceMapper {
 
   /** Like {@link #get} but omits the RESOURCE_CONTENT column. */
   DeployedResourceEntity getMetadata(Long resourceKey);
+
+  Long count(DeployedResourceDbQuery filter);
+
+  List<DeployedResourceEntity> search(DeployedResourceDbQuery filter);
 }

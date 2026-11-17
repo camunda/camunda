@@ -22,7 +22,7 @@ import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.sort.GlobalListenerSort;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;

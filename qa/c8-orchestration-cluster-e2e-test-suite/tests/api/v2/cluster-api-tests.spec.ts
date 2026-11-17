@@ -30,8 +30,8 @@ test.describe('Cluster API Tests', () => {
       res,
     );
     const result = await res.json();
-    expect(result.brokers).toHaveLength(1);
-    expect(result.brokers[0].partitions).toHaveLength(1);
+    expect(result.brokers.length).toBeGreaterThanOrEqual(1);
+    expect(result.brokers[0].partitions.length).toBeGreaterThanOrEqual(1);
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {

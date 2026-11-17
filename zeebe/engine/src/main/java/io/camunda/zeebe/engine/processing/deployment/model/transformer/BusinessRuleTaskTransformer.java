@@ -12,10 +12,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.CalledDecisionTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.JobPriorityDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
@@ -25,6 +27,8 @@ public final class BusinessRuleTaskTransformer
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final JobPriorityDefinitionTransformer jobPriorityDefinitionTransformer =
+      new JobPriorityDefinitionTransformer();
   private final CalledDecisionTransformer calledDecisionTransformer =
       new CalledDecisionTransformer();
 
@@ -45,6 +49,10 @@ public final class BusinessRuleTaskTransformer
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(executableTask, taskHeaders, element);
+
+    final var jobPriorityDefinition =
+        element.getSingleExtensionElement(ZeebeJobPriorityDefinition.class);
+    jobPriorityDefinitionTransformer.transform(executableTask, context, jobPriorityDefinition);
 
     final var calledDecision = element.getSingleExtensionElement(ZeebeCalledDecision.class);
     calledDecisionTransformer.transform(executableTask, context, calledDecision);

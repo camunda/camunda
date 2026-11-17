@@ -13,7 +13,7 @@ import static io.camunda.zeebe.engine.processing.identity.authorization.property
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,13 +56,14 @@ public class UserTaskCompleteAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import java.util.Collections;
 import java.util.List;
@@ -22,8 +21,8 @@ final class StreamProcessorListenerRelay implements StreamProcessorListener {
   }
 
   @Override
-  public void onProcessed(final TypedRecord<?> processedCommand) {
-    delegates.forEach(l -> l.onProcessed(processedCommand));
+  public void onProcessed(final long processedPosition) {
+    delegates.forEach(l -> l.onProcessed(processedPosition));
   }
 
   @Override

@@ -16,16 +16,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.exception.ResourceAccessDeniedException;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.condition.AuthorizationConditions;
-import io.camunda.security.reader.ResourceAccess;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.reader.TenantAccess;
-import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.authz.ResourceAccess;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.authz.TenantAccess;
+import io.camunda.security.core.authz.TenantAccessProvider;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +57,7 @@ public class AbstractResourceAccessControllerTest {
       final var resource = new Object();
       final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
       final var authorization =
-          Authorization.of(a -> a.processDefinition().readProcessDefinition())
+          RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition())
               .withCondition(o -> false);
 
       final var securityContext =
@@ -79,9 +79,10 @@ public class AbstractResourceAccessControllerTest {
       // given
       final var resource = new Object();
       final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-      final var enabledAuthorization = Authorization.of(a -> a.processDefinition().readUserTask());
+      final var enabledAuthorization =
+          RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
       final var disabledAuthorization =
-          Authorization.of(a -> a.processDefinition().readProcessDefinition())
+          RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition())
               .withCondition(o -> false);
 
       // it's important to have the disabled one first, otherwise the controller would skip checking
@@ -115,7 +116,7 @@ public class AbstractResourceAccessControllerTest {
       // given
       final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
       final var authorization =
-          Authorization.of(a -> a.processDefinition().readProcessDefinition().transitive());
+          RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition().transitive());
 
       final var securityContext =
           SecurityContext.of(
@@ -146,7 +147,7 @@ public class AbstractResourceAccessControllerTest {
       // given
       final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
       final var authorization =
-          Authorization.of(a -> a.processDefinition().readProcessDefinition().transitive());
+          RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition().transitive());
 
       final var securityContext =
           SecurityContext.of(

@@ -16,7 +16,14 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.filter.MappingRuleFilterBase;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.MappingRuleFilterMapper;
+import io.camunda.client.protocol.rest.MappingRuleFilterFields;
+import java.util.List;
+import java.util.function.Consumer;
 
 public class MappingRuleFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.MappingRuleFilter>
@@ -30,7 +37,14 @@ public class MappingRuleFilterImpl
 
   @Override
   public MappingRuleFilter mappingRuleId(final String mappingRuleId) {
-    filter.setMappingRuleId(mappingRuleId);
+    return mappingRuleId(b -> b.eq(mappingRuleId));
+  }
+
+  @Override
+  public MappingRuleFilter mappingRuleId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setMappingRuleId(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -48,7 +62,26 @@ public class MappingRuleFilterImpl
 
   @Override
   public MappingRuleFilter name(final String name) {
-    filter.setName(name);
+    return name(b -> b.eq(name));
+  }
+
+  @Override
+  public MappingRuleFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public MappingRuleFilterBase orFilters(final List<Consumer<MappingRuleFilterBase>> fns) {
+    for (final Consumer<MappingRuleFilterBase> fn : fns) {
+      final MappingRuleFilterImpl orFilter = new MappingRuleFilterImpl();
+      fn.accept(orFilter);
+      final MappingRuleFilterFields protocolFilterFields =
+          MappingRuleFilterMapper.from(orFilter.getSearchRequestProperty());
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

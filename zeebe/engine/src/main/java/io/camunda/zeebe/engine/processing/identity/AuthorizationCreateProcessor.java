@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -23,9 +25,14 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
+@NullMarked
 public class AuthorizationCreateProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
@@ -34,29 +41,32 @@ public class AuthorizationCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
   private final PermissionsBehavior permissionsBehavior;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final AuthorizationEntityValidator authorizationEntityChecker;
+  private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
 
   public AuthorizationCreateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final SecurityConfiguration securityConfig) {
+      final CslAuthorizationCheck cslCheck,
+      final EngineSecurityConfig securityConfig,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
-    authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
+    this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing CREATE authorization command for owner '{}'", command.getValue().getOwnerId());
     permissionsBehavior
         .isAuthorized(command, PermissionType.CREATE)
         .flatMap(
@@ -72,13 +82,18 @@ public class AuthorizationCreateProcessor
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
+              LOG.debug("Rejecting CREATE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing distributed CREATE authorization command for owner '{}'",
+        command.getValue().getOwnerId());
     permissionsBehavior
         .permissionsAlreadyExist(command.getValue())
         .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
@@ -88,8 +103,7 @@ public class AuthorizationCreateProcessor
                   command.getKey(), AuthorizationIntent.CREATED, command.getValue());
               sideEffectWriter.appendSideEffect(
                   () -> {
-                    authorizationCheckBehavior.clearAuthorizationsCache();
-                    return true;
+                    authorizationScopeStateAdapter.invalidateAll();
                   });
             },
             rejection ->
@@ -102,9 +116,14 @@ public class AuthorizationCreateProcessor
       final TypedRecord<AuthorizationRecord> command,
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
+    LOG.debug(
+        "Creating authorization with key {} for owner '{}' on resource type '{}'",
+        key,
+        authorizationRecord.getOwnerId(),
+        authorizationRecord.getResourceType());
     authorizationRecord.setAuthorizationKey(key);
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         key, AuthorizationIntent.CREATED, authorizationRecord, command);
     distributionBehavior
         .withKey(key)
@@ -112,8 +131,7 @@ public class AuthorizationCreateProcessor
         .distribute(command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authorizationCheckBehavior.clearAuthorizationsCache();
-          return true;
+          authorizationScopeStateAdapter.invalidateAll();
         });
   }
 }

@@ -7,11 +7,11 @@
  */
 package io.camunda.service.cache;
 
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,23 +19,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProcessDefinitionProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionProvider.class);
-  private final ProcessDefinitionServices processDefinitionServices;
+  private final ProcessDefinitionSearchClient processDefinitionSearchClient;
 
-  public ProcessDefinitionProvider(final ProcessDefinitionServices processDefinitionServices) {
-    this.processDefinitionServices = processDefinitionServices;
+  public ProcessDefinitionProvider(
+      final ProcessDefinitionSearchClient processDefinitionSearchClient) {
+    this.processDefinitionSearchClient =
+        processDefinitionSearchClient.withSecurityContext(
+            SecurityContext.of(b -> b.withAuthentication(a -> a.anonymous(true))));
   }
 
   public ProcessCacheData extractProcessData(final Long processDefinitionKey) {
     try {
       final var processDefinition =
-          processDefinitionServices.getByKey(
-              processDefinitionKey, CamundaAuthentication.anonymous());
+          processDefinitionSearchClient.getProcessDefinition(processDefinitionKey);
       return buildCacheData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
@@ -57,13 +60,12 @@ public class ProcessDefinitionProvider {
 
     try {
       final var searchResult =
-          processDefinitionServices.search(
+          processDefinitionSearchClient.searchProcessDefinitions(
               ProcessDefinitionQuery.of(
                   q ->
                       q.filter(f -> f.processDefinitionKeys(keysList))
                           .page(p -> p.size(keysList.size()))
-                          .resultConfig(c -> c.includeXml(true))),
-              CamundaAuthentication.anonymous());
+                          .resultConfig(c -> c.includeXml(true))));
 
       if (searchResult.total() < processDefinitionKeys.size()) {
         LOG.warn(
@@ -98,13 +100,20 @@ public class ProcessDefinitionProvider {
                     .map(fn -> new ProcessElement(fn.getId(), fn.getName()))
                     .forEach(fn -> elements.put(fn.id(), fn.name())));
 
-    return new ProcessCacheData(processDefinition.name(), Collections.unmodifiableMap(elements));
+    return new ProcessCacheData(
+        processDefinition.name(),
+        Collections.unmodifiableMap(elements),
+        processDefinition.version());
   }
 
   public record ProcessElement(String id, String name) {}
 
-  public record ProcessCacheData(String processName, Map<String, String> elementIdNameMap) {
+  public record ProcessCacheData(
+      String processName,
+      Map<String, String> elementIdNameMap,
+      @Nullable Integer processDefinitionVersion) {
 
-    public static final ProcessCacheData EMPTY = new ProcessCacheData(null, Collections.emptyMap());
+    public static final ProcessCacheData EMPTY =
+        new ProcessCacheData(null, Collections.emptyMap(), null);
   }
 }

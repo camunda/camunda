@@ -7,26 +7,34 @@
  */
 package io.camunda.zeebe.broker;
 
-import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.fromBrokerCopier;
-import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getNodeIdProvider;
-import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getS3NodeIdRepository;
+import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.fromBrokerCopier;
+import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.getNodeIdProvider;
+import static io.camunda.zeebe.broker.NodeIdProviderConfigurationUtils.getS3NodeIdRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,14 +77,20 @@ public class NodeIdProviderConfiguration {
       final Optional<NodeIdRepository> nodeIdRepository,
       final BrokerShutdownHelper shutdownHelper) {
     return getNodeIdProvider(
-        LOG, cluster, nodeIdRepository, () -> shutdownHelper.initiateShutdown(1));
+        LOG,
+        cluster,
+        nodeIdRepository,
+        () ->
+            shutdownHelper.initiateShutdown(
+                1, "NodeIdProvider requested shutdown due to lease loss or failure"));
   }
 
   @Bean
-  public DataDirectoryProvider dataDirectoryProvider(
+  public ResolvedDataDirectory resolvedDataDirectory(
       final NodeIdProvider nodeIdProvider,
       final NodeIdProviderReadinessAwaiter readinessAwaiter,
-      final BrokerBasedConfiguration brokerBasedConfiguration) {
+      final BrokerBasedConfiguration brokerBasedConfiguration)
+      throws ExecutionException, InterruptedException, TimeoutException {
 
     if (!readinessAwaiter.isReady()) {
       throw new IllegalStateException("NodeIdProvider is not ready");
@@ -88,8 +102,13 @@ public class NodeIdProviderConfiguration {
           case S3 -> {
             final var brokerCopier = new BrokerDataDirectoryCopier();
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
-            final var previousNodeGracefullyShutdown =
-                nodeIdProvider.previousNodeGracefullyShutdown().join();
+            final Boolean previousNodeGracefullyShutdown;
+            previousNodeGracefullyShutdown =
+                nodeIdProvider.previousNodeGracefullyShutdown().get(10, TimeUnit.SECONDS);
+            LOG.info(
+                "Node instance from nodeIdProvider is {}, did previous node instance shutdown gracefully:{}",
+                nodeInstance,
+                previousNodeGracefullyShutdown);
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
                 : new VersionedNodeIdBasedDataDirectoryProvider(
@@ -106,7 +125,7 @@ public class NodeIdProviderConfiguration {
     final var configuredDirectory = initializer.initialize(directory).join();
     data.setDirectory(configuredDirectory.toString());
 
-    return initializer;
+    return new ResolvedDataDirectory(configuredDirectory.toString());
   }
 
   @Bean
@@ -117,7 +136,8 @@ public class NodeIdProviderConfiguration {
         l -> {
           switch (l.type()) {
             case MEMBER_ADDED, MEMBER_REMOVED ->
-                nodeIdProvider.setMembers(membershipService.getMembers());
+                nodeIdProvider.setMemberVersions(
+                    collectMemberVersions(membershipService.getMembers()));
             default -> {
               // noop
             }
@@ -125,10 +145,14 @@ public class NodeIdProviderConfiguration {
         });
 
     // initialize current members
-    nodeIdProvider.setMembers(membershipService.getMembers());
+    nodeIdProvider.setMemberVersions(collectMemberVersions(membershipService.getMembers()));
 
     final var isReady = nodeIdProvider.awaitReadiness().join();
     return new NodeIdProviderReadinessAwaiter(isReady);
+  }
+
+  private static Map<MemberId, Version> collectMemberVersions(final Set<Member> members) {
+    return members.stream().collect(Collectors.toMap(Member::id, m -> Version.of(m.nodeVersion())));
   }
 
   public record NodeIdProviderReadinessAwaiter(boolean isReady) {}

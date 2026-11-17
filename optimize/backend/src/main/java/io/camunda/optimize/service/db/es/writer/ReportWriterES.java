@@ -56,6 +56,8 @@ import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -67,6 +69,7 @@ import org.springframework.stereotype.Component;
 public class ReportWriterES implements ReportWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportWriterES.class);
+
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
@@ -144,7 +147,19 @@ public class ReportWriterES implements ReportWriter {
       final String reportName,
       final String description,
       final String collectionId) {
-    LOG.debug("Writing new single report to Elasticsearch");
+    return createOrUpdateSingleProcessReport(
+        IdGenerator.getNextId(), userId, reportData, reportName, description, collectionId);
+  }
+
+  @Override
+  public IdResponseDto createOrUpdateSingleProcessReport(
+      final String reportId,
+      final String userId,
+      final ProcessReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId) {
+    LOG.debug("Writing single process report with id [{}] to Elasticsearch", reportId);
 
     if (reportData == null) {
       throw new OptimizeRuntimeException("reportData is null");
@@ -153,10 +168,9 @@ public class ReportWriterES implements ReportWriter {
       throw new OptimizeRuntimeException("reportName is null");
     }
 
-    final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         new SingleProcessReportDefinitionRequestDto();
-    reportDefinitionDto.setId(id);
+    reportDefinitionDto.setId(reportId);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
@@ -173,20 +187,23 @@ public class ReportWriterES implements ReportWriter {
               OptimizeIndexRequestBuilderES.of(
                   i ->
                       i.optimizeIndex(esClient, SINGLE_PROCESS_REPORT_INDEX_NAME)
-                          .id(id)
+                          .id(reportId)
                           .document(reportDefinitionDto)
                           .refresh(Refresh.True)));
 
-      if (!indexResponse.result().equals(Result.Created)) {
-        final String message = "Could not write single process report to Elasticsearch.";
+      if (!indexResponse.result().equals(Result.Created)
+          && !indexResponse.result().equals(Result.Updated)) {
+        final String message =
+            String.format(
+                "Could not write single process report with id [%s] to Elasticsearch.", reportId);
         LOG.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
-      LOG.debug("Single process report with id [{}] has successfully been created.", id);
-      return new IdResponseDto(id);
+      LOG.debug("Single process report with id [{}] has successfully been written.", reportId);
+      return new IdResponseDto(reportId);
     } catch (final IOException e) {
-      final String errorMessage = "Was not able to insert single process report.";
+      final String errorMessage = "Was not able to write single process report.";
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -278,13 +295,50 @@ public class ReportWriterES implements ReportWriter {
                 s.lang(ScriptLanguage.Painless)
                     // this script is deliberately not updating the modified date as this is
                     // no user operation
-                    .source("ctx._source.data.configuration.xml = params.newXml;")
+                    .source(
+                        src ->
+                            src.scriptString("ctx._source.data.configuration.xml = params.newXml;"))
                     .params(Collections.singletonMap("newXml", JsonData.of(definitionXml))));
 
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItem,
         updateDefinitionXmlScript,
         Query.of(q -> q.term(t -> t.field(PROCESS_DEFINITION_PROPERTY).value(definitionKey))),
+        SINGLE_PROCESS_REPORT_INDEX_NAME);
+  }
+
+  @Override
+  public void clearReportDefinitionXmlForReportIds(
+      final List<String> reportIds, final String processDefinitionKey, final String tenantId) {
+    if (reportIds.isEmpty()) {
+      return;
+    }
+    final String updateItem =
+        String.format("%d report(s) with cleared definition XML", reportIds.size());
+    LOG.debug("Clearing definition XML for {} in Elasticsearch", updateItem);
+
+    final Map<String, JsonData> scriptParams = new HashMap<>();
+    scriptParams.put("key", JsonData.of(processDefinitionKey));
+    scriptParams.put("tenantId", JsonData.of(tenantId));
+    final Script clearDefinitionXmlScript =
+        Script.of(
+            s ->
+                s.lang(ScriptLanguage.Painless)
+                    // this script is deliberately not updating the modified date as this is
+                    // not a user operation
+                    .source(
+                        src ->
+                            src.scriptString(
+                                ReportWriter.CLEAR_DEFINITION_XML_IF_STILL_MATCHING_SCRIPT))
+                    .params(scriptParams));
+
+    // Abort on version conflicts so a report edited concurrently with this write can be retried by
+    // the caller instead of keeping stale XML.
+    taskRepositoryES.tryUpdateByQueryRequest(
+        updateItem,
+        clearDefinitionXmlScript,
+        Query.of(q -> q.ids(i -> i.values(reportIds))),
+        true,
         SINGLE_PROCESS_REPORT_INDEX_NAME);
   }
 
@@ -317,10 +371,12 @@ public class ReportWriterES implements ReportWriter {
             s ->
                 s.lang(ScriptLanguage.Painless)
                     .source(
-                        "def reports = ctx._source.data.reports;"
-                            + "if(reports != null) {"
-                            + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
-                            + "}")
+                        src ->
+                            src.scriptString(
+                                "def reports = ctx._source.data.reports;"
+                                    + "if(reports != null) {"
+                                    + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
+                                    + "}"))
                     .params(Map.of("idToRemove", JsonData.of(reportId))));
 
     taskRepositoryES.tryUpdateByQueryRequest(

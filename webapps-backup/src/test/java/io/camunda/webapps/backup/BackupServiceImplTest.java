@@ -10,6 +10,9 @@ package io.camunda.webapps.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.webapps.backup.BackupException.BackupAlreadyRunningException;
 import io.camunda.webapps.backup.BackupException.IndexNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -27,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -65,8 +69,21 @@ public class BackupServiceImplTest {
       };
 
   public BackupServiceImpl makeBackupService(final BackupPriorities backupPriorities) {
+    return makeBackupService(backupPriorities, executor);
+  }
+
+  public BackupServiceImpl makeBackupService(
+      final BackupPriorities backupPriorities, final Executor snapshotExecutor) {
+    final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+    final SearchEngineConfiguration searchEngineConfiguration =
+        new SearchEngineConfiguration(connectConfiguration, null, null, null);
+
     return new BackupServiceImpl(
-        executor, backupPriorities, backupRepositoryProps, backupRepository);
+        snapshotExecutor,
+        new BackupWiring(backupPriorities, backupRepositoryProps, backupRepository),
+        searchEngineConfiguration,
+        List.of(),
+        List.of());
   }
 
   @BeforeEach
@@ -84,7 +101,9 @@ public class BackupServiceImplTest {
   @Test
   public void shouldCreateBackupWithAllIndices() {
     // when
-    final var backup = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
+    final var backup =
+        backupService.takeBackup(
+            new TakeBackupRequestDto().setBackupId(1L).setSkipSchemaCheck(true));
 
     // then
     assertThat(backup.getScheduledSnapshots())
@@ -134,7 +153,9 @@ public class BackupServiceImplTest {
             new BackupPriorities(
                 List.of(() -> "prio1"), List.of(() -> "prio2"), List.of(() -> "prio3"), List.of()));
     // backup #1 is taken with only 3 parts
-    final var response = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
+    final var response =
+        backupService.takeBackup(
+            new TakeBackupRequestDto().setBackupId(1L).setSkipSchemaCheck(true));
     assertThat(response.getScheduledSnapshots()).hasSize(3);
 
     // when
@@ -149,6 +170,22 @@ public class BackupServiceImplTest {
             "camunda_webapps_1_*_part_1_of_3",
             "camunda_webapps_1_*_part_2_of_3",
             "camunda_webapps_1_*_part_3_of_3");
+  }
+
+  @Test
+  public void shouldRejectABackupWhileAnotherIsRunning() {
+    // given a backup whose snapshots stay queued, because the executor never runs them
+    backupService = makeBackupService(DEFAULT_BACKUP_PRIORITIES, command -> {});
+    backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L).setSkipSchemaCheck(true));
+
+    // when
+    assertThatThrownBy(
+            () ->
+                backupService.takeBackup(
+                    new TakeBackupRequestDto().setBackupId(2L).setSkipSchemaCheck(true)))
+        // then
+        .isInstanceOf(BackupAlreadyRunningException.class)
+        .hasMessage("Another backup is running at the moment");
   }
 
   private void waitForAllTasks() {

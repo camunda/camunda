@@ -13,7 +13,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -54,7 +53,6 @@ class AuditLogExportHandlerTest {
                   .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, USERNAME)));
 
   private AuditLogWriter writer;
-  private VendorDatabaseProperties databaseProperties;
   private AuditLogConfiguration config;
   private AuditLogTransformer transformer;
   private AuditLogExportHandler handler;
@@ -63,10 +61,9 @@ class AuditLogExportHandlerTest {
   @BeforeEach
   void setUp() {
     writer = mock(AuditLogWriter.class);
-    databaseProperties = mock(VendorDatabaseProperties.class);
     config = mock(AuditLogConfiguration.class);
     transformer = mock(AuditLogTransformer.class);
-    handler = new AuditLogExportHandler(writer, databaseProperties, transformer, config);
+    handler = new AuditLogExportHandler(writer, transformer, config);
   }
 
   @Test

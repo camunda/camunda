@@ -10,7 +10,6 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.DEFAULT_TENANT_ID;
 import static io.camunda.it.util.TestHelper.cancelInstance;
 import static io.camunda.it.util.TestHelper.completeJob;
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployServiceTaskProcess;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForJobs;
@@ -24,13 +23,15 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
@@ -53,18 +54,18 @@ public class ProcessDefinitionInstanceStatisticsIT {
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(USERNAME_1, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant TENANT_1 =
+      new TestTenant(TENANT_ID_1)
+          .setName(TENANT_ID_1)
+          .addUsers(InitializationConfiguration.DEFAULT_USER_USERNAME, USERNAME_1);
+
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient)
       throws InterruptedException {
 
     camundaClient = adminClient;
 
-    createTenant(
-        adminClient,
-        TENANT_ID_1,
-        TENANT_ID_1,
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USERNAME_1);
     adminClient.newAssignRoleToUserCommand().roleId("admin").username(USERNAME_1).execute();
   }
 
@@ -507,6 +508,42 @@ public class ProcessDefinitionInstanceStatisticsIT {
             .filter(s -> Objects.equals(s.getProcessDefinitionId(), bpmnProcessId))
             .count();
     assertThat(countForProcId).isEqualTo(1);
+  }
+
+  // Reproduction test for https://github.com/camunda/camunda/issues/51617
+  @Test
+  void shouldReturnHasMultipleVersionsTrueWhenOnlyLatestVersionHasInstances() {
+    // given
+    final String bpmnProcessId = "multi_version_no_v1_instances_proc";
+    final String v1Name = "Multi Version Bug V1";
+    final String v2Name = "Multi Version Bug V2";
+
+    deployServiceTaskProcess(camundaClient, bpmnProcessId, v1Name, "3");
+    final var deploymentV2 = deployServiceTaskProcess(camundaClient, bpmnProcessId, v2Name, "3");
+    final long v2Key = deploymentV2.getProcesses().getFirst().getProcessDefinitionKey();
+
+    // Start one instance on V2 only
+    startInstance(v2Key);
+
+    waitForProcessInstances(
+        camundaClient, f -> f.processDefinitionKey(v2Key).state(ProcessInstanceState.ACTIVE), 1);
+
+    // when
+    final var result = camundaClient.newProcessDefinitionInstanceStatisticsRequest().send().join();
+
+    // then
+    final var stats =
+        result.items().stream()
+            .filter(s -> Objects.equals(s.getProcessDefinitionId(), bpmnProcessId))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "Expected statistics entry for bpmnProcessId=" + bpmnProcessId));
+
+    // Two versions are deployed, even though only V2 has active instances
+    assertThat(stats.getHasMultipleVersions()).isTrue();
+    assertThat(stats.getActiveInstancesWithoutIncidentCount()).isOne();
   }
 
   @Test

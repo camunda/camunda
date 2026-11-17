@@ -9,36 +9,38 @@
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { useQuery } from "@tanstack/react-query";
+import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "src/pages/mapping-rules/modals/add-modal";
-import { searchMappingRule } from "src/utility/api/mapping-rules";
 import DeleteModal from "src/pages/mapping-rules/modals/DeleteModal";
 import EditModal from "src/pages/mapping-rules/modals/EditModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
   const { t } = useTranslate("mappingRules");
+  const noop = () => {};
+
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: mappingRuleSearchResults,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchMappingRule);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(mappingRuleQueries.search(pageParams));
 
-  const [addMappingRule, addMappingRuleModal] = useModal(AddModal, reload);
+  const [addMappingRule, addMappingRuleModal] = useModal(AddModal, noop);
   const [editMappingRule, editMappingRuleModal] = useEntityModal(
     EditModal,
-    reload,
+    noop,
   );
   const [deleteMappingRule, deleteMappingRuleModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
   );
 
   const shouldShowEmptyState =
@@ -102,12 +104,18 @@ const List: FC = () => {
         ]}
         searchPlaceholder={t("searchByMappingRuleId")}
         searchKey="mappingRuleId"
-        {...paginationProps}
+        page={{ ...page, ...mappingRuleSearchResults?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("loadMappingRulesError")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       {addMappingRuleModal}

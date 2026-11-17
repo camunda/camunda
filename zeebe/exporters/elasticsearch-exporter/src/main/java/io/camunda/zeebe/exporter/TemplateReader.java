@@ -21,9 +21,11 @@ import java.util.Map;
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
 final class TemplateReader {
   @SuppressWarnings("java:S1075") // not an actual URI
-  private static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
+  private static final String INDEX_TEMPLATE_FILENAME_PATTERN =
+      "/elasticsearch/zeebe-record-%s-template.json";
 
-  private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
+  private static final String ZEEBE_RECORD_TEMPLATE_JSON =
+      "/elasticsearch/zeebe-record-template.json";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final ElasticsearchExporterConfiguration config;
@@ -91,8 +93,12 @@ final class TemplateReader {
       settings.put("number_of_replicas", numberOfReplicas);
     }
 
-    // update index.lifecycle in template in case a retention policy is configured
-    if (config.retention.isEnabled()) {
+    // update index.lifecycle in template in case a retention policy is configured.
+    // When managePolicy is false the exporter must leave existing lifecycle settings
+    // intact, so we keep writing the configured policy name into the template even when
+    // retention is disabled - otherwise the template would be overwritten without the
+    // policy and future rolled indices would be created without it.
+    if (config.retention.isEnabled() || !config.retention.isManagePolicy()) {
       settings.put("index.lifecycle.name", config.retention.getPolicyName());
     }
   }

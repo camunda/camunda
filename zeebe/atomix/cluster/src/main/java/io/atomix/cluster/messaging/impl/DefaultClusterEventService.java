@@ -274,6 +274,7 @@ public class DefaultClusterEventService
     }
 
     @Override
+    @SuppressWarnings("ReturnValueIgnored")
     public CompletableFuture<byte[]> apply(final Address address, final byte[] payload) {
       for (final InternalSubscription s : subscriptions) {
         s.callback.apply(payload);

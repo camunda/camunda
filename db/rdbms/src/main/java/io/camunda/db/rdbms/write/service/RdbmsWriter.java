@@ -7,4 +7,12 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+/**
+ * Marker interface for exporter-driven RDBMS writers.
+ *
+ * <p>Implementations must be registered in {@link io.camunda.db.rdbms.write.RdbmsWriters} and route
+ * all write operations through {@link io.camunda.db.rdbms.write.queue.ExecutionQueue} for batching
+ * and transaction management. Writers that bypass {@code ExecutionQueue} (e.g. synchronous,
+ * request-scoped session management) must not implement this interface.
+ */
 public interface RdbmsWriter {}

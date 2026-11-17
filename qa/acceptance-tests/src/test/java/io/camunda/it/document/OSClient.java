@@ -89,6 +89,16 @@ public class OSClient implements DocumentClient {
   }
 
   @Override
+  public void createAlias(final String indexName, final String aliasName) throws IOException {
+    opensearchClient.indices().putAlias(b -> b.index(indexName).name(aliasName));
+  }
+
+  @Override
+  public void deleteAlias(final String indexName, final String aliasName) throws IOException {
+    opensearchClient.indices().deleteAlias(b -> b.index(indexName).name(aliasName));
+  }
+
+  @Override
   public void deleteAllIndices(final String indexPrefix) throws IOException {
     opensearchClient.indices().delete(DeleteIndexRequest.of(b -> b.index("*")));
   }

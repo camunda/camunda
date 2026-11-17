@@ -8,7 +8,13 @@
 
 import {renderHook} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {useBatchOperationMutationRequestBody} from './useBatchOperationMutationRequestBody';
+import {
+  useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
+  useDeleteProcessInstancesBatchOperationMutationRequestBody,
+  useResumeProcessInstancesBatchOperationMutationRequestBody,
+  useSuspendProcessInstancesBatchOperationMutationRequestBody,
+} from './useBatchOperationMutationRequestBody';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 
@@ -26,6 +32,34 @@ const getWrapper = (initialSearchParams?: Record<string, string>) => {
   };
   return Wrapper;
 };
+
+const processOperationHooks = [
+  {
+    name: 'retry',
+    useRequestBody: useBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleRunningIds',
+  },
+  {
+    name: 'cancel',
+    useRequestBody: useCancelProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleRunningIds',
+  },
+  {
+    name: 'suspend',
+    useRequestBody: useSuspendProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleRunningIds',
+  },
+  {
+    name: 'resume',
+    useRequestBody: useResumeProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleSuspendedIds',
+  },
+  {
+    name: 'delete',
+    useRequestBody: useDeleteProcessInstancesBatchOperationMutationRequestBody,
+    eligibleIdsKey: 'visibleFinishedIds',
+  },
+] as const;
 
 describe('useBatchOperationMutationRequestBody', () => {
   afterEach(() => {
@@ -58,18 +92,228 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should not include process instance keys when checkedRunningIds is empty', () => {
-    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
-    processInstancesSelectionStore.state.selectedIds = ['123', '456', '789'];
+  describe('cancel', () => {
+    it('should request suspended instances when the suspended filter is set', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {wrapper: getWrapper({suspended: 'true'})},
+      );
 
-    const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
-      wrapper: getWrapper(),
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'SUSPENDED'},
+        },
+      });
     });
 
-    expect(result.current).toEqual({
-      filter: {},
+    it('should keep suspended instances when active, suspended and incident filters are combined', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            suspended: 'true',
+            incidents: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          $or: [
+            {state: {$eq: 'ACTIVE'}, hasIncident: false},
+            {state: {$eq: 'SUSPENDED'}},
+            {hasIncident: true, state: {$neq: 'SUSPENDED'}},
+          ],
+        },
+      });
+    });
+
+    it('should leave finished states out of the filter', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            canceled: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+        },
+      });
+    });
+
+    it('should leave finished states out of the filter when filtering by element', () => {
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            elementId: 'task-1',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+          elementId: {$eq: 'task-1'},
+          elementInstanceState: {$eq: 'ACTIVE'},
+        },
+      });
+    });
+
+    it('should include selected suspended instances alongside running ones', () => {
+      processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+      processInstancesSelectionStore.state.selectedIds = ['1', '2'];
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 3,
+        visibleIds: ['1', '2', '3'],
+        visibleRunningIds: ['1'],
+        visibleSuspendedIds: ['2'],
+      });
+
+      const {result} = renderHook(
+        () => useCancelProcessInstancesBatchOperationMutationRequestBody(),
+        {wrapper: getWrapper()},
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['1', '2']},
+        },
+      });
     });
   });
+
+  describe('suspend', () => {
+    it('should leave finished states out of the filter', () => {
+      const {result} = renderHook(
+        () => useSuspendProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            canceled: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          state: {$eq: 'ACTIVE'},
+          hasIncident: false,
+        },
+      });
+    });
+
+    it('should leave finished states out of the filter when incidents are included', () => {
+      const {result} = renderHook(
+        () => useSuspendProcessInstancesBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            completed: 'true',
+            incidents: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+        },
+      });
+    });
+  });
+
+  describe('retry', () => {
+    it('should ignore the suspended filter', () => {
+      const {result} = renderHook(
+        () => useBatchOperationMutationRequestBody(),
+        {
+          wrapper: getWrapper({
+            active: 'true',
+            suspended: 'true',
+            incidents: 'true',
+          }),
+        },
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
+        },
+      });
+    });
+
+    it('should drop selected suspended instances from the request', () => {
+      processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+      processInstancesSelectionStore.state.selectedIds = ['1', '2'];
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 3,
+        visibleIds: ['1', '2', '3'],
+        visibleRunningIds: ['1'],
+        visibleSuspendedIds: ['2'],
+        visibleIncidentIds: ['1'],
+      });
+
+      const {result} = renderHook(
+        () => useBatchOperationMutationRequestBody(),
+        {wrapper: getWrapper()},
+      );
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['1']},
+        },
+      });
+    });
+  });
+
+  it.each(processOperationHooks)(
+    'should retain selected process instance keys for $name when eligible instances disappear',
+    ({useRequestBody, eligibleIdsKey}) => {
+      processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
+      processInstancesSelectionStore.state.selectedIds = ['123'];
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 2,
+        visibleIds: ['123'],
+        [eligibleIdsKey]: ['123'],
+      });
+
+      const {result, rerender} = renderHook(() => useRequestBody(), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['123']},
+        },
+      });
+
+      processInstancesSelectionStore.setRuntime({
+        totalCount: 2,
+        visibleIds: [],
+        [eligibleIdsKey]: [],
+      });
+      rerender();
+
+      expect(result.current).toEqual({
+        filter: {
+          processInstanceKey: {$in: ['123']},
+        },
+      });
+    },
+  );
 
   it('should not include process instance keys when selectedIds is empty', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
@@ -112,11 +356,10 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should include variable filter', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1"',
-    });
+  it('should include variable conditions', () => {
+    variableFilterStore.setConditions([
+      {name: 'testVar', operator: 'equals', value: '"value1"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -127,18 +370,18 @@ describe('useBatchOperationMutationRequestBody', () => {
         variables: [
           {
             name: 'testVar',
-            value: '"value1"',
+            value: {$eq: '"value1"'},
           },
         ],
       },
     });
   });
 
-  it('should include multiple variable values', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1", "value2", "value3"',
-    });
+  it('should include multiple variable conditions', () => {
+    variableFilterStore.setConditions([
+      {name: 'testVar', operator: 'equals', value: '"value1"'},
+      {name: 'status', operator: 'notEqual', value: '"draft"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -147,23 +390,25 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         variables: [
-          {
-            name: 'testVar',
-            value: {$in: ['"value1"', '"value2"', '"value3"']},
-          },
+          {name: 'testVar', value: {$eq: '"value1"'}},
+          {name: 'status', value: {$neq: '"draft"'}},
         ],
       },
     });
   });
 
-  it('should combine search params, selected keys, and variable filter', () => {
+  it('should combine search params, selected keys, and variable conditions', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
     processInstancesSelectionStore.state.selectedIds = ['123', '456'];
-
-    variableFilterStore.setVariable({
-      name: 'status',
-      values: '"active"',
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 3,
+      visibleIds: ['123', '456'],
+      visibleRunningIds: ['123', '456'],
     });
+
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
@@ -175,37 +420,18 @@ describe('useBatchOperationMutationRequestBody', () => {
       filter: {
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
+        processInstanceKey: {$in: ['123', '456']},
         variables: [
           {
             name: 'status',
-            value: '"active"',
+            value: {$eq: '"active"'},
           },
         ],
       },
     });
   });
 
-  it('should not include variable filter when variable name is missing', () => {
-    variableFilterStore.setVariable({
-      name: '',
-      values: '"value1"',
-    });
-
-    const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
-      wrapper: getWrapper(),
-    });
-
-    expect(result.current).toEqual({
-      filter: {},
-    });
-  });
-
-  it('should not include variable filter when variable values are missing', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '',
-    });
-
+  it('should not include variables when no conditions set', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
     });
@@ -322,17 +548,17 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should handle operationId filter', () => {
+  it('should handle batchOperationKey filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        batchOperationId: 'op-123',
+        batchOperationKey: 'op-123',
         active: 'true',
       }),
     });
 
     expect(result.current).toEqual({
       filter: {
-        batchOperationId: {$eq: 'op-123'},
+        batchOperationKey: {$eq: 'op-123'},
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
       },

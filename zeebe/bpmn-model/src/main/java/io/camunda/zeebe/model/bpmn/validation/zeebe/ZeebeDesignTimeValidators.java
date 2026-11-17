@@ -20,10 +20,12 @@ import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
@@ -32,20 +34,35 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeDesignTimeValidators {
 
+  /**
+   * All validators, which can be shared between validations. Prefer {@link #getValidators()} or
+   * {@link #STATELESS_VALIDATORS_BY_TYPE} with {@link #newStatefulValidators()}: the {@link
+   * ActivityValidator} in here scans the whole scope for every activity.
+   */
   public static final Collection<ModelElementValidator<?>> VALIDATORS;
+
+  /**
+   * The validators which can be shared between validations and that are not in {@link
+   * #newStatefulValidators()}, grouped by element type, so it is only done once.
+   */
+  public static final Map<Class, List<ModelElementValidator>> STATELESS_VALIDATORS_BY_TYPE;
+
+  private static final Collection<ModelElementValidator<?>> STATELESS_VALIDATORS;
 
   static {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
-    validators.add(new ActivityValidator());
     validators.add(new AdHocSubProcessValidator());
+    validators.add(new AgentDefinitionValidator());
     validators.add(new BoundaryEventValidator());
     validators.add(new BusinessRuleTaskValidator());
     validators.add(
@@ -82,6 +99,10 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new SubProcessValidator());
     validators.add(new TimerEventDefinitionValidator());
     validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeAgentDefinition.class)
+            .hasNonEmptyEnumAttribute(
+                ZeebeAgentDefinition::getAgentType, ZeebeConstants.ATTRIBUTE_AGENT_TYPE));
+    validators.add(
         ZeebeElementValidator.verifyThat(ZeebeCalledElement.class)
             .hasNonEmptyAttribute(
                 ZeebeCalledElement::getProcessId, ZeebeConstants.ATTRIBUTE_PROCESS_ID));
@@ -111,6 +132,7 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(
                 ZeebeSubscription::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
     validators.add(new ZeebeFormDefinitionValidator());
+    validators.add(new ZeebeCaseValidator());
     validators.add(new ZeebeUserTaskFormValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeCalledDecision.class)
@@ -152,13 +174,36 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(
                 ZeebePriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
     validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeJobPriorityDefinition.class)
+            .hasNonEmptyAttribute(
+                ZeebeJobPriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
+    validators.add(new ZeebeJobPriorityDefinitionValidator());
+    validators.add(
         ZeebeElementValidator.verifyThat(Condition.class)
             .hasNonEmptyAttribute(Condition::getTextContent, ZeebeConstants.ATTRIBUTE_CONDITION));
     validators.add(new ZeebeConditionalFilterValidator());
     validators.addAll(ExtensionElementDuplicationValidators.VALIDATORS);
 
-    VALIDATORS = Collections.unmodifiableList(validators);
+    STATELESS_VALIDATORS = Collections.unmodifiableList(validators);
+    STATELESS_VALIDATORS_BY_TYPE = ValidationVisitor.groupByType(STATELESS_VALIDATORS);
+
+    final List<ModelElementValidator<?>> all = new ArrayList<>();
+    all.add(new ActivityValidator());
+    all.addAll(STATELESS_VALIDATORS);
+    VALIDATORS = Collections.unmodifiableList(all);
   }
 
   private ZeebeDesignTimeValidators() {}
+
+  /** Creates new validators that keep state during a walk. */
+  public static Collection<ModelElementValidator<?>> newStatefulValidators() {
+    return Collections.singletonList(new ScopeIndexedActivityValidator());
+  }
+
+  /** All validators, with new instances of the stateful ones. */
+  public static Collection<ModelElementValidator<?>> getValidators() {
+    final List<ModelElementValidator<?>> all = new ArrayList<>(STATELESS_VALIDATORS);
+    all.addAll(newStatefulValidators());
+    return all;
+  }
 }

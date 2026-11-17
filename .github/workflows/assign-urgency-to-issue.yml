@@ -76,6 +76,8 @@ jobs:
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ inputs.repo || github.event.repository.name }}
       ISSUE_NUMBER: ${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+      # Org-level Urgency issue field (camunda org, single-select)
+      # Query: gh api graphql -f query='{organization(login:"camunda"){issueFields(first:30){nodes{...on IssueFieldSingleSelect{id name options{id name}}}}}}'
       URGENCY_FIELD_ID: 'IFSS_kgDNKAw'
       # Projects whose project-level Urgency field should be kept in sync
       # (for public projects where org-level fields are not visible)
@@ -88,7 +90,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -99,10 +101,10 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - name: Dump event issue JSON
+        env:
+          ISSUE_JSON: ${{ toJSON(github.event.issue) }}
         run: |
-          cat << 'EOF'
-          ${{ toJSON(github.event.issue) }}
-          EOF
+          echo "$ISSUE_JSON"
       - name: Fetch issue data
         id: fetch_data
         env:
@@ -182,7 +184,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          ISSUE_DATA="${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}"
 
           # Extract issue type and labels
           ISSUE_TYPE=$(echo "$ISSUE_DATA" | jq -r '.issueType.name // empty')
@@ -232,14 +234,16 @@ jobs:
             echo "when=$when"
             echo "has_urgency_locked=$has_urgency_locked"
           } >> "$GITHUB_OUTPUT"
+        env:
+          STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
 
       - name: Calculate urgency from severity
         id: calculate_urgency_from_severity
         if: steps.check_labels.outputs.severity != ''
         run: |
           set -euo pipefail
-          SEVERITY='${{ steps.check_labels.outputs.severity }}'
-          LIKELIHOOD='${{ steps.check_labels.outputs.likelihood }}'
+          SEVERITY="${STEPS_CHECK_LABELS_OUTPUTS_SEVERITY}"
+          LIKELIHOOD="${STEPS_CHECK_LABELS_OUTPUTS_LIKELIHOOD}"
 
           # Default missing or unknown likelihood to low
           if [[ -z "$LIKELIHOOD" || "$LIKELIHOOD" == "unknown" ]]; then
@@ -276,14 +280,17 @@ jobs:
 
           echo "🎯 Urgency (from severity/likelihood): $URGENCY"
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+        env:
+          STEPS_CHECK_LABELS_OUTPUTS_SEVERITY: ${{ steps.check_labels.outputs.severity }}
+          STEPS_CHECK_LABELS_OUTPUTS_LIKELIHOOD: ${{ steps.check_labels.outputs.likelihood }}
 
       - name: Calculate urgency from impact
         id: calculate_urgency_from_impact
         if: steps.check_labels.outputs.impact != ''
         run: |
           set -euo pipefail
-          IMPACT='${{ steps.check_labels.outputs.impact }}'
-          WHEN='${{ steps.check_labels.outputs.when }}'
+          IMPACT="${STEPS_CHECK_LABELS_OUTPUTS_IMPACT}"
+          WHEN="${STEPS_CHECK_LABELS_OUTPUTS_WHEN}"
 
           # Default when to later if not set
           if [[ -z "$WHEN" ]]; then
@@ -319,14 +326,17 @@ jobs:
 
           echo "🎯 Urgency (from impact/when): $URGENCY"
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+        env:
+          STEPS_CHECK_LABELS_OUTPUTS_IMPACT: ${{ steps.check_labels.outputs.impact }}
+          STEPS_CHECK_LABELS_OUTPUTS_WHEN: ${{ steps.check_labels.outputs.when }}
 
       - name: Validate urgency
         id: validate_urgency
         if: steps.calculate_urgency_from_severity.outputs.urgency != '' || steps.calculate_urgency_from_impact.outputs.urgency != ''
         run: |
           set -euo pipefail
-          URGENCY_FROM_SEVERITY='${{ steps.calculate_urgency_from_severity.outputs.urgency }}'
-          URGENCY_FROM_IMPACT='${{ steps.calculate_urgency_from_impact.outputs.urgency }}'
+          URGENCY_FROM_SEVERITY="${STEPS_CALCULATE_URGENCY_FROM_SEVERITY_OUTPUTS_URGENCY}"
+          URGENCY_FROM_IMPACT="${STEPS_CALCULATE_URGENCY_FROM_IMPACT_OUTPUTS_URGENCY}"
 
           # Urgency priority: immediate > next > planned > someday
           # Use case statement for bash 3.2+ compatibility
@@ -359,18 +369,24 @@ jobs:
           fi
 
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+        env:
+          STEPS_CALCULATE_URGENCY_FROM_SEVERITY_OUTPUTS_URGENCY: ${{ steps.calculate_urgency_from_severity.outputs.urgency }}
+          STEPS_CALCULATE_URGENCY_FROM_IMPACT_OUTPUTS_URGENCY: ${{ steps.calculate_urgency_from_impact.outputs.urgency }}
 
       - name: Update org-level Urgency field
         if: steps.validate_urgency.outputs.urgency != ''
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
+          STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY: ${{ steps.validate_urgency.outputs.urgency }}
+          STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED: ${{ steps.check_labels.outputs.has_urgency_locked }}
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          ISSUE_DATA="${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}"
           ISSUE_ID=$(echo "$ISSUE_DATA" | jq -r '.id')
-          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
-          HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
+          NEW_URGENCY="${STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY}"
+          HAS_URGENCY_LOCKED="${STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED}"
 
           # Org-level urgency field option IDs
           declare -A OPTION_IDS=(
@@ -446,12 +462,15 @@ jobs:
         if: steps.validate_urgency.outputs.urgency != ''
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA: ${{ steps.fetch_data.outputs.issue_data }}
+          STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED: ${{ steps.check_labels.outputs.has_urgency_locked }}
+          STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY: ${{ steps.validate_urgency.outputs.urgency }}
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          ISSUE_DATA="${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}"
           URGENCY_FIELD_NAME='Urgency'
-          HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
+          HAS_URGENCY_LOCKED="${STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED}"
 
           # For locked issues, use the current org-level value instead of the calculated one
           if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
@@ -463,7 +482,7 @@ jobs:
             fi
             echo "🔒 urgency-locked — syncing org-level value '$NEW_URGENCY' to project"
           else
-            NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
+            NEW_URGENCY="${STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY}"
           fi
 
           if [[ "$DRY_RUN" == "true" ]]; then

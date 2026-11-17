@@ -288,6 +288,11 @@ public final class RaftRule extends ExternalResource {
     return servers.get(id);
   }
 
+  /** The registry every server in the cluster reports its metrics to. */
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public void shutdownServer(final RaftServer raftServer) throws Exception {
     shutdownServer(raftServer.name());
   }
@@ -383,6 +388,11 @@ public final class RaftRule extends ExternalResource {
   /** Takes a snapshot on the given node, without waiting for compaction to occur. */
   public Optional<PersistedSnapshot> takeSnapshot(
       final RaftServer raftServer, final long index, final int size) {
+    return takeSnapshot(raftServer, index, size, false);
+  }
+
+  public Optional<PersistedSnapshot> takeSnapshot(
+      final RaftServer raftServer, final long index, final int size, final boolean withMetadata) {
     if (!raftServer.isRunning()) {
       return Optional.empty();
     }
@@ -393,7 +403,12 @@ public final class RaftRule extends ExternalResource {
 
     return Optional.of(
         InMemorySnapshot.newPersistedSnapshot(
-            Integer.parseInt(memberId.id()), index, raftContext.getTerm(), size, snapshotStore));
+            Integer.parseInt(memberId.id()),
+            index,
+            raftContext.getTerm(),
+            size,
+            snapshotStore,
+            withMetadata));
   }
 
   private TestSnapshotStore getSnapshotStore(final String memberId) {
@@ -757,6 +772,11 @@ public final class RaftRule extends ExternalResource {
 
     @Override
     public ReplicatableJournalRecord getReplicatableJournalRecord() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int size() {
       throw new UnsupportedOperationException();
     }
   }

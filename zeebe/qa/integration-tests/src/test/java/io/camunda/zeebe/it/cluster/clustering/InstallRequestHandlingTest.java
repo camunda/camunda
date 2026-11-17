@@ -30,7 +30,8 @@ public class InstallRequestHandlingTest {
           3,
           config -> {
             config.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
-            config.getData().setLogSegmentSize(DataSize.ofKilobytes(32));
+            // segment size must fit the atomic identity-setup batch written at startup
+            config.getData().setLogSegmentSize(DataSize.ofKilobytes(128));
             config.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
           });
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);

@@ -24,9 +24,12 @@ on:
         type: choice
         options: ['true', 'false']
 
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidence
+# Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
 
 permissions:
   actions: write
@@ -35,6 +38,18 @@ permissions:
   statuses: write
 
 jobs:
+  read-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   build-and-package:
     name: Build and Package Camunda
     runs-on: ubuntu-latest
@@ -43,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
@@ -60,7 +75,7 @@ jobs:
           ./mvnw -B -T2C -pl dist -am -DskipTests -DskipChecks -Dflatten.skip=true --no-transfer-progress package
 
       - name: Upload Camunda Distribution
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-dist
           path: dist/target/camunda-zeebe-*.tar.gz
@@ -68,7 +83,7 @@ jobs:
 
   run-http-regression-tests:
     name: Run Regression Tests
-    needs: build-and-package
+    needs: [ build-and-package, read-versions ]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -109,7 +124,7 @@ jobs:
 
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.read-versions.outputs.elasticsearch-9 }}
         env:
           discovery.type: single-node
           cluster.name: "ci-${{ matrix.case }}"
@@ -122,19 +137,19 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
-      - name: Set up Java 21
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - name: Set up Java 25
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
-          distribution: temurin
-          java-version: 21
+          distribution: "temurin"
+          java-version: "25"
 
       - name: Download Camunda Distribution Artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: camunda-dist
           path: ./dist/target
@@ -250,13 +265,13 @@ jobs:
       - name: Install IntelliJ HTTP Client
         shell: bash
         run: |
-          curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
+          curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
           unzip ijhttp.zip
-          ijhttp/ijhttp qa/http/${{ matrix.case }} --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
+          ijhttp/ijhttp qa/http/${{ matrix.case }} --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --no-progress --report -t 60000
 
       - name: Publish Test Report
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2.23.0
+        uses: EnricoMi/publish-unit-test-result-action@da5b7be67623cd59bbbd1a0ce4f022050a55605f # v2.26.0
         with:
           files: '**/reports/report.xml'
           comment_mode: off

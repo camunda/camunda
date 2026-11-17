@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -39,7 +41,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
   private final RecordBatch mutableRecordBatch;
-  private ProcessingResponseImpl processingResponse;
+  private @Nullable ProcessingResponseImpl processingResponse;
   private boolean processInASeparateBatch = false;
 
   private final List<Consumer<RecordMetadata>> metadataDecorators = new ArrayList<>();
@@ -102,7 +104,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .valueType(valueType);
 
     metadataDecorators.forEach(m -> m.accept(metadata));
-    metadata.getAuthorization().reset(); // don't expose the authorization data in the response
+    metadata.authorization(AuthInfo.EMPTY); // don't expose the authorization data in the response
 
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);

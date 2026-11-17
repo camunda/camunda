@@ -7,23 +7,30 @@
  */
 package io.camunda.zeebe.engine.processing.signal;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
@@ -31,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -50,7 +58,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
+  private final VariableBehavior variableBehavior;
+  private final SuspensionState suspensionState;
 
   public SignalBroadcastProcessor(
       final Writers writers,
@@ -59,7 +70,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
+      final VariableBehavior variableBehavior,
+      final StorageOrdinalProvider storageOrdinalProvider) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -68,7 +82,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
     elementInstanceState = processingState.getElementInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
+    this.variableBehavior = variableBehavior;
+    suspensionState = processingState.getSuspensionState();
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -76,7 +93,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
   }
 
   @Override
@@ -88,12 +106,34 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
-      if (!authCheckBehavior.isAssignedToTenant(command, signalRecord.getTenantId())) {
-        final var message =
-            "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
-                .formatted(signalRecord.getTenantId());
-        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+      final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
+      final var tenantCheckResult =
+          tenantCheck.checkTenantsRequiringPrincipal(
+              List.of(signalRecord.getTenantId()),
+              authorizedTenants,
+              signalRecord,
+              () ->
+                  new Rejection(
+                      RejectionType.FORBIDDEN,
+                      "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
+                          .formatted(signalRecord.getTenantId())));
+      if (tenantCheckResult.isLeft()) {
+        final var rejection = tenantCheckResult.getLeft();
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
+        return;
+      }
+    }
+
+    final var variables = signalRecord.getVariablesBuffer();
+    if (variables.capacity() > 0) {
+      final var validation = variableBehavior.validateVariables(variables);
+      if (validation.isLeft()) {
+        final String reason = validation.getLeft().reason();
+        rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+        responseWriter.writeRejectedResponseOnCommand(
+            command, RejectionType.INVALID_ARGUMENT, reason);
         return;
       }
     }
@@ -106,8 +146,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     if (isAuthNeeded) {
       commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
     } else {
-      final var authInfo = new AuthInfo();
-      authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
+      final var authInfo = AuthInfo.EMPTY.withFormat(AuthDataFormat.PRE_AUTHORIZED);
       commandDistributionBehavior
           .withKey(eventKey)
           .unordered()
@@ -130,22 +169,33 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         isStartEvent
             ? PermissionType.CREATE_PROCESS_INSTANCE
             : PermissionType.UPDATE_PROCESS_INSTANCE;
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(permissionType)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(subscriptionRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized =
+        cslCheck.checkForDistributedCommand(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(AuthzModelMapper.fromProtocol(permissionType))
+                        .resourceId(subscriptionRecord.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                permissionType, AuthorizationResourceType.PROCESS_DEFINITION));
     if (isAuthorized.isLeft()) {
-      throw new ForbiddenException(authRequest);
+      throw new ForbiddenException(isAuthorized.getLeft());
     }
   }
 
   private void activateElement(
       final SignalSubscriptionRecord subscription, final DirectBuffer variables) {
+    // signal start events have no process instance yet to check, so skip only for non-start
+    // subscriptions
+    final var isStartEvent = subscription.getCatchEventInstanceKey() == -1;
+    if (!isStartEvent && suspensionState.isSuspended(subscription.getProcessInstanceKey())) {
+      return;
+    }
+
     final var processDefinitionKey = subscription.getProcessDefinitionKey();
     final var catchEventInstanceKey = subscription.getCatchEventInstanceKey();
     final var catchEventId = subscription.getCatchEventIdBuffer();
@@ -171,7 +221,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     if (error instanceof final ForbiddenException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
       if (command.isCommandDistributed()) {
         // If the command was distributed but doesn't pass auth checks on this partition, we still
@@ -221,7 +271,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         });
 
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(
+          eventKey, SignalIntent.BROADCASTED, signalRecord, command);
     }
   }
 }

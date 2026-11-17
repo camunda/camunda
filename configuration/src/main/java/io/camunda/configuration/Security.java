@@ -7,12 +7,18 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.security.ClusterAdmin;
+import io.camunda.configuration.security.Tls;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Security {
+public class Security extends CamundaSecurityLibraryProperties {
 
   /** TLS configuration. */
   @NestedConfigurationProperty private Tls transportLayerSecurity = new Tls();
+
+  /** Configuration for the dedicated cluster-admin security chain. */
+  @NestedConfigurationProperty private ClusterAdmin clusterAdmin = new ClusterAdmin();
 
   public Tls getTransportLayerSecurity() {
     return transportLayerSecurity;
@@ -20,5 +26,13 @@ public class Security {
 
   public void setTransportLayerSecurity(final Tls transportLayerSecurity) {
     this.transportLayerSecurity = transportLayerSecurity;
+  }
+
+  public ClusterAdmin getClusterAdmin() {
+    return clusterAdmin;
+  }
+
+  public void setClusterAdmin(final ClusterAdmin clusterAdmin) {
+    this.clusterAdmin = clusterAdmin == null ? new ClusterAdmin() : clusterAdmin;
   }
 }

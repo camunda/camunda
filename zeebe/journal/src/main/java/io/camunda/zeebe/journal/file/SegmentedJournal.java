@@ -17,6 +17,7 @@
 package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
@@ -34,6 +35,7 @@ import java.util.OptionalLong;
 import java.util.SortedMap;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +81,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
+    assertOpen();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(asqn, recordDataWriter);
     }
@@ -86,6 +89,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void append(final JournalRecord record) {
+    assertOpen();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       writer.append(record);
     }
@@ -93,6 +97,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public JournalRecord append(final long checksum, final byte[] serializedRecord) {
+    assertOpen();
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(checksum, serializedRecord);
     }
@@ -104,9 +109,8 @@ public final class SegmentedJournal implements Journal {
         () -> {
           final var stamp = rwlock.writeLock();
           try {
-            writer.deleteAfter(indexExclusive);
-            // Reset segment readers.
-            resetAdvancedReaders(indexExclusive + 1);
+            writer.deleteAfter(indexExclusive, hasConcurrentReaderPast(indexExclusive));
+            readers.forEach(reader -> reader.onTruncatedAfter(indexExclusive));
           } finally {
             rwlock.unlockWrite(stamp);
           }
@@ -183,9 +187,18 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public JournalReader openReader() {
+    return openReader(false);
+  }
+
+  @Override
+  public JournalReader openConcurrentReader() {
+    return openReader(true);
+  }
+
+  private JournalReader openReader(final boolean readsConcurrently) {
     final var stamped = acquireReadlock();
     try {
-      final var reader = new SegmentedJournalReader(this, journalMetrics);
+      final var reader = new SegmentedJournalReader(this, journalMetrics, readsConcurrently);
       readers.add(reader);
       return reader;
     } finally {
@@ -207,7 +220,7 @@ public final class SegmentedJournal implements Journal {
 
     final var segmentPaths =
         tailSegments.values().stream()
-            .map(segment -> segment.file().file().toPath())
+            .map(segment -> segment.file().file())
             .collect(Collectors.toList());
 
     final var firstAsqn = findFirstAsqn(tailSegments);
@@ -242,8 +255,14 @@ public final class SegmentedJournal implements Journal {
     } catch (final FlushException e) {
       LOGGER.warn("Failed to flush when closing", e);
     }
-    segments.close();
-    open = false;
+
+    final var stamp = rwlock.writeLock();
+    try {
+      open = false;
+      segments.close();
+    } finally {
+      rwlock.unlockWrite(stamp);
+    }
   }
 
   /**
@@ -262,7 +281,7 @@ public final class SegmentedJournal implements Journal {
    */
   Segment getFirstSegment() {
     assertOpen();
-    return segments.getFirstSegment();
+    return requireNonNull(segments.getFirstSegment(), "journal has no first segment");
   }
 
   /**
@@ -272,7 +291,7 @@ public final class SegmentedJournal implements Journal {
    */
   Segment getLastSegment() {
     assertOpen();
-    return segments.getLastSegment();
+    return requireNonNull(segments.getLastSegment(), "journal has no last segment");
   }
 
   /**
@@ -281,7 +300,7 @@ public final class SegmentedJournal implements Journal {
    * @param index The segment index with which to look up the next segment.
    * @return The next segment for the given index.
    */
-  Segment getNextSegment(final long index) {
+  @Nullable Segment getNextSegment(final long index) {
     return segments.getNextSegment(index);
   }
 
@@ -291,7 +310,7 @@ public final class SegmentedJournal implements Journal {
    * @param index The index for which to return the segment.
    * @throws IllegalStateException if the segment manager is not open
    */
-  Segment getSegment(final long index) {
+  @Nullable Segment getSegment(final long index) {
     assertOpen();
     return segments.getSegment(index);
   }
@@ -301,16 +320,18 @@ public final class SegmentedJournal implements Journal {
   }
 
   /**
-   * Resets journal readers to the given index, if they are at a larger index.
+   * Whether any reader that reads on another thread has already read a record after the given
+   * index. Such a reader handed that record to a consumer that may still be reading it straight
+   * from the segment, so the records after the given index must stay where they are instead of
+   * being overwritten. Readers that read on the writer's thread need no such care: this truncation
+   * runs on that thread, so their consumer is not reading a record right now.
    *
-   * @param index The index at which to reset readers.
+   * <p>Reading the reader positions here is safe: readers only move while holding the read lock,
+   * which the write lock held during a truncation excludes.
    */
-  private void resetAdvancedReaders(final long index) {
-    for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() > index) {
-        reader.unsafeSeek(index);
-      }
-    }
+  private boolean hasConcurrentReaderPast(final long index) {
+    return readers.stream()
+        .anyMatch(reader -> reader.readsConcurrently() && reader.getNextIndex() > index + 1);
   }
 
   JournalIndex getJournalIndex() {

@@ -7,21 +7,21 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.Api;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.processing.engine.EngineJob;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -155,7 +155,7 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * Modifies the security configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
+  T withSecurityConfig(final Consumer<CamundaSecurityLibraryProperties> modifier);
 
   /**
    * Convenience method to modify engine job configuration using the unified configuration API.

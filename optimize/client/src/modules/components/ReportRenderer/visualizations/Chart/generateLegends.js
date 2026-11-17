@@ -39,7 +39,8 @@ function draw(chart) {
   }
 
   if (previouslyTruncated[chart.id]) {
-    addText(chart, 3, t('common.viewMore'));
+    const lastIndex = (chart.legend.legendHitBoxes?.length || 0) - 1;
+    addText(chart, lastIndex, t('common.viewMore'));
   } else if (viewMoreClicked[chart.id]) {
     addText(chart, 0, t('common.viewLess'));
   }
@@ -55,7 +56,11 @@ function update(chart, newTruncatedState) {
 }
 
 function addText(chart, position, text) {
-  const {left, width, top} = chart.legend.legendHitBoxes[position];
+  const hitBox = chart.legend.legendHitBoxes?.[position];
+  if (!hitBox) {
+    return;
+  }
+  const {left, width, top} = hitBox;
   const textXPos = left + width / 2 - 20;
   const textYPos = top + 5;
   chart.ctx.fillStyle = 'blue';

@@ -1,5 +1,3 @@
-/* eslint-disable license-header/header */
-
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed

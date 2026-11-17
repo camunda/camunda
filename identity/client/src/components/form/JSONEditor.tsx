@@ -15,7 +15,6 @@ import { options } from "src/utility/components/editor/options.ts";
 import useTranslate from "src/utility/localization";
 import { Copy, Edit } from "@carbon/react/icons";
 import Flex from "src/components/layout/Flex.tsx";
-import { spacing03 } from "@carbon/elements";
 import { useNotifications } from "src/components/notifications";
 import { themeStore } from "src/common/theme/theme.ts";
 
@@ -130,7 +129,7 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
   };
 
   return (
-    <Stack gap={spacing03}>
+    <Stack gap="3">
       <Flex align="start">
         <Flex
           direction="column"

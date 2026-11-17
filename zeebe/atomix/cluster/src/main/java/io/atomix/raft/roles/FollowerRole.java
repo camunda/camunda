@@ -21,6 +21,7 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.ElectionTimerFactory;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
@@ -33,10 +34,15 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
+import io.atomix.raft.utils.VoteQuorum.VoteErrorStatus;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -191,6 +197,39 @@ public final class FollowerRole extends ActiveRole {
   }
 
   @Override
+  public CompletableFuture<TimeoutNowResponse> onTimeoutNow(final TimeoutNowRequest request) {
+    logRequest(request);
+
+    final var future = new CompletableFuture<TimeoutNowResponse>();
+    raft.getThreadContext()
+        .execute(
+            () -> {
+              if (!isRunning()
+                  || !isTimeoutNowFromCurrentLeader(request.term(), request.leader())) {
+                future.complete(
+                    logResponse(
+                        TimeoutNowResponse.builder()
+                            .withStatus(RaftResponse.Status.ERROR)
+                            .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
+                            .build()));
+                return;
+              }
+
+              log.info(
+                  "Received TimeoutNow from leader {} in term {}, starting election immediately",
+                  request.leader(),
+                  request.term());
+
+              future.complete(
+                  logResponse(
+                      TimeoutNowResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+              raft.transition(RaftServer.Role.CANDIDATE);
+            });
+
+    return future;
+  }
+
+  @Override
   protected VoteResponse handleVote(final VoteRequest request) {
     // Reset the heartbeat timeout if we voted for another candidate.
     final VoteResponse response = super.handleVote(request);
@@ -198,6 +237,27 @@ public final class FollowerRole extends ActiveRole {
       onHeartbeatFromLeader();
     }
     return response;
+  }
+
+  /**
+   * Stricter than {@link #isRequestFromCurrentLeader}: a TimeoutNow campaigns immediately, so it
+   * must prove the sender is the established leader of the <em>current</em> term. A higher term is
+   * rejected here (rather than accepted, as append/install/configure do) so it cannot bypass the
+   * normal leader-establishment path.
+   */
+  private boolean isTimeoutNowFromCurrentLeader(final long term, final MemberId leader) {
+    final long currentTerm = raft.getTerm();
+    final RaftMember currentLeader = raft.getLeader();
+    if (term != currentTerm || currentLeader == null || !leader.equals(currentLeader.memberId())) {
+      log.debug(
+          "Ignoring TimeoutNow from {} in term {}: expected the current leader {} in term {}",
+          leader,
+          term,
+          currentLeader,
+          currentTerm);
+      return false;
+    }
+    return true;
   }
 
   private boolean isRequestFromCurrentLeader(final long term, final MemberId leader) {
@@ -267,8 +327,11 @@ public final class FollowerRole extends ActiveRole {
 
     if (isRunning() && !complete.get()) {
       if (error != null) {
-        log.warn("Poll request to {} failed: {}", member.memberId(), error.getMessage());
-        quorum.fail(member.memberId());
+        final var cause = FuturesUtil.unwrapCompletionException(error);
+        final var status = VoteErrorStatus.of(cause);
+        log.atLevel(status.logLevel())
+            .log("Poll request to {} failed with {}: {}", member.memberId(), status, cause);
+        quorum.fail(member.memberId(), status);
       } else {
         if (response.term() > raft.getTerm()) {
           raft.setTerm(response.term());
@@ -276,10 +339,10 @@ public final class FollowerRole extends ActiveRole {
 
         if (!response.accepted()) {
           log.debug("Received rejected poll from {}", member);
-          quorum.fail(member.memberId());
+          quorum.fail(member.memberId(), VoteErrorStatus.REJECTED);
         } else if (response.term() != raft.getTerm()) {
           log.debug("Received accepted poll for a different term from {}", member);
-          quorum.fail(member.memberId());
+          quorum.fail(member.memberId(), VoteErrorStatus.INVALID_TERM);
         } else {
           log.debug("Received accepted poll from {}", member);
           quorum.succeed(member.memberId());

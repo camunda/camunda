@@ -11,10 +11,13 @@ export declare global {
     isOidc?: string;
     isCamundaGroupsEnabled?: string;
     isTenantsApiEnabled?: string;
+    isNewDesignSystemEnabled?: string;
+    isAdditionalIdpConfigured?: string;
     organizationId?: string;
     clusterId?: string;
     idPattern?: string;
     resourcePermissions?: Record<string, string[]>;
+    defaultRoleIds?: string[];
   }
 
   interface Window {

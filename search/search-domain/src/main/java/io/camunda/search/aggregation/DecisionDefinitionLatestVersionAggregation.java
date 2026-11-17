@@ -33,4 +33,10 @@ public record DecisionDefinitionLatestVersionAggregation(
   // Aggregation fields
   public static final String AGGREGATION_GROUP_DECISION_ID = "decisionId";
   public static final String AGGREGATION_GROUP_TENANT_ID = "tenantId";
+
+  // Total count aggregation
+  public static final String AGGREGATION_NAME_TOTAL_COUNT = "total-count";
+  public static final String DECISION_DEFINITION_AND_TENANT_KEY =
+      "doc['decisionId'].value + '::' + doc['tenantId'].value";
+  public static final String SCRIPT_LANGUAGE = "painless";
 }

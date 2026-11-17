@@ -30,7 +30,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -46,8 +49,10 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -55,17 +60,31 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
@@ -102,6 +121,48 @@ public final class StreamProcessorTest {
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onResumed();
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onClose();
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldRecordDurationOfSlowOnRecoveredListener() throws Exception {
+    // given
+    // A listener slower than the WARN threshold must not prevent recovery from completing, and its
+    // duration must be observable through the timer. The WARN log is not asserted because the
+    // module has no log-capture test dependency.
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final var slowBy = StreamProcessor.SLOW_ON_RECOVERED_LISTENER_THRESHOLD.plusMillis(100);
+    doAnswer(
+            invocation -> {
+              // parkNanos can return early on an unpark permit, which the actor scheduler issues,
+              // so keep parking until the deadline has passed.
+              final long deadline = System.nanoTime() + slowBy.toNanos();
+              long remaining;
+              while ((remaining = deadline - System.nanoTime()) > 0) {
+                LockSupport.parkNanos(remaining);
+              }
+              return null;
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    // when
+    streamPlatform.startStreamProcessor();
+
+    // then
+    verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(any());
+    final var meterRegistry = streamPlatform.getProcessorMeterRegistry();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .find("zeebe.stream.processor.on.recovered.listener.duration")
+                            .timers()
+                            .stream()
+                            .mapToDouble(timer -> timer.totalTime(TimeUnit.MILLISECONDS))
+                            .sum())
+                    .isGreaterThanOrEqualTo(slowBy.toMillis()));
   }
 
   @Test
@@ -166,6 +227,28 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldFailOpeningWhenSnapshotPositionIsNotInLog() throws Exception {
+    // given - a snapshot that claims a position which does not exist in the log
+    streamPlatform.startStreamProcessor();
+    final var zeebeDb = streamPlatform.getZeebeDb();
+    new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext()).markAsProcessed(1_000L);
+    streamPlatform.snapshot();
+    streamPlatform.closeStreamProcessor();
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    Mockito.clearInvocations(mockProcessorLifecycleAware);
+
+    // when - recovering from that snapshot
+    final var startingProcessor =
+        Assertions.assertThatThrownBy(() -> streamPlatform.startStreamProcessorNotAwaitOpening());
+
+    // then - opening fails with the recovery error, not an NPE or a timeout, and listeners know
+    startingProcessor
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasStackTraceContaining("Expected to find event with the snapshot position 1000");
+    verify(mockProcessorLifecycleAware, TIMEOUT).onFailed();
+  }
+
+  @Test
   public void shouldCallRecordProcessorLifecycle() {
     // given
     streamPlatform.writeBatch(
@@ -217,6 +300,22 @@ public final class StreamProcessorTest {
         .verify(defaultRecordProcessor, TIMEOUT)
         .onProcessingError(eq(processingError), any(), any());
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/12240")
+  void shouldCallOnErrorWhenProcessingOverflowsStack() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var processingError = new StackOverflowError("processing error");
+    doThrow(processingError).when(defaultRecordProcessor).process(any(), any());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT).onProcessingError(eq(processingError), any(), any());
   }
 
   @Test
@@ -657,7 +756,6 @@ public final class StreamProcessorTest {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var mockPostCommitTask = mock(PostCommitTask.class);
-    when(mockPostCommitTask.flush()).thenReturn(true);
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
@@ -672,32 +770,219 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldRepeatExecutePostCommitTask() {
+  public void shouldExecuteSideEffectsOnlyAfterProcessingResultsAreCommitted() {
     // given
-    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var mockPostCommitTask = mock(PostCommitTask.class);
-    when(mockPostCommitTask.flush()).thenReturn(false);
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+    logStorage.deferCommits();
 
+    final var postCommitTask = mock(PostCommitTask.class);
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.appendPostCommitTask(mockPostCommitTask);
+    resultBuilder
+        .appendRecord(
+            3,
+            Records.processInstance(3),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""))
+        .withResponse(
+            RecordType.EVENT,
+            3,
+            ELEMENT_ACTIVATING,
+            Records.processInstance(3),
+            ValueType.PROCESS_INSTANCE,
+            RejectionType.NULL_VAL,
+            "",
+            1,
+            12)
+        .appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
-
     streamPlatform.startStreamProcessor();
 
+    await("both commands are processed before their results are committed")
+        .untilAsserted(
+            () -> {
+              verify(defaultMockedRecordProcessor, Mockito.times(2)).process(any(), any());
+              assertThat(logStorage.pendingCommitCount()).isEqualTo(2);
+            });
+
+    final var responseWriter = streamPlatform.getMockCommandResponseWriter();
+    final var processorListener = streamPlatform.getMockStreamProcessorListener();
+    verify(postCommitTask, never()).flush();
+    verify(responseWriter, never()).tryWriteResponse(anyInt(), anyLong());
+    verify(processorListener, never()).onProcessed(anyLong());
+
     // when
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+    logStorage.commitPendingEntries();
 
     // then
-    verify(mockPostCommitTask, TIMEOUT.atLeast(5)).flush();
+    verify(postCommitTask, TIMEOUT.times(2)).flush();
+    verify(responseWriter, TIMEOUT.times(2)).tryWriteResponse(12, 1);
+    verify(processorListener, TIMEOUT.times(2)).onProcessed(anyLong());
+    final var sideEffectOrder = inOrder(postCommitTask, processorListener);
+    sideEffectOrder.verify(postCommitTask).flush();
+    sideEffectOrder.verify(processorListener).onProcessed(1);
+    sideEffectOrder.verify(postCommitTask).flush();
+    sideEffectOrder.verify(processorListener).onProcessed(2);
   }
 
   @Test
-  public void shouldNotRepeatPostCommitOnException() throws Exception {
+  public void shouldReportPendingSideEffects() {
+    // given
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+    logStorage.deferCommits();
+
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder
+        .appendRecord(
+            3,
+            Records.processInstance(3),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""))
+        .appendPostCommitTask(mock(PostCommitTask.class));
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when - both commands are processed but their results are not committed
+    // then - their side effects are reported as pending
+    await("side effects of both processed commands are pending")
+        .untilAsserted(() -> assertThat(pendingSideEffects()).isEqualTo(2));
+
+    // when - the results are committed
+    logStorage.commitPendingEntries();
+
+    // then - no side effects are left pending
+    await("no side effects are pending anymore")
+        .untilAsserted(() -> assertThat(pendingSideEffects()).isZero());
+  }
+
+  @Test
+  public void shouldStopProcessingWhenTooManySideEffectsArePending() {
+    // given - a processor that allows only one processing result to wait for commit
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    final var postCommitTask = mock(PostCommitTask.class);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    logStorage.deferCommits();
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(), true, cfg -> cfg.maxPendingSideEffects(1));
+
+    // when - two commands are written but nothing is committed
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+
+    // then - only the first command is processed, because its side effects fill the queue
+    await("only the first command is processed")
+        .during(Duration.ofMillis(200))
+        .atMost(Duration.ofMillis(TIMEOUT_MILLIS))
+        .untilAsserted(
+            () -> {
+              verify(defaultMockedRecordProcessor, Mockito.times(1)).process(any(), any());
+              assertThat(pendingSideEffects()).isEqualTo(1);
+            });
+  }
+
+  @Test
+  public void shouldResumeProcessingWhenPendingSideEffectsDrain() {
+    // given - processing stopped because the single allowed side effect is waiting for commit
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    final var postCommitTask = mock(PostCommitTask.class);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    logStorage.deferCommits();
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(), true, cfg -> cfg.maxPendingSideEffects(1));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+    await("processing stopped on the full side effect queue")
+        .untilAsserted(
+            () -> verify(defaultMockedRecordProcessor, Mockito.times(1)).process(any(), any()));
+
+    // when - the results are committed, which drains the queue
+    logStorage.commitPendingEntries();
+
+    // then - the blocked command is processed and both side effects run
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(postCommitTask, TIMEOUT.times(2)).flush();
+  }
+
+  private double pendingSideEffects() {
+    return streamPlatform
+        .getProcessorMeterRegistry()
+        .get(StreamMetricsDoc.PENDING_SIDE_EFFECTS.getName())
+        .gauge()
+        .value();
+  }
+
+  @Test
+  public void shouldProcessRecordsBeforeTheyAreCommitted() {
+    // given
+    final var logStorage = new ListLogStorage();
+    streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+    logStorage.deferCommits();
+
+    final var postCommitTask = mock(PostCommitTask.class);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder
+        .appendRecord(
+            2,
+            Records.processInstance(2),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""))
+        .appendPostCommitTask(postCommitTask);
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when - write a command whose results are not committed yet
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then - the command is processed even though its results are not committed yet
+    verify(defaultMockedRecordProcessor, TIMEOUT).process(any(), any());
+    assertThat(logStorage.pendingCommitCount()).isGreaterThanOrEqualTo(1);
+    verify(postCommitTask, never()).flush();
+    verify(streamPlatform.getMockStreamProcessorListener(), never()).onProcessed(anyLong());
+
+    // when - the command and its results are committed
+    logStorage.commitPendingEntries();
+
+    // then - the side effects run
+    verify(postCommitTask, TIMEOUT).flush();
+    verify(streamPlatform.getMockStreamProcessorListener(), TIMEOUT).onProcessed(anyLong());
+  }
+
+  @Test
+  public void shouldLogAndContinueWhenPostCommitTaskThrows() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var mockPostCommitTask = mock(PostCommitTask.class);
-    when(mockPostCommitTask.flush()).thenThrow(new RuntimeException("expected"));
+    doThrow(new RuntimeException("expected")).when(mockPostCommitTask).flush();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
@@ -715,6 +1000,49 @@ public final class StreamProcessorTest {
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
     verify(mockPostCommitTask, TIMEOUT.times(1)).flush();
+    verify(streamPlatform.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(anyLong());
+  }
+
+  @Test
+  public void shouldLogAndContinueWhenSendingResponseThrows() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var mockPostCommitTask = mock(PostCommitTask.class);
+    doThrow(new RuntimeException("expected"))
+        .when(streamPlatform.getMockCommandResponseWriter())
+        .tryWriteResponse(anyInt(), anyLong());
+
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder
+        .withResponse(
+            RecordType.EVENT,
+            3,
+            ELEMENT_ACTIVATING,
+            Records.processInstance(1),
+            ValueType.PROCESS_INSTANCE,
+            RejectionType.NULL_VAL,
+            "",
+            1,
+            12)
+        .appendPostCommitTask(mockPostCommitTask);
+    when(defaultMockedRecordProcessor.process(any(), any()))
+        .thenReturn(resultBuilder.build())
+        .thenReturn(EmptyProcessingResult.INSTANCE);
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then a failed response neither skips the remaining side effects of the same result nor stops
+    // the stream processor
+    verify(mockPostCommitTask, TIMEOUT.times(1)).flush();
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(streamPlatform.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(anyLong());
   }
 
   @Test
@@ -731,9 +1059,7 @@ public final class StreamProcessorTest {
         };
     // in order to not mark the processing as skipped we need to return a result
     testProcessor.processingResult =
-        new BufferedProcessingResultBuilder((c, s) -> true)
-            .appendPostCommitTask(() -> true)
-            .build();
+        new BufferedProcessingResultBuilder((c, s) -> true).appendPostCommitTask(() -> {}).build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
         .when(testProcessor)
@@ -1205,7 +1531,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.appendPostCommitTask(() -> true);
+    resultBuilder.appendPostCommitTask(() -> {});
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
@@ -1217,7 +1543,7 @@ public final class StreamProcessorTest {
     // then
 
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
-    verify(mockStreamProcessorListener, TIMEOUT.times(2)).onProcessed(any());
+    verify(mockStreamProcessorListener, TIMEOUT.times(2)).onProcessed(anyLong());
   }
 
   @Test
@@ -1245,7 +1571,7 @@ public final class StreamProcessorTest {
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.appendPostCommitTask(() -> true);
+    resultBuilder.appendPostCommitTask(() -> {});
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
@@ -1548,6 +1874,179 @@ public final class StreamProcessorTest {
                         && healthReport.getIssue().throwable()
                             instanceof final UncommittedStateException uncommittedStateException
                         && uncommittedStateException.getCause().equals(unexpectedException)));
+  }
+
+  /**
+   * Reproduces the use-after-unmap crash described in
+   * https://github.com/camunda/camunda/issues/57609.
+   *
+   * <p>The {@link ProcessingStateMachine} kept the last-read record as a zero-copy flyweight into a
+   * journal segment's mmap buffer, and used to dereference it <em>after</em> calling {@code
+   * hasNext()}. {@code hasNext()} can cross a segment boundary and unmap the previous segment, so
+   * reading the flyweight afterwards accessed freed memory and crashed the JVM (SIGSEGV).
+   *
+   * <p>This test emulates that by wrapping the real reader: every returned record is copied into a
+   * freshly mmap'd buffer, and crossing to the next record (a {@code hasNext()} that advances)
+   * unmaps the previously returned record's buffer — exactly the window in which the previous
+   * record must no longer be touched. With the buggy ordering the processor thread reads the
+   * unmapped buffer and the JVM crashes; with the fix all reads happen before {@code hasNext()} and
+   * the processor drains the log normally.
+   */
+  @ParameterizedTest(name = "write in separate batches: {0}")
+  @ValueSource(booleans = {false, true})
+  public void shouldNotAccessPreviousRecordAfterHasNext(final boolean writeInSeparateBatches)
+      throws InterruptedException {
+    // given -- a reader that unmaps a returned record when checking for another record
+    final var realStream = streamPlatform.getLogStream();
+    final var spyStream = spy(realStream);
+    final var recordUnmapped = new CountDownLatch(1);
+    doAnswer(
+            invocation ->
+                new UnmapOnCrossReader(
+                    (LogStreamReader) invocation.callRealMethod(), recordUnmapped))
+        .when(spyStream)
+        .newLogStreamReader();
+    doAnswer(
+            invocation ->
+                new UnmapOnCrossReader(
+                    (LogStreamReader) invocation.callRealMethod(), recordUnmapped))
+        .when(spyStream)
+        .newUncommittedLogStreamReader();
+
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    streamPlatform.buildStreamProcessor(spyStream, true);
+
+    final var key = new AtomicInteger(1);
+    final var events =
+        Stream.generate(
+                () ->
+                    RecordToWrite.command()
+                        .processInstance(
+                            ACTIVATE_ELEMENT, Records.processInstance(key.getAndIncrement())))
+            .limit(2)
+            .toArray(RecordToWrite[]::new);
+    // when
+    if (writeInSeparateBatches) {
+      streamPlatform.writeBatch(events[0]);
+      assertThat(recordUnmapped.await(10, TimeUnit.SECONDS)).isTrue();
+      streamPlatform.writeBatch(events[1]);
+    } else {
+      streamPlatform.writeBatch(events);
+    }
+
+    // then -- the processor does not access the invalid previous record
+    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+  }
+
+  /**
+   * Wraps a {@link LogStreamReader}, copying every returned record into its own mmap'd buffer and
+   * unmapping the previously returned record's buffer whenever {@code hasNext()} checks the
+   * underlying reader. This emulates a journal segment being unmapped when the reader crosses a
+   * segment boundary, including when no next record is available yet.
+   */
+  private static final class UnmapOnCrossReader implements LogStreamReader {
+
+    private final LogStreamReader delegate;
+    private final CountDownLatch unavailableNextRecord;
+    private MappedByteBuffer lastMapped;
+    private Path tempFile;
+
+    private UnmapOnCrossReader(
+        final LogStreamReader delegate, final CountDownLatch unavailableNextRecord) {
+      this.delegate = delegate;
+      this.unavailableNextRecord = unavailableNextRecord;
+    }
+
+    @Override
+    public boolean hasNext() {
+      final boolean hasNext = delegate.hasNext();
+      // Checking for the next record may release the previously returned record's segment, even
+      // when no next record is available yet.
+      if (lastMapped != null) {
+        unmapLast();
+        if (!hasNext) {
+          unavailableNextRecord.countDown();
+        }
+      }
+      return hasNext;
+    }
+
+    @Override
+    public LoggedEvent next() {
+      final var event = delegate.next();
+      unmapLast();
+      lastMapped = mapToNativeMemory(event);
+      final var copy = new LoggedEventImpl();
+      copy.wrap(new UnsafeBuffer(lastMapped), 0);
+      return copy;
+    }
+
+    private MappedByteBuffer mapToNativeMemory(final LoggedEvent event) {
+      final int length = event.getLength();
+      try {
+        tempFile = Files.createTempFile("uae-repro-57609", ".seg");
+        try (final var channel =
+            FileChannel.open(tempFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+          final var mapped = channel.map(MapMode.READ_WRITE, 0, length);
+          event.write(new UnsafeBuffer(mapped), 0);
+          return mapped;
+        }
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    @Override
+    public boolean seekToNextEvent(final long position) {
+      return delegate.seekToNextEvent(position);
+    }
+
+    @Override
+    public boolean seek(final long position) {
+      return delegate.seek(position);
+    }
+
+    @Override
+    public void seekToFirstEvent() {
+      delegate.seekToFirstEvent();
+    }
+
+    @Override
+    public long seekToEnd() {
+      return delegate.seekToEnd();
+    }
+
+    @Override
+    public long getPosition() {
+      return delegate.getPosition();
+    }
+
+    @Override
+    public LoggedEvent peekNext() {
+      return delegate.peekNext();
+    }
+
+    private void unmapLast() {
+      try {
+        if (lastMapped != null) {
+          IoUtil.unmap(lastMapped);
+        }
+        if (tempFile != null) {
+          Files.deleteIfExists(tempFile);
+        }
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      } finally {
+        lastMapped = null;
+        tempFile = null;
+      }
+    }
+
+    @Override
+    public void close() {
+      unmapLast();
+      delegate.close();
+    }
   }
 
   private static final class TestProcessor implements RecordProcessor {

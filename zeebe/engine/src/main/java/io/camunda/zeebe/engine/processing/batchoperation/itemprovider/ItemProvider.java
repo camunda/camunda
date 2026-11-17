@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
 import java.util.List;
 
 public interface ItemProvider {
@@ -17,7 +17,7 @@ public interface ItemProvider {
   ItemPage fetchItemPage(String cursor, int pageSize);
 
   default SecurityContext createSecurityContext(
-      final CamundaAuthentication authentication, final Authorization authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<?> authorization) {
     return SecurityContext.of(
         b -> b.withAuthentication(authentication).withAuthorization(authorization));
   }
@@ -30,8 +30,10 @@ public interface ItemProvider {
    * @param processInstanceKey the key of the process instance this item belongs to
    * @param rootProcessInstanceKey the key of the root process instance this item belongs to (or
    *     null if not known)
+   * @param storageOrdinal storage ordinal this item is part of (or null if not known)
    */
-  record Item(long itemKey, long processInstanceKey, Long rootProcessInstanceKey) {}
+  record Item(
+      long itemKey, long processInstanceKey, Long rootProcessInstanceKey, Integer storageOrdinal) {}
 
   /**
    * Internal abstraction to hold the result of a page of entity items.

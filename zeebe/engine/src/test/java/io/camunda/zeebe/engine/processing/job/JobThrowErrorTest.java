@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -474,5 +475,126 @@ public final class JobThrowErrorTest {
             + expectedJobMessage
             + "', but it was not caught. No error events are available in the scope.";
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedIncidentMessage);
+  }
+
+  @Test
+  public void shouldThrowErrorOnLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batch.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withJobLeaseToken(jobLeaseToken)
+            .withErrorCode("error")
+            .throwError();
+
+    // then
+    Assertions.assertThat(result)
+        .describedAs("A throw-error command with a matching lease token is accepted")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ERROR_THROWN);
+    Assertions.assertThat(result.getValue()).hasErrorCode("error");
+  }
+
+  @Test
+  public void shouldRejectThrowErrorOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batch.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE.job().withKey(jobKey).withErrorCode("error").expectRejection().throwError();
+
+    // then
+    Assertions.assertThat(result)
+        .describedAs("A throw-error command without a lease token on a leased job is rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(result.getRejectionReason())
+        .contains("must be provided")
+        .doesNotContain(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldRejectThrowErrorOnLeasedJobWithWrongLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batch.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withJobLeaseToken("stale-lease-token")
+            .withErrorCode("error")
+            .expectRejection()
+            .throwError();
+
+    // then
+    Assertions.assertThat(result)
+        .describedAs("A throw-error command with a non-matching lease token is rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(result.getRejectionReason())
+        .contains("does not match")
+        .doesNotContain(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldThrowErrorOnNonLeasedJobWithoutLease() {
+    // given
+    final var job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE.job().withKey(job.getKey()).withErrorCode("error").throwError();
+
+    // then
+    Assertions.assertThat(result)
+        .describedAs("A throw-error command on a non-leased job is accepted without a lease token")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ERROR_THROWN);
+    Assertions.assertThat(result.getValue()).hasErrorCode("error");
+  }
+
+  @Test
+  public void shouldRejectJobThrowErrorForBannedProcessInstance() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.job().withKey(jobKey).expectRejection().throwError();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
   }
 }

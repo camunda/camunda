@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.restore;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -15,23 +17,27 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Objects;
+import java.nio.file.StandardCopyOption;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.SortedSet;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,21 +50,21 @@ public class PartitionRestoreService {
   final Path rootDirectory;
   private final RaftPartition partition;
   private final int brokerId;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider fileInfoProvider;
   private final MeterRegistry meterRegistry;
 
   public PartitionRestoreService(
       final BackupStore backupStore,
       final RaftPartition partition,
       final int brokerId,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
-    partitionId = partition.id().id();
+    partitionId = partition.id().number();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.brokerId = brokerId;
-    this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.fileInfoProvider = requireNonNull(fileInfoProvider);
     this.meterRegistry = meterRegistry;
   }
 
@@ -68,18 +74,18 @@ public class PartitionRestoreService {
    */
   public void restore(final long backupId, final BackupValidator validator)
       throws IOException, FlushException {
-    restore(new long[] {backupId}, validator);
+    restore(PartitionRestore.ofBackups(backupId), validator);
   }
 
   /**
    * Downloads backups, restores them to the partition's data directory. Backups are truncated to
-   * checkpoint positions.
+   * checkpoint positions, and the last one to the restore's checkpoint position when it has one.
    *
-   * @param backupIds ids of the backups to restore from
+   * @param restore what the partition is restored from
    */
-  public void restore(final long[] backupIds, final BackupValidator validator)
+  public void restore(final PartitionRestore restore, final BackupValidator validator)
       throws IOException, FlushException {
-    validateAndSortBackupIds(backupIds);
+    validateBackupIds(restore.backupIds());
 
     try (final var restoredJournal =
         SegmentedJournal.builder(partition.getMeterRegistry())
@@ -88,7 +94,8 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
-      for (final var backupId : backupIds) {
+      final long lastBackupId = restore.backupIds().last();
+      for (final var backupId : restore.backupIds()) {
         final var restoreTarget =
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
         FileUtil.ensureDirectoryExists(restoreTarget);
@@ -97,7 +104,13 @@ public class PartitionRestoreService {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
         }
-        copyBetweenCheckpoints(previousBackup, backup, restoreTarget, restoredJournal);
+        renameLegacyJournalFiles(restoreTarget);
+        final var checkpointPosition = backup.descriptor().checkpointPosition();
+        final var untilPosition =
+            backupId == lastBackupId
+                ? restore.checkpointPosition().orElse(checkpointPosition)
+                : checkpointPosition;
+        copyBetweenCheckpoints(previousBackup, untilPosition, restoreTarget, restoredJournal);
         previousBackup = backup;
         FileUtil.deleteFolder(restoreTarget);
       }
@@ -109,31 +122,27 @@ public class PartitionRestoreService {
     // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
-  /** Ensures that we have a valid array of backup ids. */
-  private static void validateAndSortBackupIds(final long[] backupIds) {
-    if (backupIds.length == 0) {
+  private static void validateBackupIds(final SortedSet<Long> backupIds) {
+    if (backupIds.isEmpty()) {
       throw new IllegalArgumentException("No backups to restore");
     }
-
-    for (final long backupId : backupIds) {
-      if (backupId < 0) {
-        throw new IllegalArgumentException("Backup id must not be negative but was " + backupId);
-      }
+    if (backupIds.first() < 0) {
+      throw new IllegalArgumentException(
+          "Backup id must not be negative but was " + backupIds.first());
     }
-    Arrays.sort(backupIds);
   }
 
   /**
    * This copies records from the journal in the source directory to the target journal. Records
-   * outside of the checkpoint range <code>(previousBackup.checkpointPosition,
-   * sourceBackup.checkpointPosition]</code> are skipped.
+   * outside of the range <code>(previousBackup.checkpointPosition, untilPosition]</code> are
+   * skipped.
    *
    * <p>If this is the first backup we are restoring, the target journal will be reset to match the
    * index of the source journal.
    */
   private void copyBetweenCheckpoints(
-      final Backup previousBackup,
-      final Backup sourceBackup,
+      final @Nullable Backup previousBackup,
+      final long untilPosition,
       final Path sourceDirectory,
       final Journal targetJournal) {
     try (final var sourceJournal =
@@ -154,8 +163,7 @@ public class PartitionRestoreService {
         targetJournal.reset(sourceReader.getNextIndex());
       }
 
-      copyUntilCheckpoint(
-          targetJournal, sourceReader, sourceBackup.descriptor().checkpointPosition());
+      copyUntilCheckpoint(targetJournal, sourceReader, untilPosition);
     }
   }
 
@@ -176,10 +184,9 @@ public class PartitionRestoreService {
       final Journal targetJournal,
       final JournalReader sourceReader,
       final long checkpointPosition) {
-    final var recordWriter = new DirectBufferWriter();
     while (sourceReader.hasNext()) {
       final var record = sourceReader.next();
-      targetJournal.append(record.asqn(), recordWriter.wrap(record.data()));
+      targetJournal.append(record.asqn(), new DirectBufferWriter(record.data()));
       if (record.asqn() == checkpointPosition) {
         LOG.debug("Copied up to checkpoint record {} from source journal", record);
         return;
@@ -206,6 +213,34 @@ public class PartitionRestoreService {
             .formatted(checkpointPosition));
   }
 
+  /**
+   * Renames any journal segment files in the restore target that use the legacy partition group
+   * name {@code raft-partition} to the current partition name. This allows restoring backups taken
+   * with the old partition group naming (see #50538) by a broker using the new {@code default}
+   * naming.
+   *
+   * <p>The source {@link SegmentedJournal} used by {@link #copyBetweenCheckpoints} discovers
+   * segments by exact prefix match against {@link RaftPartition#name()}; without this rename, files
+   * from old backups are invisible to it and the restore fails with a missing checkpoint.
+   */
+  private void renameLegacyJournalFiles(final Path restoreTarget) throws IOException {
+    final var legacyPrefix = "raft-partition-partition-" + partitionId;
+    final var currentPrefix = partition.name();
+    if (legacyPrefix.equals(currentPrefix)) {
+      return;
+    }
+    try (final var files = Files.newDirectoryStream(restoreTarget)) {
+      for (final var file : files) {
+        final var fileName = file.getFileName().toString();
+        if (fileName.startsWith(legacyPrefix + "-") && fileName.endsWith(".log")) {
+          final var newName = currentPrefix + fileName.substring(legacyPrefix.length());
+          LOG.debug("Renaming legacy journal file {} to {}", fileName, newName);
+          Files.move(file, restoreTarget.resolve(newName), StandardCopyOption.ATOMIC_MOVE);
+        }
+      }
+    }
+  }
+
   private void moveSnapshotFiles(final Backup backup) {
     if (backup.descriptor().snapshotId().isEmpty()) {
       return;
@@ -215,9 +250,9 @@ public class PartitionRestoreService {
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
             brokerId,
-            partition.id().id(),
+            partition.id(),
             partition.dataDirectory().toPath(),
-            checksumProvider,
+            fileInfoProvider,
             meterRegistry);
 
     try {
@@ -249,7 +284,10 @@ public class PartitionRestoreService {
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
             .findAny()
-            .orElseThrow(() -> new BackupNotFoundException(checkpointId));
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "Could not find a completed backup with id %d.".formatted(checkpointId)));
     validator.validateStatus(validStatus);
     return validStatus.id();
   }

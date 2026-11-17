@@ -19,7 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ST
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -30,6 +30,12 @@ public class ProcessDefinitionInstanceVersionStatisticsFilterTransformer
   public ProcessDefinitionInstanceVersionStatisticsFilterTransformer(
       final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
+  }
+
+  @Override
+  protected boolean matchesOnlyRuntimeData(
+      final ProcessDefinitionInstanceVersionStatisticsFilter filter) {
+    return true;
   }
 
   @Override
@@ -44,7 +50,8 @@ public class ProcessDefinitionInstanceVersionStatisticsFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

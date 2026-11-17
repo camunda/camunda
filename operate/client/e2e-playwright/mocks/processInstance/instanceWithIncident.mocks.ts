@@ -22,9 +22,11 @@ const instanceWithIncident: InstanceMock = {
     hasIncident: true,
     processDefinitionVersionTag: null,
     endDate: null,
+    suspendedDate: null,
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
   },
   callHierarchy: [
     {

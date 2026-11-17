@@ -67,9 +67,50 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    *
    * <p>This event is not applied to the state, but is used for auditing reasons.
    */
-  CANCELING((short) 16);
+  CANCELING((short) 16),
 
-  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
+  SUSPEND((short) 17, false),
+  SUSPENDED((short) 18),
+  RESUME((short) 19, false),
+  RESUMED((short) 20),
+
+  /**
+   * Represents the intent that signals that a suspended process instance has started resuming: the
+   * commands that were buffered while it was suspended are being drained, and the instance is not
+   * fully resumed until {@link #RESUMED} is written.
+   */
+  RESUMING((short) 21),
+
+  /**
+   * Represents the internal command that finalizes the resume lifecycle once every parked job and
+   * suspended user task has been resumed. {@link #RESUME_JOBS} writes this command once none are
+   * left; a dedicated processor reacts by writing {@link #RESUMED}.
+   */
+  COMPLETE_RESUMING((short) 22, false),
+
+  /**
+   * Represents the internal command that un-parks suspended jobs of the instance, appending itself
+   * again until none are left, then handing off to {@link #COMPLETE_RESUMING}. {@link
+   * #RESUME_USER_TASKS} writes the first cycle once no suspended user task is left, or the drain
+   * processor when the drain is complete and the instance has no suspended user task.
+   */
+  RESUME_JOBS((short) 23, false),
+
+  /**
+   * Marks the instance as suspending while its subscriptions are closed and jobs are suspended,
+   * before {@link #SUSPENDED} is written in the same processing batch.
+   */
+  SUSPENDING((short) 24),
+
+  /**
+   * Represents the internal command that resumes suspended user tasks of the instance, appending
+   * itself again until none are left, then handing off to {@link #RESUME_JOBS}. The drain processor
+   * writes the first cycle when the buffered-command drain is complete.
+   */
+  RESUME_USER_TASKS((short) 25, false);
+
+  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
+      EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS, RESUME_USER_TASKS);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -130,6 +171,24 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return SEQUENCE_FLOW_DELETED;
       case 16:
         return CANCELING;
+      case 17:
+        return SUSPEND;
+      case 18:
+        return SUSPENDED;
+      case 19:
+        return RESUME;
+      case 20:
+        return RESUMED;
+      case 21:
+        return RESUMING;
+      case 22:
+        return COMPLETE_RESUMING;
+      case 23:
+        return RESUME_JOBS;
+      case 24:
+        return SUSPENDING;
+      case 25:
+        return RESUME_USER_TASKS;
       default:
         return Intent.UNKNOWN;
     }
@@ -154,6 +213,10 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ANCESTOR_MIGRATED:
       case SEQUENCE_FLOW_DELETED:
       case CANCELING:
+      case SUSPENDING:
+      case SUSPENDED:
+      case RESUMING:
+      case RESUMED:
         return true;
       default:
         return false;

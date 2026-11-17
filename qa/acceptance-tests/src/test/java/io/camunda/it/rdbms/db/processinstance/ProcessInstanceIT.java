@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -26,13 +27,18 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessInstanceSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -67,13 +73,15 @@ public class ProcessInstanceIT {
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
                     .version(1)
-                    .businessId("test-business-id")));
+                    .businessId("test-business-id")
+                    .storageOrdinal(3)));
 
     final var instance = processInstanceReader.findOne(processInstanceKey).orElse(null);
 
     assertThat(instance).isNotNull();
     assertThat(instance.processInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(instance.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(instance.storageOrdinal()).isEqualTo(3);
     assertThat(instance.processDefinitionId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
@@ -133,6 +141,95 @@ public class ProcessInstanceIT {
     assertThat(readInstance).isNotNull();
     assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.COMPLETED);
     assertThat(readInstance.tags()).containsExactlyInAnyOrder("foo", "bar");
+  }
+
+  @TestTemplate
+  public void shouldNotRevertToActiveWhenResumeAndFinishLandInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    // given
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, instance);
+
+    // when
+    rdbmsWriters.getProcessInstanceWriter().suspend(instance.processInstanceKey(), NOW);
+    rdbmsWriters.getProcessInstanceWriter().resume(instance.processInstanceKey());
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.COMPLETED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.COMPLETED);
+    assertThat(readInstance.endDate()).isNotNull();
+  }
+
+  @TestTemplate
+  public void shouldClearSuspendedDateWhenSuspendAndFinishLandInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    // given
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+
+    // when
+    rdbmsWriters.getProcessInstanceWriter().create(instance);
+    rdbmsWriters.getProcessInstanceWriter().suspend(instance.processInstanceKey(), NOW);
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.CANCELED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.CANCELED);
+    assertThat(readInstance.suspendedDate()).isNull();
+  }
+
+  @TestTemplate
+  public void shouldClearSuspendedDateWhenCancellingAlreadyFlushedSuspendedInstance(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    // given
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.state(ProcessInstanceState.ACTIVE).suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, instance);
+    rdbmsWriters.getProcessInstanceWriter().suspend(instance.processInstanceKey(), NOW);
+    rdbmsWriters.flush();
+
+    // when
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.CANCELED, NOW);
+    rdbmsWriters.flush();
+
+    // then
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.CANCELED);
+    assertThat(readInstance.suspendedDate()).isNull();
   }
 
   @TestTemplate
@@ -262,6 +359,77 @@ public class ProcessInstanceIT {
     assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
         .containsExactlyInAnyOrder(
             incidentPI1.processInstanceKey(), incidentPI2.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterBySuspendedDate(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var suspendedDate = NOW;
+    final ProcessInstanceDbModel suspendedInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(suspendedDate));
+    final ProcessInstanceDbModel activeInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, suspendedInstance);
+    createAndSaveProcessInstance(rdbmsWriters, activeInstance);
+
+    final var dateFilteredResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.suspendedDateOperations(
+                                        Operation.gte(suspendedDate.minusMinutes(1)))
+                                    .processInstanceKeys(
+                                        suspendedInstance.processInstanceKey(),
+                                        activeInstance.processInstanceKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(dateFilteredResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .contains(suspendedInstance.processInstanceKey())
+        .doesNotContain(activeInstance.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterBySuspendedDateRange(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var insideRange = NOW;
+    final ProcessInstanceDbModel insideInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(insideRange));
+    final ProcessInstanceDbModel beforeInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(insideRange.minusDays(2)));
+    final ProcessInstanceDbModel afterInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspendedDate(insideRange.plusDays(2)));
+    createAndSaveProcessInstance(rdbmsWriters, insideInstance);
+    createAndSaveProcessInstance(rdbmsWriters, beforeInstance);
+    createAndSaveProcessInstance(rdbmsWriters, afterInstance);
+
+    final var rangeFilteredResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.suspendedDateOperations(
+                                        Operation.gte(insideRange.minusDays(1)),
+                                        Operation.lt(insideRange.plusDays(1)))
+                                    .processInstanceKeys(
+                                        insideInstance.processInstanceKey(),
+                                        beforeInstance.processInstanceKey(),
+                                        afterInstance.processInstanceKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(rangeFilteredResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .contains(insideInstance.processInstanceKey())
+        .doesNotContain(beforeInstance.processInstanceKey(), afterInstance.processInstanceKey());
   }
 
   @TestTemplate
@@ -409,6 +577,71 @@ public class ProcessInstanceIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(10);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 20));
+  }
+
+  @TestTemplate
+  public void shouldFindProcessInstanceWithSearchBefore(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - three pages traversed forwards
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    createAndSaveRandomProcessInstances(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(processDefinition.processDefinitionKey())
+                .processDefinitionId(processDefinition.processDefinitionId()));
+    final var sort = ProcessInstanceSort.of(s -> s.startDate().desc());
+
+    final var firstPage =
+        searchProcessInstances(processInstanceReader, processDefinition, sort, p -> p.size(5));
+    final var secondPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).after(firstPage.endCursor()));
+    final var thirdPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).after(secondPage.endCursor()));
+
+    // when - paging backwards from the third page
+    final var backToSecondPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).before(thirdPage.startCursor()));
+    final var backToFirstPage =
+        searchProcessInstances(
+            processInstanceReader,
+            processDefinition,
+            sort,
+            p -> p.size(5).before(backToSecondPage.startCursor()));
+
+    // then - the same entries in the same order as the forward traversal produced
+    assertThat(backToSecondPage.total()).isEqualTo(20);
+    assertThat(backToSecondPage.items()).isEqualTo(secondPage.items());
+    assertThat(backToFirstPage.items()).isEqualTo(firstPage.items());
+  }
+
+  private static SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
+      final ProcessInstanceDbReader processInstanceReader,
+      final ProcessDefinitionDbModel processDefinition,
+      final ProcessInstanceSort sort,
+      final Function<SearchQueryPage.Builder, ObjectBuilder<SearchQueryPage>> page) {
+    return processInstanceReader.search(
+        ProcessInstanceQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                    .sort(sort)
+                    .page(page)));
   }
 
   @TestTemplate

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -28,9 +28,7 @@ test.describe.parallel('login page', () => {
     await loginPage.login('demo', 'wrong-password');
     await expect(page).toHaveURL(`${relativizePath(Paths.login('admin'))}`);
 
-    await expect(loginPage.errorMessage).toContainText(
-      "Username and password don't match",
-    );
+    await expect(loginPage.invalidCredentialsError).toBeVisible();
 
     await expect(page).toHaveURL(`${relativizePath(Paths.login('admin'))}`);
   });

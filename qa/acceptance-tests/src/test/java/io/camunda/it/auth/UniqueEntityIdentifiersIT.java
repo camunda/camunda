@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ public class UniqueEntityIdentifiersIT {
     // assign group to tenant
     client.newAssignGroupToTenantCommand().groupId(conflictingId).tenantId(tenantId).send().join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -48,6 +50,7 @@ public class UniqueEntityIdentifiersIT {
     // assign role to tenant with the same ID
     client.newAssignRoleToTenantCommand().roleId(conflictingId).tenantId(tenantId).send().join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -89,6 +92,7 @@ public class UniqueEntityIdentifiersIT {
     // assign user to group
     client.newAssignUserToGroupCommand().username(conflictingId).groupId(groupId).send().join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -106,6 +110,7 @@ public class UniqueEntityIdentifiersIT {
         .send()
         .join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -141,6 +146,7 @@ public class UniqueEntityIdentifiersIT {
     // assign user to role
     client.newAssignRoleToUserCommand().roleId(roleId).username(conflictingId).send().join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -153,6 +159,7 @@ public class UniqueEntityIdentifiersIT {
     // assign group to role with the same ID
     client.newAssignRoleToGroupCommand().roleId(roleId).groupId(conflictingId).send().join();
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

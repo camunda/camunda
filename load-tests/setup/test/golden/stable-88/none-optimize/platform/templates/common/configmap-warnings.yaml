@@ -1,0 +1,22 @@
+---
+# Source: camunda-platform/templates/common/configmap-warnings.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-golden-stable-88-none-optimize-camunda-platform-warnings
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-88-none-optimize
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+  annotations:
+    {}
+data:
+  warnings: |-
+    [camunda][warning] DEPRECATION: global.documentStore.type.aws.accessKeyId is using legacy secret configuration at 'global.documentStore.type.aws.accessKeyId'. This method is deprecated and will be removed in a future version. Please migrate to the new format: 'global.documentStore.type.aws.accessKeyId.secret.existingSecret' for referencing secrets or 'global.documentStore.type.aws.accessKeyId.secret.inlineSecret' for plain-text values (non-production only).
+    [camunda][warning] DEPRECATION: global.documentStore.type.aws.secretAccessKey is using legacy secret configuration at 'global.documentStore.type.aws.secretAccessKey'. This method is deprecated and will be removed in a future version. Please migrate to the new format: 'global.documentStore.type.aws.secretAccessKey.secret.existingSecret' for referencing secrets or 'global.documentStore.type.aws.secretAccessKey.secret.inlineSecret' for plain-text values (non-production only).
+    [camunda][warning] DEPRECATION: global.documentStore.type.gcp is using legacy secret configuration at 'global.documentStore.type.gcp'. This method is deprecated and will be removed in a future version. Please migrate to the new format: 'global.documentStore.type.gcp.secret.existingSecret' for referencing secrets or 'global.documentStore.type.gcp.secret.inlineSecret' for plain-text values (non-production only).

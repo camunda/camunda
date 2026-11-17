@@ -10,9 +10,9 @@ package io.camunda.service.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ class SecurityContextProviderTest {
   void shouldProvideSecurityContextWithSingleAuthorizationCondition() {
     // given
     final var authentication = mock(CamundaAuthentication.class);
-    final var authorization = mock(Authorization.class);
+    final var authorization = mock(RequiredAuthorization.class);
 
     // when
     final var securityContext =
@@ -45,8 +45,8 @@ class SecurityContextProviderTest {
   void shouldProvideSecurityContextWithAnyOfAuthorizationCondition() {
     // given
     final var authentication = mock(CamundaAuthentication.class);
-    final var authorizationA = mock(Authorization.class);
-    final var authorizationB = mock(Authorization.class);
+    final var authorizationA = mock(RequiredAuthorization.class);
+    final var authorizationB = mock(RequiredAuthorization.class);
 
     // when
     final var securityContext =

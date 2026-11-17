@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ALL;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 
 public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
@@ -38,44 +39,49 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       "Expected to claim user task with key '%d', but it has already been assigned";
   private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
       "Expected to claim user task with key '%d', but provided assignee is empty";
+  private static final String INVALID_USER_TASK_CLAIM_FOR_OTHER_USER_MESSAGE =
+      "Expected to claim user task with key '%d', but the assignee '%s' does not match the calling user '%s'";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final UserTaskAuthorizationCheck userTaskAuth;
   private final UserTaskCommandPreconditionValidator commandChecker;
 
   public UserTaskClaimProcessor(
       final ProcessingState state,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslTenantCheck tenantCheck,
+      final UserTaskAuthorizationCheck userTaskAuth) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.userTaskAuth = userTaskAuth;
     commandChecker =
         new UserTaskCommandPreconditionValidator(
-            List.of(LifecycleState.CREATED), "claim", state.getUserTaskState(), authCheckBehavior);
+            List.of(LifecycleState.CREATED),
+            "claim",
+            state.getUserTaskState(),
+            tenantCheck,
+            state.getBannedInstanceState());
   }
 
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return commandChecker
-        .checkUserTaskExists(command)
-        .flatMap(userTask -> enrichCommandForRejection(command, userTask))
-        .flatMap(userTask -> checkAuthorization(command, userTask))
-        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask))
-        .flatMap(userTask -> checkClaim(command, userTask));
+        .validate(command, task -> checkAuthorization(command, task))
+        .flatMap(task -> checkClaim(command, task));
   }
 
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        userTaskRecord.getElementInstanceKey(), userTaskRecord.getStorageOrdinal(), command);
 
     final var newAssignee = command.getValue().getAssignee();
     if (!userTaskRecord.getAssignee().equals(newAssignee)) {
@@ -98,14 +104,14 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
     if (asyncRequest.isEmpty()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
       return;
     }
 
     final var request = asyncRequest.get();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeResponse(
+    responseWriter.writeAcceptedResponse(
         userTaskKey,
         UserTaskIntent.ASSIGNED,
         userTaskRecord,
@@ -117,15 +123,14 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return authCheckBehavior
-        .isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.CLAIM_USER_TASK),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.CLAIM))
-        .map(ignored -> persistedUserTask);
+    // 4-way OR: PD.UPDATE_USER_TASK || PD.CLAIM_USER_TASK || UT.UPDATE || UT.CLAIM
+    return userTaskAuth.check(
+        command,
+        persistedUserTask,
+        processDefinition(PermissionType.UPDATE_USER_TASK),
+        processDefinition(PermissionType.CLAIM_USER_TASK),
+        userTask(PermissionType.UPDATE, ALL),
+        userTask(PermissionType.CLAIM, ALL));
   }
 
   private static Either<Rejection, UserTaskRecord> checkClaim(
@@ -140,6 +145,18 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
               String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, userTaskKey)));
     }
 
+    final Optional<String> callerUsername = getCallerUsername(command);
+    if (callerUsername.isPresent() && !callerUsername.get().equals(newAssignee)) {
+      return Either.left(
+          new Rejection(
+              RejectionType.FORBIDDEN,
+              String.format(
+                  INVALID_USER_TASK_CLAIM_FOR_OTHER_USER_MESSAGE,
+                  userTaskKey,
+                  newAssignee,
+                  callerUsername.get())));
+    }
+
     final String currentAssignee = userTaskRecord.getAssignee();
     final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(newAssignee);
     if (!canClaim) {
@@ -150,5 +167,9 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     }
 
     return Either.right(userTaskRecord);
+  }
+
+  private static Optional<String> getCallerUsername(final TypedRecord<?> command) {
+    return Optional.ofNullable(command.getAuthInfo().getUsername());
   }
 }

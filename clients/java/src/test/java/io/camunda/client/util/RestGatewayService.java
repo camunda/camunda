@@ -21,6 +21,13 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.protocol.rest.AgentDefinitionResult;
+import io.camunda.client.protocol.rest.AgentDefinitionSearchQueryResult;
+import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
+import io.camunda.client.protocol.rest.AgentInstanceHistorySearchQueryResult;
+import io.camunda.client.protocol.rest.AgentInstanceResult;
+import io.camunda.client.protocol.rest.AgentInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.AgentInstanceUpdateResult;
 import io.camunda.client.protocol.rest.AuditLogResult;
 import io.camunda.client.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.client.protocol.rest.AuthorizationCreateResult;
@@ -28,6 +35,8 @@ import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.client.protocol.rest.ClockResult;
+import io.camunda.client.protocol.rest.ClusterStatusResponse;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
@@ -62,11 +71,14 @@ import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatistic
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
+import io.camunda.client.protocol.rest.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.protocol.rest.RoleUpdateResult;
 import io.camunda.client.protocol.rest.SearchQueryResponse;
+import io.camunda.client.protocol.rest.SecretListResult;
+import io.camunda.client.protocol.rest.SecretResolveResult;
 import io.camunda.client.protocol.rest.SignalBroadcastResult;
 import io.camunda.client.protocol.rest.TenantCreateResult;
 import io.camunda.client.protocol.rest.TenantResult;
@@ -75,6 +87,7 @@ import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UserCreateResult;
 import io.camunda.client.protocol.rest.UserResult;
+import io.camunda.client.protocol.rest.UserTaskLookupResult;
 import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserUpdateResult;
 import io.camunda.client.protocol.rest.VariableResult;
@@ -124,6 +137,24 @@ public class RestGatewayService {
    */
   public void onTopologyRequest(final TopologyResponse response) {
     registerGet(RestGatewayPaths.getTopologyUrl(), response);
+  }
+
+  /**
+   * Register the given response for get clock requests.
+   *
+   * @param response the response to provide upon a get clock request
+   */
+  public void onClockRequest(final ClockResult response) {
+    registerGet(RestGatewayPaths.getClockUrl(), response);
+  }
+
+  /**
+   * Register the given response for add clock requests.
+   *
+   * @param response the response to provide upon an add clock request
+   */
+  public void onAddClockRequest(final ClockResult response) {
+    registerPost(RestGatewayPaths.getClockAddUrl(), response);
   }
 
   public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
@@ -213,6 +244,10 @@ public class RestGatewayService {
     register(WireMock.put(url), response);
   }
 
+  private void registerPatch(final String url, final Object response) {
+    register(WireMock.patch(url), response);
+  }
+
   private void register(final MappingBuilder builder, final Object response) {
     mockInfo
         .getWireMock()
@@ -227,6 +262,14 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getCreateUserUrl(), response);
   }
 
+  public void onSecretsResolveRequest(final SecretResolveResult response) {
+    registerPost(RestGatewayPaths.getSecretsResolveUrl(), response);
+  }
+
+  public void onSecretsListRequest(final SecretListResult response) {
+    registerPost(RestGatewayPaths.getSecretsListUrl(), response);
+  }
+
   public void onCorrelateMessageRequest(final MessageCorrelationResult response) {
     registerPost(RestGatewayPaths.getMessageCorrelationUrl(), response);
   }
@@ -234,6 +277,12 @@ public class RestGatewayService {
   public void onProcessInstanceCallHierarchyRequest(
       final long processInstanceKey, final Object[] response) {
     registerGet(RestGatewayPaths.getProcessInstanceCallHierarchyUrl(processInstanceKey), response);
+  }
+
+  public void onProcessInstanceWaitStateStatisticsRequest(
+      final long processInstanceKey, final ProcessInstanceWaitStateStatisticsQueryResult response) {
+    registerGet(
+        RestGatewayPaths.getProcessInstanceWaitStateStatisticsUrl(processInstanceKey), response);
   }
 
   public void onProcessInstanceRequest(
@@ -279,6 +328,14 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getProcessInstancesCancelUrl(), response);
   }
 
+  public void onSuspendProcessInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesSuspendUrl(), response);
+  }
+
+  public void onResumeProcessInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesResumeUrl(), response);
+  }
+
   public void onDeleteProcessInstanceRequest(
       final long processInstanceKey, final BatchOperationCreatedResult response) {
     registerPost(RestGatewayPaths.getDeleteProcessInstanceUrl(processInstanceKey), response);
@@ -302,6 +359,10 @@ public class RestGatewayService {
 
   public void onDeleteDecisionInstancesRequest(final BatchOperationCreatedResult response) {
     registerPost(RestGatewayPaths.getDecisionInstancesDeletionUrl(), response);
+  }
+
+  public void onUpdateJobsBatchRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getJobsBatchUpdateUrl(), response);
   }
 
   public void onCreateAuthorizationRequest(final AuthorizationCreateResult response) {
@@ -365,6 +426,47 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getBatchOperationUrl(batchOperationKey), response);
   }
 
+  public void onAgentDefinitionGetRequest(
+      final long agentDefinitionKey, final AgentDefinitionResult response) {
+    registerGet(RestGatewayPaths.getAgentDefinitionUrl(agentDefinitionKey), response);
+  }
+
+  public void onAgentDefinitionSearchRequest(final AgentDefinitionSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAgentDefinitionsSearchUrl(), response);
+  }
+
+  public void onCreateAgentInstanceRequest(final AgentInstanceCreationResult response) {
+    registerPost(RestGatewayPaths.getAgentInstancesUrl(), response);
+  }
+
+  public void onAgentInstanceHistorySearchRequest(
+      final long agentInstanceKey, final AgentInstanceHistorySearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAgentHistorySearchUrl(agentInstanceKey), response);
+  }
+
+  public void onUpdateAgentInstanceRequest(final long agentInstanceKey) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.patch(
+                    WireMock.urlEqualTo(RestGatewayPaths.getAgentInstanceUrl(agentInstanceKey)))
+                .willReturn(WireMock.noContent()));
+  }
+
+  public void onUpdateAgentInstanceRequest(
+      final long agentInstanceKey, final AgentInstanceUpdateResult response) {
+    registerPatch(RestGatewayPaths.getAgentInstanceUrl(agentInstanceKey), response);
+  }
+
+  public void onAgentInstanceGetRequest(
+      final long agentInstanceKey, final AgentInstanceResult response) {
+    registerGet(RestGatewayPaths.getAgentInstanceUrl(agentInstanceKey), response);
+  }
+
+  public void onAgentInstanceSearchRequest(final AgentInstanceSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAgentInstancesSearchUrl(), response);
+  }
+
   public void onSearchBatchOperationsRequest(final BatchOperationSearchQueryResult response) {
     registerPost(RestGatewayPaths.getBatchOperationsSearchUrl(), response);
   }
@@ -384,6 +486,10 @@ public class RestGatewayService {
 
   public void onUserTaskRequest(final long userTaskKey, final UserTaskResult response) {
     registerGet(RestGatewayPaths.getUserTaskUrl(userTaskKey), response);
+  }
+
+  public void onLookupUserTaskRequest(final long userTaskKey, final UserTaskLookupResult response) {
+    registerPost(RestGatewayPaths.getUserTaskLookupUrl(userTaskKey), response);
   }
 
   public void onElementInstanceRequest(
@@ -459,6 +565,17 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getAuditLogSearchUrl(), response);
   }
 
+  public void onSearchElementInstanceWaitStatesRequest(
+      final io.camunda.client.protocol.rest.ElementInstanceWaitStateQueryResult response) {
+    registerPost(RestGatewayPaths.getElementInstanceWaitStateSearchUrl(), response);
+  }
+
+  public void onSearchCorrelatedMessageSubscriptionsRequest(
+      final io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult
+          response) {
+    registerPost(RestGatewayPaths.getCorrelatedMessageSubscriptionsSearchUrl(), response);
+  }
+
   public void onSearchUserTaskAuditLogRequest(
       final long userTaskKey, final AuditLogSearchQueryResult response) {
     registerPost(RestGatewayPaths.getUserTaskAuditLogSearchUrl(userTaskKey), response);
@@ -515,15 +632,20 @@ public class RestGatewayService {
   }
 
   public void onStatusRequestHealthy() {
-    onStatusRequest(204);
+    onStatusRequest(200, ClusterStatusResponse.StatusEnum.HEALTHY);
+  }
+
+  public void onStatusRequestDegraded() {
+    onStatusRequest(200, ClusterStatusResponse.StatusEnum.DEGRADED);
   }
 
   public void onStatusRequestUnhealthy() {
-    onStatusRequest(503);
+    onStatusRequest(503, ClusterStatusResponse.StatusEnum.DOWN);
   }
 
   /**
-   * Register a status response with a custom HTTP status code.
+   * Register a bodyless status response with a custom HTTP status code, to exercise how the client
+   * maps a status code it does not expect from this endpoint.
    *
    * @param statusCode the HTTP status code to return for status requests
    */
@@ -535,11 +657,38 @@ public class RestGatewayService {
                 .willReturn(WireMock.aResponse().withStatus(statusCode)));
   }
 
+  private void onStatusRequest(
+      final int statusCode, final ClusterStatusResponse.StatusEnum status) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getStatusUrl())
+                .willReturn(
+                    WireMock.aResponse()
+                        .withStatus(statusCode)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"status\":\"" + status.getValue() + "\"}")));
+  }
+
   public void onResourceGetRequest(final long resourceKey, final ResourceResult response) {
     registerGet(RestGatewayPaths.getResourceUrl(String.valueOf(resourceKey)), response);
   }
 
   public void onResourceContentGetRequest(final long resourceKey, final String response) {
-    registerGet(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)), response);
+    // The real API returns the resource content as raw bytes with application/json content type
+    // (not JSON-encoded), so we register it as a raw body string here.
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)))
+                .willReturn(WireMock.okJson(response)));
+  }
+
+  public void onResourceContentBinaryGetRequest(final long resourceKey, final String response) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getResourceContentBinaryUrl(String.valueOf(resourceKey)))
+                .willReturn(WireMock.okForContentType("application/octet-stream", response)));
   }
 }

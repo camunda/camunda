@@ -12,8 +12,11 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
+import io.camunda.zeebe.util.ProjectionOf;
+import io.camunda.zeebe.util.collection.Tuple;
 
-public class AsyncRequestMetadataValue extends UnpackedObject implements DbValue {
+public class AsyncRequestMetadataValue extends UnpackedObject
+    implements DbValue, ProjectionOf<Tuple<AsyncRequestRecord, Long>, AsyncRequestMetadataValue> {
 
   private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
 
@@ -36,5 +39,11 @@ public class AsyncRequestMetadataValue extends UnpackedObject implements DbValue
 
   public long getAsyncRequestKey() {
     return asyncRequestKeyProperty.getValue();
+  }
+
+  @Override
+  public AsyncRequestMetadataValue wrap(final Tuple<AsyncRequestRecord, Long> source) {
+    wrap(source.getRight(), source.getLeft());
+    return this;
   }
 }

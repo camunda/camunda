@@ -19,6 +19,7 @@ import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getProper
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
@@ -49,6 +50,9 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String PROPERTY_NAME_RUNTIME_MODE = "runtimeMode";
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
   public static final String PROPERTY_NAME_MULTI_TENANCY_ENABLED = "multiTenancyEnabled";
+  public static final String PROPERTY_NAME_CLOCK_RESET_ENABLED = "clockResetEnabled";
+  public static final String PROPERTY_NAME_DATA_DELETION_MODE = "dataDeletionMode";
+  public static final String PROPERTY_NAME_QUERY_PAGE_LIMIT = "queryPageLimit";
 
   private static final String BASE_DIR = "/";
 
@@ -63,13 +67,15 @@ public final class ContainerRuntimePropertiesUtil {
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
+  private final boolean clockResetEnabled;
+  private final DataDeletionMode dataDeletionMode;
+  private final int queryPageLimit;
 
   private final String elasticsearchVersion;
 
-  public ContainerRuntimePropertiesUtil(
-      final Properties properties, final GitPropertiesUtil gitProperties) {
+  public ContainerRuntimePropertiesUtil(final Properties properties) {
 
-    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
+    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil();
 
     elasticsearchVersion =
         getPropertyOrDefault(
@@ -99,18 +105,34 @@ public final class ContainerRuntimePropertiesUtil {
         getPropertyOrDefault(properties, PROPERTY_NAME_MULTI_TENANCY_ENABLED, "false")
             .trim()
             .equalsIgnoreCase("true");
+
+    clockResetEnabled =
+        getPropertyOrDefault(properties, PROPERTY_NAME_CLOCK_RESET_ENABLED, "true")
+            .trim()
+            .equalsIgnoreCase("true");
+
+    dataDeletionMode =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_DATA_DELETION_MODE,
+            value -> parseDataDeletionModeOrDefault(value, DataDeletionMode.CLUSTER_PURGE),
+            DataDeletionMode.CLUSTER_PURGE);
+
+    queryPageLimit =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_QUERY_PAGE_LIMIT,
+            Integer::parseInt,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_QUERY_PAGE_LIMIT);
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
-    return new ContainerRuntimePropertiesUtil(
-        readPropertiesFileWithUserOverrides(BASE_DIR), new GitPropertiesUtil());
+    return new ContainerRuntimePropertiesUtil(readPropertiesFileWithUserOverrides(BASE_DIR));
   }
 
-  static ContainerRuntimePropertiesUtil readProperties(
-      final String directoryOverride, final GitPropertiesUtil gitProperties) {
-
+  static ContainerRuntimePropertiesUtil readProperties(final String directoryOverride) {
     return new ContainerRuntimePropertiesUtil(
-        readPropertiesFileWithUserOverrides(directoryOverride), gitProperties);
+        readPropertiesFileWithUserOverrides(directoryOverride));
   }
 
   private static Properties readPropertiesFileWithUserOverrides(final String dir) {
@@ -149,6 +171,15 @@ public final class ContainerRuntimePropertiesUtil {
 
     try {
       return CamundaProcessTestRuntimeMode.valueOf(value.trim().toUpperCase());
+    } catch (final IllegalArgumentException e) {
+      return defaultValue;
+    }
+  }
+
+  private static DataDeletionMode parseDataDeletionModeOrDefault(
+      final String value, final DataDeletionMode defaultValue) {
+    try {
+      return DataDeletionMode.valueOf(value.trim().toUpperCase());
     } catch (final IllegalArgumentException e) {
       return defaultValue;
     }
@@ -206,6 +237,10 @@ public final class ContainerRuntimePropertiesUtil {
     return connectorsContainerRuntimeProperties.getConnectorsExposedPorts();
   }
 
+  public Map<String, String> getClusterSecrets() {
+    return camundaContainerRuntimeProperties.getClusterSecrets();
+  }
+
   public URI getRemoteCamundaMonitoringApiAddress() {
     return remoteRuntimeProperties.getCamundaMonitoringApiAddress();
   }
@@ -238,6 +273,18 @@ public final class ContainerRuntimePropertiesUtil {
 
   public boolean isMultiTenancyEnabled() {
     return multiTenancyEnabled;
+  }
+
+  public boolean isClockResetEnabled() {
+    return clockResetEnabled;
+  }
+
+  public DataDeletionMode getDataDeletionMode() {
+    return dataDeletionMode;
+  }
+
+  public int getQueryPageLimit() {
+    return queryPageLimit;
   }
 
   public CoverageReportProperties getCoverageReportProperties() {

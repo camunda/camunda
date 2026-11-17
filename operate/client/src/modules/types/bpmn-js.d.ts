@@ -91,6 +91,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     cancelActivity?: boolean;
     triggeredByEvent?: boolean;
     $instanceOf?: (type: string) => boolean;
+    get?: (property: string) => unknown;
     isForCompensation?: boolean;
     targetRef?: BusinessObject;
   };
@@ -188,6 +189,9 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       open(): void;
       close(): void;
       isOpen(): boolean;
+    };
+    get(module: 'outline'): {
+      createOutline(element: BpmnElement): SVGElement;
     };
 
     on: EventCallback;

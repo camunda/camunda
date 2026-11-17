@@ -8,14 +8,21 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -100,8 +107,8 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
-  void shouldNotHandleUserTaskMigrationRecord() {
-    // given
+  void shouldNotHandleNonCanceledMigrationRecord() {
+    // given: migration=true records that are NOT CANCELED must never be handled
     final JobRecordValue jobRecordValue =
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
@@ -109,14 +116,80 @@ public class UserTaskJobBasedHandlerTest {
             .withJobToUserTaskMigration(true)
             .build();
 
-    SUPPORTED_INTENTS.forEach(
-        intent -> {
-          final Record<JobRecordValue> jobRecord =
-              factory.generateRecord(
-                  ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
-          // when - then
-          assertThat(underTest.handlesRecord(jobRecord)).isFalse();
-        });
+    SUPPORTED_INTENTS.stream()
+        .filter(intent -> !intent.equals(JobIntent.CANCELED))
+        .forEach(
+            intent -> {
+              final Record<JobRecordValue> jobRecord =
+                  factory.generateRecord(
+                      ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
+              assertThat(underTest.handlesRecord(jobRecord)).isFalse();
+            });
+  }
+
+  @Test
+  void shouldHandleRecordForMigrationCancelWithLegacyKey() {
+    // given: CANCELED + migration=true + key below watermark → true (stale-doc delete)
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CANCELED).withKey(legacyJobKey).withValue(value));
+
+    assertThat(underTest.handlesRecord(record)).isTrue();
+  }
+
+  @Test
+  void shouldNotHandleRecordForMigrationCancelWithCurrentVersionKey() {
+    // given: CANCELED + migration=true + key above watermark → false (current-version, no delete)
+    final long firstUserTaskKey = 100;
+    final long currentJobKey = 110;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CANCELED).withKey(currentJobKey).withValue(value));
+
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldHandleRecordForMigrationCancelWhenWatermarkUnset() {
+    // given: CANCELED + migration=true + watermark=-1 → any key treated as legacy → true
+    // (watermark reset to -1 in @BeforeEach)
+    final long anyJobKey = 12345;
+
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CANCELED).withKey(anyJobKey).withValue(value));
+
+    assertThat(underTest.handlesRecord(record)).isTrue();
   }
 
   @Test
@@ -153,8 +226,12 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdForNewVersionReferenceRecord() {
+  void shouldExtractIdAndIndexesForNewVersionReferenceRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 110;
@@ -173,16 +250,18 @@ public class UserTaskJobBasedHandlerTest {
                             .withElementInstanceKey(flowNodeInstanceKey)
                             .build()));
 
-    // when
-    final var idList = underTest.generateIds(jobRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(flowNodeInstanceKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, jobRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(flowNodeInstanceKey), index));
   }
 
   @Test
-  void shouldGenerateIdForPreviousVersionReferenceRecord() {
+  void shouldExtractIdAndIndexesForPreviousVersionReferenceRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 90;
@@ -201,11 +280,9 @@ public class UserTaskJobBasedHandlerTest {
                             .withElementInstanceKey(flowNodeInstanceKey)
                             .build()));
 
-    // when
-    final var idList = underTest.generateIds(jobRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(recordKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, jobRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
   }
 
   @Test
@@ -233,17 +310,18 @@ public class UserTaskJobBasedHandlerTest {
             .setKey(recordKey)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
@@ -263,19 +341,22 @@ public class UserTaskJobBasedHandlerTest {
         new TaskEntity()
             .setId(String.valueOf(recordKey))
             .setKey(recordKey)
+            .setState(TaskState.CREATED)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
+    updateFieldsMap.put(TaskTemplate.STATE, TaskState.CREATED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(recordKey),
             inputEntity,
             updateFieldsMap,
@@ -328,7 +409,7 @@ public class UserTaskJobBasedHandlerTest {
     processCache.put(
         processDefinitionKey,
         new CachedProcessEntity(
-            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node"), false));
+            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node"), false, Map.of()));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));
@@ -441,6 +522,7 @@ public class UserTaskJobBasedHandlerTest {
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
             .withProcessInstanceKey(processInstanceKey)
+            .withJobToUserTaskMigration(false)
             .build();
 
     final Record<JobRecordValue> jobRecord =
@@ -538,10 +620,11 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
     expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
@@ -555,7 +638,7 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(jobRecordValue.getBpmnProcessId());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -578,17 +661,18 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.COMPLETED);
     expectedUpdates.put(TaskTemplate.COMPLETION_TIME, taskEntity.getCompletionTime());
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -640,16 +724,17 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.FAILED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -703,16 +788,17 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.FAILED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -766,16 +852,17 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -802,6 +889,189 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
+  void shouldDeleteLegacyDocumentOnMigrationCancelForPreviousVersionRecord() {
+    // given
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90; // below watermark → legacy doc _id = jobKey
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue migrationCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> migrationCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(legacyJobKey)
+                    .withValue(migrationCancelValue));
+
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when: process the migration cancel through the handler
+    assertThat(underTest.handlesRecord(migrationCancelRecord)).isTrue();
+    final var ids = underTest.generateIds(migrationCancelRecord);
+    ids.forEach(
+        id -> {
+          final var entity = underTest.createNewEntity(id);
+          underTest.updateEntity(migrationCancelRecord, entity);
+          underTest.flush(index, entity, mockRequest);
+        });
+
+    // then — the stale legacy task doc (keyed by jobKey) must be deleted; no upsert should occur
+    verify(mockRequest, times(1))
+        .deleteWithRouting(index, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
+    verify(mockRequest, never())
+        .upsertWithRouting(
+            org.mockito.ArgumentMatchers.eq(index),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)));
+  }
+
+  @Test
+  void shouldDeleteLegacyDocumentOnMigrationCancelEvenWhenCreatedInSameBatch() {
+    // given: simulates a batch containing both JOB.CREATED and JOB.CANCELED+migration for the
+    // same legacy job key — the CANCELED must still issue a delete, not an upsert
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue createdValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(false)
+            .build();
+
+    final Record<JobRecordValue> createdRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(JobIntent.CREATED).withKey(legacyJobKey).withValue(createdValue));
+
+    final JobRecordValue migrationCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> migrationCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(legacyJobKey)
+                    .withValue(migrationCancelValue));
+
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    final TaskEntity sharedEntity = underTest.createNewEntity(String.valueOf(legacyJobKey));
+
+    // simulate same-batch processing: CREATED first, then CANCELED+migration on the same entity
+    underTest.updateEntity(createdRecord, sharedEntity);
+    underTest.updateEntity(migrationCancelRecord, sharedEntity);
+    underTest.flush(index, sharedEntity, mockRequest);
+
+    // then — the migration-cancel must mark the entity for deletion so the delete path is taken
+    assertThat(sharedEntity.isMarkedForDeletion()).isTrue();
+    verify(mockRequest, times(1))
+        .deleteWithRouting(index, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
+    verify(mockRequest, never())
+        .upsertWithRouting(
+            org.mockito.ArgumentMatchers.eq(index),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)));
+  }
+
+  @Test
+  void shouldNotDeleteDocumentOnMigrationCancelForCurrentVersionRecord() {
+    // given: jobKey above watermark → current-version scheme (_id = elementInstanceKey)
+    final long firstUserTaskKey = 100;
+    final long currentJobKey =
+        110; // above watermark → current-version doc _id = elementInstanceKey
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue migrationCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(true)
+            .build();
+
+    final Record<JobRecordValue> migrationCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(currentJobKey)
+                    .withValue(migrationCancelValue));
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when: current-version migration cancel — handlesRecord returns false, nothing dispatched
+    assertThat(underTest.handlesRecord(migrationCancelRecord)).isFalse();
+  }
+
+  @Test
+  void shouldNotDeleteDocumentOnNonMigrationCancel() {
+    // given: a normal (non-migration) JOB CANCELED — must never trigger a delete
+    final long firstUserTaskKey = 100;
+    final long legacyJobKey = 90; // below watermark, but NOT a migration cancel
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstUserTaskKey);
+
+    final JobRecordValue normalCancelValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .withJobToUserTaskMigration(false)
+            .build();
+
+    final Record<JobRecordValue> normalCancelRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CANCELED)
+                    .withKey(legacyJobKey)
+                    .withValue(normalCancelValue));
+
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when: non-migration cancel is handled normally (state update, not delete)
+    assertThat(underTest.handlesRecord(normalCancelRecord)).isTrue();
+    final var ids = underTest.generateIds(normalCancelRecord);
+    ids.forEach(
+        id -> {
+          final var entity = underTest.createNewEntity(id);
+          underTest.updateEntity(normalCancelRecord, entity);
+          underTest.flush(index, entity, mockRequest);
+        });
+
+    // then — normal cancel issues an upsert (state update), never a delete
+    verify(mockRequest, never())
+        .deleteWithRouting(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any());
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            org.mockito.ArgumentMatchers.eq(index),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)));
+  }
+
+  @Test
   void flushedEntityShouldContainRecurredAfterBackoffUpdate() {
     // given
     final long processInstanceKey = 123;
@@ -821,15 +1091,16 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 }

@@ -9,14 +9,16 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
-import { getMappingRulesByRoleId } from "src/utility/api/roles";
+import { usePagination } from "src/utility/api";
+import { roleQueries } from "src/utility/api/roles/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/roles/detail/mapping-rules/AssignMappingRulesModal.tsx";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
 
 type MappingRulesProps = {
   roleId: string;
@@ -25,30 +27,35 @@ type MappingRulesProps = {
 const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
 
+  const { pageParams, page, ...paginationCallbacks } = usePagination();
   const {
     data: mappingRules,
-    loading,
-    success,
-    reload,
-    ...paginationProps
-  } = usePaginatedApi(getMappingRulesByRoleId, {
-    roleId: roleId,
-  });
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(roleQueries.mappingRules(roleId, pageParams));
 
   const isMappingRulesListEmpty =
     !mappingRules || mappingRules.items?.length === 0;
+  const { startPolling } = useListPollingReload(
+    reload,
+    mappingRules?.items ?? [],
+    "mappingRuleId",
+    mappingRules?.page.totalItems,
+  );
 
   const [assignMappingRules, assignMappingRulesModal] = useEntityModal(
     AssignMappingRulesModal,
-    reload,
+    () => {},
     {
       assignedMappingRules: mappingRules?.items || [],
+      onItemsAssigned: startPolling,
     },
   );
   const openAssignModal = () => assignMappingRules({ id: roleId });
   const [unassignMappingRule, unassignMappingRuleModal] = useEntityModal(
     DeleteModal,
-    reload,
+    () => startPolling(-1),
     {
       roleId,
     },
@@ -61,7 +68,12 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
         description={t("unableToLoadResource", {
           resourceType: t("mappingRule").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        button={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
       />
     );
 
@@ -104,7 +116,8 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
             onClick: unassignMappingRule,
           },
         ]}
-        {...paginationProps}
+        page={{ ...page, ...mappingRules?.page }}
+        {...paginationCallbacks}
       />
       {assignMappingRulesModal}
       {unassignMappingRuleModal}

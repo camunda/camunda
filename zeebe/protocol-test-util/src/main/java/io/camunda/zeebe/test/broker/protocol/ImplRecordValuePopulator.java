@@ -19,8 +19,12 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -46,6 +50,8 @@ final class ImplRecordValuePopulator {
    */
   static void populate(final Object implInstance, final EasyRandom random) {
     final Class<?> clazz = implInstance.getClass();
+    ValueType valueType = null;
+    IntegerProperty intentProperty = null;
 
     for (final Field field : clazz.getDeclaredFields()) {
       try {
@@ -58,12 +64,20 @@ final class ImplRecordValuePopulator {
         // Handle different msgpack property types
         if (fieldType.equals(EnumProperty.class)) {
           populateEnumProperty(implInstance, field, random);
+          final var enumProperty = (EnumProperty<?>) field.get(implInstance);
+          if (enumProperty.getValue() instanceof final ValueType nestedValueType) {
+            valueType = nestedValueType;
+          }
         } else if (fieldType.equals(StringProperty.class)) {
           populateStringProperty(field, implInstance, random);
         } else if (fieldType.equals(LongProperty.class)) {
           populateLongProperty(field, implInstance, random);
         } else if (fieldType.equals(IntegerProperty.class)) {
-          populateIntegerProperty(field, implInstance, random);
+          if ("intentProperty".equals(field.getName())) {
+            intentProperty = (IntegerProperty) field.get(implInstance);
+          } else {
+            populateIntegerProperty(field, implInstance, random);
+          }
         } else if (fieldType.equals(BinaryProperty.class)) {
           populateBinaryProperty(field, implInstance, random);
         } else if (fieldType.equals(DocumentProperty.class)) {
@@ -76,6 +90,8 @@ final class ImplRecordValuePopulator {
           populateArrayProperty(field, implInstance, random);
         } else if (fieldType.equals(ObjectProperty.class)) {
           populateObjectProperty(field, implInstance, random);
+        } else if (fieldType.equals(AuthInfoProperty.class)) {
+          ((AuthInfoProperty) field.get(implInstance)).setValue(random.nextObject(AuthInfo.class));
         } else if (!BaseProperty.class.isAssignableFrom(fieldType)) {
           // Skip non-property fields (e.g. caches, internal state, MsgPackWriter/Reader)
         } else {
@@ -93,6 +109,16 @@ final class ImplRecordValuePopulator {
             e);
       }
     }
+
+    // Resolve the intent after its value type, regardless of field order.
+    if (intentProperty != null) {
+      if (valueType == null) {
+        throw new IllegalArgumentException(
+            "Expected a value type for the intent property in class: " + clazz.getName());
+      }
+      final var intent = random.nextObject(ValueTypeMapping.get(valueType).getIntentClass());
+      intentProperty.setValue(intent.value());
+    }
   }
 
   private static void populateEnumProperty(
@@ -105,7 +131,7 @@ final class ImplRecordValuePopulator {
       if (typeArgs.length > 0
           && typeArgs[0] instanceof final Class<?> enumClass
           && enumClass.isEnum()) {
-        final Object[] enumConstants = enumClass.getEnumConstants();
+        final Object[] enumConstants = enumConstantsFor(enumClass);
         if (enumConstants.length > 0) {
           final Object randomEnum = enumConstants[random.nextInt(enumConstants.length)];
           final EnumProperty enumProperty = (EnumProperty<?>) field.get(implInstance);
@@ -113,6 +139,19 @@ final class ImplRecordValuePopulator {
         }
       }
     }
+  }
+
+  /**
+   * Returns the constants to randomly pick from for the given enum type. For {@link ValueType},
+   * this excludes {@link ValueType#NULL_VAL} and {@link ValueType#SBE_UNKNOWN}, as these are
+   * synthetic placeholder values created by SBE and are never valid on an actual record - picking
+   * one here would produce a record value with an inner value type that no consumer can handle.
+   */
+  private static Object[] enumConstantsFor(final Class<?> enumClass) {
+    if (enumClass == ValueType.class) {
+      return ValueTypeMapping.getAcceptedValueTypes().toArray();
+    }
+    return enumClass.getEnumConstants();
   }
 
   private static void populateStringProperty(
@@ -141,12 +180,7 @@ final class ImplRecordValuePopulator {
       throws IllegalAccessException {
     final IntegerProperty integerProperty = (IntegerProperty) field.get(implInstance);
     if (integerProperty != null) {
-      // Special handling for intent properties, that are mapped to enums elsewhere
-      if ("intentProperty".equals(field.getName())) {
-        integerProperty.setValue(0);
-      } else {
-        integerProperty.setValue(random.nextInt());
-      }
+      integerProperty.setValue(random.nextInt());
     }
   }
 

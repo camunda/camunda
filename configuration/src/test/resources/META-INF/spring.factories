@@ -1,0 +1,2 @@
+org.springframework.test.context.TestExecutionListener=\
+io.camunda.configuration.UnifiedConfigurationHelperResetListener

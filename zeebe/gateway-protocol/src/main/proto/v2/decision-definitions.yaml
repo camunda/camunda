@@ -7,6 +7,12 @@ paths:
       tags:
         - Decision definition
       operationId: searchDecisionDefinitions
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: READ_DECISION_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search decision definitions
       description: Search for decision definitions based on given criteria.
       requestBody:
@@ -31,6 +37,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /decision-definitions/{decisionDefinitionKey}:
     get:
@@ -38,6 +45,11 @@ paths:
       tags:
         - Decision definition
       operationId: getDecisionDefinition
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: READ_DECISION_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get decision definition
       description: Returns a decision definition by key.
       parameters:
@@ -71,6 +83,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /decision-definitions/{decisionDefinitionKey}/xml:
     get:
@@ -78,6 +91,11 @@ paths:
       tags:
         - Decision definition
       operationId: getDecisionDefinitionXML
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: READ_DECISION_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get decision definition XML
       description: Returns decision definition as XML.
       parameters:
@@ -111,6 +129,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /decision-definitions/evaluation:
     post:
@@ -118,6 +137,11 @@ paths:
       tags:
         - Decision definition
       operationId: evaluateDecision
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: CREATE_DECISION_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Evaluate decision
       description: |
         Evaluates a decision.
@@ -139,7 +163,7 @@ paths:
               By decision definition ID:
                 summary: Evaluate the decision by decisionDefinitionId.
                 value:
-                  decisionDefinitionId: 1234-5678
+                  decisionDefinitionId: my-decision
                   variables: {}
       responses:
         "200":
@@ -161,6 +185,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -244,6 +269,15 @@ components:
         decisionRequirementsVersion:
           type: integer
           description: The assigned version of the decision requirements that the decision definition is part of.
+      x-properties-added-in-version:
+        - propertyName: name
+          addedInVersion: "8.8"
+        - propertyName: isLatestVersion
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsName
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsVersion
+          addedInVersion: "8.9"
 
     DecisionDefinitionSearchQueryResult:
       type: object
@@ -303,6 +337,25 @@ components:
         version:
           description: The assigned version of the decision definition.
           type: integer
+      x-properties-added-in-version:
+        - propertyName: decisionDefinitionId
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsId
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsKey
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsName
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsVersion
+          addedInVersion: "8.9"
+        - propertyName: name
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: version
+          addedInVersion: "8.6"
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true
@@ -424,6 +477,9 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the evaluated decision.
+      x-properties-added-in-version:
+        - propertyName: decisionEvaluationKey
+          addedInVersion: "8.8"
 
     EvaluatedDecisionResult:
       required:
@@ -482,3 +538,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
           description: The unique key identifying this decision evaluation instance.
+      x-properties-added-in-version:
+        - propertyName: decisionEvaluationInstanceKey
+          addedInVersion: "8.8"

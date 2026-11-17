@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.protocol.record;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import org.immutables.value.Value;
+import org.jspecify.annotations.Nullable;
 
 /** Represents a record published to the log stream. */
 @Value.Immutable
@@ -76,13 +76,13 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    * @return the type of rejection if {@link #getRecordType()} returns {@link
    *     RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
-  RejectionType getRejectionType();
+  @Nullable RejectionType getRejectionType();
 
   /**
    * @return the reason why a command was rejected if {@link #getRecordType()} returns {@link
    *     RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
-  String getRejectionReason();
+  @Nullable String getRejectionReason();
 
   /**
    * @return the version of the broker that wrote this record
@@ -90,15 +90,22 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   String getBrokerVersion();
 
   /**
-   * Provides the authorization data of the user the triggered the creation of this record. The
-   * following entries may be available:
+   * Provides the authorization data of the principal that triggered the creation of this record.
+   * Commands and rejections can contain these entries:
    *
    * <ul>
-   *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings defining the user's
-   *       authorized tenants.
-   *   <li>Key: <code>authorized_user_key</code>; Value: the Long representation of the
-   *       authenticated user's key
+   *   <li>Key: <code>authorized_anonymous_user</code>; Value: a Boolean, true if the principal is
+   *       not authenticated.
+   *   <li>Key: <code>authorized_username</code>; Value: the String username of the user.
+   *   <li>Key: <code>authorized_client_id</code>; Value: the String id of the client.
+   *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings with the authorized
+   *       tenants.
+   *   <li>Key: <code>user_groups_claims</code>; Value: a List of Strings with the groups from the
+   *       token.
+   *   <li>Key: <code>user_token_claims</code>; Value: a Map with the claims of the token.
    * </ul>
+   *
+   * <p>Events contain only the first three entries.
    *
    * @return a Map of authorization data for this record or an empty Map if not set.
    */
@@ -110,8 +117,22 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    *
    * @return the agent information associated with this record, or {@code null} if no agent
    */
-  @Nullable
-  Agent getAgent();
+  @Nullable Agent getAgent();
+
+  /**
+   * Identifies the inbound channel through which the command that produced this record was received
+   * (e.g. REST, gRPC, MCP).
+   *
+   * @return the channel type, or {@code null} if not set
+   */
+  @Nullable ChannelType getRequestChannelType();
+
+  /**
+   * An optional tool name associated with the command, e.g. the MCP tool that triggered it.
+   *
+   * @return the tool name, or {@code null} if not set
+   */
+  @Nullable String getRequestToolName();
 
   /**
    * A record version is an integer starting from 1. The version of a record is defined when it is

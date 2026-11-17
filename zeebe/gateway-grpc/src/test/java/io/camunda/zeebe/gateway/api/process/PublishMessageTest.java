@@ -40,6 +40,7 @@ public final class PublishMessageTest extends GatewayTest {
             .setMessageId("unique")
             .setTimeToLive(123)
             .setVariables(variables)
+            .setBusinessId("order-12345")
             .build();
 
     // when
@@ -62,5 +63,6 @@ public final class PublishMessageTest extends GatewayTest {
     assertThat(brokerRequestValue.getTimeToLive()).isEqualTo(request.getTimeToLive());
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(brokerRequestValue.getBusinessId()).isEqualTo(request.getBusinessId());
   }
 }

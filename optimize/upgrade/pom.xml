@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>upgrade-optimize</artifactId>
@@ -35,7 +35,7 @@
     <dependency>
       <groupId>io.github.netmikey.logunit</groupId>
       <artifactId>logunit-log4j2</artifactId>
-      <version>2.0.0</version>
+      <version>${logunit.version}</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -62,16 +62,15 @@
     <!-- used/undeclared block -->
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.5.14</version>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.20.0</version>
+      <version>3.22.0</version>
       <scope>provided</scope>
     </dependency>
 
@@ -126,15 +125,15 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-rest5-client</artifactId>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.23.0</version>
+      <version>5.24.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -151,9 +150,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <version>4.4.16</version>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -171,7 +169,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.184</version>
+      <version>4.8.200</version>
       <scope>provided</scope>
     </dependency>
 
@@ -183,7 +181,7 @@
     <dependency>
       <groupId>com.vdurmont</groupId>
       <artifactId>semver4j</artifactId>
-      <version>3.1.0</version>
+      <version>${version.semver4j}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -317,18 +315,28 @@
           <value>!true</value>
         </property>
       </activation>
-    </profile>
-    <profile>
-      <id>skip-upgrade-tests-without-it-support</id>
-      <activation>
-        <property>
-          <name>skipQaBuild</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <properties>
-        <maven.test.skip>true</maven.test.skip>
-      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-it-source</id>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <phase>generate-test-sources</phase>
+                <configuration>
+                  <sources>
+                    <source>src/it/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 

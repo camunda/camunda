@@ -15,10 +15,11 @@ import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,8 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
   }
 
   @Override
-  public UserEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable UserEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOneByUsername(id).orElse(null);
   }
 
@@ -67,11 +69,6 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
 
   public Optional<UserEntity> findOneByUsername(final String username) {
     final var result = search(UserQuery.of(b -> b.filter(f -> f.usernames(username))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
-  public Optional<UserEntity> findOne(final long userKey) {
-    final var result = search(UserQuery.of(b -> b.filter(f -> f.key(userKey))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 

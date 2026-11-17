@@ -16,10 +16,10 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.condition.AuthorizationCondition;
-import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.condition.AuthorizationCondition;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -43,12 +43,14 @@ public class AuditLogServices
   private final AuditLogSearchClient auditLogSearchClient;
 
   public AuditLogServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuditLogSearchClient auditLogSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

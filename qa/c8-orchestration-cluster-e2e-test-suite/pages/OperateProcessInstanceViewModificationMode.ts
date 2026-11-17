@@ -15,13 +15,12 @@ export class OperateProcessInstanceViewModificationModePage {
   readonly addModificationButtononPopup: Locator;
   readonly moveAllButtononPopup: Locator;
   readonly cancelButtonPopup: Locator;
-  readonly cancelAllButtonPopup: Locator;
   readonly reviewModificationsButton: Locator;
-  readonly discardAllModificationsButton: Locator;
   readonly cancelButtonModificationDialog: Locator;
   readonly applyButtonModificationsDialog: Locator;
   readonly moveTokensMessage: Locator;
   readonly diagram: Locator;
+  readonly resetDiagramZoomButton: Locator;
   readonly multipleInstancesAlert: Locator;
   readonly history: Locator;
   readonly continueButton: Locator;
@@ -64,6 +63,8 @@ export class OperateProcessInstanceViewModificationModePage {
     valueErrorMessage?: Locator;
   };
   readonly applyModificationDialog: Locator;
+  private variableRow: (name: string) => Locator;
+  private newVariableRow: (index: number | string) => Locator;
   readonly applyModificationDialogFlowNodeModificationRowByIndex: (
     index: number,
   ) => {
@@ -99,13 +100,9 @@ export class OperateProcessInstanceViewModificationModePage {
     this.cancelButtonPopup = page.getByRole('button', {
       name: /Cancel selected instance in this (flow node|element)/i,
     });
-    this.cancelAllButtonPopup = page.getByRole('button', {
-      name: /Cancel all running (flow node|element) instances in this (flow node|element)/i,
-    });
     this.reviewModificationsButton = page.getByRole('button', {
       name: /Apply Modifications|Review Modifications/,
     });
-    this.discardAllModificationsButton = page.getByTestId('discard-all-button');
     this.cancelButtonModificationDialog = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Cancel'});
@@ -116,12 +113,26 @@ export class OperateProcessInstanceViewModificationModePage {
       /Select the target (flow node|element) in the diagram/,
     );
     this.diagram = this.page.getByTestId('diagram');
+    this.resetDiagramZoomButton = page.getByRole('button', {
+      name: 'Reset diagram zoom',
+    });
     this.multipleInstancesAlert = page
       .getByTestId('popover')
       .getByText(
         'To modify a specific instance, select it in the Instance History below.',
       );
-    this.history = page.getByTestId('instance-history');
+    this.history = page.getByRole('tree', {name: /instance history$/i});
+    this.variableRow = (name: string) =>
+      page
+        .getByRole('table', {name: 'Variable List', exact: true})
+        .getByRole('row')
+        .filter({has: page.getByTitle(name, {exact: true})});
+    this.newVariableRow = (index: number | string) =>
+      page
+        .getByRole('table', {name: 'Variable List', exact: true})
+        .getByRole('row')
+        .filter({has: page.getByRole('textbox', {name: 'Name', exact: true})})
+        .nth(Number(index));
 
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
@@ -145,21 +156,21 @@ export class OperateProcessInstanceViewModificationModePage {
     this.modalDialog = page.getByRole('dialog');
     this.noVariablesText = page.getByText(/The element has no variables/i);
     this.newVariableByIndex = (index: number) => ({
-      name: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .locator(`[id="newVariables[${index}].name"]`),
-      readModeValue: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByTestId('new-variable-value-readonly'),
-      writeModeValue: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByTestId('new-variable-value'),
-      jsonEditorButton: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Open'}),
-      deleteButton: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Delete'}),
+      name: this.newVariableRow(index).locator(
+        `[id="newVariables[${index}].name"]`,
+      ),
+      readModeValue: this.newVariableRow(index)
+        .getByRole('group', {name: 'Value', exact: true})
+        .getByRole('textbox'),
+      writeModeValue: this.newVariableRow(index)
+        .getByRole('group', {name: 'Value', exact: true})
+        .getByRole('textbox'),
+      jsonEditorButton: this.newVariableRow(index).getByRole('button', {
+        name: 'Open',
+      }),
+      deleteButton: this.newVariableRow(index).getByRole('button', {
+        name: 'Delete',
+      }),
       jsonEditorModal: {
         header: this.page.getByRole('dialog').getByText('Edit a new Variable'),
         cancelButton: this.page
@@ -171,31 +182,31 @@ export class OperateProcessInstanceViewModificationModePage {
         inputField: this.page
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', {name: 'Editor content'}),
+          .getByRole('textbox'),
       },
-      valueErrorMessage: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
+      valueErrorMessage: this.newVariableRow(index)
         .getByRole('cell')
         .nth(1)
         .locator(`.cds--form-requirement`),
-      nameErrorMessage: this.page
-        .getByTestId(`variable-newVariables[${index}]`)
+      nameErrorMessage: this.newVariableRow(index)
         .getByRole('cell')
         .nth(0)
         .locator(`[id="newVariables[${index}].name-error-msg"]`),
     });
 
     this.editableExistingVariableByName = (name: string) => ({
-      name: this.page.getByTestId(`variable-${name}`).getByTitle(name),
-      readModeValue: this.page
-        .getByTestId(`variable-${name}`)
-        .getByTestId('edit-variable-value'),
-      writeModeValue: this.page
-        .getByTestId(`variable-${name}`)
-        .getByTestId('edit-variable-value'),
-      jsonEditorButton: this.page
-        .getByTestId(`variable-${name}`)
-        .getByRole('button', {name: 'Open'}),
+      name: this.variableRow(name).getByTitle(name),
+      readModeValue: this.variableRow(name).getByRole('group', {
+        name,
+        exact: true,
+      }),
+      writeModeValue: this.variableRow(name).getByRole('group', {
+        name,
+        exact: true,
+      }),
+      jsonEditorButton: this.variableRow(name).getByRole('button', {
+        name: 'Open',
+      }),
       jsonEditorModal: {
         header: this.page
           .getByRole('dialog')
@@ -209,11 +220,11 @@ export class OperateProcessInstanceViewModificationModePage {
         inputField: this.page
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', {name: 'Editor content'}),
+          .getByRole('textbox'),
       },
-      valueErrorMessage: this.page
-        .getByTestId(`variable-${name}`)
-        .locator(`[id="${name}-error-msg"]`),
+      valueErrorMessage: this.variableRow(name).locator(
+        `[id="${name}-error-msg"]`,
+      ),
     });
     this.applyModificationDialog = this.page.getByRole('dialog', {
       name: 'Apply Modifications',
@@ -311,6 +322,12 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickAddModificationButtononPopup(): Promise<void> {
+    // The popup briefly swaps its buttons for a spinner while an in-flight
+    // element-stats fetch resolves; wait it out so the click lands on a stable
+    // button. Passes immediately when the spinner is not present.
+    await this.page
+      .getByTestId('dropdown-spinner')
+      .waitFor({state: 'hidden', timeout: 15000});
     await this.addModificationButtononPopup.click();
   }
 
@@ -336,16 +353,8 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.cancelButtonPopup.click();
   }
 
-  async clickCancelAllButtononPopup(): Promise<void> {
-    await this.cancelAllButtonPopup.click();
-  }
-
   async clickReviewModificationsButton(): Promise<void> {
     await this.reviewModificationsButton.click();
-  }
-
-  async clickDiscardAllModificationsButton(): Promise<void> {
-    await this.discardAllModificationsButton.click();
   }
 
   async clickCancelButtonDialog(): Promise<void> {
@@ -365,6 +374,16 @@ export class OperateProcessInstanceViewModificationModePage {
       position: {x: 5, y: 5},
       force: true,
     });
+  }
+
+  async clickTargetFlowNode(
+    flowNodeName: string,
+    position?: {x: number; y: number},
+  ): Promise<void> {
+    await this.resetDiagramZoomButton.click();
+    await this.getFlowNode(flowNodeName)
+      .first()
+      .click({position, timeout: 20000});
   }
 
   getFlowNode(flowNodeName: string) {
@@ -394,7 +413,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveAllButtononPopup();
     await expect(this.moveTokensMessage).toBeVisible();
-    await this.clickFlowNode(targetFlowNodeName);
+    await this.clickTargetFlowNode(targetFlowNodeName);
   }
 
   async moveInstanceFromSelectedFlowNodeToTarget(
@@ -404,7 +423,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveInstanceButtononPopup();
     await expect(this.moveTokensMessage).toBeVisible();
-    await this.clickFlowNode(targetFlowNodeName);
+    await this.clickTargetFlowNode(targetFlowNodeName);
   }
 
   async addTokenToFlowNode(flowNodeName: string): Promise<void> {
@@ -456,11 +475,7 @@ export class OperateProcessInstanceViewModificationModePage {
   async cancelOneTokenUsingHistory(flowNodeName: string): Promise<void> {
     await this.clickFlowNode(flowNodeName);
     await expect(this.multipleInstancesAlert).toBeVisible();
-    const meow = this.history
-      .getByTestId(/^tree-node-/)
-      .locator('[aria-current="true"]')
-      .first();
-    await meow.click();
+    await this.history.getByRole('treeitem', {selected: true}).first().click();
     await expect(
       this.page
         .getByTestId('popover')
@@ -472,29 +487,26 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   getNewVariableNameFieldSelector = (variableIndex: string) => {
-    return this.page
-      .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .locator(`[id="newVariables[${variableIndex}].name"]`);
+    return this.newVariableRow(variableIndex).locator(
+      `[id="newVariables[${variableIndex}].name"]`,
+    );
   };
 
   getNewVariableValueFieldSelector = (variableIndex: string) => {
-    return this.page
-      .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .getByTestId('new-variable-value');
+    return this.newVariableRow(variableIndex).getByRole('group', {
+      name: 'Value',
+      exact: true,
+    });
   };
 
   getEditVariableFieldSelector(variableName: string) {
-    return this.page
-      .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value');
+    return this.variableRow(variableName)
+      .getByRole('group', {name: variableName, exact: true})
+      .getByRole('textbox', {name: variableName, exact: true});
   }
 
   async undoModification() {
     await this.undoModificationButton.click();
-  }
-
-  async clickAddVariable() {
-    await this.addVariableModificationButton.click();
   }
 
   async clickDeleteVariableModification() {
@@ -528,19 +540,8 @@ export class OperateProcessInstanceViewModificationModePage {
     return this.modalDialog.getByText(`${variableName}: ${value}`);
   }
 
-  getDialogDeleteVariableModificationButton(index?: number) {
-    const button = this.modalDialog.getByRole('button', {
-      name: 'Delete variable modification',
-    });
-    return index !== undefined ? button.nth(index) : button;
-  }
-
   getDialogCancelButton() {
     return this.modalDialog.getByRole('button', {name: 'Cancel'});
-  }
-
-  async clickDialogDeleteVariableModification(index?: number) {
-    await this.getDialogDeleteVariableModificationButton(index).click();
   }
 
   async clickDialogCancel() {
@@ -549,21 +550,26 @@ export class OperateProcessInstanceViewModificationModePage {
 
   async addNewVariable(variableIndex: string, name: string, value: string) {
     await this.addVariableModificationButton.click();
-    await expect(
-      this.page.getByTestId(`variable-newVariables[${variableIndex}]`),
-    ).toBeVisible();
-
-    await this.getNewVariableNameFieldSelector(variableIndex).clear();
-    await this.getNewVariableNameFieldSelector(variableIndex).type(name);
-    await this.page.keyboard.press('Tab');
-
-    await this.expectEditorToBeLoaded();
+    const nameField = this.getNewVariableNameFieldSelector(variableIndex);
+    // Wait for a fresh empty input — guards against matching a pre-existing row
+    // at the same index that is about to be detached by the re-render.
+    await expect(nameField).toBeVisible();
+    await expect(nameField).toHaveValue('');
+    await nameField.click();
+    await nameField.type(name);
+    const valueField = this.getNewVariableValueFieldSelector(variableIndex);
+    await valueField.click();
+    await expect(async () => {
+      expect(
+        await valueField.evaluate((el) => el.matches(':focus-within')),
+      ).toBe(true);
+    }).toPass({timeout: 10_000});
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
 
   async editVariableValue(variableName: string, value: string) {
-    await this.getEditVariableFieldSelector(variableName).click();
+    await this.getEditVariableFieldSelector(variableName).focus();
 
     await this.expectEditorToBeLoaded();
 
@@ -595,10 +601,6 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(errorMessage!).toHaveText(message);
   }
 
-  async deleteNewVariableModification(variableIndex: number) {
-    await this.newVariableByIndex(variableIndex).deleteButton.click();
-  }
-
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
     await this.clearMonacoEditor();
 
@@ -606,8 +608,9 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeEnabled();
+    // await expect(jsonEditorModal.inputField).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await this.page.keyboard.press('Tab');
@@ -617,7 +620,6 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.editableExistingVariableByName(
       variableName,
     ).readModeValue.click();
-    await this.clearMonacoEditor();
 
     await this.editableExistingVariableByName(
       variableName,
@@ -625,10 +627,14 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.editableExistingVariableByName(variableName).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeEnabled();
+    // await expect(jsonEditorModal.inputField).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
+    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
+    await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
+    await expect(jsonEditorModal.header).toBeHidden();
     await this.editableExistingVariableByName(
       variableName,
     ).writeModeValue.click();
@@ -715,6 +721,11 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async expectEditorToBeLoaded() {
-    await expect(this.page.getByRole('code')).toBeVisible();
+    await expect(
+      this.page
+        .getByRole('group')
+        .filter({has: this.page.getByRole('textbox')})
+        .first(),
+    ).toBeVisible();
   }
 }

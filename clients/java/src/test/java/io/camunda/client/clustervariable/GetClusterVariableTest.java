@@ -21,12 +21,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import java.util.HashMap;
+import java.util.Map;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +75,26 @@ public class GetClusterVariableTest extends ClientRestTest {
     assertThat(request.getUrl())
         .isEqualTo(RestGatewayPaths.getClusterVariablesGetTenantUrl(TENANT_ID, VARIABLE_NAME));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldMapMetadataFromResponse() {
+    // given
+    final Map<String, Object> metadata = new HashMap<>();
+    metadata.put("env", "prod");
+    metadata.put("version", 3);
+    gatewayService.onGetGlobalClusterVariableRequest(
+        VARIABLE_NAME,
+        Instancio.create(ClusterVariableResult.class)
+            .scope(ClusterVariableScopeEnum.GLOBAL)
+            .metadata(metadata));
+
+    // when
+    final ClusterVariable response =
+        client.newGloballyScopedClusterVariableGetRequest().withName(VARIABLE_NAME).send().join();
+
+    // then
+    assertThat(response.getMetadata()).containsEntry("env", "prod").containsEntry("version", 3);
   }
 
   @Test

@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -15,10 +15,28 @@
 
   <name>Zeebe Snapshots</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
     </dependency>
 
     <dependency>
@@ -107,6 +125,18 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${project.build.directory}/generated-sources</directory>
+        <includes>
+          <include>**/*.sbeir</include>
+          <include>**/*.xml</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

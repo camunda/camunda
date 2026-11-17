@@ -10,8 +10,9 @@ import {
   render,
   waitForElementToBeRemoved,
   screen,
+  waitFor,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
 import {TopPanel} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {searchResult} from 'modules/testUtils';
@@ -35,10 +36,14 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
+import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
+import {mockFetchProcessInstanceWaitStateStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {
   SearchParamsUpdater,
   updateSearchParams,
 } from 'modules/testUtils/SearchParamsUpdater';
+import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -110,6 +115,8 @@ const mockProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const mockElementInstance: ElementInstance = {
@@ -129,7 +136,18 @@ const mockElementInstance: ElementInstance = {
   tenantId: '<default>',
 };
 
-const getWrapper = (searchParams?: Record<string, string>) => {
+const LocationSpy: React.FC<{onLocationChange: (search: string) => void}> = ({
+  onLocationChange,
+}) => {
+  const location = useLocation();
+  onLocationChange(location.search);
+  return null;
+};
+
+const getWrapper = (
+  searchParams?: Record<string, string>,
+  onLocationChange?: (search: string) => void,
+) => {
   let initialPath = Paths.processInstance('1');
   if (searchParams) {
     const search = new URLSearchParams(searchParams).toString();
@@ -147,6 +165,9 @@ const getWrapper = (searchParams?: Record<string, string>) => {
                 element={
                   <>
                     <SearchParamsUpdater />
+                    {onLocationChange && (
+                      <LocationSpy onLocationChange={onLocationChange} />
+                    )}
                     {children}
                   </>
                 }
@@ -206,10 +227,15 @@ describe('TopPanel', () => {
     mockSearchMessageSubscriptions().withSuccess(searchResult([]));
 
     mockSearchElementInstances().withSuccess(searchResult([]));
+
+    mockSearchAgentInstances().withSuccess(searchResult([]));
+
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({items: []});
   });
 
   afterEach(() => {
     modificationsStore.reset();
+    diagramOverlaysStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -274,7 +300,7 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+        'Contact your organization owner or admin to give you the necessary permissions to read this definition',
       ),
     ).toBeInTheDocument();
   });
@@ -320,6 +346,189 @@ describe('TopPanel', () => {
         /Move selected instance in this element to another target/,
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should keep the clicked element selected and reset its instance selection', async () => {
+    const elementId = 'multi-instance-subprocess';
+    const elementInstanceKey = '2251799813699889';
+    let currentSearch = '';
+    const elementInstance = {
+      ...mockElementInstance,
+      elementId,
+      elementName: 'Multi Instance Subprocess',
+      type: 'MULTI_INSTANCE_BODY' as const,
+    };
+
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId,
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+    mockFetchElementInstance(elementInstanceKey).withSuccess(elementInstance);
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(
+        {
+          elementId,
+          isMultiInstanceBody: 'true',
+        },
+        (search) => {
+          currentSearch = search;
+        },
+      ),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await user.click(await screen.findByTestId(elementId));
+
+    expect(currentSearch).toContain(`elementId=${elementId}`);
+    expect(currentSearch).not.toContain('elementInstanceKey=');
+    expect(currentSearch).toContain('isMultiInstanceBody=true');
+
+    updateSearchParams({
+      elementId,
+      elementInstanceKey,
+      isMultiInstanceBody: 'true',
+    });
+
+    await waitFor(() => {
+      expect(currentSearch).toContain(
+        `elementInstanceKey=${elementInstanceKey}`,
+      );
+    });
+
+    await user.click(screen.getByTestId('diagram-canvas'));
+
+    await waitFor(() => {
+      expect(currentSearch).toBe('');
+    });
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        elementInstance,
+        {...elementInstance, elementInstanceKey: '2251799813699890'},
+      ]),
+    );
+    updateSearchParams({
+      elementId,
+      elementInstanceKey,
+    });
+
+    await waitFor(() => {
+      expect(currentSearch).toContain(
+        `elementInstanceKey=${elementInstanceKey}`,
+      );
+    });
+    expect(currentSearch).toContain(`elementId=${elementId}`);
+    expect(currentSearch).not.toContain('isMultiInstanceBody=');
+
+    await user.click(await screen.findByTestId(elementId));
+
+    await waitFor(() => {
+      expect(currentSearch).not.toContain('elementInstanceKey=');
+    });
+    expect(currentSearch).toContain(`elementId=${elementId}`);
+    expect(currentSearch).toContain('isMultiInstanceBody=true');
+  });
+
+  it('should select the anchor element from an anchored instance selection', async () => {
+    const elementInstanceKey = '2251799813699889';
+    let currentSearch = '';
+
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'user-task-1',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+    mockFetchElementInstance(elementInstanceKey).withSuccess({
+      ...mockElementInstance,
+      elementInstanceKey,
+      elementId: 'multi-instance-subprocess',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    });
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(
+        {
+          elementId: 'multi-instance-subprocess',
+          elementInstanceKey,
+          anchorElementId: 'user-task-1',
+        },
+        (search) => {
+          currentSearch = search;
+        },
+      ),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+    await user.click(await screen.findByTestId('user-task-1'));
+
+    await waitFor(() => {
+      expect(currentSearch).toContain('elementId=user-task-1');
+    });
+    expect(currentSearch).not.toContain('elementInstanceKey=');
+    expect(currentSearch).not.toContain('anchorElementId=');
+    expect(currentSearch).not.toContain('isMultiInstanceBody=');
+  });
+
+  it('should preserve repeated-click behavior in modification mode', async () => {
+    const elementInstanceKey = '2251799813699889';
+    const elementId = 'multi-instance-subprocess';
+    let currentSearch = '';
+
+    mockFetchElementInstance(elementInstanceKey).withSuccess({
+      ...mockElementInstance,
+      elementId,
+      type: 'MULTI_INSTANCE_BODY',
+    });
+    mockFetchElementInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId,
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+    modificationsStore.enableModificationMode();
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(
+        {
+          elementId,
+          elementInstanceKey,
+        },
+        (search) => {
+          currentSearch = search;
+        },
+      ),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+    await user.click(await screen.findByTestId(elementId));
+
+    expect(currentSearch).toBe('');
   });
 
   it('should display move token banner in moving mode', async () => {
@@ -418,5 +627,152 @@ describe('TopPanel', () => {
       operation: 'MOVE_TOKEN',
       ancestorScopeType: 'sourceParent',
     });
+  });
+
+  it('should render the agent status overlay for an active agent instance', async () => {
+    mockSearchAgentInstances().withSuccess(
+      searchResult([mockAgentInstance({status: 'THINKING'})]),
+    );
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    expect(
+      await screen.findByTestId('agent-status-overlay-THINKING'),
+    ).toHaveTextContent('Thinking');
+  });
+
+  it('should not render any agent overlay when the search returns no items', async () => {
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    expect(
+      screen.queryByTestId(/^agent-status-overlay-/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(/^agent-shine-overlay-/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should add an active overlay for a waiting multi-instance body missing from element-instances statistics', async () => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'multi-instance-service-task', waitingCount: 1}],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.find(
+          ({elementId, type}) =>
+            elementId === 'multi-instance-service-task' &&
+            type === 'elementState',
+        ),
+      ).toBeDefined();
+    });
+
+    const activeOverlay = diagramOverlaysStore.state.overlays.find(
+      ({elementId, type}) =>
+        elementId === 'multi-instance-service-task' && type === 'elementState',
+    );
+
+    const payload = activeOverlay?.payload as {
+      elementState: string;
+      count?: number;
+    };
+    expect(payload?.elementState).toBe('active');
+    expect(payload?.count).toBeUndefined();
+  });
+
+  it('should not add an active overlay for a waiting non-multi-instance element missing from statistics', async () => {
+    // service-task-3 is a plain task absent from element-instances stats; a
+    // waiting count alone must not synthesize an active overlay for it.
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'service-task-3', waitingCount: 1}],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    expect(
+      diagramOverlaysStore.state.overlays.find(
+        ({elementId, type}) =>
+          elementId === 'service-task-3' && type === 'elementState',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('should render a waiting overlay with a count label for a waiting element', async () => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [
+        {elementId: 'service-task-7', waitingCount: 5},
+        {elementId: 'service-task-1', waitingCount: 1},
+      ],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.some(
+          ({elementId, type}) =>
+            elementId === 'service-task-7' && type === 'waitingState',
+        ),
+      ).toBe(true);
+    });
+
+    expect(await screen.findByText('5 waiting')).toBeInTheDocument();
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
+  });
+
+  it('should not render a waiting overlay for the process-level wait state', async () => {
+    // The process-level wait state targets the PROCESS container
+    // (elementId === processDefinitionId), which has no diagram shape. Its
+    // label is surfaced in the header, not on the diagram.
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [
+        {elementId: mockProcessInstance.processDefinitionId, waitingCount: 1},
+        {elementId: 'service-task-1', waitingCount: 1},
+      ],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.some(
+          ({elementId, type}) =>
+            elementId === 'service-task-1' && type === 'waitingState',
+        ),
+      ).toBe(true);
+    });
+
+    expect(
+      diagramOverlaysStore.state.overlays.some(
+        ({elementId, type}) =>
+          elementId === mockProcessInstance.processDefinitionId &&
+          type === 'waitingState',
+      ),
+    ).toBe(false);
   });
 });

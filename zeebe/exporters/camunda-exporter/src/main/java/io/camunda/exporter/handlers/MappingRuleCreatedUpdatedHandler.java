@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 public class MappingRuleCreatedUpdatedHandler
-    implements ExportHandler<MappingRuleEntity, MappingRuleRecordValue> {
+    implements MainIndexExporterHandler<MappingRuleEntity, MappingRuleRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED);
 
@@ -68,9 +69,10 @@ public class MappingRuleCreatedUpdatedHandler
   }
 
   @Override
-  public void flush(final MappingRuleEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final MappingRuleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

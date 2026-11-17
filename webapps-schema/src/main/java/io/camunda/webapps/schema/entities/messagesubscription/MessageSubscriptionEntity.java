@@ -61,10 +61,19 @@ public class MessageSubscriptionEntity
   private Integer processDefinitionVersion;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private Map<String, String> extensionProperties;
+  private Map<String, String> toolProperties;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String messageSubscriptionType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String toolName;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String inboundConnectorType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String businessId;
 
   /**
    * @deprecated since 8.9
@@ -232,13 +241,12 @@ public class MessageSubscriptionEntity
     return this;
   }
 
-  public Map<String, String> getExtensionProperties() {
-    return extensionProperties;
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
   }
 
-  public MessageSubscriptionEntity setExtensionProperties(
-      final Map<String, String> extensionProperties) {
-    this.extensionProperties = extensionProperties;
+  public MessageSubscriptionEntity setToolProperties(final Map<String, String> toolProperties) {
+    this.toolProperties = toolProperties;
     return this;
   }
 
@@ -249,6 +257,33 @@ public class MessageSubscriptionEntity
   public MessageSubscriptionEntity setMessageSubscriptionType(
       final String messageSubscriptionType) {
     this.messageSubscriptionType = messageSubscriptionType;
+    return this;
+  }
+
+  public String getToolName() {
+    return toolName;
+  }
+
+  public MessageSubscriptionEntity setToolName(final String toolName) {
+    this.toolName = toolName;
+    return this;
+  }
+
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  public MessageSubscriptionEntity setInboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
+    return this;
+  }
+
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public MessageSubscriptionEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 
@@ -343,8 +378,11 @@ public class MessageSubscriptionEntity
         rootProcessInstanceKey,
         processDefinitionName,
         processDefinitionVersion,
-        extensionProperties,
-        messageSubscriptionType);
+        toolProperties,
+        messageSubscriptionType,
+        toolName,
+        inboundConnectorType,
+        businessId);
   }
 
   @Override
@@ -377,7 +415,10 @@ public class MessageSubscriptionEntity
         && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(processDefinitionName, that.processDefinitionName)
         && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
-        && Objects.equals(extensionProperties, that.extensionProperties)
-        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType);
+        && Objects.equals(toolProperties, that.toolProperties)
+        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType)
+        && Objects.equals(toolName, that.toolName)
+        && Objects.equals(inboundConnectorType, that.inboundConnectorType)
+        && Objects.equals(businessId, that.businessId);
   }
 }

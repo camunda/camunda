@@ -10,12 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.distribution;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -27,10 +29,13 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -63,10 +68,12 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
   private static final StringValue AUTH_INFO_KEY = new StringValue("authInfo");
+  private static final StringValue START_TIME_KEY = new StringValue("startTime");
 
   // You'll need to register any of the records value's that you want to distribute
   static {
     RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, DeploymentRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.PROCESS, ProcessRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SIGNAL, SignalRecord::new);
@@ -76,6 +83,9 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.ROLE, RoleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.TENANT, TenantRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MAPPING_RULE, MappingRuleRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.POLICY_UPDATE, PolicyUpdateRecord::new);
+    RECORDS_BY_TYPE.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION, ProcessDefinitionSuspensionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.GROUP, GroupRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SCALE, ScaleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord::new);
@@ -97,19 +107,20 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
-  private final ObjectProperty<AuthInfo> authInfoProperty =
-      new ObjectProperty<>(AUTH_INFO_KEY, new AuthInfo());
+  private final AuthInfoProperty authInfoProperty = new AuthInfoProperty(AUTH_INFO_KEY);
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
+  private final LongProperty startTimeProperty = new LongProperty(START_TIME_KEY, -1L);
 
   public CommandDistributionRecord() {
-    super(5);
+    super(7);
     declareProperty(partitionIdProperty)
         .declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty)
-        .declareProperty(authInfoProperty);
+        .declareProperty(authInfoProperty)
+        .declareProperty(startTimeProperty);
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
@@ -223,13 +234,22 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     return this;
   }
 
+  public long getStartTime() {
+    return startTimeProperty.getValue();
+  }
+
+  public CommandDistributionRecord setStartTime(final long startTimeProperty) {
+    this.startTimeProperty.setValue(startTimeProperty);
+    return this;
+  }
+
   @JsonIgnoreProperties
   public AuthInfo getAuthInfo() {
     return authInfoProperty.getValue();
   }
 
   public CommandDistributionRecord setAuthInfo(final AuthInfo authInfo) {
-    authInfoProperty.getValue().copyFrom(authInfo);
+    authInfoProperty.setValue(authInfo);
     return this;
   }
 }

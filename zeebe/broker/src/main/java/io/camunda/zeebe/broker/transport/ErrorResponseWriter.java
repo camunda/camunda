@@ -44,6 +44,9 @@ public final class ErrorResponseWriter implements BufferWriter {
   private static final String PARTITION_UNAVAILABLE = "Cannot accept requests for partition %d.";
   private static final String OUT_OF_DISK_SPACE =
       "Cannot accept requests for partition %d. Broker is out of disk space";
+  private static final String EXPORTING_CONTROL_REMOVED =
+      "This operation is no longer supported. Use the /actuator/exporting endpoint, or the"
+          + " /v2/exporting and /cluster/v2/exporting REST endpoints instead";
 
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
@@ -103,6 +106,15 @@ public final class ErrorResponseWriter implements BufferWriter {
         .errorMessage(String.format(OUT_OF_DISK_SPACE, partitionId));
   }
 
+  /**
+   * Exporting control was removed from this wire-protocol admin API and from {@code
+   * BrokerAdminService} (the {@code /actuator/partitions} endpoint); exporting state is now managed
+   * exclusively through dynamic cluster configuration.
+   */
+  public ErrorResponseWriter exportingControlRemoved() {
+    return errorCode(ErrorCode.UNSUPPORTED_MESSAGE).errorMessage(EXPORTING_CONTROL_REMOVED);
+  }
+
   public ErrorResponseWriter malformedRequest(Throwable e) {
     final StringBuilder builder = new StringBuilder();
 
@@ -155,6 +167,12 @@ public final class ErrorResponseWriter implements BufferWriter {
                   "Failed to write client request to partition '%d', because the request limit is exhausted.",
                   partitionId));
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
+      case PARTITION_PAUSED ->
+          resourceExhausted(
+              String.format(
+                  "Failed to write client request to partition '%d', because it is paused for a"
+                      + " leadership transfer.",
+                  partitionId));
     };
   }
 
@@ -224,7 +242,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   @Override
-  public int write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     errorResponseEncoder.wrapAndApplyHeader(buffer, offset, messageHeaderEncoder);
     errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
 

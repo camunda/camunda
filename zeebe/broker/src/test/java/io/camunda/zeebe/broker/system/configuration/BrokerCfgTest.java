@@ -196,13 +196,7 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseSpecifiedHosts() {
-    assertHost(
-        "specific-hosts",
-        "0.0.0.0",
-        "gatewayHost",
-        "commandHost",
-        "internalHost",
-        "monitoringHost");
+    assertHost("specific-hosts", "0.0.0.0", "192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4");
   }
 
   @Test
@@ -218,15 +212,14 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseHostFromEnvironmentWithGlobalHost() {
-    environment.put(ZEEBE_BROKER_NETWORK_HOST, "myHost");
-    assertHost("host", "myHost");
+    environment.put(ZEEBE_BROKER_NETWORK_HOST, "192.0.2.5");
+    assertHost("host", "192.0.2.5");
   }
 
   @Test
   public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
-    environment.put(ZEEBE_BROKER_NETWORK_HOST, "myHost");
-    assertHost(
-        "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "monitoringHost");
+    environment.put(ZEEBE_BROKER_NETWORK_HOST, "192.0.2.5");
+    assertHost("specific-hosts", "192.0.2.5", "192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4");
   }
 
   @Test

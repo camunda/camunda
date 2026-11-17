@@ -43,9 +43,9 @@ public abstract class SecurityHeadersBaseIT {
   // Common infrastructure
   @Container
   protected static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
-  @AutoClose protected static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  @AutoClose protected final HttpClient httpClient = HttpClient.newHttpClient();
 
   // Abstract methods to be implemented by subclasses
   protected abstract CamundaClient getCamundaClient();

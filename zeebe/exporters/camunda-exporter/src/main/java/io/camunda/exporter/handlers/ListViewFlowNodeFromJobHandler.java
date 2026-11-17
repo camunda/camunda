@@ -11,8 +11,10 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_POSITION;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -23,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewFlowNodeFromJobHandler
-    implements ExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
+    implements OrdinalIndexExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromJobHandler.class);
@@ -80,6 +82,7 @@ public class ListViewFlowNodeFromJobHandler
         .setPositionJob(record.getPosition())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue))
         .getJoinRelation()
         .setParent(recordValue.getProcessInstanceKey());
 
@@ -104,7 +107,9 @@ public class ListViewFlowNodeFromJobHandler
 
   @Override
   public void flush(
-      final FlowNodeInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final TargetIndex index,
+      final FlowNodeInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug(
         "Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
@@ -117,7 +122,7 @@ public class ListViewFlowNodeFromJobHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override

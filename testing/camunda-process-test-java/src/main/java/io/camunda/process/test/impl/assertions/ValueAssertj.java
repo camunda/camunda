@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.assertions;
 import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
+import java.util.Collections;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.AbstractAssert;
 
@@ -49,7 +50,7 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
   public ValueAssert satisfiesJudge(final String expectation) {
     judgeAssertj.assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
-    judgeAssertj.evaluateExpectation(expectation, actual, "");
+    judgeAssertj.evaluateExpectation(expectation, actual, "", Collections.emptyList());
     return this;
   }
 

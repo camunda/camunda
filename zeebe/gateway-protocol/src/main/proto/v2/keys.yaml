@@ -69,7 +69,6 @@ components:
       type: string
       format: ScopeKey
       x-semantic-type: ScopeKey
-      example: "2251799813683890"
       oneOf:
         - $ref: '#/components/schemas/ProcessInstanceKey'
         - $ref: '#/components/schemas/ElementInstanceKey'
@@ -102,13 +101,17 @@ components:
         - $ref: '#/components/schemas/LongKey'
 
     DecisionEvaluationInstanceKey:
-      description: System-generated key for a decision evaluation instance.
+      description: |
+        System-generated identifier for a decision evaluation instance. It is composed of the
+        parent decision evaluation key and the 1-based index of the evaluated decision within
+        that evaluation, joined by a hyphen (format: `<decisionEvaluationKey>-<index>`).
       format: DecisionEvaluationInstanceKey
       x-semantic-type: DecisionEvaluationInstanceKey
-      example: "2251799813684367"
       type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
+      pattern: ^[0-9]+-[0-9]+$
+      minLength: 3
+      maxLength: 30
+      example: "2251799813684367-1"
 
     DecisionEvaluationKey:
       allOf:
@@ -151,6 +154,33 @@ components:
       type: integer
       format: int64
       minimum: 1
+
+    AgentDefinitionKey:
+      description: System-generated key for an agent definition.
+      format: AgentDefinitionKey
+      x-semantic-type: AgentDefinitionKey
+      example: "2251799813691958"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
+    AgentInstanceKey:
+      description: System-generated key for an agent instance.
+      format: AgentInstanceKey
+      x-semantic-type: AgentInstanceKey
+      example: "4503599627370496"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
+    AgentHistoryItemKey:
+      description: System-generated key for an agent history item.
+      format: AgentHistoryItemKey
+      x-semantic-type: AgentHistoryItemKey
+      example: "6755399441055744"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
 
     AuditLogKey:
       allOf:
@@ -200,6 +230,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ProcessInstanceKeyFilterProperty:
       description: ProcessInstanceKey property with full advanced search capabilities.
@@ -237,6 +278,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ElementInstanceKeyFilterProperty:
       description: ElementInstanceKey property with full advanced search capabilities.
@@ -274,6 +326,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ElementInstanceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     JobKeyFilterProperty:
       description: JobKey property with full advanced search capabilities.
@@ -311,6 +374,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobKey'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     DecisionDefinitionKeyFilterProperty:
       description: DecisionDefinitionKey property with full advanced search capabilities.
@@ -348,6 +422,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ScopeKeyFilterProperty:
       description: |
@@ -461,6 +546,128 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
+
+    AgentDefinitionKeyFilterProperty:
+      description: AgentDefinitionKey property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AgentDefinitionKey"
+        - $ref: '#/components/schemas/AdvancedAgentDefinitionKeyFilter'
+
+    AdvancedAgentDefinitionKeyFilter:
+      title: Advanced filter
+      description: Advanced AgentDefinitionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentDefinitionKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentDefinitionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentDefinitionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentDefinitionKey"
+
+    AgentInstanceKeyFilterProperty:
+      description: AgentInstanceKey property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AgentInstanceKey"
+        - $ref: '#/components/schemas/AdvancedAgentInstanceKeyFilter'
+
+    AdvancedAgentInstanceKeyFilter:
+      title: Advanced filter
+      description: Advanced AgentInstanceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentInstanceKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentInstanceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentInstanceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentInstanceKey"
+
+    AgentHistoryItemKeyFilterProperty:
+      description: AgentHistoryItemKey property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AgentHistoryItemKey"
+        - $ref: '#/components/schemas/AdvancedAgentHistoryItemKeyFilter'
+
+    AdvancedAgentHistoryItemKeyFilter:
+      title: Advanced filter
+      description: Advanced AgentHistoryItemKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentHistoryItemKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentHistoryItemKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentHistoryItemKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentHistoryItemKey"
 
     AuditLogKeyFilterProperty:
       description: AuditLogKey property with full advanced search capabilities.

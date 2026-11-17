@@ -7,6 +7,11 @@ paths:
       tags:
         - Document
       operationId: createDocument
+      x-required-permissions:
+        - { resourceType: DOCUMENT, permissionType: CREATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Upload document
       description: |
         Upload a document to the Camunda 8 cluster.
@@ -57,6 +62,7 @@ paths:
         "415":
           $ref: 'common-responses.yaml#/components/responses/UnsupportedMediaType'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /documents/batch:
     post:
@@ -64,6 +70,11 @@ paths:
       tags:
         - Document
       operationId: createDocuments
+      x-required-permissions:
+        - { resourceType: DOCUMENT, permissionType: CREATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Upload multiple documents
       description: |
         Upload multiple documents to the Camunda 8 cluster.
@@ -112,6 +123,9 @@ paths:
                     $ref: '#/components/schemas/DocumentMetadata'
               required:
                 - files
+              x-properties-added-in-version:
+                - propertyName: metadataList
+                  addedInVersion: "8.8"
             encoding:
               files:
                 headers:
@@ -137,6 +151,7 @@ paths:
         "415":
           $ref: 'common-responses.yaml#/components/responses/UnsupportedMediaType'
       x-added-in-version: "8.7"
+      x-scope: physical-tenant
 
   /documents/{documentId}:
     get:
@@ -144,6 +159,11 @@ paths:
       tags:
         - Document
       operationId: getDocument
+      x-required-permissions:
+        - { resourceType: DOCUMENT, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Download document
       description: |
         Download a document from the Camunda 8 cluster.
@@ -188,12 +208,18 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Document
       operationId: deleteDocument
+      x-required-permissions:
+        - { resourceType: DOCUMENT, permissionType: DELETE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete document
       description: |
         Delete a document from the Camunda 8 cluster.
@@ -224,6 +250,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /documents/{documentId}/links:
     post:
@@ -231,6 +258,11 @@ paths:
       tags:
         - Document
       operationId: createDocumentLink
+      x-required-permissions:
+        - { resourceType: DOCUMENT, permissionType: CREATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create document link
       description: |
         Create a link to a document in the Camunda 8 cluster.
@@ -259,7 +291,7 @@ paths:
           schema:
             type: string
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -274,12 +306,15 @@ paths:
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
       x-added-in-version: "8.7"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
 components:
   schemas:
     DocumentReference:
+      x-semantic-provider:
+        - documentId
       type: object
       required:
         - camunda.document.type
@@ -306,6 +341,17 @@ components:
           nullable: true
         metadata:
           $ref: '#/components/schemas/DocumentMetadataResponse'
+      x-properties-added-in-version:
+        - propertyName: "camunda.document.type"
+          addedInVersion: "8.7"
+        - propertyName: storeId
+          addedInVersion: "8.6"
+        - propertyName: documentId
+          addedInVersion: "8.6"
+        - propertyName: contentHash
+          addedInVersion: "8.7"
+        - propertyName: metadata
+          addedInVersion: "8.6"
 
     DocumentCreationFailureDetail:
       type: object
@@ -328,6 +374,15 @@ components:
         detail:
           type: string
           description: A human-readable explanation specific to this occurrence of the problem.
+      x-properties-added-in-version:
+        - propertyName: status
+          addedInVersion: "8.9"
+        - propertyName: title
+          addedInVersion: "8.9"
+        - propertyName: fileName
+          addedInVersionOverride: "8.7"
+        - propertyName: detail
+          addedInVersionOverride: "8.7"
 
     DocumentCreationBatchResponse:
       allOf:
@@ -346,6 +401,11 @@ components:
               description: Documents that failed creation.
               items:
                 $ref: '#/components/schemas/DocumentReference'
+          x-properties-added-in-version:
+            - propertyName: "createdDocuments"
+              addedInVersionOverride: "8.7"
+            - propertyName: "failedDocuments"
+              addedInVersionOverride: "8.7"
 
     DocumentMetadata:
       description: Information about the document.
@@ -377,6 +437,21 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
+      x-properties-added-in-version:
+        - propertyName: contentType
+          addedInVersion: "8.6"
+        - propertyName: fileName
+          addedInVersion: "8.6"
+        - propertyName: expiresAt
+          addedInVersion: "8.6"
+        - propertyName: size
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionId
+          addedInVersion: "8.7"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.7"
+        - propertyName: customProperties
+          addedInVersion: "8.7"
 
     DocumentMetadataResponse:
       description: Information about the document that is returned in responses.
@@ -419,6 +494,13 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
+      x-properties-added-in-version:
+        - propertyName: processDefinitionId
+          addedInVersion: "8.7"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.7"
+        - propertyName: customProperties
+          addedInVersion: "8.7"
 
     DocumentLinkRequest:
       type: object

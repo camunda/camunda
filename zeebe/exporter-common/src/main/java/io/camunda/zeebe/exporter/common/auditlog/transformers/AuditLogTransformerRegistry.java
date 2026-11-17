@@ -104,12 +104,14 @@ public final class AuditLogTransformerRegistry {
   public static List<Supplier<AuditLogTransformer<?>>> getAllPartitionTransformerSuppliers() {
     return List.of(
         DecisionEvaluationAuditLogTransformer::new,
+        HistoryDeletionAuditLogTransformer::new,
         IncidentResolutionAuditLogTransformer::new,
         JobAuditLogTransformer::new,
         ProcessInstanceCancelAuditLogTransformer::new,
         ProcessInstanceCreationAuditLogTransformer::new,
         ProcessInstanceMigrationAuditLogTransformer::new,
         ProcessInstanceModificationAuditLogTransformer::new,
+        ProcessInstanceSuspendResumeAuditLogTransformer::new,
         UserTaskAuditLogTransformer::new,
         VariableAddUpdateAuditLogTransformer::new);
   }

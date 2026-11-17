@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -49,6 +50,15 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<ResourceMetadataRecord> resourceMetadataProp =
       new ArrayProperty<>("resourceMetadata", ResourceMetadataRecord::new);
 
+  /**
+   * Agent definitions created at deploy time for elements carrying a recognized agent marker (see
+   * {@code AgentElementTypeTransformer}). Internal-only: unlike the other metadata arrays, this is
+   * not exposed on the public {@link DeploymentRecordValue} interface, since agent definitions are
+   * a deploy-time engine concern rather than a deployment result reported to clients.
+   */
+  private final ArrayProperty<AgentDefinitionRecord> agentDefinitionsMetadataProp =
+      new ArrayProperty<>("agentDefinitionsMetadata", AgentDefinitionRecord::new);
+
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -57,13 +67,14 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final LongProperty reconstructionKeyProp = new LongProperty("reconstructionKey", -1);
 
   public DeploymentRecord() {
-    super(8);
+    super(9);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
         .declareProperty(decisionMetadataProp)
         .declareProperty(formMetadataProp)
         .declareProperty(resourceMetadataProp)
+        .declareProperty(agentDefinitionsMetadataProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp);
   }
@@ -99,6 +110,15 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   public ValueArray<ResourceMetadataRecord> resourceMetadata() {
     return resourceMetadataProp;
+  }
+
+  /**
+   * @return the mutable list of agent definitions created for this deployment. Internal-only,
+   *     populated by {@code AgentDefinitionTransformer}; not part of the public {@link
+   *     DeploymentRecordValue} interface.
+   */
+  public ValueArray<AgentDefinitionRecord> agentDefinitionsMetadata() {
+    return agentDefinitionsMetadataProp;
   }
 
   @Override
@@ -220,30 +240,6 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public DeploymentRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
-  }
-
-  public boolean hasBpmnResources() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".bpmn") || x.endsWith(".xml"));
-  }
-
-  public boolean hasDmnResources() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".dmn"));
-  }
-
-  public boolean hasForms() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".form"));
-  }
-
-  public boolean hasResources() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".rpa"));
   }
 
   /**

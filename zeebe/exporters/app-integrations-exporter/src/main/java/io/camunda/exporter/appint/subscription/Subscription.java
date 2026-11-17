@@ -11,6 +11,7 @@ import io.camunda.exporter.appint.config.BatchConfig;
 import io.camunda.exporter.appint.dispatch.Dispatcher;
 import io.camunda.exporter.appint.dispatch.DispatcherImpl;
 import io.camunda.exporter.appint.mapper.RecordMapper;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.transport.Transport;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,7 +36,8 @@ public class Subscription<T> {
       final Transport<T> transport,
       final RecordMapper<T> mapper,
       final BatchConfig batchConfig,
-      final Consumer<Long> positionConsumer) {
+      final Consumer<Long> positionConsumer,
+      final AppIntegrationsExporterMetrics metrics) {
     this.transport = transport;
     this.mapper = mapper;
     this.batchConfig = batchConfig;
@@ -44,7 +46,7 @@ public class Subscription<T> {
       log.warn(
           "Subscription is configured to continue on error. This may lead to data loss if errors occur during export.");
     }
-    dispatcher = new DispatcherImpl(batchConfig.maxBatchesInFlight());
+    dispatcher = new DispatcherImpl(batchConfig.maxBatchesInFlight(), metrics);
     currentBatch = new Batch<>(batchConfig.batchSize(), batchConfig.batchIntervalMs());
   }
 

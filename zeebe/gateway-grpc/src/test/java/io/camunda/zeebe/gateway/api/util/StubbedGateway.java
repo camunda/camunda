@@ -10,9 +10,10 @@ package io.camunda.zeebe.gateway.api.util;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
@@ -27,11 +28,12 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
@@ -63,6 +65,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
@@ -77,7 +80,8 @@ public final class StubbedGateway {
   private final StubbedJobStreamer jobStreamer;
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig securityConfiguration;
+  private final PhysicalTenantIds physicalTenantIds;
   private Server server;
 
   public StubbedGateway(
@@ -85,12 +89,14 @@ public final class StubbedGateway {
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
       final GatewayCfg config,
-      final SecurityConfiguration securityConfiguration) {
+      final EngineSecurityConfig securityConfiguration,
+      final PhysicalTenantIds physicalTenantIds) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
     this.securityConfiguration = securityConfiguration;
+    this.physicalTenantIds = physicalTenantIds;
   }
 
   public void start() throws IOException {
@@ -101,20 +107,43 @@ public final class StubbedGateway {
 
     final EndpointManager endpointManager =
         new EndpointManager(
-            brokerClient, activateJobsHandler, clientStreamAdapter, securityConfiguration);
+            brokerClient,
+            activateJobsHandler,
+            clientStreamAdapter,
+            physicalTenantIds.known().stream()
+                .collect(Collectors.toMap(tenantId -> tenantId, tenantId -> securityConfiguration)),
+            VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final var handlersByTenant =
+        physicalTenantIds.known().stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    tenantId -> tenantId,
+                    tenantId ->
+                        (AuthenticationHandler)
+                            new AuthenticationHandler.Oidc(
+                                new FakeJwtDecoder(),
+                                (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+                                securityConfiguration.getAuthentication().getOidc())));
+    final var metricsByTenant =
+        physicalTenantIds.known().stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    tenantId -> tenantId,
+                    tenantId ->
+                        new AuthenticationMetrics(
+                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC)));
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
                     new AuthenticationInterceptor(
-                        new AuthenticationHandler.Oidc(
-                            new FakeJwtDecoder(),
-                            new NoopOidcClaimsProvider(),
-                            securityConfiguration.getAuthentication().getOidc()),
-                        new AuthenticationMetrics(
-                            new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
+                        physicalTenantIds.known(),
+                        handlersByTenant,
+                        !securityConfiguration.getAuthentication().isUnprotectedApi(),
+                        metricsByTenant,
+                        new SimpleMeterRegistry())));
     server = serverBuilder.build();
     server.start();
   }
@@ -174,7 +203,7 @@ public final class StubbedGateway {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-        .setMetrics(LongPollingMetrics.noop())
+        .setMetricsFactory(LongPollingMetricsFactory.noop())
         .build();
   }
 
@@ -190,7 +219,8 @@ public final class StubbedGateway {
     public ActorFuture<ClientStreamId> add(
         final DirectBuffer streamType,
         final JobActivationProperties metadata,
-        final ClientStreamConsumer clientStreamConsumer) {
+        final ClientStreamConsumer clientStreamConsumer,
+        final String physicalTenantId) {
       final var failure = failOnAdd.get();
       if (failure != null) {
         return CompletableActorFuture.completedExceptionally(failure);
@@ -198,7 +228,7 @@ public final class StubbedGateway {
 
       final StubbedClientStreamId streamId = new StubbedClientStreamId(UUID.randomUUID());
       final StreamTypeConsumer consumer =
-          new StreamTypeConsumer(streamType, metadata, clientStreamConsumer);
+          new StreamTypeConsumer(streamType, metadata, clientStreamConsumer, physicalTenantId);
       registeredStreams.put(streamType, consumer);
       streamIdToConsumer.put(streamId, consumer);
 
@@ -246,6 +276,11 @@ public final class StubbedGateway {
       return consumer != null ? consumer.metadata() : null;
     }
 
+    public String getStreamPhysicalTenantId(final String streamType) {
+      final var consumer = registeredStreams.get(BufferUtil.wrapString(streamType));
+      return consumer != null ? consumer.physicalTenantId() : null;
+    }
+
     public void setFailOnAdd(final Throwable failure) {
       failOnAdd.set(failure);
     }
@@ -254,7 +289,8 @@ public final class StubbedGateway {
   private record StreamTypeConsumer(
       DirectBuffer streamType,
       JobActivationProperties metadata,
-      ClientStreamConsumer clientStreamConsumer) {}
+      ClientStreamConsumer clientStreamConsumer,
+      String physicalTenantId) {}
 
   private record StubbedClientStreamId(UUID serverStreamId) implements ClientStreamId {}
 

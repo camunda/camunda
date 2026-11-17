@@ -1,0 +1,12 @@
+{
+  "mavenOnlyMetadataVariants": [
+    {
+      "mavenArtifact": "okhttp.jar",
+      "gradleArtifact": "okhttp-jvm.jar"
+    },
+    {
+      "mavenArtifact": "okio.jar",
+      "gradleArtifact": "okio-jvm.jar"
+    }
+  ]
+}

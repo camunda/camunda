@@ -60,7 +60,8 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = CanceledFlowNodesOnlyFilterDto.class, name = "canceledFlowNodesOnly"),
   @JsonSubTypes.Type(
       value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-      name = "completedOrCanceledFlowNodesOnly")
+      name = "completedOrCanceledFlowNodesOnly"),
+  @JsonSubTypes.Type(value = HasAgentInstancesFilterDto.class, name = "hasAgentInstances")
 })
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 

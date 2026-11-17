@@ -7,26 +7,28 @@
  */
 package io.camunda.zeebe.engine.processing.job.behaviour;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.job.JobCommandPreconditionValidator;
+import io.camunda.zeebe.engine.processing.job.JobLeaseFencingCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Optional;
 
 public class JobUpdateBehaviour {
 
-  public static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to update job with key '%d', but no such job was found";
   public static final String NO_DEADLINE_FOUND_MESSAGE =
       "Expected to update the timeout of job with key '%d', but it is not active";
   private static final String NEGATIVE_RETRIES_MESSAGE =
@@ -36,68 +38,96 @@ public class JobUpdateBehaviour {
   private final JobState jobState;
   private final InstantSource clock;
   private final StateWriter stateWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final JobCommandPreconditionValidator preconditionChecker;
+  private final CslAuthorizationCheck cslCheck;
 
   public JobUpdateBehaviour(
-      final JobState jobState,
+      final ProcessingState processingStateState,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final Writers writers) {
-    this.jobState = jobState;
+    jobState = processingStateState.getJobState();
     this.clock = clock;
     stateWriter = writers.state();
-    this.authCheckBehavior = authCheckBehavior;
+    preconditionChecker =
+        new JobCommandPreconditionValidator(
+            jobState,
+            processingStateState.getBannedInstanceState(),
+            "update",
+            List.of(
+                State.ACTIVATABLE,
+                State.ACTIVATED,
+                State.FAILED,
+                State.ERROR_THROWN,
+                State.WAITING_FOR_SECRET_RESOLUTION),
+            List.of(JobLeaseFencingCheck.forUpdateCommand()),
+            tenantCheck);
+    this.cslCheck = cslCheck;
   }
 
-  public Either<Rejection, JobRecord> getJob(
-      final long jobKey, final TypedRecord<JobRecord> command) {
-    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
-    final var job = jobState.getJob(jobKey, authorizedTenantIds);
-
-    if (job != null) {
-      return Either.right(job);
-    }
-    return Either.left(
-        new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey)));
+  public Either<Rejection, JobRecord> checkJobCommand(final TypedRecord<JobRecord> command) {
+    return preconditionChecker.check(command);
   }
 
   public Either<Rejection, JobRecord> isAuthorized(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    if (authCheckBehavior.shouldSkipAllChecks()) {
-      return Either.right(job);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
+        job,
+        AuthorizationRejectionMapper.noPrincipal());
+  }
+
+  public Optional<String> validateJobRetries(final long jobKey, final int retries) {
+    if (retries < 1) {
+      return Optional.of(NEGATIVE_RETRIES_MESSAGE.formatted(jobKey, retries));
     }
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(job.getTenantId())
-            .addResourceId(job.getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> job);
+    return Optional.empty();
+  }
+
+  public void applyJobRetries(final long jobKey, final int retries, final JobRecord jobRecord) {
+    jobRecord.setRetries(retries);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
   }
 
   public Optional<String> updateJobRetries(
       final long jobKey, final int retries, final JobRecord jobRecord) {
-    if (retries < 1) {
-      return Optional.of(NEGATIVE_RETRIES_MESSAGE.formatted(jobKey, retries));
+    final Optional<String> error = validateJobRetries(jobKey, retries);
+    if (error.isPresent()) {
+      return error;
     }
-    // update retries for response sent to client
-    jobRecord.setRetries(retries);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
+    applyJobRetries(jobKey, retries, jobRecord);
     return Optional.empty();
+  }
+
+  public Optional<String> validateJobTimeout(final long jobKey, final JobRecord jobRecord) {
+    if (!jobState.jobDeadlineExists(jobKey, jobRecord.getDeadline())) {
+      return Optional.of(NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
+    }
+    return Optional.empty();
+  }
+
+  public void applyJobTimeout(final long jobKey, final long timeout, final JobRecord jobRecord) {
+    final long newDeadline = clock.millis() + timeout;
+    jobRecord.setDeadline(newDeadline);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
   }
 
   public Optional<String> updateJobTimeout(
       final long jobKey, final long timeout, final JobRecord jobRecord) {
-    final long oldDeadline = jobRecord.getDeadline();
-
-    if (!jobState.jobDeadlineExists(jobKey, oldDeadline)) {
-      return Optional.of(NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
+    final Optional<String> error = validateJobTimeout(jobKey, jobRecord);
+    if (error.isPresent()) {
+      return error;
     }
-    final long newDeadline = clock.millis() + timeout;
-    jobRecord.setDeadline(newDeadline);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
+    applyJobTimeout(jobKey, timeout, jobRecord);
     return Optional.empty();
+  }
+
+  public void applyJobPriority(
+      final long jobKey, final int newPriority, final JobRecord jobRecord) {
+    jobRecord.setPriority(newPriority);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.PRIORITY_UPDATED, jobRecord);
   }
 }

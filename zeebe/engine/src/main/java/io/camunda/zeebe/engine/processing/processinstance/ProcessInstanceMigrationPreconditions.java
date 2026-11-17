@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
@@ -44,6 +46,9 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceMigrationPreconditions {
+
+  static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
+      "Expected to migrate process instance but no process instance found with key '%d'";
 
   private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
@@ -74,12 +79,14 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnEventType.SIGNAL,
           BpmnEventType.CONDITIONAL);
 
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
-      "Expected to migrate process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       """
       Expected to migrate process instance to process definition \
       but no process definition found with key '%d'""";
+  private static final String ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_DRAINING =
+      """
+      Expected to migrate process instance to process definition with key '%d' \
+      but it is being deleted""";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_HAS_START_EVENT_INSTANCE =
       """
       Expected to migrate process instance '%d' \
@@ -138,6 +145,18 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' and type '%s' is mapped to \
       an element with id '%s' and different type '%s'. \
       Elements must be mapped to elements of the same type.""";
+  private static final String ERROR_AGENT_INSTANCE_MISSING_AGENT_DEFINITION =
+      """
+      Expected to migrate process instance '%s' \
+      but the agent instance with element id '%s' would be migrated to element '%s' \
+      that has no agent definition. \
+      An agent instance must always belong to an agent definition.""";
+  private static final String ERROR_AGENT_DEFINITION_TYPE_CHANGED =
+      """
+      Expected to migrate process instance '%s' \
+      but the agent instance element with id '%s' has agent definition type '%s' \
+      while the mapped target element with id '%s' has a different agent definition type '%s'. \
+      An agent instance's type must not change on migration.""";
   private static final String ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION =
       """
       Expected to migrate process instance '%s' \
@@ -250,6 +269,24 @@ public final class ProcessInstanceMigrationPreconditions {
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.NOT_FOUND);
+    }
+  }
+
+  /**
+   * Checks that the target process definition is not being deleted. A definition that is draining
+   * is kept in state so its running instances can finish, but no new instances may be migrated onto
+   * it.
+   *
+   * @param targetProcessDefinition target process definition to check (must be non-null)
+   * @param targetProcessDefinitionKey target process definition key, for the error message
+   */
+  public static void requireTargetProcessDefinitionNotDraining(
+      final DeployedProcess targetProcessDefinition, final long targetProcessDefinitionKey) {
+    if (targetProcessDefinition.isDraining()) {
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          String.format(
+              ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_DRAINING, targetProcessDefinitionKey),
+          RejectionType.INVALID_STATE);
     }
   }
 
@@ -576,17 +613,110 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
+   * Checks that the agent definition backing an agent instance is preserved across the migration.
+   * The method is only called for elements that already have an agent instance, so the source
+   * element always carries an agent definition. The migration is rejected when the mapped target
+   * element carries no agent definition (an agent instance must always belong to one) or carries an
+   * agent definition of a different type (an agent instance's type must not change).
+   *
+   * @param sourceProcessDefinition source process definition to resolve the source agent type
+   * @param targetProcessDefinition target process definition to resolve the target agent type
+   * @param sourceElementId the agent instance's source element id
+   * @param targetElementId the mapped target element id
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireCompatibleAgentDefinition(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId,
+      final String targetElementId,
+      final long processInstanceKey) {
+    final AgentDefinitionType sourceType =
+        resolveAgentDefinitionType(sourceProcessDefinition, sourceElementId);
+    final AgentDefinitionType targetType =
+        resolveAgentDefinitionType(targetProcessDefinition, targetElementId);
+
+    if (sourceType == targetType) {
+      return;
+    }
+
+    final String reason;
+    if (targetType == AgentDefinitionType.UNSPECIFIED) {
+      reason =
+          String.format(
+              ERROR_AGENT_INSTANCE_MISSING_AGENT_DEFINITION,
+              processInstanceKey,
+              sourceElementId,
+              targetElementId);
+    } else {
+      reason =
+          String.format(
+              ERROR_AGENT_DEFINITION_TYPE_CHANGED,
+              processInstanceKey,
+              sourceElementId,
+              sourceType,
+              targetElementId,
+              targetType);
+    }
+    throw new ProcessInstanceMigrationPreconditionFailedException(
+        reason, RejectionType.INVALID_STATE);
+  }
+
+  private static AgentDefinitionType resolveAgentDefinitionType(
+      final DeployedProcess processDefinition, final String elementId) {
+    final AbstractFlowElement element = processDefinition.getProcess().getElementById(elementId);
+    if (element == null) {
+      return AgentDefinitionType.UNSPECIFIED;
+    }
+    // the agent definition marker sits on the job worker element itself; unwrap a multi-instance
+    // body to reach it, mirroring how the agent definition is created at deploy time
+    final ExecutableFlowElement activity =
+        element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+            ? multiInstanceBody.getInnerActivity()
+            : element;
+    return activity instanceof final ExecutableJobWorkerElement jobWorkerElement
+        ? jobWorkerElement.getAgentDefinitionType()
+        : AgentDefinitionType.UNSPECIFIED;
+  }
+
+  /**
    * Checks whether the given user task implementations are supported for migration. Throws an
-   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   * exception if a zeebe user task is migrated to the deprecated job worker user task type, or when
+   * it is an implementation migration with an incident on the job worker.
    *
    * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
-   * @return whether the migration is to a different user task implementation
+   * @param incidentState incident state to check for active incidents on the job
    */
-  public static boolean requireSupportedUserTaskImplementation(
+  public static void requireSupportedUserTaskMigration(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance,
+      final long processInstanceKey,
+      final IncidentState incidentState) {
+    requireSupportedUserTaskImplementation(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey);
+
+    if (ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
+        sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance)) {
+      requireNoIncidentForJobWorkerUserTaskConversion(
+          incidentState, elementInstance, processInstanceKey);
+    }
+  }
+
+  /**
+   * Checks whether the given user task implementations are supported for migration. Throws an
+   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   */
+  public static void requireSupportedUserTaskImplementation(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -594,7 +724,7 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return false;
+      return;
     }
 
     final AbstractFlowElement targetElement =
@@ -604,42 +734,33 @@ public final class ProcessInstanceMigrationPreconditions {
     if (targetElementType != BpmnElementType.USER_TASK
         && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
             && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
-      return false;
+      return;
     }
 
     final ExecutableUserTask targetUserTask =
         targetProcessDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableUserTask.class);
-    final String targetUserTaskType =
-        targetUserTask.getUserTaskProperties() != null
-            ? ZEEBE_USER_TASK_IMPLEMENTATION
-            : JOB_WORKER_IMPLEMENTATION;
-
     final ExecutableUserTask sourceUserTask =
         sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
-    final String sourceUserTaskType =
-        sourceUserTask.getUserTaskProperties() != null
-            ? ZEEBE_USER_TASK_IMPLEMENTATION
-            : JOB_WORKER_IMPLEMENTATION;
 
-    if (!sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)) {
+    final boolean sourceIsZeebeUserTask = sourceUserTask.getUserTaskProperties() != null;
+    final boolean targetIsJobWorker = targetUserTask.getUserTaskProperties() == null;
+
+    if (sourceIsZeebeUserTask && targetIsJobWorker) {
       final String reason =
           String.format(
               ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
-              sourceUserTaskType,
+              ZEEBE_USER_TASK_IMPLEMENTATION,
               targetElementId,
-              targetUserTaskType);
+              JOB_WORKER_IMPLEMENTATION);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
-    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
   }
 
   /**

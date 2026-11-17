@@ -16,6 +16,7 @@ export class OperationsLog {
   readonly processInstanceKeyFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly tableLoader: Locator;
+  readonly detailsModal: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -26,6 +27,14 @@ export class OperationsLog {
       name: /reset filters/i,
     });
     this.tableLoader = page.getByTestId('data-table-loader');
+    this.detailsModal = page.getByRole('dialog');
+  }
+
+  async openRowDetails(index: number) {
+    await this.page
+      .getByRole('button', {name: 'Open details'})
+      .nth(index)
+      .click();
   }
 
   async gotoOperationsLogPage(options?: {

@@ -81,4 +81,41 @@ public class MockDmnDecisionInstructionTest {
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
   }
+
+  @Test
+  void shouldMockDmnDecisionWithDecisionOutput() {
+    // given
+    final MockDmnDecisionInstruction instruction =
+        ImmutableMockDmnDecisionInstruction.builder()
+            .decisionDefinitionId(DECISION_ID)
+            .decisionOutput(15)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockDmnDecision(DECISION_ID, 15);
+
+    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
+  }
+
+  @Test
+  void shouldFavorDecisionOutputOverVariables() {
+    // given
+    final MockDmnDecisionInstruction instruction =
+        ImmutableMockDmnDecisionInstruction.builder()
+            .decisionDefinitionId(DECISION_ID)
+            .decisionOutput(15)
+            .putVariables("discount", 10)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).mockDmnDecision(DECISION_ID, 15);
+
+    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
+  }
 }

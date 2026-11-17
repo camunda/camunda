@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.operate.TreePath;
@@ -18,6 +19,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -34,7 +36,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRecordValue> {
+public class IncidentHandler
+    implements OrdinalIndexExportHandler<IncidentEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
   private static final Set<IncidentIntent> SUPPORTED_INTENTS =
@@ -103,7 +106,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
         .setState(IncidentState.PENDING)
         .setCreationTime(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
-        .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
@@ -117,7 +121,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   }
 
   @Override
-  public void flush(final IncidentEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final IncidentEntity entity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
@@ -125,7 +130,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     updateFields.put(POSITION, entity.getPosition());
     updateFields.put(TREE_PATH, entity.getTreePath());
     updateFields.put(STATE, entity.getState());
-    batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
+    batchRequest.upsert(index, String.valueOf(entity.getKey()), entity, updateFields);
   }
 
   @Override
@@ -171,7 +176,9 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
               record.getKey());
           treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
         }
-        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
+        // the call activity FNI is the last entry, not index 1: intermediate flow scopes
+        // (e.g. a subprocess wrapping the call activity) sit between the PI root and it
+        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
       }
     }
 

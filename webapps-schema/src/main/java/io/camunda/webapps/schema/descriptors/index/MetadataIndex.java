@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
+import java.util.OptionalInt;
 
 public final class MetadataIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
@@ -22,6 +23,11 @@ public final class MetadataIndex extends AbstractIndexDescriptor implements Prio
 
   public MetadataIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
+  }
+
+  @Override
+  public OptionalInt getDefaultShardCount() {
+    return OptionalInt.of(1);
   }
 
   @Override

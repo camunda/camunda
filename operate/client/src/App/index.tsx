@@ -23,6 +23,7 @@ import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from '../modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from '../modules/auth/AuthorizationCheck';
+import {SessionHeartbeat} from '../modules/auth/SessionHeartbeat';
 import {SessionWatcher} from '../modules/auth/SessionWatcher';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
@@ -35,12 +36,34 @@ import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {hasProcessLevelWaitState} from 'modules/utils/waitStates';
 
 const DefaultTabRedirect: React.FC = () => {
   const location = useLocation();
-  const {data: processInstance} = useProcessInstance();
+  const {data: processInstance, isLoading: isProcessInstanceLoading} =
+    useProcessInstance();
+  const {hasSelection} = useProcessInstanceElementSelection();
+  const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
+    useWaitStateStatistics({
+      enabled: getClientConfig().waitStatesEnabled,
+    });
+
+  if (isProcessInstanceLoading || isWaitStateLoading) {
+    return null;
+  }
+
+  const isProcessLevelWaiting = hasProcessLevelWaitState(
+    waitStateStatistics,
+    processInstance?.processDefinitionId,
+  );
   const pathname =
-    processInstance?.hasIncident === true ? 'incidents' : 'variables';
+    processInstance?.hasIncident === true
+      ? 'incidents'
+      : hasSelection || isProcessLevelWaiting
+        ? 'details'
+        : 'variables';
   return <Navigate to={{pathname, search: location.search}} replace />;
 };
 
@@ -72,6 +95,7 @@ const routes = createRoutesFromElements(
         return {
           Component: () => (
             <AuthenticationCheck redirectPath={Paths.login()}>
+              <SessionHeartbeat />
               <AuthorizationCheck>
                 <Layout />
               </AuthorizationCheck>
@@ -93,7 +117,16 @@ const routes = createRoutesFromElements(
           const {Processes} = await import('./Processes/index');
           return {Component: Processes};
         }}
-      />
+      >
+        <Route
+          path="filters/variables"
+          lazy={async () => {
+            const {VariableFilterModal} =
+              await import('./Processes/ListView/Filters/VariablesFilter/VariableFilterModal');
+            return {Component: VariableFilterModal};
+          }}
+        />
+      </Route>
       <Route
         path={Paths.processInstance(undefined, true)}
         lazy={async () => {

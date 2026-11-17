@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.processing.usertask;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAssignProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCancelProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskClaimProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
@@ -37,7 +39,8 @@ public final class UserTaskCommandProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -45,7 +48,10 @@ public final class UserTaskCommandProcessors {
             writers,
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
+
+    final var userTaskAuth = new UserTaskAuthorizationCheck(cslCheck);
 
     commandToProcessor =
         new EnumMap<>(
@@ -58,20 +64,26 @@ public final class UserTaskCommandProcessors {
                     bpmnBehaviors.jobBehavior()),
                 UserTaskIntent.ASSIGN,
                 new UserTaskAssignProcessor(
-                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState, writers, asyncRequestBehavior, tenantCheck, userTaskAuth),
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(
-                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState, writers, asyncRequestBehavior, tenantCheck, userTaskAuth),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(
                     processingState,
                     writers,
                     bpmnBehaviors.variableBehavior(),
                     asyncRequestBehavior,
-                    authCheckBehavior),
+                    tenantCheck,
+                    userTaskAuth),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
-                    processingState, eventHandle, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState,
+                    eventHandle,
+                    writers,
+                    asyncRequestBehavior,
+                    tenantCheck,
+                    userTaskAuth),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);
@@ -95,9 +107,9 @@ public final class UserTaskCommandProcessors {
       final Map<UserTaskIntent, UserTaskCommandProcessor> commandToProcessor) {
     final var missingProcessors =
         UserTaskIntent.commands().stream()
-            // Exclude COMPLETE_TASK_LISTENER and REJECT_TASK_LISTENER as they don't require a
-            // dedicated processor.
-            // This intent is handled internally within UserTaskProcessor
+            // Exclude COMPLETE_TASK_LISTENER and REJECT_TASK_LISTENER as they don't
+            // require a dedicated processor.
+            // These intents are handled internally within UserTaskProcessor
             .filter(intent -> intent != UserTaskIntent.COMPLETE_TASK_LISTENER)
             .filter(intent -> intent != UserTaskIntent.DENY_TASK_LISTENER)
             .filter(intent -> !commandToProcessor.containsKey(intent))

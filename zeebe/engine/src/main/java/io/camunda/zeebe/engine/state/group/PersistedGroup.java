@@ -12,9 +12,11 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedGroup extends UnpackedObject implements DbValue {
+public class PersistedGroup extends UnpackedObject
+    implements DbValue, ProjectionOf<GroupRecord, PersistedGroup> {
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey");
   private final StringProperty groupIdProp = new StringProperty("groupId");
@@ -29,11 +31,13 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
         .declareProperty(nameProp);
   }
 
-  public void wrap(final GroupRecord group) {
+  @Override
+  public PersistedGroup wrap(final GroupRecord group) {
     groupKeyProp.setValue(group.getGroupKey());
     groupIdProp.setValue(group.getGroupId());
     descriptionProp.setValue(group.getDescription());
     nameProp.setValue(group.getNameBuffer());
+    return this;
   }
 
   public long getGroupKey() {

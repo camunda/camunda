@@ -27,8 +27,7 @@ public class TenantAwareModifyProcessInstanceTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true));
+      EngineRule.singlePartition().withMultiTenancyChecksEnabled(true);
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -126,7 +125,7 @@ public class TenantAwareModifyProcessInstanceTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to modify a process instance with key '%s', but no such process instance was found"
+            "Expected to modify process instance but no process instance found with key '%s'"
                 .formatted(processInstanceKey));
   }
 

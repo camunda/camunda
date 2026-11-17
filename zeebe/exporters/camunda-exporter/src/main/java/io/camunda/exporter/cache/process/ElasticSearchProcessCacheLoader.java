@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -22,11 +23,15 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
 
   private final ElasticsearchClient client;
   private final String processIndexName;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ElasticSearchProcessCacheLoader(
-      final ElasticsearchClient client, final String processIndexName) {
+      final ElasticsearchClient client,
+      final String processIndexName,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.client = client;
     this.processIndexName = processIndexName;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -37,16 +42,13 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
             ProcessEntity.class);
     if (response.found()) {
       final var processEntity = response.source();
-      final var processDiagramData =
-          ProcessCacheUtil.extractProcessDiagramData(
-              processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
-      return new CachedProcessEntity(
+      return ProcessCacheUtil.createCachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersion(),
           processEntity.getVersionTag(),
-          processDiagramData.callActivityIds(),
-          processDiagramData.flowNodesMap(),
-          processDiagramData.hasUserTasks());
+          processEntity.getBpmnXml(),
+          processEntity.getBpmnProcessId(),
+          extensionPropertiesConfiguration);
     } else {
       // This should only happen if the process was deleted from ElasticSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the

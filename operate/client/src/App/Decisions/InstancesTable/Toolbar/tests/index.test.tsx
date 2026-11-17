@@ -88,9 +88,40 @@ describe('<Toolbar />', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Discard'})).toBeInTheDocument();
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
+
+    expect(
+      within(toolbar).getByRole('button', {name: 'Delete'}),
+    ).toBeInTheDocument();
+    expect(
+      within(toolbar).getByRole('button', {name: 'Discard'}),
+    ).toBeInTheDocument();
     expect(screen.getByText('1 item selected')).toBeInTheDocument();
+  });
+
+  it('should append "+" to the selected count label when truncated', () => {
+    render(<Toolbar selectedCount={10000} isSelectedCountTruncated />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText('10000+ items selected')).toBeInTheDocument();
+  });
+
+  it('should append "+" to the count in the delete confirmation modal when truncated', async () => {
+    const {user} = render(
+      <Toolbar selectedCount={10000} isSelectedCountTruncated />,
+      {wrapper: Wrapper},
+    );
+
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
+    await user.click(within(toolbar).getByRole('button', {name: 'Delete'}));
+
+    const modal = screen.getByRole('dialog');
+    expect(
+      within(modal).getByText(
+        /10000\+ instances selected for delete operation\. This permanently deletes/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('should perform delete batch operation successfully', async () => {
@@ -100,7 +131,8 @@ describe('<Toolbar />', () => {
 
     const {user} = render(<Toolbar selectedCount={2} />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: 'Delete'}));
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
+    await user.click(within(toolbar).getByRole('button', {name: 'Delete'}));
 
     const modal = screen.getByRole('dialog');
     expect(

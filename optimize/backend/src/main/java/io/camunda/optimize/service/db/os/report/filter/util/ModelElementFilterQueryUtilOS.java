@@ -106,6 +106,7 @@ public final class ModelElementFilterQueryUtilOS {
 
   private ModelElementFilterQueryUtilOS() {}
 
+  @SuppressWarnings("ReturnValueIgnored")
   public static Optional<Query> instanceFilterForRelevantViewLevelFiltersQuery(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =

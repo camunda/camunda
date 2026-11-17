@@ -9,20 +9,24 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -604,6 +608,97 @@ public final class CreateDeploymentMultiplePartitionsTest {
               .extracting(Record::getValue)
               .extracting(DecisionRecordValue::getDeploymentKey)
               .isEqualTo(deployment.getKey());
+        });
+  }
+
+  @Test
+  public void shouldWriteAgentDefinitionCreatedEventsWithSameKeysOnAllPartitions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var elementId = "agent-task";
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    elementId, t -> t.zeebeJobType("agent-task-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .withBpmnProcessId(processId)
+                  .getFirst();
+          assertThat(record)
+              .describedAs(
+                  "Should replicate AgentDefinition:CREATED to every partition, not only the"
+                      + " deployment partition")
+              .isNotNull();
+        });
+
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .limit(PARTITION_COUNT)
+                .map(Record::getKey)
+                .distinct())
+        .describedAs("All created events get the same agentDefinitionKey on every partition")
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldResolveReplicatedAgentDefinitionKeyOnAllPartitions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var jobType = "agent-" + processId;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "agent-task", t -> t.zeebeJobType(jobType).zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when - an instance is created on every partition, whose job resolves the agent definition
+    // key from that partition's replicated agent definition
+    ENGINE.forEachPartition(
+        partitionId ->
+            ENGINE.processInstance().ofBpmnProcessId(processId).onPartition(partitionId).create());
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var agentDefinitionKey =
+              RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .withBpmnProcessId(processId)
+                  .getFirst()
+                  .getKey();
+          final var job =
+              RecordingExporter.jobRecords(JobIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .withType(jobType)
+                  .getFirst();
+          assertThat(job.getValue().getCustomHeaders())
+              .describedAs(
+                  "Job on partition %d should carry the replicated agentDefinitionKey", partitionId)
+              .contains(
+                  entry(
+                      Protocol.AGENT_DEFINITION_KEY_HEADER_NAME,
+                      String.valueOf(agentDefinitionKey)));
         });
   }
 

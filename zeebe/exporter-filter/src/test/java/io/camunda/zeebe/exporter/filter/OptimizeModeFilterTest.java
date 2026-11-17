@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -150,6 +151,25 @@ final class OptimizeModeFilterTest {
     assertThat(filter.accept(created)).as("VARIABLE.CREATED should be accepted").isTrue();
     assertThat(filter.accept(updated)).as("VARIABLE.UPDATED should be accepted").isTrue();
     assertThat(filter.accept(migrated)).as("VARIABLE.MIGRATED should be rejected").isFalse();
+  }
+
+  // ---------------------------------------------------------------------------
+  // AGENT_INSTANCE
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldAcceptOnlyCreatedUpdatedAndCompletedAgentInstances() {
+    final var created = record(ValueType.AGENT_INSTANCE, AgentInstanceIntent.CREATED);
+    final var updated = record(ValueType.AGENT_INSTANCE, AgentInstanceIntent.UPDATED);
+    final var completed = record(ValueType.AGENT_INSTANCE, AgentInstanceIntent.COMPLETED);
+    final var createCommand = record(ValueType.AGENT_INSTANCE, AgentInstanceIntent.CREATE);
+
+    assertThat(filter.accept(created)).as("AGENT_INSTANCE.CREATED should be accepted").isTrue();
+    assertThat(filter.accept(updated)).as("AGENT_INSTANCE.UPDATED should be accepted").isTrue();
+    assertThat(filter.accept(completed)).as("AGENT_INSTANCE.COMPLETED should be accepted").isTrue();
+    assertThat(filter.accept(createCommand))
+        .as("AGENT_INSTANCE.CREATE is not in the allowed set and should be rejected")
+        .isFalse();
   }
 
   // ---------------------------------------------------------------------------

@@ -7,58 +7,59 @@
  */
 package io.camunda.it.rdbms.db.group;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomGroups;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createRandomized;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.fixtures.GroupMemberFixtures;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
-import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@Tag("rdbms")
-@DataJdbcTest
-@ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
-@AutoConfigurationPackage
+@RdbmsDataJdbcTest
 @TestPropertySource(
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class GroupSpecificFilterIT {
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
-  @Autowired private GroupDbReader groupReader;
+  private GroupDbReader groupReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
+    groupReader = rdbmsService.getGroupReader();
   }
 
   @Test
@@ -94,11 +95,7 @@ public class GroupSpecificFilterIT {
     createAndSaveGroup(
         rdbmsWriters,
         GroupFixtures.createRandomized(
-            b ->
-                b.groupId("groupId")
-                    .groupKey(1337L)
-                    .name("Group 1337")
-                    .description("This is group 1337")));
+            b -> b.groupId("groupId").name("Group 1337").description("This is group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
         rdbmsWriters,
         b -> b.groupId("groupId").entityId("entityId").entityType(EntityType.USER.name()));
@@ -110,7 +107,7 @@ public class GroupSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(1337L);
+    assertThat(searchResult.items().getFirst().groupId()).isEqualTo("groupId");
   }
 
   @ParameterizedTest
@@ -119,8 +116,7 @@ public class GroupSpecificFilterIT {
     createAndSaveRandomGroups(rdbmsWriters);
     createAndSaveGroup(
         rdbmsWriters,
-        GroupFixtures.createRandomized(
-            b -> b.groupId("groupId1").groupKey(1337L).name("Group 1337")));
+        GroupFixtures.createRandomized(b -> b.groupId("groupId1").name("Group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
         rdbmsWriters,
         b -> b.groupId("groupId1").entityId("entityId1").entityType(EntityType.USER.name()));
@@ -143,9 +139,57 @@ public class GroupSpecificFilterIT {
     assertThat(searchResult.items()).hasSize(expectedCount);
   }
 
+  @Test
+  public void shouldFindGroupsWithOrFilters() {
+    final var matchingGroup = createRandomized(b -> b);
+    final var otherMatchingGroup = createRandomized(b -> b);
+    final var nonMatchingGroup = createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriters, matchingGroup);
+    createAndSaveGroup(rdbmsWriters, otherMatchingGroup);
+    createAndSaveGroup(rdbmsWriters, nonMatchingGroup);
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder()
+                    .orFilters(
+                        List.of(
+                            new GroupFilter.Builder().groupIds(matchingGroup.groupId()).build(),
+                            new GroupFilter.Builder()
+                                .groupIds(otherMatchingGroup.groupId())
+                                .build()))
+                    .build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldFilterGroupsByNameLike() {
+    final var matchingName = "like-test-name-" + java.util.UUID.randomUUID();
+    final var matchingGroup = createRandomized(b -> b.name(matchingName));
+    final var nonMatchingGroup = createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriters, matchingGroup);
+    createAndSaveGroup(rdbmsWriters, nonMatchingGroup);
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder()
+                    .nameOperations(Operation.like("like-test-name-*"))
+                    .build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items())
+        .extracting(item -> item.groupId())
+        .containsExactly(matchingGroup.groupId());
+  }
+
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
-        new GroupFilter.Builder().groupKey(1337L).build(),
         new GroupFilter.Builder().name("Group 1337").build(),
         new GroupFilter.Builder().description("This is group 1337").build(),
         new GroupFilter.Builder().memberId("entityId").childMemberType(EntityType.USER).build());

@@ -12,6 +12,11 @@ import {Wrapper} from './mocks';
 import {createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
+vi.mock('modules/feature-flags', async (importActual) => ({
+  ...(await importActual()),
+  IS_NAV_V2_ENABLED: false,
+}));
+
 describe('Header', () => {
   beforeEach(() => {
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
@@ -36,7 +41,7 @@ describe('Header', () => {
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true$/,
+      /^\?active=true&suspended=true&incidents=true$/,
     );
 
     await user.click(

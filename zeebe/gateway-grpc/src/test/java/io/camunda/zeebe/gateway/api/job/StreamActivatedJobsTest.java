@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.gateway.api.job;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -19,8 +23,10 @@ import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.MetadataUtils;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +39,14 @@ import org.junit.Test;
 public class StreamActivatedJobsTest extends GatewayTest {
   public static final long DEADLINE = 123123123L;
   private static final String WORKER = "testWorker";
+  private static final String KNOWN_TENANT = "tenant-a";
+
+  public StreamActivatedJobsTest() {
+    super(
+        new GatewayCfg(),
+        EngineSecurityConfigurations.defaultConfig(),
+        () -> Set.of(DEFAULT_PHYSICAL_TENANT_ID, KNOWN_TENANT));
+  }
 
   @Test
   public void shouldMapRequestAndResponse() {
@@ -133,6 +147,45 @@ public class StreamActivatedJobsTest extends GatewayTest {
     // then
     Awaitility.await("until the stream is removed")
         .until(() -> !jobStreamer.containsStreamFor(jobType));
+  }
+
+  @Test
+  public void shouldRegisterStreamWithDefaultPhysicalTenantIdWhenNoPhysicalTenantHeaderPresent() {
+    // given - no Camunda-Physical-Tenant header set (interceptor not in test chain)
+    final String jobType = "testJobGroup";
+    final Duration timeout = Duration.ofMinutes(1);
+    final List<String> fetchVariables = List.of("foo");
+
+    // when
+    getStreamActivatedJobsRequest(jobType, WORKER, timeout, fetchVariables);
+
+    // then
+    assertThat(jobStreamer.getStreamPhysicalTenantId(jobType))
+        .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  public void shouldRegisterStreamWithPhysicalTenantIdFromPhysicalTenantHeader() {
+    // given
+    final String jobType = "testJobPhysicalTenantHeader";
+    final var headers = new Metadata();
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, KNOWN_TENANT);
+    final var tenantAsyncClient =
+        asyncClient.withInterceptors(MetadataUtils.newAttachHeadersInterceptor(headers));
+
+    // when
+    tenantAsyncClient.streamActivatedJobs(
+        StreamActivatedJobsRequest.newBuilder()
+            .setType(jobType)
+            .setWorker(WORKER)
+            .setTimeout(Duration.ofMinutes(1).toMillis())
+            .addAllFetchVariable(List.of("foo"))
+            .build(),
+        new TestStreamObserver());
+    jobStreamer.waitStreamToBeAvailable(BufferUtil.wrapString(jobType));
+
+    // then
+    assertThat(jobStreamer.getStreamPhysicalTenantId(jobType)).isEqualTo(KNOWN_TENANT);
   }
 
   @Test

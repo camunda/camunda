@@ -117,7 +117,7 @@ public class BrokerRequestWithAuthorizationInfoTest extends GatewayTest {
 
   private void assertThatAuthorizationInfoIsSet(final Map<String, Object> claims) {
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    final Map<String, Object> decodedMap = brokerRequest.getAuthorization().getClaims();
+    final Map<String, Object> decodedMap = brokerRequest.getAuthorization().toClaimsMap();
     assertThat(decodedMap)
         .extractingByKey(
             Authorization.USER_TOKEN_CLAIMS,

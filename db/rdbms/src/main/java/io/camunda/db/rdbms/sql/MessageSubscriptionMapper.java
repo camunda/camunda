@@ -18,6 +18,8 @@ public interface MessageSubscriptionMapper
 
   void insert(MessageSubscriptionDbModel messageSubscription);
 
+  void createIfNotExists(MessageSubscriptionDbModel messageSubscription);
+
   void update(MessageSubscriptionDbModel messageSubscription);
 
   Long count(MessageSubscriptionDbQuery filter);
@@ -26,4 +28,7 @@ public interface MessageSubscriptionMapper
 
   List<ProcessDefinitionMessageSubscriptionStatisticsEntity> getProcessDefinitionStatistics(
       ProcessDefinitionMessageSubscriptionStatisticsDbQuery query);
+
+  int deleteStartEventSubscriptionsByProcessDefinitionKeys(
+      List<Long> processDefinitionKeys, int limit);
 }

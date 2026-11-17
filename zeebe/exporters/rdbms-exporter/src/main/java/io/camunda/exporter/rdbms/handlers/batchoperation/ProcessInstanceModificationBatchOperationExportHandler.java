@@ -49,12 +49,12 @@ public class ProcessInstanceModificationBatchOperationExportHandler
   }
 
   @Override
-  protected boolean isCompleted(final Record<ProcessInstanceModificationRecordValue> record) {
+  boolean isCompleted(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceModificationIntent.MODIFIED);
   }
 
   @Override
-  protected boolean isFailed(final Record<ProcessInstanceModificationRecordValue> record) {
+  boolean isFailed(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceModificationIntent.MODIFY)
         && record.getRejectionType() != RejectionType.NULL_VAL;
   }

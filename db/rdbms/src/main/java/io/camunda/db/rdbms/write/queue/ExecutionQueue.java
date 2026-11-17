@@ -65,6 +65,14 @@ public interface ExecutionQueue {
   boolean tryMergeWithExistingQueueItem(QueueItemMerger merger);
 
   /**
+   * Counts the given bytes towards the memory limit until the next flush. The exporter adds the
+   * size of each record it queued items for, as an estimate of the memory those items take.
+   *
+   * @param bytes the estimated size of what was queued
+   */
+  void addEstimatedBytes(long bytes);
+
+  /**
    * Checks if the queue has reached its flush limit and flushes if necessary. Does nothing if no
    * flush limit is configured (both queueFlushLimit <= 0 and queueMemoryLimit <= 0).
    *
@@ -74,4 +82,13 @@ public interface ExecutionQueue {
    * @return true if the queue was flushed, false otherwise
    */
   boolean checkQueueForFlush();
+
+  /**
+   * Resets the queue to a clean state: discards all pending queue items and removes all registered
+   * pre-flush listeners, post-flush listeners, and in-transaction hooks.
+   *
+   * <p>Call this at the start of {@code open()} before registering new listeners to prevent
+   * duplicate registrations when an exporter is reopened after a recoverable failure.
+   */
+  void reset();
 }

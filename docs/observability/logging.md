@@ -97,11 +97,8 @@ understand its context.
 
 For example, take the `zeebe-util` module, where all classes live under the `io.camunda.zeebe.util`
 package. By configuring the log level to `DEBUG` for `io.camunda.zeebe.util`, you would see debug
-level logging (and higher) for all classes under the module. Now, say we want to trace allocations
-from the `io.camunda.zeebe.util.allocation` classes, we could also configure a logger with this name
-to `TRACE`. If we only cared to trace
-[DirectBufferAllocator](../../zeebe/util/src/main/java/io/camunda/zeebe/util/allocation/DirectBufferAllocator.java),
-then we could simply set `io.camunda.zeebe.util.allocation.DirectBufferAllocator` to trace.
+level logging (and higher) for all classes under the module. If you want to see the log lines from a
+specific class or package, then you can add a logger with the required log level (example: TRACE).
 
 > [!Note]
 > Doing so would also trace inner classes, as their fully qualified class names are prefixed by the

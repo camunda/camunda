@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-qa</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -19,6 +19,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -65,11 +69,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
     </dependency>
 
@@ -108,6 +107,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>webapps-backup</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -115,11 +118,19 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
+      <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
       <groupId>io.github.openfeign</groupId>
@@ -182,6 +193,15 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.github.dasniko</groupId>
       <artifactId>testcontainers-keycloak</artifactId>
     </dependency>
@@ -217,7 +237,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>

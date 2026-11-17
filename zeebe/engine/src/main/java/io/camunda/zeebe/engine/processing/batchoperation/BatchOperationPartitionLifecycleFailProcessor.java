@@ -67,11 +67,14 @@ public final class BatchOperationPartitionLifecycleFailProcessor
         command.getPartitionId());
 
     final int boLeadPartitionId = Protocol.decodePartitionId(batchOperationKey);
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
     final var batchInternalFail =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(batchOperationKey)
             .setSourcePartitionId(command.getPartitionId())
+            .setStorageOrdinal(recordValue.getStorageOrdinal())
             .setError(recordValue.getError());
+    oBatchOperation.ifPresent(bo -> batchInternalFail.setStorageOrdinal(bo.getStorageOrdinal()));
 
     LOGGER.debug(
         "Send internal fail command for batch operation {} to original partition {}",
@@ -85,7 +88,6 @@ public final class BatchOperationPartitionLifecycleFailProcessor
           batchInternalFail,
           FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
 
-      final var oBatchOperation = batchOperationState.get(batchOperationKey);
       oBatchOperation.ifPresent(
           persistedBatchOperation ->
               metrics.recordFailed(persistedBatchOperation.getBatchOperationType()));

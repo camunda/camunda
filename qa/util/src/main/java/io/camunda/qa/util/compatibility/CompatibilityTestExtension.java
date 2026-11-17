@@ -203,7 +203,7 @@ public class CompatibilityTestExtension
     LOGGER.info("Starting Elasticsearch container");
 
     elasticsearchContainer =
-        TestSearchContainers.createDefeaultElasticsearchContainer()
+        TestSearchContainers.createDefaultElasticsearchContainer()
             .withNetwork(network)
             .withNetworkAliases("elasticsearch")
             .withEnv("indices.lifecycle.poll_interval", "1s");
@@ -233,7 +233,8 @@ public class CompatibilityTestExtension
     // Configure database connection using the configurator
     final String databaseUrl = getDatabaseUrl();
     final CompatibilityTestDatabaseConfigurator dbConfigurator =
-        new CompatibilityTestDatabaseConfigurator(testPrefix, databaseType, databaseUrl);
+        new CompatibilityTestDatabaseConfigurator(
+            testPrefix, databaseType, databaseUrl, !"SNAPSHOT".equals(version));
 
     dbConfigurator.configureCamundaContainer(camundaContainer);
 
@@ -283,7 +284,8 @@ public class CompatibilityTestExtension
           "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUER_URI",
           keycloakContainer.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
       camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENT_ID", "example");
-      camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "example.com");
+      camundaContainer.withEnv(
+          "CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECT_URI", "https://example.com/sso-callback");
     }
 
     camundaContainer.start();

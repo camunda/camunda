@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
@@ -22,7 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class DecisionRequirementsHandler
-    implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
+    implements MainIndexExporterHandler<
+        DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
   private final String indexName;
@@ -88,8 +90,11 @@ public class DecisionRequirementsHandler
   }
 
   @Override
-  public void flush(final DecisionRequirementsEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final TargetIndex index,
+      final DecisionRequirementsEntity entity,
+      final BatchRequest batchRequest) {
+    batchRequest.add(index, entity);
   }
 
   @Override

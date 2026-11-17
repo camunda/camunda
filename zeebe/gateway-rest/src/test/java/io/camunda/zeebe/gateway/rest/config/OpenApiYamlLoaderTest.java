@@ -247,6 +247,29 @@ class OpenApiYamlLoaderTest {
   }
 
   @Test
+  void shouldCopyOpenApiVersionToTargetSpec() throws IOException {
+    // given
+    final String yaml =
+        """
+        openapi: "3.0.3"
+        info:
+          title: Test API
+          version: "1.0"
+        paths: {}
+        """;
+    final Path yamlFile = tempDir.resolve("test-api.yaml");
+    Files.writeString(yamlFile, yaml);
+    final OpenAPI target = new OpenAPI();
+    target.setOpenapi("3.0.1");
+
+    // when
+    OpenApiYamlLoader.customizeOpenApiFromYaml(target, yamlFile.toString());
+
+    // then
+    assertThat(target.getOpenapi()).isEqualTo("3.0.3");
+  }
+
+  @Test
   void openApiLoadingExceptionShouldHaveCorrectMessageAndCause() {
     // given
     final String message = "Test error message";
@@ -310,5 +333,143 @@ class OpenApiYamlLoaderTest {
     assertThat(auditLog.getType()).isEqualTo("object");
     assertThat(auditLog.getProperties()).containsKey("id");
     assertThat(((Schema<?>) auditLog.getProperties().get("id")).getType()).isEqualTo("string");
+  }
+
+  @Test
+  void shouldNotPrefixWellKnownRootPathsWithV2() throws IOException {
+    // given
+    final var validYaml =
+        // language=yaml
+        """
+        openapi: "3.0.3"
+        info:
+          title: Test API
+          version: "1.0"
+        tags:
+          - name: Authentication
+          - name: Authorization
+        paths:
+          /cluster/v2/status:
+            get:
+              responses:
+                "200":
+                  description: Success
+        """;
+
+    final var yamlFile = tempDir.resolve("test-root-path-api.yaml");
+    Files.writeString(yamlFile, validYaml);
+
+    final var customized = new OpenAPI();
+    customized.setOpenapi("3.0.1");
+
+    // when
+    OpenApiYamlLoader.customizeOpenApiFromYaml(customized, yamlFile.toString());
+
+    // then
+    assertThat(customized.getPaths()).containsOnlyKeys("/cluster/v2/status");
+  }
+
+  @Test
+  void shouldKeepNullableNextToAllOfRef() throws IOException {
+    // given
+    final OpenAPI result = loadSpecWithAnnotatedRefs();
+
+    // when
+    final Schema<?> property = fooProperty(result, "nullableRef");
+
+    // then
+    assertThat(property.getNullable()).isTrue();
+    assertThat(property.getAllOf()).hasSize(1);
+  }
+
+  @Test
+  void shouldKeepDeprecatedAndReadOnlyNextToAllOfRef() throws IOException {
+    // given
+    final OpenAPI result = loadSpecWithAnnotatedRefs();
+
+    // when
+    final Schema<?> deprecated = fooProperty(result, "deprecatedRef");
+    final Schema<?> readOnly = fooProperty(result, "readOnlyRef");
+
+    // then
+    assertThat(deprecated.getDeprecated()).isTrue();
+    assertThat(readOnly.getReadOnly()).isTrue();
+  }
+
+  @Test
+  void shouldKeepScalarExampleOfReferencedSchema() throws IOException {
+    // given
+    final OpenAPI result = loadSpecWithAnnotatedRefs();
+
+    // when
+    final Schema<?> property = fooProperty(result, "nullableRef");
+
+    // then
+    final Schema<?> referenced = property.getAllOf().get(0);
+    assertThat(referenced.getExample()).isEqualTo("foo");
+  }
+
+  private OpenAPI loadSpecWithAnnotatedRefs() throws IOException {
+    final String yaml =
+        // language=yaml
+        """
+        openapi: "3.0.3"
+        info:
+          title: Test API
+          version: "1.0"
+        paths:
+          /foo:
+            get:
+              operationId: getFoo
+              responses:
+                "200":
+                  description: Success
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Foo"
+        components:
+          schemas:
+            Key:
+              type: string
+              example: foo
+            Foo:
+              type: object
+              properties:
+                nullableRef:
+                  nullable: true
+                  allOf:
+                    - $ref: "#/components/schemas/Key"
+                deprecatedRef:
+                  deprecated: true
+                  allOf:
+                    - $ref: "#/components/schemas/Key"
+                readOnlyRef:
+                  readOnly: true
+                  allOf:
+                    - $ref: "#/components/schemas/Key"
+        """;
+    final Path yamlFile = tempDir.resolve("annotated-refs-api.yaml");
+    Files.writeString(yamlFile, yaml);
+
+    return OpenApiYamlLoader.loadOpenApiFromYaml(yamlFile.toString());
+  }
+
+  /**
+   * Reads the property through the path response, because only schemas reachable from a path are
+   * resolved by the parser; unreferenced component schemas keep their unresolved wrappers.
+   */
+  private static Schema<?> fooProperty(final OpenAPI openApi, final String name) {
+    final Schema<?> foo =
+        openApi
+            .getPaths()
+            .get("/foo")
+            .getGet()
+            .getResponses()
+            .get("200")
+            .getContent()
+            .get("application/json")
+            .getSchema();
+    return (Schema<?>) foo.getProperties().get(name);
   }
 }

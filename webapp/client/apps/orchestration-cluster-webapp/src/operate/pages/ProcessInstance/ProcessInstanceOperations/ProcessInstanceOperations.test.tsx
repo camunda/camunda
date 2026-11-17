@@ -1,0 +1,742 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {userEvent} from 'vitest/browser';
+import {useQuery} from '@tanstack/react-query';
+import {HttpResponse} from 'msw';
+import {cleanup} from 'vitest-browser-react';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
+import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {
+	mockCancelProcessInstanceEndpoint,
+	mockDeleteProcessInstanceEndpoint,
+	mockGetProcessInstanceCallHierarchyEndpoint,
+	mockGetProcessInstanceEndpoint,
+	mockResolveProcessInstanceIncidentsEndpoint,
+	mockResumeProcessInstanceEndpoint,
+	mockSuspendProcessInstanceEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {authenticationStore} from '#/shared/auth/authentication.store';
+import {storeStateLocally} from '#/shared/browser-storage/local-storage';
+import {Notifications} from '#/shared/notifications/components/Notifications';
+import {ProcessInstanceContext} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
+import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
+import {ProcessInstanceModificationContext} from '../useProcessInstanceModification';
+import {initialModificationState} from '../modifications/modificationReducer';
+import {ProcessInstanceOperations} from './ProcessInstanceOperations';
+
+const ACTIONS = [
+	{
+		action: 'Retry',
+		state: 'ACTIVE',
+		pending: 'Retrying...',
+		success: 'Incidents are scheduled for retry',
+		mock: mockResolveProcessInstanceIncidentsEndpoint,
+	},
+	{
+		action: 'Cancel',
+		state: 'ACTIVE',
+		pending: 'Canceling...',
+		success: 'Instance is scheduled for cancellation',
+		mock: mockCancelProcessInstanceEndpoint,
+	},
+	{
+		action: 'Delete',
+		state: 'COMPLETED',
+		pending: 'Deleting...',
+		success: 'Instance is scheduled for deletion',
+		mock: mockDeleteProcessInstanceEndpoint,
+	},
+	{
+		action: 'Suspend',
+		state: 'ACTIVE',
+		pending: 'Suspending...',
+		success: 'Instance suspended',
+		mock: mockSuspendProcessInstanceEndpoint,
+	},
+	{
+		action: 'Resume',
+		state: 'SUSPENDED',
+		pending: 'Resuming...',
+		success: 'Instance resumed',
+		mock: mockResumeProcessInstanceEndpoint,
+	},
+] as const;
+
+const ACTION_BY_NAME = {
+	Retry: ACTIONS[0],
+	Cancel: ACTIONS[1],
+	Delete: ACTIONS[2],
+	Suspend: ACTIONS[3],
+	Resume: ACTIONS[4],
+};
+
+const FORBIDDEN = {
+	title: "You don't have permission to perform this operation",
+	kind: 'warning',
+	subtitle: 'Contact the administrator if you need access.',
+} as const;
+const RETRY_FAILED = {
+	title: "Couldn't create operation",
+	kind: 'error',
+	subtitle: undefined,
+} as const;
+const CANCEL_FAILED = {
+	title: 'Failed to cancel process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+const DELETE_FAILED = {
+	title: 'Failed to delete process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+const SUSPEND_FAILED = {
+	title: 'Failed to suspend process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+const RESUME_FAILED = {
+	title: 'Failed to resume process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+
+const HTTP_FAILURES = [
+	{action: 'Retry', status: 401, ...RETRY_FAILED},
+	{action: 'Retry', status: 403, ...FORBIDDEN},
+	{action: 'Retry', status: 500, ...RETRY_FAILED},
+	{action: 'Cancel', status: 401, ...CANCEL_FAILED},
+	{action: 'Cancel', status: 403, ...CANCEL_FAILED},
+	{action: 'Cancel', status: 500, ...CANCEL_FAILED},
+	{action: 'Delete', status: 401, ...DELETE_FAILED},
+	{action: 'Delete', status: 403, ...DELETE_FAILED},
+	{action: 'Delete', status: 500, ...DELETE_FAILED},
+	{action: 'Suspend', status: 401, ...SUSPEND_FAILED},
+	{action: 'Suspend', status: 403, ...FORBIDDEN},
+	{action: 'Suspend', status: 500, ...SUSPEND_FAILED},
+	{action: 'Resume', status: 401, ...RESUME_FAILED},
+	{action: 'Resume', status: 403, ...FORBIDDEN},
+	{action: 'Resume', status: 500, ...RESUME_FAILED},
+] as const;
+
+const NETWORK_FAILURES = [
+	{action: 'Retry', title: "Couldn't create operation", subtitle: undefined},
+	{action: 'Cancel', title: 'Failed to cancel process instance', subtitle: 'Failed to fetch'},
+	{action: 'Delete', title: 'Failed to delete process instance', subtitle: 'Failed to fetch'},
+	{action: 'Suspend', title: 'Failed to suspend process instance', subtitle: undefined},
+	{action: 'Resume', title: 'Failed to resume process instance', subtitle: undefined},
+] as const;
+
+function renderOperations(instance: ProcessInstance, {isModificationModeEnabled = false, basepath = ''} = {}) {
+	const modification = {
+		state: initialModificationState,
+		isModificationModeEnabled,
+		dispatch: () => {},
+		enterModificationMode: () => {},
+		discardModifications: () => {},
+	};
+	function Preview() {
+		const {data} = useQuery({
+			...processInstanceQuery(instance.processInstanceKey),
+			initialData: instance,
+			staleTime: Infinity,
+			refetchInterval: false,
+		});
+		return (
+			<ProcessInstanceContext
+				value={{processInstanceId: instance.processInstanceKey, processInstance: data, search: {}, selection: {}}}
+			>
+				<ProcessInstanceModificationContext value={modification}>
+					<ProcessInstanceOperations />
+				</ProcessInstanceModificationContext>
+				<Notifications />
+			</ProcessInstanceContext>
+		);
+	}
+	return renderWithRouter(Preview, {
+		path: '/operate/processes/$processInstanceId/variables',
+		basepath,
+		initialEntry: `${basepath}/operate/processes/${instance.processInstanceKey}/variables?tenantId=tenant-a&elementId=task`,
+	});
+}
+
+function createInstance(state: ProcessInstance['state'], hasIncident = true) {
+	return createProcessInstance({
+		processInstanceKey: String(2251799813680000 + Math.floor(Math.random() * 100000)),
+		state,
+		hasIncident,
+		tenantId: 'tenant-a',
+	});
+}
+
+function mockViewport(isCollapsed: boolean) {
+	const listeners = new Set<() => void>();
+	const query = {
+		matches: isCollapsed,
+		media: '',
+		onchange: null,
+		addEventListener: vi.fn((_type: string, listener: () => void) => listeners.add(listener)),
+		removeEventListener: vi.fn((_type: string, listener: () => void) => listeners.delete(listener)),
+		addListener: vi.fn(),
+		removeListener: vi.fn(),
+		dispatchEvent: vi.fn(),
+	};
+	vi.spyOn(window, 'matchMedia').mockReturnValue(query);
+	return (matches: boolean) => {
+		query.matches = matches;
+		listeners.forEach((listener) => listener());
+	};
+}
+
+async function execute(screen: Awaited<ReturnType<typeof renderOperations>>, action: string, key: string) {
+	await userEvent.click(screen.getByRole('button', {name: `${action} Instance ${key}`}));
+	if (action === 'Cancel') {
+		await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+	} else if (action === 'Delete') {
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Delete'}));
+	}
+}
+
+describe('<ProcessInstanceOperations />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		authenticationStore.activateSession();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		notificationsStore.reset();
+		authenticationStore.reset();
+		sessionStorage.clear();
+		localStorage.clear();
+	});
+
+	it.for([
+		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate']},
+		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel', 'Modify', 'Migrate']},
+		{state: 'SUSPENDED', hasIncident: true, actions: ['Resume', 'Cancel']},
+		{state: 'SUSPENDED', hasIncident: false, actions: ['Resume', 'Cancel']},
+		{state: 'COMPLETED', hasIncident: true, actions: ['Delete']},
+		{state: 'COMPLETED', hasIncident: false, actions: ['Delete']},
+		{state: 'TERMINATED', hasIncident: true, actions: ['Delete']},
+		{state: 'TERMINATED', hasIncident: false, actions: ['Delete']},
+	] as const)(
+		'should preserve actions for $state with incident=$hasIncident',
+		async ({state, hasIncident, actions}) => {
+			mockViewport(false);
+			const instance = createInstance(state, hasIncident);
+			const screen = await renderOperations(instance);
+			await expect
+				.poll(() =>
+					screen
+						.getByRole('button')
+						.elements()
+						.map((element) => element.getAttribute('aria-label')),
+				)
+				.toEqual(actions.map((action) => `${action} Instance ${instance.processInstanceKey}`));
+			for (const action of actions) {
+				await expect
+					.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+					.toBeEnabled();
+			}
+		},
+	);
+
+	it('should hide operations in modification mode', async () => {
+		const screen = await renderOperations(createInstance('ACTIVE'), {isModificationModeEnabled: true});
+		await expect.element(screen.getByRole('button')).not.toBeInTheDocument();
+	});
+
+	it.for(ACTIONS.filter(({action}) => action !== 'Delete'))(
+		'should submit $action with no request body and stay on the instance',
+		async ({action, state, success, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			const requests: Request[] = [];
+			const onRequest = ({request}: {request: Request}) => {
+				if (request.method !== 'GET') {
+					requests.push(request.clone());
+				}
+			};
+			worker.events.on('request:start', onRequest);
+			try {
+				worker.use(
+					mock({
+						successResponse:
+							action === 'Retry'
+								? HttpResponse.json({batchOperationKey: 'retry-batch'}, {status: 202})
+								: new HttpResponse(null, {status: 204}),
+					}),
+					mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+					mockGetProcessInstanceEndpoint({
+						successResponse: HttpResponse.json({...instance, state: action === 'Suspend' ? 'SUSPENDED' : 'ACTIVE'}),
+					}),
+				);
+				const screen = await renderOperations(instance, {basepath: '/deployment'});
+				await execute(screen, action, instance.processInstanceKey);
+				await expect.element(screen.getByText(success)).toBeVisible();
+				expect(requests).toHaveLength(1);
+				expect(requests[0]!.method).toBe('POST');
+				expect(await requests[0]!.text()).toBe('');
+				expect(requests[0]!.headers.has('content-type')).toBe(false);
+				expect(requests[0]!.url).toContain(`/process-instances/${instance.processInstanceKey}`);
+				expect(screen.router.state.location.search).toEqual({tenantId: 'tenant-a', elementId: 'task'});
+			} finally {
+				worker.events.removeListener('request:start', onRequest);
+			}
+		},
+	);
+
+	it('should submit Delete with no request body and return to the processes list', async ({worker}) => {
+		mockViewport(false);
+		const instance = createInstance('COMPLETED');
+		const requests: Request[] = [];
+		const onRequest = ({request}: {request: Request}) => {
+			if (request.method !== 'GET') {
+				requests.push(request.clone());
+			}
+		};
+		worker.events.on('request:start', onRequest);
+		try {
+			worker.use(
+				mockDeleteProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance, {basepath: '/deployment'});
+			await execute(screen, 'Delete', instance.processInstanceKey);
+			await expect.poll(() => notificationsStore.notifications[0]?.title).toBe('Instance is scheduled for deletion');
+			expect(requests).toHaveLength(1);
+			expect(requests[0]!.method).toBe('POST');
+			expect(await requests[0]!.text()).toBe('');
+			expect(requests[0]!.headers.has('content-type')).toBe(false);
+			expect(requests[0]!.url).toContain(`/process-instances/${instance.processInstanceKey}`);
+			await expect.poll(() => screen.router.history.location.pathname).toBe('/deployment/operate/processes');
+			expect(screen.router.state.location.search).toEqual({
+				active: true,
+				incidents: true,
+				suspended: true,
+				completed: false,
+				canceled: false,
+			});
+		} finally {
+			worker.events.removeListener('request:start', onRequest);
+		}
+	});
+
+	it.for(ACTIONS)(
+		'should show $pending while $action is in flight',
+		async ({action, state, pending, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(pending)).toBeVisible();
+		},
+	);
+
+	it.for(HTTP_FAILURES)(
+		'should surface $action failures with HTTP status $status and recover',
+		async ({action, status, title, kind, subtitle}, {worker}) => {
+			mockViewport(false);
+			const {state, mock} = ACTION_BY_NAME[action];
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status, statusText: 'Command failed'})}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(title)).toBeVisible();
+			expect(notificationsStore.notifications[0]?.kind).toBe(kind);
+			expect(notificationsStore.notifications[0]?.subtitle).toBe(subtitle);
+			await expect.element(screen.getByText('Failed', {exact: true})).toBeVisible();
+			await expect
+				.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+				.toBeEnabled();
+		},
+	);
+
+	it.for(NETWORK_FAILURES)(
+		'should surface $action network failures and recover',
+		async ({action, title, subtitle}, {worker}) => {
+			mockViewport(false);
+			const {state, mock} = ACTION_BY_NAME[action];
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: HttpResponse.error()}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(title)).toBeVisible();
+			expect(notificationsStore.notifications[0]?.kind).toBe('error');
+			expect(notificationsStore.notifications[0]?.subtitle).toBe(subtitle);
+			await expect.element(screen.getByText('Failed', {exact: true})).toBeVisible();
+			await expect
+				.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+				.toBeEnabled();
+		},
+	);
+
+	it('should show the failure reason returned by the server', async ({worker}) => {
+		mockViewport(false);
+		const instance = createInstance('ACTIVE');
+		worker.use(
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 500, statusText: 'Command failed'}),
+			}),
+			mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+		);
+		const screen = await renderOperations(instance);
+
+		await execute(screen, 'Suspend', instance.processInstanceKey);
+
+		await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
+		await expect.element(screen.getByText('Command failed')).toBeVisible();
+	});
+
+	it.for(ACTIONS)('should expire the session when $action is unauthorized', async ({action, state, mock}, {worker}) => {
+		mockViewport(false);
+		const instance = createInstance(state);
+		worker.use(
+			mock({successResponse: new HttpResponse(null, {status: 401})}),
+			mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+		);
+		const screen = await renderOperations(instance);
+
+		await execute(screen, action, instance.processInstanceKey);
+
+		await expect.poll(() => authenticationStore.status).toBe('session-expired');
+	});
+
+	it.for(ACTIONS.filter(({action}) => action === 'Suspend' || action === 'Resume'))(
+		'should warn and recover when $action state polling is forbidden',
+		async ({action, state, mock}, {worker}) => {
+			mockViewport(false);
+			vi.useFakeTimers({shouldAdvanceTime: true});
+			const instance = createInstance(state);
+			let reads = 0;
+			const onRequest = ({request}: {request: Request}) => {
+				if (request.method === 'GET') {
+					reads++;
+				}
+			};
+			worker.events.on('request:start', onRequest);
+			try {
+				worker.use(
+					mock({successResponse: new HttpResponse(null, {status: 204})}),
+					mockGetProcessInstanceEndpoint({
+						successResponse: new HttpResponse(null, {status: 403, statusText: 'Forbidden'}),
+					}),
+				);
+				const screen = await renderOperations(instance);
+				await execute(screen, action, instance.processInstanceKey);
+				for (let attempt = 1; attempt <= 31; attempt++) {
+					await expect.poll(() => reads).toBe(attempt);
+					if (attempt < 31) {
+						await vi.advanceTimersByTimeAsync(1000);
+					}
+				}
+				await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
+				await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
+				expect(notificationsStore.notifications).toHaveLength(1);
+				expect(notificationsStore.notifications[0]?.kind).toBe('warning');
+				expect(notificationsStore.notifications[0]?.subtitle).toBe('Contact the administrator if you need access.');
+				await vi.advanceTimersByTimeAsync(2000);
+				await expect
+					.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+					.toBeEnabled();
+			} finally {
+				worker.events.removeListener('request:start', onRequest);
+				vi.useRealTimers();
+			}
+		},
+	);
+
+	it.for([
+		{action: 'Suspend', state: 'ACTIVE', pending: 'Suspending...', mock: mockSuspendProcessInstanceEndpoint},
+		{action: 'Resume', state: 'SUSPENDED', pending: 'Resuming...', mock: mockResumeProcessInstanceEndpoint},
+	] as const)(
+		'should keep $action pending while secondary storage still returns the previous state',
+		async ({action, state, pending, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(pending)).toBeVisible();
+		},
+	);
+
+	it.for([
+		{action: 'Suspend', state: 'ACTIVE', target: 'SUSPENDED', mock: mockSuspendProcessInstanceEndpoint},
+		{action: 'Resume', state: 'SUSPENDED', target: 'ACTIVE', mock: mockResumeProcessInstanceEndpoint},
+		{action: 'Resume', state: 'SUSPENDED', target: 'COMPLETED', mock: mockResumeProcessInstanceEndpoint},
+		{action: 'Resume', state: 'SUSPENDED', target: 'TERMINATED', mock: mockResumeProcessInstanceEndpoint},
+	] as const)(
+		'should finish $action once secondary storage reaches $target',
+		async ({action, state, target, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: target})}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect
+				.element(screen.getByText(action === 'Suspend' ? 'Instance suspended' : 'Instance resumed'))
+				.toBeVisible();
+			await expect
+				.element(
+					screen.getByRole('button', {
+						name: `${target === 'SUSPENDED' ? 'Resume' : target === 'ACTIVE' ? 'Suspend' : 'Delete'} Instance ${instance.processInstanceKey}`,
+					}),
+				)
+				.toBeEnabled();
+		},
+	);
+
+	it('should support the collapsed menu with keyboard and preserve pending state across layout changes', async ({
+		worker,
+	}) => {
+		const setCollapsed = mockViewport(true);
+		const instance = createInstance('ACTIVE');
+		worker.use(
+			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}),
+			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'SUSPENDED'})}),
+		);
+		const screen = await renderOperations(instance);
+		await userEvent.tab();
+		await userEvent.keyboard('{Enter}');
+		await expect.element(screen.getByRole('menuitem', {name: 'Suspend'})).toBeEnabled();
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Suspend'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
+		await expect.element(screen.getByRole('menuitem', {name: 'Suspend'})).toBeDisabled();
+		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeEnabled();
+		setCollapsed(false);
+		await expect.element(screen.getByText('Suspending...')).toBeVisible();
+	});
+
+	it.for(['COMPLETED', 'TERMINATED'] as const)('should show only Delete for collapsed %s instances', async (state) => {
+		mockViewport(true);
+		const instance = createInstance(state);
+		const screen = await renderOperations(instance);
+
+		await expect
+			.element(screen.getByRole('button', {name: `Delete Instance ${instance.processInstanceKey}`}))
+			.toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: 'Actions'})).not.toBeInTheDocument();
+	});
+
+	it.for([
+		{state: 'ACTIVE', labels: ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate'], hiddenLabels: []},
+		{state: 'SUSPENDED', labels: ['Resume', 'Cancel'], hiddenLabels: ['Modify', 'Migrate']},
+	] as const)('should preserve collapsed $state actions and keyboard focus', async ({state, labels, hiddenLabels}) => {
+		mockViewport(true);
+		const screen = await renderOperations(createInstance(state));
+		await userEvent.tab();
+		await userEvent.keyboard('{Enter}');
+		for (const label of labels) {
+			await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
+		}
+		for (const label of hiddenLabels) {
+			await expect.element(screen.getByRole('menuitem', {name: label})).not.toBeInTheDocument();
+		}
+		await userEvent.keyboard('{Escape}');
+		await expect.element(screen.getByRole('button', {name: 'Actions'})).toHaveFocus();
+		await expect.element(screen.getByRole('menuitem')).not.toBeInTheDocument();
+	});
+
+	it('should stop state polling and avoid stale notifications after leaving the instance', async ({worker}) => {
+		mockViewport(false);
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		const instance = createInstance('ACTIVE');
+		let reads = 0;
+		const onRequest = ({request}: {request: Request}) => {
+			if (request.method === 'GET') {
+				reads++;
+			}
+		};
+		worker.events.on('request:start', onRequest);
+		try {
+			worker.use(
+				mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, 'Suspend', instance.processInstanceKey);
+			await expect.poll(() => reads).toBe(1);
+			await cleanup();
+			await vi.advanceTimersByTimeAsync(4000);
+			expect(reads).toBe(1);
+			expect(notificationsStore.notifications).toEqual([]);
+		} finally {
+			worker.events.removeListener('request:start', onRequest);
+			vi.useRealTimers();
+		}
+	});
+
+	it('should fail and recover after thirty unsuccessful state retries', async ({worker}) => {
+		mockViewport(false);
+		vi.useFakeTimers({shouldAdvanceTime: true});
+		const instance = createInstance('ACTIVE');
+		let reads = 0;
+		const onRequest = ({request}: {request: Request}) => {
+			if (request.method === 'GET') {
+				reads++;
+			}
+		};
+		worker.events.on('request:start', onRequest);
+		try {
+			worker.use(
+				mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, 'Suspend', instance.processInstanceKey);
+			for (let attempt = 1; attempt <= 31; attempt++) {
+				await expect.poll(() => reads).toBe(attempt);
+				if (attempt < 31) {
+					await vi.advanceTimersByTimeAsync(1000);
+				}
+			}
+			await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
+			await expect.element(screen.getByText('Process instance has not reached SUSPENDED state')).toBeVisible();
+			await vi.advanceTimersByTimeAsync(2000);
+			await expect
+				.element(screen.getByRole('button', {name: `Suspend Instance ${instance.processInstanceKey}`}))
+				.toBeEnabled();
+		} finally {
+			worker.events.removeListener('request:start', onRequest);
+			vi.useRealTimers();
+		}
+	});
+
+	it.for(['Cancel', 'Delete'] as const)(
+		'should dismiss %s confirmation without submitting',
+		async (action, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(action === 'Cancel' ? 'ACTIVE' : 'COMPLETED');
+			worker.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
+			const screen = await renderOperations(instance);
+			await userEvent.click(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}));
+			await expect.element(screen.getByRole('dialog')).toBeVisible();
+			await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Cancel'}));
+			await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+			await expect
+				.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+				.toBeEnabled();
+		},
+	);
+
+	it.for([
+		{multiTenancy: 'disabled', isMultiTenancyEnabled: false, tenantId: undefined},
+		{multiTenancy: 'enabled', isMultiTenancyEnabled: true, tenantId: 'tenant-a'},
+	])(
+		'should explain migration before handing the instance to the wizard with multi-tenancy $multiTenancy',
+		async ({isMultiTenancyEnabled, tenantId}) => {
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(
+					createSystemConfiguration({deployment: {...createSystemConfiguration().deployment, isMultiTenancyEnabled}}),
+				),
+			);
+			mockViewport(false);
+			const instance = createProcessInstance({
+				...createInstance('ACTIVE'),
+				processDefinitionKey: 'invoice-key',
+				processDefinitionId: 'invoice',
+				processDefinitionName: 'Invoice',
+				processDefinitionVersion: 2,
+				processDefinitionVersionTag: 'v2',
+			});
+			const screen = await renderOperations(instance);
+			const migrate = screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`});
+
+			await userEvent.click(migrate);
+			const helper = screen.getByRole('dialog', {name: 'Migrate process instance versions'});
+			await expect.element(helper).toBeVisible();
+			await userEvent.click(helper.getByRole('button', {name: 'Cancel'}));
+
+			await expect.element(helper).not.toBeInTheDocument();
+			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${instance.processInstanceKey}/variables`);
+
+			await userEvent.click(migrate);
+			await userEvent.click(helper.getByRole('button', {name: 'Continue'}), {force: true});
+
+			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes');
+			expect(screen.router.state.location.search).toEqual({
+				active: true,
+				incidents: true,
+				suspended: true,
+				completed: false,
+				canceled: false,
+				process: 'invoice',
+				version: 2,
+				tenantId,
+			});
+			expect(screen.router.state.location.state.operateInstanceMigration).toEqual({
+				processInstanceKey: instance.processInstanceKey,
+				processDefinitionKey: 'invoice-key',
+				processDefinitionId: 'invoice',
+				processDefinitionName: 'Invoice',
+				processDefinitionVersion: 2,
+				processDefinitionVersionTag: 'v2',
+				tenantId: 'tenant-a',
+			});
+		},
+	);
+
+	it.for(
+		(['shown', 'hidden by the unified preference', 'hidden by the legacy preference'] as const).flatMap((helper) =>
+			(['header button', 'Actions menu'] as const).map((layout) => ({helper, layout})),
+		),
+	)('should hand the instance to the wizard from the $layout when the helper is $helper', async ({helper, layout}) => {
+		mockViewport(layout === 'Actions menu');
+		if (helper === 'hidden by the unified preference') {
+			storeStateLocally('operate.hideMigrationHelperModal', true);
+		} else if (helper === 'hidden by the legacy preference') {
+			localStorage.setItem('sharedState', JSON.stringify({hideMigrationHelperModal: true}));
+		}
+		const instance = createInstance('ACTIVE');
+		const screen = await renderOperations(instance);
+
+		if (layout === 'Actions menu') {
+			await userEvent.click(screen.getByRole('button', {name: 'Actions'}));
+			await userEvent.click(screen.getByRole('menuitem', {name: 'Migrate'}));
+		} else {
+			await userEvent.click(screen.getByRole('button', {name: `Migrate Instance ${instance.processInstanceKey}`}));
+		}
+		if (helper === 'shown') {
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Migrate process instance versions'}).getByRole('button', {name: 'Continue'}),
+				{force: true},
+			);
+		}
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/processes');
+		expect(screen.router.state.location.state.operateInstanceMigration).toMatchObject({
+			processInstanceKey: instance.processInstanceKey,
+		});
+	});
+});

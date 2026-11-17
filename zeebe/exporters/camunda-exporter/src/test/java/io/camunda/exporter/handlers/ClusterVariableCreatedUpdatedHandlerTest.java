@@ -8,12 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.MetadataEntry;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
@@ -21,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -147,14 +152,18 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
             .setValue("value")
             .setTenantId("tenantId")
             .setScope(
-                io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT);
+                io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT)
+            .setKind(ClusterVariableKind.SECRET_REFERENCE);
+
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest).add(eq(index), eq(inputEntity));
+    verifyNoMoreInteractions(mockRequest);
   }
 
   @ParameterizedTest
@@ -204,6 +213,7 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
             .withValue("v".repeat(variableSizeThreshold))
             .withScope(ClusterVariableScope.TENANT)
             .withTenantId("tenantId")
+            .withMetadata(Map.of())
             .build();
 
     final Record<ClusterVariableRecordValue> variableRecord =
@@ -226,6 +236,7 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
     assertThat(clusterVariableEntity.getIsPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();
+    assertThat(clusterVariableEntity.getMetadata()).isEmpty();
   }
 
   @ParameterizedTest
@@ -241,6 +252,7 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
             .from(factory.generateObject(ClusterVariableRecordValue.class))
             .withValue("v".repeat(variableSizeThreshold + 1))
             .withTenantId("tenantId")
+            .withMetadata(Map.of("kind", "CREDENTIALS"))
             .build();
 
     final Record<ClusterVariableRecordValue> variableRecord =
@@ -257,5 +269,121 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
     assertThat(clusterVariableEntity.getFullValue())
         .isEqualTo("v".repeat(variableSizeThreshold + 1));
     assertThat(clusterVariableEntity.getIsPreview()).isTrue();
+    assertThat(clusterVariableEntity.getMetadata())
+        .containsExactly(new MetadataEntry("kind", "CREDENTIALS", null));
+  }
+
+  @Test
+  void shouldSetKindOnEntityForCreatedRecord() {
+    // given
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.SECRET_REFERENCE)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getKind())
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind
+                .SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldSetKindFromRecordOnUpdatedRecord() {
+    // given — UPDATED records carry the authoritative kind from the engine
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.SECRET_REFERENCE)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.UPDATED).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then — kind is always set from the record, engine enforces immutability upstream
+    assertThat(entity.getKind())
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind
+                .SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldDefaultKindToJsonOnCreatedWhenRecordKindIsJson() {
+    // given
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.JSON)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getKind())
+        .isEqualTo(io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind.JSON);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldMapMetadataWithNumericAndStringValues(final ClusterVariableIntent intent) {
+    // given
+    final ClusterVariableRecordValue clusterVariableRecordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withValue("v")
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withMetadata(
+                Map.ofEntries(
+                    Map.entry("kind", "test"),
+                    Map.entry("schemaVersion", 10),
+                    Map.entry("long", 10L),
+                    Map.entry("double", 1.2)))
+            .build();
+
+    final Record<ClusterVariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(intent).withValue(clusterVariableRecordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(variableRecord, entity);
+
+    // then
+    assertThat(entity.getMetadata())
+        .containsExactlyInAnyOrder(
+            new MetadataEntry("kind", "test", null),
+            new MetadataEntry("schemaVersion", "10", 10.0),
+            new MetadataEntry("long", "10", 10.0),
+            new MetadataEntry("double", "1.2", 1.2));
   }
 }

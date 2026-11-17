@@ -13,10 +13,10 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ public class SequenceFlowQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
@@ -65,7 +65,8 @@ public class SequenceFlowQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -142,7 +143,7 @@ public class SequenceFlowQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);

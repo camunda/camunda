@@ -30,9 +30,21 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
-  private static final String DEFAULT_ENGINE_NAME = "default";
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
-  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
+  // Keep in sync with the defaults in ExperimentalRaftCfg, which usually override these.
+  private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
+  // 60s: well above the RPC-scale configurationChangeTimeout, since catching up to the admitting
+  // entry may include a snapshot install and a log replay. Still bounded, so a join whose entry a
+  // newer leader truncated eventually fails and is retried with a fresh request.
+  private static final Duration DEFAULT_JOIN_CATCH_UP_TIMEOUT = Duration.ofSeconds(60);
+  private static final int DEFAULT_SNAPSHOT_CHUNK_SIZE = 8 * 1024 * 1024;
+  private static final long DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD = 8L * 1024 * 1024;
+  private static final Duration DEFAULT_REBALANCE_REPLICATION_TIMEOUT = Duration.ofSeconds(10);
+  private static final int DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS = 3;
+  // 16 MiB: at a conservative 20 MB/s of replication bandwidth this bounds the commit-stall
+  // window of a promotion to well under a second, while the in-flight replication lag of a
+  // healthy, caught-up member stays orders of magnitude below it even under sustained load.
+  private static final long DEFAULT_PROMOTION_LAG_THRESHOLD = 16 * 1024 * 1024L;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -44,13 +56,16 @@ public class RaftPartitionConfig {
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
+  private long rebalanceReplicationLagThreshold = DEFAULT_REBALANCE_REPLICATION_LAG_THRESHOLD;
+  private Duration rebalanceReplicationTimeout = DEFAULT_REBALANCE_REPLICATION_TIMEOUT;
+  private int rebalanceMaxTransferAttempts = DEFAULT_REBALANCE_MAX_TRANSFER_ATTEMPTS;
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
-  private Duration configurationChangeTimeout;
-  private int snapshotChunkSize;
-  private String engineName = DEFAULT_ENGINE_NAME;
+  private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
+  private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
+  private int snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
-  private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
+  private long promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
 
   /**
    * Returns the Raft leader election timeout.
@@ -158,6 +173,22 @@ public class RaftPartitionConfig {
     this.configurationChangeTimeout = configurationChangeTimeout;
   }
 
+  /**
+   * The maximum time this node's own commit index may stay unchanged, once a join request was
+   * accepted, while it catches up to the index it was admitted at. Unlike {@link
+   * #getConfigurationChangeTimeout()}, which bounds request round-trips, this bounds a
+   * replication-paced wait, so it defaults to a longer duration.
+   *
+   * @return the join catch-up timeout
+   */
+  public Duration getJoinCatchUpTimeout() {
+    return joinCatchUpTimeout;
+  }
+
+  public void setJoinCatchUpTimeout(final Duration joinCatchUpTimeout) {
+    this.joinCatchUpTimeout = joinCatchUpTimeout;
+  }
+
   public int getMinStepDownFailureCount() {
     return minStepDownFailureCount;
   }
@@ -199,6 +230,54 @@ public class RaftPartitionConfig {
     this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
   }
 
+  /**
+   * The maximum replication lag, in bytes, that the desired leader may have for the current leader
+   * to attempt a coordinated leadership transfer. Above it the partition is skipped with {@code
+   * LAG_TOO_HIGH}. Maps to {@code camunda.cluster.raft.rebalance.replicationLagThreshold}.
+   *
+   * <p>Operators can override this value for each rebalance request - this is a default value that
+   * applies when no override is specified.
+   */
+  public long getRebalanceReplicationLagThreshold() {
+    return rebalanceReplicationLagThreshold;
+  }
+
+  public void setRebalanceReplicationLagThreshold(final long rebalanceReplicationLagThreshold) {
+    this.rebalanceReplicationLagThreshold = rebalanceReplicationLagThreshold;
+  }
+
+  /**
+   * How long the current leader waits (paused, declining writes) for the desired leader to finish
+   * replicating during a coordinated leadership transfer before cancelling with {@code
+   * REPLICATION_TIMED_OUT}. Maps to {@code camunda.cluster.raft.rebalance.replicationTimeout}.
+   *
+   * <p>Operators can override this value for each rebalance request - this is a default value that
+   * applies when no override is specified.
+   */
+  public Duration getRebalanceReplicationTimeout() {
+    return rebalanceReplicationTimeout;
+  }
+
+  public void setRebalanceReplicationTimeout(final Duration rebalanceReplicationTimeout) {
+    this.rebalanceReplicationTimeout = rebalanceReplicationTimeout;
+  }
+
+  /**
+   * The maximum number of TimeoutNow requests the current leader sends (including the initial
+   * request) before reporting {@code TIMEOUT_NOW_EXHAUSTED} during a leadership transfer. Maps to
+   * {@code camunda.cluster.raft.rebalance.maxTransferAttempts}.
+   *
+   * <p>Operators can override this value for each rebalance request - this is a default value that
+   * applies when no override is specified.
+   */
+  public int getRebalanceMaxTransferAttempts() {
+    return rebalanceMaxTransferAttempts;
+  }
+
+  public void setRebalanceMaxTransferAttempts(final int rebalanceMaxTransferAttempts) {
+    this.rebalanceMaxTransferAttempts = rebalanceMaxTransferAttempts;
+  }
+
   public RaftStorageConfig getStorageConfig() {
     return storageConfig;
   }
@@ -215,14 +294,6 @@ public class RaftPartitionConfig {
     this.entryValidator = entryValidator;
   }
 
-  public String getEngineName() {
-    return engineName;
-  }
-
-  public void setEngineName(final String engineName) {
-    this.engineName = engineName;
-  }
-
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -231,12 +302,20 @@ public class RaftPartitionConfig {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
   }
 
-  public boolean isSendOnLegacySubject() {
-    return sendOnLegacySubject;
+  public long getPromotionLagThreshold() {
+    return promotionLagThreshold;
   }
 
-  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
-    this.sendOnLegacySubject = sendOnLegacySubject;
+  /**
+   * Sets the maximum replication lag, in bytes, up to which a member may be promoted to ACTIVE. The
+   * lag is the byte-exact amount of data the leader still has to replicate to the member - the
+   * unreplicated log tail plus any pending snapshot install - and bounds how long commits can stall
+   * once the promoted member joins the commit quorum.
+   *
+   * @param promotionLagThreshold the maximum replication lag in bytes for promotions
+   */
+  public void setPromotionLagThreshold(final long promotionLagThreshold) {
+    this.promotionLagThreshold = promotionLagThreshold;
   }
 
   @Override
@@ -260,18 +339,24 @@ public class RaftPartitionConfig {
         + snapshotChunkSize
         + ", configurationChangeTimeout="
         + configurationChangeTimeout
+        + ", joinCatchUpTimeout="
+        + joinCatchUpTimeout
         + ", minStepDownFailureCount="
         + minStepDownFailureCount
         + ", maxQuorumResponseTimeout="
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
-        + ", engineName="
-        + engineName
+        + ", rebalanceReplicationLagThreshold="
+        + rebalanceReplicationLagThreshold
+        + ", rebalanceReplicationTimeout="
+        + rebalanceReplicationTimeout
+        + ", rebalanceMaxTransferAttempts="
+        + rebalanceMaxTransferAttempts
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
-        + ", sendOnLegacySubject="
-        + sendOnLegacySubject
+        + ", promotionLagThreshold="
+        + promotionLagThreshold
         + '}';
   }
 }

@@ -41,7 +41,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
 
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+        buildUrl('/user-tasks/{userTaskKey}/variables/search', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {},
@@ -70,7 +70,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
 
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+        buildUrl('/user-tasks/{userTaskKey}/variables/search', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {
@@ -105,7 +105,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
       'CREATED',
     );
     const res = await request.post(
-      buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+      buildUrl('/user-tasks/{userTaskKey}/variables/search', {userTaskKey}),
       {
         // No auth headers
         headers: {
@@ -125,7 +125,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
       'CREATED',
     );
     const res = await request.post(
-      buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+      buildUrl('/user-tasks/{userTaskKey}/variables/search', {userTaskKey}),
       {
         headers: jsonHeaders(),
         data: {
@@ -145,7 +145,9 @@ test.describe.parallel('Search User Task Variables Tests', () => {
   }) => {
     const invalidUserTaskKey = 'invalidKey';
     const res = await request.post(
-      buildUrl(`/user-tasks/${invalidUserTaskKey}/variables/search`),
+      buildUrl('/user-tasks/{userTaskKey}/variables/search', {
+        userTaskKey: invalidUserTaskKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {},
@@ -167,7 +169,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     );
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+        buildUrl('/user-tasks/{userTaskKey}/variables/search', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {
@@ -203,7 +205,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     );
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/user-tasks/${userTaskKey}/variables/search`),
+        buildUrl('/user-tasks/{userTaskKey}/variables/search', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {

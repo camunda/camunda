@@ -21,7 +21,8 @@ import java.util.Map;
 public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
 
   /**
-   * Adds an element to activate in the ad-hoc sub-process.
+   * Adds an element to activate in the ad-hoc sub-process. This starts a new variable accumulation;
+   * variables added afterward apply to this element rather than any previously activated element.
    *
    * @return this result
    */
@@ -90,5 +91,24 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      */
     @Override
     CompleteAdHocSubProcessResultStep1 variable(String key, Object value);
+
+    /**
+     * Adds a single variable to the most recently activated element instance.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command.
+     */
+    @Override
+    CompleteAdHocSubProcessResultStep2 addVariable(String key, Object value);
+
+    /**
+     * Adds multiple variables to the most recently activated element instance.
+     *
+     * @param variables the variables document as map
+     * @return the builder for this command.
+     */
+    @Override
+    CompleteAdHocSubProcessResultStep2 addVariables(Map<String, Object> variables);
   }
 }

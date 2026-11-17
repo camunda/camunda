@@ -39,6 +39,7 @@ public class UserTaskBuilder implements UserTask {
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
+  private String businessId;
   private Long formKey;
   private OffsetDateTime creationDate;
   private OffsetDateTime completionDate;
@@ -50,6 +51,7 @@ public class UserTaskBuilder implements UserTask {
   private Map<String, String> customHeaders;
   private Integer priority;
   private Set<String> tags;
+  private Boolean isSuspended;
 
   @Override
   public Long getUserTaskKey() {
@@ -117,6 +119,11 @@ public class UserTaskBuilder implements UserTask {
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
   public Long getFormKey() {
     return formKey;
   }
@@ -171,8 +178,18 @@ public class UserTaskBuilder implements UserTask {
     return tags;
   }
 
+  @Override
+  public Boolean isSuspended() {
+    return isSuspended;
+  }
+
   public UserTaskBuilder setTags(final Set<String> tags) {
     this.tags = tags;
+    return this;
+  }
+
+  public UserTaskBuilder setSuspended(final Boolean isSuspended) {
+    this.isSuspended = isSuspended;
     return this;
   }
 
@@ -223,6 +240,11 @@ public class UserTaskBuilder implements UserTask {
 
   public UserTaskBuilder setFormKey(final Long formKey) {
     this.formKey = formKey;
+    return this;
+  }
+
+  public UserTaskBuilder setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 

@@ -106,39 +106,39 @@ type Resource = z.infer<typeof resourceSchema>;
 const getResourceContentResponseBodySchema = z.string();
 type GetResourceContentResponseBody = z.infer<typeof getResourceContentResponseBodySchema>;
 
-const createDeployment: Endpoint = {
+const createDeployment = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/deployments`;
+		return `/${API_VERSION}/deployments` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const deleteResource: Endpoint<{resourceKey: string}> = {
+const deleteResource = {
 	method: 'POST',
 	getUrl(params) {
 		const {resourceKey} = params;
 
-		return `/${API_VERSION}/resources/${resourceKey}/deletion`;
+		return `/${API_VERSION}/resources/${resourceKey}/deletion` as const;
 	},
-};
+} as const satisfies Endpoint<{resourceKey: string}>;
 
-const getResource: Endpoint<{resourceKey: string}> = {
+const getResource = {
 	method: 'GET',
 	getUrl(params) {
 		const {resourceKey} = params;
 
-		return `/${API_VERSION}/resources/${resourceKey}`;
+		return `/${API_VERSION}/resources/${resourceKey}` as const;
 	},
-};
+} as const satisfies Endpoint<{resourceKey: string}>;
 
-const getResourceContent: Endpoint<{resourceKey: string}> = {
+const getResourceContent = {
 	method: 'GET',
 	getUrl(params) {
 		const {resourceKey} = params;
 
-		return `/${API_VERSION}/resources/${resourceKey}/content`;
+		return `/${API_VERSION}/resources/${resourceKey}/content` as const;
 	},
-};
+} as const satisfies Endpoint<{resourceKey: string}>;
 
 export {
 	createDeployment,

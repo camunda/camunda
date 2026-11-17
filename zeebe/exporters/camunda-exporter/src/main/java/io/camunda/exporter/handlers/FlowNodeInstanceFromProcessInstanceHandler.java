@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -39,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceFromProcessInstanceHandler
-    implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceFromProcessInstanceHandler.class);
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
@@ -106,10 +107,17 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setId(String.valueOf(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
-    entity.setFlowNodeName(
+    entity.setType(
+        FlowNodeType.fromZeebeBpmnElementType(
+            recordValue.getBpmnElementType() == null
+                ? null
+                : recordValue.getBpmnElementType().name()));
+    final var resolvedFlowNodeName =
         ProcessCacheUtil.getFlowNodeName(
-                processCache, processDefinitionKey, recordValue.getElementId())
-            .orElse(null));
+            processCache, processDefinitionKey, recordValue.getElementId());
+    if (shouldWriteName(entity, resolvedFlowNodeName.isPresent())) {
+      entity.setFlowNodeName(resolvedFlowNodeName.orElse(null));
+    }
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setProcessDefinitionKey(processDefinitionKey);
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
@@ -139,11 +147,6 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       }
     }
 
-    entity.setType(
-        FlowNodeType.fromZeebeBpmnElementType(
-            recordValue.getBpmnElementType() == null
-                ? null
-                : recordValue.getBpmnElementType().name()));
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
@@ -151,7 +154,10 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   }
 
   @Override
-  public void flush(final FlowNodeInstanceEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index,
+      final FlowNodeInstanceEntity entity,
+      final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.ID, entity.getId());
     updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());
@@ -162,7 +168,9 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
-    updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
+    if (shouldWriteName(entity, entity.getFlowNodeName() != null)) {
+      updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
+    }
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
@@ -175,12 +183,22 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     if (entity.getPosition() != null) {
       updateFields.put(FlowNodeInstanceTemplate.POSITION, entity.getPosition());
     }
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  /**
+   * The ad-hoc subprocess inner instance's synthetic id is absent from the BPMN, so this handler
+   * never resolves a name for it; FlowNodeInstanceNameFromAdHocActivityHandler writes that name
+   * instead, derived from the activated entry element.
+   */
+  private static boolean shouldWriteName(
+      final FlowNodeInstanceEntity entity, final boolean hasName) {
+    return entity.getType() != FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE || hasName;
   }
 
   /**

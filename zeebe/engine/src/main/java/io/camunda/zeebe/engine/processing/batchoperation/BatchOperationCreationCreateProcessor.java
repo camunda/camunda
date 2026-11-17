@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -25,10 +26,14 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -48,15 +53,18 @@ public final class BatchOperationCreationCreateProcessor
 
   private static final String EMPTY_JSON_OBJECT = "{}";
   private static final String MESSAGE_GIVEN_FILTER_IS_EMPTY = "Given filter is empty";
+  private static final String MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY =
+      "Expected to create a batch operation of type 'UPDATE_JOB' with a changeset containing at least one of [retries, timeout, priority], but none were provided";
   private static final String BATCH_OPERATION_ALREADY_EXISTS =
       "Expected to create a batch operation with key: '%d', but a batch operation command with this key already exists";
 
   private final KeyGenerator keyGenerator;
+  private final StorageOrdinalProvider storageOrdinalProvider;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final RoutingInfo routingInfo;
   private final BatchOperationMetrics metrics;
   private final BatchOperationState batchOperationState;
@@ -65,8 +73,9 @@ public final class BatchOperationCreationCreateProcessor
       final Writers writers,
       final ProcessingState state,
       final KeyGenerator keyGenerator,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
@@ -74,19 +83,31 @@ public final class BatchOperationCreationCreateProcessor
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
     this.metrics = metrics;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationCreationRecord> command) {
+    // Stamped before validation so a rejected CREATE carries the active storage ordinal too.
+    command.getValue().setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal());
+
     if (isEmptyOrNullFilter(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
+      return;
+    }
+
+    if (isEmptyJobUpdateChangeset(command)) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY);
       return;
     }
 
@@ -94,7 +115,7 @@ public final class BatchOperationCreationCreateProcessor
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -123,7 +144,8 @@ public final class BatchOperationCreationCreateProcessor
         BatchOperationIntent.CREATED,
         recordWithKey,
         FollowUpEventMetadata.of(b -> b.batchOperationReference(key)));
-    responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.BATCH_OPERATION)
@@ -164,26 +186,39 @@ public final class BatchOperationCreationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
 
     if (!DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getAuthorizationCheckBuffer())) {
-      final Authorization<?> authorization =
+      final var check =
           MsgPackConverter.convertToObject(
-              command.getValue().getAuthorizationCheckBuffer(), Authorization.class);
-      final AuthorizationRequest authorizationRequest =
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(authorization.resourceType())
-              .permissionType(authorization.permissionType())
-              .addAllResourceIds(authorization.resourceIds())
-              .build();
-      return authCheckBehavior.isAuthorized(authorizationRequest);
+              command.getValue().getAuthorizationCheckBuffer(),
+              BatchOperationAuthorizationCheck.class);
+      // the resource id supplier and condition are not part of the wire format
+      final RequiredAuthorization<?> authorization =
+          new RequiredAuthorization<>(
+              check.resourceType(),
+              check.permissionType(),
+              check.resourceIds(),
+              null,
+              check.resourcePropertyNames(),
+              null,
+              check.transitive());
+      return cslCheck.checkForDistributedCommand(
+          command,
+          authorization,
+          null,
+          AuthorizationRejectionMapper.forbidden(
+              authorization.permissionType(), authorization.resourceType()));
     }
     // first check for general CREATE_BATCH_OPERATION permission
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.BATCH)
-            .permissionType(PermissionType.CREATE)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
+    final var isAuthorized =
+        cslCheck.check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.BATCH))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            (Void) null,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE, AuthorizationResourceType.BATCH));
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
       final var permission =
@@ -195,17 +230,23 @@ public final class BatchOperationCreationCreateProcessor
             case MODIFY_PROCESS_INSTANCE ->
                 PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE;
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
+            case RESUME_PROCESS_INSTANCE, SUSPEND_PROCESS_INSTANCE ->
+                PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE;
             case DELETE_PROCESS_INSTANCE ->
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
             case DELETE_DECISION_INSTANCE ->
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE;
+            case UPDATE_JOB -> PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB;
           };
-      return authCheckBehavior.isAuthorized(
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthorizationResourceType.BATCH)
-              .permissionType(permission)
-              .build());
+      return cslCheck.check(
+          command,
+          RequiredAuthorization.of(
+              b ->
+                  b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.BATCH))
+                      .permissionType(AuthzModelMapper.fromProtocol(permission))
+                      .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+          (Void) null,
+          AuthorizationRejectionMapper.forbidden(permission, AuthorizationResourceType.BATCH));
     }
 
     return isAuthorized;
@@ -215,5 +256,15 @@ public final class BatchOperationCreationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
     return command.getValue().getEntityFilter() == null
         || command.getValue().getEntityFilter().equalsIgnoreCase(EMPTY_JSON_OBJECT);
+  }
+
+  private static boolean isEmptyJobUpdateChangeset(
+      final TypedRecord<BatchOperationCreationRecord> command) {
+    if (command.getValue().getBatchOperationType() != BatchOperationType.UPDATE_JOB) {
+      return false;
+    }
+    final var plan = command.getValue().getJobUpdatePlan();
+    return plan == null
+        || (plan.getRetries() == null && plan.getTimeout() == null && plan.getPriority() == null);
   }
 }

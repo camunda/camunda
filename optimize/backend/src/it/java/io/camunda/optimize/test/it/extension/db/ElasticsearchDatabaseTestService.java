@@ -42,6 +42,7 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
@@ -87,7 +88,6 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -344,45 +344,54 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
-    final String[] indicesToDelete;
+    // Force a refresh first so any records the exporter wrote without an explicit refresh become
+    // visible to the subsequent deleteByQuery. Without this, unrefreshed writes are invisible to
+    // the delete, pass the zero-count assertion, and then surface at the next automatic 1-second
+    // refresh — exactly when the next test starts. Two delete passes then catch any records that
+    // the exporter flushes in the window between the refresh and the delete's own refresh.
     try {
-      indicesToDelete =
-          getOptimizeElasticClient()
-              .getEsClient()
-              .indices()
-              .get(GetIndexRequest.of(r -> r.index(zeebeRecordPrefix + "*")))
-              .result()
-              .keySet()
-              .toArray(String[]::new);
+      getOptimizeElasticClient()
+          .getEsClient()
+          .indices()
+          .refresh(
+              RefreshRequest.of(
+                  r ->
+                      r.index(zeebeRecordPrefix + "*")
+                          .ignoreUnavailable(true)
+                          .allowNoIndices(true)));
+      for (int i = 0; i < 2; i++) {
+        getOptimizeElasticClient()
+            .getEsClient()
+            .deleteByQuery(
+                DeleteByQueryRequest.of(
+                    r ->
+                        r.index(zeebeRecordPrefix + "*")
+                            .query(Query.of(q -> q.matchAll(m -> m)))
+                            .refresh(true)
+                            .conflicts(Conflicts.Proceed)
+                            .allowNoIndices(true)
+                            .ignoreUnavailable(true)));
+      }
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
-    if (indicesToDelete.length > 1) {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
-    }
+  }
+
+  @Override
+  public void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix) {
+    // List matching indices explicitly first — wildcard DELETE is blocked by
+    // action.destructive_requires_name in the test ES cluster.
+    deleteZeebeIndicesByName(listZeebeIndicesForPrefix(zeebeRecordPrefix));
   }
 
   @Override
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
-    final String[] indicesToDelete;
-    try {
-      indicesToDelete =
-          getOptimizeElasticClient()
-              .elasticsearchClient()
-              .indices()
-              .get(GetIndexRequest.of(r -> r.index(zeebeRecordPrefix + "*")))
-              .result()
-              .keySet()
-              .stream()
-              .filter(indexName -> !indexName.contains(recordsToKeep))
-              .toArray(String[]::new);
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException(e);
-    }
-    if (indicesToDelete.length > 1) {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
-    }
+    final String[] indicesToDelete =
+        Arrays.stream(listZeebeIndicesForPrefix(zeebeRecordPrefix))
+            .filter(indexName -> !indexName.contains(recordsToKeep))
+            .toArray(String[]::new);
+    deleteZeebeIndicesByName(indicesToDelete);
   }
 
   @Override
@@ -397,7 +406,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                       u.index(zeebeRecordPrefix + "_" + indexName + "*")
                           .refresh(true)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .query(Query.of(q -> q.matchAll(m -> m)))));
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
@@ -419,7 +431,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                       u.index(zeebeRecordPrefix + "_" + indexName + "*")
                           .refresh(true)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .query(
                               Query.of(
                                   q ->
@@ -452,7 +467,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                       u.index(zeebeRecordPrefix + "_" + ZEEBE_PROCESS_INSTANCE_INDEX_NAME + "*")
                           .refresh(true)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .query(
                               Query.of(
                                   q ->
@@ -490,7 +508,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                               getProcessInstanceIndexAliasName(processDefinitionKey))
                           .id(processInstanceId)
                           .script(
-                              Script.of(s -> s.lang(ScriptLanguage.Painless).source(updateScript)))
+                              Script.of(
+                                  s ->
+                                      s.lang(ScriptLanguage.Painless)
+                                          .source(src -> src.scriptString(updateScript))))
                           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
               Object.class);
     } catch (final IOException e) {
@@ -579,6 +600,19 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    try {
+      getOptimizeElasticClient()
+          .elasticsearchClient()
+          .index(
+              IndexRequest.of(
+                  i -> i.index(rawIndexName).id(id).document(entry).refresh(Refresh.True)));
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add a raw entry to elasticsearch", e);
+    }
+  }
+
+  @Override
   public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
     final DeleteRequest request =
         OptimizeDeleteRequestBuilderES.of(
@@ -649,14 +683,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     } catch (final Exception e) {
       LOG.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
     }
-  }
-
-  @Override
-  public List<String> getImportIndices() {
-    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
-        .filter(IndexMappingCreator::isImportIndex)
-        .map(IndexMappingCreator::getIndexName)
-        .toList();
   }
 
   @Override
@@ -819,7 +845,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                 Script.of(
                     s ->
                         s.lang(ScriptLanguage.Painless)
-                            .source(scriptData.scriptString())
+                            .source(src -> src.scriptString(scriptData.scriptString()))
                             .params(
                                 scriptData.params().entrySet().stream()
                                     .collect(
@@ -856,7 +882,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                 Script.of(
                     s ->
                         s.lang(ScriptLanguage.Painless)
-                            .source(script.scriptString())
+                            .source(src -> src.scriptString(script.scriptString()))
                             .params(
                                 script.params().entrySet().stream()
                                     .collect(
@@ -920,7 +946,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
     final Map<String, IndexAliases> indexNameToAliasMap;
     try {
-      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
+      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).aliases();
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
@@ -985,7 +1011,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     final GetMappingResponse getMappingResponse =
         getOptimizeElasticClient().getMapping(new GetMappingRequest.Builder(), indexName);
     final Object propertiesMap =
-        getMappingResponse.result().values().stream()
+        getMappingResponse.mappings().values().stream()
             .findFirst()
             .orElseThrow(
                 () ->
@@ -1038,7 +1064,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                         a.name(
                             getOptimizeElasticClient()
                                 .addPrefixesToIndices(readOnlyAliasForIndex))));
-    return aliases.result().values().stream()
+    return aliases.aliases().values().stream()
         .flatMap(a -> a.aliases().values().stream())
         .collect(Collectors.toSet())
         .stream()
@@ -1052,7 +1078,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
     final Map<String, IndexAliases> indexNameToAliasMap;
     try {
-      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
+      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).aliases();
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -1067,6 +1093,39 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public String[] getIndexNames() throws IOException {
     return getOptimizeElasticClient().getAllIndexNames().toArray(new String[0]);
+  }
+
+  private String[] listZeebeIndicesForPrefix(final String prefix) {
+    try {
+      return getOptimizeElasticClient()
+          .elasticsearchClient()
+          .indices()
+          .get(
+              GetIndexRequest.of(
+                  r -> r.index(prefix + "*").ignoreUnavailable(true).allowNoIndices(true)))
+          .indices()
+          .keySet()
+          .toArray(String[]::new);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
+  }
+
+  private void deleteZeebeIndicesByName(final String... indices) {
+    if (indices.length == 0) {
+      return;
+    }
+    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
+    // that vanishes between listing and deletion does not fail the cleanup.
+    try {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indices);
+    } catch (final ElasticsearchException e) {
+      if ("index_not_found_exception".equals(e.error().type())) {
+        LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
+      } else {
+        throw e;
+      }
+    }
   }
 
   public OptimizeIndexNameService getIndexNameService() {

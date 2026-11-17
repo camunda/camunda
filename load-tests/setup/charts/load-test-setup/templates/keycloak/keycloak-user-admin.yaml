@@ -1,0 +1,25 @@
+{{- if .Values.keycloak.enabled }}
+{{- $secretKey := dict
+            "namespace" $.Release.Namespace
+            "user" .Values.keycloak.adminUser.secret.key
+-}}
+{{- $keycloakAdminUsername := .Values.keycloak.adminUser.username -}}
+{{- $keycloakAdminPassword := include "generate-secret" $secretKey -}}
+---
+# This configures the "admin" credentials for Keycloak itself.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ include "load-test-setup.keycloak.admin-secret-name" . }}"
+  labels:
+    deadline-date: "{{ .Values.deadlineDate }}"
+    camunda.io/created-by: "{{ .Values.author }}"
+    camunda.io/purpose: load-test
+  annotations:
+    kubernetes.io/description: |-
+      The credentials for the "admin" user of Keycloak.
+type: kubernetes.io/basic-auth
+data:
+  username: "{{ $keycloakAdminUsername | b64enc }}"
+  password: "{{ $keycloakAdminPassword | b64enc }}"
+{{- end }}

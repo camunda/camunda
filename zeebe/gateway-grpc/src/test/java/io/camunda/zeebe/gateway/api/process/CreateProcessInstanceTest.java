@@ -89,6 +89,86 @@ public final class CreateProcessInstanceTest extends GatewayTest {
   }
 
   @Test
+  public void shouldMapVersionTagToBrokerRequest() {
+    // given
+    final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceRequest request =
+        CreateProcessInstanceRequest.newBuilder()
+            .setBpmnProcessId(stub.getProcessId())
+            .setVersionTag("v1.2")
+            .build();
+
+    // when
+    client.createProcessInstance(request);
+
+    // then
+    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getVersionTag()).isEqualTo("v1.2");
+    assertThat(brokerRequestValue.getVersion()).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldForwardExplicitVersionUnchangedWithVersionTag() {
+    // given
+    final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceRequest request =
+        CreateProcessInstanceRequest.newBuilder()
+            .setBpmnProcessId(stub.getProcessId())
+            .setVersion(3)
+            .setVersionTag("v1.2")
+            .build();
+
+    // when
+    client.createProcessInstance(request);
+
+    // then
+    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getVersion()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldRejectBlankVersionTag() {
+    // given
+    final CreateProcessInstanceRequest request =
+        CreateProcessInstanceRequest.newBuilder()
+            .setBpmnProcessId("process")
+            .setVersionTag("  ")
+            .build();
+
+    // when/then
+    assertThatThrownBy(() -> client.createProcessInstance(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.Code.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldLeaveVersionTagEmptyWhenNotSet() {
+    // given
+    final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceRequest request =
+        CreateProcessInstanceRequest.newBuilder()
+            .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+            .build();
+
+    // when
+    client.createProcessInstance(request);
+
+    // then
+    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getVersionTag()).isEmpty();
+  }
+
+  @Test
   public void shouldMapDuplicateBusinessIdRejectionToAlreadyExists() {
     // given
     final var businessId = "order-12345";

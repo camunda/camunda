@@ -79,6 +79,7 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(topology.getPartitionsCount()).isEqualTo(10);
     assertThat(topology.getReplicationFactor()).isEqualTo(3);
     assertThat(topology.getGatewayVersion()).isEqualTo("1.22.3-SNAPSHOT");
+    assertThat(topology.getLastCompletedChangeId()).isNull();
 
     final List<BrokerInfo> brokers = topology.getBrokers();
     assertThat(brokers).hasSize(3);

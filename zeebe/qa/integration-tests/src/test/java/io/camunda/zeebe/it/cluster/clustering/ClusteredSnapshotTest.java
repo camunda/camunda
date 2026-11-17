@@ -135,7 +135,8 @@ final class ClusteredSnapshotTest {
     brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
 
     final DataCfg data = brokerCfg.getData();
-    data.setLogSegmentSize(DataSize.ofKilobytes(32));
+    // segment size must fit the atomic identity-setup batch written at startup
+    data.setLogSegmentSize(DataSize.ofKilobytes(128));
     data.setLogIndexDensity(5);
     data.setSnapshotPeriod(SNAPSHOT_INTERVAL);
 

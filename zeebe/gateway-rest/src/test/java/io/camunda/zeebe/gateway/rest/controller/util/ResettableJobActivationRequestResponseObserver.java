@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.util;
 
-import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 
@@ -21,7 +21,7 @@ public class ResettableJobActivationRequestResponseObserver
   }
 
   public void reset() {
-    response = new JobActivationResult();
+    jobs = new ArrayList<>();
   }
 
   public ResettableJobActivationRequestResponseObserver setResult(

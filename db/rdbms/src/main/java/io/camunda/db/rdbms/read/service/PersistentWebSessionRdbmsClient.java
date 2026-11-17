@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.query.SearchQueryResult;
+import org.jspecify.annotations.Nullable;
 
 public class PersistentWebSessionRdbmsClient implements PersistentWebSessionClient {
 
@@ -25,7 +26,7 @@ public class PersistentWebSessionRdbmsClient implements PersistentWebSessionClie
   }
 
   @Override
-  public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+  public @Nullable PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
     return persistentWebSessionDbReader.findById(sessionId);
   }
 

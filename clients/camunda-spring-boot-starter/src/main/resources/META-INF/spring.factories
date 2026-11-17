@@ -1,1 +1,1 @@
-org.springframework.boot.env.EnvironmentPostProcessor=io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor
+org.springframework.boot.EnvironmentPostProcessor=io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor

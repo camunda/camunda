@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -19,7 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MigratedVariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
+public class MigratedVariableHandler
+    implements OrdinalIndexExportHandler<VariableEntity, VariableRecordValue> {
 
   private final String indexName;
 
@@ -62,18 +64,25 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
         .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setPosition(record.getPosition())
-        .setBpmnProcessId(recordValue.getBpmnProcessId());
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey());
+
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override
-  public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final VariableEntity entity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
 
     updateFields.put(VariableTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(VariableTemplate.POSITION, entity.getPosition());
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

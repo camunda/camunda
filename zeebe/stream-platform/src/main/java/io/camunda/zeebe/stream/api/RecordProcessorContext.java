@@ -14,6 +14,7 @@ import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public interface RecordProcessorContext {
 
@@ -29,7 +30,7 @@ public interface RecordProcessorContext {
 
   void addLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners);
 
-  InterPartitionCommandSender getPartitionCommandSender();
+  @Nullable InterPartitionCommandSender getPartitionCommandSender();
 
   KeyGenerator getKeyGenerator();
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.util.logging;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 
@@ -24,10 +25,13 @@ import org.slf4j.Marker;
  *
  * When ThrottledLogger is used, this is not logged in every loop. Instead, it will be logged once
  * in every configured interval.
+ *
+ * <p>The throttle is shared by all log levels and all threads that use the same instance: when
+ * several threads log at the same time, exactly one of them wins the interval.
  */
 public class ThrottledLogger implements Logger {
 
-  private long lastLogTime = 0;
+  private final AtomicLong lastLogTime = new AtomicLong();
   private final Logger log;
   private final long intervalMillis;
 
@@ -343,9 +347,10 @@ public class ThrottledLogger implements Logger {
 
   private void checkAndLog(final Runnable logger) {
     final var currentTime = System.currentTimeMillis();
-    if (currentTime - lastLogTime >= intervalMillis) {
+    final var lastTime = lastLogTime.get();
+    if (currentTime - lastTime >= intervalMillis
+        && lastLogTime.compareAndSet(lastTime, currentTime)) {
       logger.run();
-      lastLogTime = currentTime;
     }
   }
 }

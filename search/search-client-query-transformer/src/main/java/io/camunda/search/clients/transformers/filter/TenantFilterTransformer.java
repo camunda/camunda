@@ -13,13 +13,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.index.TenantIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.TenantIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -53,7 +52,8 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(TENANT_ID, authorization.resourceIds());
   }
 
@@ -74,7 +74,6 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
 
   private SearchQuery buildCoreFilters(final TenantFilter filter) {
     return and(
-        filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantIds() == null ? null : stringTerms(TENANT_ID, filter.tenantIds()),
         filter.name() == null ? null : term(NAME, filter.name()),
         term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType()));

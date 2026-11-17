@@ -8,27 +8,24 @@
 
 import {readFileSync} from 'node:fs';
 import {basename} from 'node:path';
-import {Camunda8} from '@camunda8/sdk';
+import {Camunda8, HTTPError} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {sleep} from './sleep';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
-    | 'BASIC'
-    | 'OAUTH'
-    | 'BEARER'
-    | 'COOKIE'
-    | 'NONE'
-    | undefined,
+    'BASIC' | 'OAUTH' | 'BEARER' | 'COOKIE' | 'NONE' | undefined,
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
   ZEEBE_GRPC_ADDRESS:
     process.env.ZEEBE_GRPC_ADDRESS || 'grpc://localhost:26500',
-  // Zeebe server rejects keepalive pings sent without active RPC calls
-  // (permitKeepAliveWithoutCalls=false). Setting this to 0 aligns the client
-  // with the server's expectation and prevents ENHANCE_YOUR_CALM / excess pings errors.
-  // @ts-expect-error -- GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS is a valid gRPC channel option but not yet typed in the SDK
-  GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: 0,
+  zeebeGrpcSettings: {
+    // Zeebe server rejects keepalive pings sent without active RPC calls
+    // (permitKeepAliveWithoutCalls=false). Setting this to 0 aligns the client
+    // with the server's expectation and prevents ENHANCE_YOUR_CALM / excess pings errors.
+    GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: 0,
+  },
 });
 
 function generateManyVariables(): Record<string, string> {
@@ -46,7 +43,11 @@ const zeebe = c8.getCamundaRestClient();
 const zeebeGrpc = c8.getZeebeGrpcApiClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
-    const results = await zeebe.deployResourcesFromFiles(processFilePaths);
+    const resources = processFilePaths.map((filePath) => ({
+      content: readFileSync(filePath, 'utf-8'),
+      name: basename(filePath),
+    }));
+    const results = await zeebe.deployResources(resources);
     return results;
   } catch (error) {
     console.error('Deployment failed:', error);
@@ -57,19 +58,19 @@ const deploy = async (processFilePaths: string[]) => {
 const deployWithSubstitutions = async (
   filePath: string,
   substitutions: Record<string, string>,
-): Promise<void> => {
+) => {
   let content = readFileSync(filePath, 'utf-8');
   for (const [placeholder, replacement] of Object.entries(substitutions)) {
     if (!content.includes(placeholder)) {
       throw new Error(
-        `Placeholder '${placeholder}' not found in BPMN file '${filePath}'`,
+        `Placeholder '${placeholder}' not found in resource file '${filePath}'`,
       );
     }
     content = content.split(placeholder).join(replacement);
   }
   const name = basename(filePath);
   try {
-    await zeebe.deployResources([{content, name}]);
+    return await zeebe.deployResources([{content, name}]);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
@@ -106,14 +107,34 @@ const createSingleInstance = async (
   });
 };
 
-const cancelProcessInstance = async (processInstanceKey: string) => {
+// Defaults to swallowing 404 -- the existing behaviour every other caller in
+// this suite already relies on for teardown. Pass ignoreNotFound: false when
+// the cancellation itself drives the assertion (e.g. finalizing a drain), so a
+// 404 there surfaces instead of letting the next assertion pass vacuously.
+// Teardown can also tolerate an already-pending cancellation, but other
+// INVALID_STATE conflicts must still surface.
+const cancelProcessInstance = async (
+  processInstanceKey: string,
+  {
+    ignoreNotFound = true,
+    ignorePendingCancellation = false,
+  }: {ignoreNotFound?: boolean; ignorePendingCancellation?: boolean} = {},
+) => {
   return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
-    if (e.status === 404) {
-      // an active process with this key was not found. It probably completed already.
-      // we swallow the error, because this is a common cleanup scenario.
+    const status = e?.status ?? e?.code ?? e?.response?.status;
+    if (ignoreNotFound && (status === 404 || status === 'NOT_FOUND')) {
       return;
     }
-    // Something else happened. Throw the error to surface the problem.
+    if (
+      ignorePendingCancellation &&
+      e instanceof HTTPError &&
+      e.status === 409 &&
+      e.title === 'INVALID_STATE' &&
+      typeof e.detail === 'string' &&
+      e.detail.includes('a cancel request is already in progress')
+    ) {
+      return;
+    }
     throw e;
   });
 };
@@ -160,9 +181,38 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
+/**
+ * Waits until the given process definition version is indexed as the latest,
+ * so UI pages relying on the search API (e.g. Tasklist's Processes tab) are
+ * guaranteed to reflect it.
+ */
+const waitForLatestProcessVersion = async (
+  processDefinitionId: string,
+  expectedVersion: number,
+  timeoutSeconds: number = 30,
+) => {
+  for (let attempt = 0; attempt < timeoutSeconds; attempt++) {
+    const response = await zeebe.searchProcessDefinitions({
+      // isLatestVersion mirrors the query Tasklist's Processes tab issues;
+      // the SDK filter type does not expose the flag yet.
+      filter: {processDefinitionId, isLatestVersion: true} as Parameters<
+        typeof zeebe.searchProcessDefinitions
+      >[0]['filter'] & {isLatestVersion: boolean},
+    });
+    if (response.items?.[0]?.version === expectedVersion) {
+      return;
+    }
+    await sleep(1000);
+  }
+  throw new Error(
+    `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest within ${timeoutSeconds}s`,
+  );
+};
+
 export {
   deploy,
   deployWithSubstitutions,
+  waitForLatestProcessVersion,
   createInstances,
   generateManyVariables,
   checkUpdateOnVersion,

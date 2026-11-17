@@ -60,6 +60,17 @@ export default [
     files: ['tests/**', 'pages/**/*'],
     rules: {
       ...playwright.configs['flat/recommended'].rules,
+      'playwright/expect-expect': [
+        'warn',
+        {
+          assertFunctionNames: [
+            'expect',
+            'expectJobsByType',
+            'expectProcessState',
+            'expectRowsForBusinessId',
+          ],
+        },
+      ],
     },
   },
 
@@ -68,7 +79,10 @@ export default [
       'license-header': licenseHeaderPlugin,
     },
     rules: {
-      'license-header/header': ['error', './license-header.js'],
+      'license-header/header': [
+        'error',
+        path.join(__dirname, 'license-header.js'),
+      ],
     },
   },
 

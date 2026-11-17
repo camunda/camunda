@@ -11,6 +11,10 @@ import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 
 public interface ScheduledTaskState {
 
+  SecretReferenceState getSecretReferenceState();
+
+  ProbeState getProbeState();
+
   DistributionState getDistributionState();
 
   MessageState getMessageState();
@@ -24,6 +28,10 @@ public interface ScheduledTaskState {
   PendingMessageSubscriptionState getPendingMessageSubscriptionState();
 
   PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
+
+  MessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState();
+
+  MessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState();
 
   UserTaskState getUserTaskState();
 

@@ -51,6 +51,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .decisionDefinitionType(DecisionDefinitionType.DECISION_TABLE)
                     .processDefinitionKey(2L)
                     .processInstanceKey(3L)
+                    .businessId("biz")
                     .decisionDefinitionKey(4L)
                     .elementInstanceKey(5L)
                     .decisionDefinitionId("ddi")
@@ -70,12 +71,39 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
     assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo("2");
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo("3");
+    assertThat(request.getFilter().getBusinessId().get$Eq()).isEqualTo("biz");
     assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo("4");
     assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("5");
     assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
     assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
     assertThat(request.getFilter().getTenantId()).isEqualTo("t");
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByBusinessId() {
+    // when
+    client.newDecisionInstanceSearchRequest().filter(f -> f.businessId("order-42")).send().join();
+
+    // then
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    assertThat(request.getFilter().getBusinessId().get$Eq()).isEqualTo("order-42");
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByBusinessIdStringFilter() {
+    // when
+    client
+        .newDecisionInstanceSearchRequest()
+        .filter(f -> f.businessId(b -> b.like("order-*")))
+        .send()
+        .join();
+
+    // then
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    assertThat(request.getFilter().getBusinessId().get$Like()).isEqualTo("order-*");
   }
 
   @Test
@@ -208,14 +236,16 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .decisionDefinitionType()
                     .asc()
                     .tenantId()
-                    .asc())
+                    .asc()
+                    .businessId()
+                    .desc())
         .send()
         .join();
 
     // then
     final DecisionInstanceSearchQuery request =
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
-    assertThat(request.getSort().size()).isEqualTo(12);
+    assertThat(request.getSort().size()).isEqualTo(13);
     assertThat(request.getSort().get(0).getField())
         .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
@@ -252,5 +282,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(request.getSort().get(11).getField())
         .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.TENANT_ID);
     assertThat(request.getSort().get(11).getOrder()).isEqualTo(SortOrderEnum.ASC);
+    assertThat(request.getSort().get(12).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.BUSINESS_ID);
+    assertThat(request.getSort().get(12).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

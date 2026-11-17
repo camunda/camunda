@@ -37,7 +37,7 @@ public class OsanoConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(scriptUrl);
+    return Objects.hashCode(scriptUrl);
   }
 
   @Override

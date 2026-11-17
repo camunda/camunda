@@ -24,6 +24,15 @@ public interface MessageSubscription {
 
   Long getMessageSubscriptionKey();
 
+  /**
+   * Returns the business id inherited from the subscribing process instance when this message
+   * subscription was opened.
+   *
+   * @return the business id, or {@code null} when the process instance has no business id or for
+   *     message start event subscriptions
+   */
+  String getBusinessId();
+
   String getProcessDefinitionId();
 
   Long getProcessDefinitionKey();
@@ -61,5 +70,9 @@ public interface MessageSubscription {
 
   Integer getProcessDefinitionVersion();
 
-  Map<String, String> getExtensionProperties();
+  Map<String, String> getToolProperties();
+
+  String getToolName();
+
+  String getInboundConnectorType();
 }

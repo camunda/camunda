@@ -27,7 +27,9 @@ const targetDefinition = createProcessDefinition({
   tenantId: '<default>',
 });
 
-function createWrapper() {
+function createWrapper(params: Record<string, string>) {
+  const initialPath = `/processes?${new URLSearchParams(params).toString()}`;
+
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       processInstanceMigrationStore.enable();
@@ -35,27 +37,28 @@ function createWrapper() {
         processInstanceMigrationStore.reset();
       };
     }, []);
-    return <MemoryRouter>{children}</MemoryRouter>;
+    return (
+      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+    );
   };
   return Wrapper;
 }
 
 describe('MigrationDetails', () => {
   it('should render migration details', async () => {
-    const queryString =
-      '?active=true&incidents=true&processDefinitionId=demoProcess&processDefinitionVersion=3';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
     processInstanceMigrationStore.setSelectedInstancesCount(7);
     processInstanceMigrationStore.setCurrentStep('summary');
     processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
     processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
 
-    render(<MigrationDetails />, {wrapper: createWrapper()});
+    render(<MigrationDetails />, {
+      wrapper: createWrapper({
+        active: 'true',
+        incidents: 'true',
+        processDefinitionId: 'demoProcess',
+        processDefinitionVersion: '3',
+      }),
+    });
 
     expect(
       screen.getByText(
@@ -71,6 +74,28 @@ describe('MigrationDetails', () => {
 
     expect(
       screen.getByText(/Big variable process - version 1/i),
+    ).toBeInTheDocument();
+  });
+
+  it('should append "+" to the summary count when the selection is truncated', async () => {
+    processInstanceMigrationStore.setSelectedInstancesCount(10000, true);
+    processInstanceMigrationStore.setCurrentStep('summary');
+    processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
+    processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
+
+    render(<MigrationDetails />, {
+      wrapper: createWrapper({
+        active: 'true',
+        incidents: 'true',
+        processDefinitionId: 'demoProcess',
+        processDefinitionVersion: '3',
+      }),
+    });
+
+    expect(
+      screen.getByText(
+        /You are about to migrate 10000\+ process instances from the process definition:/i,
+      ),
     ).toBeInTheDocument();
   });
 });

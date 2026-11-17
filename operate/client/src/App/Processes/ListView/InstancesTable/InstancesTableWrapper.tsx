@@ -45,8 +45,8 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const hasActiveFilter = searchParams.get('active') === 'true';
   const hasIncidentsFilter = searchParams.get('incidents') === 'true';
 
-  const variable = variableFilterStore.variable;
-  const filter = useProcessInstancesSearchFilter(variable);
+  const conditions = variableFilterStore.conditions;
+  const filter = useProcessInstancesSearchFilter(conditions);
   const sort = useProcessInstancesSearchSort();
 
   const enablePeriodicRefetch =
@@ -73,7 +73,11 @@ const InstancesTableWrapper: React.FC = observer(() => {
       (instance) => instance.processInstanceKey,
     );
     const visibleRunningIds = processInstances
-      .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
+      .filter((instance) => instance.state === 'ACTIVE')
+      .map((instance) => instance.processInstanceKey);
+
+    const visibleSuspendedIds = processInstances
+      .filter((instance) => instance.state === 'SUSPENDED')
       .map((instance) => instance.processInstanceKey);
 
     const visibleFinishedIds = processInstances
@@ -83,13 +87,20 @@ const InstancesTableWrapper: React.FC = observer(() => {
       )
       .map((instance) => instance.processInstanceKey);
 
+    const visibleIncidentIds = processInstances
+      .filter((instance) => instance.state === 'ACTIVE' && instance.hasIncident)
+      .map((instance) => instance.processInstanceKey);
+
     processInstancesSelectionStore.setRuntime({
       totalCount,
+      hasMoreTotalItems,
       visibleIds,
       visibleRunningIds,
+      visibleSuspendedIds,
       visibleFinishedIds,
+      visibleIncidentIds,
     });
-  }, [processInstances, totalCount]);
+  }, [processInstances, totalCount, hasMoreTotalItems]);
 
   return (
     <InstancesTable

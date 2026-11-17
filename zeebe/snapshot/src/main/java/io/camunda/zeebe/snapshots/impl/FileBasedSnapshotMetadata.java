@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import java.io.IOException;
-import java.io.OutputStream;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FileBasedSnapshotMetadata(
@@ -22,7 +21,8 @@ public record FileBasedSnapshotMetadata(
     @JsonProperty("exportedPosition") long minExportedPosition,
     long maxExportedPosition,
     long lastFollowupEventPosition,
-    @JsonProperty("bootstrap") boolean isBootstrap)
+    @JsonProperty("bootstrap") boolean isBootstrap,
+    long totalSizeBytes)
     implements SnapshotMetadata {
 
   private static final ObjectMapper OBJECTMAPPER = new ObjectMapper();
@@ -34,7 +34,8 @@ public record FileBasedSnapshotMetadata(
       @JsonProperty("exportedPosition") final long minExportedPosition,
       @JsonProperty("maxExportedPosition") final Long maxExportedPosition,
       @JsonProperty("lastFollowupEventPosition") final long lastFollowupEventPosition,
-      @JsonProperty("bootstrap") final boolean isBootstrap) {
+      @JsonProperty("bootstrap") final boolean isBootstrap,
+      @JsonProperty("totalSizeBytes") final Long totalSizeBytes) {
     this(
         version,
         processedPosition,
@@ -42,15 +43,28 @@ public record FileBasedSnapshotMetadata(
         // Backwards compatibility
         maxExportedPosition == null ? Long.MAX_VALUE : maxExportedPosition,
         lastFollowupEventPosition,
-        isBootstrap);
+        isBootstrap,
+        totalSizeBytes == null ? 0L : totalSizeBytes);
   }
 
-  public static FileBasedSnapshotMetadata forBootstrap(final int version) {
-    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true);
+  public static FileBasedSnapshotMetadata forBootstrap(
+      final int version, final long totalSizeBytes) {
+    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true, totalSizeBytes);
   }
 
-  public void encode(final OutputStream output) throws IOException {
-    OBJECTMAPPER.writeValue(output, this);
+  public FileBasedSnapshotMetadata withTotalSizeBytes(final long totalSizeBytes) {
+    return new FileBasedSnapshotMetadata(
+        version,
+        processedPosition,
+        minExportedPosition,
+        maxExportedPosition,
+        lastFollowupEventPosition,
+        isBootstrap,
+        totalSizeBytes);
+  }
+
+  public byte[] encode() throws IOException {
+    return OBJECTMAPPER.writeValueAsBytes(this);
   }
 
   public static FileBasedSnapshotMetadata decode(final byte[] serializedBytes) throws IOException {

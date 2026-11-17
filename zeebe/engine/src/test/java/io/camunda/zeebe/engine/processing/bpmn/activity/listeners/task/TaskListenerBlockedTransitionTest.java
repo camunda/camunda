@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
@@ -692,6 +694,67 @@ public class TaskListenerBlockedTransitionTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.CANCELED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldPropagateBatchOperationReferenceToTerminatedEventAfterCancelingListener() {
+    // given
+    final long batchOperationReference = 42L;
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling, listenerType));
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    // when: cancel the instance as part of a batch operation, then let the canceling listener
+    // job complete so termination resumes in a later processing cycle
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .withBatchOperationReference(batchOperationReference)
+        .expectTerminating()
+        .cancel();
+    helper.completeJobs(processInstanceKey, listenerType);
+
+    // then: the terminal process ELEMENT_TERMINATED must retain the batchOperationReference so the
+    // batch operation item can be marked completed (regression for stuck batch cancel of user
+    // tasks with canceling listeners)
+    final var processTerminated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    assertThat(processTerminated.getBatchOperationReference()).isEqualTo(batchOperationReference);
+  }
+
+  @Test
+  public void shouldNotSetBatchOperationReferenceOnTerminatedEventWhenCancelWithoutBatch() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling, listenerType));
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    // when: cancel the instance outside of any batch operation (no batchOperationReference), then
+    // let the canceling listener job complete so termination resumes in a later processing cycle
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+    helper.completeJobs(processInstanceKey, listenerType);
+
+    // then: the terminal process ELEMENT_TERMINATED must NOT carry a batchOperationReference. This
+    // is the negative counterpart to the batch-cancel regression: the reference appears on the
+    // terminal event only when propagated from the async request, never leaked onto plain cancels.
+    final var processTerminated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    assertThat(processTerminated.getBatchOperationReference())
+        .isEqualTo(RecordMetadataDecoder.batchOperationReferenceNullValue());
   }
 
   @Test

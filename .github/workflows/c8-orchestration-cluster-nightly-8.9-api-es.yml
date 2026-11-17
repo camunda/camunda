@@ -19,3 +19,10 @@ jobs:
     with:
       branch: stable/8.9
     secrets: inherit
+
+  nightly-api-tests-es-all-in-one:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
+    with:
+      branch: stable/8.9
+      camunda_mode: all-in-one
+    secrets: inherit

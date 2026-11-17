@@ -50,11 +50,8 @@ public class JobWorkerElementMultiTenantTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withSecurityConfig(
-              config -> {
-                config.getAuthorizations().setEnabled(true);
-                config.getMultiTenancy().setChecksEnabled(true);
-              });
+          .withAuthorizationsEnabled(true)
+          .withMultiTenancyChecksEnabled(true);
 
   private static final String PROCESS_ID = "process";
   private static String tenantId;

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
@@ -92,9 +94,8 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private void doWork() {
     submittedCallbacks.drain(this);
 
-    if (clock.update()) {
-      timerJobQueue.processExpiredTimers(clock);
-    }
+    clock.update();
+    timerJobQueue.processExpiredTimers(clock);
 
     currentTask = taskScheduler.getNextTask();
 
@@ -229,7 +230,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
     state = ActorThreadState.TERMINATED;
 
-    terminationFuture.complete(null);
+    terminationFuture.complete(unit());
   }
 
   public CompletableFuture<Void> close() {

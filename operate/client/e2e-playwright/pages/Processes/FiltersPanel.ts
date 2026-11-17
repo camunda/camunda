@@ -9,10 +9,11 @@
 import {type Page, type Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Variable'
+  | 'Variables'
   | 'Process Instance Key(s)'
   | 'Parent Process Instance Key'
-  | 'Operation Id'
+  | 'Business ID'
+  | 'Batch Operation Key'
   | 'Error Message'
   | 'Start Date Range'
   | 'End Date Range'
@@ -32,13 +33,12 @@ export class FiltersPanel {
   readonly processInstanceKeysFilter: Locator;
   readonly parentProcessInstanceKey: Locator;
   readonly elementFilter: Locator;
-  readonly batchOperationIdFilter: Locator;
+  readonly batchOperationKeyFilter: Locator;
+  readonly businessIdFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
-  readonly variableNameFilter: Locator;
-  readonly variableValueFilter: Locator;
-  readonly multipleVariablesSwitch: Locator;
+  readonly openVariableFilterModal: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -80,9 +80,14 @@ export class FiltersPanel {
       name: /element/i,
     });
 
-    this.batchOperationIdFilter = this.panel.getByRole('textbox', {
-      name: /operation id/i,
+    this.batchOperationKeyFilter = this.panel.getByRole('textbox', {
+      name: /batch operation key/i,
     });
+
+    this.businessIdFilter = this.panel.getByRole('textbox', {
+      name: /business id/i,
+    });
+
     this.resetFiltersButton = this.panel.getByRole('button', {
       name: /reset filters/i,
     });
@@ -95,15 +100,9 @@ export class FiltersPanel {
       name: /start date range/i,
     });
 
-    this.variableNameFilter = this.panel.getByRole('textbox', {
-      name: /name/i,
-    });
-
-    this.variableValueFilter = this.panel.getByRole('textbox', {
-      name: /value/i,
-    });
-
-    this.multipleVariablesSwitch = this.panel.getByText(/^multiple$/i);
+    this.openVariableFilterModal = this.panel.getByTestId(
+      'open-variable-filter-modal',
+    );
   }
 
   async validateCheckedState({

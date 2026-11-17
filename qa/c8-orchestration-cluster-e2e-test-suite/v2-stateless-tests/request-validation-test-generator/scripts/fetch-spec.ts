@@ -1,66 +1,50 @@
 #!/usr/bin/env tsx
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import fs from 'fs';
 import path from 'path';
-import https from 'https';
+import {execFileSync} from 'child_process';
+import {fileURLToPath} from 'url';
 
-const RAW_URL =
-  'https://raw.githubusercontent.com/camunda/camunda-orchestration-cluster-api/main/specification/rest-api.yaml';
-const COMMITS_API =
-  'https://api.github.com/repos/camunda/camunda-orchestration-cluster-api/commits?path=specification/rest-api.yaml&per_page=1';
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const SOURCE_SPEC_DIR = path.resolve(
+  scriptDir,
+  '../../../../../zeebe/gateway-protocol/src/main/proto/v2',
+);
+const SOURCE_SPEC_PATH = path.join(SOURCE_SPEC_DIR, 'rest-api.yaml');
 const cacheDir = path.resolve(process.cwd(), 'cache');
-const target = path.join(cacheDir, 'rest-api.yaml');
 const commitFile = path.join(cacheDir, 'spec-commit.txt');
 
 async function main() {
   await fs.promises.mkdir(cacheDir, {recursive: true});
-  console.log('[fetch-spec] Downloading spec...');
-  const data = await download(RAW_URL);
-  await fs.promises.writeFile(target, data, 'utf8');
-  console.log('[fetch-spec] Wrote', target, `(bytes=${data.length})`);
-  // Attempt to resolve the latest commit hash for the spec path
+  if (!fs.existsSync(SOURCE_SPEC_PATH)) {
+    throw new Error(
+      `[fetch-spec] Spec not found at ${SOURCE_SPEC_PATH}. Expected the ` +
+        'in-repo OpenAPI root (zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml).',
+    );
+  }
+  console.log('[fetch-spec] Using in-repo spec at', SOURCE_SPEC_PATH);
   try {
-    const metaJson = await download(COMMITS_API, {
-      headers: {'User-Agent': 'request-validation-generator'},
-    });
-    const parsed = JSON.parse(metaJson);
-    const sha: string | undefined = Array.isArray(parsed) && parsed[0]?.sha;
+    const sha = execFileSync(
+      'git',
+      ['log', '-1', '--format=%H', '--', SOURCE_SPEC_DIR],
+      {cwd: SOURCE_SPEC_DIR, encoding: 'utf8'},
+    ).trim();
     if (sha) {
-      await fs.promises.writeFile(commitFile, sha.trim() + '\n', 'utf8');
-      console.log('[fetch-spec] Commit hash:', sha);
-    } else {
-      console.warn(
-        '[fetch-spec] Could not extract commit SHA from API response',
-      );
+      await fs.promises.writeFile(commitFile, sha + '\n', 'utf8');
+      console.log('[fetch-spec] Spec commit:', sha);
     }
   } catch (e) {
     console.warn(
-      '[fetch-spec] Unable to fetch commit hash (non-fatal):',
+      '[fetch-spec] Unable to resolve spec commit hash (non-fatal):',
       (e as Error).message,
     );
   }
-}
-
-function download(
-  url: string,
-  options?: {headers?: Record<string, string>},
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const req = https.request(
-      url,
-      {method: 'GET', headers: options?.headers},
-      (res) => {
-        if (res.statusCode && res.statusCode >= 400) {
-          reject(new Error('HTTP ' + res.statusCode));
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-      },
-    );
-    req.on('error', reject);
-    req.end();
-  });
 }
 
 main().catch((e) => {

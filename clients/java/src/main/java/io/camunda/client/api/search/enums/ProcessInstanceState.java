@@ -18,6 +18,7 @@ package io.camunda.client.api.search.enums;
 public enum ProcessInstanceState {
   ACTIVE,
   COMPLETED,
+  SUSPENDED,
   TERMINATED,
   UNKNOWN_ENUM_VALUE;
 }

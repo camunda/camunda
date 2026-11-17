@@ -57,16 +57,14 @@ const useVariableScopeKey = (fallback?: string | null) => {
 const useDisplayStatus = ({
   scopeKey,
   isLoading,
-  isFetchingNextPage,
-  isFetchingPreviousPage,
+  isFetching,
   isFetched,
   isError,
   hasItems,
 }: {
   scopeKey: string | null;
   isLoading: boolean;
-  isFetchingNextPage: boolean;
-  isFetchingPreviousPage: boolean;
+  isFetching: boolean;
   isFetched: boolean;
   isError: boolean;
   hasItems: boolean;
@@ -101,7 +99,7 @@ const useDisplayStatus = ({
   if (!hasItems) {
     return 'no-variables';
   }
-  if ((isFetched || isFetchingNextPage || isFetchingPreviousPage) && hasItems) {
+  if ((isFetched || isFetching) && hasItems) {
     return 'variables';
   }
 

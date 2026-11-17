@@ -16,6 +16,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 import {
   createUser,
   grantUserResourceAuthorization,
@@ -106,35 +107,58 @@ test.describe
       }
     });
 
+    if (jobType === 'uninitialized') {
+      return;
+    }
+
     await test.step('Get time-series metrics with jobType', async () => {
-      const extendedSearchRes = await request.post(
-        buildUrl('/jobs/statistics/time-series'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              from: fromDate,
-              to: toDate,
-              jobType,
-              resolution,
+      // Retry until time-series catches up with by-types: on a shared cluster
+      // the time-series view can lag the by-types snapshot by a few seconds.
+      await expect(async () => {
+        const extendedSearchRes = await request.post(
+          buildUrl('/jobs/statistics/time-series'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                from: fromDate,
+                to: toDate,
+                jobType,
+                resolution,
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(extendedSearchRes, 200);
-      await validateResponse(
-        {
-          path: '/jobs/statistics/time-series',
-          method: 'POST',
-          status: '200',
-        },
-        extendedSearchRes,
-      );
-      const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+        );
+        await assertStatusCode(extendedSearchRes, 200);
+        await validateResponse(
+          {
+            path: '/jobs/statistics/time-series',
+            method: 'POST',
+            status: '200',
+          },
+          extendedSearchRes,
+        );
+        const extendedResponseBody = await extendedSearchRes.json();
+        expect(extendedResponseBody.items.length).toBeGreaterThan(0);
+        // Sum across all time buckets: jobs on a shared cluster can be spread
+        // over multiple minute buckets, so only the aggregate matches by-types.
+        const totalCreated = extendedResponseBody.items.reduce(
+          (sum: number, i: {created: {count: number}}) => sum + i.created.count,
+          0,
+        );
+        const totalCompleted = extendedResponseBody.items.reduce(
+          (sum: number, i: {completed: {count: number}}) =>
+            sum + i.completed.count,
+          0,
+        );
+        const totalFailed = extendedResponseBody.items.reduce(
+          (sum: number, i: {failed: {count: number}}) => sum + i.failed.count,
+          0,
+        );
+        expect(totalCreated).toBe(item.created.count);
+        expect(totalCompleted).toBe(item.completed.count);
+        expect(totalFailed).toBe(item.failed.count);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
@@ -246,34 +270,57 @@ test.describe
       }
     });
 
+    if (jobType === 'uninitialized') {
+      return;
+    }
+
     await test.step('Get time-series metrics with jobType', async () => {
-      const extendedSearchRes = await request.post(
-        buildUrl('/jobs/statistics/time-series'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              from: fromDate,
-              to: toDate,
-              jobType,
+      // Retry until time-series catches up with by-types: on a shared cluster
+      // the time-series view can lag the by-types snapshot by a few seconds.
+      await expect(async () => {
+        const extendedSearchRes = await request.post(
+          buildUrl('/jobs/statistics/time-series'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                from: fromDate,
+                to: toDate,
+                jobType,
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(extendedSearchRes, 200);
-      await validateResponse(
-        {
-          path: '/jobs/statistics/time-series',
-          method: 'POST',
-          status: '200',
-        },
-        extendedSearchRes,
-      );
-      const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+        );
+        await assertStatusCode(extendedSearchRes, 200);
+        await validateResponse(
+          {
+            path: '/jobs/statistics/time-series',
+            method: 'POST',
+            status: '200',
+          },
+          extendedSearchRes,
+        );
+        const extendedResponseBody = await extendedSearchRes.json();
+        expect(extendedResponseBody.items.length).toBeGreaterThan(0);
+        // Sum across all time buckets: jobs on a shared cluster can be spread
+        // over multiple minute buckets, so only the aggregate matches by-types.
+        const totalCreated = extendedResponseBody.items.reduce(
+          (sum: number, i: {created: {count: number}}) => sum + i.created.count,
+          0,
+        );
+        const totalCompleted = extendedResponseBody.items.reduce(
+          (sum: number, i: {completed: {count: number}}) =>
+            sum + i.completed.count,
+          0,
+        );
+        const totalFailed = extendedResponseBody.items.reduce(
+          (sum: number, i: {failed: {count: number}}) => sum + i.failed.count,
+          0,
+        );
+        expect(totalCreated).toBe(item.created.count);
+        expect(totalCompleted).toBe(item.completed.count);
+        expect(totalFailed).toBe(item.failed.count);
+      }).toPass(extendedAssertionOptions);
     });
   });
 

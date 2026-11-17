@@ -105,6 +105,117 @@
       </when>
     </choose>
   </sql>
+  <!--
+    Use LOWER on both sides. EQUALS, IN and LIKE must be case-insensitive.
+    ES/OS match_phrase is case-insensitive on the errorMessage text field.
+  -->
+  <sql id="errorMessageOperationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        LOWER(${column}) NOT LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+          ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        ${column} IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        ${column} IS NULL
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
+          LOWER(${column}) LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+            ESCAPE ${escapeChar}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" AND " close=")">
+          LOWER(${column}) NOT LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+            ESCAPE ${escapeChar}
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler})
+          ESCAPE ${escapeChar}
+      </when>
+    </choose>
+  </sql>
+  <!--
+    Oracle treats empty strings as NULL. EQUALS '' and NOT_EQUALS '' must use
+    IS NULL / IS NOT NULL. LIKE '' has the same problem: Oracle binds '' as NULL.
+  -->
+  <sql id="errorMessageOperationCondition" databaseId="oracle">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            ${column} IS NULL
+          </when>
+          <otherwise>
+            LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+              ESCAPE ${escapeChar}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            ${column} IS NOT NULL
+          </when>
+          <otherwise>
+            LOWER(${column}) NOT LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+              ESCAPE ${escapeChar}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        ${column} IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        ${column} IS NULL
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" OR " close=")">
+          <choose>
+            <when test="value != null and value.toString().equals('')">
+              ${column} IS NULL
+            </when>
+            <otherwise>
+              LOWER(${column}) LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+                ESCAPE ${escapeChar}
+            </otherwise>
+          </choose>
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <foreach collection="operation.values" item="value" open="(" separator=" AND " close=")">
+          <choose>
+            <when test="value != null and value.toString().equals('')">
+              ${column} IS NOT NULL
+            </when>
+            <otherwise>
+              LOWER(${column}) NOT LIKE LOWER(#{value, typeHandler=io.camunda.db.rdbms.sql.typehandler.LiteralSubstringStringTypeHandler})
+                ESCAPE ${escapeChar}
+            </otherwise>
+          </choose>
+        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            ${column} IS NULL
+          </when>
+          <otherwise>
+            LOWER(${column}) LIKE LOWER(#{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler})
+              ESCAPE ${escapeChar}
+          </otherwise>
+        </choose>
+      </when>
+    </choose>
+  </sql>
 
   <sql id="keySetPageFilter">
     <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
@@ -125,26 +236,85 @@
       </foreach>
     </if>
   </sql>
+  <!--
+    Oracle treats empty strings as NULL. When a cursor field value is '' (empty string),
+    comparison operators like = '' and > '' evaluate to UNKNOWN (NULL comparison), so no
+    rows would be returned.  Map empty-string cursor comparisons to their null-safe equivalents:
+      EQUALS ''  → IS NULL       (match the rows that contain NULL)
+      GREATER '' → IS NOT NULL   (in ASC NULLS FIRST, NULLs sort first; anything after them is non-NULL)
+    All other operators with '' fall through to the default behaviour (which yields no rows,
+    the correct result for e.g. LOWER '' in a NULLS FIRST ascending sort).
+  -->
+  <sql id="keySetPageFilter" databaseId="oracle">
+    <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+      WHERE
+      <foreach collection="page.keySetPagination" item="keySet" open="(" separator=" OR "
+        close=")">
+        <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
+          close=")">
+          <choose>
+            <when test="entry.fieldValue != null and entry.fieldValue.toString().equals('')">
+              <choose>
+                <when test="entry.operator.name().equals('EQUALS')">
+                  ${entry.fieldName} IS NULL
+                </when>
+                <when test="entry.operator.name().equals('GREATER')">
+                  ${entry.fieldName} IS NOT NULL
+                </when>
+                <otherwise>
+                  ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+                </otherwise>
+              </choose>
+            </when>
+            <when test="entry.fieldValue != null">
+              ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+            </when>
+            <otherwise>
+              ${entry.fieldName} ${entry.operator.symbol}
+            </otherwise>
+          </choose>
+        </foreach>
+      </foreach>
+    </if>
+  </sql>
 
+  <!--
+    A `before` page seeks backwards from its cursor, so the statement is ordered against the display
+    direction: only then does the page-size LIMIT keep the rows adjacent to the cursor instead of the
+    first rows of the whole filtered range. The reader reverses the returned rows back into display
+    order (see AbstractEntityReader#restoreDisplayOrder).
+  -->
   <sql id="orderBy">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
       </foreach>
     </if>
   </sql>
   <!--
-    Oracle sorts NULLs differently from other databases by default:
-    Oracle: NULLs LAST for ASC, NULLs FIRST for DESC
-    PostgreSQL/H2/MySQL/MariaDB: NULLs FIRST for ASC, NULLs LAST for DESC
+    Oracle and PostgreSQL sort NULLs differently from other databases by default:
+    Oracle/PostgreSQL: NULLs LAST for ASC, NULLs FIRST for DESC
+    H2/MySQL/MariaDB: NULLs FIRST for ASC, NULLs LAST for DESC
     This override ensures consistent NULL ordering across all databases.
   -->
   <sql id="orderBy" databaseId="oracle">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.column} ${item.order}
-        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
-        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
+        <if test="seekOrder.name().equals('ASC')">NULLS FIRST</if>
+        <if test="seekOrder.name().equals('DESC')">NULLS LAST</if>
+      </foreach>
+    </if>
+  </sql>
+  <sql id="orderBy" databaseId="postgresql">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        <bind name="seekOrder" value="page != null and page.searchBefore ? item.reversedOrder : item.order"/>
+        ${item.column} ${seekOrder}
+        <if test="seekOrder.name().equals('ASC')">NULLS FIRST</if>
+        <if test="seekOrder.name().equals('DESC')">NULLS LAST</if>
       </foreach>
     </if>
   </sql>
@@ -163,22 +333,28 @@
   <sql id="variableOperationCondition">
     <choose>
       <when test="operation.operator.name().equals('EQUALS')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE = 'null'
+        </if>
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE = #{operation.value}
         </if>
         <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE = #{operation.value}
+          (LONG_VALUE = #{operation.value} OR DOUBLE_VALUE = #{operation.value})
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
           DOUBLE_VALUE = #{operation.value}
         </if>
       </when>
       <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE != 'null'
+        </if>
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE != #{operation.value}
         </if>
         <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE != #{operation.value}
+          (LONG_VALUE != #{operation.value} OR DOUBLE_VALUE != #{operation.value})
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
           DOUBLE_VALUE != #{operation.value}
@@ -217,18 +393,65 @@
         </if>
       </when>
       <when test="operation.operator.name().equals('IN')">
-        <if test="operation.type.toString == 'STRING'">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE = 'null'
+        </if>
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
         </if>
         <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE IN
+          (LONG_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          OR DOUBLE_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          )
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
           DOUBLE_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
         </if>
-        <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
-          #{value}
-        </foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE != 'null'
+        </if>
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
+          VAR_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+        </if>
+        <if test="operation.type.toString == 'LONG'">
+          (
+            (LONG_VALUE IS NULL OR LONG_VALUE NOT IN
+            <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+              #{value}
+            </foreach>
+            )
+            AND
+            (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
+            <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+              #{value}
+            </foreach>
+            )
+          )
+        </if>
+        <if test="operation.type.toString == 'DOUBLE'">
+          (DOUBLE_VALUE IS NULL OR DOUBLE_VALUE NOT IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          )
+        </if>
       </when>
       <when test="operation.operator.name().equals('LIKE')">
         VAR_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
@@ -399,12 +622,25 @@
   <resultMap id="flowNodeStatisticsResultMap"
     type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
     <constructor>
-      <idArg column="FLOW_NODE_ID" javaType="java.lang.String"/>
-      <arg column="COUNT_ACTIVE" javaType="java.lang.Long"/>
-      <arg column="COUNT_CANCELED" javaType="java.lang.Long"/>
-      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long"/>
-      <arg column="COUNT_COMPLETED" javaType="java.lang.Long"/>
+      <idArg column="FLOW_NODE_ID" javaType="java.lang.String" name="flowNodeId"/>
+      <arg column="COUNT_ACTIVE" javaType="java.lang.Long" name="active"/>
+      <arg column="COUNT_CANCELED" javaType="java.lang.Long" name="canceled"/>
+      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long" name="incidents"/>
+      <arg column="COUNT_COMPLETED" javaType="java.lang.Long" name="completed"/>
     </constructor>
   </resultMap>
+
+  <!--
+    Vendor-specific SQL fragment to let us COALESCE a CLOB column with a non-CLOB column
+     - ${clobColumn} is the name of the CLOB column (e.g. FULL_RESULT)
+     - ${nonClobColumn} is the name of the non-CLOB column (e.g. RESULT) that contains the same data for short values
+  -->
+  <sql id="coalesceCLOB">
+    COALESCE(${clobColumn}, ${nonClobColumn})
+  </sql>
+
+  <sql id="coalesceCLOB" databaseId="oracle">
+    COALESCE(${clobColumn}, TO_CLOB(${nonClobColumn}))
+  </sql>
 
 </mapper>

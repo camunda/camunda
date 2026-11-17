@@ -16,35 +16,48 @@ import { useEntityModal } from "src/components/modal";
 import AssignGroupsModal from "src/pages/roles/detail/groups/AssignGroupsModal";
 import AssignGroupModal from "src/pages/roles/detail/groups/AssignGroupModal";
 import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
-import { isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import { useListPollingReload } from "src/utility/hooks/useListPollingReload";
 
 type GroupsProps = {
   roleId: string;
+  isCamundaGroupsEnabled: boolean;
 };
 
-const Groups: FC<GroupsProps> = ({ roleId }) => {
+const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
   const { t } = useTranslate("roles");
 
   const { groups, loading, success, reload, paginationProps } =
-    useEnrichedGroups(getGroupsByRoleId, {
-      roleId,
-    });
+    useEnrichedGroups(
+      "roles",
+      getGroupsByRoleId,
+      {
+        roleId,
+      },
+      isCamundaGroupsEnabled,
+    );
 
   const isGroupsEmpty = !groups || groups.length === 0;
+  const { startPolling } = useListPollingReload(
+    reload,
+    groups,
+    "groupId",
+    paginationProps.page.totalItems,
+  );
   const [assignGroups, assignGroupsModal] = useEntityModal(
     isCamundaGroupsEnabled ? AssignGroupsModal : AssignGroupModal,
-    reload,
+    () => {},
     {
       assignedGroups: groups,
+      onItemsAssigned: startPolling,
     },
   );
   const openAssignModal = () => assignGroups({ roleId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
-    reload,
+    () => startPolling(-1),
     {
       role: roleId,
     },

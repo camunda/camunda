@@ -21,6 +21,11 @@ public class VariableAddUpdateAuditLogTransformer
   }
 
   @Override
+  public Class<VariableRecordValue> getRecordValueType() {
+    return VariableRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
     final VariableRecordValue value = record.getValue();
     log.setEntityDescription(value.getName());
@@ -29,7 +34,8 @@ public class VariableAddUpdateAuditLogTransformer
   @Override
   public boolean supports(final Record<VariableRecordValue> record) {
     final VariableRecordValue value = record.getValue();
-    return VariableOperationType.API.equals(value.getSource().getType())
+    return (VariableOperationType.API.equals(value.getSource().getType())
+            || VariableOperationType.USER_TASK_COMPLETION.equals(value.getSource().getType()))
         && AuditLogTransformer.super.supports(record);
   }
 }

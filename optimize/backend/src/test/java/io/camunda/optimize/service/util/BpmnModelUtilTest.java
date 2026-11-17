@@ -8,10 +8,12 @@
 package io.camunda.optimize.service.util;
 
 import static io.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
+import static io.camunda.optimize.util.ZeebeBpmnModels.ADHOC_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createAdHocSubProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 
@@ -117,5 +120,66 @@ public class BpmnModelUtilTest {
                 put(END_EVENT, null);
               }
             });
+  }
+
+  @Test
+  void shouldExtractOnlyActivatableEntryPointToolsOfAdHocSubProcess() {
+    // given an ad-hoc subprocess with two independent entry-point tools (toolA, toolB) and a
+    // deterministic follow-up step reached from toolA via an internal sequence flow
+    final String adHocSubProcessXml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+            id="defs" targetNamespace="http://bpmn.io/schema/bpmn">
+          <bpmn:process id="proc" isExecutable="true">
+            <bpmn:adHocSubProcess id="ahsp">
+              <bpmn:serviceTask id="toolA">
+                <bpmn:outgoing>flowA</bpmn:outgoing>
+              </bpmn:serviceTask>
+              <bpmn:serviceTask id="toolB" />
+              <bpmn:serviceTask id="followUp">
+                <bpmn:incoming>flowA</bpmn:incoming>
+              </bpmn:serviceTask>
+              <bpmn:sequenceFlow id="flowA" sourceRef="toolA" targetRef="followUp" />
+            </bpmn:adHocSubProcess>
+          </bpmn:process>
+        </bpmn:definitions>
+        """;
+
+    // when
+    final Map<String, Set<String>> childElementIds =
+        BpmnModelUtil.extractAdHocSubProcessChildElementIds(adHocSubProcessXml);
+
+    // then only the two entry-point tools are returned; the follow-up step is excluded as it is not
+    // a tool activation
+    assertThat(childElementIds).containsOnlyKeys("ahsp");
+    assertThat(childElementIds.get("ahsp")).containsExactlyInAnyOrder("toolA", "toolB");
+  }
+
+  @Test
+  void shouldExcludeFollowUpStepsReachedBySequenceFlowWithinAdHocSubProcess() {
+    // given an ad-hoc subprocess where the fluent builder chains tool1 -> tool2, so tool2 is a
+    // follow-up step (has an incoming sequence flow) rather than an activatable tool
+    final String adHocSubProcessXml =
+        Bpmn.convertToString(
+            createAdHocSubProcess(PROCESS_NAME, ahsp -> ahsp.task("tool1").task("tool2")));
+
+    // when
+    final Map<String, Set<String>> childElementIds =
+        BpmnModelUtil.extractAdHocSubProcessChildElementIds(adHocSubProcessXml);
+
+    // then only the entry-point tool is returned
+    assertThat(childElementIds).containsOnlyKeys(ADHOC_SUB_PROCESS);
+    assertThat(childElementIds.get(ADHOC_SUB_PROCESS)).containsExactly("tool1");
+  }
+
+  @Test
+  void shouldReturnEmptyMapWhenNoAdHocSubProcessPresent() {
+    // when
+    final Map<String, Set<String>> childElementIds =
+        BpmnModelUtil.extractAdHocSubProcessChildElementIds(SIMPLE_SERVICE_TASK_PROCESS);
+
+    // then
+    assertThat(childElementIds).isEmpty();
   }
 }

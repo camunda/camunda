@@ -10,25 +10,29 @@ package io.camunda.search.clients.auth;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.exception.TenantAccessDeniedException;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
-import io.camunda.security.auth.condition.AuthorizationConditions;
-import io.camunda.security.auth.condition.SingleAuthorizationCondition;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccess;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.reader.TenantAccess;
-import io.camunda.security.reader.TenantAccessProvider;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.auth.condition.AnyOfAuthorizationCondition;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.condition.SingleAuthorizationCondition;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccess;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.authz.TenantAccess;
+import io.camunda.security.core.authz.TenantAccessProvider;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractResourceAccessController implements ResourceAccessController {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractResourceAccessController.class);
 
   protected abstract ResourceAccessProvider getResourceAccessProvider();
 
@@ -63,7 +67,11 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     final var authentication = securityContext.authentication();
     final var tenantCheck = determineTenantCheck(authentication);
 
-    // read with resource access checks
+    LOG.debug(
+        "Applying resource access checks - authorization: [{}], tenants: [{}]",
+        authorizationCheck,
+        tenantCheck);
+
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, tenantCheck, authentication);
     return applier.apply(resourceAccessChecks);
@@ -84,7 +92,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
   }
 
   protected ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization<?> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<?> authorization) {
     return getResourceAccessProvider().resolveResourceAccess(authentication, authorization);
   }
 
@@ -102,8 +110,8 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
 
   private AuthorizationCheck createAnyOfAuthorizationCheck(
       final CamundaAuthentication authentication, final AnyOfAuthorizationCondition anyOf) {
-    final var resolvedAuthorizations = new ArrayList<Authorization<?>>();
-    for (final Authorization authorization : anyOf.authorizations()) {
+    final var resolvedAuthorizations = new ArrayList<RequiredAuthorization<?>>();
+    for (final RequiredAuthorization<?> authorization : anyOf.authorizations()) {
       final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
       if (resourceAccess.wildcard() && !authorization.transitive()) {
@@ -172,7 +180,9 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final SecurityContext securityContext,
       final T document,
       final SingleAuthorizationCondition single) {
-    final Authorization authorization = single.authorization();
+    @SuppressWarnings("unchecked")
+    final RequiredAuthorization<T> authorization =
+        (RequiredAuthorization<T>) single.authorization();
 
     if (!authorization.appliesTo(document)) {
       throw new ResourceAccessDeniedException(
@@ -194,7 +204,9 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final AnyOfAuthorizationCondition anyOf) {
     final var authorizations = anyOf.applicableAuthorizations(document);
 
-    for (final Authorization authorization : authorizations) {
+    for (final RequiredAuthorization<?> auth : authorizations) {
+      @SuppressWarnings("unchecked")
+      final RequiredAuthorization<T> authorization = (RequiredAuthorization<T>) auth;
       final var resourceAccess =
           getResourceAccessProvider()
               .hasResourceAccess(securityContext.authentication(), authorization, document);

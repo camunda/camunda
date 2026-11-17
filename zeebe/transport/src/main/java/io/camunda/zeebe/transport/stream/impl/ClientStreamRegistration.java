@@ -13,6 +13,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,8 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   private final MemberId serverId;
 
   private State state = State.INITIAL;
-  private CompletionStage<byte[]> pendingRequest;
+  private @Nullable CompletionStage<byte[]> pendingRequest;
+  private @Nullable CompletionStage<byte[]> legacyPendingRequest;
 
   ClientStreamRegistration(final AggregatedClientStream<M> stream, final MemberId serverId) {
     this.stream = stream;
@@ -40,6 +42,10 @@ final class ClientStreamRegistration<M extends BufferWriter> {
 
   UUID streamId() {
     return stream.streamId();
+  }
+
+  String physicalTenantId() {
+    return stream.physicalTenantId();
   }
 
   LogicalId<? extends BufferWriter> logicalId() {
@@ -54,12 +60,20 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     return state;
   }
 
-  CompletionStage<byte[]> pendingRequest() {
+  @Nullable CompletionStage<byte[]> pendingRequest() {
     return pendingRequest;
   }
 
   void setPendingRequest(final CompletionStage<byte[]> pendingRequest) {
     this.pendingRequest = pendingRequest;
+  }
+
+  @Nullable CompletionStage<byte[]> legacyPendingRequest() {
+    return legacyPendingRequest;
+  }
+
+  void setLegacyPendingRequest(final CompletionStage<byte[]> legacyPendingRequest) {
+    this.legacyPendingRequest = legacyPendingRequest;
   }
 
   boolean transitionToAdding() {

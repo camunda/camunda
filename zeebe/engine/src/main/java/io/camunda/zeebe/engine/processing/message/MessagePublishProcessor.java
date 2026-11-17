@@ -9,18 +9,25 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -30,6 +37,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -50,8 +58,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final RoutingInfo routingInfo;
+  private final VariableBehavior variableBehavior;
+  private final MessageCorrelationMetrics metrics;
 
   public MessagePublishProcessor(
       final int partitionId,
@@ -65,16 +75,24 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final CslAuthorizationCheck cslCheck,
+      final RoutingInfo routingInfo,
+      final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
+      final boolean businessIdUniquenessEnabled,
+      final VariableBehavior variableBehavior,
+      final StorageOrdinalProvider storageOrdinalProvider,
+      final MessageCorrelationMetrics metrics) {
     this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
+    this.variableBehavior = variableBehavior;
+    this.metrics = metrics;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -82,7 +100,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
     correlateBehavior =
         new MessageCorrelateBehavior(
             startEventSubscriptionState,
@@ -90,39 +109,62 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             eventHandle,
             stateWriter,
             subscriptionState,
-            commandSender);
+            commandSender,
+            elementInstanceState,
+            bannedInstanceState,
+            businessIdUniquenessEnabled,
+            routingInfo,
+            partitionId,
+            metrics);
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
-    if (!authCheckBehavior.shouldSkipAllChecks()) {
-      final var authRequest =
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthorizationResourceType.MESSAGE)
-              .permissionType(PermissionType.CREATE)
-              .tenantId(command.getValue().getTenantId())
-              .newResource()
-              .addResourceId(command.getValue().getName())
-              .build();
-      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-      if (isAuthorized.isLeft()) {
-        final var rejection = isAuthorized.getLeft();
-        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-        responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-        return;
-      }
+    final var tenantId = command.getValue().getTenantId();
+    final var tenantMessage =
+        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+            .formatted(PermissionType.CREATE, AuthorizationResourceType.MESSAGE, tenantId);
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.MESSAGE))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                        .resourceId(command.getValue().getName())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE, AuthorizationResourceType.MESSAGE),
+            tenantId,
+            new Rejection(RejectionType.FORBIDDEN, tenantMessage));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
     }
 
     messageRecord = command.getValue();
+    final var variables = messageRecord.getVariablesBuffer();
+    if (variables.capacity() > 0) {
+      final var validation = variableBehavior.validateVariables(variables);
+      if (validation.isLeft()) {
+        final String reason = validation.getLeft().reason();
+        rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+        responseWriter.writeRejectedResponseOnCommand(
+            command, RejectionType.INVALID_ARGUMENT, reason);
+        return;
+      }
+    }
     if (routingInfo.partitionForCorrelationKey(messageRecord.getCorrelationKeyBuffer())
         != partitionId) {
       final var reason =
           "The message has not been routed to the right partition. This is probably a temporary issue, please retry in a few seconds";
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return;
     }
+
     if (messageRecord.hasMessageId()
         && messageState.exist(
             messageRecord.getNameBuffer(),
@@ -134,7 +176,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
       handleNewMessage(command);
@@ -148,7 +190,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
 
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
     final var correlatingSubscriptions = new Subscriptions();
@@ -160,6 +202,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
       stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
+      metrics.expireCrossPartitionAsks(messageKey);
     }
   }
 
@@ -170,6 +213,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         messageCorrelationRecord.getNameBuffer(),
         messageCorrelationRecord.getCorrelationKeyBuffer(),
         messageCorrelationRecord.getVariablesBuffer(),
-        messageCorrelationRecord.getTenantId());
+        messageCorrelationRecord.getTenantId(),
+        messageCorrelationRecord.getBusinessIdBuffer(),
+        messageCorrelationRecord.getDeadline(),
+        messageCorrelationRecord.getTimeToLive());
   }
 }

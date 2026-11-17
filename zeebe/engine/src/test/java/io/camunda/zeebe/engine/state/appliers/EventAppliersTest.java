@@ -17,7 +17,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
@@ -192,6 +194,30 @@ public class EventAppliersTest {
                         "Intent %s.%s has a registered event applier",
                         intent.getClass().getSimpleName(), intent.name())
                     .isNotEqualTo(-1));
+  }
+
+  @Test
+  void shouldReplayElementInstanceWalkAcknowledgementWithoutChangingState() {
+    // given
+    final var state = mock(MutableProcessingState.class);
+    eventAppliers.registerEventAppliers(state);
+    Mockito.clearInvocations(state);
+    final var intent = ElementInstanceWalkIntent.SUSPENDED;
+    final var value =
+        new ElementInstanceWalkRecord()
+            .setProcessInstanceKey(123L)
+            .setProcessDefinitionKey(234L)
+            .setElementInstanceKey(456L)
+            .setParentKey(345L)
+            .setIndex(567L)
+            .setStorageOrdinal(1001);
+
+    // when
+    eventAppliers.applyState(456L, intent, value, eventAppliers.getLatestVersion(intent));
+    eventAppliers.applyState(456L, intent, value, eventAppliers.getLatestVersion(intent));
+
+    // then
+    Mockito.verifyNoInteractions(state);
   }
 
   @Test

@@ -12,6 +12,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -49,6 +51,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
@@ -202,10 +206,26 @@ public class GatewayGrpcService extends GatewayImplBase {
   }
 
   @Override
+  public void assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final StreamObserver<AssignProcessInstanceBusinessIdResponse> responseObserver) {
+    endpointManager.assignProcessInstanceBusinessId(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
   public void updateJobTimeout(
       final UpdateJobTimeoutRequest request,
       final StreamObserver<UpdateJobTimeoutResponse> responseObserver) {
     endpointManager.updateJobTimeout(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void updateJobPriority(
+      final UpdateJobPriorityRequest request,
+      final StreamObserver<UpdateJobPriorityResponse> responseObserver) {
+    endpointManager.updateJobPriority(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 

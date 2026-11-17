@@ -14,9 +14,11 @@ import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamResponse;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.agrona.collections.ArrayUtil;
+import org.jspecify.annotations.Nullable;
 
 final class ClientStreamApiHandler {
   private final ClientStreamManager<?> clientStreamManager;
@@ -38,23 +40,34 @@ final class ClientStreamApiHandler {
     return responseFuture;
   }
 
-  byte[] handleRestartRequest(final MemberId sender, final byte[] ignored) {
-    clientStreamManager.onServerRemoved(MemberId.from(sender.id()));
-    clientStreamManager.onServerJoined(MemberId.from(sender.id()));
+  /**
+   * The RESTART_STREAMS topic is physicalTenantId-scoped, so this only affects registrations for
+   * {@code physicalTenantId}; the sender may still serve other physical tenants unaffected by this
+   * restart. Reuses the remove+join pair rather than a blanket reset, since a restart is just a
+   * forced re-registration scoped to the one group that signaled it.
+   */
+  byte[] handleRestartRequest(
+      final MemberId sender, final String physicalTenantId, final byte[] ignored) {
+    final var serverId = MemberId.from(sender.id());
+    clientStreamManager.onServerRemoved(serverId, physicalTenantId);
+    clientStreamManager.onServerJoined(serverId, physicalTenantId);
     return ArrayUtil.EMPTY_BYTE_ARRAY;
   }
 
   private void handlePayloadPushed(
-      final CompletableFuture<StreamResponse> response, final Throwable error) {
+      final CompletableFuture<StreamResponse> response, final @Nullable Throwable error) {
     if (error == null) {
       response.complete(new PushStreamResponse());
       return;
     }
 
     final var errorResponse =
-        new ErrorResponse().code(ErrorResponse.mapErrorToCode(error)).message(error.getMessage());
+        new ErrorResponse()
+            .code(ErrorResponse.mapErrorToCode(error))
+            .message(Objects.toString(error.getMessage(), ""));
     for (final var detail : error.getSuppressed()) {
-      errorResponse.addDetail(ErrorResponse.mapErrorToCode(detail), detail.getMessage());
+      errorResponse.addDetail(
+          ErrorResponse.mapErrorToCode(detail), Objects.toString(detail.getMessage(), ""));
     }
 
     response.complete(errorResponse);

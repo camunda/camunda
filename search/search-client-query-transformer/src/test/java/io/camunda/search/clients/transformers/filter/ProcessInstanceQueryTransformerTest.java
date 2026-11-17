@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchMatchPhraseQuery;
@@ -22,11 +23,13 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.UntypedOperation;
+import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -331,6 +334,39 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
+  public void shouldQueryBySuspendedDate() {
+    // given
+    final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateBefore = OffsetDateTime.of(2024, 7, 15, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateFilter = List.of(Operation.gte(dateAfter), Operation.lt(dateBefore));
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.suspendedDateOperations(dateFilter));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            (searchRangeQuery) -> {
+              assertThat(searchRangeQuery.field()).isEqualTo("suspendedDate");
+              assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
+              assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
+              assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // given
     final var processInstanceFilter = FilterBuilders.processInstance(f -> f.tenantIds("tenant"));
@@ -377,7 +413,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByErrorMessage() {
+  public void shouldQueryByErrorMessageOfFlowNodeOrProcessLevelIncident() {
     // given
     final String expectedError = "expected error";
     final ProcessInstanceFilter filter =
@@ -399,20 +435,83 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertIsSearchTermQuery(
         boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
 
-    // Second must clause: should be a has_child query for errorMessage.
+    // Second must clause: the error message either on a flow node child, or, for a process level
+    // incident, on the process instance document itself.
     assertThat(boolQuery.must().get(1).queryOption())
-        .isInstanceOf(SearchHasChildQuery.class)
-        .satisfies(
-            queryOption -> {
-              // Cast the queryOption to SearchHasChildQuery
-              final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
-              assertThat(hasChildQuery.type()).isEqualTo("activity");
-              // Assert that the inner query is a match query on "errorMessage" with our
-              // expected value.
-              assertThat(hasChildQuery.query().queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            errorMessageQuery -> {
+              assertThat(errorMessageQuery.should()).hasSize(2);
+
+              assertThat(errorMessageQuery.should().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchHasChildQuery.class,
+                      hasChildQuery -> {
+                        assertThat(hasChildQuery.type()).isEqualTo("activity");
+                        assertIsErrorMessageMatch(
+                            hasChildQuery.query().queryOption(), expectedError);
+                      });
+
+              assertIsErrorMessageMatch(
+                  errorMessageQuery.should().get(1).queryOption(), expectedError);
+            });
+  }
+
+  @Test
+  public void shouldQueryByMissingErrorMessage() {
+    // given
+    final ProcessInstanceFilter filter =
+        FilterBuilders.processInstance(
+            f -> f.errorMessageOperations(List.of(Operation.exists(false))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then: neither a flow node child nor the process instance itself may carry an error message
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery boolQuery = (SearchBoolQuery) queryVariant;
+    assertThat(boolQuery.must()).hasSize(2);
+
+    assertThat(boolQuery.must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            errorMessageQuery -> {
+              assertThat(errorMessageQuery.must()).hasSize(2);
+
+              assertThat(errorMessageQuery.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      notHasChild ->
+                          assertThat(notHasChild.mustNot().get(0).queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchHasChildQuery.class,
+                                  hasChildQuery ->
+                                      assertThat(hasChildQuery.type()).isEqualTo("activity")));
+
+              assertThat(errorMessageQuery.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      notExists ->
+                          assertThat(notExists.mustNot().get(0).queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  existsQuery ->
+                                      assertThat(existsQuery.field()).isEqualTo("errorMessage")));
+            });
+  }
+
+  private void assertIsErrorMessageMatch(
+      final SearchQueryOption queryOption, final String expectedError) {
+    assertThat(queryOption)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            innerBool -> {
+              assertThat(innerBool.must()).hasSize(1);
+              assertThat(innerBool.must().get(0).queryOption())
                   .isInstanceOfSatisfying(
                       SearchMatchPhraseQuery.class,
-                      (searchMatchQuery) -> {
+                      searchMatchQuery -> {
                         assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
                         assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
                       });
@@ -474,6 +573,51 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
               assertIsSearchTermQuery(
                   (hasChildQuery.query().queryOption()), "activityId", "activity_123");
               assertThat(hasChildQuery.type()).isEqualTo("activity");
+            });
+  }
+
+  @Test
+  public void shouldQueryByVariableValueNotIn() {
+    // given
+    final var variableFilter =
+        new VariableValueFilter.Builder()
+            .name("status")
+            .valueOperation(UntypedOperation.of(Operation.notIn("done", "cancelled")))
+            .build();
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.variables(List.of(variableFilter)));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchHasChildQuery.class,
+            hasChildQuery -> {
+              assertThat(hasChildQuery.type()).isEqualTo("variable");
+              final var innerBoolQuery = (SearchBoolQuery) hasChildQuery.query().queryOption();
+              assertThat(innerBoolQuery.must()).hasSize(2);
+              assertIsSearchTermQuery(
+                  innerBoolQuery.must().get(0).queryOption(), "varName", "status");
+
+              final var valueBoolQuery =
+                  (SearchBoolQuery) innerBoolQuery.must().get(1).queryOption();
+              assertThat(valueBoolQuery.mustNot()).hasSize(1);
+              final var termsQuery =
+                  (SearchTermsQuery) valueBoolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("varValue");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::stringValue)
+                  .containsExactlyInAnyOrder("done", "cancelled");
             });
   }
 
@@ -762,7 +906,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
@@ -799,7 +943,8 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -882,7 +1027,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);

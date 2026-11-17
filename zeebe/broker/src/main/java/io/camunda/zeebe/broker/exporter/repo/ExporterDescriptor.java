@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * When initialising the ExporterRepository via Spring, we inject predefined beans of the
@@ -56,5 +57,21 @@ public class ExporterDescriptor {
 
   public boolean isSameTypeAs(final ExporterDescriptor other) {
     return exporterFactory.isSameTypeAs(other.exporterFactory);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final ExporterDescriptor other)) {
+      return false;
+    }
+    return Objects.equals(getId(), other.getId());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(getId());
   }
 }

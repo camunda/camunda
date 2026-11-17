@@ -17,12 +17,14 @@ import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lt;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.sourceInclude;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundExceptionInCauseChain;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static java.lang.Math.min;
 import static java.lang.String.format;
@@ -100,6 +102,29 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
             .toList();
 
     osClient.doBulkRequest(BulkRequest.Builder::new, bulkOperations, itemName, false);
+  }
+
+  @Override
+  public void deleteByDefinitionId(final String bpmnProcessId, final String definitionId) {
+    try {
+      osClient.deleteByQueryTask(
+          String.format("process instances with definitionId %s", definitionId),
+          term(ProcessInstanceIndex.PROCESS_DEFINITION_ID, definitionId),
+          true, // refresh
+          true, // failOnVersionConflicts
+          getProcessInstanceIndexAliasName(bpmnProcessId));
+    } catch (final RuntimeException e) {
+      // Depending on how the async delete-by-query task fails, a missing index can surface as an
+      // OpenSearchException directly or wrapped in one or more OptimizeRuntimeExceptions
+      if (isInstanceIndexNotFoundExceptionInCauseChain(PROCESS, e)) {
+        LOG.info(
+            "Was not able to delete process instances for definitionId {} because instance index {} does not exist.",
+            definitionId,
+            getProcessInstanceIndexAliasName(bpmnProcessId));
+        return;
+      }
+      throw e;
+    }
   }
 
   @Override

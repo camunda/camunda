@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,12 +60,14 @@ public class OptimizeProcessCleanupServiceTest {
       new PageResultDto<>("1", 1, INSTANCE_IDS.subList(1, 2));
 
   @RegisterExtension
-  LogCapturer logCapturer = LogCapturer.create().captureForType(CleanupService.class);
+  LogCapturer logCapturer =
+      LogCapturer.create().captureForType(EngineDataProcessCleanupService.class);
 
   @Mock private ProcessDefinitionReader processDefinitionReader;
   @Mock private ProcessInstanceReader processInstanceReader;
   @Mock private ProcessInstanceWriter processInstanceWriter;
   @Mock private ProcessVariableWriter processVariableWriter;
+  @Mock private EmptyProcessInstanceIndexReaper emptyProcessInstanceIndexReaper;
   private ConfigurationService configurationService;
 
   @BeforeEach
@@ -87,6 +90,38 @@ public class OptimizeProcessCleanupServiceTest {
     // then
     assertDeleteProcessInstancesExecutedFor(
         processDefinitionKeys, getCleanupConfiguration().getTtl());
+  }
+
+  @Test
+  public void shouldNotDeleteEmptyIndicesByDefault() {
+    // given
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(2);
+    mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
+
+    // when
+    doCleanup(createOptimizeCleanupServiceToTest());
+
+    // then
+    verify(emptyProcessInstanceIndexReaper, never()).deleteIfEmpty(anyString());
+  }
+
+  @Test
+  public void shouldDeleteEmptyIndicesOfEveryCleanedKeyWhenEnabled() {
+    // given
+    getCleanupConfiguration().getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(2);
+    mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
+
+    // when
+    doCleanup(createOptimizeCleanupServiceToTest());
+
+    // then
+    processDefinitionKeys.forEach(
+        key -> verify(emptyProcessInstanceIndexReaper).deleteIfEmpty(key));
   }
 
   @Test
@@ -370,7 +405,7 @@ public class OptimizeProcessCleanupServiceTest {
             .map(this::createProcessDefinitionDto)
             .collect(Collectors.toList());
     when(processDefinitionReader.getAllProcessDefinitions())
-        .thenReturn(processDefinitionOptimizeDtos);
+        .thenReturn(processDefinitionOptimizeDtos.iterator());
   }
 
   private List<String> generateRandomDefinitionsKeys(final Integer amount) {
@@ -389,6 +424,7 @@ public class OptimizeProcessCleanupServiceTest {
         processDefinitionReader,
         processInstanceReader,
         processInstanceWriter,
-        processVariableWriter);
+        processVariableWriter,
+        emptyProcessInstanceIndexReaper);
   }
 }

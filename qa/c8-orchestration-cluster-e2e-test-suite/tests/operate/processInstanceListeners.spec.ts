@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {completeUserTask, findUserTask} from '@requestHelpers';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -55,9 +55,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Listeners', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 
@@ -129,20 +128,28 @@ test.describe('Process Instance Listeners', () => {
         id: processInstanceKey,
       });
 
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
+      await operateProcessInstancePage.selectFlowNodeWhenSelectable(
         'Service Task B',
       );
       await operateProcessInstancePage.openListenersTab();
       await expect(
         operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      ).toHaveCount(1, {timeout: 15000});
     });
 
     await test.step('Add a new flow node instance', async () => {
       await operateProcessInstancePage.startModificationFlow();
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
-        'Service Task B',
-      );
+      // Selecting the flow node opens its modification popup carrying the
+      // "Add single element instance" action; under load the popup can lag, so
+      // re-select the node until the action is present before clicking it.
+      await expect(async () => {
+        await operateProcessInstancePage.diagramHelper.clickFlowNode(
+          'Service Task B',
+        );
+        await expect(
+          operateProcessInstancePage.addSingleFlowNodeInstanceButton,
+        ).toBeVisible({timeout: 5000});
+      }).toPass({timeout: 30000});
       await operateProcessInstancePage.addSingleFlowNodeInstanceButton.click();
       await operateProcessInstancePage.applyModifications();
     });
@@ -156,7 +163,7 @@ test.describe('Process Instance Listeners', () => {
         })
         .toBe(2);
 
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
+      await operateProcessInstancePage.selectFlowNodeWhenSelectable(
         'Service Task B',
       );
       await operateProcessInstancePage.openListenersTab();
@@ -165,13 +172,18 @@ test.describe('Process Instance Listeners', () => {
         assertion: async () => {
           await expect(
             operateProcessInstancePage.getListenerRows('execution'),
-          ).toHaveCount(2, {timeout: 5000});
+          ).toHaveCount(2, {timeout: 15000});
         },
         onFailure: async () => {
+          // The flow-node selection is stored in the `elementId` URL param, so it
+          // survives a reload — the element stays selected. Do NOT click the node
+          // again: a second click on an already-selected element deselects it and
+          // reverts the query to the process root (0 listeners). Just wait for the
+          // diagram to become selectable again and re-open the Listeners tab.
           await page.reload();
-          await operateProcessInstancePage.diagramHelper.clickFlowNode(
-            'Service Task B',
-          );
+          await expect(
+            operateProcessInstancePage.getDiagramFlowNode('Service Task B'),
+          ).toHaveClass(/op-selectable/, {timeout: 30000});
           await operateProcessInstancePage.openListenersTab();
         },
       });
@@ -185,7 +197,7 @@ test.describe('Process Instance Listeners', () => {
       await operateProcessInstancePage.openListenersTab();
       await expect(
         operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      ).toHaveCount(1, {timeout: 15000});
     });
   });
 

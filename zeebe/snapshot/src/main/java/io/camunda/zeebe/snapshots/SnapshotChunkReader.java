@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a snapshot chunk reader, which means it is used to chunk an {@link PersistedSnapshot}
@@ -33,7 +34,7 @@ public interface SnapshotChunkReader extends Iterator<SnapshotChunk>, CloseableS
    *
    * @return the next chunk ID
    */
-  ByteBuffer nextId();
+  @Nullable ByteBuffer nextId();
 
   /**
    * Sets the maximum chunk size for the reader when sending files.

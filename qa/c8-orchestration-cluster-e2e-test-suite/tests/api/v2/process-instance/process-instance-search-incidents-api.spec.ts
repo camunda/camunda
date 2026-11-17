@@ -63,7 +63,8 @@ test.describe.parallel('Process Instance Search Incidents Tests', () => {
         .expect(async () => {
           const searchResult = await request.post(
             buildUrl(
-              `/process-instances/${processInstanceKey}/incidents/search`,
+              '/process-instances/{processInstanceKey}/incidents/search',
+              {processInstanceKey},
             ),
             {
               headers: jsonHeaders(),
@@ -97,7 +98,9 @@ test.describe.parallel('Process Instance Search Incidents Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-instances/2251799813685249/incidents/search`),
+      buildUrl('/process-instances/{processInstanceKey}/incidents/search', {
+        processInstanceKey: '2251799813685249',
+      }),
       {
         data: {},
       },
@@ -109,7 +112,9 @@ test.describe.parallel('Process Instance Search Incidents Tests', () => {
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/process-instances/9999999999999/incidents/search`),
+      buildUrl('/process-instances/{processInstanceKey}/incidents/search', {
+        processInstanceKey: '9999999999999',
+      }),
       {
         headers: jsonHeaders(),
         data: {},

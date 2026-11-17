@@ -10,7 +10,6 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.*;
 import static io.camunda.client.api.search.enums.ResourceType.CLUSTER_VARIABLE;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
-import static io.camunda.it.util.TestHelper.createTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -18,12 +17,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -90,11 +91,12 @@ class ClusterVariableAuthorizationIT {
   private static final TestUser NO_PERMISSION_USER_DEF =
       new TestUser(NO_PERMISSION_USER, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant TEST_TENANT =
+      new TestTenant(TEST_TENANT_ID).setName("Test Tenant");
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    // Create the test tenant
-    createTenant(adminClient, TEST_TENANT_ID, "Test Tenant");
-
     // Create globally scoped cluster variables
     adminClient
         .newGloballyScopedClusterVariableCreateRequest()
@@ -798,7 +800,7 @@ class ClusterVariableAuthorizationIT {
   private static void waitForClusterVariablesToBeAvailable(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should have cluster variables available")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -810,7 +812,7 @@ class ClusterVariableAuthorizationIT {
   private static void waitForClusterVariableToBeDeleted(
       final CamundaClient camundaClient, final String variableName, final String tenantId) {
     Awaitility.await("should have cluster variable deleted")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

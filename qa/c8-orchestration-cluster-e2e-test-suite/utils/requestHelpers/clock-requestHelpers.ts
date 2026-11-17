@@ -24,7 +24,9 @@ export async function createProcessInstanceAndRetrieveTimeStamp(
 
   await expect(async () => {
     const res = await request.get(
-      buildUrl(`/process-instances/${processInstanceKeyToGet}`),
+      buildUrl('/process-instances/{processInstanceKey}', {
+        processInstanceKey: processInstanceKeyToGet,
+      }),
       {
         headers: jsonHeaders(),
       },

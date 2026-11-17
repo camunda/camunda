@@ -17,6 +17,8 @@ public final class InterceptorUtil {
   private static final Key<QueryApi> QUERY_API_KEY = Context.key("zeebe-query-api");
   private static final Context.Key<List<String>> AUTHORIZED_TENANTS_KEY =
       Context.key("io.camunda.zeebe:authorized_tenants");
+  private static final Key<String> PHYSICAL_TENANT_ID_KEY =
+      Context.key("io.camunda.zeebe:physical_tenant_id");
 
   private InterceptorUtil() {}
 
@@ -61,5 +63,9 @@ public final class InterceptorUtil {
    */
   public static Key<QueryApi> getQueryApiKey() {
     return QUERY_API_KEY;
+  }
+
+  public static Context.Key<String> getPhysicalTenantIdKey() {
+    return PHYSICAL_TENANT_ID_KEY;
   }
 }

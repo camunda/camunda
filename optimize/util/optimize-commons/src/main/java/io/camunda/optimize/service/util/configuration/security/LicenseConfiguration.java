@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.util.configuration.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Objects;
 
 public class LicenseConfiguration {
 
@@ -41,7 +40,7 @@ public class LicenseConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(enterprise);
+    return Boolean.hashCode(enterprise);
   }
 
   @Override

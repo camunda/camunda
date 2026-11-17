@@ -66,4 +66,9 @@ class TestSnapshotChunkImpl implements SnapshotChunk {
   public long getTotalFileSize() {
     return 0;
   }
+
+  @Override
+  public long getContentLength() {
+    return content.length;
+  }
 }

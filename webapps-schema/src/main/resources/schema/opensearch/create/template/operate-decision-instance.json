@@ -121,6 +121,12 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "businessId": {
+        "type": "keyword"
+      },
+      "storageOrdinal": {
+        "type": "integer"
       }
     }
   }

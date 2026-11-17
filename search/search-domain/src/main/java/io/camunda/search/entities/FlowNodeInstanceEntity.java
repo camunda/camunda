@@ -8,29 +8,46 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlowNodeInstanceEntity(
     Long flowNodeInstanceKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long processDefinitionKey,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
+    @Nullable Long rootProcessInstanceKey,
+    // absent on documents imported by Operate 8.1.7 and earlier.
+    @Nullable Long processDefinitionKey,
+    // only written on AI_START_STATES intents; absent on docs first created by a later intent.
+    @Nullable OffsetDateTime startDate,
+    @Nullable OffsetDateTime endDate,
     String flowNodeId,
-    String flowNodeName,
-    String treePath,
+    // null on exporter cache miss.
+    @Nullable String flowNodeName,
+    @Nullable String treePath,
     FlowNodeType type,
     FlowNodeState state,
-    Boolean hasIncident,
-    Long incidentKey,
-    String processDefinitionId,
+    // not set by the primary handler; populated asynchronously by IncidentUpdateTask.
+    @Nullable Boolean hasIncident,
+    @Nullable Long incidentKey,
+    // absent on documents imported by Operate 8.1 and earlier.
+    @Nullable String processDefinitionId,
     String tenantId,
-    Integer level)
+    @Nullable Integer level)
     implements TenantOwnedEntity {
 
-  public FlowNodeInstanceEntity withFlowNodeName(final String name) {
+  public FlowNodeInstanceEntity {
+    Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(type, "type");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public FlowNodeInstanceEntity withFlowNodeName(@Nullable final String name) {
     return new FlowNodeInstanceEntity(
         flowNodeInstanceKey,
         processInstanceKey,

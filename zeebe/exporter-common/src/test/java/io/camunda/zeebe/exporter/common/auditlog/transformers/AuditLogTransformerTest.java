@@ -13,6 +13,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -184,6 +185,11 @@ class AuditLogTransformerTest {
             public TransformerConfig config() {
               return TransformerConfig.with(record.getValueType()).withIntents(record.getIntent());
             }
+
+            @Override
+            public Class<RecordValue> getRecordValueType() {
+              return RecordValue.class;
+            }
           };
 
       final var log = transformer.create(record);
@@ -209,6 +215,11 @@ class AuditLogTransformerTest {
               return TransformerConfig.with(record.getValueType())
                   .withRejections(record.getIntent(), record.getRejectionType());
             }
+
+            @Override
+            public Class<RecordValue> getRecordValueType() {
+              return RecordValue.class;
+            }
           };
 
       final var log = transformer.create(record);
@@ -230,6 +241,11 @@ class AuditLogTransformerTest {
             @Override
             public TransformerConfig config() {
               return TransformerConfig.with(record.getValueType()).withIntents(record.getIntent());
+            }
+
+            @Override
+            public Class<RecordValue> getRecordValueType() {
+              return RecordValue.class;
             }
 
             @Override

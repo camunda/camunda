@@ -15,14 +15,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
+import com.sun.management.HotSpotDiagnosticMXBean.ThreadDumpFormat;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateGroupResponse;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.management.backups.StateCode;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
+import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -33,23 +41,38 @@ import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractStartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -58,16 +81,19 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 @ZeebeIntegration
+// Interrupt any test method hanging longer than 10 minutes so the remaining tests still run and
+// the failure is attributed with a stack trace, instead of the CI job timing out with no test
+// results at all (see https://github.com/camunda/camunda/issues/56666).
+@Timeout(value = 10, unit = TimeUnit.MINUTES)
 public class ScaleUpPartitionsTest {
   private static final Logger LOG = LoggerFactory.getLogger(ScaleUpPartitionsTest.class);
 
@@ -75,13 +101,21 @@ public class ScaleUpPartitionsTest {
   private static final String JOB_TYPE = "job";
   private static final String PROCESS_ID = DEFAULT_PROCESS_ID;
   private static final MemberId MEMBER_0 = MemberId.from("0");
+  // Restoring the three brokers takes seconds; keep the bound well inside the method timeout so a
+  // broker that hangs is reported with a thread dump instead of the method timing out first.
+  private static final Duration RESTORE_TIMEOUT = Duration.ofMinutes(2);
   @AutoClose CamundaClient camundaClient;
+  private String decisionUsername;
+  private String decisionPassword;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
 
-  @TestZeebe private final TestCluster cluster;
+  @TestZeebe(autoStart = false, awaitCompleteTopology = false)
+  private final TestCluster cluster;
 
   ScaleUpPartitionsTest(@TempDir final Path backupPath) {
+    final var h2Url =
+        "jdbc:h2:mem:scale-up-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
     cluster =
         TestCluster.builder()
             .useRecordingExporter(true)
@@ -90,30 +124,94 @@ public class ScaleUpPartitionsTest {
             .withPartitionsCount(PARTITIONS_COUNT)
             .withReplicationFactor(3)
             .withBrokerConfig(
-                b ->
-                    b.withUnifiedConfig(
-                        cfg -> {
-                          final var backup = cfg.getData().getPrimaryStorage().getBackup();
-                          backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
-                          backup.getFilesystem().setBasePath(backupPath.toString());
+                b -> {
+                  b.withSecondaryStorageType(SecondaryStorageType.rdbms);
+                  b.withAuthenticationMethod(AuthenticationMethod.BASIC);
+                  b.withAuthorizationsEnabled();
+                  b.withUnifiedConfig(
+                      cfg -> {
+                        final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+                        rdbms.setUrl(h2Url);
+                        rdbms.setUsername("sa");
+                        rdbms.setPassword("");
 
-                          final var membership = cfg.getCluster().getMembership();
-                          membership.setSyncInterval(Duration.ofSeconds(1));
-                          membership.setGossipInterval(Duration.ofMillis(500));
+                        final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                        backup.setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+                        backup.getFilesystem().setBasePath(backupPath.toString());
 
-                          final var distribution =
-                              cfg.getProcessing().getEngine().getDistribution();
-                          distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
-                          distribution.setRedistributionInterval(Duration.ofMillis(200));
-                        }))
+                        final var membership = cfg.getCluster().getMembership();
+                        membership.setSyncInterval(Duration.ofSeconds(1));
+                        membership.setGossipInterval(Duration.ofMillis(500));
+
+                        final var distribution = cfg.getProcessing().getEngine().getDistribution();
+                        distribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                        distribution.setRedistributionInterval(Duration.ofMillis(200));
+                      });
+                })
             .build();
   }
 
   @BeforeEach
   void createClient() {
-    camundaClient = cluster.availableGateway().newClientBuilder().build();
+    cluster.start();
+    cluster.await(TestHealthProbe.READY);
+
+    camundaClient = cluster.newClientBuilder().build();
     clusterActuator = ClusterActuator.of(cluster.availableGateway());
     backupActuator = BackupActuator.of(cluster.availableGateway());
+    initializeIdentityState();
+  }
+
+  private void initializeIdentityState() {
+    cluster.awaitHealthyTopology();
+    decisionUsername = Strings.newRandomValidUsername();
+    decisionPassword = "password";
+
+    camundaClient
+        .newCreateUserCommand()
+        .username(decisionUsername)
+        .password(decisionPassword)
+        .name("Decision user")
+        .email("decision-user@example.com")
+        .send()
+        .join();
+    final var authorizationKey =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(decisionUsername)
+            .ownerType(OwnerType.USER)
+            .resourceId("*")
+            .resourceType(ResourceType.DECISION_DEFINITION)
+            .permissionTypes(PermissionType.CREATE_DECISION_INSTANCE)
+            .send()
+            .join()
+            .getAuthorizationKey();
+    final var deploymentKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("dmn/decision-table.dmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+
+    Awaitility.await("until identity state is distributed")
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      RecordingExporter.userRecords(UserIntent.CREATED)
+                          .withUsername(decisionUsername)
+                          .limit(PARTITIONS_COUNT)
+                          .count())
+                  .isEqualTo(PARTITIONS_COUNT);
+              assertThat(
+                      RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                          .withAuthorizationKey(authorizationKey)
+                          .limit(PARTITIONS_COUNT)
+                          .count())
+                  .isEqualTo(PARTITIONS_COUNT);
+            });
   }
 
   private Camunda getRestoreConfig(final Camunda brokerCfg, final Path workingDirectory) {
@@ -144,6 +242,7 @@ public class ScaleUpPartitionsTest {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
+
     // when
     executeScaling(desiredPartitionCount);
 
@@ -154,6 +253,7 @@ public class ScaleUpPartitionsTest {
   @Test
   void shouldScaleWhenGlobalStateIsLarge() {
     // given
+    final int totalCount = 1000;
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
 
@@ -178,10 +278,9 @@ public class ScaleUpPartitionsTest {
 
     processDefinitionId.forEach(process -> deployProcessModel(camundaClient, process, false));
 
-    // Create a total of 1000 users in batch of 100
-    for (int b = 0; b < 10; b++) {
+    final int batches = totalCount / 100;
+    for (int b = 0; b < batches; b++) {
       final var batchId = b;
-      // create users in batches of 10 concurrently
       final var futures =
           IntStream.range(0, 100)
               .mapToObj(i -> createGroupWithIdx(i * 100 + batchId))
@@ -189,6 +288,8 @@ public class ScaleUpPartitionsTest {
               .toArray(CompletableFuture[]::new);
       CompletableFuture.allOf(futures).join();
     }
+
+    awaitAllGroupsDistributed(totalCount);
 
     // when
     executeScaling(desiredPartitionCount);
@@ -211,6 +312,18 @@ public class ScaleUpPartitionsTest {
         .name("Group#" + userIdx)
         .send()
         .toCompletableFuture();
+  }
+
+  private void awaitAllGroupsDistributed(final int count) {
+    RecordingExporter.await(Duration.ofMinutes(2))
+        .until(
+            () ->
+                RecordingExporter.commandDistributionRecords()
+                        .withDistributionIntent(GroupIntent.CREATE)
+                        .withIntent(CommandDistributionIntent.FINISHED)
+                        .limit(count)
+                        .count()
+                    == count);
   }
 
   @ParameterizedTest
@@ -300,7 +413,7 @@ public class ScaleUpPartitionsTest {
                 partition1Leader.unifiedConfig().getData().getPrimaryStorage().getDirectory(),
                 partition1Leader.getWorkingDirectory().toString()));
     final var bootstrapSnapshotDirectory =
-        directory.resolve("raft-partition/partitions/1/bootstrap-snapshots/1-1-0-0-0");
+        directory.resolve("default/partitions/1/bootstrap-snapshots/1-1-0-0-0");
     scaleToPartitions(targetPartitionCount);
     Awaitility.await("until snapshot is created")
         // to limit flakyness, the folder is checked every millisecond
@@ -391,8 +504,7 @@ public class ScaleUpPartitionsTest {
   }
 
   @Test
-  public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup()
-      throws IOException, InterruptedException {
+  public void shouldBePossibleToRestoreFromBackupTakenAfterScaleup() throws IOException {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
@@ -591,9 +703,53 @@ public class ScaleUpPartitionsTest {
       try (final var restoreApp =
           new TestRestoreApp(getRestoreConfig(broker.unifiedConfig(), workingDirectory))
               .withBackupId(backupId)) {
-        assertThatNoException().isThrownBy(restoreApp::start);
+        awaitRestored(restoreApp, broker.nodeId());
       }
       FileUtil.flushDirectory(dataFolder);
+    }
+  }
+
+  /**
+   * Restoring is unbounded, so a partition that never finishes leaves the caller blocked forever.
+   * The class-level {@link Timeout} does not help: it only compares elapsed time once the test
+   * method returns, so a blocked restore takes down the whole CI job without a single test result.
+   * Run the restore on its own thread instead, and report where it got stuck if it overruns.
+   */
+  private void awaitRestored(final TestRestoreApp restoreApp, final MemberId nodeId) {
+    final var restoreExecutor =
+        Executors.newSingleThreadExecutor(
+            command -> Thread.ofPlatform().daemon().name("restore-" + nodeId).unstarted(command));
+    try {
+      CompletableFuture.runAsync(restoreApp::start, restoreExecutor)
+          .get(RESTORE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final TimeoutException e) {
+      fail(
+          "Expected broker %s to be restored within %s, but it is still restoring. Thread dump:%n%s"
+              .formatted(nodeId, RESTORE_TIMEOUT, threadDump()));
+    } catch (final ExecutionException e) {
+      fail("Failed to restore broker %s".formatted(nodeId), e.getCause());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      fail("Interrupted while restoring broker %s".formatted(nodeId), e);
+    } finally {
+      restoreExecutor.shutdownNow();
+    }
+  }
+
+  /**
+   * Partitions are restored on virtual threads, which {@link Thread#getAllStackTraces()} does not
+   * report, so take a JVM thread dump that covers them.
+   */
+  private static String threadDump() {
+    try {
+      final var dumpFile = Files.createTempFile("restore-thread-dump", ".txt");
+      // dumpThreads refuses to write to a file that already exists
+      Files.delete(dumpFile);
+      ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class)
+          .dumpThreads(dumpFile.toAbsolutePath().toString(), ThreadDumpFormat.TEXT_PLAIN);
+      return Files.readString(dumpFile);
+    } catch (final IOException e) {
+      return "Failed to capture a thread dump: " + e;
     }
   }
 
@@ -623,6 +779,39 @@ public class ScaleUpPartitionsTest {
               final var allPartitions = (RequestHandlingAllPartitions) requestHandling;
               assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
             });
+    verifyExistingDecisionCanBeEvaluatedOnPartition(desiredPartitionCount);
+  }
+
+  private void verifyExistingDecisionCanBeEvaluatedOnPartition(final int partitionId) {
+    try (final var decisionClient =
+        AuthorizationsUtil.createClient(
+            cluster.availableGateway(), decisionUsername, decisionPassword)) {
+
+      Awaitility.await("until the new partition evaluates the existing decision")
+          .atMost(Duration.ofMinutes(2))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var response =
+                    decisionClient
+                        .newEvaluateDecisionCommand()
+                        .decisionId("jedi_or_sith")
+                        .variable("lightsaberColor", "blue")
+                        .send()
+                        .toCompletableFuture()
+                        .join();
+                assertThat(response.getDecisionOutput()).isEqualTo("\"Jedi\"");
+                assertThat(Protocol.decodePartitionId(response.getDecisionEvaluationKey()))
+                    .isEqualTo(partitionId);
+                assertThat(
+                        RecordingExporter.decisionEvaluationRecords(
+                                DecisionEvaluationIntent.EVALUATED)
+                            .withPartitionId(partitionId)
+                            .withDecisionId("jedi_or_sith")
+                            .findAny())
+                    .isPresent();
+              });
+    }
   }
 
   static class CorrelationKeyVariableProvider {

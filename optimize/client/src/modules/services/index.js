@@ -35,6 +35,7 @@ export {
   TEXT_REPORT_MAX_CHARACTERS,
   isTextTileTooLong,
   isTextTileValid,
+  applyMissingVariableLabel,
 } from './reportService';
 
 export {addSources, getCollection} from './collectionService';
@@ -52,4 +53,4 @@ export function capitalize(string) {
 export {loadAlerts, addAlert, removeAlert, editAlert} from './alertService';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
-export {loadDefinitions} from './loadDefinitions';
+export {loadDefinitions, loadVersions} from './loadDefinitions';

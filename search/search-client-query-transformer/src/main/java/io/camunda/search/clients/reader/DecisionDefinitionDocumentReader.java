@@ -12,7 +12,7 @@ import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class DecisionDefinitionDocumentReader extends DocumentBasedReader
@@ -37,7 +37,7 @@ public class DecisionDefinitionDocumentReader extends DocumentBasedReader
   public SearchQueryResult<DecisionDefinitionEntity> search(
       final DecisionDefinitionQuery query, final ResourceAccessChecks resourceAccessChecks) {
 
-    if (query.filter().isLatestVersion()) {
+    if (Boolean.TRUE.equals(query.filter().isLatestVersion())) {
       return searchWithAggregation(query, resourceAccessChecks);
     }
 
@@ -58,10 +58,6 @@ public class DecisionDefinitionDocumentReader extends DocumentBasedReader
                 resourceAccessChecks);
 
     return new SearchQueryResult<>(
-        aggResult.items().size(),
-        !aggResult.items().isEmpty(),
-        aggResult.items(),
-        null,
-        aggResult.endCursor());
+        aggResult.totalItems(), false, aggResult.items(), null, aggResult.endCursor());
   }
 }

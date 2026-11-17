@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message.command;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,9 +19,18 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartLockReleaseHolder;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
@@ -29,11 +39,14 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class SubscriptionCommandSenderTest {
 
   public static final DirectBuffer DEFAULT_PROCESS_ID = BufferUtil.wrapString("process");
   public static final int DEFAULT_MESSAGE_KEY = 123;
+  public static final long DEFAULT_MESSAGE_DEADLINE = 4567L;
+  public static final long DEFAULT_MESSAGE_TTL = 1000L;
   public static final UnsafeBuffer DEFAULT_VARIABLES = new UnsafeBuffer();
   public static final DirectBuffer DEFAULT_CORRELATION_KEY =
       BufferUtil.wrapString("correlationKey");
@@ -46,7 +59,14 @@ public class SubscriptionCommandSenderTest {
   private static final long DEFAULT_ELEMENT_INSTANCE_KEY = 111;
   private static final long DEFAULT_PROCESS_DEFINITION_KEY = 222;
   private static final DirectBuffer DEFAULT_MESSAGE_NAME = BufferUtil.wrapString("msg");
+  private static final DirectBuffer DEFAULT_BUSINESS_ID = BufferUtil.wrapString("");
+  private static final DirectBuffer DEFAULT_ELEMENT_ID = BufferUtil.wrapString("catch-1");
+  private static final long DEFAULT_ROOT_PROCESS_INSTANCE_KEY = 100L;
+  private static final BpmnElementType DEFAULT_ELEMENT_TYPE = BpmnElementType.RECEIVE_TASK;
+  private static final DirectBuffer DEFAULT_START_EVENT_ID = BufferUtil.wrapString("start");
+  private static final long DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY = 333;
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  private static final int DEFAULT_STORAGE_ORDINAL = 444;
   private InterPartitionCommandSender mockInterPartitionCommandSender;
   private SubscriptionCommandSender subscriptionCommandSender;
   private ProcessingResultBuilder mockProcessingResultBuilder;
@@ -73,7 +93,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -90,7 +111,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -111,7 +133,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_KEY,
         DEFAULT_VARIABLES,
         DEFAULT_CORRELATION_KEY,
-        DEFAULT_TENANT);
+        DEFAULT_TENANT,
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -132,7 +156,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_KEY,
         DEFAULT_VARIABLES,
         DEFAULT_CORRELATION_KEY,
-        DEFAULT_TENANT);
+        DEFAULT_TENANT,
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -153,7 +179,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_KEY,
         DEFAULT_VARIABLES,
         DEFAULT_CORRELATION_KEY,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -177,7 +205,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -195,7 +225,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -213,7 +245,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -240,7 +274,12 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_STORAGE_ORDINAL,
+        DEFAULT_ELEMENT_TYPE);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -261,11 +300,164 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_STORAGE_ORDINAL,
+        DEFAULT_ELEMENT_TYPE);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
     verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnOpenMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.openMessageSubscription(
+        SAME_PARTITION,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        true,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_STORAGE_ORDINAL,
+        DEFAULT_ELEMENT_TYPE);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(MessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnDirectOpenMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectOpenMessageSubscription(
+        DIFFERENT_PARTITION,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        true,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_STORAGE_ORDINAL,
+        DEFAULT_ELEMENT_TYPE);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(MessageSubscriptionRecord.class);
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.MESSAGE_SUBSCRIPTION),
+            eq(MessageSubscriptionIntent.CREATE),
+            recordCaptor.capture());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnOpenProcessMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.openProcessMessageSubscription(
+        SAME_RECEIVER_PARTITION_KEY,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_MESSAGE_NAME,
+        true,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnCloseProcessMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.closeProcessMessageSubscription(
+        SAME_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_MESSAGE_NAME,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnCorrelationKeyLockReleaseRecord() {
+    // given
+    final var holder =
+        new MessageStartLockReleaseHolder()
+            .setProcessInstanceKey(DEFAULT_ELEMENT_INSTANCE_KEY)
+            .setBpmnProcessId(DEFAULT_PROCESS_ID)
+            .setCorrelationKey(DEFAULT_CORRELATION_KEY)
+            .setTenantId(DEFAULT_TENANT)
+            .setStorageOrdinal(DEFAULT_STORAGE_ORDINAL);
+
+    // when
+    subscriptionCommandSender.sendCorrelationKeyLockRelease(SAME_RECEIVER_PARTITION_KEY, holder);
+
+    // then
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartCorrelationKeyLockReleaseRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getHolders())
+        .singleElement()
+        .extracting(MessageStartLockReleaseHolderValue::getStorageOrdinal)
+        .isEqualTo(DEFAULT_STORAGE_ORDINAL);
+  }
+
+  @Test
+  public void shouldSetStorageOrdinalOnCorrelateProcessMessageSubscriptionRecord() {
+    // given
+
+    // when
+    subscriptionCommandSender.correlateProcessMessageSubscription(
+        SAME_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_TENANT,
+        1L,
+        DEFAULT_STORAGE_ORDINAL);
+
+    // then
+    final var recordCaptor = ArgumentCaptor.forClass(ProcessMessageSubscriptionRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal()).isEqualTo(DEFAULT_STORAGE_ORDINAL);
   }
 
   @Test
@@ -282,7 +474,12 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_STORAGE_ORDINAL,
+        DEFAULT_ELEMENT_TYPE);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -306,7 +503,10 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -324,7 +524,10 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -345,7 +548,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_KEY,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -366,7 +571,9 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_KEY,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        -1L,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -386,7 +593,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -406,10 +614,250 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_STORAGE_ORDINAL);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
     verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceRequest() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceRequest(
+        DIFFERENT_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldWriteFollowUpCommandForStartProcessInstanceRequest() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceRequest(
+        SAME_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSendDirectStartProcessInstanceRequest() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectStartProcessInstanceRequest(
+        DIFFERENT_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST),
+            eq(MessageStartProcessInstanceRequestIntent.REQUEST),
+            any());
+    verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldMarkStartProcessInstanceRequestAsNotOrdinalControlled() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceRequest(
+        SAME_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkDirectStartProcessInstanceRequestAsNotOrdinalControlled() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectStartProcessInstanceRequest(
+        DIFFERENT_PARTITION,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_PROCESS_DEFINITION_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_START_EVENT_ID,
+        DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_MESSAGE_DEADLINE,
+        DEFAULT_MESSAGE_TTL,
+        DEFAULT_TENANT);
+
+    // then
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST),
+            eq(MessageStartProcessInstanceRequestIntent.REQUEST),
+            recordCaptor.capture());
+    assertThat(recordCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkStartProcessInstanceRejectionReplyAsNotOrdinalControlled() {
+    // given a request that (wrongly) carries an instance ordinal
+    final var request = requestFromSourcePartition(SAME_PARTITION).setStorageOrdinal(1234);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceUniquenessRejected(request);
+
+    // then the rejection is forced to the marker, the request value is not copied
+    final var recordCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), recordCaptor.capture(), any());
+    assertThat(recordCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceStartedReply() {
+    // given a request whose messageKey encodes a different source partition than the sender
+    final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
+    final long createdPiKey = 999L;
+
+    // when the P_B side replies STARTED
+    subscriptionCommandSender.sendStartProcessInstanceStarted(request, createdPiKey, 1234);
+
+    // then it is dispatched cross-partition back to P_K (the source partition)
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldWriteFollowUpCommandForStartProcessInstanceStartedReply() {
+    // given a request whose messageKey encodes the sender's own partition
+    final var request = requestFromSourcePartition(SAME_PARTITION);
+
+    // when the (degenerate) reply targets the same partition
+    subscriptionCommandSender.sendStartProcessInstanceStarted(request, 999L, 1234);
+
+    // then it is written as a local follow-up command instead of being sent
+    verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceUniquenessRejectedReply() {
+    // given
+    final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceUniquenessRejected(request);
+
+    // then
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceNoSubscriptionRejectedReply() {
+    // given
+    final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
+
+    // then
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceExpiredRejectedReply() {
+    // given
+    final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceExpiredRejected(request);
+
+    // then
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
+  private static MessageStartProcessInstanceRequestRecord requestFromSourcePartition(
+      final int sourcePartition) {
+    return new MessageStartProcessInstanceRequestRecord()
+        .setMessageKey(Protocol.encodePartitionId(sourcePartition, 7))
+        .setMessageName(DEFAULT_MESSAGE_NAME)
+        .setCorrelationKey(DEFAULT_CORRELATION_KEY)
+        .setBusinessId(DEFAULT_BUSINESS_ID)
+        .setProcessDefinitionKey(DEFAULT_PROCESS_DEFINITION_KEY)
+        .setBpmnProcessId(DEFAULT_PROCESS_ID)
+        .setStartEventId(DEFAULT_START_EVENT_ID)
+        .setMessageStartEventSubscriptionKey(DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY)
+        .setVariables(DEFAULT_VARIABLES)
+        .setTenantId(DEFAULT_TENANT);
   }
 }

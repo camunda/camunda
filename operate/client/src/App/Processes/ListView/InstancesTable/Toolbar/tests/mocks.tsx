@@ -43,6 +43,8 @@ const mockProcessInstancesV2 = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
+    suspendedDate: null,
   },
   {
     processInstanceKey: '2',
@@ -60,6 +62,8 @@ const mockProcessInstancesV2 = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
+    suspendedDate: null,
   },
   {
     processInstanceKey: '3',
@@ -77,6 +81,8 @@ const mockProcessInstancesV2 = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
+    suspendedDate: null,
   },
   {
     processInstanceKey: '4',
@@ -94,6 +100,8 @@ const mockProcessInstancesV2 = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
+    suspendedDate: null,
   },
 ] satisfies ProcessInstance[];
 

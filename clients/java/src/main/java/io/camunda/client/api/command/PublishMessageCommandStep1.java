@@ -86,6 +86,22 @@ public interface PublishMessageCommandStep1
     PublishMessageCommandStep3 timeToLive(Duration timeToLive);
 
     /**
+     * Set the business id of the message.
+     *
+     * <p>The business id is an optional, user-defined string identifier used to enforce uniqueness
+     * of the process instance that a message start event would create. If provided and uniqueness
+     * enforcement is enabled, the engine rejects starting a new process instance when another root
+     * process instance with the same business id is already active for the same process definition.
+     *
+     * <p>It has no effect when the message correlates to a catch, boundary, or intermediate event.
+     *
+     * @param businessId the business id of the message
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    PublishMessageCommandStep3 businessId(String businessId);
+
+    /**
      * Set the variables of the message.
      *
      * @param variables the variables (JSON) as String

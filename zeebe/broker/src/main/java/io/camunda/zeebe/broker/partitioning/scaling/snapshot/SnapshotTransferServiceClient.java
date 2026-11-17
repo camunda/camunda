@@ -20,23 +20,29 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotTransferServiceClient implements SnapshotTransferService {
 
   private final BrokerClient client;
+  private final String partitionGroup;
+  private final Duration requestTimeout;
 
-  public SnapshotTransferServiceClient(final BrokerClient client) {
+  public SnapshotTransferServiceClient(
+      final BrokerClient client, final String partitionGroup, final Duration requestTimeout) {
     this.client = client;
+    this.partitionGroup = partitionGroup;
+    this.requestTimeout = requestTimeout;
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getLatestSnapshot(
+  public ActorFuture<@Nullable SnapshotChunk> getLatestSnapshot(
       final int partition, final long lastProcessedPosition, final UUID transferId) {
     return sendRequest(partition, Optional.empty(), Optional.empty(), transferId);
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getNextChunk(
+  public ActorFuture<@Nullable SnapshotChunk> getNextChunk(
       final int partition,
       final String snapshotId,
       final String previousChunkName,
@@ -45,16 +51,17 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
         partition, Optional.of(snapshotId), Optional.of(previousChunkName), transferId);
   }
 
-  private ActorFuture<SnapshotChunk> sendRequest(
+  private ActorFuture<@Nullable SnapshotChunk> sendRequest(
       final int partition,
       final Optional<String> snapshotId,
       final Optional<String> previousChunkName,
       final UUID transferId) {
     final var request = new GetSnapshotChunk(partition, transferId, snapshotId, previousChunkName);
     final var brokerRequest = new SnapshotBrokerRequest(request);
-    final var future = new CompletableActorFuture<SnapshotChunk>();
+    brokerRequest.setPartitionGroup(partitionGroup);
+    final var future = new CompletableActorFuture<@Nullable SnapshotChunk>();
     client
-        .sendRequestWithRetry(brokerRequest, Duration.ofSeconds(30))
+        .sendRequestWithRetry(brokerRequest, requestTimeout)
         .thenCompose(
             response -> {
               if (response.isResponse()

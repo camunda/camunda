@@ -117,7 +117,7 @@ test.describe
     await test.step('Get process instance statistics by error to get errorHashCode', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(`/incidents/statistics/process-instances-by-error`),
+          buildUrl('/incidents/statistics/process-instances-by-error'),
           {
             headers: jsonHeaders(),
           },
@@ -146,7 +146,7 @@ test.describe
     await test.step('Get process instance statistics by definition with errorHashCode filter', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(`/incidents/statistics/process-instances-by-definition`),
+          buildUrl('/incidents/statistics/process-instances-by-definition'),
           {
             headers: jsonHeaders(),
             data: {
@@ -186,7 +186,7 @@ test.describe
 
     await test.step('Get process instance statistics by definition without authorization', async () => {
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-definition`),
+        buildUrl('/incidents/statistics/process-instances-by-definition'),
         {
           headers: {},
           data: {
@@ -205,7 +205,7 @@ test.describe
   }) => {
     const errorHashCode = 'meow';
     const res = await request.post(
-      buildUrl(`/incidents/statistics/process-instances-by-definition`),
+      buildUrl('/incidents/statistics/process-instances-by-definition'),
       {
         headers: jsonHeaders(),
         data: {
@@ -230,7 +230,7 @@ test.describe
       );
       const errorHashCode = 123456789;
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-definition`),
+        buildUrl('/incidents/statistics/process-instances-by-definition'),
         {
           headers: jsonHeaders(token),
           data: {

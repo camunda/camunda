@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 
 public interface JobState {
@@ -44,11 +45,24 @@ public interface JobState {
 
   JobRecord getJob(long key);
 
-  JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds);
+  JobRecord getJob(final long key, final TenantAccess authorizedTenantIds);
 
   boolean jobDeadlineExists(final long jobKey, final long deadline);
 
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
+
+  /**
+   * Visits every job key indexed under the given process instance, in key order. Not guaranteed to
+   * find every job of the instance, since the index is only filled in at job creation (8.10+) and
+   * on suspension.
+   *
+   * @param processInstanceKey the process instance whose jobs to visit
+   * @param startAtJobKey the job key to start at (inclusive), or a negative value to start at the
+   *     beginning
+   * @param visitor called with each job key; returning {@code false} stops the iteration
+   */
+  void forEachJobsByProcessInstance(
+      long processInstanceKey, long startAtJobKey, LongPredicate visitor);
 
   /** Index to point to a specific position in the jobs with deadline column family. */
   record DeadlineIndex(long deadline, long key) {}
@@ -58,7 +72,19 @@ public interface JobState {
     ACTIVATED((byte) 1),
     FAILED((byte) 2),
     NOT_FOUND((byte) 3),
-    ERROR_THROWN((byte) 4);
+    ERROR_THROWN((byte) 4),
+    /**
+     * The job is parked until its secret references are resolved in the background. It is not in
+     * the activatable index, so it is handed out to no worker, and it leaves this state only by
+     * being reactivated after the resolution or by being deleted.
+     */
+    WAITING_FOR_SECRET_RESOLUTION((byte) 5),
+    /**
+     * The job belongs to a suspended process instance. It is not in the activatable index, so it is
+     * handed out to no worker, and it leaves this state only by being resumed with its process
+     * instance or by being deleted.
+     */
+    SUSPENDED((byte) 6);
 
     byte value;
 

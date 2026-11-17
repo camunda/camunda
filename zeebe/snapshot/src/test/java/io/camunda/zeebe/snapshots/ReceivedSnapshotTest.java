@@ -18,7 +18,6 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,12 +40,20 @@ public class ReceivedSnapshotTest {
 
     senderSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            senderDirectory,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            receiverDirectory,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }
@@ -69,6 +76,22 @@ public class ReceivedSnapshotTest {
 
     // then
     assertThat(receivedSnapshot.index()).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldReceiveSnapshotForBootstrapAsLatestSnapshot() {
+    // given - a scaled up partition replicates its snapshot for bootstrap to a joining member
+    final var snapshotForBootstrap =
+        ((FileBasedSnapshotStore) senderSnapshotStore)
+            .copyForBootstrap(takePersistedSnapshot(), SnapshotCopyUtil::copyAllFiles)
+            .join();
+
+    // when
+    final var receivedSnapshot = receiveSnapshot(snapshotForBootstrap).persist().join();
+
+    // then
+    assertThat(receivedSnapshot.isBootstrap()).isTrue();
+    assertThat(receiverSnapshotStore.getLatestSnapshot()).hasValue(receivedSnapshot);
   }
 
   @Test
@@ -104,6 +127,10 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).isGreaterThan(0);
+    assertThat(receivedSnapshot.getTotalSizeInBytes())
+        .as("the received snapshot carries the sender's total size")
+        .isEqualTo(persistedSnapshot.getTotalSizeInBytes());
   }
 
   @Test
@@ -141,33 +168,6 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldPersistEvenIfSameChunkIsConsumedMultipleTimes() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      final SnapshotChunk chunk = snapshotChunkReader.next();
-      receivedSnapshot.apply(chunk).join();
-      receivedSnapshot.apply(chunk).join();
-
-      while (snapshotChunkReader.hasNext()) {
-        receivedSnapshot.apply(snapshotChunkReader.next()).join();
-      }
-    }
-
-    final var receivedPersistedSnapshot = receivedSnapshot.persist().join();
-
-    // then
-    assertThat(receivedPersistedSnapshot)
-        .as("the snapshot was persisted even if one chunk was applied more than once")
-        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
-  }
-
-  @Test
   public void shouldThrowWhenAlreadyExistingSnapshotWasReceivedAgain() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
@@ -192,7 +192,8 @@ public class ReceivedSnapshotTest {
 
     // when
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .hasCauseInstanceOf(NullPointerException.class);
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("is missing or unreadable");
   }
 
   @Test

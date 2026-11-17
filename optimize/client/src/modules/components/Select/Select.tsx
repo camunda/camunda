@@ -8,7 +8,7 @@
 
 import {Children, cloneElement, ComponentProps, ReactElement, ReactNode} from 'react';
 import {MenuItemSelectable} from '@carbon/react';
-import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
+import {MenuDropdown} from '../MenuDropdown';
 
 import {ignoreFragments, isReactElement} from 'services';
 import classnames from 'classnames';

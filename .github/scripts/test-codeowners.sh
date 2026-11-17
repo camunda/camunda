@@ -1,0 +1,524 @@
+#!/usr/bin/env bash
+# Tests for .codeowners ownership rules using codeowners-plus CLI.
+# Run from the repo root: .github/scripts/test-codeowners.sh
+set -euo pipefail
+
+WORKTREE_ROOT="$(git rev-parse --show-toplevel)"
+# codeowners-cli requires a real .git directory; git worktrees have a .git file.
+# Fall back to the common git dir's parent (the main checkout) when in a worktree,
+# but copy the current branch's .codeowners there so we validate the right file.
+if [[ -f "${WORKTREE_ROOT}/.git" ]]; then
+  REPO_ROOT="$(dirname "$(git rev-parse --git-common-dir)")"
+  _ORIG_CODEOWNERS_BACKUP="$(mktemp)"
+  cp "${REPO_ROOT}/.codeowners" "${_ORIG_CODEOWNERS_BACKUP}"
+  cp "${WORKTREE_ROOT}/.codeowners" "${REPO_ROOT}/.codeowners"
+  trap 'cp "${_ORIG_CODEOWNERS_BACKUP}" "${REPO_ROOT}/.codeowners"; rm -f "${_ORIG_CODEOWNERS_BACKUP}"' EXIT
+else
+  REPO_ROOT="${WORKTREE_ROOT}"
+fi
+CODEOWNERS_CLI="${CODEOWNERS_CLI:-codeowners-cli}"
+PASS=0
+FAIL=0
+BUGS=0
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# assert_owner <description> <file> <expected_owners...>
+# Checks that all expected owners appear in the 'required' list.
+assert_owner() {
+  local description="$1"
+  local file="$2"
+  shift 2
+  local expected=("$@")
+
+  local _stderr _json _exit_code=0
+  _stderr="$(mktemp)"
+  _json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>"${_stderr}") || _exit_code=$?
+  local stderr_out
+  stderr_out=$(cat "${_stderr}"); rm -f "${_stderr}"
+  if [[ $_exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
+    echo -e "  ${RED}ERROR${NC}: ${description} (${file}): CLI error: ${stderr_out}"
+    (( FAIL++ )) || true
+    return
+  fi
+
+  # OR-groups are returned as "ownerA or ownerB" in a single array entry.
+  # Split on " or " so each name becomes its own line for exact matching.
+  local actual_required_lines actual_required
+  actual_required_lines=$(echo "${_json}" | jq -r --arg f "${file}" '.[$f].required[]?' | sed 's/ or /\n/g' | sort)
+  actual_required=$(echo "${actual_required_lines}" | tr '\n' ' ' | sed 's/ $//')
+
+  local missing=()
+  for owner in "${expected[@]}"; do
+    if ! echo "${actual_required_lines}" | grep -qxF "${owner}"; then
+      missing+=("${owner}")
+    fi
+  done
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    echo -e "  ${GREEN}PASS${NC}: ${description}"
+    (( PASS++ )) || true
+  else
+    echo -e "  ${RED}FAIL${NC}: ${description}"
+    echo -e "        file:     ${file}"
+    echo -e "        expected: ${expected[*]}"
+    echo -e "        actual:   ${actual_required:-"(none)"}"
+    echo -e "        missing:  ${missing[*]}"
+    (( FAIL++ )) || true
+  fi
+}
+
+# assert_owner_bug: same as assert_owner but marks it as a known bug.
+# Test is expected to FAIL — it documents broken behavior.
+assert_owner_bug() {
+  local description="$1"
+  local file="$2"
+  shift 2
+  local expected=("$@")
+
+  local _stderr _json _exit_code=0
+  _stderr="$(mktemp)"
+  _json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>"${_stderr}") || _exit_code=$?
+  local stderr_out
+  stderr_out=$(cat "${_stderr}"); rm -f "${_stderr}"
+  if [[ $_exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
+    echo -e "  ${RED}ERROR${NC} [BUG]: ${description}: CLI error"
+    (( BUGS++ )) || true
+    return
+  fi
+
+  # OR-groups are returned as "ownerA or ownerB" in a single array entry.
+  # Split on " or " so each name becomes its own line for exact matching.
+  local actual_required_lines actual_required
+  actual_required_lines=$(echo "${_json}" | jq -r --arg f "${file}" '.[$f].required[]?' | sed 's/ or /\n/g' | sort)
+  actual_required=$(echo "${actual_required_lines}" | tr '\n' ' ' | sed 's/ $//')
+
+  local missing=()
+  for owner in "${expected[@]}"; do
+    if ! echo "${actual_required_lines}" | grep -qxF "${owner}"; then
+      missing+=("${owner}")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo -e "  ${YELLOW}BUG CONFIRMED${NC}: ${description}"
+    echo -e "        file:     ${file}"
+    echo -e "        expected: ${expected[*]}"
+    echo -e "        actual:   ${actual_required:-"(none)"}"
+    echo -e "        missing (shadowed): ${missing[*]}"
+    (( BUGS++ )) || true
+  else
+    echo -e "  ${GREEN}BUG FIXED${NC}: ${description} — expected owners now present"
+    (( PASS++ )) || true
+  fi
+}
+
+echo ""
+echo "========================================"
+echo " .codeowners ownership tests"
+echo "========================================"
+
+# ── /qa/ default ownership ────────────────────────────────────────────────────
+echo ""
+echo "── /qa/ default (qa-engineering) ──"
+
+assert_owner \
+  "qa/pom.xml → qa-engineering" \
+  "qa/pom.xml" \
+  "@camunda/qa-engineering"
+
+# ── /qa/ overrides: orchestration-cluster ────────────────────────────────────
+echo ""
+echo "── /qa/ overrides → orchestration-cluster ──"
+
+assert_owner \
+  "qa/archunit-tests/ → orchestration-cluster" \
+  "qa/archunit-tests/src/test/java/io/camunda/ForbidSpringProblemDetailArchTest.java" \
+  "@camunda/orchestration-cluster"
+
+assert_owner \
+  "qa/util/ → orchestration-cluster" \
+  "qa/util/src/test/java/io/camunda/qa/util/multidb/MultiDbConfiguratorTest.java" \
+  "@camunda/orchestration-cluster"
+
+# ── /qa/acceptance-tests dual ownership: util/ ───────────────────────────────
+echo ""
+echo "── /qa/acceptance-tests/util/ → dual ownership ──"
+
+assert_owner \
+  "acceptance-tests util/ → qa-engineering AND orchestration-cluster" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/util/TestHelper.java" \
+  "@camunda/qa-engineering" "@camunda/orchestration-cluster"
+
+# ── /qa/acceptance-tests → core-features ─────────────────────────────────────────
+echo ""
+echo "── /qa/acceptance-tests → core-features ──"
+
+assert_owner \
+  "acceptance-tests client/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/client/UnassignClientFromTenantIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests spring/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/spring/AbstractSpringDependenciesTest.java" \
+  "@camunda/core-features"
+
+# ── /qa/acceptance-tests → identity ──────────────────────────────────────────
+echo ""
+echo "── /qa/acceptance-tests → identity ──"
+
+assert_owner \
+  "acceptance-tests identity/ → identity" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/identity/InitializeInvalidTenantIT.java" \
+  "@camunda/identity"
+
+assert_owner \
+  "acceptance-tests auth/ → identity" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/auth/UsageMetricAuthorizationIT.java" \
+  "@camunda/identity"
+
+assert_owner \
+  "acceptance-tests oidc/ → identity" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/oidc/OverlappingUsernameAndClientIdClaimTest.java" \
+  "@camunda/identity"
+
+assert_owner \
+  "acceptance-tests csrf/ → identity" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/csrf/CsrfTokenIT.java" \
+  "@camunda/identity"
+
+assert_owner \
+  "acceptance-tests logout/ → identity" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/logout/BasicAuthLogoutIT.java" \
+  "@camunda/identity"
+
+# ── /qa/acceptance-tests → zeebe-distributed-platform ───────────────────────
+echo ""
+echo "── /qa/acceptance-tests → zeebe-distributed-platform ──"
+
+assert_owner \
+  "acceptance-tests cluster/ → zeebe-distributed-platform" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/cluster/ClusterPurgeMultiDbIT.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "acceptance-tests backup/ → zeebe-distributed-platform" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/backup/AbstractBackupRestoreIT.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "acceptance-tests network/ → zeebe-distributed-platform" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/network/SecuredClusterMessagingIT.java" \
+  "@camunda/zeebe-distributed-platform"
+
+# ── /qa/acceptance-tests → data-layer ────────────────────────────────────────
+echo ""
+echo "── /qa/acceptance-tests → data-layer ──"
+
+assert_owner \
+  "acceptance-tests rdbms/db/ → data-layer (direct file)" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/RdbmsFlushRollbackIT.java" \
+  "@camunda/data-layer"
+
+assert_owner \
+  "acceptance-tests rdbms/db/subdir/ → data-layer (nested file)" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/agentinstance/AgentInstanceSortIT.java" \
+  "@camunda/data-layer"
+
+assert_owner \
+  "acceptance-tests schema/ → data-layer" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/schema/ExporterMigrationTestHelper.java" \
+  "@camunda/data-layer"
+
+assert_owner \
+  "acceptance-tests nodb/ → data-layer" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/nodb/BasicAuthNoSecondaryStorageTest.java" \
+  "@camunda/data-layer"
+
+assert_owner \
+  "acceptance-tests historycleanup/ → data-layer" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/historycleanup/HistoryCleanupIT.java" \
+  "@camunda/data-layer"
+
+# ── /qa/acceptance-tests → core-features ─────────────────────────────────────
+echo ""
+echo "── /qa/acceptance-tests → core-features ──"
+
+assert_owner \
+  "acceptance-tests task/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/task/UserTaskIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests orchestration/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/orchestration/JobIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests mcp/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/mcp/McpServerConfigurationIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests tenancy/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/tenancy/DecisionDefinitionTenancyIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests auditlog/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/AuditLogWithoutAuthorizationsIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests historydeletion/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/historydeletion/DeleteDecisionInstanceHistoryIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests document/ → core-features" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/document/ESClient.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "acceptance-tests waitstate/ → core-features (not qa-engineering)" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/waitstate/WaitStateJobIT.java" \
+  "@camunda/core-features"
+
+# ── /zeebe/qa/integration-tests ordering bug ─────────────────────────────────
+echo ""
+echo "── /zeebe/qa/integration-tests ownership ──"
+
+assert_owner \
+  "zeebe IT cluster/ → zeebe-distributed-platform (direct)" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/config/IdleStrategyConfigIT.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "zeebe IT cluster/clustering/dynamic/ → zeebe-distributed-platform (3-level deep, ScaleUpPartitionsTest)" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/clustering/dynamic/ScaleUpPartitionsTest.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "zeebe IT shared/ → zeebe-distributed-platform" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/smoke/NoSecondaryStorageSmokeIT.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "zeebe IT util/ → zeebe-distributed-platform" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/ZeebeContainerUtil.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "zeebe IT engine/ → core-features" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/engine/processing/GlobalListenersInitializerIT.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "zeebe IT exporter/ → core-features" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/exporter/AnalyticsExporterIT.java" \
+  "@camunda/core-features"
+
+# ── .claude/skills overrides ──────────────────────────────────────────────────
+echo ""
+echo "── .claude/skills overrides ──"
+
+assert_owner \
+  ".agents/skills/engine-expert/ → core-features (overrides orchestration-cluster)" \
+  ".agents/skills/engine-expert/SKILL.md" \
+  "@camunda/core-features"
+
+assert_owner \
+  ".agents/skills/frontend-feature/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-feature/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/frontend-integration-test/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-integration-test/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/frontend-operate-migrator/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-operate-migrator/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/frontend-unit-test/ → orchestration-cluster-webapps" \
+  ".agents/skills/frontend-unit-test/SKILL.md" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  ".agents/skills/operate-engineering-loop/ → operate-admin-pod" \
+  ".agents/skills/operate-engineering-loop/SKILL.md" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  ".agents/skills/operate-frontend/ → operate-admin-pod" \
+  ".agents/skills/operate-frontend/SKILL.md" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  ".agents/skills/tasklist-frontend/ → employee-engagement-tasklist" \
+  ".agents/skills/tasklist-frontend/SKILL.md" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  ".agents/skills/load-test-ops/ → reliability-testing (overrides orchestration-cluster)" \
+  ".agents/skills/load-test-ops/SKILL.md" \
+  "@camunda/reliability-testing"
+
+assert_owner \
+  ".agents/skills/ci-validation/ → engineering-operations (overrides orchestration-cluster)" \
+  ".agents/skills/ci-validation/SKILL.md" \
+  "@camunda/engineering-operations"
+
+# ── webapp/client → frontend pods ─────────────────────────────────────────────
+echo ""
+echo "── webapp/client → frontend pods ──"
+
+OCW="webapp/client/apps/orchestration-cluster-webapp"
+
+assert_owner \
+  "webapp/server/ → core-features (not overridden by webapp/client rules)" \
+  "webapp/server/src/main/java/io/camunda/webapp/WebappModuleConfiguration.java" \
+  "@camunda/core-features"
+
+assert_owner \
+  "webapp/client/ → orchestration-cluster-webapps (default)" \
+  "webapp/client/package.json" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/main.tsx → orchestration-cluster-webapps (default)" \
+  "${OCW}/src/main.tsx" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/integration/shared/ → orchestration-cluster-webapps" \
+  "${OCW}/test/integration/shared/login.test.ts" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/routes/ → orchestration-cluster-webapps" \
+  "${OCW}/src/routes/_shadcn/_auth/tasklist/_tasks/\$userTaskKey/history/route.tsx" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/shared/ → orchestration-cluster-webapps" \
+  "${OCW}/src/shared/login/shadcn.components/Disclaimer/index.tsx" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp src/admin/ → operate-admin-pod" \
+  "${OCW}/src/admin/modules/operations-log/searchSchema.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp src/operate/ → operate-admin-pod" \
+  "${OCW}/src/operate/pages/Dashboard/shadcn.components/variants/NativeExpansionCell.tsx" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp src/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/src/tasklist/modules/task-details/components/process-diagram/ProcessDiagramView.tsx" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/integration/admin/ → operate-admin-pod" \
+  "${OCW}/test/integration/admin/admin-index.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/integration/operate/ → operate-admin-pod" \
+  "${OCW}/test/integration/operate/operate-processes.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/integration/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/test/integration/tasklist/header.test.ts" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/a11y/shared/ → orchestration-cluster-webapps" \
+  "${OCW}/test/a11y/shared/error-pages.test.ts" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/a11y/admin/ → operate-admin-pod" \
+  "${OCW}/test/a11y/admin/admin-login.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/a11y/operate/ → operate-admin-pod" \
+  "${OCW}/test/a11y/operate/operate-preview.test.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/a11y/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/test/a11y/tasklist/tasklist.test.ts" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/fixtures/operate/ → operate-admin-pod" \
+  "${OCW}/test/fixtures/operate/elementFilterTestCases.tsx" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/pages root → orchestration-cluster-webapps (default)" \
+  "${OCW}/test/pages/BasePage.ts" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/pages/admin/ → operate-admin-pod" \
+  "${OCW}/test/pages/admin/AdminIndex.page.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/pages/operate/ → operate-admin-pod" \
+  "${OCW}/test/pages/operate/OperateIndex.page.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/pages/tasklist/ → employee-engagement-tasklist" \
+  "${OCW}/test/pages/tasklist/TasklistIndex.page.ts" \
+  "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/visual/shared/ snapshot → orchestration-cluster-webapps" \
+  "${OCW}/test/visual/shared/login.test.ts-snapshots/should-match-the-login-page-snapshot-1-visual-dark-linux.png" \
+  "@camunda/orchestration-cluster-webapps"
+
+assert_owner \
+  "webapp test/visual/admin/ snapshot → operate-admin-pod" \
+  "${OCW}/test/visual/admin/admin.test.ts-snapshots/should-match-the-admin-index-page-snapshot-1-visual-dark-linux.png" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/visual/operate/ helper → operate-admin-pod" \
+  "${OCW}/test/visual/operate/movePointerAwayFromNavigation.ts" \
+  "@camunda/operate-admin-pod"
+
+assert_owner \
+  "webapp test/visual/tasklist/ snapshot → employee-engagement-tasklist" \
+  "${OCW}/test/visual/tasklist/tasklist.test.ts-snapshots/should-match-the-tasklist-index-page-snapshot-1-visual-dark-linux.png" \
+  "@camunda/employee-engagement-tasklist"
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+echo ""
+echo "========================================"
+echo " Results"
+echo "========================================"
+echo -e "  ${GREEN}PASS${NC}:          ${PASS}"
+echo -e "  ${RED}FAIL${NC}:          ${FAIL}"
+echo -e "  ${YELLOW}BUGS CONFIRMED${NC}: ${BUGS}"
+echo ""
+
+if [[ ${FAIL} -gt 0 ]]; then
+  exit 1
+fi
+exit 0

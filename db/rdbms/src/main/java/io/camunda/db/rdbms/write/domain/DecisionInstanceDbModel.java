@@ -29,6 +29,7 @@ public record DecisionInstanceDbModel(
     String flowNodeId,
     Long processInstanceKey,
     Long rootProcessInstanceKey,
+    String businessId,
     Long processDefinitionKey,
     String processDefinitionId,
     Long decisionDefinitionKey,
@@ -39,6 +40,7 @@ public record DecisionInstanceDbModel(
     DecisionDefinitionType decisionType,
     String tenantId,
     int partitionId,
+    Integer storageOrdinal,
     List<EvaluatedInput> evaluatedInputs,
     List<EvaluatedOutput> evaluatedOutputs,
     OffsetDateTime historyCleanupDate) {
@@ -78,6 +80,7 @@ public record DecisionInstanceDbModel(
         flowNodeId,
         processInstanceKey,
         rootProcessInstanceKey,
+        businessId,
         processDefinitionKey,
         processDefinitionId,
         decisionDefinitionKey,
@@ -88,6 +91,7 @@ public record DecisionInstanceDbModel(
         decisionType,
         tenantId,
         partitionId,
+        storageOrdinal,
         evaluatedInputs,
         evaluatedOutputs,
         historyCleanupDate);
@@ -106,6 +110,7 @@ public record DecisionInstanceDbModel(
         .flowNodeId(flowNodeId)
         .processInstanceKey(processInstanceKey)
         .rootProcessInstanceKey(rootProcessInstanceKey)
+        .businessId(businessId)
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionId(processDefinitionId)
         .decisionDefinitionKey(decisionDefinitionKey)
@@ -116,6 +121,7 @@ public record DecisionInstanceDbModel(
         .decisionType(decisionType)
         .tenantId(tenantId)
         .partitionId(partitionId)
+        .storageOrdinal(storageOrdinal)
         .evaluatedInputs(evaluatedInputs)
         .evaluatedOutputs(evaluatedOutputs)
         .historyCleanupDate(historyCleanupDate);
@@ -134,6 +140,7 @@ public record DecisionInstanceDbModel(
     private String flowNodeId;
     private Long processInstanceKey;
     private Long rootProcessInstanceKey;
+    private String businessId;
     private Long processDefinitionKey;
     private String processDefinitionId;
     private Long decisionDefinitionKey;
@@ -144,6 +151,7 @@ public record DecisionInstanceDbModel(
     private DecisionDefinitionType decisionType;
     private String tenantId;
     private int partitionId;
+    private Integer storageOrdinal;
     private List<EvaluatedInput> evaluatedInputs;
     private List<EvaluatedOutput> evaluatedOutputs;
     private OffsetDateTime historyCleanupDate;
@@ -203,6 +211,11 @@ public record DecisionInstanceDbModel(
       return this;
     }
 
+    public Builder businessId(final String value) {
+      businessId = value;
+      return this;
+    }
+
     public Builder processDefinitionKey(final Long value) {
       processDefinitionKey = value;
       return this;
@@ -253,6 +266,11 @@ public record DecisionInstanceDbModel(
       return this;
     }
 
+    public Builder storageOrdinal(final Integer value) {
+      storageOrdinal = value;
+      return this;
+    }
+
     public Builder evaluatedInputs(final List<EvaluatedInput> value) {
       evaluatedInputs = value;
       return this;
@@ -282,6 +300,7 @@ public record DecisionInstanceDbModel(
           flowNodeId,
           processInstanceKey,
           rootProcessInstanceKey,
+          businessId,
           processDefinitionKey,
           processDefinitionId,
           decisionDefinitionKey,
@@ -292,6 +311,7 @@ public record DecisionInstanceDbModel(
           decisionType,
           tenantId,
           partitionId,
+          storageOrdinal,
           evaluatedInputs,
           evaluatedOutputs,
           historyCleanupDate);

@@ -17,7 +17,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.response.Topology;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -94,6 +94,11 @@ public class GatewayAuthenticationNoneIT {
           .withEnv("KEYCLOAK_SETUP_PASSWORD", KEYCLOAK_PASSWORD)
           .withEnv("KEYCLOAK_INIT_ORCHESTRATION_SECRET", ORCHESTRATION_CLIENT_SECRET)
           .withEnv("KEYCLOAK_INIT_ORCHESTRATION_ROOT_URL", "http://localhost:8080")
+          // Identity's orchestration preset grants its client permissions on the Web Modeler
+          // public API, but that resource server is only created when the webmodeler component
+          // is initialized as well. Without this, Identity aborts its startup with HTTP 404
+          // while assigning those permissions.
+          .withEnv("KEYCLOAK_INIT_WEBMODELER_ROOT_URL", "http://localhost:8070")
           .withEnv("KEYCLOAK_CLIENTS_0_NAME", ORCHESTRATION_CLIENT_NAME)
           .withEnv("KEYCLOAK_CLIENTS_0_ID", ORCHESTRATION_CLIENT_ID)
           .withEnv("KEYCLOAK_CLIENTS_0_SECRET", ORCHESTRATION_CLIENT_SECRET)

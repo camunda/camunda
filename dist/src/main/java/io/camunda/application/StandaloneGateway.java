@@ -10,15 +10,6 @@ package io.camunda.application;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.McpGatewayInitializer;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
@@ -32,20 +23,7 @@ public class StandaloneGateway {
 
     final var standaloneGatewayApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(
-                // Unified Configuration classes
-                UnifiedConfiguration.class,
-                PrimaryStorageBackupPropertiesOverride.class,
-                UnifiedConfigurationHelper.class,
-                GatewayBasedPropertiesOverride.class,
-                SearchEngineConnectPropertiesOverride.class,
-                SearchEngineIndexPropertiesOverride.class,
-                SearchEngineRetentionPropertiesOverride.class,
-                SearchEngineSchemaManagerPropertiesOverride.class,
-                // ---
-                CommonsModuleConfiguration.class,
-                GatewayModuleConfiguration.class,
-                GatewayRestPropertiesOverride.class)
+            .sources(CommonsModuleConfiguration.class, GatewayModuleConfiguration.class)
             .profiles(Profile.GATEWAY.getId(), Profile.STANDALONE.getId())
             .initializers(new HealthConfigurationInitializer(), new McpGatewayInitializer())
             .build(args);

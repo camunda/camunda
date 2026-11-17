@@ -20,13 +20,13 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.Partition;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -104,15 +104,39 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return CompletableFuture.completedFuture(this);
   }
 
+  /**
+   * Joins the partition's replication group as a member of the given type. See {@link
+   * io.atomix.raft.RaftServer#join(RaftMember.Type, java.util.Collection)} for the type semantics.
+   */
   public CompletableFuture<RaftPartition> join(
+      final RaftMember.Type type,
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
     initServer(managementService, snapshotStore);
-    return server.join().thenApply(v -> this);
+    return server.join(type).thenApply(v -> this);
   }
 
   public CompletableFuture<RaftPartition> leave() {
     return server.leave().thenApply(v -> this);
+  }
+
+  /**
+   * Promotes the local member to an ACTIVE voting member via a leader-forwarded reconfiguration -
+   * the second phase of a two-phase join for members that joined as PROMOTABLE and have caught up.
+   * See {@link RaftPartitionServer#promoteMember()} for the retry semantics.
+   */
+  public CompletableFuture<RaftPartition> promoteMember() {
+    return server.promoteMember().thenApply(v -> this);
+  }
+
+  /**
+   * Demotes the local member to a PASSIVE, non-voting member via a leader-forwarded reconfiguration
+   * - the first phase of a two-phase leave, so that the subsequent {@link #leave()} commits without
+   * the departing member's participation. See {@link RaftPartitionServer#demoteMember()} for the
+   * retry semantics.
+   */
+  public CompletableFuture<RaftPartition> demoteMember() {
+    return server.demoteMember().thenApply(v -> this);
   }
 
   private void initServer(
@@ -147,12 +171,12 @@ public final class RaftPartition implements Partition, HealthMonitorable {
    * @return the partition name
    */
   public String name() {
-    return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.id());
+    return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.number());
   }
 
   @Override
   public String componentName() {
-    return String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId.id());
+    return String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId.number());
   }
 
   @Override

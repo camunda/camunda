@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.engine.authorization;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -39,7 +39,7 @@ public class OidcAuthOverRestInitializerIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
@@ -52,14 +52,12 @@ public class OidcAuthOverRestInitializerIT {
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
           .withSecurityConfig(
               c -> {
+                c.getAuthentication()
+                    .getOidc()
+                    .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com/sso-callback");
                 c.getAuthorizations().setEnabled(true);
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
-
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
                 // add a preconfigured user. This should not be allowed with OIDC
                 c.getInitialization()
                     .getUsers()

@@ -8,6 +8,9 @@
 package io.camunda.zeebe.backup.azure;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestPathPattern;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.parseManifestPath;
 
 import com.azure.core.http.rest.Response;
 import com.azure.core.util.BinaryData;
@@ -30,47 +33,60 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.PagedReads;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ManifestManager {
+
   public static final int PRECONDITION_FAILED = 412;
 
   /**
-   * The path format consists of the following elements:
-   *
-   * <ul>
-   *   <li>{@code "manifests"}
-   *   <li>{@code partitionId}
-   *   <li>{@code checkpointId}
-   *   <li>{@code nodeId}
-   *   <li>{@code "manifest.json"}
-   * </ul>
-   *
-   * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
+   * A sweep batch selects up to a thousand manifests; downloading them one blocking HTTP GET after
+   * another would cost that many sequential round trips. Bounded to the same width GCS and S3
+   * already use for the same reason.
    */
-  private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
+  static final int MANIFEST_READ_PARALLELISM = 16;
 
-  private static final ObjectMapper MAPPER =
+  static final ObjectMapper MAPPER =
       new ObjectMapper()
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
+
+  private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
+
+  private static final int LIST_PAGE_SIZE = 1000;
+
   private volatile boolean containerCreated;
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final BlobContainerClient blobContainerClient;
+  private final Executor executor;
+  private final Semaphore manifestReadConcurrencyLimit = new Semaphore(MANIFEST_READ_PARALLELISM);
 
-  ManifestManager(final BlobContainerClient blobContainerClient, final boolean createContainer) {
+  ManifestManager(
+      final BlobContainerClient blobContainerClient,
+      final boolean createContainer,
+      final Executor executor) {
     this.blobContainerClient = blobContainerClient;
+    this.executor = executor;
     containerCreated = !createContainer;
   }
 
@@ -146,10 +162,12 @@ public final class ManifestManager {
 
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
 
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
-    Manifest manifest = getManifest(manifestId);
+    final BlobClient blobClient =
+        blobContainerClient.getBlobClient(BackupStorePaths.manifestPath(manifestId));
+    final Manifest manifest = getManifest(manifestId);
     if (manifest == null) {
-      manifest = Manifest.createFailed(manifestId);
+      upload(blobClient, Manifest.createFailed(manifestId, failureReason));
+      return;
     }
 
     final var updatedManifest =
@@ -162,11 +180,15 @@ public final class ManifestManager {
         };
 
     if (manifest != updatedManifest) {
-      try {
-        blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(updatedManifest)), true);
-      } catch (final JsonProcessingException e) {
-        throw new RuntimeException(e);
-      }
+      upload(blobClient, updatedManifest);
+    }
+  }
+
+  private static void upload(final BlobClient blobClient, final Manifest manifest) {
+    try {
+      blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(manifest)), true);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -182,8 +204,7 @@ public final class ManifestManager {
 
     if (manifest != deletedManifest) {
       try {
-        final BlobClient blobClient =
-            blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+        final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(manifest));
         blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(deletedManifest)), true);
       } catch (final JsonProcessingException e) {
         throw new RuntimeException(e);
@@ -192,14 +213,13 @@ public final class ManifestManager {
   }
 
   public void deleteManifest(final Manifest manifest) {
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(manifest));
     blobClient.delete();
   }
 
   Manifest getManifest(final BackupIdentifier id) {
     assureContainerCreated();
-    return getManifestWithPath(
-        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    return getManifestWithPath(BackupStorePaths.manifestPath(id));
   }
 
   private Manifest getManifestWithPath(final String path) {
@@ -223,38 +243,53 @@ public final class ManifestManager {
     }
   }
 
-  public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+  /**
+   * Lists the page of manifests selected by the options. All matching blob names are enumerated
+   * page by page, but only the selected manifests are downloaded, up to {@link
+   * #manifestReadConcurrencyLimit} at a time.
+   */
+  public List<Manifest> listManifests(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     assureContainerCreated();
-    return blobContainerClient
-        .listBlobs(new ListBlobsOptions().setPrefix(wildcardPrefix(wildcard)), null)
-        .stream()
-        .map(BlobItem::getName)
-        .filter(path -> filterBlobsByWildcard(wildcard, path))
-        .map(this::getManifestWithPath)
-        .filter(Objects::nonNull)
-        .filter(m -> wildcard.matches(m.id()))
-        .toList();
+    final var pathPattern = manifestPathPattern(wildcard);
+    final var manifestBlobs = new ArrayList<ManifestBlob>();
+    final var listOptions =
+        new ListBlobsOptions()
+            .setPrefix(wildcardPrefix(wildcard))
+            .setMaxResultsPerPage(LIST_PAGE_SIZE);
+    for (final var page : blobContainerClient.listBlobs(listOptions, null).iterableByPage()) {
+      for (final BlobItem blob : page.getValue()) {
+        final var matcher = pathPattern.matcher(blob.getName());
+        if (!matcher.matches()) {
+          continue;
+        }
+        final var id = parseManifestPath(matcher);
+        if (id.isEmpty()) {
+          LOG.warn("Tried interpreting blob {} as a backup manifest but failed", blob.getName());
+          continue;
+        }
+        id.filter(wildcard::matches)
+            .ifPresent(it -> manifestBlobs.add(new ManifestBlob(it, blob.getName())));
+      }
+    }
+    return PagedReads.readPageAsync(manifestBlobs, ManifestBlob::id, options, this::readManifest)
+        .join();
+  }
+
+  /**
+   * Downloads one manifest, bounded by {@link #manifestReadConcurrencyLimit}. Empty if it was
+   * deleted between listing and this read — retention's own deletes race with its next sweep, so
+   * this is expected, not a failure.
+   */
+  private CompletableFuture<Optional<Manifest>> readManifest(final ManifestBlob manifestBlob) {
+    return SemaphoreLeasedScheduler.schedule(
+        () -> Optional.ofNullable(getManifestWithPath(manifestBlob.path())),
+        executor,
+        manifestReadConcurrencyLimit);
   }
 
   public static String manifestPath(final Manifest manifest) {
-    return manifestIdPath(manifest.id());
-  }
-
-  private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
-    return MANIFEST_PATH_FORMAT.formatted(
-        backupIdentifier.partitionId(), backupIdentifier.checkpointId(), backupIdentifier.nodeId());
-  }
-
-  private boolean filterBlobsByWildcard(
-      final BackupIdentifierWildcard wildcard, final String path) {
-    final var pattern =
-        Pattern.compile(
-                MANIFEST_PATH_FORMAT.formatted(
-                    wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                    wildcard.checkpointPattern().asRegex(),
-                    wildcard.nodeId().map(Number::toString).orElse("\\d+")))
-            .asMatchPredicate();
-    return pattern.test(path);
+    return BackupStorePaths.manifestPath(manifest.id());
   }
 
   /**
@@ -263,7 +298,7 @@ public final class ManifestManager {
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return "manifests/" + BackupIdentifierWildcard.asPrefix(wildcard);
+    return manifestsPrefix(wildcard);
   }
 
   void assureContainerCreated() {
@@ -287,4 +322,6 @@ public final class ManifestManager {
   }
 
   record PersistedManifest(String eTag, InProgressManifest manifest) {}
+
+  private record ManifestBlob(BackupIdentifier id, String path) {}
 }

@@ -34,6 +34,11 @@ public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> 
     return this;
   }
 
+  public BrokerFailJobRequest setJobLeaseToken(final String jobLeaseToken) {
+    requestDto.setJobLeaseToken(jobLeaseToken);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

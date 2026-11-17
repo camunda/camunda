@@ -71,4 +71,10 @@ public class ProcessGroupByInterpreterFacadeES
       final Query baseQuery) {
     return interpreter(context.getPlan().getGroupBy()).getMinMaxStats(context, baseQuery);
   }
+
+  @Override
+  public Optional<String> getBaselineCountAggregationField(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return interpreter(context.getPlan().getGroupBy()).getBaselineCountAggregationField(context);
+  }
 }

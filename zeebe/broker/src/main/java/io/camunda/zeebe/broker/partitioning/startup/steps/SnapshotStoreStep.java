@@ -12,7 +12,7 @@ import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
@@ -37,9 +37,9 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
     final var snapshotStore =
         new FileBasedSnapshotStore(
             context.brokerConfig().getCluster().getNodeId(),
-            context.partitionId(),
+            context.partitionMetadata().id(),
             context.partitionDirectory(),
-            new ChecksumProviderRocksDBImpl(),
+            new RocksDBSnapshotFileInfoProvider(),
             context.partitionMeterRegistry());
 
     var result =
@@ -55,7 +55,16 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                   ignored -> {
                     final var snapshotTransfer =
                         new SnapshotTransferImpl(
-                            actor -> new SnapshotTransferServiceClient(context.brokerClient()),
+                            context.partitionMetadata().id(),
+                            actor ->
+                                new SnapshotTransferServiceClient(
+                                    context.brokerClient(),
+                                    context.partitionMetadata().id().group(),
+                                    context
+                                        .brokerConfig()
+                                        .getExperimental()
+                                        .getRaft()
+                                        .getBootstrapSnapshotRequestTimeout()),
                             snapshotStore.getSnapshotMetrics(),
                             snapshotStore);
                     return context

@@ -20,6 +20,9 @@ import io.camunda.client.api.response.Resource;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.AgentDefinition;
+import io.camunda.client.api.search.response.AgentInstance;
+import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -32,6 +35,7 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.GlobalTaskListener;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
@@ -69,6 +73,38 @@ import java.util.stream.Collectors;
 public final class SearchResponseMapper {
 
   private SearchResponseMapper() {}
+
+  public static AgentDefinition toAgentDefinitionGetResponse(final AgentDefinitionResult result) {
+    return new AgentDefinitionImpl(result);
+  }
+
+  public static SearchResponse<AgentDefinition> toAgentDefinitionSearchResponse(
+      final AgentDefinitionSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AgentDefinition> instances =
+        toSearchResponseInstances(response.getItems(), AgentDefinitionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static AgentInstance toAgentInstanceGetResponse(final AgentInstanceResult result) {
+    return new AgentInstanceImpl(result);
+  }
+
+  public static SearchResponse<AgentInstance> toAgentInstanceSearchResponse(
+      final AgentInstanceSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AgentInstance> instances =
+        toSearchResponseInstances(response.getItems(), AgentInstanceImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<AgentInstanceHistory> toAgentInstanceHistorySearchResponse(
+      final AgentInstanceHistorySearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AgentInstanceHistory> items =
+        toSearchResponseInstances(response.getItems(), AgentInstanceHistoryImpl::new);
+    return new SearchResponseImpl<>(items, page);
+  }
 
   public static SearchResponse<ProcessDefinition> toProcessDefinitionSearchResponse(
       final ProcessDefinitionSearchQueryResult response) {
@@ -125,10 +161,10 @@ public final class SearchResponseMapper {
   }
 
   public static SearchResponse<Variable> toVariableSearchResponse(
-      final VariableSearchQueryResult response) {
+      final VariableSearchQueryResult response, final JsonMapper jsonMapper) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Variable> instances =
-        toSearchResponseInstances(response.getItems(), VariableImpl::new);
+        toSearchResponseInstances(response.getItems(), v -> new VariableImpl(v, jsonMapper));
     return new SearchResponseImpl<>(instances, page);
   }
 
@@ -450,11 +486,37 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
+  public static SearchResponse<ElementInstanceWaitStateResult>
+      toElementInstanceWaitStateSearchResponse(
+          final io.camunda.client.protocol.rest.ElementInstanceWaitStateQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ElementInstanceWaitStateResult> instances =
+        toSearchResponseInstances(response.getItems(), ElementInstanceWaitStateResultImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static SearchResponse<GlobalTaskListener> toGlobalTaskListenerSearchResponse(
       final GlobalTaskListenerSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<GlobalTaskListener> instances =
         toSearchResponseInstances(response.getItems(), GlobalTaskListenerImpl::new);
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<Resource> toResourceSearchResponse(
+      final ResourceSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Resource> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toResource);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  private static Resource toResource(final io.camunda.client.protocol.rest.ResourceResult result) {
+    return new ResourceImpl(
+        result.getResourceId(),
+        Long.parseLong(result.getResourceKey()),
+        result.getVersion(),
+        result.getResourceName(),
+        result.getTenantId());
   }
 }

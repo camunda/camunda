@@ -21,7 +21,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 class TomcatEncodedSlashConfigTest {
 
   @Test
-  void shouldConfigurePassthroughForEncodedSlashes() {
+  void shouldConfigureDecodeForEncodedSlashes() {
     // given
     final var config = new TomcatEncodedSlashConfig();
     final WebServerFactoryCustomizer<TomcatServletWebServerFactory> customizer =
@@ -37,6 +37,6 @@ class TomcatEncodedSlashConfigTest {
 
     final var connector = mock(Connector.class);
     captor.getValue().customize(connector);
-    verify(connector).setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue());
+    verify(connector).setEncodedSolidusHandling(EncodedSolidusHandling.DECODE.getValue());
   }
 }

@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -20,12 +20,15 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.BeforeClass;
@@ -43,17 +46,18 @@ public class TenantAwareResourceDeletionTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               config ->
                   config
                       .getInitialization()
                       .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(USERNAME))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(USERNAME)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private static final String PROCESS_ID = "test";
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
@@ -61,6 +65,10 @@ public class TenantAwareResourceDeletionTest {
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
+
+  private static final String DRAINING_PROCESS_ID = "draining-tenant-process";
+  private static final BpmnModelInstance DRAINING_PROCESS =
+      Bpmn.createExecutableProcess(DRAINING_PROCESS_ID).startEvent().userTask().endEvent().done();
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -154,14 +162,22 @@ public class TenantAwareResourceDeletionTest {
     final var resourceKey =
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
+    final var tenantBUser = Strings.newRandomValidIdentityId();
+    ENGINE.user().newUser(tenantBUser).create();
+    ENGINE
+        .tenant()
+        .addEntity(TENANT_ID_B)
+        .withEntityType(EntityType.USER)
+        .withEntityId(tenantBUser)
+        .add();
+
     // when
     final var rejection =
         ENGINE
             .resourceDeletion()
             .withResourceKey(resourceKey)
-            .withAuthorizedTenantIds(TENANT_ID_B)
             .expectRejection()
-            .delete();
+            .delete(tenantBUser);
 
     // then
     RecordAssert.assertThat(rejection)
@@ -178,6 +194,31 @@ public class TenantAwareResourceDeletionTest {
                         .withIntent(ResourceDeletionIntent.DELETED)
                         .exists()))
         .isFalse();
+  }
+
+  @Test
+  public void shouldAcceptRepeatDeleteOfDrainingProcessForOwningTenant() {
+    // given - a tenant A definition kept DRAINING by a running instance
+    final var deployment =
+        ENGINE.deployment().withXmlResource(DRAINING_PROCESS).withTenantId(TENANT_ID_A).deploy();
+    final var resourceKey =
+        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(DRAINING_PROCESS_ID)
+        .withTenantId(TENANT_ID_A)
+        .create();
+    ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(USERNAME);
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(resourceKey)
+        .await();
+
+    // when - the owning tenant repeats the delete
+    final var repeat = ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(USERNAME);
+
+    // then - accepted, with the tenant resolved on the response
+    Assertions.assertThat(repeat.getValue()).hasTenantId(TENANT_ID_A);
   }
 
   @Test

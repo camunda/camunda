@@ -12,6 +12,7 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record AuditLogDbModel(
@@ -51,7 +52,9 @@ public record AuditLogDbModel(
     String relatedEntityKey,
     String entityDescription,
     int partitionId,
-    OffsetDateTime historyCleanupDate)
+    OffsetDateTime historyCleanupDate,
+    String inboundChannelType,
+    String inboundChannelToolName)
     implements DbModel<AuditLogDbModel> {
 
   @Override
@@ -98,19 +101,19 @@ public record AuditLogDbModel(
         .entityDescription(entityDescription)
         .partitionId(partitionId)
         .historyCleanupDate(historyCleanupDate)
-        .rootProcessInstanceKey(rootProcessInstanceKey);
+        .rootProcessInstanceKey(rootProcessInstanceKey)
+        .inboundChannelType(inboundChannelType)
+        .inboundChannelToolName(inboundChannelToolName);
   }
 
   public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
-    if (TruncateUtil.shouldTruncate(entityDescription(), sizeLimit, byteLimit)) {
-
-      return copy(
-          fn ->
-              ((Builder) fn)
-                  .entityDescription(
-                      TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit)));
+    final var truncatedEntityDescription =
+        TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit);
+    if (Objects.equals(truncatedEntityDescription, entityDescription())) {
+      return this;
     }
-    return this;
+
+    return copy(fn -> ((Builder) fn).entityDescription(truncatedEntityDescription));
   }
 
   public static class Builder implements ObjectBuilder<AuditLogDbModel> {
@@ -152,6 +155,8 @@ public record AuditLogDbModel(
     private String entityDescription;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
+    private String inboundChannelType;
+    private String inboundChannelToolName;
 
     public Builder() {}
 
@@ -340,6 +345,16 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder inboundChannelType(final String inboundChannelType) {
+      this.inboundChannelType = inboundChannelType;
+      return this;
+    }
+
+    public Builder inboundChannelToolName(final String inboundChannelToolName) {
+      this.inboundChannelToolName = inboundChannelToolName;
+      return this;
+    }
+
     @Override
     public AuditLogDbModel build() {
       return new AuditLogDbModel(
@@ -379,7 +394,9 @@ public record AuditLogDbModel(
           relatedEntityKey,
           entityDescription,
           partitionId,
-          historyCleanupDate);
+          historyCleanupDate,
+          inboundChannelType,
+          inboundChannelToolName);
     }
   }
 }

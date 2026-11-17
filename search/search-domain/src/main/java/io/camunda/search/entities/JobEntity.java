@@ -10,10 +10,13 @@ package io.camunda.search.entities;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record JobEntity(
@@ -24,26 +27,43 @@ public record JobEntity(
     JobKind kind,
     ListenerEventType listenerEventType,
     Integer retries,
-    Boolean isDenied,
-    String deniedReason,
+    @Nullable Integer priority,
+    @Nullable Boolean isDenied,
+    @Nullable String deniedReason,
     Boolean hasFailedWithRetriesLeft,
-    String errorCode,
-    String errorMessage,
+    @Nullable String errorCode,
+    @Nullable String errorMessage,
     Map<String, String> customHeaders,
-    OffsetDateTime deadline,
-    OffsetDateTime endTime,
-    String processDefinitionId,
-    Long processDefinitionKey,
+    @Nullable OffsetDateTime deadline,
+    @Nullable OffsetDateTime endTime,
+    // absent on job documents imported by Operate 8.7 and earlier.
+    @Nullable String processDefinitionId,
+    @Nullable Long processDefinitionKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    String elementId,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable String businessId,
+    @Nullable Integer storageOrdinal,
+    // absent on jobs created before the 8.6 upgrade whose first imported event was a failure.
+    @Nullable String elementId,
     Long elementInstanceKey,
     String tenantId,
-    OffsetDateTime creationTime,
-    OffsetDateTime lastUpdateTime)
+    // absent on job documents written before 8.9.
+    @Nullable OffsetDateTime creationTime,
+    @Nullable OffsetDateTime lastUpdateTime)
     implements TenantOwnedEntity {
 
   public JobEntity {
+    requireNonNull(jobKey, "jobKey");
+    requireNonNull(type, "type");
+    requireNonNull(worker, "worker");
+    requireNonNull(state, "state");
+    requireNonNull(kind, "kind");
+    requireNonNull(listenerEventType, "listenerEventType");
+    requireNonNull(retries, "retries");
+    requireNonNull(hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft");
+    requireNonNull(processInstanceKey, "processInstanceKey");
+    requireNonNull(elementInstanceKey, "elementInstanceKey");
+    requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
@@ -51,30 +71,33 @@ public record JobEntity(
   }
 
   public static class Builder implements ObjectBuilder<JobEntity> {
-    private Long jobKey;
-    private String type;
-    private String worker;
-    private JobState state;
-    private JobKind kind;
-    private ListenerEventType listenerEventType;
-    private Integer retries;
-    private Boolean isDenied;
-    private String deniedReason;
-    private Boolean hasFailedWithRetriesLeft;
-    private String errorCode;
-    private String errorMessage;
-    private Map<String, String> customHeaders;
-    private OffsetDateTime deadline;
-    private OffsetDateTime endTime;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private String elementId;
-    private Long elementInstanceKey;
-    private String tenantId;
-    private OffsetDateTime creationTime;
-    private OffsetDateTime lastUpdateTime;
+    private @Nullable Long jobKey;
+    private @Nullable String type;
+    private @Nullable String worker;
+    private @Nullable JobState state;
+    private @Nullable JobKind kind;
+    private @Nullable ListenerEventType listenerEventType;
+    private @Nullable Integer retries;
+    private @Nullable Integer priority;
+    private @Nullable Boolean isDenied;
+    private @Nullable String deniedReason;
+    private @Nullable Boolean hasFailedWithRetriesLeft;
+    private @Nullable String errorCode;
+    private @Nullable String errorMessage;
+    private @Nullable Map<String, String> customHeaders;
+    private @Nullable OffsetDateTime deadline;
+    private @Nullable OffsetDateTime endTime;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String businessId;
+    private @Nullable Integer storageOrdinal;
+    private @Nullable String elementId;
+    private @Nullable Long elementInstanceKey;
+    private @Nullable String tenantId;
+    private @Nullable OffsetDateTime creationTime;
+    private @Nullable OffsetDateTime lastUpdateTime;
 
     public Builder jobKey(final Long jobKey) {
       this.jobKey = jobKey;
@@ -108,6 +131,11 @@ public record JobEntity(
 
     public Builder retries(final Integer retries) {
       this.retries = retries;
+      return this;
+    }
+
+    public Builder priority(final Integer priority) {
+      this.priority = priority;
       return this;
     }
 
@@ -171,6 +199,16 @@ public record JobEntity(
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
+    public Builder storageOrdinal(final Integer storageOrdinal) {
+      this.storageOrdinal = storageOrdinal;
+      return this;
+    }
+
     public Builder elementId(final String elementId) {
       this.elementId = elementId;
       return this;
@@ -196,16 +234,18 @@ public record JobEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public JobEntity build() {
       return new JobEntity(
-          requireNonNull(jobKey, "Expected non-null field for jobKey."),
+          jobKey,
           type,
           worker,
-          requireNonNull(state, "Expected non-null field for state"),
-          requireNonNull(kind, "Expected non-null field for kind."),
-          requireNonNull(listenerEventType, "Expected non-null field for listenerEventType."),
+          state,
+          kind,
+          listenerEventType,
           retries,
+          priority,
           isDenied,
           deniedReason,
           hasFailedWithRetriesLeft,
@@ -218,6 +258,8 @@ public record JobEntity(
           processDefinitionKey,
           processInstanceKey,
           rootProcessInstanceKey,
+          businessId,
+          storageOrdinal,
           elementId,
           elementInstanceKey,
           tenantId,
@@ -233,8 +275,22 @@ public record JobEntity(
     ERROR_THROWN,
     FAILED,
     MIGRATED,
+    PRIORITY_UPDATED,
     RETRIES_UPDATED,
-    TIMED_OUT,
+    TIMEOUT_UPDATED,
+    TIMED_OUT;
+
+    public static List<JobState> nonTerminalStates() {
+      return List.of(
+          CREATED,
+          FAILED,
+          ERROR_THROWN,
+          TIMED_OUT,
+          RETRIES_UPDATED,
+          PRIORITY_UPDATED,
+          TIMEOUT_UPDATED,
+          MIGRATED);
+    }
   }
 
   public enum JobKind {
@@ -247,6 +303,7 @@ public record JobEntity(
   public enum ListenerEventType {
     ASSIGNING,
     BEFORE_ALL,
+    CANCEL,
     CANCELING,
     COMPLETING,
     CREATING,

@@ -71,12 +71,12 @@ type QueryMessageSubscriptionsRequestBody = z.infer<typeof queryMessageSubscript
 const queryMessageSubscriptionsResponseBodySchema = getQueryResponseBodySchema(messageSubscriptionSchema);
 type QueryMessageSubscriptionsResponseBody = z.infer<typeof queryMessageSubscriptionsResponseBodySchema>;
 
-const queryMessageSubscriptions: Endpoint = {
+const queryMessageSubscriptions = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/message-subscriptions/search`;
+		return `/${API_VERSION}/message-subscriptions/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 const correlatedMessageSubscriptionSchema = z.object({
 	subscriptionKey: z.string(),
@@ -139,12 +139,12 @@ type QueryCorrelatedMessageSubscriptionsResponseBody = z.infer<
 	typeof queryCorrelatedMessageSubscriptionsResponseBodySchema
 >;
 
-const queryCorrelatedMessageSubscriptions: Endpoint = {
+const queryCorrelatedMessageSubscriptions = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/correlated-message-subscriptions/search`;
+		return `/${API_VERSION}/correlated-message-subscriptions/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 export {
 	queryMessageSubscriptions,

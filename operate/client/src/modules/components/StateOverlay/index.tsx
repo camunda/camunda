@@ -20,6 +20,16 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import type {ElementState} from 'modules/bpmn-js/overlayTypes';
 import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
 
+const STATE_LABELS: Record<string, string> = {
+  active: 'Active',
+  incidents: 'Incidents',
+  canceled: 'Canceled',
+  completed: 'Completed',
+  completedEndEvents: 'Completed',
+  EVALUATED: 'Evaluated',
+  FAILED: 'Failed',
+};
+
 type Props = {
   state: (ElementState | 'completedEndEvents') | DecisionInstanceState;
   container: HTMLElement;
@@ -39,11 +49,14 @@ const StateOverlay: React.FC<Props> = observer(
     title,
   }) => {
     const showStatistic = count !== undefined;
+    const label = title ?? STATE_LABELS[state] ?? state;
 
     return createPortal(
       <Container
         data-testid={testId}
         title={title}
+        role="img"
+        aria-label={showStatistic ? `${label}: ${count}` : label}
         $theme={currentTheme.theme}
         $state={state}
         $isFaded={isFaded}

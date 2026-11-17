@@ -12,16 +12,15 @@ import {
   InlineNotification as BaseInlineNotification,
   Button as BaseButton,
 } from "@carbon/react";
-import { spacing06, spacing07 } from "@carbon/elements";
 import Page from "src/components/layout/Page.tsx";
 
 const setupPageContentWidth = "25rem";
 
 export const SetupFormContainer = styled(Stack)<{ $hasError: boolean }>`
   flex-direction: column;
-  gap: ${spacing06};
+  gap: var(--cds-spacing-06);
   width: 100%;
-  padding-top: ${({ $hasError }) => ($hasError ? 0 : spacing06)};
+  padding-top: ${({ $hasError }) => ($hasError ? 0 : "var(--cds-spacing-06)")};
 `;
 
 export const SetupPageContainer = styled(Page)`
@@ -30,7 +29,7 @@ export const SetupPageContainer = styled(Page)`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: ${spacing06};
+  padding: var(--cds-spacing-06);
 `;
 
 export const Content = styled.div`
@@ -44,23 +43,23 @@ export const PageTitle = styled.h1`
 `;
 
 export const Header = styled.div`
-  margin: ${spacing06};
+  margin: var(--cds-spacing-06);
   margin-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 
   h1 {
-    font-size: ${spacing07};
+    font-size: var(--cds-spacing-07);
   }
 
   img {
-    height: ${spacing07};
+    height: var(--cds-spacing-07);
   }
 `;
 
 export const InlineNotification = styled(BaseInlineNotification)`
-  margin-top: ${spacing06};
+  margin-top: var(--cds-spacing-06);
 `;
 
 export const Button: typeof BaseButton = styled(BaseButton)`

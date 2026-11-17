@@ -11,16 +11,23 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSI
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_NAME;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
@@ -77,19 +84,20 @@ public class ListViewVariableFromVariableHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(VariableIntent.CREATED));
     final String expectedId =
         VariableForListViewEntity.getIdBy(
             variableRecord.getValue().getScopeKey(), variableRecord.getValue().getName());
 
-    // when
-    final var idList = underTest.generateIds(variableRecord);
-
-    // then
-    assertThat(idList).containsExactly(expectedId);
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, variableRecord))
+        .containsExactly(new IdAndIndex(expectedId, index));
   }
 
   @Test
@@ -115,15 +123,16 @@ public class ListViewVariableFromVariableHandlerTest {
     expectedUpdateFields.put(VAR_NAME, inputEntity.getVarName());
     expectedUpdateFields.put(VAR_VALUE, inputEntity.getVarValue());
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,
@@ -227,5 +236,49 @@ public class ListViewVariableFromVariableHandlerTest {
     // then
     assertThat(entity.getVarValue()).hasSize(variableSizeThreshold - 10);
     assertThat(entity.getVarValue()).isEqualTo(shortValue);
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final VariableForListViewEntity entity = new VariableForListViewEntity();
+    underTest.updateEntity(variableRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final VariableForListViewEntity entity = new VariableForListViewEntity();
+    underTest.updateEntity(variableRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

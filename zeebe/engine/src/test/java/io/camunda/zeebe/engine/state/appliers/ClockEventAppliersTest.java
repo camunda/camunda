@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
+import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -51,6 +52,41 @@ public class ClockEventAppliersTest {
 
       // then
       assertThat(state.getModification()).isEqualTo(Modification.pinAt(Instant.ofEpochMilli(5)));
+    }
+  }
+
+  @Nested
+  final class OffsettedTest {
+    private ClockOffsettedApplier applier;
+
+    @BeforeEach
+    void beforeEach() {
+      applier = new ClockOffsettedApplier(state);
+    }
+
+    @Test
+    void shouldOffsetClock() {
+      // given
+      final var clock = new ClockRecord().offsetBy(5);
+
+      // when
+      applier.applyState(1, clock);
+
+      // then
+      assertThat(state.getModification()).isEqualTo(Modification.offsetBy(Duration.ofMillis(5)));
+    }
+
+    @Test
+    void shouldReplacePinWithOffset() {
+      // given
+      state.pinAt(10);
+      final var clock = new ClockRecord().offsetBy(-5);
+
+      // when
+      applier.applyState(1, clock);
+
+      // then
+      assertThat(state.getModification()).isEqualTo(Modification.offsetBy(Duration.ofMillis(-5)));
     }
   }
 }

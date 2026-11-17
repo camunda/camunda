@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.entities.BatchOperationEntity.getBatchOperationKey;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.BATCH_OPERATION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -17,8 +17,8 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -38,12 +38,14 @@ public final class BatchOperationServices
   private final BatchOperationSearchClient batchOperationSearchClient;
 
   public BatchOperationServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final BatchOperationSearchClient batchOperationSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -82,7 +84,8 @@ public final class BatchOperationServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(BATCH_OPERATION_READ_AUTHORIZATION, batchOperationKey)))
+                        withRequiredAuthorization(
+                            BATCH_OPERATION_READ_AUTHORIZATION, batchOperationKey)))
                 .getBatchOperation(batchOperationKey));
   }
 

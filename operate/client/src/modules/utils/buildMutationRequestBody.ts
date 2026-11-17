@@ -12,25 +12,30 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
+import type {VariableCondition} from 'modules/stores/variableFilter';
+import {buildVariableEntry} from 'modules/hooks/processInstancesSearch';
 
 type BuildMutationRequestBodyParams = {
   searchParams: URLSearchParams;
   includeIds?: string[];
   excludeIds?: string[];
-  variableFilter?: Variable;
+  conditions?: VariableCondition[];
   processDefinitionKey?: string;
+  includeSuspended?: boolean;
 };
 
 const buildMutationRequestBody = ({
   searchParams,
   includeIds = [],
   excludeIds = [],
-  variableFilter,
+  conditions,
   processDefinitionKey,
+  includeSuspended = false,
 }: BuildMutationRequestBodyParams) => {
-  const baseFilter = parseProcessInstancesSearchFilter(searchParams);
+  const baseFilter = parseProcessInstancesSearchFilter({
+    searchParams,
+    includeSuspended,
+  });
 
   const keyCriterion = buildInstanceKeyCriterion(includeIds, excludeIds);
 
@@ -47,19 +52,14 @@ const buildMutationRequestBody = ({
     };
   }
 
-  if (variableFilter?.name && variableFilter?.values) {
-    const parsed = (getValidVariableValues(variableFilter.values) ?? []).map(
-      (v) => JSON.stringify(v),
-    );
-    if (parsed.length > 0) {
+  if (conditions && conditions.length > 0) {
+    const entries = conditions
+      .map(buildVariableEntry)
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    if (entries.length > 0) {
       filter = {
         ...filter,
-        variables: [
-          {
-            name: variableFilter.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ],
+        variables: entries,
       };
     }
   }

@@ -18,7 +18,6 @@ package io.camunda.client.spring.annotation.processor;
 import static io.camunda.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
@@ -40,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
@@ -64,23 +62,13 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     this.camundaClientProperties = camundaClientProperties;
   }
 
-  public DeploymentAnnotationProcessor(
-      final ApplicationEventPublisher publisher,
-      final CamundaClientProperties camundaClientProperties) {
-    this(
-        publisher,
-        AnnotationUtil::getDeploymentValues,
-        new PathMatchingResourcePatternResolver(),
-        camundaClientProperties);
-  }
-
   @Override
-  public boolean isApplicableFor(final BeanInfo beanInfo) {
+  protected boolean isApplicableFor(final BeanInfo beanInfo) {
     return isDeployment(beanInfo);
   }
 
   @Override
-  public void configureFor(final BeanInfo beanInfo) {
+  protected void configureFor(final BeanInfo beanInfo) {
     final List<DeploymentValue> extractedDeploymentValues =
         deploymentValuesExtractor.apply(beanInfo);
     extractedDeploymentValues.forEach(this::overrideFromProperties);
@@ -91,7 +79,12 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
-  public void start(final CamundaClient client) {
+  protected void clearDiscovered() {
+    deploymentValues.clear();
+  }
+
+  @Override
+  protected void start(final CamundaClient client) {
     if (deploymentValues.isEmpty()) {
       return;
     }
@@ -101,7 +94,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
-  public void stop(final CamundaClient client) {
+  protected void stop(final CamundaClient client) {
     deploymentValues.clear();
   }
 
@@ -120,6 +113,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     final List<Resource> resources =
         deploymentValue.getResources().stream()
             .flatMap(r -> Arrays.stream(getResources(r)))
+            .filter(this::isFile)
             .filter(r -> !ownJarOnly || comeFromSameJar(deploymentValue.getSource(), r))
             .distinct()
             .toList();
@@ -203,6 +197,23 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       return resourcePatternResolver.getResources(resources);
     } catch (final IOException e) {
       return new Resource[0];
+    }
+  }
+
+  private boolean isFile(final Resource resource) {
+    try {
+      final java.io.File file = resource.getFile();
+      return file != null && !file.isDirectory();
+    } catch (final IOException e) {
+      // getFile() is unsupported for jar/classpath* resources; fall back to URL check.
+      // Directory entries in jar and classpath resources end with '/'.
+      try {
+        return !resource.getURL().toString().endsWith("/");
+      } catch (final IOException urlException) {
+        // If we can't determine if it's a directory, assume it's a file and let the
+        // deployment process handle any errors
+        return true;
+      }
     }
   }
 }

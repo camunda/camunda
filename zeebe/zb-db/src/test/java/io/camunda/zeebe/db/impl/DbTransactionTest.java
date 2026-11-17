@@ -238,6 +238,28 @@ public final class DbTransactionTest {
   }
 
   @Test
+  public void shouldRollbackFailedTransactionAfterCountOutsideTransaction() {
+    // given a count outside of any transaction
+    oneColumnFamily.count();
+    oneColumnFamily.countEqualPrefix(new DbLong());
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    // when a transaction fails after writing
+    assertThatThrownBy(
+            () ->
+                transactionContext.runInTransaction(
+                    () -> {
+                      oneColumnFamily.insert(oneKey, oneValue);
+                      throw new IllegalStateException("expected");
+                    }))
+        .isInstanceOf(RuntimeException.class);
+
+    // then the write is rolled back
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+  }
+
+  @Test
   public void shouldGetValueInTransaction() {
     // given
     final AtomicLong actualValue = new AtomicLong(0);

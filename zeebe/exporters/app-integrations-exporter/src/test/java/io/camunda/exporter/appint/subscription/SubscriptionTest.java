@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.appint.config.BatchConfig;
 import io.camunda.exporter.appint.mapper.RecordMapper;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.transport.Transport;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.List;
@@ -52,7 +53,13 @@ public class SubscriptionTest {
     mapper = mock(RecordMapper.class);
     positionConsumer = mock(Consumer.class);
     batchConfig = new BatchConfig(MAX_BATCHES_IN_FLIGHT, BATCH_SIZE, BATCH_INTERVAL_MS, false);
-    subscription = new Subscription<>(transport, mapper, batchConfig, positionConsumer);
+    subscription =
+        new Subscription<>(
+            transport,
+            mapper,
+            batchConfig,
+            positionConsumer,
+            AppIntegrationsExporterMetrics.disabled());
 
     // Default behavior for mapper to support all test records and return a non-null value
     // This can be overridden in specific tests as needed
@@ -246,7 +253,13 @@ public class SubscriptionTest {
   void shouldRetryBatchOnTransportFailureWhenContinueOnErrorDisabled() {
     // given
     batchConfig = new BatchConfig(MAX_BATCHES_IN_FLIGHT, 1, BATCH_INTERVAL_MS, false);
-    subscription = new Subscription<>(transport, mapper, batchConfig, positionConsumer);
+    subscription =
+        new Subscription<>(
+            transport,
+            mapper,
+            batchConfig,
+            positionConsumer,
+            AppIntegrationsExporterMetrics.disabled());
     final var counter = new AtomicInteger(0);
     doAnswer(
             i -> {
@@ -271,7 +284,13 @@ public class SubscriptionTest {
   void shouldContinueOnTransportFailureWhenContinueOnErrorEnabled() {
     // given
     batchConfig = new BatchConfig(MAX_BATCHES_IN_FLIGHT, 1, BATCH_INTERVAL_MS, true);
-    subscription = new Subscription<>(transport, mapper, batchConfig, positionConsumer);
+    subscription =
+        new Subscription<>(
+            transport,
+            mapper,
+            batchConfig,
+            positionConsumer,
+            AppIntegrationsExporterMetrics.disabled());
 
     doThrow(new RuntimeException("Transport error")).when(transport).send(anyList());
 

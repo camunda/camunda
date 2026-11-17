@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="Definitions_tested_and_mocked" name="Tested And Mocked" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.26.0">
+  <decision id="tested-and-mocked-decision" name="Tested And Mocked Decision">
+    <decisionTable id="DecisionTable_tested_and_mocked">
+      <input id="Input_1" label="yes_or_no">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>yes_or_no</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="result" name="result" typeRef="string" />
+      <rule id="DecisionRule_Yes">
+        <inputEntry id="UnaryTests_Yes">
+          <text>"yes"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_Yes">
+          <text>":)"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_No">
+        <inputEntry id="UnaryTests_No">
+          <text>"no"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_No">
+          <text>":("</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

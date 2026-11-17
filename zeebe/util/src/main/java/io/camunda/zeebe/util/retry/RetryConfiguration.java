@@ -13,14 +13,15 @@ import static io.github.resilience4j.retry.RetryConfig.DEFAULT_MAX_ATTEMPTS;
 import static java.util.Optional.ofNullable;
 
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 
 public class RetryConfiguration {
 
   private static final Duration DEFAULT_MAX_RETRY_DELAY = Duration.ofMillis(30_000);
-  private Integer maxRetries;
-  private Duration minRetryDelay;
-  private Duration maxRetryDelay;
-  private Double retryDelayMultiplier;
+  private @Nullable Integer maxRetries;
+  private @Nullable Duration minRetryDelay;
+  private @Nullable Duration maxRetryDelay;
+  private @Nullable Double retryDelayMultiplier;
 
   public int getMaxRetries() {
     return ofNullable(maxRetries).orElseGet(this::defaultMaxRetries);

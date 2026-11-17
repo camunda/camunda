@@ -116,6 +116,16 @@ public class AuditLogSortImpl extends SearchRequestSortBase<AuditLogSort> implem
   }
 
   @Override
+  public AuditLogSort inboundChannelType() {
+    return field("inboundChannelType");
+  }
+
+  @Override
+  public AuditLogSort inboundChannelToolName() {
+    return field("inboundChannelToolName");
+  }
+
+  @Override
   public AuditLogSort result() {
     return field("result");
   }

@@ -1,0 +1,58 @@
+# Fragment file (no `openapi:` at root) — mirrors the per-file CI pass over
+# the real spec's domain files (tenants.yaml, roles.yaml, etc.). Only the
+# producer-existence cross-reference is skipped on fragments; per-operation
+# checks (unknown kind, illegal direct establishes/requires of an
+# external-entity, edge-endpoint single-owner resolution) must still run.
+
+paths:
+  /fragment/edges/{widgetId}/users/{username}:
+    put:
+      operationId: assignUserInFragment
+      summary: Edge in a fragment file
+      description: |
+        Edge whose endpoints (Widget, User) are established in sibling files
+        not visible in this scope. The bundled lint pass enforces producer
+        existence; this per-file pass must not falsely flag missing
+        producers.
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: username
+          in: path
+          required: true
+          description: The username.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetOwnership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: username, semanticType: Username }
+      responses:
+        '204':
+          description: Done.
+
+  /fragment/widgets/{widgetId}:
+    get:
+      operationId: getWidgetInFragment
+      summary: Consumer in a fragment file
+      description: |
+        Requires Widget which is established in a sibling file. The bundled
+        pass enforces producer existence; this per-file pass must not flag
+        Widget as unestablished here.
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: Done.

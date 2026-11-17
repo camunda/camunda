@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -17,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import java.util.List;
 
 public class MappingRuleDeletedHandler
-    implements ExportHandler<MappingRuleEntity, MappingRuleRecordValue> {
+    implements MainIndexExporterHandler<MappingRuleEntity, MappingRuleRecordValue> {
   private final String indexName;
 
   public MappingRuleDeletedHandler(final String indexName) {
@@ -62,9 +63,10 @@ public class MappingRuleDeletedHandler
   }
 
   @Override
-  public void flush(final MappingRuleEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final MappingRuleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

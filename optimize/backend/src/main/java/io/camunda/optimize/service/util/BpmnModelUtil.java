@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
@@ -98,6 +99,37 @@ public final class BpmnModelUtil {
       flowNodeNames.put(flowNode.getId(), flowNode.getName());
     }
     return flowNodeNames;
+  }
+
+  public static Map<String, Set<String>> extractAdHocSubProcessChildElementIds(
+      final String bpmn20Xml) {
+    return extractAdHocSubProcessChildElementIds(parseBpmnModel(bpmn20Xml));
+  }
+
+  /**
+   * Returns, for each ad-hoc subprocess in the model, the set of ids of its <em>activatable</em>
+   * child flow nodes (the "tools" of an AI Agent): the direct child flow nodes that have no
+   * incoming sequence flow within the ad-hoc subprocess. In an ad-hoc subprocess only such
+   * entry-point elements are directly activatable by the agent; any downstream node reached via a
+   * sequence flow is a deterministic follow-up step, not a tool call, so it is excluded here.
+   * Sequence flows and other non-flow-node elements are excluded as well so the ids line up with
+   * the {@code flowNodeInstances} recorded for tool activations.
+   */
+  public static Map<String, Set<String>> extractAdHocSubProcessChildElementIds(
+      final BpmnModelInstance model) {
+    final Map<String, Set<String>> childIdsByAdHocSubProcessId = new HashMap<>();
+    for (final AdHocSubProcess adHocSubProcess :
+        model.getModelElementsByType(AdHocSubProcess.class)) {
+      final Set<String> childIds =
+          adHocSubProcess.getFlowElements().stream()
+              .filter(FlowNode.class::isInstance)
+              .map(FlowNode.class::cast)
+              .filter(flowNode -> flowNode.getIncoming().isEmpty())
+              .map(BaseElement::getId)
+              .collect(Collectors.toSet());
+      childIdsByAdHocSubProcessId.put(adHocSubProcess.getId(), childIds);
+    }
+    return childIdsByAdHocSubProcessId;
   }
 
   public static Set<String> getCollapsedSubprocessElementIds(final String xmlString) {

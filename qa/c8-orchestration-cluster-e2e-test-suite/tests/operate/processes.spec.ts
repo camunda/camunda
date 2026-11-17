@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
 
@@ -52,10 +52,14 @@ test.beforeAll(async () => {
     processInstanceKey: instanceWithAnIncidentResponse.processInstanceKey,
   };
 
-  await deploy(['./resources/process_to_test_delete_process_definition.bpmn']);
+  // Use a process definition dedicated to this suite. The previously shared
+  // "process_to_test_delete_process_definition" is deleted by the resource
+  // delete API test, which removed the definition mid-run and broke instance
+  // creation / version selection here.
+  await deploy(['./resources/process_to_cancel_operate_test.bpmn']);
 
   const instanceToCancelResponse = await createSingleInstance(
-    'process_to_test_delete_process_definition',
+    'process_to_cancel_operate_test',
     1,
   );
   instanceToCancel = {
@@ -66,9 +70,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Processes', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
@@ -141,9 +144,9 @@ test.describe('Processes', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessesPage.dataList.getByTestId(
-              `INCIDENT-icon-${instanceWithAnIncident.processInstanceKey}`,
-            ),
+            operateProcessesPage
+              .processInstanceRow(instanceWithAnIncident.processInstanceKey)
+              .getByRole('img', {name: 'incident state', exact: true}),
           ).toBeVisible();
         },
         onFailure: async () => {
@@ -152,9 +155,9 @@ test.describe('Processes', () => {
       });
 
       await expect(
-        operateProcessesPage.dataList.getByTestId(
-          `ACTIVE-icon-${instanceWithoutAnIncident.processInstanceKey}`,
-        ),
+        operateProcessesPage
+          .processInstanceRow(instanceWithoutAnIncident.processInstanceKey)
+          .getByRole('img', {name: 'active state', exact: true}),
       ).toBeVisible();
     });
   });
@@ -250,24 +253,14 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
       );
 
-      await expect(page).toHaveURL(
-        `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
-      );
+      // Operate detects the unknown process definition, surfaces a
+      // "Process could not be found" notification, and strips the invalid
+      // processDefinitionId/processDefinitionVersion params from the URL.
       await expect(
         operateProcessesPage.processCouldNotBeFoundMessage,
       ).toBeVisible();
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
-            timeout: 5000,
-          });
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 5,
-      });
+      await expect(page).toHaveURL(`${baseUrl}/operate/processes`);
     });
 
     await test.step('Deploy new process and verify it loads', async () => {
@@ -307,7 +300,7 @@ test.describe('Processes', () => {
       );
 
       await operateFiltersPanelPage.selectProcess(
-        'Delete Process Definition API Test',
+        'Cancel Instance Operate Test',
       );
       await operateFiltersPanelPage.selectVersion('1');
 
@@ -315,8 +308,8 @@ test.describe('Processes', () => {
     });
 
     await test.step('Cancel the running instance', async () => {
-      await operateProcessesPage.cancelProcessInstanceButton.click();
-      await operateProcessesPage.cancelProcessInstanceDialogButton.click();
+      await operateProcessesPage.clickCancelProcessInstanceButton();
+      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,

@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -43,6 +44,15 @@ public final class BusinessRuleTaskValidator implements ModelElementValidator<Bu
               "Must have either one 'zeebe:%s' or one 'zeebe:%s' extension element",
               ZeebeConstants.ELEMENT_CALLED_DECISION, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     }
+
+    if (hasJobPriorityDefinitionWithoutTaskDefinition(element)) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "'zeebe:%s' is only allowed in job-worker mode ('zeebe:%s')",
+              ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION,
+              ZeebeConstants.ELEMENT_TASK_DEFINITION));
+    }
   }
 
   private boolean hasExactlyOneExtension(final BusinessRuleTask element) {
@@ -59,5 +69,17 @@ public final class BusinessRuleTaskValidator implements ModelElementValidator<Bu
 
     return calledDecisionExtensions.size() == 1 && taskDefinitionExtensions.isEmpty()
         || calledDecisionExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
+  }
+
+  private boolean hasJobPriorityDefinitionWithoutTaskDefinition(final BusinessRuleTask element) {
+    final ExtensionElements extensionElements = element.getExtensionElements();
+    if (extensionElements == null) {
+      return false;
+    }
+    final boolean hasJobPriorityDefinition =
+        !extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class).isEmpty();
+    final boolean hasTaskDefinition =
+        !extensionElements.getChildElementsByType(ZeebeTaskDefinition.class).isEmpty();
+    return hasJobPriorityDefinition && !hasTaskDefinition;
   }
 }

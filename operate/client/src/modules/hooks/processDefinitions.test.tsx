@@ -136,7 +136,12 @@ describe('useProcessDefinitionVersions', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(['all', 3, 2, 1]);
+    expect(result.current.data).toEqual([
+      {value: 'all'},
+      {value: 3, state: 'ACTIVE'},
+      {value: 2, state: 'ACTIVE'},
+      {value: 1, state: 'ACTIVE'},
+    ]);
   });
 
   it('should return versions without "all" when only a single version exists', async () => {
@@ -149,7 +154,27 @@ describe('useProcessDefinitionVersions', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([1]);
+    expect(result.current.data).toEqual([{value: 1, state: 'ACTIVE'}]);
+  });
+
+  it('should preserve the state of each version', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2, state: 'DELETED'}),
+        createProcessDefinition({version: 1, state: 'ACTIVE'}),
+      ]),
+    );
+
+    const {result} = renderHook(() => useProcessDefinitionVersions('someId'), {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([
+      {value: 'all'},
+      {value: 2, state: 'DELETED'},
+      {value: 1, state: 'ACTIVE'},
+    ]);
   });
 
   it('should disable the query when no processDefinitionId is provided', () => {

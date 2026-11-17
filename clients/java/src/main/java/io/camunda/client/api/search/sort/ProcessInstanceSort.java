@@ -39,6 +39,8 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
 
   ProcessInstanceSort endDate();
 
+  ProcessInstanceSort suspendedDate();
+
   ProcessInstanceSort state();
 
   ProcessInstanceSort hasIncident();

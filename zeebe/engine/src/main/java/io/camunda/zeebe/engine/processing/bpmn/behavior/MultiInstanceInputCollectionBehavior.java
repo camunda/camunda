@@ -37,7 +37,10 @@ public class MultiInstanceInputCollectionBehavior {
     return evaluateInputCollection(element, context)
         .map(
             inputCollection -> {
-              final var record = new MultiInstanceRecord().setInputCollection(inputCollection);
+              final var record =
+                  new MultiInstanceRecord()
+                      .setInputCollection(inputCollection)
+                      .setStorageOrdinal(context.getStorageOrdinal());
               stateWriter.appendFollowUpEvent(
                   context.getElementInstanceKey(),
                   MultiInstanceIntent.INPUT_COLLECTION_EVALUATED,

@@ -20,18 +20,18 @@ import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.exception.ResourceAccessDeniedException.MissingAuthorization;
 import io.camunda.search.exception.TenantAccessDeniedException;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.condition.AuthorizationConditions;
-import io.camunda.security.reader.ResourceAccess;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.reader.TenantAccess;
-import io.camunda.security.reader.TenantAccessProvider;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.authz.ResourceAccess;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.authz.TenantAccess;
+import io.camunda.security.core.authz.TenantAccessProvider;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -58,14 +58,15 @@ class DocumentResourceAccessControllerTest {
   void shouldEnableAuthorizationCheckOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
 
     // required authorization
     final var requiredAuthorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessDefinition().resourceIds(List.of("bar", "baz")));
     when(resourceAccessProvider.resolveResourceAccess(eq(authentication), eq(authorization)))
         .thenReturn(ResourceAccess.allowed(requiredAuthorization));
@@ -94,8 +95,8 @@ class DocumentResourceAccessControllerTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var processDefinitionReadAuth =
-        Authorization.of(a -> a.processDefinition().readUserTask());
-    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = RequiredAuthorization.of(a -> a.userTask().read());
     final var securityContext =
         SecurityContext.of(
             s ->
@@ -105,10 +106,10 @@ class DocumentResourceAccessControllerTest {
                             processDefinitionReadAuth, userTaskReadAuth)));
 
     final var resolvedProcessDefinitionAuth =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readUserTask().resourceIds(List.of("pd-1", "pd-2")));
     final var resolvedUserTaskAuth =
-        Authorization.of(a -> a.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
+        RequiredAuthorization.of(a -> a.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
 
     when(resourceAccessProvider.resolveResourceAccess(authentication, processDefinitionReadAuth))
         .thenReturn(ResourceAccess.allowed(resolvedProcessDefinitionAuth));
@@ -134,14 +135,15 @@ class DocumentResourceAccessControllerTest {
   void shouldDisableAuthorizationCheckWithWildcardResourceAccessOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
 
     // required authorization
     final var requiredAuthorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessDefinition().resourceIds(List.of("*")));
     when(resourceAccessProvider.resolveResourceAccess(eq(authentication), eq(authorization)))
         .thenReturn(ResourceAccess.wildcard(requiredAuthorization));
@@ -168,8 +170,8 @@ class DocumentResourceAccessControllerTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var processDefinitionReadAuth =
-        Authorization.of(a -> a.processDefinition().readUserTask());
-    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = RequiredAuthorization.of(a -> a.userTask().read());
     final var securityContext =
         SecurityContext.of(
             s ->
@@ -179,7 +181,8 @@ class DocumentResourceAccessControllerTest {
                             processDefinitionReadAuth, userTaskReadAuth)));
 
     final var wildcardAuthorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("*")));
+        RequiredAuthorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("*")));
 
     when(resourceAccessProvider.resolveResourceAccess(authentication, processDefinitionReadAuth))
         .thenReturn(ResourceAccess.wildcard(wildcardAuthorization));
@@ -204,14 +207,15 @@ class DocumentResourceAccessControllerTest {
   void shouldEnableResourceAccessCheckOnSearchEvenWhenNoResourceIdsProvided() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
 
     // required authorization
     final var requiredAuthorization =
-        Authorization.of(a -> a.processDefinition().readProcessDefinition());
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
 
     when(resourceAccessProvider.resolveResourceAccess(eq(authentication), eq(authorization)))
         .thenReturn(ResourceAccess.denied(requiredAuthorization));
@@ -238,14 +242,15 @@ class DocumentResourceAccessControllerTest {
   void shouldEnableTenantCheckOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
 
     // required authorization
     when(resourceAccessProvider.resolveResourceAccess(any(), any()))
-        .thenReturn(ResourceAccess.wildcard(mock(Authorization.class)));
+        .thenReturn(ResourceAccess.wildcard(mock(RequiredAuthorization.class)));
     when(tenantAccessProvider.resolveTenantAccess(eq(authentication)))
         .thenReturn(TenantAccess.allowed(List.of("bar")));
 
@@ -269,14 +274,15 @@ class DocumentResourceAccessControllerTest {
   void shouldEnableTenantCheckOnSearchEvenWhenTenantAccessDenied() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
 
     // required authorization
     when(resourceAccessProvider.resolveResourceAccess(any(), any()))
-        .thenReturn(ResourceAccess.wildcard(mock(Authorization.class)));
+        .thenReturn(ResourceAccess.wildcard(mock(RequiredAuthorization.class)));
     when(tenantAccessProvider.resolveTenantAccess(eq(authentication)))
         .thenReturn(TenantAccess.denied(null));
 
@@ -293,21 +299,22 @@ class DocumentResourceAccessControllerTest {
     // then
     final var result = reference.get();
     assertThat(result.tenantCheck().enabled()).isTrue();
-    assertThat(result.tenantCheck().tenantIds()).isNull();
+    assertThat(result.tenantCheck().tenantIds()).isEmpty();
   }
 
   @Test
   void shouldDisableTenantCheckWithWildcardTenantAccessOnSearch() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
 
     // required authorization
     when(resourceAccessProvider.resolveResourceAccess(any(), any()))
-        .thenReturn(ResourceAccess.wildcard(mock(Authorization.class)));
+        .thenReturn(ResourceAccess.wildcard(mock(RequiredAuthorization.class)));
     when(tenantAccessProvider.resolveTenantAccess(eq(authentication)))
         .thenReturn(TenantAccess.wildcard(null));
 
@@ -331,7 +338,8 @@ class DocumentResourceAccessControllerTest {
   void shouldReturnResourceOnGetWhenAccessAllowedBySingleAuthorization() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
@@ -354,8 +362,8 @@ class DocumentResourceAccessControllerTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var processDefinitionReadAuth =
-        Authorization.of(a -> a.processDefinition().readUserTask());
-    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = RequiredAuthorization.of(a -> a.userTask().read());
     final var securityContext =
         SecurityContext.of(
             s ->
@@ -387,8 +395,8 @@ class DocumentResourceAccessControllerTest {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var processDefinitionReadAuth =
-        Authorization.of(a -> a.processDefinition().readUserTask());
-    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = RequiredAuthorization.of(a -> a.userTask().read());
     final var securityContext =
         SecurityContext.of(
             s ->
@@ -416,7 +424,8 @@ class DocumentResourceAccessControllerTest {
   @Test
   void shouldThrowResourceAccessDeniedOnGetWhenAccessDeniedForSingleAuthorization() {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));
@@ -447,8 +456,8 @@ class DocumentResourceAccessControllerTest {
   void shouldThrowResourceAccessDeniedOnGetWhenAccessDeniedForAnyOfAuthorizations() {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var processDefinitionReadAuth =
-        Authorization.of(a -> a.processDefinition().readUserTask());
-    final var userTaskReadAuth = Authorization.of(a -> a.userTask().read());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
+    final var userTaskReadAuth = RequiredAuthorization.of(a -> a.userTask().read());
     final var securityContext =
         SecurityContext.of(
             s ->
@@ -487,7 +496,8 @@ class DocumentResourceAccessControllerTest {
   @Test
   void shouldThrowTenantAccessDeniedOnGetWhenNoTenantAccess() {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition());
     final var securityContext =
         SecurityContext.of(
             s -> s.withAuthentication(authentication).withAuthorization(authorization));

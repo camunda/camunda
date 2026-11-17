@@ -28,12 +28,12 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.condition.AuthorizationConditions;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.List;
@@ -271,6 +271,60 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryBySuspendedUserTasks() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(true));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertSearchTermQuery(t.must().get(0).queryOption(), "isSuspended", true);
+            });
+  }
+
+  @Test
+  public void shouldQueryByNotSuspendedUserTasksIncludingMissingField() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(false));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              // user tasks indexed before the field existed have no value and read as not suspended
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      (orQuery) -> {
+                        assertThat(orQuery.should()).hasSize(2);
+                        assertSearchTermQuery(
+                            orQuery.should().get(0).queryOption(), "isSuspended", false);
+                        assertThat(orQuery.should().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchBoolQuery.class,
+                                (notQuery) ->
+                                    assertThat(notQuery.mustNot())
+                                        .singleElement()
+                                        .extracting(SearchQuery::queryOption)
+                                        .satisfies(
+                                            (mustNotQuery) ->
+                                                assertExistsQuery(mustNotQuery, "isSuspended")));
+                      });
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // given
     final var filter = FilterBuilders.userTask((f) -> f.tenantIds("tenant1"));
@@ -329,9 +383,9 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryByBpmnProcessId() {
+  public void shouldQueryByProcessDefinitionIds() {
     // given
-    final var filter = FilterBuilders.userTask((f) -> f.bpmnProcessIds("bpmnProcess1"));
+    final var filter = FilterBuilders.userTask((f) -> f.processDefinitionIds("bpmnProcess1"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -345,6 +399,243 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             (t) -> {
               assertSearchTermQuery(t.must().get(0).queryOption(), "bpmnProcessId", "bpmnProcess1");
             });
+  }
+
+  static Stream<Arguments> provideProcessDefinitionIdOperations() {
+    return Stream.of(
+        processDefinitionIdCase(
+            Operation.eq("proc-1"),
+            query -> assertSearchTermQuery(query, "bpmnProcessId", "proc-1")),
+        processDefinitionIdCase(
+            Operation.neq("proc-1"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "bpmnProcessId", "proc-1")))),
+        processDefinitionIdCase(
+            Operation.exists(true), query -> assertExistsQuery(query, "bpmnProcessId")),
+        processDefinitionIdCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertExistsQuery(mustNotQuery, "bpmnProcessId")))),
+        processDefinitionIdCase(
+            Operation.in("proc-1", "proc-2"),
+            query -> assertSearchTermsQuery(query, "bpmnProcessId", "proc-1", "proc-2")),
+        processDefinitionIdCase(
+            Operation.notIn("proc-1", "proc-2"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermsQuery(
+                                            mustNotQuery, "bpmnProcessId", "proc-1", "proc-2")))),
+        processDefinitionIdCase(
+            Operation.like("proc*"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchWildcardQuery.class,
+                        wildcardQuery -> {
+                          assertThat(wildcardQuery.field()).isEqualTo("bpmnProcessId");
+                          assertThat(wildcardQuery.value()).isEqualTo("proc*");
+                        })));
+  }
+
+  private static Arguments processDefinitionIdCase(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideProcessDefinitionIdOperations")
+  @DisplayName("Should transform processDefinitionId operations into correct search query")
+  void shouldTransformProcessDefinitionIdOperationsToSearchQuery(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.processDefinitionIdOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
+  }
+
+  static Stream<Arguments> provideProcessDefinitionKeyOperations() {
+    return Stream.of(
+        processDefinitionKeyCase(
+            Operation.eq(123L), query -> assertSearchTermQuery(query, "processDefinitionId", 123L)),
+        processDefinitionKeyCase(
+            Operation.neq(456L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "processDefinitionId", 456L)))),
+        processDefinitionKeyCase(
+            Operation.exists(true), query -> assertExistsQuery(query, "processDefinitionId")),
+        processDefinitionKeyCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertExistsQuery(mustNotQuery, "processDefinitionId")))),
+        processDefinitionKeyCase(
+            Operation.in(123L, 456L),
+            query -> assertSearchTermsQuery(query, "processDefinitionId", 123L, 456L)),
+        processDefinitionKeyCase(
+            Operation.notIn(123L, 456L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermsQuery(
+                                            mustNotQuery, "processDefinitionId", 123L, 456L)))));
+  }
+
+  private static Arguments processDefinitionKeyCase(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideProcessDefinitionKeyOperations")
+  @DisplayName("Should transform processDefinitionKey operations into correct search query")
+  void shouldTransformProcessDefinitionKeyOperationsToSearchQuery(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.processDefinitionKeyOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
+  }
+
+  static Stream<Arguments> provideProcessInstanceKeyOperations() {
+    return Stream.of(
+        processInstanceKeyCase(
+            Operation.eq(12345L),
+            query -> assertSearchTermQuery(query, "processInstanceId", 12345L)),
+        processInstanceKeyCase(
+            Operation.neq(67890L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "processInstanceId", 67890L)))),
+        processInstanceKeyCase(
+            Operation.exists(true), query -> assertExistsQuery(query, "processInstanceId")),
+        processInstanceKeyCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertExistsQuery(mustNotQuery, "processInstanceId")))),
+        processInstanceKeyCase(
+            Operation.in(12345L, 67890L),
+            query -> assertSearchTermsQuery(query, "processInstanceId", 12345L, 67890L)),
+        processInstanceKeyCase(
+            Operation.notIn(12345L, 67890L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermsQuery(
+                                            mustNotQuery, "processInstanceId", 12345L, 67890L)))));
+  }
+
+  private static Arguments processInstanceKeyCase(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideProcessInstanceKeyOperations")
+  @DisplayName("Should transform processInstanceKey operations into correct search query")
+  void shouldTransformProcessInstanceKeyOperationsToSearchQuery(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.processInstanceKeyOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
   }
 
   @Test
@@ -407,6 +698,25 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByBusinessId() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.businessIds("businessId1"));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertSearchTermQuery(t.must().get(0).queryOption(), "businessId", "businessId1");
+            });
+  }
+
+  @Test
   public void shouldQueryByProcessInstanceVariableValueFilter() {
     // given
     final VariableValueFilter.Builder variableValueFilterBuilder =
@@ -457,10 +767,63 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByProcessInstanceVariableValueNotIn() {
+    // Covers the same VariableValueFilterTransformer -> SearchQueryBuilders.variableOperation()
+    // code path used by localVariables (identical wiring via getLocalVariablesQuery/
+    // getProcessInstanceVariablesQuery, differing only in the join relationship type).
+    // given
+    final VariableValueFilter.Builder variableValueFilterBuilder =
+        new VariableValueFilter.Builder();
+    variableValueFilterBuilder
+        .name("test")
+        .valueOperation(UntypedOperation.of(Operation.notIn("excluded-1", "excluded-2")))
+        .build();
+
+    final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
+
+    final var filter =
+        FilterBuilders.userTask((f) -> f.processInstanceVariables(List.of(variableFilterValue)));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            outerBoolQuery -> {
+              final SearchHasParentQuery nestedHasParentQuery =
+                  (SearchHasParentQuery) outerBoolQuery.must().get(0).queryOption();
+              final SearchHasChildQuery childQuery =
+                  (SearchHasChildQuery) nestedHasParentQuery.query().queryOption();
+              assertThat(childQuery.type())
+                  .isEqualTo(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
+
+              final SearchBoolQuery innerBoolQuery =
+                  (SearchBoolQuery) childQuery.query().queryOption();
+              assertThat(innerBoolQuery.must()).hasSize(2);
+              assertSearchTermQuery(innerBoolQuery.must().get(0).queryOption(), "name", "test");
+
+              final SearchBoolQuery valueBoolQuery =
+                  (SearchBoolQuery) innerBoolQuery.must().get(1).queryOption();
+              assertThat(valueBoolQuery.mustNot()).hasSize(1);
+              final SearchTermsQuery termsQuery =
+                  (SearchTermsQuery) valueBoolQuery.mustNot().getFirst().queryOption();
+              assertThat(termsQuery.field()).isEqualTo("value");
+              assertThat(termsQuery.values())
+                  .extracting(TypedValue::stringValue)
+                  .containsExactlyInAnyOrder("excluded-1", "excluded-2");
+            });
+  }
+
+  @Test
   public void shouldApplySingleAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -486,10 +849,11 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAnyOfAuthorizationCheck() {
     // given
     final var processDefinitionAuth =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readUserTask().resourceIds(List.of("pd-1", "pd-2")));
     final var userTaskAuth =
-        Authorization.of(a -> a.userTask().read().resourceIds(List.of("5", "55", "not-a-number")));
+        RequiredAuthorization.of(
+            a -> a.userTask().read().resourceIds(List.of("5", "55", "not-a-number")));
     final var authorizationCheck =
         AuthorizationCheck.enabled(
             AuthorizationConditions.anyOf(processDefinitionAuth, userTaskAuth));
@@ -545,7 +909,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
+    final var authorization = RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -562,7 +926,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyPropertyBasedAuthorizationForAssignee() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("john"));
-    final var authorization = Authorization.of(a -> a.userTask().read().authorizedByAssignee());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByAssignee());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -588,7 +953,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("jane"));
     final var authorization =
-        Authorization.of(a -> a.userTask().read().authorizedByCandidateUsers());
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByCandidateUsers());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -615,7 +980,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var authentication =
         CamundaAuthentication.of(b -> b.user("alice").groupIds(List.of("group1", "group2")));
     final var authorization =
-        Authorization.of(a -> a.userTask().read().authorizedByCandidateGroups());
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByCandidateGroups());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -645,7 +1010,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var authentication =
         CamundaAuthentication.of(b -> b.user("bob").groupIds(List.of("teamA")));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.userTask()
                     .read()
@@ -703,11 +1068,11 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldReturnMatchNoneWhenPropertyBasedAuthorizationWithNoAuthentication() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.userTask()
                     .read()
-                    .resourcePropertyNames(java.util.Set.of(Authorization.PROP_ASSIGNEE)));
+                    .resourcePropertyNames(java.util.Set.of(RequiredAuthorization.PROP_ASSIGNEE)));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), null);
@@ -725,7 +1090,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("user1"));
     final var authorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().authorizedByAssignee());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask().authorizedByAssignee());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -743,7 +1108,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("user1"));
     final var authorization =
-        Authorization.of(a -> a.userTask().read().authorizedByProperty("unknownProperty"));
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByProperty("unknownProperty"));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -845,7 +1210,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
@@ -859,6 +1225,67 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchQuery.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
+  }
+
+  @Test
+  public void shouldQueryWithOrConditions() {
+    // given - assignee plus an $or over candidateGroup and candidateUser
+    final var filter =
+        FilterBuilders.userTask(
+            f ->
+                f.assignees("user1")
+                    .addOrOperation(new Builder().candidateGroups("groupA").build())
+                    .addOrOperation(new Builder().candidateUsers("user2").build()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery outerBool = (SearchBoolQuery) queryVariant;
+
+    // assignee, the two clauses that always scope the query to Zeebe user tasks, and the OR clause
+    assertThat(outerBool.must()).hasSize(4);
+    assertSearchTermQuery(outerBool.must().get(0).queryOption(), "assignee", "user1");
+
+    assertThat(outerBool.must().get(3).queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            orBool -> {
+              assertThat(orBool.should()).hasSize(2);
+              assertSearchTermQuery(
+                  orBool.should().get(0).queryOption(), "candidateGroups", "groupA");
+              assertSearchTermQuery(
+                  orBool.should().get(1).queryOption(), "candidateUsers", "user2");
+            });
+  }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsNull() {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.assignees("user1"));
+
+    // then
+    assertThat(filter.orFilters()).isNull();
+  }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsEmpty() {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.assignees("user1").orFilters(List.of()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then - assignee plus the two always-on clauses, with no OR wrapper appended
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            t -> {
+              assertThat(t.must()).hasSize(3);
+              assertSearchTermQuery(t.must().get(0).queryOption(), "assignee", "user1");
+            });
   }
 
   private static void assertSearchTermQuery(

@@ -53,9 +53,7 @@ public class ClusterMultiplePartitionsBatchOperationIT {
           .withUnauthenticatedAccess()
           .withUnifiedConfig(
               b -> {
-                final var cluster = b.getCluster();
-                cluster.setPartitionCount(3);
-                b.setCluster(cluster);
+                b.getCluster().setPartitionCount(3);
               });
 
   private static CamundaClient camundaClient;
@@ -126,7 +124,11 @@ public class ClusterMultiplePartitionsBatchOperationIT {
     waitForBatchOperationWithCorrectTotalCount(
         camundaClient, batchOperationKey, activeProcessInstances.size());
     waitForBatchOperationCompleted(
-        camundaClient, batchOperationKey, activeProcessInstances.size(), 0);
+        camundaClient,
+        batchOperationKey,
+        activeProcessInstances.size(),
+        0,
+        TIMEOUT_DATA_AVAILABILITY.multipliedBy(3));
 
     // Now wait until all process instances are terminated
     final var activeKeys =

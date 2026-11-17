@@ -24,6 +24,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_KEY = "key";
   public static final String ATTRIBUTE_NAME = "name";
   public static final String ATTRIBUTE_VALUE = "value";
+  public static final String ATTRIBUTE_TITLE = "title";
 
   public static final String ATTRIBUTE_SOURCE = "source";
   public static final String ATTRIBUTE_TARGET = "target";
@@ -38,6 +39,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_OUTPUT_ELEMENT = "outputElement";
 
   public static final String ATTRIBUTE_PROCESS_ID = "processId";
+  public static final String ATTRIBUTE_BUSINESS_ID = "businessId";
   public static final String ATTRIBUTE_PROPAGATE_ALL_CHILD_VARIABLES = "propagateAllChildVariables";
   public static final String ATTRIBUTE_PROPAGATE_ALL_PARENT_VARIABLES =
       "propagateAllParentVariables";
@@ -72,6 +74,9 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
   public static final String ATTRIBUTE_CONDITION = "condition";
+
+  public static final String ATTRIBUTE_AGENT_TYPE = "agentType";
+  public static final String ATTRIBUTE_MODELER_TEMPLATE = "modelerTemplate";
 
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
@@ -111,6 +116,8 @@ public class ZeebeConstants {
 
   public static final String ELEMENT_VERSION_TAG = "versionTag";
 
+  public static final String ELEMENT_CASE = "case";
+
   /** Form key format used for camunda-forms format */
   public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";
 
@@ -118,6 +125,7 @@ public class ZeebeConstants {
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
 
   public static final String ELEMENT_PRIORITY_DEFINITION = "priorityDefinition";
+  public static final String ELEMENT_JOB_PRIORITY_DEFINITION = "jobPriorityDefinition";
 
   public static final String ELEMENT_AD_HOC = "adHoc";
 
@@ -125,6 +133,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_LINKED_RESOURCES = "linkedResources";
 
   public static final String ELEMENT_CONDITIONAL_FILTER = "conditionalFilter";
+
+  public static final String ELEMENT_AGENT_DEFINITION = "agentDefinition";
 
   /** The property used for the example output JSON data. */
   public static final String PROPERTY_EXAMPLE_DATA = "camundaModeler:exampleOutputJson";

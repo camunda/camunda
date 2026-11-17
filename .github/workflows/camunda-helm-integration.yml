@@ -1,5 +1,5 @@
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Camunda Helm Chart Integration Test
 
 on:
@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 
 env:
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
@@ -27,23 +28,21 @@ jobs:
     secrets: inherit
     with:
       identifier: camunda-helm-int
-      camunda-helm-dir: camunda-platform-8.8
+      # main only supports Elasticsearch 9; the 8.11 chart deploys an ES 9 companion
+      camunda-helm-dir: camunda-platform-8.11
+      # Must match exactly one registry entry: with no exact match, deploy-camunda falls back to
+      # substring-matching the scenario and deploys every "*elasticsearch*" entry into one namespace
+      shortname: eske
       test-enabled: true
       caller-git-ref: main
       # On main: uses SNAPSHOT tag; on stable: uses versioned tag (e.g. 8.9-SNAPSHOT)
       extra-values: |
-        zeebe:
-          image:
-            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-        operate:
-          image:
-            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-        tasklist:
+        orchestration:
           image:
             tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         optimize:
           image:
-            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && '8-SNAPSHOT' || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
@@ -58,11 +57,13 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -73,7 +74,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         if: ${{ always() && needs.helm-deploy.result != 'success' && github.event_name == 'schedule' }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}

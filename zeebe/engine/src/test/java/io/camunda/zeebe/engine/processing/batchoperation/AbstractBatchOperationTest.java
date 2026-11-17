@@ -15,37 +15,48 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.Mockito;
@@ -66,7 +77,9 @@ abstract class AbstractBatchOperationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
+  protected static final Duration SCHEDULER_INTERVAL = Duration.ofDays(1);
   protected static final int DEFAULT_QUERY_PAGE_SIZE = 10000;
+  protected static final String DEFAULT_JOB_TYPE = "fake-job-type";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -81,25 +94,54 @@ abstract class AbstractBatchOperationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(
               cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put(
-                          "admin",
-                          Map.of(
-                              "users",
-                              List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername()))))
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin",
+                    Map.of("users", List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              })
           .withEngineConfig(
               cfg ->
                   cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
                       .setBatchOperationQueryRetryMax(2)
-                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100)))
+                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100))
+                      .setBatchOperationSchedulerInterval(SCHEDULER_INTERVAL))
           .withSearchClientsProxy(searchClientsProxy)
           .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+
+  /** When false, tests can act on a batch before the scheduler touches it. */
+  protected boolean autoStartScheduler;
+
+  protected AbstractBatchOperationTest() {
+    this(true);
+  }
+
+  protected AbstractBatchOperationTest(final boolean autoStartScheduler) {
+    this.autoStartScheduler = autoStartScheduler;
+  }
+
+  /** Advances the test clock until the scheduler has produced a matching record. */
+  protected void advanceSchedulerUntil(final Predicate<Record<?>> predicate) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(10))
+        .until(
+            () -> {
+              engine.getClock().addTime(SCHEDULER_INTERVAL);
+              return RecordingExporter.getRecords().stream().anyMatch(predicate);
+            });
+  }
+
+  private void startScheduler() {
+    if (autoStartScheduler) {
+      engine.increaseTime(SCHEDULER_INTERVAL);
+    }
+  }
 
   @Before
   public void setUp() {
@@ -132,14 +174,91 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
+  }
+
+  protected long createNewSuspendProcessInstanceBatchOperation(final Set<Long> itemKeys) {
+    return createNewSuspendProcessInstanceBatchOperation(itemKeys, null);
+  }
+
+  protected long createNewSuspendProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                itemKeys.stream().map(this::fakeProcessInstanceEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
+  }
+
+  protected long createNewResumeProcessInstanceBatchOperation(final Set<Long> itemKeys) {
+    return createNewResumeProcessInstanceBatchOperation(itemKeys, null);
+  }
+
+  protected long createNewResumeProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                itemKeys.stream().map(this::fakeProcessInstanceEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.RESUME_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewModifyProcessInstanceBatchOperation(
@@ -172,15 +291,18 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.MODIFY_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .withModificationPlan(modificationPlan)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.MODIFY_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .withModificationPlan(modificationPlan)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewFailedCancelProcessInstanceBatchOperation() {
@@ -191,14 +313,17 @@ abstract class AbstractBatchOperationTest {
         convertToBuffer(
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .waitForInitialized()
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .waitForInitialized()
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewResolveIncidentsBatchOperation(
@@ -235,14 +360,17 @@ abstract class AbstractBatchOperationTest {
     when(brokerRequestAuthorizationConverter.convert(any()))
         .thenReturn(Map.of(AUTHORIZED_USERNAME, OTHER_USER.getUsername()));
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.RESOLVE_INCIDENT)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.RESOLVE_INCIDENT)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewMigrateProcessesBatchOperation(
@@ -279,15 +407,75 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .withMigrationPlan(migrationPlan)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .withMigrationPlan(migrationPlan)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
+  }
+
+  protected long createNewUpdateJobBatchOperation(
+      final Set<Long> itemKeys,
+      final BatchOperationJobUpdatePlan plan,
+      final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<JobEntity>()
+            .items(itemKeys.stream().map(this::fakeJobEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+
+    when(searchClientsProxy.searchJobs(Mockito.any(JobQuery.class))).thenReturn(result);
+
+    final var filterBuffer =
+        convertToBuffer(new JobFilter.Builder().types(DEFAULT_JOB_TYPE).build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.UPDATE_JOB)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .withJobUpdatePlan(plan)
+            .create(DEFAULT_USER.username())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
+  }
+
+  protected JobEntity fakeJobEntity(final long jobKey) {
+    final var now = java.time.OffsetDateTime.now();
+    return new JobEntity.Builder()
+        .jobKey(jobKey)
+        .type(DEFAULT_JOB_TYPE)
+        .worker("fake-worker")
+        .state(JobEntity.JobState.CREATED)
+        .kind(JobEntity.JobKind.BPMN_ELEMENT)
+        .listenerEventType(JobEntity.ListenerEventType.UNSPECIFIED)
+        .retries(3)
+        .hasFailedWithRetriesLeft(false)
+        .processDefinitionId("fake-process-def-id")
+        .processDefinitionKey(-1L)
+        .processInstanceKey(-1L)
+        .elementId("fake-element-id")
+        .elementInstanceKey(-1L)
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .creationTime(now)
+        .lastUpdateTime(now)
+        .build();
   }
 
   protected long createDeleteProcessInstanceBatchOperation(
@@ -308,14 +496,17 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.DELETE_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected static UnsafeBuffer convertToBuffer(final Object object) {
@@ -325,22 +516,24 @@ abstract class AbstractBatchOperationTest {
   protected ProcessInstanceEntity fakeProcessInstanceEntity(final long processInstanceKey) {
     return new ProcessInstanceEntity(
         processInstanceKey,
-        null,
-        null,
-        null,
-        -1,
-        null,
-        -1L,
-        -1L,
-        -1L,
-        null,
-        null,
-        null,
-        false,
-        null,
-        null,
-        Set.of(),
-        null);
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
+        -1L, // processDefinitionKey
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        java.time.OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        null, // treePath
+        Set.of(), // tags
+        null, // businessId
+        null, // suspendedDate
+        null); // storageOrdinal
   }
 
   protected IncidentEntity fakeIncidentEntity(
@@ -348,17 +541,18 @@ abstract class AbstractBatchOperationTest {
     return new IncidentEntity(
         incidentKey,
         -1L, // processDefinitionKey
-        null, // processDefinitionId
+        "fake-process-def-id", // processDefinitionId
         processInstanceKey, // processInstanceKey
         null, // rootProcessInstanceKey
         IncidentEntity.ErrorType.UNSPECIFIED,
         "Fake incident message",
         "flowNodeId",
         -1L, // flowNodeInstanceKey
-        null, // creationTime
+        java.time.OffsetDateTime.now(), // creationTime
         IncidentEntity.IncidentState.ACTIVE,
         -1L, // jobKey
-        null // tenantId
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER, // tenantId
+        null // storageOrdinal
         );
   }
 
@@ -380,20 +574,32 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.DELETE_DECISION_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.DELETE_DECISION_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long itemKey) {
     return new DecisionInstanceEntity.Builder()
+        .decisionInstanceId(itemKey + "-1")
         .decisionInstanceKey(itemKey)
+        .state(DecisionInstanceEntity.DecisionInstanceState.EVALUATED)
+        .evaluationDate(java.time.OffsetDateTime.now())
         .processInstanceKey(itemKey)
+        .decisionDefinitionId("fake-decision-def-id")
+        .decisionDefinitionKey(-1L)
+        .decisionDefinitionName("Fake Decision")
+        .decisionDefinitionType(DecisionInstanceEntity.DecisionDefinitionType.DECISION_TABLE)
+        .result("{}")
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }
 
@@ -433,6 +639,25 @@ abstract class AbstractBatchOperationTest {
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withResourceMatcher(WILDCARD.getMatcher())
         .withResourceId(WILDCARD.getResourceId())
+        .create(DEFAULT_USER.getUsername());
+  }
+
+  /**
+   * Grants a permission scoped to a single process definition id, instead of the wildcard granted
+   * by {@link #addProcessDefinitionPermissionsToUser(UserRecordValue, PermissionType)}. Used to
+   * simulate a user authorized on one process definition but not another.
+   */
+  protected void addProcessDefinitionPermissionsToUser(
+      final UserRecordValue user, final PermissionType permissionType, final String resourceId) {
+    engine
+        .authorization()
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
+        .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
 }

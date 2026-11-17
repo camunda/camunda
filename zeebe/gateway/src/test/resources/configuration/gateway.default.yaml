@@ -66,11 +66,6 @@
 # Default is 127.0.0.1:26502
 # initialContactPoints : [127.0.0.1:26502]
 
-# WARNING: This setting is deprecated! Use initialContactPoints instead.
-# Sets the broker the gateway should initial contact
-# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT.
-# contactPoint: 127.0.0.1:26502
-
 # Sets the timeout of requests send to the broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_REQUESTTIMEOUT.
 # requestTimeout: 15s

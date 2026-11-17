@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -22,8 +22,7 @@
   <properties>
     <version.java>17</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
-    <version.roaster>2.31.0.Final</version.roaster>
-    <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
+    <version.aspectjweaver>1.9.27</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
   </properties>
 
@@ -107,11 +106,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-protocol-impl</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
     </dependency>
@@ -176,6 +170,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- provides EndpointAutoConfiguration so the actuator @ConditionalOnClass activates in
+           tests, letting us assert the health-check surface is preserved on the unified path -->
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -208,6 +209,11 @@
             <dependency>commons-logging:commons-logging</dependency>
             <dependency>org.springframework:spring-jcl</dependency>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- test-only: present so the actuator @ConditionalOnClass matches in tests; it has no
+                 compile-time reference, so dependency-analyze cannot see it is used -->
+            <dependency>org.springframework.boot:spring-boot-actuator-autoconfigure</dependency>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
@@ -218,6 +224,9 @@
           <compilerArgs>
             <arg>-parameters</arg>
           </compilerArgs>
+          <!-- Overrides the parent's false. The configuration processor loses defaultValue entries
+               for classes it did not see again, so recompile the whole module on any change. -->
+          <useIncrementalCompilation>true</useIncrementalCompilation>
           <annotationProcessorPaths>
             <path>
               <groupId>org.springframework.boot</groupId>

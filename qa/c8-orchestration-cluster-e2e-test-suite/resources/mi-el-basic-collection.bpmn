@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+  targetNamespace="http://bpmn.io/schema/bpmn"
+  exporter="Camunda Modeler" exporterVersion="5.46.1"
+  modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.10.0"
+  id="Definitions_mi_basic_collection">
+  <bpmn:process id="mi-el-basic-collection" name="MI EL - Basic Collection (Parallel)" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>flow_start_to_task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="mi_task" name="MI Service Task (Parallel)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="mi-inner-worker" retries="3" />
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="beforeAll" type="mi-body-init-collection" retries="3" />
+        </zeebe:executionListeners>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_start_to_task</bpmn:incoming>
+      <bpmn:outgoing>flow_task_to_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="= items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>flow_task_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_task" sourceRef="StartEvent_1" targetRef="mi_task" />
+    <bpmn:sequenceFlow id="flow_task_to_end" sourceRef="mi_task" targetRef="EndEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mi-el-basic-collection">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="mi_task_di" bpmnElement="mi_task">
+        <dc:Bounds x="250" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="412" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_start_to_task_di" bpmnElement="flow_start_to_task">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="250" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_task_to_end_di" bpmnElement="flow_task_to_end">
+        <di:waypoint x="350" y="120" />
+        <di:waypoint x="412" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -24,6 +24,8 @@ defaults:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
+    # Unshallowed checkout plus seven branch fetches.
+    timeout-minutes: 15
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
@@ -40,21 +42,45 @@ jobs:
           fi
           echo "Branch '$branch_name' exists."
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Base detection counts commits back to each candidate's
+          # merge-base, which a shallow clone cannot answer.
+          fetch-depth: 0
 
       - name: Detect base branch
         id: detect-base
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
-          branch="${{ github.event.inputs.branch }}"
-          echo "Detecting base branch for input branch: $branch"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 main "$branch"
-          base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 main; do
-            if git merge-base --is-ancestor origin/$candidate origin/$branch; then
+          set -euo pipefail
+          echo "Detecting base branch for input branch: $BRANCH"
+          # main first: an equal distance means the branch forked from trunk
+          # at or before the point a stable line was cut, so it left main, not
+          # that stable line. Strict < below keeps main on a tie.
+          candidates=(main stable/8.10 stable/8.9 stable/8.8 stable/8.7 stable/8.6)
+          git fetch origin "${candidates[@]}" "$BRANCH"
+
+          base=""
+          best=""
+          for candidate in "${candidates[@]}"; do
+            if ! merge_base=$(git merge-base "origin/$candidate" "origin/$BRANCH"); then
+              echo "  $candidate: no common history, skipping"
+              continue
+            fi
+            distance=$(git rev-list --count "$merge_base..origin/$BRANCH")
+            echo "  $candidate: forked at ${merge_base:0:9}, $distance commit(s) since"
+            if [[ -z "$best" || "$distance" -lt "$best" ]]; then
+              best="$distance"
               base="$candidate"
-              break
             fi
           done
+
+          if [[ -z "$base" ]]; then
+            echo "Error: no candidate branch shares history with '$BRANCH'." >&2
+            exit 1
+          fi
+
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
@@ -81,7 +107,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -137,13 +163,35 @@ jobs:
         run: |
           export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
           echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
-          if [[ "$NON_STANDALONE" == "true" ]]; then
-            echo "Using single services for older branches (8.6/8.7)"
-            DATABASE=elasticsearch docker compose up -d operate tasklist
-          else
-            echo "Using standalone camunda container"
-            DATABASE=elasticsearch docker compose up -d camunda
-          fi
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
+          # deadline exceeded"). docker compose up -d is idempotent, so a retry
+          # simply resumes the pull and starts the container.
+          start_camunda() {
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              echo "Using single services for older branches (8.6/8.7)"
+              DATABASE=elasticsearch docker compose up -d operate tasklist
+            else
+              echo "Using standalone camunda container"
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
@@ -154,8 +202,48 @@ jobs:
         id: wait-for-services
         run: |
           echo "Checking if services are up..."
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
+          declare -A non_running
           for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name: some branches set container_name to
+            # operate-${DATABASE}, so `docker inspect operate` matches nothing
+            # there. --all is required or compose omits an already-exited
+            # container. Test Running rather than a status allowlist so a crash
+            # loop is caught too (restart: always surfaces as `restarting`, never
+            # `exited`) along with a container that was never created at all. Two
+            # consecutive observations keep a single legitimate restart from
+            # failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
             if [[ "$NON_STANDALONE" == "true" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
@@ -190,19 +278,23 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -212,27 +304,9 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.x"
 
       - name: Run API tests
         env:
@@ -256,26 +330,7 @@ jobs:
 
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Publish test results to TestRail
-        if: always()
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-        run: |
-          pip install trcli==1.14.1
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
-
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result
@@ -304,7 +359,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -401,9 +456,9 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -437,7 +492,7 @@ jobs:
           echo "=== Camunda logs ==="
           cat dev-dist/camunda.log
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS)

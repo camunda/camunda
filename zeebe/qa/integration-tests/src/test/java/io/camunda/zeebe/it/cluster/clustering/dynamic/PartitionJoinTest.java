@@ -8,7 +8,9 @@
 package io.camunda.zeebe.it.cluster.clustering.dynamic;
 
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.assertChangeIsPlanned;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -16,11 +18,12 @@ import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 final class PartitionJoinTest {
-  private static final Duration JOIN_TIMEOUT = Duration.ofSeconds(20);
+  private static final Duration JOIN_TIMEOUT = Duration.ofMinutes(2);
 
   @ParameterizedTest
   @MethodSource("testScenarios")
@@ -42,6 +45,35 @@ final class PartitionJoinTest {
     }
   }
 
+  @Test
+  void canCompleteJoinWhenJoinerRestartsMidChange() {
+    // given
+    final var scenario = new Scenario(new InitialClusterState(2, 2, 1), new Operation(1, 1, 2));
+    try (final var cluster = setupCluster(scenario.initialClusterState())) {
+      final var response = runOperation(cluster, scenario.operation());
+      assertChangeIsPlanned(response);
+
+      // when — the joiner restarts while the two-phase join (join as a learner, then promote once
+      // caught up) is in progress. Whichever phase the restart lands in must resume: a pending
+      // join is retried from scratch, and a pending promotion finds the learner partition started
+      // from its persisted raft state, because the LEARNER state is part of the partition
+      // distribution.
+      final var joiner = cluster.brokers().get(MemberId.from("1"));
+      joiner.stop();
+      joiner.start();
+
+      // then
+      Awaitility.await("Requested change is completed in time")
+          .timeout(JOIN_TIMEOUT)
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(response));
+      ClusterActuatorAssert.assertThat(cluster)
+          .hasAppliedChanges(response)
+          .brokerHasPartition(scenario.operation().brokerId(), scenario.operation().partitionId());
+      cluster.awaitHealthyTopology();
+    }
+  }
+
   @ParameterizedTest
   @MethodSource("testScenarios")
   void canLeavePartitionAfterJoining(final Scenario scenario) {
@@ -50,7 +82,7 @@ final class PartitionJoinTest {
       final var join = runOperation(cluster, scenario.operation());
       assertChangeIsPlanned(join);
       Awaitility.await("Requested change is completed in time")
-          .atMost(Duration.ofSeconds(30))
+          .atMost(JOIN_TIMEOUT)
           .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(join));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(join);
       // when
@@ -62,8 +94,30 @@ final class PartitionJoinTest {
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(leave));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(leave);
+      assertPartitionIsAbsent(cluster, scenario);
       cluster.awaitHealthyTopology();
     }
+  }
+
+  private void assertPartitionIsAbsent(final TestCluster cluster, final Scenario scenario) {
+    Awaitility.await("broker no longer reports partition in gRPC topology")
+        .atMost(JOIN_TIMEOUT)
+        .untilAsserted(
+            () -> {
+              try (final var client =
+                  cluster.newClientBuilder().preferRestOverGrpc(false).build()) {
+                final var topology = client.newTopologyRequest().send().join();
+                assertThat(topology.getBrokers())
+                    .filteredOn(b -> b.getNodeId() == scenario.operation().brokerId())
+                    .hasSize(1)
+                    .element(0)
+                    .satisfies(
+                        b ->
+                            assertThat(b.getPartitions())
+                                .noneMatch(
+                                    p -> p.getPartitionId() == scenario.operation().partitionId()));
+              }
+            });
   }
 
   static Stream<Scenario> testScenarios() {

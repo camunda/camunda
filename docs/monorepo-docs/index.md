@@ -13,12 +13,12 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 
 ### Collaboration
 
-**[Monorepo DevOps Team Processes](./monorepo-devops-team-processes.md)** - Internal processes and policies for the Monorepo DevOps team, including code review policy and the 4-eye principle.
+**[Engineering Operations Team Processes](./eng-ops-processes.md)** - Internal processes and policies for the Engineering Operations team, including code review policy and the 4-eye principle.
 
 **[Collaboration guidelines](./collaboration-guidelines.md)** - Guidelines for collaborating on CI/CD, releases, and monorepo infrastructure. All teams are welcome to contribute and improve these processes:
 
 - Core collaboration principles and ownership boundaries
-- When and how to reach out to the Monorepo DevOps team for support
+- When and how to reach out to the Engineering Operations team for support
 - Heads-Up Pattern for scoping and requests
 - Code review and integration expectations
 - How all teams can independently own and maintain their workflows
@@ -49,6 +49,8 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - Snapshot artifact staleness and missing artifact alerts
 - Helm chart integration test failures and preview environment smoke test failures
 
+**[FOSSA Reporting Runbook](./fossa-reporting-runbook.md)** - How to publish FOSSA attribution and SBOM reports for a component in the monorepo release, including release group creation, workflow wiring, dry run and backfill.
+
 ### Infrastructure Services
 
 **[Infrastructure Services](./infrastructure-services.md)** - Overview of the infrastructure services
@@ -60,18 +62,22 @@ used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
 - CI analytics monitoring with BigQuery, Prometheus, and Grafana
 - Infra Global GitHub Actions reusable workflows and composite actions
 
-### Renovate PR Handling
+### Processes
 
-**[Renovate PR Handling](./renovate-pr-handling.md)** - Process and responsibilities for handling
-Renovate dependency update PRs that require manual intervention:
+**[Processes](./processes.md)** - Processes we follow in the Monorepo, including:
 
-- How DRIs are assigned to open Renovate PRs based on expertise
-- DRI responsibilities: resolving breaking changes, follow-up tickets, Renovate config improvements
-- Assignment automation via GitHub Actions (in progress)
+- Renovate PR Handling
+- (CI) Incident Management Process
+
+### Testing
+
+**[Rejection tests for physical tenant isolation](./physical-tenant-isolation-tests.md)** - The
+rule that every physical tenant isolation criterion links to a test that proves the rejection on
+each path: REST, gRPC (embedded and standalone gateway), browser login and session, and MCP.
 
 ### Release Process
 
-**[Release Process](./release.md)** - Complete software release procedures and guidelines including:
+**[Release Process](./release/index.md)** - Complete software release procedures and guidelines including:
 
 - Release types (Minor, Alpha, Patch) and artifacts
 - BPMN-based release process implementation

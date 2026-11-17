@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,7 +173,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    *
    * @return the max key value stored in the state , or null if not set
    */
-  public Long getMaxKeyValue() {
+  public @Nullable Long getMaxKeyValue() {
     final var readValue = maxValueColumnFamily.get(maxKeyValueKey);
     if (readValue != null) {
       return readValue.getValue();

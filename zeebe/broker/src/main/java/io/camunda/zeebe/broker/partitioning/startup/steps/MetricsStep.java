@@ -12,7 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 
 public class MetricsStep implements StartupStep<PartitionStartupContext> {
 
@@ -30,7 +30,7 @@ public class MetricsStep implements StartupStep<PartitionStartupContext> {
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var brokerRegistry = context.brokerMeterRegistry();
-    final var partitionId = context.partitionMetadata().id().id();
+    final var partitionId = context.partitionMetadata().id();
     final var partitionRegistry =
         MicrometerUtil.wrap(brokerRegistry, PartitionKeyNames.tags(partitionId));
     context.partitionMeterRegistry(partitionRegistry);

@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.value.BooleanValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ImmutableAsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableNestedRecordValue;
 import io.github.classgraph.ClassGraph;
@@ -30,8 +32,11 @@ import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -67,6 +72,8 @@ import org.slf4j.LoggerFactory;
 public final class ProtocolFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolFactory.class);
   private static final String PROTOCOL_PACKAGE_NAME = Record.class.getPackage().getName() + "*";
+  private static final long DATE_RANGE_MIN = Instant.parse("2000-01-01T00:00:00Z").getEpochSecond();
+  private static final long DATE_RANGE_MAX = Instant.parse("2099-12-31T23:59:59Z").getEpochSecond();
 
   private final CustomRandomizerRegistry randomizerRegistry;
   private final EasyRandomParameters parameters;
@@ -353,7 +360,10 @@ public final class ProtocolFactory {
   }
 
   private void registerRandomizers() {
-    findProtocolTypes().forEach(this::registerProtocolType);
+    ClasspathScan.PROTOCOL_TYPES.forEach(
+        type ->
+            randomizerRegistry.registerRandomizer(
+                type.abstractType(), () -> random.nextObject(type.implementation())));
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
 
     // restrict longs to be between 0 and max value - this is because many of our long properties
@@ -376,6 +386,13 @@ public final class ProtocolFactory {
 
     // Register randomizers for all implementation classes
     registerImplClassRandomizers();
+
+    // AuthInfo is immutable, so it can't be populated field by field
+    randomizerRegistry.registerRandomizer(
+        AuthInfo.class,
+        () ->
+            AuthInfo.ofClaims(Map.of("authorized_username", random.nextObject(String.class)))
+                .withFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED));
 
     // Register randomizers for msgpack value classes
     registerMsgPackValueRandomizers();
@@ -421,18 +438,31 @@ public final class ProtocolFactory {
               .build();
         });
 
+    randomizerRegistry.registerRandomizer(
+        ImmutableBufferedCommandRecordValue.class,
+        () -> {
+          final var valueType = random.nextObject(ValueType.class);
+          final var typeInfo = ValueTypeMapping.get(valueType);
+          return ImmutableBufferedCommandRecordValue.builder()
+              .withProcessInstanceKey(random.nextLong())
+              .withProcessDefinitionKey(random.nextLong())
+              .withTenantId(random.nextObject(String.class))
+              .withCommandKey(random.nextLong())
+              .withValueType(valueType)
+              .withIntent(random.nextObject(typeInfo.getIntentClass()))
+              .withCommandValue(generateObject(typeInfo.getValueClass()))
+              .build();
+        });
+
     // A randomizer for any String property whose name ends with the "Date" suffix,
-    // generating a random date between now - 2 years and now + 2 years
+    // generating a random date between 2000-01-01 and 2099-12-31
+    final var epochRandomizer = new LongRangeRandomizer(DATE_RANGE_MIN, DATE_RANGE_MAX, getSeed());
     randomizerRegistry.registerRandomizer(
         field -> field.getType() == String.class && field.getName().endsWith("Date"),
-        () -> {
-          final var now = OffsetDateTime.now();
-          final var min = now.minusYears(2).toEpochSecond();
-          final var max = now.plusYears(2).toEpochSecond();
-          final var randomEpoch = min + Math.abs(random.nextLong()) % (max - min + 1);
-          return OffsetDateTime.ofInstant(Instant.ofEpochSecond(randomEpoch), now.getOffset())
-              .format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-        });
+        () ->
+            OffsetDateTime.ofInstant(
+                    Instant.ofEpochSecond(epochRandomizer.getRandomValue()), ZoneOffset.UTC)
+                .format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
   }
 
   /**
@@ -441,19 +471,10 @@ public final class ProtocolFactory {
    * populate all msgpack properties, including complex types like ArrayProperty.
    */
   private void registerImplClassRandomizers() {
-    try (final var scanResult =
-        new ClassGraph()
-            .enableClassInfo()
-            .acceptPackages("io.camunda.zeebe.protocol.impl")
-            .scan()) {
-      scanResult
-          .getAllClasses()
-          .loadClasses()
-          .forEach(
-              implClass ->
-                  randomizerRegistry.registerRandomizer(
-                      implClass, () -> generateProtocolImplRecord(implClass)));
-    }
+    ClasspathScan.IMPL_CLASSES.forEach(
+        implClass ->
+            randomizerRegistry.registerRandomizer(
+                implClass, () -> generateProtocolImplRecord(implClass)));
   }
 
   private Object generateProtocolImplRecord(final Class<?> implClass) {
@@ -482,34 +503,6 @@ public final class ProtocolFactory {
         BooleanValue.class, () -> new BooleanValue(random.nextBoolean()));
   }
 
-  private void registerProtocolType(final ClassInfo abstractType) {
-    final var implementations =
-        abstractType
-            .getClassesImplementing()
-            // grab only the immutable implementations
-            .filter(info -> info.hasAnnotation(ImmutableProtocol.Type.class))
-            .directOnly()
-            .loadClasses();
-
-    if (implementations.isEmpty()) {
-      LOGGER.warn(
-          "No implementations found for abstract protocol type {}; random generation will not be possible for this type",
-          abstractType.getName());
-      return;
-    }
-
-    final var implementation = implementations.get(0);
-    if (implementations.size() > 1) {
-      LOGGER.warn(
-          "More than one implementation found for abstract protocol type {}; random generation will use the first one: {}",
-          abstractType.getName(),
-          implementation.getName());
-    }
-
-    randomizerRegistry.registerRandomizer(
-        abstractType.loadClass(), () -> random.nextObject(implementation));
-  }
-
   private EasyRandomParameters getDefaultParameters() {
     // as we will ensure value/intent/valueType having matching types, omit them from the
     // randomization process - we will do that individually afterwards
@@ -529,7 +522,10 @@ public final class ProtocolFactory {
         // as we have nested types in our protocol, let's give a generous depth here, but let's
         // still limit it to avoid errors/issues with nested collections
         .randomizationDepth(8)
-        .excludeField(excludedRecordFields);
+        .excludeField(excludedRecordFields)
+        // force the default ordinal so random records will always target the main index and
+        // not ordinal indexes (unless we need to verify that in tests)
+        .randomize(field -> field.getName().equals("storageOrdinal"), () -> 0);
   }
 
   private <T extends RecordValue> Record<T> generateImmutableRecord(
@@ -602,5 +598,59 @@ public final class ProtocolFactory {
       final var variableType = variableTypes[random.nextInt(variableTypes.length)];
       return random.nextObject(variableType);
     }
+  }
+
+  /**
+   * Scanning the classpath is expensive (~100+ ms per scan), and the result is fixed for the
+   * lifetime of the JVM, so do it once instead of on every factory construction.
+   */
+  private static final class ClasspathScan {
+    private static final List<Class<?>> IMPL_CLASSES = scanImplClasses();
+    private static final List<ProtocolType> PROTOCOL_TYPES = scanProtocolTypes();
+
+    private static List<Class<?>> scanImplClasses() {
+      try (final var scanResult =
+          new ClassGraph()
+              .enableClassInfo()
+              .acceptPackages("io.camunda.zeebe.protocol.impl")
+              .scan()) {
+        return List.copyOf(scanResult.getAllClasses().loadClasses());
+      }
+    }
+
+    private static List<ProtocolType> scanProtocolTypes() {
+      return findProtocolTypes().stream()
+          .map(ClasspathScan::resolveProtocolType)
+          .filter(Objects::nonNull)
+          .toList();
+    }
+
+    private static ProtocolType resolveProtocolType(final ClassInfo abstractType) {
+      final var implementations =
+          abstractType
+              .getClassesImplementing()
+              // grab only the immutable implementations
+              .filter(info -> info.hasAnnotation(ImmutableProtocol.Type.class))
+              .directOnly()
+              .loadClasses();
+
+      if (implementations.isEmpty()) {
+        LOGGER.warn(
+            "No implementations found for abstract protocol type {}; random generation will not be possible for this type",
+            abstractType.getName());
+        return null;
+      }
+
+      final var implementation = implementations.get(0);
+      if (implementations.size() > 1) {
+        LOGGER.warn(
+            "More than one implementation found for abstract protocol type {}; random generation will use the first one: {}",
+            abstractType.getName(),
+            implementation.getName());
+      }
+      return new ProtocolType(abstractType.loadClass(), implementation);
+    }
+
+    private record ProtocolType(Class<?> abstractType, Class<?> implementation) {}
   }
 }

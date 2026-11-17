@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
@@ -17,32 +18,32 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorContext {
 
   public static final Duration DEFAULT_DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
+  public static final int DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS = 100_000;
 
   private int id;
-  private String name;
+  private PartitionId partitionId;
   private LogStream logStream;
   private Map<ExporterDescriptor, ExporterInitializationInfo> descriptors;
   private ZeebeDb zeebeDb;
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
+  private int migrationStatusScanMaxRecords = DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS;
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
-  private String engineName;
-  private boolean sendOnLegacySubject = true;
+  private String clusterId = "";
+  private @Nullable String licenseKey;
+  private String tenantName;
   private boolean receiveOnLegacySubject = true;
 
   public int getId() {
     return id;
-  }
-
-  public String getName() {
-    return name;
   }
 
   public LogStream getLogStream() {
@@ -69,6 +70,10 @@ public final class ExporterDirectorContext {
     return distributionInterval;
   }
 
+  public int getMigrationStatusScanMaxRecords() {
+    return migrationStatusScanMaxRecords;
+  }
+
   public EventFilter getPositionsToSkipFilter() {
     return positionsToSkipFilter;
   }
@@ -81,12 +86,16 @@ public final class ExporterDirectorContext {
     return clock;
   }
 
-  public String getEngineName() {
-    return engineName;
+  public String getClusterId() {
+    return clusterId;
   }
 
-  public boolean isSendOnLegacySubject() {
-    return sendOnLegacySubject;
+  public @Nullable String getLicenseKey() {
+    return licenseKey;
+  }
+
+  public String getTenantName() {
+    return tenantName;
   }
 
   public boolean isReceiveOnLegacySubject() {
@@ -95,11 +104,6 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext id(final int id) {
     this.id = id;
-    return this;
-  }
-
-  public ExporterDirectorContext name(final String name) {
-    this.name = name;
     return this;
   }
 
@@ -140,6 +144,12 @@ public final class ExporterDirectorContext {
     return this;
   }
 
+  public ExporterDirectorContext migrationStatusScanMaxRecords(
+      final int migrationStatusScanMaxRecords) {
+    this.migrationStatusScanMaxRecords = migrationStatusScanMaxRecords;
+    return this;
+  }
+
   public ExporterDirectorContext positionsToSkipFilter(final EventFilter skipPositionsFilter) {
     positionsToSkipFilter = skipPositionsFilter;
     return this;
@@ -150,18 +160,32 @@ public final class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext engineName(final String engineName) {
-    this.engineName = engineName;
+  public ExporterDirectorContext clusterId(final String clusterId) {
+    this.clusterId = clusterId;
     return this;
   }
 
-  public ExporterDirectorContext sendOnLegacySubject(final boolean sendOnLegacySubject) {
-    this.sendOnLegacySubject = sendOnLegacySubject;
+  public ExporterDirectorContext licenseKey(final @Nullable String licenseKey) {
+    this.licenseKey = licenseKey;
+    return this;
+  }
+
+  public ExporterDirectorContext tenantName(final String tenantName) {
+    this.tenantName = tenantName;
     return this;
   }
 
   public ExporterDirectorContext receiveOnLegacySubject(final boolean receiveOnLegacySubject) {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
+    return this;
+  }
+
+  public PartitionId getPartitionId() {
+    return partitionId;
+  }
+
+  public ExporterDirectorContext partitionId(final PartitionId partitionId) {
+    this.partitionId = partitionId;
     return this;
   }
 
@@ -176,5 +200,5 @@ public final class ExporterDirectorContext {
      * positions and stores them in the state. This mode is used on the follower side.
      */
     PASSIVE
-  };
+  }
 }

@@ -16,8 +16,9 @@ type ProcessInstanceFilterField =
   | 'elementId'
   | 'variableName'
   | 'variableValues'
-  | 'batchOperationId'
+  | 'batchOperationKey'
   | 'active'
+  | 'suspended'
   | 'incidents'
   | 'completed'
   | 'canceled'
@@ -26,7 +27,8 @@ type ProcessInstanceFilterField =
   | 'endDateFrom'
   | 'endDateTo'
   | 'tenantId'
-  | 'hasRetriesLeft';
+  | 'hasRetriesLeft'
+  | 'businessId';
 
 type ProcessInstanceFilters = {
   processDefinitionId?: string;
@@ -38,8 +40,9 @@ type ProcessInstanceFilters = {
   elementId?: string;
   variableName?: string;
   variableValues?: string;
-  batchOperationId?: string;
+  batchOperationKey?: string;
   active?: boolean;
+  suspended?: boolean;
   incidents?: boolean;
   completed?: boolean;
   canceled?: boolean;
@@ -49,6 +52,7 @@ type ProcessInstanceFilters = {
   endDateTo?: string;
   tenantId?: string;
   hasRetriesLeft?: boolean;
+  businessId?: string;
 };
 
 const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
@@ -61,8 +65,9 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'elementId',
   'variableName',
   'variableValues',
-  'batchOperationId',
+  'batchOperationKey',
   'active',
+  'suspended',
   'incidents',
   'completed',
   'canceled',
@@ -72,10 +77,12 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'endDateTo',
   'tenantId',
   'hasRetriesLeft',
+  'businessId',
 ];
 
 const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'active',
+  'suspended',
   'incidents',
   'completed',
   'canceled',

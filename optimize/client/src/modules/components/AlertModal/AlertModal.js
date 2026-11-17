@@ -22,7 +22,7 @@ import {
 
 import {Modal, Select} from 'components';
 import {formatters, evaluateReport, getReportResult} from 'services';
-import {isEmailEnabled} from 'config';
+import {isEmailEnabled, getEntityNameMaxLength} from 'config';
 import {t} from 'translation';
 import {withDocs, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -69,6 +69,7 @@ export class AlertModal extends React.Component {
 
     this.setState({
       emailNotificationIsEnabled: await isEmailEnabled(),
+      nameMaxLength: await getEntityNameMaxLength(),
     });
   };
 
@@ -231,6 +232,7 @@ export class AlertModal extends React.Component {
       reminder,
       fixNotification,
       emailNotificationIsEnabled,
+      nameMaxLength,
       invalid,
       validEmails,
       report,
@@ -267,13 +269,14 @@ export class AlertModal extends React.Component {
                     value={name}
                     onChange={({target: {value}}) => this.setState({name: value})}
                     autoComplete="off"
+                    maxLength={nameMaxLength}
                   />
                   <ComboBox
                     id="report"
                     size="sm"
                     items={reports}
                     selectedItem={selectedReport}
-                    itemToString={(item) => item.name || item.id}
+                    itemToString={(item) => item?.name || item?.id || ''}
                     disabled={!!this.props.initialReport || !reports?.length}
                     placeholder={t('alert.form.reportPlaceholder')}
                     titleText={t('alert.form.report')}

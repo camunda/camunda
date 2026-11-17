@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
@@ -21,17 +23,32 @@ public final class RemoteJobStreamer implements JobStreamer {
 
   private final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate;
   private final ClusterEventService eventService;
+  private final String physicalTenantId;
 
   public RemoteJobStreamer(
       final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate,
-      final ClusterEventService eventService) {
+      final ClusterEventService eventService,
+      final String physicalTenantId) {
     this.delegate = delegate;
     this.eventService = eventService;
+    this.physicalTenantId = physicalTenantId;
   }
 
   @Override
   public void notifyWorkAvailable(final String jobType) {
-    eventService.broadcast(JOBS_AVAILABLE_TOPIC, jobType);
+    eventService.broadcast(topic(physicalTenantId), jobType);
+    legacyBroadcastIfDefaultTenant(jobType);
+  }
+
+  private static String topic(final String physicalTenantId) {
+    return physicalTenantId + "-" + JOBS_AVAILABLE_TOPIC;
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void legacyBroadcastIfDefaultTenant(final String jobType) {
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      eventService.broadcast(JOBS_AVAILABLE_TOPIC, jobType);
+    }
   }
 
   @Override

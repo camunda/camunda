@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -36,6 +37,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
   private static final StringValue SOURCE_KEY = new StringValue("source");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
@@ -48,6 +50,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final ObjectProperty<VariableSourceRecord> sourceProp =
       new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
 
@@ -58,7 +61,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private String cachedJsonValue;
 
   public VariableRecord() {
-    super(9);
+    super(10);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
@@ -67,6 +70,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(sourceProp);
   }
 
@@ -87,6 +91,13 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       cachedJsonValue = MsgPackConverter.convertToJson(valueProp.getValue());
     }
     return cachedJsonValue;
+  }
+
+  // Internal accessor used by MetricsExporter for size-based metrics; not part of
+  // VariableRecordValue and excluded from JSON serialization.
+  @JsonIgnore
+  public int getValueLength() {
+    return valueProp.getValue().capacity();
   }
 
   @Override
@@ -188,6 +199,16 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public VariableRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

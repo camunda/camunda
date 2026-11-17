@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.db;
 
-public record AccessMetricsConfiguration(Kind kind, int partitionId) {
+public record AccessMetricsConfiguration(Kind kind) {
   public enum Kind {
     NONE,
     FINE

@@ -71,6 +71,7 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
     final var ioMapping =
         Optional.ofNullable(element.getSingleExtensionElement(ZeebeIoMapping.class));
 
+    // transformInputMappings also detects the secret references (only honored in input mappings)
     ioMapping
         .map(ZeebeIoMapping::getInputs)
         .filter(mappings -> !mappings.isEmpty())

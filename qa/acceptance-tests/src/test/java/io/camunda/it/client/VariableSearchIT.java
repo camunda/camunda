@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -180,6 +181,23 @@ class VariableSearchIT {
     final var first = result.items().getFirst();
     assertThat(first.getVariableKey()).isEqualTo(variable.getVariableKey());
     assertThat(first.getValue()).isEqualTo(variable.getValue());
+  }
+
+  @Test
+  void shouldQueryByValueFilterNotIn() {
+    // StringProperty has no $notIn method yet, so exercise it via a raw HTTP request.
+    final var response =
+        TestHelper.sendRawSearchRequest(
+            camundaClient,
+            "v2/variables/search",
+            Map.of("filter", Map.of("value", Map.of("$notIn", List.of(variable.getValue())))));
+
+    // then
+    final var variableKeys =
+        StreamSupport.stream(response.get("items").spliterator(), false)
+            .map(item -> item.get("variableKey").asText())
+            .toList();
+    assertThat(variableKeys).isNotEmpty().doesNotContain(String.valueOf(variable.getVariableKey()));
   }
 
   @Test
@@ -383,6 +401,35 @@ class VariableSearchIT {
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(6);
+  }
+
+  @Test
+  void shouldReturnEmptyForNonExistentVariableKey() {
+    // when
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.variableKey(Long.MAX_VALUE))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSortByNameDescProducesReverseAlphabeticalOrder() {
+    // when
+    final var resultAsc =
+        camundaClient.newVariableSearchRequest().sort(s -> s.name().asc()).send().join();
+    final var resultDesc =
+        camundaClient.newVariableSearchRequest().sort(s -> s.name().desc()).send().join();
+
+    // then - desc must be exact reverse of asc
+    final var namesAsc = resultAsc.items().stream().map(Variable::getName).toList();
+    final var namesDesc = resultDesc.items().stream().map(Variable::getName).toList();
+    assertThat(namesAsc).isSorted();
+    assertThat(namesDesc).isEqualTo(namesAsc.reversed());
   }
 
   private static void waitForTasksBeingExported() {

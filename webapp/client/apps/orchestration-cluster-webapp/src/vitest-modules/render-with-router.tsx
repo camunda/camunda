@@ -1,0 +1,78 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render} from 'vitest-browser-react';
+import {TooltipProvider} from '@camunda/design-system';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {
+	Outlet,
+	RouterProvider,
+	createMemoryHistory,
+	createRootRouteWithContext,
+	createRoute,
+	createRouter,
+	joinPaths,
+	type RegisteredRouter,
+} from '@tanstack/react-router';
+
+type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
+type ValidRoutes = FileRouteTypes['to'] | FileRouteTypes['id'];
+
+async function renderWithRouter(
+	Component: React.ComponentType,
+	{
+		path,
+		basepath = '',
+		initialEntry = joinPaths([basepath, path]),
+	}: {
+		path: ValidRoutes;
+		initialEntry?: string;
+		basepath?: string;
+	},
+) {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: {retry: false},
+		},
+	});
+
+	const rootRoute = createRootRouteWithContext<{queryClient: QueryClient}>()({
+		component: () => <Outlet />,
+	});
+
+	const testRoute = createRoute({
+		getParentRoute: () => rootRoute,
+		path,
+		component: () => <Component />,
+	});
+
+	const router = createRouter({
+		routeTree: rootRoute.addChildren([testRoute]),
+		history: createMemoryHistory({initialEntries: [initialEntry]}),
+		basepath,
+		defaultPendingMinMs: 0,
+		defaultNotFoundComponent: () => null,
+		context: {
+			queryClient,
+		},
+	});
+
+	await router.load();
+
+	const screen = await render(
+		<TooltipProvider>
+			<QueryClientProvider client={queryClient}>
+				<RouterProvider router={router} />
+			</QueryClientProvider>
+		</TooltipProvider>,
+	);
+
+	return {...screen, router, queryClient};
+}
+
+export {renderWithRouter};

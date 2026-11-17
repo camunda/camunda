@@ -17,7 +17,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 public class AuthorizationServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private CamundaAuthentication authentication;
   private AuthorizationServices services;
   private AuthorizationSearchClient client;
@@ -36,6 +37,7 @@ public class AuthorizationServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new AuthorizationServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

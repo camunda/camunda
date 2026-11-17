@@ -62,6 +62,11 @@ public final class ExpressionClient {
     return this;
   }
 
+  public ExpressionClient withScopeKey(final long key) {
+    expressionRecord.setScopeKey(key);
+    return this;
+  }
+
   public ExpressionClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;

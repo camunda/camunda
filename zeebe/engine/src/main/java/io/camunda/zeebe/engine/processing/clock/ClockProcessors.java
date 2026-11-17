@@ -8,9 +8,10 @@
 package io.camunda.zeebe.engine.processing.clock;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ClockState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
@@ -23,18 +24,32 @@ public final class ClockProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final KeyGenerator keyGenerator,
+      final ClockState clockState,
       final ControllableStreamClock clock,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     typedRecordProcessors.onCommand(
         ValueType.CLOCK,
         ClockIntent.PIN,
-        new ClockPinProcessor(
-            writers, keyGenerator, clock, commandDistributionBehavior, authCheckBehavior));
+        new ClockPinProcessor(writers, keyGenerator, clock, commandDistributionBehavior, cslCheck));
     typedRecordProcessors.onCommand(
         ValueType.CLOCK,
         ClockIntent.RESET,
         new ClockResetProcessor(
-            writers, keyGenerator, clock, commandDistributionBehavior, authCheckBehavior));
+            writers, keyGenerator, clock, commandDistributionBehavior, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.FETCH,
+        new ClockFetchProcessor(writers, keyGenerator, clock, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.ADD,
+        new ClockAddProcessor(
+            writers, keyGenerator, clockState, clock, commandDistributionBehavior, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.OFFSET,
+        new ClockOffsetProcessor(
+            writers, keyGenerator, clock, commandDistributionBehavior, cslCheck));
   }
 }

@@ -11,30 +11,28 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
-import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -43,9 +41,16 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -53,88 +58,84 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
-  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
-  private final ExporterRepository exporterRepository;
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final SecurityConfiguration securityConfiguration;
-  private final UserServices userServices;
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts;
+  private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
+  private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
-  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final PhysicalTenantIds physicalTenantIds;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private AtomixServerTransport gatewayBrokerTransport;
   private SnowflakeIdGenerator requestIdGenerator;
   private ManagedMessagingService commandApiMessagingService;
-  private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
-  private PartitionManagerImpl partitionManager;
-  private BrokerAdminServiceImpl brokerAdminService;
-  private JobStreamService jobStreamService;
+  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
+  private final Map<String, PartitionManager> partitionManagers = new ConcurrentHashMap<>();
+  private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
+  private RocksDbResources sharedRocksDbResources;
   private ClusterConfigurationService clusterConfigurationService;
-  private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private CheckpointSchedulingService checkpointSchedulingService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
-      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
-      final ExporterRepository exporterRepository,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration,
-      final UserServices userServices,
+      final Map<String, PhysicalTenantContext> physicalTenantContexts,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers,
+      final NodeIdProvider nodeIdProvider,
+      final PhysicalTenantIds physicalTenantIds) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
-    this.exporterRepository = requireNonNull(exporterRepository);
     this.clusterServices = requireNonNull(clusterServices);
-    this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.securityConfiguration = requireNonNull(securityConfiguration);
-    this.userServices = userServices;
+    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
+    this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider = oidcClaimsProvider;
+    this.jwtDecoderFactory = jwtDecoderFactory;
+    this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
+    this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
+    this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
-    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   @Override
   public String toString() {
-    return "BrokerStartupContextImpl{" + "broker=" + brokerInfo.getNodeId() + '}';
+    return "BrokerStartupContextImpl{" + "broker=" + brokerInfo.brokerIdStr() + '}';
   }
 
   @Override
@@ -145,11 +146,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerCfg getBrokerConfiguration() {
     return configuration;
-  }
-
-  @Override
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
   }
 
   @Override
@@ -179,6 +175,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  @Override
+  public @Nullable IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
+    return exportedPositionSuppliers.get(physicalTenantId);
   }
 
   @Override
@@ -214,16 +215,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
-  }
-
-  @Override
-  public CommandApiServiceImpl getCommandApiService() {
-    return commandApiService;
-  }
-
-  @Override
-  public void setCommandApiService(final CommandApiServiceImpl commandApiService) {
-    this.commandApiService = commandApiService;
   }
 
   @Override
@@ -277,38 +268,60 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public ExporterRepository getExporterRepository() {
-    return exporterRepository;
+  public JobStreamService getJobStreamService(final String physicalTenantId) {
+    return jobStreamServices.get(physicalTenantId);
   }
 
   @Override
-  public PartitionManagerImpl getPartitionManager() {
-    return partitionManager;
+  public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
+    jobStreamServices.put(physicalTenantId, service);
   }
 
   @Override
-  public void setPartitionManager(final PartitionManagerImpl partitionManager) {
-    this.partitionManager = partitionManager;
+  public void removeJobStreamService(final String physicalTenantId) {
+    jobStreamServices.remove(physicalTenantId);
   }
 
   @Override
-  public BrokerAdminServiceImpl getBrokerAdminService() {
-    return brokerAdminService;
+  public Map<String, PartitionManager> getPartitionManagers() {
+    return Collections.unmodifiableMap(partitionManagers);
   }
 
   @Override
-  public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
-    this.brokerAdminService = brokerAdminService;
+  public void addPartitionManager(
+      final String physicalTenantId, final PartitionManager partitionManager) {
+    partitionManagers.put(physicalTenantId, partitionManager);
   }
 
   @Override
-  public JobStreamService getJobStreamService() {
-    return jobStreamService;
+  public void removePartitionManager(final String physicalTenantId) {
+    partitionManagers.remove(physicalTenantId);
   }
 
   @Override
-  public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.jobStreamService = jobStreamService;
+  public RocksDbResources getRocksDbResources() {
+    return sharedRocksDbResources;
+  }
+
+  @Override
+  public void setRocksDbResources(final RocksDbResources sharedRocksDbResources) {
+    this.sharedRocksDbResources = sharedRocksDbResources;
+  }
+
+  @Override
+  public BrokerAdminServiceImpl getBrokerAdminService(final String physicalTenantId) {
+    return brokerAdminServices.get(physicalTenantId);
+  }
+
+  @Override
+  public void addBrokerAdminService(
+      final String physicalTenantId, final BrokerAdminServiceImpl brokerAdminService) {
+    brokerAdminServices.put(physicalTenantId, brokerAdminService);
+  }
+
+  @Override
+  public void removeBrokerAdminService(final String physicalTenantId) {
+    brokerAdminServices.remove(physicalTenantId);
   }
 
   @Override
@@ -348,13 +361,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfiguration() {
-    return securityConfiguration;
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    if (!physicalTenantContexts.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    return physicalTenantContexts.get(physicalTenantId);
   }
 
   @Override
-  public UserServices getUserServices() {
-    return userServices;
+  public Function<String, UserServices> getUserServicesForTenant() {
+    return userServicesForTenant;
   }
 
   @Override
@@ -363,29 +379,13 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public JwtDecoder getJwtDecoder() {
-    return jwtDecoder;
+  public Function<AuthenticationConfiguration, JwtDecoder> getJwtDecoderFactory() {
+    return jwtDecoderFactory;
   }
 
   @Override
-  public OidcClaimsProvider getOidcClaimsProvider() {
-    return oidcClaimsProvider;
-  }
-
-  @Override
-  public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
-    return snapshotApiRequestHandler;
-  }
-
-  @Override
-  public void setSnapshotApiRequestHandler(
-      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
-  }
-
-  @Override
-  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
-    return brokerRequestAuthorizationConverter;
+  public Function<AuthenticationConfiguration, OidcClaimsProvider> getOidcClaimsProviderFactory() {
+    return oidcClaimsProviderFactory;
   }
 
   @Override
@@ -402,5 +402,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  @Override
+  public PhysicalTenantIds getPhysicalTenantIds() {
+    return physicalTenantIds;
   }
 }

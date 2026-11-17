@@ -9,13 +9,17 @@ package io.camunda.exporter.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ExporterConfigurationTest {
 
@@ -417,30 +421,7 @@ class ExporterConfigurationTest {
   }
 
   @Test
-  public void shouldSetBatchSizesToOneWhenVendorDoesNotSupportInsertBatching() {
-    // given
-    final ExporterConfiguration configuration = new ExporterConfiguration();
-    configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
-    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(50);
-    configuration.getInsertBatching().setMaxJobInsertBatchSize(25);
-    configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(25);
-
-    final VendorDatabaseProperties vendorProps = mock(VendorDatabaseProperties.class);
-    when(vendorProps.supportsInsertBatching()).thenReturn(false);
-
-    // when
-    final var writerConfig =
-        configuration.createRdbmsWriterConfig(1, vendorProps, InstantSource.system());
-
-    // then
-    assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(1);
-    assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(1);
-    assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(1);
-    assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldUseBatchSizesFromConfigWhenVendorSupportsInsertBatching() {
+  public void shouldUseBatchSizesFromConfig() {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
     configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
@@ -448,12 +429,9 @@ class ExporterConfigurationTest {
     configuration.getInsertBatching().setMaxJobInsertBatchSize(30);
     configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(35);
 
-    final VendorDatabaseProperties vendorProps = mock(VendorDatabaseProperties.class);
-    when(vendorProps.supportsInsertBatching()).thenReturn(true);
-
     // when
     final var writerConfig =
-        configuration.createRdbmsWriterConfig(1, vendorProps, InstantSource.system());
+        configuration.createRdbmsWriterConfig(1, "mytenant", InstantSource.system());
 
     // then
     assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(25);
@@ -512,5 +490,254 @@ class ExporterConfigurationTest {
 
     assertThatThrownBy(configuration::validate)
         .hasMessageContaining("maxHistoryCleanupUsage must be between");
+  }
+
+  // ReplicationConfiguration tests
+
+  @Test
+  public void shouldBeOkWithLogSeqReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setType(ReplicationType.LOG_SEQ);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMinSyncReplicas(1);
+    replication.setMaxLag(Duration.ofMinutes(5));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
+  public void shouldBeOkWithTimeLagReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setType(ReplicationType.TIME_LAG);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMinSyncReplicas(1);
+    replication.setMaxLag(Duration.ofMinutes(5));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
+  public void shouldBeOkWithDelayReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setType(ReplicationType.DELAY);
+    replication.setDelay(Duration.ofMinutes(10));
+    replication.setQueueDebounceTime(Duration.ZERO);
+    replication.setQueueCapacity(10);
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
+  public void shouldNotFailWhenReplicationDisabledWithCompletelyWrongConfig() {
+    // given - completely invalid configuration, but replication is disabled
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(false);
+    replication.setPollingInterval(Duration.ofMillis(-1000));
+    replication.setMaxLag(Duration.ofMillis(-1000));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error, pollingInterval and maxLag are only validated when enabled
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidReplicationConfigurations")
+  public void shouldFailValidationForReplicationConfiguration(
+      final Consumer<ReplicationConfiguration> configurer, final String expectedMessage) {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    configurer.accept(replication);
+    configuration.setAsyncReplication(replication);
+
+    // when / then
+    assertThatThrownBy(configuration::validate).hasMessageContaining(expectedMessage);
+  }
+
+  static Stream<Arguments> invalidReplicationConfigurations() {
+    return Stream.of(
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setPollingInterval(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setPollingInterval(Duration.ZERO);
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMinSyncReplicas(-1);
+                },
+            "asyncReplication.minSyncReplicas must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMinSyncReplicas(0);
+                },
+            "asyncReplication.minSyncReplicas must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setMaxLag(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setMaxLag(Duration.ZERO);
+                },
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.TIME_LAG);
+                  r.setPollingInterval(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.TIME_LAG);
+                  r.setMaxLag(Duration.ZERO);
+                },
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.delay must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ZERO);
+                },
+            "asyncReplication.delay must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueDebounceTime(Duration.ofMillis(-1));
+                },
+            "asyncReplication.queueDebounceTime must be a non-negative duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueDebounceTime(null);
+                },
+            "asyncReplication.queueDebounceTime must be a non-negative duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueCapacity(0);
+                },
+            "asyncReplication.queueCapacity must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueCapacity(-1);
+                },
+            "asyncReplication.queueCapacity must be greater 0"),
+        // queueCapacity/queueDebounceTime back DefaultReplicationController's queue for LOG_SEQ
+        // and TIME_LAG too, not just DELAY - a misconfiguration there must fail validate() the
+        // same way, instead of surfacing as an uncaught exception when the controller is created.
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setPollingInterval(Duration.ofSeconds(10));
+                  r.setMaxLag(Duration.ofMinutes(5));
+                  r.setQueueCapacity(0);
+                },
+            "asyncReplication.queueCapacity must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.TIME_LAG);
+                  r.setPollingInterval(Duration.ofSeconds(10));
+                  r.setMaxLag(Duration.ofMinutes(5));
+                  r.setQueueDebounceTime(Duration.ofMillis(-1));
+                },
+            "asyncReplication.queueDebounceTime must be a non-negative duration"),
+        // pollingInterval/maxLag back DefaultReplicationController's scheduling and pause
+        // decision for DELAY too, not just LOG_SEQ/TIME_LAG - a misconfiguration there must fail
+        // validate() the same way, instead of surfacing as an uncaught exception at controller
+        // construction time.
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setPollingInterval(Duration.ZERO);
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setMaxLag(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.maxLag must be a positive duration"));
   }
 }

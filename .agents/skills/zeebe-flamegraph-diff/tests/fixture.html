@@ -1,0 +1,21 @@
+<!-- Minimal async-profiler flamegraph fixture for parser tests.
+     Mirrors the real f()/u()/n() emission scheme:
+       f(key, level, left, width): absolute level; left0 += left; width0 = width || width0
+       u(key, width): child   -> f(key, level0+1, 0, width)
+       n(key, width): sibling -> f(key, level0, width0, width)
+     title = cpool[key >>> 3]; cpool is prefix-compressed (first char = shared-prefix len + 32). -->
+<script>
+	const cpool = [
+'all',
+' root',
+' aa',
+' bb'
+];
+	function unpack(cpool) {}
+unpack(cpool);
+
+n(0,100)
+u(8,60)
+f(16,1,30,40)
+n(24,10)
+</script>

@@ -17,6 +17,11 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {authenticationStore} from 'modules/stores/authentication';
 import * as clientConfig from 'modules/utils/getClientConfig';
 
+vi.mock('modules/feature-flags', async (importActual) => ({
+  ...(await importActual()),
+  IS_NAV_V2_ENABLED: false,
+}));
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
@@ -37,6 +42,16 @@ const mockSsoUser = createUser({
 });
 
 describe('User info', () => {
+  beforeEach(() => {
+    // C3 sidebar schedules a real timer on open; fake timers ensure it is
+    // discarded on teardown instead of leaking past the test environment.
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
   it('should render user display name', async () => {
     mockMe().withSuccess(mockUser);
 

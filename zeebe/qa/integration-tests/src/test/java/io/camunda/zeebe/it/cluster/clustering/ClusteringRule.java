@@ -35,10 +35,11 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.impl.util.AddressUtil;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
-import io.camunda.security.configuration.SecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -48,14 +49,20 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -114,13 +121,23 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.util.unit.DataSize;
 
+/**
+ * @deprecated Do not use this class in new tests. It is a JUnit 4 {@link
+ *     org.junit.rules.ExternalResource} that wires up an embedded cluster manually, which is
+ *     fragile and hard to maintain. New tests should use the {@code @ZeebeIntegration} JUnit 5
+ *     extension together with {@link io.camunda.zeebe.qa.util.cluster.TestCluster}, which provides
+ *     the same multi-broker/multi-partition capabilities with a cleaner lifecycle and better
+ *     isolation.
+ */
+@Deprecated
 public class ClusteringRule extends ExternalResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
-      PartitionManagerImpl.GROUP_NAME + "/partitions/1";
+      PartitionManagerImpl.DEFAULT_GROUP_NAME + "/partitions/1";
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -258,6 +275,7 @@ public class ClusteringRule extends ExternalResource {
 
     // create gateway
     gatewayResource = createGateway();
+    closeables.add(gatewayResource);
 
     // create client
     client = createClient();
@@ -304,7 +322,16 @@ public class ClusteringRule extends ExternalResource {
               return null;
             })
         .join();
-    systemContexts.values().forEach(ctx -> ctx.getScheduler().stop());
+    systemContexts
+        .values()
+        .forEach(
+            ctx -> {
+              try {
+                ctx.getScheduler().close();
+              } catch (final Exception e) {
+                LOG.error("Failed to close scheduler", e);
+              }
+            });
     systemContexts.clear();
     brokers.clear();
     brokerCfgs.clear();
@@ -340,8 +367,9 @@ public class ClusteringRule extends ExternalResource {
     brokerCfg.getNetwork().getInternalApi().setPort(internalApiAddresses.get(nodeId).getPort());
     brokerCfg.getCluster().setInitialContactPoints(contactPoints);
 
-    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
+    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    brokerSpringConfig.brokerIdMeterRegistryCustomizer().customize(meterRegistry);
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
@@ -371,7 +399,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
             brokerSpringConfig.shutdownTimeout(),
             brokerCfg,
             null,
@@ -379,14 +407,15 @@ public class ClusteringRule extends ExternalResource {
             atomixCluster,
             brokerClient,
             meterRegistry,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
             null,
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            PhysicalTenantIds.DEFAULT);
 
     final Broker broker =
         new Broker(
@@ -436,6 +465,26 @@ public class ClusteringRule extends ExternalResource {
                   getBrokerCfg(0).getNetwork().getInternalApi().getAddress()))
           .accept(brokerCfg);
     }
+
+    // same fast bootstrap settings as TestStandaloneBroker; the defaults make every cluster start
+    // wait for the 30s bootstrap timeout because the gateway never reports a configuration
+    brokerCfg
+        .getCluster()
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    Duration.ofMillis(500),
+                    Duration.ofMillis(500),
+                    null,
+                    Duration.ofMillis(500),
+                    Duration.ofSeconds(5))));
+
+    // By default, RocksDB takes 10% of the host memory per broker (FRACTION strategy), which adds
+    // up quickly when many brokers run in the same JVM or many test forks run in parallel. Use
+    // the minimum per partition (32 MiB) instead.
+    final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    rocksdbCfg.setMemoryLimit(DataSize.ofBytes(RocksdbCfg.MINIMUM_PARTITION_MEMORY_LIMIT));
 
     // custom configurators
     brokerConfigurator.accept(brokerCfg);
@@ -521,9 +570,9 @@ public class ClusteringRule extends ExternalResource {
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
-        new Gateway(
+        GatewayTestFactory.create(
             gatewayCfg,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
@@ -531,6 +580,7 @@ public class ClusteringRule extends ExternalResource {
             null,
             meterRegistry,
             null);
+
     gateway.start().join();
 
     return new GatewayResource(
@@ -730,8 +780,8 @@ public class ClusteringRule extends ExternalResource {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              assertThat(serverOfExpectedLeader.promote())
-                  .describedAs("Promote request is successful")
+              assertThat(serverOfExpectedLeader.anoint())
+                  .describedAs("Anoint request is successful")
                   .succeedsWithin(Duration.ofSeconds(15));
               final int currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
               assertThat(currentLeaderId)
@@ -762,6 +812,7 @@ public class ClusteringRule extends ExternalResource {
             .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
 
     request.setPartitionId(partitionId);
+    request.setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     final BrokerResponse<ProcessInstanceCreationRecord> response =
         gatewayResource.gateway.getBrokerClient().sendRequestWithRetry(request).join();
@@ -1016,11 +1067,11 @@ public class ClusteringRule extends ExternalResource {
           gateway,
           jobStreamClient,
           brokerClient,
+          clusterTopologyService,
           scheduler,
           () -> cluster.stop().join(),
           meterRegistry::clear,
-          meterRegistry::close,
-          clusterTopologyService);
+          meterRegistry::close);
     }
   }
 

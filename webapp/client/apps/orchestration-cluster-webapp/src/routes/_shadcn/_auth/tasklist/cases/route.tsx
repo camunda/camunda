@@ -1,0 +1,20 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {createFileRoute, notFound} from '@tanstack/react-router';
+import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
+
+const Route = createFileRoute('/_shadcn/_auth/tasklist/cases')({
+	beforeLoad: () => {
+		if (!ENABLE_CASE_MANAGEMENT) {
+			throw notFound({routeId: '/_shadcn/_auth/tasklist'});
+		}
+	},
+});
+
+export {Route};

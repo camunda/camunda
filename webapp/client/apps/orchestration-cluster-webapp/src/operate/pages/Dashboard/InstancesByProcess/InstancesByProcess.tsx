@@ -1,0 +1,159 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Suspense, useMemo} from 'react';
+import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
+import {InlineLoading} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
+import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.11';
+import {ErrorBoundary} from 'react-error-boundary';
+import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {ExpandableList} from '#/operate/pages/Dashboard/ExpandableList';
+import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/ExpandedRowErrorFallback';
+import {useDashboardScrollPagination} from '#/operate/pages/Dashboard/useDashboardScrollPagination';
+import {
+	dashboardTenantId,
+	runningOrAllInstancesFilter,
+	useDashboardTenants,
+} from '#/operate/pages/Dashboard/processesLinkFilters';
+import {LinkWrapper, LoadingRow} from '#/operate/pages/Dashboard/styled';
+import {
+	drainingByIdKey,
+	drainingProcessDefinitionsQuery,
+	getInstancesByProcessRefetchInterval,
+	instancesByProcessInfiniteQuery,
+	PAGE_SIZE,
+} from './instancesByProcess.queries';
+import {InstancesByProcessVersions} from './InstancesByProcessVersions';
+
+const InstancesByProcess: React.FC = () => {
+	const {t} = useTranslation();
+	const {isMultiTenancyEnabled, tenantsById} = useDashboardTenants();
+	const {
+		data,
+		isPending,
+		isError,
+		fetchNextPage,
+		fetchPreviousPage,
+		hasNextPage,
+		hasPreviousPage,
+		isFetchingNextPage,
+		isFetchingPreviousPage,
+	} = useInfiniteQuery({
+		...instancesByProcessInfiniteQuery(),
+		refetchInterval: (query) => getInstancesByProcessRefetchInterval(query.state.data?.pages.length ?? 1),
+	});
+
+	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
+
+	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+
+	const onScroll = useDashboardScrollPagination({
+		pageSize: PAGE_SIZE,
+		hasNextPage,
+		hasPreviousPage,
+		isFetchingNextPage,
+		isFetchingPreviousPage,
+		fetchNextPage,
+		fetchPreviousPage,
+	});
+
+	const rows = useMemo(
+		() =>
+			items.map((item: ProcessDefinitionInstanceStatistics) => {
+				const total = item.activeInstancesWithoutIncidentCount + item.activeInstancesWithIncidentCount;
+				const versionKey = item.hasMultipleVersions
+					? 'operate.dashboard.instancesInMultipleVersions'
+					: 'operate.dashboard.instancesInOneVersion';
+				const tenantId = dashboardTenantId(item.tenantId, isMultiTenancyEnabled);
+				const tenantName = tenantId ? (tenantsById[tenantId] ?? tenantId) : undefined;
+				const name = item.latestProcessDefinitionName || item.processDefinitionId;
+				const labelText = tenantName
+					? t(
+							item.hasMultipleVersions
+								? 'operate.dashboard.instancesInMultipleVersionsWithTenant'
+								: 'operate.dashboard.instancesInOneVersionWithTenant',
+							{name, count: total, tenant: tenantName},
+						)
+					: `${name} – ${t(versionKey, {count: total})}`;
+
+				return {
+					id: `${item.processDefinitionId}:${item.tenantId}`,
+					instance: (
+						<LinkWrapper
+							to="/operate/processes"
+							search={{
+								process: item.processDefinitionId,
+								tenantId,
+								...runningOrAllInstancesFilter(total),
+							}}
+							title={labelText}
+						>
+							<InstancesBar
+								label={{type: 'process', size: 'medium', text: labelText}}
+								activeInstancesCount={item.activeInstancesWithoutIncidentCount}
+								incidentsCount={item.activeInstancesWithIncidentCount}
+								isDraining={!!draining?.byId.has(drainingByIdKey(item.tenantId, item.processDefinitionId))}
+								drainingDescription={t('operate.dashboard.drainingDescriptionAllVersions')}
+								size="medium"
+							/>
+						</LinkWrapper>
+					),
+				};
+			}),
+		[items, t, draining, isMultiTenancyEnabled, tenantsById],
+	);
+
+	const expandedContents = useMemo(
+		() =>
+			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
+				if (item.hasMultipleVersions) {
+					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
+						<ErrorBoundary
+							fallback={<ExpandedRowErrorFallback message={t('operate.dashboard.versionDetailsFetchError')} />}
+						>
+							<Suspense
+								fallback={
+									<LoadingRow>
+										<InlineLoading />
+									</LoadingRow>
+								}
+							>
+								<InstancesByProcessVersions
+									processDefinitionId={item.processDefinitionId}
+									tenantId={item.tenantId}
+									drainingDefinitionKeys={draining?.byKey}
+									isMultiTenancyEnabled={isMultiTenancyEnabled}
+									tenantsById={tenantsById}
+								/>
+							</Suspense>
+						</ErrorBoundary>
+					);
+				}
+				return accumulator;
+			}, {}),
+		[items, t, draining?.byKey, isMultiTenancyEnabled, tenantsById],
+	);
+
+	return (
+		<ExpandableList
+			isPending={isPending}
+			isError={isError}
+			listTestId="instances-by-process-list"
+			dataTestId="instances-by-process-definition"
+			header="instance"
+			rows={rows}
+			expandedContents={expandedContents}
+			isFetchingNextPage={isFetchingNextPage}
+			isFetchingPreviousPage={isFetchingPreviousPage}
+			onScroll={onScroll}
+		/>
+	);
+};
+
+export {InstancesByProcess};

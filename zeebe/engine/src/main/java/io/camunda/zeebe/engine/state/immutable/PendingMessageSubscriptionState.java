@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState.MessageSubscriptionVisitor;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 
-public interface PendingMessageSubscriptionState {
+public interface PendingMessageSubscriptionState extends PendingSubscriptionRecovery {
 
   /**
    * Visits all pending message subscriptions where a command hasn't been sent out since a given

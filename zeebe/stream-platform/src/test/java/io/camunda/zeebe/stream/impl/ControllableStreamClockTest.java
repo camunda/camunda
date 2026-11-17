@@ -152,6 +152,26 @@ final class ControllableStreamClockTest {
   }
 
   @Test
+  void shouldReturnSystemTimeIgnoringModification() {
+    // given
+    final var sourceTime = Instant.now();
+    final var source = InstantSource.fixed(sourceTime);
+    final var clock = StreamClock.controllable(source);
+
+    // when -- pinned
+    clock.pinAt(sourceTime.plusSeconds(10));
+
+    // then
+    assertThat(clock.systemMillis()).isEqualTo(sourceTime.toEpochMilli());
+
+    // when -- offset
+    clock.offsetBy(Duration.ofSeconds(10));
+
+    // then
+    assertThat(clock.systemMillis()).isEqualTo(sourceTime.toEpochMilli());
+  }
+
+  @Test
   void shouldStackOffset() {
     // given
     final var sourceTime = Instant.now();

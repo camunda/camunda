@@ -58,14 +58,15 @@ public class GenericDecisionExecutionPlanInterpreterOS
         DECISION_INSTANCE_FREQUENCY_GROUP_BY_OUTPUT_VARIABLE);
   }
 
-  public DecisionDefinitionReader getDecisionDefinitionReader() {
+  protected DecisionDefinitionReader getDecisionDefinitionReader() {
     return this.decisionDefinitionReader;
   }
 
-  public DecisionQueryFilterEnhancerOS getQueryFilterEnhancer() {
+  protected DecisionQueryFilterEnhancerOS getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
   }
 
+  @Override
   public DecisionGroupByInterpreterFacadeOS getGroupByInterpreter() {
     return this.groupByInterpreter;
   }
@@ -74,7 +75,8 @@ public class GenericDecisionExecutionPlanInterpreterOS
     return this.viewInterpreter;
   }
 
-  public OptimizeOpenSearchClient getOsClient() {
+  @Override
+  protected OptimizeOpenSearchClient getOsClient() {
     return this.osClient;
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.asserts;
 
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionBrokerRole;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import java.util.ArrayList;
@@ -47,7 +48,8 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   /**
    * Asserts that the actual topology is complete. A complete topology is one which has the expected
    * number of brokers, the expected number of partitions, the expected number of replicas per
-   * partition, one leader per partition, and all partitions are healthy.
+   * partition, one leader per partition, every replica resolved into an active role (leader or
+   * follower), and all partitions are healthy.
    *
    * <p>This is a convenience method that combines all other assertions from this class.
    *
@@ -65,6 +67,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
         .hasBrokersCount(clusterSize)
         .hasExpectedReplicasCount(partitionCount, replicationFactor)
         .hasLeaderForEachPartition(partitionCount)
+        .hasActiveRoleForEachPartition(partitionCount)
         .isHealthy();
 
     return myself;
@@ -250,6 +253,46 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
+  /**
+   * Asserts that every replica of every partition has resolved into an active role ({@link
+   * PartitionBrokerRole#LEADER} or {@link PartitionBrokerRole#FOLLOWER}) - never unresolved ({@code
+   * null}) or {@link PartitionBrokerRole#INACTIVE}.
+   *
+   * @param partitionCount the expected number of partitions
+   * @return itself for chaining
+   */
+  public TopologyAssert hasActiveRoleForEachPartition(final int partitionCount) {
+    isNotNull();
+
+    final Map<Integer, List<PartitionBroker>> partitionMap = buildPartitionsMap();
+
+    if (partitionMap.size() != partitionCount) {
+      throw failure(
+          "Expected <%d> partitions to have a resolved role, but there are <%d> partitions in the topology: partitions <%s>",
+          partitionCount, partitionMap.size(), partitionMap.keySet());
+    }
+
+    for (final Entry<Integer, List<PartitionBroker>> partitionBrokers : partitionMap.entrySet()) {
+      final int partitionId = partitionBrokers.getKey();
+      final List<PartitionBroker> unresolved =
+          partitionBrokers.getValue().stream()
+              .filter(
+                  p ->
+                      p.partitionInfo.getRole() != PartitionBrokerRole.LEADER
+                          && p.partitionInfo.getRole() != PartitionBrokerRole.FOLLOWER)
+              .toList();
+
+      if (!unresolved.isEmpty()) {
+        throw failure(
+            "Expected partition <%d> to have a resolved role (LEADER or FOLLOWER) on every"
+                + " replica, but the following brokers report an unresolved role: <%s>",
+            partitionId, unresolved.stream().map(PartitionBroker::brokerInfo).toList());
+      }
+    }
+
+    return myself;
+  }
+
   public TopologyAssert hasLeaderForPartition(final int partitionId, final int expectedLeaderId) {
     isNotNull();
 
@@ -264,6 +307,49 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
             .map(p -> p.brokerInfo.getNodeId())
             .findFirst();
     return has(hasLeaderForPartition(partitionId, expectedLeaderId, leader));
+  }
+
+  /**
+   * Asserts that the broker identified by {@code nodeId} hosts exactly {@code expectedPartitions},
+   * each in an active role (not {@code null}, not {@link PartitionBrokerRole#INACTIVE}).
+   *
+   * @param nodeId the broker's node id
+   * @param expectedPartitions the exact set of partition ids the broker should host
+   * @return itself for chaining
+   */
+  public TopologyAssert hasBrokerWithActivePartitions(
+      final int nodeId, final Set<Integer> expectedPartitions) {
+    isNotNull();
+
+    final var brokerInfo =
+        actual.getBrokers().stream().filter(b -> b.getNodeId() == nodeId).findFirst().orElse(null);
+    if (brokerInfo == null) {
+      throw failure("Expected topology to contain broker <%d>, but it does not", nodeId);
+    }
+
+    final var hostedPartitions =
+        brokerInfo.getPartitions().stream()
+            .map(PartitionInfo::getPartitionId)
+            .collect(Collectors.toSet());
+    if (!hostedPartitions.equals(expectedPartitions)) {
+      throw failure(
+          "Expected broker <%d> to host partitions <%s>, but it hosts <%s>",
+          nodeId, expectedPartitions, hostedPartitions);
+    }
+
+    final var inactivePartitions =
+        brokerInfo.getPartitions().stream()
+            .filter(p -> p.getRole() == null || p.getRole() == PartitionBrokerRole.INACTIVE)
+            .map(PartitionInfo::getPartitionId)
+            .collect(Collectors.toSet());
+    if (!inactivePartitions.isEmpty()) {
+      throw failure(
+          "Expected broker <%d> to be active on every hosted partition, but partitions <%s>"
+              + " report an inactive or null role",
+          nodeId, inactivePartitions);
+    }
+
+    return myself;
   }
 
   /**

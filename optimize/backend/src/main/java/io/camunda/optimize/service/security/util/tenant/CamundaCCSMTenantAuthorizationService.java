@@ -120,16 +120,27 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
         .anyMatch(tenant -> Objects.equals(tenantId, tenant.getId()));
   }
 
+  // Caches a successful Identity response (even an empty one); a failed or absent lookup returns
+  // Optional.empty() and stays uncached so the next request retries instead of masking tenants.
   private void repopulateCacheWithCurrentUserTenantAuthorization() {
     getCurrentUserId()
-        .ifPresent(id -> userTenantAuthorizations.put(id, fetchCurrentUserAuthorizedTenants()));
+        .ifPresent(
+            id ->
+                fetchCurrentUserAuthorizedTenants()
+                    .ifPresent(tenants -> userTenantAuthorizations.put(id, tenants)));
   }
 
-  private List<TenantDto> fetchCurrentUserAuthorizedTenants() {
-    return ccsmTokenService
-        .getCurrentUserAuthToken()
-        .map(ccsmTokenService::getAuthorizedTenantsFromToken)
-        .orElse(Collections.emptyList());
+  private Optional<List<TenantDto>> fetchCurrentUserAuthorizedTenants() {
+    final Optional<String> authToken = ccsmTokenService.getCurrentUserAuthToken();
+    if (authToken.isEmpty()) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(ccsmTokenService.getAuthorizedTenantsFromToken(authToken.get()));
+    } catch (final Exception e) {
+      LOG.error("Could not retrieve authorized tenants from Identity.", e);
+      return Optional.empty();
+    }
   }
 
   private Optional<String> getCurrentUserId() {

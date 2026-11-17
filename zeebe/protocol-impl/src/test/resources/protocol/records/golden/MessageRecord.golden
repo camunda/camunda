@@ -31,6 +31,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue MESSAGE_ID_KEY = new StringValue("messageId");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -41,16 +42,18 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final StringProperty messageIdProp = new StringProperty(MESSAGE_ID_KEY, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
   public MessageRecord() {
-    super(7);
+    super(8);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
         .declareProperty(variablesProp)
         .declareProperty(messageIdProp)
         .declareProperty(deadlineProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(businessIdProp);
   }
 
   public void wrap(final MessageRecord record) {
@@ -61,6 +64,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     setVariables(record.getVariablesBuffer());
     setMessageId(record.getMessageIdBuffer());
     setTenantId(record.getTenantId());
+    setBusinessId(record.getBusinessIdBuffer());
   }
 
   public boolean hasMessageId() {
@@ -169,6 +173,26 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   public MessageRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  public MessageRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public MessageRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
     return this;
   }
 }

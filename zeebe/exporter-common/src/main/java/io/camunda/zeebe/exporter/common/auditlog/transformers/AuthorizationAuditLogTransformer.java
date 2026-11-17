@@ -21,6 +21,11 @@ public class AuthorizationAuditLogTransformer
   }
 
   @Override
+  public Class<AuthorizationRecordValue> getRecordValueType() {
+    return AuthorizationRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<AuthorizationRecordValue> record, final AuditLogEntry log) {
     final AuthorizationRecordValue value = record.getValue();
     log.setRelatedEntityKey(value.getOwnerId());

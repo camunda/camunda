@@ -7,6 +7,6 @@
  */
 package io.camunda.qa.util.auth;
 
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 
 public record Membership(String memberId, EntityType entityType) {}

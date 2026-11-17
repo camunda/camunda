@@ -11,7 +11,7 @@ import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 

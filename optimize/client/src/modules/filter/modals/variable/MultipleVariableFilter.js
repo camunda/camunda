@@ -11,6 +11,8 @@ import classnames from 'classnames';
 import {Button} from '@carbon/react';
 
 import {Modal} from 'components';
+// not via the 'components' barrel — see components/ExportFilterHint/index.tsx
+import {ExportFilterHint} from 'components/ExportFilterHint';
 import {t} from 'translation';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
@@ -142,9 +144,14 @@ export default function MultipleVariableFilter({
       className={classnames('MultipleVariableFilterModal', className)}
     >
       <Modal.Header
-        title={t('common.filter.modalHeader', {
-          type: t(`common.filter.types.${filterType}`),
-        })}
+        title={
+          <>
+            {t('common.filter.modalHeader', {
+              type: t(`common.filter.types.${filterType}`),
+            })}{' '}
+            <ExportFilterHint variant="variable" />
+          </>
+        }
       />
       <Modal.Content>
         {definitions && (

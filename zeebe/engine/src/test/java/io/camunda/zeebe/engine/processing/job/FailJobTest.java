@@ -50,8 +50,7 @@ public final class FailJobTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+      EngineRule.singlePartition().withAuthorizationsEnabled(true);
 
   private static final String PROCESS_ID = "process";
   private static String jobType;
@@ -429,5 +428,178 @@ public final class FailJobTest {
     final String expectedErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+  }
+
+  @Test
+  public void shouldFailLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withJobLeaseToken(jobLeaseToken)
+            .withRetries(3)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord)
+        .describedAs("expect fail to be accepted when the lease token matches")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED);
+  }
+
+  @Test
+  public void shouldRejectFailOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withRetries(3)
+            .expectRejection()
+            .fail();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .describedAs("expect fail without a lease token to be rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason())
+        .contains("must be provided")
+        .doesNotContain(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldRejectFailOnLeasedJobWithWrongLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withJobLeaseToken("stale-lease-token")
+            .withRetries(3)
+            .expectRejection()
+            .fail();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .describedAs("expect fail with a mismatching lease token to be rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason())
+        .contains("does not match")
+        .doesNotContain(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldFailNonLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE.job().withKey(jobKey).ofInstance(job.getProcessInstanceKey()).withRetries(3).fail();
+
+    // then
+    Assertions.assertThat(failRecord)
+        .describedAs("expect fail to be accepted for a non-leased job without a lease token")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED);
+  }
+
+  @Test
+  public void shouldRecurAfterBackoffWithoutLeaseWhenFailedWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    final Duration backOff = Duration.ofDays(1);
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withJobLeaseToken(jobLeaseToken)
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+    Assertions.assertThat(failRecord)
+        .describedAs("fail is fenced, so it needs the matching lease token to be accepted")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED);
+
+    // when the backoff elapses
+    ENGINE.increaseTime(
+        backOff.plus(Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)));
+
+    // then
+    final Record<JobRecordValue> recurredRecord =
+        jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).getFirst();
+    Assertions.assertThat(recurredRecord)
+        .describedAs("recur-after-backoff is engine-internal and must never be fenced")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.RECURRED_AFTER_BACKOFF)
+        .hasKey(jobKey);
+  }
+
+  @Test
+  public void shouldRejectJobFailForBannedProcessInstance() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final Record<JobRecordValue> jobRecord = ENGINE.job().withKey(jobKey).expectRejection().fail();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
   }
 }

@@ -8,11 +8,14 @@
 package io.camunda.zeebe.engine;
 
 import java.time.Duration;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
 
   public static final int DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT = 100;
   public static final Duration DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL = Duration.ofMinutes(1);
+  public static final int DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT = 10_000;
 
   public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = 10000;
 
@@ -20,15 +23,24 @@ public final class EngineConfiguration {
   // message size.
   public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
 
+  // Bounds the work of a single job activation command: once this many jobs were skipped for
+  // uncached secret references, the batch collection stops instead of scanning further.
+  public static final int MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION = 100;
+
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
+  public static final boolean DEFAULT_PROCESS_CACHE_SOFT_VALUES = true;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
+  public static final boolean DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION = true;
   public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final boolean DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT = false;
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
+  // the broker's default for zeebe.broker.network.maxMessageSize ("4MB", where MB is 1024 * 1024)
+  public static final int DEFAULT_MAX_RESPONSE_MESSAGE_SIZE = 4 * 1024 * 1024;
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
@@ -56,6 +68,14 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY =
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_INTERVAL = Duration.ofSeconds(5);
+  public static final int DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS = 3;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY =
+      Duration.ofSeconds(1);
+  public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY = Duration.ofSeconds(30);
+  public static final int DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR = 2;
+  public static final int DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT = 20;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_WAKE_DELAY = Duration.ofMillis(50);
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
@@ -63,7 +83,41 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
+  public static final Duration DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL =
+      Duration.ofSeconds(30);
+  public static final int DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT = 100;
 
+  /**
+   * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
+   * reach before it is re-emitted. The scheduler ticks every {@code retryInterval} and re-sends
+   * every ask whose last-sent time is older than {@code now - retryInterval}, so an ask is retried
+   * at most once per interval. Correctness does not depend on this value relative to any window:
+   * every retry re-emits the same {@code messageDeadline} carried by the original ask, so the
+   * {@code P_B} dedup row that bounds re-replies shares the buffered message's lifetime on {@code
+   * P_K}. This interval only controls retry cadence.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
+
+  /**
+   * Coarse cadence at which {@code P_K} reconciles the correlation-key locks it holds for
+   * cross-partition message-start instances against {@code P_B}. This is only a slow-path backstop:
+   * on holder completion or termination {@code P_B} pushes the release to {@code P_K} directly, so
+   * a lock is normally released well before the next reconciliation tick. The poll only recovers
+   * locks whose push was lost, which is why it runs infrequently.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL =
+      Duration.ofSeconds(30);
+
+  /** Maximum number of holder instances batched into a single release query to one partition. */
+  public static final int DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT = 64;
+
+  public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
+
+  public static final boolean DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE = true;
+
+  public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
+  public static final List<Integer> DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINALS =
+      List.of(-1);
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -75,15 +129,21 @@ public final class EngineConfiguration {
   private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+  private int messagesPendingSubscriptionRecoveryBatchLimit =
+      DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
   private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private boolean processCacheSoftValues = DEFAULT_PROCESS_CACHE_SOFT_VALUES;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+  private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
+  private boolean candidateGroupNameResolution = DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
+  private int maxResponseMessageSize = DEFAULT_MAX_RESPONSE_MESSAGE_SIZE;
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
   private Duration batchOperationSchedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
@@ -96,6 +156,14 @@ public final class EngineConfiguration {
   private Duration batchOperationQueryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
+  private Duration secretResolutionInterval = DEFAULT_SECRET_RESOLUTION_INTERVAL;
+  private int secretResolutionRetryMaxAttempts = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS;
+  private Duration secretResolutionRetryInitialDelay =
+      DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY;
+  private Duration secretResolutionRetryMaxDelay = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
+  private int secretResolutionRetryBackoffFactor = DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
+  private int secretResolutionBatchLimit = DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT;
+  private Duration secretResolutionWakeDelay = DEFAULT_SECRET_RESOLUTION_WAKE_DELAY;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -106,6 +174,12 @@ public final class EngineConfiguration {
   private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
   private boolean includeVariablesInJobCompletedEvent =
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
+  private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+  private boolean enableProcessDefinitionRestore = DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE;
+  private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
+  private OutputMappingMode outputMappingMode = OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -120,6 +194,27 @@ public final class EngineConfiguration {
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 
+  private Duration messageStartDedupExpirationSweepInterval =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
+  private int messageStartDedupExpirationSweepBatchLimit =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
+  private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+  private Duration messageStartLockReleasePollInterval =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
+  private int messageStartLockReleasePollBatchLimit =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+
+  /** Controls whether the archiverless mode is enabled. */
+  private boolean archiverlessEnabled = DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
+
+  /**
+   * Override default storage ordinal with a fixed set of values, mainly used during initial
+   * testing. When more than one value is given, one is chosen in a round-robin fashion for each new
+   * process instance. The default value of -1 means no override is applied.
+   */
+  private List<Integer> fixedStorageOrdinals =
+      DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINALS;
+
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
   }
@@ -127,6 +222,17 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessagesTtlCheckerBatchLimit(
       final int messagesTtlCheckerBatchLimit) {
     this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
+    return this;
+  }
+
+  public int getMessagesPendingSubscriptionRecoveryBatchLimit() {
+    return messagesPendingSubscriptionRecoveryBatchLimit;
+  }
+
+  public EngineConfiguration setMessagesPendingSubscriptionRecoveryBatchLimit(
+      final int messagesPendingSubscriptionRecoveryBatchLimit) {
+    this.messagesPendingSubscriptionRecoveryBatchLimit =
+        messagesPendingSubscriptionRecoveryBatchLimit;
     return this;
   }
 
@@ -176,6 +282,15 @@ public final class EngineConfiguration {
     return this;
   }
 
+  public boolean isProcessCacheSoftValues() {
+    return processCacheSoftValues;
+  }
+
+  public EngineConfiguration setProcessCacheSoftValues(final boolean processCacheSoftValues) {
+    this.processCacheSoftValues = processCacheSoftValues;
+    return this;
+  }
+
   public int getAuthorizationsCacheCapacity() {
     return authorizationsCacheCapacity;
   }
@@ -191,6 +306,25 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
     this.authorizationsCacheTtl = authorizationsCacheTtl;
+    return this;
+  }
+
+  public int getGroupNameCacheCapacity() {
+    return groupNameCacheCapacity;
+  }
+
+  public EngineConfiguration setGroupNameCacheCapacity(final int groupNameCacheCapacity) {
+    this.groupNameCacheCapacity = groupNameCacheCapacity;
+    return this;
+  }
+
+  public boolean isCandidateGroupNameResolution() {
+    return candidateGroupNameResolution;
+  }
+
+  public EngineConfiguration setCandidateGroupNameResolution(
+      final boolean candidateGroupNameResolution) {
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
     return this;
   }
 
@@ -220,6 +354,19 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setValidatorsResultsOutputMaxSize(final int maxSize) {
     validatorsResultsOutputMaxSize = maxSize;
+    return this;
+  }
+
+  /**
+   * The broker's max message size, in bytes. Not a setting of its own: the broker sets it from its
+   * network configuration, so the engine can bound what it sends back in a response.
+   */
+  public int getMaxResponseMessageSize() {
+    return maxResponseMessageSize;
+  }
+
+  public EngineConfiguration setMaxResponseMessageSize(final int maxResponseMessageSize) {
+    this.maxResponseMessageSize = maxResponseMessageSize;
     return this;
   }
 
@@ -315,6 +462,90 @@ public final class EngineConfiguration {
   public EngineConfiguration setBatchOperationQueryRetryBackoffFactor(
       final int batchOperationQueryRetryBackoffFactor) {
     this.batchOperationQueryRetryBackoffFactor = batchOperationQueryRetryBackoffFactor;
+    return this;
+  }
+
+  public Duration getSecretResolutionInterval() {
+    return secretResolutionInterval;
+  }
+
+  public EngineConfiguration setSecretResolutionInterval(final Duration secretResolutionInterval) {
+    this.secretResolutionInterval = secretResolutionInterval;
+    return this;
+  }
+
+  public int getSecretResolutionRetryMaxAttempts() {
+    return secretResolutionRetryMaxAttempts;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryMaxAttempts(
+      final int secretResolutionRetryMaxAttempts) {
+    this.secretResolutionRetryMaxAttempts = secretResolutionRetryMaxAttempts;
+    return this;
+  }
+
+  public Duration getSecretResolutionRetryInitialDelay() {
+    return secretResolutionRetryInitialDelay;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryInitialDelay(
+      final Duration secretResolutionRetryInitialDelay) {
+    this.secretResolutionRetryInitialDelay = secretResolutionRetryInitialDelay;
+    return this;
+  }
+
+  public Duration getSecretResolutionRetryMaxDelay() {
+    return secretResolutionRetryMaxDelay;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryMaxDelay(
+      final Duration secretResolutionRetryMaxDelay) {
+    this.secretResolutionRetryMaxDelay = secretResolutionRetryMaxDelay;
+    return this;
+  }
+
+  public int getSecretResolutionRetryBackoffFactor() {
+    return secretResolutionRetryBackoffFactor;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryBackoffFactor(
+      final int secretResolutionRetryBackoffFactor) {
+    this.secretResolutionRetryBackoffFactor = secretResolutionRetryBackoffFactor;
+    return this;
+  }
+
+  public int getSecretResolutionBatchLimit() {
+    return secretResolutionBatchLimit;
+  }
+
+  public EngineConfiguration setSecretResolutionBatchLimit(final int secretResolutionBatchLimit) {
+    if (secretResolutionBatchLimit < 1) {
+      throw new IllegalArgumentException(
+          "secretResolutionBatchLimit must be at least 1 but was %d"
+              .formatted(secretResolutionBatchLimit));
+    }
+    this.secretResolutionBatchLimit = secretResolutionBatchLimit;
+    return this;
+  }
+
+  public Duration getSecretResolutionWakeDelay() {
+    return secretResolutionWakeDelay;
+  }
+
+  /**
+   * How long a cycle that resolved something, or that was woken since it last ran, waits before its
+   * next run. Kept short so a sustained stream of secret references is resolved close to as they
+   * arrive; falls back to {@code secretResolutionInterval} once a cycle finds nothing pending and
+   * was not woken.
+   */
+  public EngineConfiguration setSecretResolutionWakeDelay(
+      final Duration secretResolutionWakeDelay) {
+    if (secretResolutionWakeDelay.isNegative()) {
+      throw new IllegalArgumentException(
+          "secretResolutionWakeDelay must not be negative but was %s"
+              .formatted(secretResolutionWakeDelay));
+    }
+    this.secretResolutionWakeDelay = secretResolutionWakeDelay;
     return this;
   }
 
@@ -478,6 +709,72 @@ public final class EngineConfiguration {
     return this;
   }
 
+  /**
+   * Interval between scheduled expired dedup entry sweeps of the cross-partition message-start
+   * dedup.
+   */
+  public Duration getMessageStartDedupExpirationSweepInterval() {
+    return messageStartDedupExpirationSweepInterval;
+  }
+
+  public EngineConfiguration setMessageStartDedupExpirationSweepInterval(
+      final Duration messageStartDedupExpirationSweepInterval) {
+    this.messageStartDedupExpirationSweepInterval = messageStartDedupExpirationSweepInterval;
+    return this;
+  }
+
+  /** Maximum number of dedup expired dedup entries a single sweep cycle deletes. */
+  public int getMessageStartDedupExpirationSweepBatchLimit() {
+    return messageStartDedupExpirationSweepBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartDedupExpirationSweepBatchLimit(
+      final int messageStartDedupExpirationSweepBatchLimit) {
+    this.messageStartDedupExpirationSweepBatchLimit = messageStartDedupExpirationSweepBatchLimit;
+    return this;
+  }
+
+  /**
+   * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
+   * reach before it is re-emitted. The scheduler ticks every {@code retryInterval} and re-sends
+   * every ask whose last-sent time is older than {@code now - retryInterval}.
+   */
+  public Duration getMessageStartAskRetryInterval() {
+    return messageStartAskRetryInterval;
+  }
+
+  public EngineConfiguration setMessageStartAskRetryInterval(
+      final Duration messageStartAskRetryInterval) {
+    this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+    return this;
+  }
+
+  /**
+   * Coarse cadence at which {@code P_K} reconciles the correlation-key locks it holds for
+   * cross-partition message-start holders against {@code P_B}. A slow-path backstop only: holder
+   * completion is normally pushed from {@code P_B} to {@code P_K} directly.
+   */
+  public Duration getMessageStartLockReleasePollInterval() {
+    return messageStartLockReleasePollInterval;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollInterval(
+      final Duration messageStartLockReleasePollInterval) {
+    this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
+    return this;
+  }
+
+  /** Maximum number of holder instances batched into a single release query to one partition. */
+  public int getMessageStartLockReleasePollBatchLimit() {
+    return messageStartLockReleasePollBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollBatchLimit(
+      final int messageStartLockReleasePollBatchLimit) {
+    this.messageStartLockReleasePollBatchLimit = messageStartLockReleasePollBatchLimit;
+    return this;
+  }
+
   public boolean isIncludeVariablesInJobCompletedEvent() {
     return includeVariablesInJobCompletedEvent;
   }
@@ -486,5 +783,110 @@ public final class EngineConfiguration {
       final boolean includeVariablesInJobCompletedEvent) {
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
     return this;
+  }
+
+  public boolean isEnableRpaReexportMigration() {
+    return enableRpaReexportMigration;
+  }
+
+  public EngineConfiguration setEnableRpaReexportMigration(
+      final boolean enableRpaReexportMigration) {
+    this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+
+  public boolean isEnableProcessDefinitionRestore() {
+    return enableProcessDefinitionRestore;
+  }
+
+  public EngineConfiguration setEnableProcessDefinitionRestore(
+      final boolean enableProcessDefinitionRestore) {
+    this.enableProcessDefinitionRestore = enableProcessDefinitionRestore;
+    return this;
+  }
+
+  public boolean isArchiverlessEnabled() {
+    return archiverlessEnabled;
+  }
+
+  public EngineConfiguration setArchiverlessEnabled(final boolean archiverlessEnabled) {
+    this.archiverlessEnabled = archiverlessEnabled;
+    return this;
+  }
+
+  public List<Integer> getFixedStorageOrdinals() {
+    return fixedStorageOrdinals;
+  }
+
+  public EngineConfiguration setFixedStorageOrdinals(final List<Integer> fixedStorageOrdinals) {
+    if (fixedStorageOrdinals == null || fixedStorageOrdinals.isEmpty()) {
+      throw new IllegalArgumentException("fixedStorageOrdinals must not be empty");
+    }
+    if (fixedStorageOrdinals.size() == 1) {
+      final var fixedStorageOrdinal = fixedStorageOrdinals.getFirst();
+      if (fixedStorageOrdinal == null || fixedStorageOrdinal < -1) {
+        throw new IllegalArgumentException(
+            "fixedStorageOrdinals must be -1 (no override) or >= 0 but was %s"
+                .formatted(fixedStorageOrdinals));
+      }
+    } else {
+      for (final Integer fixedStorageOrdinal : fixedStorageOrdinals) {
+        if (fixedStorageOrdinal == null || fixedStorageOrdinal <= 0) {
+          throw new IllegalArgumentException(
+              "multiple fixedStorageOrdinals must not be combined with -1 (no override) and must "
+                  + "be > 0 but was %s".formatted(fixedStorageOrdinals));
+        }
+      }
+    }
+    this.fixedStorageOrdinals = List.copyOf(fixedStorageOrdinals);
+    return this;
+  }
+
+  public InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public EngineConfiguration setInputMappingMode(final InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
+    return this;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public EngineConfiguration setInputComparisonMode(
+      final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+    return this;
+  }
+
+  public OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public EngineConfiguration setOutputMappingMode(final OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+    return this;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public EngineConfiguration setOutputComparisonMode(
+      final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
+    return this;
+  }
+
+  public enum InputMappingMode {
+    ORDERED,
+    COMBINED
+  }
+
+  public enum OutputMappingMode {
+    ORDERED,
+    COMBINED
   }
 }

@@ -49,6 +49,8 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
 
     callActivity.setCalledElementProcessId(expression);
 
+    transformBusinessId(calledElement, callActivity, expressionLanguage);
+
     final var propagateAllChildVariablesEnabled =
         calledElement.isPropagateAllChildVariablesEnabled();
     callActivity.setPropagateAllChildVariablesEnabled(propagateAllChildVariablesEnabled);
@@ -62,6 +64,24 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
 
     final var versionTag = calledElement.getVersionTag();
     callActivity.setVersionTag(versionTag);
+  }
+
+  private static void transformBusinessId(
+      final ZeebeCalledElement calledElement,
+      final ExecutableCallActivity callActivity,
+      final ExpressionLanguage expressionLanguage) {
+    if (!calledElement.hasBusinessId()) {
+      // The attribute is absent: leave the configuration null so the child inherits the parent's
+      // Business ID. This is distinct from a present-but-empty attribute (handled below), which the
+      // value accessor also reports as null but which overrides inheritance with no Business ID.
+      return;
+    }
+
+    // A present-but-empty attribute reads back as null, so represent it as an empty static
+    // expression; both literal and FEEL values are parsed the same way as the process ID.
+    final var businessId = calledElement.getBusinessId();
+    final var expression = expressionLanguage.parseExpression(businessId == null ? "" : businessId);
+    callActivity.setCalledElementBusinessId(expression);
   }
 
   private static void transformLexicographicIndex(

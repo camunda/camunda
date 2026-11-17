@@ -128,6 +128,20 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
+  public ProcessDefinitionStatisticsFilter suspendedDate(final OffsetDateTime suspendedDate) {
+    suspendedDate(b -> b.eq(suspendedDate));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter suspendedDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setSuspendedDate(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionStatisticsFilter state(final ProcessInstanceState state) {
     return state(b -> b.eq(state));
   }
@@ -282,6 +296,20 @@ public class ProcessDefinitionStatisticsFilterImpl
     final IntegerProperty property = new IntegerPropertyImpl();
     fn.accept(property);
     filter.setIncidentErrorHashCode(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter businessId(final String businessId) {
+    businessId(b -> b.eq(businessId));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
     return this;
   }
 

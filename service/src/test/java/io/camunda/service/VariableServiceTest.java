@@ -20,7 +20,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 public class VariableServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private VariableServices services;
   private VariableSearchClient client;
   private CamundaAuthentication authentication;
@@ -44,6 +45,7 @@ public class VariableServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new VariableServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

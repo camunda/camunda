@@ -13,11 +13,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.util.List;
+import java.util.stream.Stream;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -25,7 +30,10 @@ import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class DefaultExecutionQueueTest {
@@ -37,13 +45,16 @@ class DefaultExecutionQueueTest {
   private DefaultExecutionQueue executionQueue;
 
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach() throws Exception {
     session = mock(SqlSession.class);
     sqlSessionFactory = mock(SqlSessionFactory.class);
     metrics = mock(RdbmsWriterMetrics.class);
     when(sqlSessionFactory.openSession(
-            ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
         .thenReturn(session);
+    final var connection = mock(Connection.class);
+    when(connection.getAutoCommit()).thenReturn(false);
+    when(session.getConnection()).thenReturn(connection);
 
     executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 10, 0, metrics);
   }
@@ -138,7 +149,7 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
     verify(session).update("statement1", "parameter1");
     verify(session).update("statement2", "parameter2");
     verify(session).flushStatements();
@@ -160,7 +171,7 @@ class DefaultExecutionQueueTest {
     executionQueue.flush();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
     verify(session).update("statement1", "parameter1");
     verify(session).flushStatements();
     verify(session).commit();
@@ -541,6 +552,151 @@ class DefaultExecutionQueueTest {
     verify(session).update(eq("statement3"), any());
   }
 
+  @Test
+  public void shouldPreserveInsertionOrderForMessageSubscriptions() {
+    // given - a CORRELATED update queued before the suspend-restore CREATED upsert (INSERT-typed)
+    // for the same row, mirroring a reusable subscription that correlated and is then restored on
+    // suspend within one flush
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MESSAGE_SUBSCRIPTION,
+            WriteStatementType.UPDATE,
+            1L,
+            "ms.update",
+            "correlated"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MESSAGE_SUBSCRIPTION,
+            WriteStatementType.INSERT,
+            1L,
+            "ms.createIfNotExists",
+            "created"));
+
+    // when
+    executionQueue.flush();
+
+    // then - insertion order is preserved, so the later CREATED restore wins. Under the default
+    // INSERT-before-UPDATE sort the upsert would run first and leave the row stale as CORRELATED.
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update(eq("ms.update"), any());
+    inOrder.verify(session).update(eq("ms.createIfNotExists"), any());
+  }
+
+  @Test
+  public void shouldFragmentJdbcBatchesWhenPreserveOrderInterleavesStatementIds() {
+    // given - message-correlation-style traffic on a preserveOrder: true context type
+    final int itemCount = 6;
+    for (int i = 0; i < itemCount; i++) {
+      final var statementId = i % 2 == 0 ? "ms.correlate" : "ms.createIfNotExists";
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.MESSAGE_SUBSCRIPTION, // preserveOrder: true
+              WriteStatementType.UPDATE,
+              (long) i,
+              statementId,
+              "parameter" + i));
+    }
+
+    // when
+    executionQueue.flush();
+
+    // then - preserveOrder keeps the alternating order, so every item is its own single-statement
+    // batch
+    final var statementIds = ArgumentCaptor.forClass(String.class);
+    verify(session, times(itemCount)).update(statementIds.capture(), any());
+    assertThat(countBatchFragments(statementIds.getAllValues())).isEqualTo(itemCount);
+  }
+
+  @Test
+  public void shouldNotFragmentJdbcBatchesWhenOrderIsNotPreserved() {
+    // given - the same alternating-statement-ID traffic, but on a preserveOrder: false context
+    // type
+    final int itemCount = 6;
+    for (int i = 0; i < itemCount; i++) {
+      final var statementId = i % 2 == 0 ? "job.a" : "job.b";
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.JOB, // preserveOrder: false
+              WriteStatementType.UPDATE,
+              (long) i,
+              statementId,
+              "parameter" + i));
+    }
+
+    // when
+    executionQueue.flush();
+
+    // then - sorting groups every "job.a" together and every "job.b" together into one batch each
+    final var statementIds = ArgumentCaptor.forClass(String.class);
+    verify(session, times(itemCount)).update(statementIds.capture(), any());
+    assertThat(countBatchFragments(statementIds.getAllValues())).isEqualTo(2);
+  }
+
+  /** Counts maximal runs of consecutive equal statement IDs, i.e. the number of JDBC batches. */
+  private static int countBatchFragments(final List<String> statementIds) {
+    int fragments = 1;
+    for (int i = 1; i < statementIds.size(); i++) {
+      if (!statementIds.get(i).equals(statementIds.get(i - 1))) {
+        fragments++;
+      }
+    }
+    return fragments;
+  }
+
+  @Test
+  public void shouldOrderByExplicitOrderBeforeFallingBackToStatementId() {
+    // given - a low-order UPDATE queued before a high-order UPDATE for the same row
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateSuspendedState",
+            "resumed"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
+            "finished",
+            Integer.MAX_VALUE));
+
+    // when
+    executionQueue.flush();
+
+    // then - explicit order wins over the alphabetical statementId tiebreak: under the default
+    // sort, "updateStateAndEndDate" would run before "updateSuspendedState" and the resume update
+    // would overwrite the terminal state back to ACTIVE.
+    final var inOrder = Mockito.inOrder(session);
+    inOrder
+        .verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateSuspendedState"), any());
+    inOrder
+        .verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate"), any());
+  }
+
+  @Test
+  public void shouldFallBackToStatementIdWhenOrderIsEqual() {
+    // given - two items with the default order (0); relative order must still come from
+    // statementId alphabetically, unchanged from before the order field existed
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE, WriteStatementType.UPDATE, 1L, "zzz.statement", "z"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE, WriteStatementType.UPDATE, 1L, "aaa.statement", "a"));
+
+    // when
+    executionQueue.flush();
+
+    // then
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update(eq("aaa.statement"), any());
+    inOrder.verify(session).update(eq("zzz.statement"), any());
+  }
+
   @ParameterizedTest
   @CsvSource({
     // statementId, expectedResult
@@ -548,6 +704,9 @@ class DefaultExecutionQueueTest {
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.updateHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists,true",
     "io.camunda.db.rdbms.sql.BatchOperationMapper.activate,true",
+    // set-if-null: affects no rows whenever the name is already resolved, which is the normal
+    // outcome of a second ad-hoc entry activation on the same inner instance
+    "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateNameIfNull,true",
     "some.other.Statement,false"
   })
   void shouldIgnoreWhenNoRowsAffectedMatchesPatterns(
@@ -556,25 +715,45 @@ class DefaultExecutionQueueTest {
         .isEqualTo(expected);
   }
 
+  static Stream<Arguments> updateCountsCases() {
+    return Stream.of(
+        Arguments.of("all zero", new int[] {0}, true),
+        Arguments.of("zero among real counts", new int[] {1, 0, 2}, true),
+        Arguments.of("no zero", new int[] {1, 2}, false),
+        Arguments.of("empty batch", new int[] {}, false),
+        Arguments.of("SUCCESS_NO_INFO only", new int[] {Statement.SUCCESS_NO_INFO}, false),
+        Arguments.of(
+            "SUCCESS_NO_INFO before a zero", new int[] {Statement.SUCCESS_NO_INFO, 0}, false),
+        Arguments.of(
+            "SUCCESS_NO_INFO after a zero", new int[] {0, Statement.SUCCESS_NO_INFO}, false));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("updateCountsCases")
+  void shouldTreatSuccessNoInfoAsUnknownNotZero(
+      final String caseName, final int[] updateCounts, final boolean expected) {
+    assertThat(DefaultExecutionQueue.hasUnexpectedZeroRowUpdate(updateCounts)).isEqualTo(expected);
+  }
+
   @Test
   public void whenMemoryLimitIsReachedFlushShouldHappen() {
     // Set a small memory limit (1 MB)
     executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 1, metrics);
 
-    // Create items with large parameters to exceed 1 MB memory limit
-    // Each large param is ~600KB, so 2 items should exceed 1 MB
-    final var largeParam = "x".repeat(600_000); // ~600 KB each
+    // Each item comes from a record of ~600 KB, so 2 items exceed 1 MB
     final var item1 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", "param1");
     final var item2 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", "param2");
 
     executionQueue.executeInQueue(item1);
+    executionQueue.addEstimatedBytes(600_000);
     verifyNoInteractions(sqlSessionFactory);
 
     executionQueue.executeInQueue(item2);
+    executionQueue.addEstimatedBytes(600_000);
     verifyNoInteractions(sqlSessionFactory);
 
     // Check should trigger flush due to memory limit
@@ -582,9 +761,9 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
-    verify(session).update("statement1", largeParam);
-    verify(session).update("statement2", largeParam);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+    verify(session).update("statement1", "param1");
+    verify(session).update("statement2", "param2");
     verify(session).flushStatements();
     verify(session).commit();
   }
@@ -650,7 +829,7 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
   }
 
   @Test
@@ -658,22 +837,23 @@ class DefaultExecutionQueueTest {
     // Set only memory limit (1 MB), no count limit
     executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 1, metrics);
 
-    // Create items with large parameters to exceed 1 MB memory limit
-    final var largeParam = "x".repeat(600_000); // ~600 KB each
+    // Each item comes from a record of ~600 KB, so 2 items exceed 1 MB
     final var item1 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", "param1");
     final var item2 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
+            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", "param2");
 
     executionQueue.executeInQueue(item1);
+    executionQueue.addEstimatedBytes(600_000);
     executionQueue.executeInQueue(item2);
+    executionQueue.addEstimatedBytes(600_000);
 
     final var result = executionQueue.checkQueueForFlush();
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
   }
 }

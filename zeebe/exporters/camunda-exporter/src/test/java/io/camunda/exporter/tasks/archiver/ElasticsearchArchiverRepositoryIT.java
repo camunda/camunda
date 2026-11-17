@@ -19,11 +19,15 @@ import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -49,7 +53,6 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -62,10 +65,8 @@ import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,10 +90,10 @@ final class ElasticsearchArchiverRepositoryIT {
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
-  @AutoClose private final RestClientTransport transport = createRestClient();
+  @AutoClose private final Rest5ClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
+  private HistoryConfiguration config;
   private String indexPrefix;
   private final String zeebeIndexPrefix = "zeebe-record";
   private String processInstanceIndex;
@@ -108,11 +109,12 @@ final class ElasticsearchArchiverRepositoryIT {
   void afterEach() throws IOException {
     // wipes all data in ES between tests
     final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
-    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(200);
   }
 
   @BeforeEach
   void beforeEach() {
+    config = new HistoryConfiguration();
     config.setRetention(retention);
     indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
@@ -124,155 +126,6 @@ final class ElasticsearchArchiverRepositoryIT {
             .getFullQualifiedName();
     auditLogIndex =
         resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class).getFullQualifiedName();
-  }
-
-  @Test
-  void shouldDeleteDocuments() throws IOException {
-    // given
-    final var indexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(indexName, doc));
-    testClient.indices().refresh(r -> r.index(indexName));
-
-    // when - delete the first two documents
-    final var result =
-        repository.deleteDocuments(
-            indexName, Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(indexName));
-    final var remaining =
-        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("only the third document is remaining")
-        .hasSize(1)
-        .first()
-        .extracting(Hit::id)
-        .isEqualTo("3");
-  }
-
-  @Test
-  void shouldDeleteDocumentsWithFilters() throws IOException {
-    // given
-    final var repository = createRepository();
-    final var documents =
-        List.of(
-            new TestAuditLogDocument("1", "A"),
-            new TestAuditLogDocument("2", "B"),
-            new TestAuditLogDocument("3", "A"));
-    createAuditLogIndex();
-    documents.forEach(doc -> index(auditLogIndex, doc));
-    testClient.indices().refresh(r -> r.index(auditLogIndex));
-
-    // when - delete documents with ids [1, 2, 3], but only if the type is "A"
-    final var result =
-        repository.deleteDocuments(
-            auditLogIndex, Map.of("id", List.of("1", "2", "3")), Map.of("entityType", "A"));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(auditLogIndex));
-    final var remaining =
-        testClient.search(
-            r -> r.index(auditLogIndex).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("documents 1,3 should be deleted")
-        .hasSize(1)
-        .first()
-        .extracting(h -> h.source().id())
-        .isEqualTo("2");
-  }
-
-  @Test
-  void shouldReindexDocumentsWithFilters() throws IOException {
-    // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(
-            new TestAuditLogDocument("1", "A"),
-            new TestAuditLogDocument("2", "B"),
-            new TestAuditLogDocument("3", "A"));
-    createAuditLogIndex(sourceIndexName);
-    createAuditLogIndex(destIndexName);
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-
-    // when - reindex documents with id "1" or "2", but only if the type is "A"
-    final var result =
-        repository.reindexDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", List.of("1", "2", "3")),
-            Map.of("entityType", "A"));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(destIndexName));
-    final var reindexed =
-        testClient.search(
-            r -> r.index(destIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("documents 1,3 should be reindexed")
-        .hasSize(2)
-        .extracting(h -> h.source().id())
-        .containsExactlyInAnyOrder("1", "3");
-  }
-
-  @Test
-  void shouldMoveDocumentsWithFilters() throws IOException {
-    // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(
-            new TestAuditLogDocument("1", "A"),
-            new TestAuditLogDocument("2", "B"),
-            new TestAuditLogDocument("3", "A"));
-    createAuditLogIndex(sourceIndexName);
-    createAuditLogIndex(destIndexName);
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-
-    // when
-    final var result =
-        repository.moveDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", List.of("1", "2", "3")),
-            Map.of("entityType", "A"),
-            Runnable::run);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(sourceIndexName, destIndexName));
-
-    final var remaining =
-        testClient.search(
-            r -> r.index(sourceIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("only document 2 should remain")
-        .hasSize(1)
-        .extracting(h -> h.source().id())
-        .containsExactlyInAnyOrder("2");
-
-    final var moved =
-        testClient.search(
-            r -> r.index(destIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
-            TestAuditLogDocument.class);
-    assertThat(moved.hits().hits())
-        .as("documents 1,3 should be moved")
-        .hasSize(2)
-        .extracting(h -> h.source().id())
-        .containsExactlyInAnyOrder("1", "3");
   }
 
   @Test
@@ -430,83 +283,6 @@ final class ElasticsearchArchiverRepositoryIT {
         .settings()
         .index()
         .lifecycle();
-  }
-
-  @Test
-  void shouldReindexDocuments() throws IOException {
-    // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-    testClient.indices().create(r -> r.index(destIndexName));
-
-    // when - reindex the first two documents
-    final var result =
-        repository.reindexDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(destIndexName));
-    final var remaining =
-        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
-    final var reindexed =
-        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("only first two documents were reindexed")
-        .hasSize(2)
-        .map(Hit::id)
-        .containsExactlyInAnyOrder("1", "2");
-    assertThat(remaining.hits().hits())
-        .as("all documents are remaining")
-        .hasSize(3)
-        .extracting(Hit::id)
-        .containsExactlyInAnyOrder("1", "2", "3");
-  }
-
-  @Test
-  void shouldMoveDocuments() throws IOException {
-    // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-    testClient.indices().create(r -> r.index(destIndexName));
-
-    // when - move the first two documents
-    final var result =
-        repository.moveDocuments(
-            sourceIndexName,
-            destIndexName,
-            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
-            Runnable::run);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(sourceIndexName, destIndexName));
-    final var remaining =
-        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
-    final var reindexed =
-        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("only first two documents were reindexed")
-        .hasSize(2)
-        .map(Hit::id)
-        .containsExactlyInAnyOrder("1", "2");
-    assertThat(remaining.hits().hits())
-        .as("only the last document is remaining")
-        .hasSize(1)
-        .extracting(Hit::id)
-        .containsExactlyInAnyOrder("3");
   }
 
   @Test
@@ -720,8 +496,12 @@ final class ElasticsearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate())
-        .isEqualTo(YearMonth.now(ZoneId.systemDefault()).atDay(1).toString());
+    final var expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            LocalDate.ofInstant(now.minus(Duration.ofHours(2)), ZoneId.of("UTC")).toString(),
+            config.getUsageMetricsRolloverInterval(),
+            "date");
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart);
   }
 
   @ParameterizedTest
@@ -759,8 +539,12 @@ final class ElasticsearchArchiverRepositoryIT {
     } else {
       assertThat(batch.ids()).containsExactly("21");
     }
-    assertThat(batch.finishDate())
-        .isEqualTo(YearMonth.now(ZoneId.systemDefault()).atDay(1).toString()); // rollover is 1M
+    final var expectedBucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            LocalDate.ofInstant(now.minus(Duration.ofHours(2)), ZoneId.of("UTC")).toString(),
+            config.getUsageMetricsRolloverInterval(),
+            "date");
+    assertThat(batch.finishDate()).isEqualTo(expectedBucketStart); // rollover interval is 1 month
   }
 
   @Test
@@ -864,8 +648,13 @@ final class ElasticsearchArchiverRepositoryIT {
                   .isEqualTo(bucketStart(now.minus(Duration.ofDays(4)), 3, dateFormatter));
             });
     repository
-        .moveDocuments(
-            batchOperationIndex, destIndexName, Map.of("id", List.of("1", "2")), Runnable::run)
+        .moveDocumentsById(
+            batchOperationIndex,
+            destIndexName,
+            Map.of("id", List.of("1", "2")),
+            Map.of(),
+            Map.of(),
+            Runnable::run)
         .join();
 
     final var secondBatchDocuments =
@@ -888,8 +677,13 @@ final class ElasticsearchArchiverRepositoryIT {
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
     repository
-        .moveDocuments(
-            batchOperationIndex, destIndexName, Map.of("id", List.of("3", "4")), Runnable::run)
+        .moveDocumentsById(
+            batchOperationIndex,
+            destIndexName,
+            Map.of("id", List.of("3", "4")),
+            Map.of(),
+            Map.of(),
+            Runnable::run)
         .join();
 
     // we create another batch of documents, which is two hours ago, since the default archive point
@@ -963,19 +757,35 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
+    index(index, document, null);
+  }
+
+  private <T extends TDocument> void index(
+      final String index, final T document, final String routing) {
     try {
-      testClient.index(b -> b.index(index).document(document).id(document.id()));
+      testClient.index(
+          b -> {
+            b.index(index).document(document).id(document.id());
+            // a null or empty routing is sent by the ES 9 client as an empty routing= parameter
+            return routing == null || routing.isEmpty() ? b : b.routing(routing);
+          });
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
   @Test
-  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
+  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly()
+      throws IOException {
     // given
     retention.setEnabled(true);
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
+    // setIndexLifeCycle now short-circuits when the target index doesn't exist (to avoid
+    // poisoning the applied-policy cache for indices that haven't been created yet), so the
+    // test must create both indices before exercising the cache behavior.
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
 
     final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(clientSpy.indices());
@@ -985,13 +795,15 @@ final class ElasticsearchArchiverRepositoryIT {
     final var repository = createRepository(clientSpy);
 
     // when - first time setting policy for indexName2 it should make the put settings for
-    // indexName2
-    repository.setIndexLifeCycle(indexName2);
+    // indexName2. Wait for the future to complete rather than only for the interaction: the
+    // applied-policy cache is populated when the request completes, so resetting the spy or
+    // issuing the second round any earlier would race with the cache update.
+    assertThat(repository.setIndexLifeCycle(indexName2)).succeedsWithin(Duration.ofSeconds(30));
 
     final ArgumentCaptor<PutIndicesSettingsRequest> captor =
         ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
-    Awaitility.await().untilAsserted(() -> verify(indicesClientSpy).putSettings(captor.capture()));
+    verify(indicesClientSpy).putSettings(captor.capture());
 
     final var putIndicesSettingsRequest = captor.getValue();
     assertThat(putIndicesSettingsRequest.index()).containsExactly(indexName2);
@@ -1001,14 +813,13 @@ final class ElasticsearchArchiverRepositoryIT {
     // setting policy first time for indexName1 but second time for indexName2, it
     // should have cached the fact that indexName2 already has a policy and not be included in
     // the request.
-    repository.setIndexLifeCycle(indexName1);
-    repository.setIndexLifeCycle(indexName2);
+    assertThat(repository.setIndexLifeCycle(indexName1)).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(repository.setIndexLifeCycle(indexName2)).succeedsWithin(Duration.ofSeconds(30));
 
     // then
     final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
-    Awaitility.await()
-        .untilAsserted(() -> verify(indicesClientSpy, times(1)).putSettings(captor2.capture()));
+    verify(indicesClientSpy, times(1)).putSettings(captor2.capture());
 
     final var putIndicesSettingsRequest2 = captor2.getValue();
     assertThat(putIndicesSettingsRequest2.index()).containsExactly(indexName1);
@@ -1018,10 +829,13 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldReapplyILMPolicyAfterRetentionPeriodExpiration() throws Exception {
     // given
     retention.setEnabled(true);
-    final int minimumAgeSeconds = 2;
-    retention.setMinimumAge("%ds".formatted(minimumAgeSeconds));
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
+    // setIndexLifeCycle now short-circuits when the target index doesn't exist (to avoid
+    // poisoning the applied-policy cache for indices that haven't been created yet), so the
+    // test must create both indices before exercising the cache behavior.
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
 
     final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(clientSpy.indices());
@@ -1031,15 +845,8 @@ final class ElasticsearchArchiverRepositoryIT {
     final var repository = createRepository(clientSpy);
 
     // when - first setting policy for indexName1 and indexName2
-    repository
-        .setIndexLifeCycle(indexName1)
-        .thenApply(
-            ignore -> {
-              // wait for the cache of indexName1 to expire
-              Awaitility.await().pollDelay(Duration.ofSeconds(minimumAgeSeconds)).until(() -> true);
-              return repository.setIndexLifeCycle(indexName2);
-            })
-        .get();
+    repository.setIndexLifeCycle(indexName1).get();
+    repository.setIndexLifeCycle(indexName2).get();
 
     final ArgumentCaptor<PutIndicesSettingsRequest> captor =
         ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
@@ -1049,16 +856,19 @@ final class ElasticsearchArchiverRepositoryIT {
     final var requests = captor.getAllValues();
     assertThat(requests)
         .map(PutIndicesSettingsRequest::index)
-        .containsExactly(List.of(indexName1), List.of(indexName2));
+        .containsExactlyInAnyOrder(List.of(indexName1), List.of(indexName2));
 
     // resetting the spy to ensure no more interactions are recorded
     reset(indicesClientSpy);
+
+    // manually invalidate cache for indexName1 only
+    repository.invalidateLifeCycleCache(indexName1);
 
     // setting policy second time for indexName1 and indexName2
     repository.setIndexLifeCycle(indexName1).get();
     repository.setIndexLifeCycle(indexName2).get();
 
-    // then - only indexName1 should be included in the request, since the cache for it has expired
+    // then - only indexName1 should be included in the request, since its cache was invalidated
     final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
     verify(indicesClientSpy, times(1)).putSettings(captor2.capture());
     final var putIndicesSettingsRequest2 = captor2.getValue();
@@ -1071,11 +881,14 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setEnabled(true);
     // ensure all templates are created
     startupSchema();
-    // create indices for all templates with a date in the index name
+    // create indices for all templates with a date and ordinal in the index name
     final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
     final String date = "2026-01-10";
+    final String ordinalSuffix = "ord000001";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+      searchClientAdapter.createIndex(
+          indexTemplate.getIndexPattern().replace("*", ordinalSuffix), 0);
     }
     final var asyncClient = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(asyncClient.indices());
@@ -1090,20 +903,20 @@ final class ElasticsearchArchiverRepositoryIT {
     Awaitility.await()
         .untilAsserted(
             () ->
-                verify(
-                        indicesClientSpy, times(20) // number of index templates
-                        )
-                    .putSettings(captor.capture()));
+                // number of index templates
+                verify(indicesClientSpy, times(24)).putSettings(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(20)
+        .hasSize(24)
         .allSatisfy(
             request -> {
               assertThat(request.index()).hasSize(1);
               final String[] split = request.index().getFirst().split(",");
               assertThat(split)
-                  .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
+                  .hasSize(
+                      4); // 4 patterns (wildcard + runtime exclusion + alias exclusion + ordinal
+              // exclusion)
               final var matchingTemplate =
                   resourceProvider.getIndexTemplateDescriptors().stream()
                       .filter(
@@ -1115,7 +928,8 @@ final class ElasticsearchArchiverRepositoryIT {
                   .containsExactly(
                       matchingTemplate.get().getIndexPattern(),
                       "-" + matchingTemplate.get().getFullQualifiedName(),
-                      "-" + matchingTemplate.get().getAlias());
+                      "-" + matchingTemplate.get().getAlias(),
+                      "-" + matchingTemplate.get().getFullQualifiedName() + "ord*");
             });
     for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
       Awaitility.await()
@@ -1126,11 +940,19 @@ final class ElasticsearchArchiverRepositoryIT {
                     testClient
                         .indices()
                         .getSettings(b -> b.index(template.getIndexPattern()))
-                        .result();
+                        .settings();
                 // Check runtime index (should not have ILM policy)
                 assertThat(
                         settings
                             .get(template.getFullQualifiedName())
+                            .settings()
+                            .index()
+                            .lifecycle())
+                    .isNull();
+                // Check ordinal index (should not have ILM policy)
+                assertThat(
+                        settings
+                            .get(template.getIndexPattern().replace("*", ordinalSuffix))
                             .settings()
                             .index()
                             .lifecycle())
@@ -1163,11 +985,12 @@ final class ElasticsearchArchiverRepositoryIT {
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
     createProcessInstanceIndex();
-    documents.forEach(doc -> index(processInstanceIndex, doc));
+    documents.forEach(
+        doc -> index(processInstanceIndex, doc, String.valueOf(doc.processInstanceKey())));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when searching for process instance key 111
-    // then - we expect documents with IDs 1,2 and 4 to be returned
+    // then - we expect documents with IDs 1,2 and 4 to be returned with routing=111
     final var batch =
         repository
             .getArchiveDocIdsBatch(
@@ -1175,10 +998,19 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                config.getReindexBatchSize())
             .join();
 
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.documents()).extracting(IdWithRouting::routing).containsOnly("111");
+    // need to ensure we have these for deletes
+    for (final var doc : batch.documents()) {
+      assertThat(doc.seqNo()).isNotNull();
+      assertThat(doc.primaryTerm()).isNotNull();
+    }
     assertThat(batch.searchAfter()).hasSize(1);
     assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
@@ -1191,16 +1023,16 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("999")),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                config.getReindexBatchSize())
             .join();
 
     assertThat(emptyBatch.isEmpty()).isTrue();
-    assertThat(emptyBatch.ids()).isEmpty();
+    assertThat(emptyBatch.documents()).isEmpty();
     assertThat(emptyBatch.searchAfter()).isEmpty();
 
     // when searching for process instance key 111 with reindex batch size of 2
     // then - we expect documents with IDs 1 and 2 to be returned
-    config.setReindexBatchSize(2);
     final var batchPg1 =
         repository
             .getArchiveDocIdsBatch(
@@ -1208,15 +1040,17 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                null)
+                null,
+                2)
             .join();
 
-    assertThat(batchPg1.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batchPg1.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "2");
     assertThat(batchPg1.searchAfter().getFirst().stringValue()).isEqualTo("2");
 
     // when searching for process instance key 111 with searchAfter from page 1
     // then - we expect document with ID 4 to be returned
-    config.setReindexBatchSize(2);
     final var batchPg2 =
         repository
             .getArchiveDocIdsBatch(
@@ -1224,15 +1058,15 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                batchPg1.searchAfter())
+                batchPg1.searchAfter(),
+                2)
             .join();
 
-    assertThat(batchPg2.ids()).containsExactlyInAnyOrder("4");
+    assertThat(batchPg2.documents()).extracting(IdWithRouting::id).containsExactlyInAnyOrder("4");
     assertThat(batchPg2.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
     // when searching for process instance key 111 with searchAfter from page 2
     // then - we expect no documents to be returned
-    config.setReindexBatchSize(2);
     final var batchPg3 =
         repository
             .getArchiveDocIdsBatch(
@@ -1240,16 +1074,16 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of(),
-                batchPg2.searchAfter())
+                batchPg2.searchAfter(),
+                2)
             .join();
 
     assertThat(batchPg3.isEmpty()).isTrue();
-    assertThat(batchPg3.ids()).isEmpty();
+    assertThat(batchPg3.documents()).isEmpty();
     assertThat(batchPg3.searchAfter()).isEmpty();
 
     // when searching for process instance key 111 with exclusion filter for joinRelation=activity
     // then - we expect only documents with joinRelation != activity (IDs 1 and 4)
-    config.setReindexBatchSize(100);
     final var batchExcluded =
         repository
             .getArchiveDocIdsBatch(
@@ -1257,10 +1091,13 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
                 Map.of("joinRelation", "activity"),
-                null)
+                null,
+                100)
             .join();
 
-    assertThat(batchExcluded.ids()).containsExactlyInAnyOrder("1", "4");
+    assertThat(batchExcluded.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "4");
 
     // when searching for process instance key 111 with inclusion filter for joinRelation=variable
     // and exclusion filter for joinRelation=activity
@@ -1272,10 +1109,13 @@ final class ElasticsearchArchiverRepositoryIT {
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of("joinRelation", "variable"),
                 Map.of("joinRelation", "activity"),
-                null)
+                null,
+                100)
             .join();
 
-    assertThat(batchBothFilters.ids()).containsExactlyInAnyOrder("1", "4");
+    assertThat(batchBothFilters.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "4");
   }
 
   @Test
@@ -1292,7 +1132,8 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // when - reindex the first two documents
     final var result =
-        repository.reindexDocumentsById(sourceIndexName, destIndexName, List.of("1", "2"));
+        repository.reindexDocumentsById(
+            sourceIndexName, destIndexName, List.of(IdWithRouting.of("1"), IdWithRouting.of("2")));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -1324,7 +1165,9 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(indexName));
 
     // when - delete the first two documents
-    final var result = repository.deleteDocumentsById(indexName, List.of("1", "2"));
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(IdWithRouting.of("1"), IdWithRouting.of("2")));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -1337,6 +1180,105 @@ final class ElasticsearchArchiverRepositoryIT {
         .first()
         .extracting(Hit::id)
         .isEqualTo("3");
+  }
+
+  @Test
+  void shouldDeleteDocumentsByIdWithRoutingOnMultiShardIndex() throws IOException {
+    // given - a 3-shard index seeded with docs whose custom routing differs from their id.
+    // On a multi-shard index, a delete-by-id without routing is routed by hash(_id); for
+    // docs indexed with custom routing this lands on the wrong shard and ES silently
+    // returns result=not_found. This test proves the bulk delete carries routing through
+    // and that getDeletedDocCount only counts items actually deleted.
+    final var indexName = UUID.randomUUID().toString();
+    testClient
+        .indices()
+        .create(r -> r.index(indexName).settings(s -> s.numberOfShards("3").numberOfReplicas("0")));
+
+    final var repository = createRepository();
+    final int total = 50;
+    final var docs =
+        IntStream.rangeClosed(1, total).mapToObj(i -> new TestDocument(String.valueOf(i))).toList();
+    // routing is deliberately different from id, so hash(routing) != hash(id) for most
+    // docs across 3 shards.
+    docs.forEach(d -> index(indexName, d, "r-" + (Integer.parseInt(d.id()) % 7)));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete with the routing each doc was indexed under
+    final var idsWithRouting =
+        docs.stream()
+            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7), null, null))
+            .toList();
+    final var result = repository.deleteDocumentsById(indexName, idsWithRouting);
+
+    // then - every doc reports result=deleted, and the index is empty
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(result.join())
+        .as(
+            "all docs must report result=deleted on multi-shard index when routing is carried"
+                + " through; if this drops below %d the routing param is being ignored",
+            total)
+        .isEqualTo(total);
+    testClient.indices().refresh(r -> r.index(indexName));
+    assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
+  }
+
+  @Test
+  void shouldFailToDeleteDocumentIfWrongSeqNoAndPrimaryTermProvided() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents = List.of(new TestDocument("1"));
+    documents.forEach(doc -> index(indexName, doc));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(new IdWithRouting("1", null, Long.MAX_VALUE, Long.MAX_VALUE)));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(30))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(VersionConflictOnArchiveDeleteException.class);
+
+    testClient.indices().refresh(r -> r.index(indexName));
+    final var remaining =
+        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("document has not been deleted")
+        .hasSize(1)
+        .first()
+        .extracting(Hit::id)
+        .isEqualTo("1");
+  }
+
+  @Test
+  void shouldNotCountNotFoundResultsAsDeleted() throws IOException {
+    // given - an index with a single real doc; we will issue a bulk delete that mixes the
+    // real id with non-existent ids so ES returns result=not_found for the latter. The
+    // tightened getDeletedDocCount must exclude not_found items, otherwise the archiver
+    // loop would falsely report progress whenever a delete missed (wrong shard / wrong
+    // routing / already-deleted doc).
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    index(indexName, new TestDocument("1"));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete a mix of one existing id and two non-existent ids
+    final var result =
+        repository.deleteDocumentsById(
+            indexName,
+            List.of(
+                IdWithRouting.of("1"),
+                IdWithRouting.of("does-not-exist-a"),
+                IdWithRouting.of("does-not-exist-b")));
+
+    // then - only the existing doc counts as deleted
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(result.join()).as("not_found items must not be counted as deleted").isEqualTo(1L);
+    testClient.indices().refresh(r -> r.index(indexName));
+    assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
   }
 
   @Test
@@ -1357,7 +1299,8 @@ final class ElasticsearchArchiverRepositoryIT {
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
     createProcessInstanceIndex();
-    documents.forEach(doc -> index(processInstanceIndex, doc));
+    documents.forEach(
+        doc -> index(processInstanceIndex, doc, String.valueOf(doc.processInstanceKey())));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when moving documents by id
@@ -1450,7 +1393,7 @@ final class ElasticsearchArchiverRepositoryIT {
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
             objectMapper)
-        .startup();
+        .startupOnce();
   }
 
   private void putLifecyclePolicies() throws IOException {
@@ -1491,9 +1434,15 @@ final class ElasticsearchArchiverRepositoryIT {
         partitionId, config, resourceProvider, client, Runnable::run, metrics, LOGGER);
   }
 
-  private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.esUrl())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  private Rest5ClientTransport createRestClient() {
+    final HttpHost host;
+    try {
+      host = HttpHost.create(SEARCH_DB.esUrl());
+    } catch (final java.net.URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+    final var restClient = Rest5Client.builder(host).build();
+    return new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
   }
 
   private void createProcessInstanceIndex() throws IOException {

@@ -53,7 +53,8 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   }
 
   @Override
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(
+      final String definitionId, final boolean includeXml) {
     final BoolQuery.Builder query = new BoolQuery.Builder();
     query.must(m -> m.matchAll(l -> l));
     query.must(
@@ -63,9 +64,26 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
                     l.field(PROCESS_DEFINITION_ID)
                         .terms(tt -> tt.value(List.of(FieldValue.of(definitionId))))));
 
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true).stream()
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, includeXml).stream()
         .findFirst()
         .map(ProcessDefinitionOptimizeDto.class::cast);
+  }
+
+  @Override
+  public boolean processDefinitionExists(final String definitionId) {
+    final BoolQuery.Builder query =
+        new BoolQuery.Builder()
+            .must(m -> m.term(t -> t.field(PROCESS_DEFINITION_ID).value(definitionId)));
+
+    try {
+      return esClient.count(new String[] {PROCESS_DEFINITION_INDEX_NAME}, query) > 0;
+    } catch (final IOException e) {
+      final String reason =
+          String.format(
+              "Was not able to check existence of process definition with id [%s].", definitionId);
+      LOG.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
   }
 
   @Override

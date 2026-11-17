@@ -15,8 +15,9 @@ import io.camunda.search.clients.reader.FormReader;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,8 @@ public class FormDbReader extends AbstractEntityReader<FormEntity> implements Fo
   }
 
   @Override
-  public FormEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable FormEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
 

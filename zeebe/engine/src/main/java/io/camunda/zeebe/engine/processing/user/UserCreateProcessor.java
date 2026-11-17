@@ -8,8 +8,7 @@
 package io.camunda.zeebe.engine.processing.user;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -42,7 +41,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final TypedCommandWriter commandWriter;
 
   public UserCreateProcessor(
@@ -50,30 +49,26 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
       final ProcessingState state,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
     userState = state.getUserState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.distributionBehavior = distributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     commandWriter = writers.command();
   }
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.USER)
-            .permissionType(PermissionType.CREATE)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
+    final var authResult =
+        permissionsBehavior.isAuthorized(
+            command, AuthorizationResourceType.USER, PermissionType.CREATE);
+    if (authResult.isLeft()) {
+      final var rejection = authResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -83,7 +78,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     if (user.isPresent()) {
       final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.get().getUsername());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, message);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.ALREADY_EXISTS, message);
       return;
     }
 
@@ -92,7 +87,8 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
 
     stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
     addUserPermissions(key, username);
-    responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, UserIntent.CREATED, command.getValue(), command);
 
     distributionBehavior
         .withKey(key)

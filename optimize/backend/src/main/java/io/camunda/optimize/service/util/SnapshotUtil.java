@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util;
 
 import static io.camunda.optimize.service.metadata.Version.VERSION;
 
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,12 +33,11 @@ public class SnapshotUtil {
   private static final String VERSION_PLACEHOLDER = "{version}";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SnapshotUtil.class);
 
-  public static String getSnapshotNameForImportIndices(final Long backupId) {
-    return getSnapshotName(SNAPSHOT_1_NAME_TEMPLATE, backupId);
-  }
-
-  public static String getSnapshotNameForNonImportIndices(final Long backupId) {
-    return getSnapshotName(SNAPSHOT_2_NAME_TEMPLATE, backupId);
+  public static String getSnapshotName(final BackupPriority priority, final Long backupId) {
+    return switch (priority) {
+      case PRIORITY1 -> getSnapshotName(SNAPSHOT_1_NAME_TEMPLATE, backupId);
+      case PRIORITY2 -> getSnapshotName(SNAPSHOT_2_NAME_TEMPLATE, backupId);
+    };
   }
 
   public static String getSnapshotPrefixWithBackupId(final Long backupId) {

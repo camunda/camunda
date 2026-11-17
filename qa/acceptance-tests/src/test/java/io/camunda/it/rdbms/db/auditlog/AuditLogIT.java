@@ -12,10 +12,10 @@ import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAudi
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -31,11 +31,11 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.condition.AuthorizationConditions;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -81,7 +81,7 @@ public class AuditLogIT {
                 b ->
                     b.filter(f -> f.entityTypes(original.entityType().name()))
                         .sort(s -> s)
-                        .page(p -> p.from(0).size(1000))));
+                        .page(p -> p.from(0).size(LIMIT))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items())
@@ -258,7 +258,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(AUDIT_LOG)
                             .resourceIds(
@@ -269,7 +269,7 @@ public class AuditLogIT {
 
     final var searchResult =
         auditLogReader.search(
-            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -306,14 +306,16 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)
                             .resourceIds(List.of(processDefId1, processDefId2)))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -356,7 +358,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)
@@ -365,7 +367,7 @@ public class AuditLogIT {
 
     final var searchResult =
         auditLogReader.search(
-            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     // Should return all logs that have a process definition ID (including USER_TASKS)
     assertThat(searchResult.items())
@@ -409,14 +411,16 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_USER_TASK)
                             .resourceIds(List.of(processDefId1, processDefId2)))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -456,14 +460,16 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_USER_TASK)
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     // Should return all USER_TASKS category logs
     assertThat(searchResult.items())
@@ -506,24 +512,26 @@ public class AuditLogIT {
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
                 AuthorizationConditions.anyOf(
-                    Authorization.of(
+                    RequiredAuthorization.of(
                         a ->
                             a.resourceType(AUDIT_LOG)
                                 .resourceIds(
                                     List.of(AuditLogOperationCategory.DEPLOYED_RESOURCES.name()))),
-                    Authorization.of(
+                    RequiredAuthorization.of(
                         a ->
                             a.resourceType(PROCESS_DEFINITION)
                                 .permissionType(READ_PROCESS_INSTANCE)
                                 .resourceIds(List.of(processDefId1))),
-                    Authorization.of(
+                    RequiredAuthorization.of(
                         a ->
                             a.resourceType(PROCESS_DEFINITION)
                                 .permissionType(READ_USER_TASK)
                                 .resourceIds(List.of(processDefId2))))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(LIMIT))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -547,7 +555,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)
@@ -617,7 +625,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)

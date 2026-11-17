@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.identity;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
+import static io.camunda.optimize.service.db.DatabaseConstants.FILTERED_USER_TASKS_AGGREGATION;
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createInclusiveFlowNodeIdFilterQuery;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
@@ -42,7 +44,6 @@ import java.util.stream.Collectors;
 public abstract class AbstractProcessDistributedByIdentityInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
-  private static final String FILTERED_USER_TASKS_AGGREGATION = "userTasksFilterAggregation";
 
   protected abstract ConfigurationService getConfigurationService();
 
@@ -61,7 +62,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
     final TermsAggregation.Builder builder = new TermsAggregation.Builder();
     builder
         .size(getConfigurationService().getElasticSearchConfiguration().getAggregationBucketLimit())
-        .order(NamedValue.of("_key", SortOrder.Asc))
+        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
         .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
         .missing(ProcessDistributedByIdentityInterpreter.DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     final Aggregation.Builder.ContainerBuilder identityTermsAggregation =

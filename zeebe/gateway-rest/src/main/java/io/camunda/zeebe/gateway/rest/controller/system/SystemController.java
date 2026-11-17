@@ -9,21 +9,35 @@ package io.camunda.zeebe.gateway.rest.controller.system;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.AuthenticationConfigurationResponse;
+import io.camunda.gateway.protocol.model.CloudConfigurationResponse;
+import io.camunda.gateway.protocol.model.CloudStage;
+import io.camunda.gateway.protocol.model.ComponentsConfigurationResponse;
+import io.camunda.gateway.protocol.model.DeploymentConfigurationResponse;
 import io.camunda.gateway.protocol.model.JobMetricsConfigurationResponse;
 import io.camunda.gateway.protocol.model.SystemConfigurationResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
+import io.camunda.gateway.protocol.model.WebappComponent;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.UsageMetricsServices;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SaasConfigurationHelper;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -31,47 +45,123 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/v2/system")
 public class SystemController {
 
-  private final UsageMetricsServices usageMetricsServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final GatewayRestConfiguration gatewayRestConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
+  private final WebappConfiguration webappConfiguration;
+  private final long maxRequestSizeBytes;
+  private final PhysicalTenantRestConfigProvider tenantRestConfigProvider;
+  private final PhysicalTenantCamundaGroups camundaGroups;
 
   public SystemController(
-      final UsageMetricsServices usageMetricsServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
-    this.usageMetricsServices = usageMetricsServices;
+      @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
+      @Autowired(required = false) final WebappConfiguration webappConfiguration,
+      @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize,
+      final PhysicalTenantRestConfigProvider tenantRestConfigProvider,
+      final Environment environment) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
-    this.gatewayRestConfiguration = gatewayRestConfiguration;
+    this.cslProperties = cslProperties;
+    this.webappConfiguration =
+        webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
+    this.maxRequestSizeBytes = maxRequestSize.toBytes();
+    this.tenantRestConfigProvider = tenantRestConfigProvider;
+    camundaGroups = new PhysicalTenantCamundaGroups(environment);
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/usage-metrics")
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestParam final String startTime,
       @RequestParam final String endTime,
       @RequestParam(required = false) final String tenantId,
       @RequestParam(required = false, defaultValue = "false") final boolean withTenants) {
 
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
+        .fold(RestErrorMapper::mapProblemToResponse, query -> getMetrics(physicalTenantId, query));
   }
 
   @CamundaGetMapping(path = "/configuration")
-  public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration() {
-    final JobMetricsConfiguration jobMetricsCfg = gatewayRestConfiguration.getJobMetrics();
+  public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration(
+      @PhysicalTenantId final String physicalTenantId) {
+    final var jobMetrics =
+        tenantRestConfigProvider.forPhysicalTenant(physicalTenantId).getJobMetrics();
     final var jobMetricsResponse =
-        new JobMetricsConfigurationResponse()
-            .enabled(jobMetricsCfg.isEnabled())
-            .exportInterval(jobMetricsCfg.getExportInterval().toString())
-            .maxWorkerNameLength(jobMetricsCfg.getMaxWorkerNameLength())
-            .maxJobTypeLength(jobMetricsCfg.getMaxJobTypeLength())
-            .maxTenantIdLength(jobMetricsCfg.getMaxTenantIdLength())
-            .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys());
-    final var response = new SystemConfigurationResponse().jobMetrics(jobMetricsResponse);
-    return ResponseEntity.ok(response);
+        JobMetricsConfigurationResponse.Builder.create()
+            .enabled(jobMetrics.isEnabled())
+            .exportInterval(jobMetrics.getExportInterval().toString())
+            .maxWorkerNameLength(jobMetrics.getMaxWorkerNameLength())
+            .maxJobTypeLength(jobMetrics.getMaxJobTypeLength())
+            .maxTenantIdLength(jobMetrics.getMaxTenantIdLength())
+            .maxUniqueKeys(jobMetrics.getMaxUniqueKeys())
+            .build();
+
+    return ResponseEntity.ok(
+        SystemConfigurationResponse.Builder.create()
+            .jobMetrics(jobMetricsResponse)
+            .components(buildComponentsConfiguration())
+            .deployment(buildDeploymentConfiguration())
+            .authentication(buildAuthenticationConfiguration(physicalTenantId))
+            .cloud(buildCloudConfiguration())
+            .build());
   }
 
-  private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
+  private ComponentsConfigurationResponse buildComponentsConfiguration() {
+    return ComponentsConfigurationResponse.Builder.create()
+        .active(
+            webappConfiguration.getActiveComponents().stream()
+                .map(WebappComponent::fromValue)
+                .toList())
+        .build();
+  }
+
+  private DeploymentConfigurationResponse buildDeploymentConfiguration() {
+    final boolean isMultiTenancyEnabled =
+        cslProperties != null
+            && cslProperties.getMultiTenancy() != null
+            && cslProperties.getMultiTenancy().isChecksEnabled();
+    final boolean isTenantsApiEnabled =
+        cslProperties != null
+            && cslProperties.getMultiTenancy() != null
+            && cslProperties.getMultiTenancy().isApiEnabled();
+
+    return DeploymentConfigurationResponse.Builder.create()
+        .isMultiTenancyEnabled(isMultiTenancyEnabled)
+        .isTenantsApiEnabled(isTenantsApiEnabled)
+        .maxRequestSize(maxRequestSizeBytes)
+        .build();
+  }
+
+  private AuthenticationConfigurationResponse buildAuthenticationConfiguration(
+      final String physicalTenantId) {
+    final boolean canLogout =
+        !SaasConfigurationHelper.isSaas(cslProperties != null ? cslProperties.getSaas() : null);
+    final boolean isCamundaGroupsEnabled =
+        camundaGroups.isCamundaGroupsEnabled(
+            physicalTenantId, cslProperties != null ? cslProperties.getAuthentication() : null);
+
+    return AuthenticationConfigurationResponse.Builder.create()
+        .canLogout(canLogout)
+        .isLoginDelegated(webappConfiguration.isLoginDelegated())
+        .isCamundaGroupsEnabled(isCamundaGroupsEnabled)
+        .build();
+  }
+
+  private CloudConfigurationResponse buildCloudConfiguration() {
+    return CloudConfigurationResponse.Builder.create()
+        .stage(
+            webappConfiguration.getCloud().getStage() != null
+                ? CloudStage.fromValue(webappConfiguration.getCloud().getStage())
+                : null)
+        .build();
+  }
+
+  private ResponseEntity<UsageMetricsResponse> getMetrics(
+      final String physicalTenantId, final UsageMetricsQuery query) {
+    final var usageMetricsServices = serviceRegistry.usageMetricsServices(physicalTenantId);
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUsageMetricsResponse(

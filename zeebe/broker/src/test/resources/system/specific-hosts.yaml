@@ -2,11 +2,11 @@ zeebe:
   broker:
     gateway:
       network:
-        host: gatewayHost
+        host: 192.0.2.1
 
     network:
       commandApi:
-        host: commandHost
+        host: 192.0.2.2
 
       internalApi:
-        host: internalHost
+        host: 192.0.2.3

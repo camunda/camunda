@@ -1,0 +1,127 @@
+{
+  "components": [
+    {
+      "text": "## Application Review\n\nReview the details submitted for this upgrade eligibility request.",
+      "type": "text",
+      "id": "heading_applicant"
+    },
+    {
+      "type": "separator",
+      "id": "sep_1"
+    },
+    {
+      "text": "### Applicant Details",
+      "type": "text",
+      "id": "label_inputs"
+    },
+    {
+      "label": "User Status",
+      "type": "textfield",
+      "id": "field_userStatus",
+      "key": "userStatus",
+      "disabled": true,
+      "validate": {}
+    },
+    {
+      "label": "Engagement Score",
+      "type": "number",
+      "id": "field_engagementScore",
+      "key": "CalculateEngagementScore",
+      "disabled": true,
+      "validate": {}
+    },
+    {
+      "label": "Is User Under 18",
+      "type": "checkbox",
+      "id": "field_under18",
+      "key": "under18",
+      "disabled": true
+    },
+    {
+      "label": "Is Student",
+      "type": "checkbox",
+      "id": "field_isStudent",
+      "key": "isStudent",
+      "disabled": true
+    },
+    {
+      "type": "separator",
+      "id": "sep_2"
+    },
+    {
+      "text": "### Decision Result",
+      "type": "text",
+      "id": "label_decision"
+    },
+    {
+      "label": "DMN Version Tag Used",
+      "type": "textfield",
+      "id": "field_decisionVersion",
+      "key": "decisionVersion",
+      "disabled": true,
+      "validate": {}
+    },
+    {
+      "label": "Eligible for Upgrade",
+      "type": "checkbox",
+      "id": "field_decided",
+      "key": "decided",
+      "disabled": true
+    },
+    {
+      "type": "separator",
+      "id": "sep_3"
+    },
+    {
+      "text": "### Reviewer Action",
+      "type": "text",
+      "id": "label_action"
+    },
+    {
+      "label": "Review Notes",
+      "type": "textarea",
+      "id": "field_reviewNotes",
+      "key": "reviewNotes",
+      "description": "Optional: add notes about this eligibility decision.",
+      "validate": {}
+    },
+    {
+      "label": "Outcome",
+      "values": [
+        {
+          "label": "Confirmed — Proceed with Upgrade",
+          "value": "confirmed"
+        },
+        {
+          "label": "Override — Reject Despite Eligibility",
+          "value": "override_reject"
+        },
+        {
+          "label": "Escalate for Further Review",
+          "value": "escalate"
+        }
+      ],
+      "type": "select",
+      "id": "field_reviewOutcome",
+      "key": "reviewOutcome",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Submit Review",
+      "action": "submit",
+      "type": "button",
+      "id": "btn_submit"
+    }
+  ],
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.10.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.49.0-rc.0"
+  },
+  "schemaVersion": 19,
+  "id": "check-0ctwsr8",
+  "type": "default"
+}

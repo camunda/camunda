@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
@@ -40,7 +41,10 @@ final class ClientStreamPusherTest {
 
   private final AggregatedClientStream<TestSerializableData> stream =
       new AggregatedClientStream<>(
-          UUID.randomUUID(), new LogicalId<>(streamType, metadata), metrics);
+          UUID.randomUUID(),
+          new LogicalId<>(streamType, metadata),
+          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+          metrics);
   private final ClientStreamPusher streamPusher = new ClientStreamPusher(metrics);
 
   @Test

@@ -17,6 +17,7 @@ body:
         - <!-- Data Layer- -->
         - <!-- Feel- -->
         - <!-- Identity- -->
+        - <!-- Load Tests- -->
         - <!-- Management Identity- -->
         - <!-- Operate- -->
         - <!-- Optimize- -->
@@ -40,6 +41,7 @@ body:
         - <!-- -8.7 -->
         - <!-- -8.8 -->
         - <!-- -8.9 -->
+        - <!-- -8.10 -->
       default: null
     validations:
       required: true
@@ -70,6 +72,21 @@ body:
       default: null
     validations:
       required: true
+  - type: dropdown
+    id: discovered-by
+    attributes:
+      label: <!-- Discovered by -->
+      description: Was this found during a specific testing activity? Leave as "Not applicable" for customer reports, code review, etc.
+      options:
+        - <!-- Not applicable+ -->
+        - <!-- Load Tests+ -->
+        - <!-- Chaos Days+ -->
+        - <!-- Game Day+ -->
+        - <!-- QA Automation Found+ -->
+        - <!-- Manual Testing+ -->
+      default: 0
+    validations:
+      required: false
   - type: textarea
     id: description
     attributes:

@@ -21,6 +21,8 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {searchResult, createProcessDefinition} from 'modules/testUtils';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -45,6 +47,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<ProcessOperations />', () => {
+  beforeEach(() => {
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+  });
+
   afterEach(() => {
     mockQueryClient.clear();
   });
@@ -65,6 +71,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -132,6 +139,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -148,7 +156,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -176,6 +184,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -192,12 +201,12 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'error',
-        title: 'Operation could not be created',
+        title: "Couldn't create operation",
         isDismissable: true,
       });
     });
@@ -220,6 +229,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -236,13 +246,13 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'warning',
         title: "You don't have permission to perform this operation",
-        subtitle: 'Please contact the administrator if you need access.',
+        subtitle: 'Contact the administrator if you need access.',
         isDismissable: true,
       });
     });
@@ -265,6 +275,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -281,7 +292,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -307,6 +318,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -323,7 +335,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -359,6 +371,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -369,10 +382,10 @@ describe('<ProcessOperations />', () => {
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(
-      await screen.findByText('Please tick this box if you want to proceed.'),
+      await screen.findByText('Tick this box if you want to proceed.'),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -384,7 +397,7 @@ describe('<ProcessOperations />', () => {
     );
 
     expect(
-      screen.queryByText('Please tick this box if you want to proceed.'),
+      screen.queryByText('Tick this box if you want to proceed.'),
     ).not.toBeInTheDocument();
   });
 
@@ -405,6 +418,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -435,6 +449,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -446,6 +461,43 @@ describe('<ProcessOperations />', () => {
     ).toBeDisabled();
   });
 
+  it('should show draining tag instead of delete button when definition is draining', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: '2251799813687094',
+          state: 'DRAINING',
+        }),
+      ]),
+    );
+
+    render(
+      <ProcessOperations
+        processDefinitionKey="2251799813687094"
+        processName="myProcess"
+        processVersion={2}
+        processDefinitionState="ACTIVE"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /^delete process definition/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('should enable delete button when process instances could not be fetched', async () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withServerError();
@@ -455,6 +507,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );
@@ -487,6 +540,7 @@ describe('<ProcessOperations />', () => {
         processDefinitionKey="2251799813687094"
         processName="myProcess"
         processVersion={2}
+        processDefinitionState="ACTIVE"
       />,
       {wrapper: Wrapper},
     );

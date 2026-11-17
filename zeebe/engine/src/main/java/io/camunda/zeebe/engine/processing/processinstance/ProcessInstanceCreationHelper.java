@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -17,18 +18,22 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -42,18 +47,28 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class ProcessInstanceCreationHelper {
+  public static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
+      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
       "Expected to find process definition with process ID '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
       "Expected to find process definition with process ID '%s' and version '%d', but none found";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG =
+      "Expected to find process definition with process ID '%s' and version tag '%s', but none found";
+  private static final String ERROR_MESSAGE_VERSION_AND_VERSION_TAG =
+      "Expected to create process instance by either version or version tag, but both were provided: version '%d', version tag '%s'";
+  private static final String ERROR_MESSAGE_VERSION_TAG_WITH_KEY =
+      "Expected to create process instance by either process definition key or version tag, but both were provided: key '%d', version tag '%s'";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
       "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
+  private static final String ERROR_MESSAGE_PROCESS_NOT_FOUND =
+      "Expected to create an instance of process with key '%d', but no such process was found";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.START_EVENT,
@@ -61,11 +76,12 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.BOUNDARY_EVENT,
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
-  private static final int MAX_BUSINESS_ID_LENGTH = 256;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private static final int MAX_REPORTED_INVALID_ELEMENT_IDS = 5;
+  private final CslAuthorizationCheck cslCheck;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final StorageOrdinalProvider storageOrdinalProvider;
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
@@ -74,15 +90,17 @@ public class ProcessInstanceCreationHelper {
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final BpmnBehaviors bpmnBehaviors,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    this.storageOrdinalProvider = storageOrdinalProvider;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
@@ -90,18 +108,77 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
+    final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
-      if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
-      } else {
-        return getProcess(bpmnProcessId, record.getTenantId());
-      }
+      process = findProcessById(bpmnProcessId, record);
     } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+      process = findProcessByKey(record);
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
+    return process.flatMap(this::rejectIfDraining);
+  }
+
+  private Either<Rejection, DeployedProcess> findProcessById(
+      final DirectBuffer bpmnProcessId, final ProcessInstanceCreationRecord record) {
+    final String versionTag = record.getVersionTag();
+    final int version = record.getVersion();
+    final String tenantId = record.getTenantId();
+
+    if (!versionTag.isEmpty() && version >= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_AND_VERSION_TAG, version, versionTag)));
+    }
+    // gRPC sends key 0 when unset; real keys are always positive
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    if (!versionTag.isEmpty() && processDefinitionKey > 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_TAG_WITH_KEY, processDefinitionKey, versionTag)));
+    }
+    if (!versionTag.isEmpty()) {
+      return getProcess(bpmnProcessId, versionTag, tenantId);
+    }
+    if (version >= 0) {
+      return getProcess(bpmnProcessId, version, tenantId);
+    }
+    return getProcess(bpmnProcessId, tenantId);
+  }
+
+  private Either<Rejection, DeployedProcess> findProcessByKey(
+      final ProcessInstanceCreationRecord record) {
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    final String versionTag = record.getVersionTag();
+
+    if (!versionTag.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_TAG_WITH_KEY, processDefinitionKey, versionTag)));
+    }
+    return getProcess(processDefinitionKey, record.getTenantId());
+  }
+
+  /**
+   * A process definition that is being deleted is kept in state so its already-running instances
+   * can finish, but no new instances may be created for it.
+   */
+  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+    if (process.isDraining()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              String.format(
+                  ERROR_MESSAGE_PROCESS_IS_DRAINING,
+                  bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey())));
+    }
+    return Either.right(process);
   }
 
   public ProcessInstanceRecord initProcessInstanceRecord(
@@ -115,6 +192,7 @@ public class ProcessInstanceCreationHelper {
         .setProcessDefinitionKey(process.getKey())
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal())
         .setBpmnElementType(BpmnElementType.PROCESS)
         .setElementId(process.getProcess().getId())
         .setFlowScopeKey(-1)
@@ -126,7 +204,7 @@ public class ProcessInstanceCreationHelper {
   private Either<Rejection, DeployedProcess> getProcess(
       final DirectBuffer bpmnProcessId, final String tenantId) {
     final DeployedProcess process =
-        processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+        processState.getLatestActiveProcessVersionByProcessId(bpmnProcessId, tenantId);
     if (process != null) {
       return Either.right(process);
     } else {
@@ -154,6 +232,23 @@ public class ProcessInstanceCreationHelper {
     }
   }
 
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final String versionTag, final String tenantId) {
+    final DeployedProcess process =
+        processState.getProcessByProcessIdAndVersionTag(bpmnProcessId, versionTag, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG,
+                  bufferAsString(bpmnProcessId),
+                  versionTag)));
+    }
+  }
+
   private Either<Rejection, DeployedProcess> getProcess(final long key, final String tenantId) {
     final DeployedProcess process = processState.getProcessByKeyAndTenant(key, tenantId);
     if (process != null) {
@@ -168,41 +263,31 @@ public class ProcessInstanceCreationHelper {
   public Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
-    // skip authorization and multi-tenancy checks if all such checks are disabled
-    if (authCheckBehavior.shouldSkipAllChecks()) {
-      return Either.right(deployedProcess);
-    }
-
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(processId)
-            .build();
-
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
-    if (isAuthorized.isRight()) {
-      return Either.right(deployedProcess);
-    }
-
-    final var rejection = isAuthorized.getLeft();
-    final String errorMessage =
-        RejectionType.NOT_FOUND.equals(rejection.type())
-            ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "create an instance of process",
-                command.getValue().getProcessDefinitionKey(),
-                "such process")
-            : rejection.reason();
-    return Either.left(new Rejection(rejection.type(), errorMessage));
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION))
+                    .permissionType(
+                        AuthzModelMapper.fromProtocol(PermissionType.CREATE_PROCESS_INSTANCE))
+                    .resourceId(processId)),
+        deployedProcess,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.CREATE_PROCESS_INSTANCE, AuthorizationResourceType.PROCESS_DEFINITION),
+        command.getValue().getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            ERROR_MESSAGE_PROCESS_NOT_FOUND.formatted(
+                command.getValue().getProcessDefinitionKey())));
   }
 
   public Either<Rejection, DeployedProcess> validateCommand(
       final ProcessInstanceCreationRecord command, final DeployedProcess deployedProcess) {
     final var process = deployedProcess.getProcess();
     final var startInstructions = command.startInstructions();
+    final var runtimeInstructions = command.runtimeInstructions();
     final var tags = command.getTags();
     final var businessId = command.getBusinessId();
 
@@ -212,6 +297,8 @@ public class ProcessInstanceCreationHelper {
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
+        .flatMap(
+            valid -> validateRuntimeInstructionAfterElementsExist(process, runtimeInstructions))
         .flatMap(valid -> validateTags(tags))
         .flatMap(valid -> validateBusinessIdFormat(businessId))
         .flatMap(
@@ -228,19 +315,21 @@ public class ProcessInstanceCreationHelper {
     record
         .setProcessInstanceKey(processInstance.getProcessInstanceKey())
         .setRootProcessInstanceKey(processInstance.getRootProcessInstanceKey())
+        .setStorageOrdinal(processInstance.getStorageOrdinal())
         .setBpmnProcessId(processInstance.getBpmnProcessId())
         .setVersion(processInstance.getVersion())
         .setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
   }
 
   public void setVariablesFromDocument(
-      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer) {
-
+      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
+      throws VariableValidationException {
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessInstanceKey(),
         processInstance.getRootProcessInstanceKey(),
+        processInstance.getStorageOrdinal(),
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
         variablesBuffer);
@@ -378,6 +467,41 @@ public class ProcessInstanceCreationHelper {
         .orElse(VALID);
   }
 
+  private Either<Rejection, ?> validateRuntimeInstructionAfterElementsExist(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
+
+    final var unknownIds =
+        runtimeInstructions.stream()
+            .map(ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
+            .filter(elementId -> !isElementOfProcess(process, elementId))
+            .distinct()
+            .toList();
+
+    if (unknownIds.isEmpty()) {
+      return VALID;
+    }
+
+    final var processId = bufferAsString(process.getId());
+    if (unknownIds.size() <= MAX_REPORTED_INVALID_ELEMENT_IDS) {
+      final var joined = unknownIds.stream().collect(Collectors.joining("', '", "'", "'"));
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to create instance of process with runtime instructions but no element found with id %s in process definition '%s'."
+                  .formatted(joined, processId)));
+    }
+
+    final var head = unknownIds.subList(0, MAX_REPORTED_INVALID_ELEMENT_IDS);
+    final var remaining = unknownIds.size() - MAX_REPORTED_INVALID_ELEMENT_IDS;
+    final var joined = head.stream().collect(Collectors.joining("', '", "'", "'"));
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            "Expected to create instance of process with runtime instructions but no element found with id %s and %d more in process definition '%s'."
+                .formatted(joined, remaining, processId)));
+  }
+
   private Either<Rejection, ?> validateTags(final Set<String> tags) {
     if (tags.size() > TagUtil.MAX_NUMBER_OF_TAGS) {
       return Either.left(
@@ -401,19 +525,13 @@ public class ProcessInstanceCreationHelper {
   }
 
   private Either<Rejection, ?> validateBusinessIdFormat(final String businessId) {
-    if (businessId == null) {
-      return VALID;
-    }
-    if (businessId.length() <= MAX_BUSINESS_ID_LENGTH) {
-      return VALID;
-    }
-    return Either.left(
-        new Rejection(
-            RejectionType.INVALID_ARGUMENT,
-            """
-            Expected to create instance of process with a valid business id, \
-            but the business id exceeds the max length of %d."""
-                .formatted(MAX_BUSINESS_ID_LENGTH)));
+    return BusinessIdValidator.validate(businessId)
+        .mapLeft(
+            reason ->
+                new Rejection(
+                    RejectionType.INVALID_ARGUMENT,
+                    "Expected to create instance of process with a valid business id, but the business id %s."
+                        .formatted(reason)));
   }
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(

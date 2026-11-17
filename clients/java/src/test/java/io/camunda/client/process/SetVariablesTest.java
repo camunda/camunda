@@ -107,7 +107,7 @@ public final class SetVariablesTest extends ClientTest {
         SetVariablesRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(() -> client.newSetVariablesCommand(123).variables("[]").send().join())
+    assertThatThrownBy(() -> client.newSetVariablesCommand(123).variables("{}").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

@@ -115,6 +115,19 @@ public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWri
             new UserTaskDbModel.Builder().userTaskKey(userTaskKey).state(state).build()));
   }
 
+  public void updateSuspended(final long userTaskKey, final boolean isSuspended) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK,
+            WriteStatementType.UPDATE,
+            userTaskKey,
+            "io.camunda.db.rdbms.sql.UserTaskMapper.updateSuspended",
+            new UserTaskDbModel.Builder()
+                .userTaskKey(userTaskKey)
+                .isSuspended(isSuspended)
+                .build()));
+  }
+
   public void migrateToProcess(final UserTaskMigrationDbModel model) {
     executionQueue.executeInQueue(
         new QueueItem(

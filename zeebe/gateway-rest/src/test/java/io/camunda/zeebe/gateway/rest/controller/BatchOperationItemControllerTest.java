@@ -20,8 +20,9 @@ import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -40,9 +41,11 @@ class BatchOperationItemControllerTest extends RestControllerTest {
 
   @MockitoBean private BatchOperationServices batchOperationServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setUpServices() {
+    when(serviceRegistry.batchOperationServices(any())).thenReturn(batchOperationServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
@@ -55,6 +56,16 @@ public final class SendTaskValidator implements ModelElementValidator<SendTask> 
     if (!publishMessageExtensions.isEmpty() && element.getMessage() == null) {
       validationResultCollector.addError(0, "Must reference a message");
     }
+
+    if (hasJobPriorityDefinitionWithoutTaskDefinition(
+        extensionElements, taskDefinitionExtensions)) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "'zeebe:%s' is only allowed in job-worker mode ('zeebe:%s')",
+              ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION,
+              ZeebeConstants.ELEMENT_TASK_DEFINITION));
+    }
   }
 
   public <T extends BpmnModelElementInstance> Collection<T> getExtensionElementsByType(
@@ -70,5 +81,16 @@ public final class SendTaskValidator implements ModelElementValidator<SendTask> 
       final Collection<ZeebeTaskDefinition> taskDefinitionExtensions) {
     return publishMessageExtensions.size() == 1 && taskDefinitionExtensions.isEmpty()
         || publishMessageExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
+  }
+
+  private boolean hasJobPriorityDefinitionWithoutTaskDefinition(
+      final ExtensionElements extensionElements,
+      final Collection<ZeebeTaskDefinition> taskDefinitionExtensions) {
+    if (extensionElements == null) {
+      return false;
+    }
+    final boolean hasJobPriorityDefinition =
+        !extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class).isEmpty();
+    return hasJobPriorityDefinition && taskDefinitionExtensions.isEmpty();
   }
 }

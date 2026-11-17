@@ -71,7 +71,7 @@ final class TestJournalFactory {
 
   TestJournalFactory(final String data, final int maxEntryCount, final SegmentAllocator allocator) {
     entryData = BufferUtil.wrapString(data);
-    entry = new DirectBufferWriter().wrap(entryData);
+    entry = new DirectBufferWriter(entryData);
     size = getSerializedSize(entryData);
     this.maxEntryCount = maxEntryCount;
 
@@ -110,13 +110,7 @@ final class TestJournalFactory {
   SegmentsManager segmentsManager(
       final Path directory, final SegmentLoader loader, final JournalMetaStore metaStore) {
     return new SegmentsManager(
-        index,
-        maxSegmentSize(),
-        directory.resolve("data").toFile(),
-        "journal",
-        loader,
-        metrics,
-        metaStore);
+        index, maxSegmentSize(), directory.resolve("data"), "journal", loader, metrics, metaStore);
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {

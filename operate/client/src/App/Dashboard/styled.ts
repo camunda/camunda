@@ -25,17 +25,19 @@ const Grid = styled.div<GridProps>`
       display: grid;
       grid-template-rows: 158px 1fr;
       grid-gap: var(--cds-spacing-05);
-      ${$numberOfColumns === 2
-        ? css`
-            grid-template-columns: 1fr 1fr;
-            & > ${Tile}:first-of-type {
-              grid-column-start: 1;
-              grid-column-end: 3;
-            }
-          `
-        : css`
-            grid-template-columns: 1fr;
-          `}
+      ${
+        $numberOfColumns === 2
+          ? css`
+              grid-template-columns: 1fr 1fr;
+              & > ${Tile}:first-of-type {
+                grid-column-start: 1;
+                grid-column-end: 3;
+              }
+            `
+          : css`
+              grid-template-columns: 1fr;
+            `
+      }
     `;
   }}
 `;
@@ -51,6 +53,11 @@ const Tile = styled(BaseTitle)`
   display: flex;
   flex-direction: column;
   border: 1px solid var(--cds-border-subtle-01);
+  border-radius: 0;
+
+  .operate-nav-v2 & {
+    border-radius: calc(var(--cds-spacing-03) + var(--spacing, 0.25rem));
+  }
 `;
 
 const TileTitle = styled.h2`

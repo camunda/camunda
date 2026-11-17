@@ -15,10 +15,10 @@ import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Gcs;
-import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.backup.Gcs;
+import io.camunda.configuration.data.primarystorage.backup.Gcs.GcsBackupStoreAuth;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig.Builder;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -303,6 +303,7 @@ final class ContinuousBackupIT {
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
+    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
     cfg.getData().getPrimaryStorage().getBackup().setGcs(gcsConfig);
     cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.GCS);
   }

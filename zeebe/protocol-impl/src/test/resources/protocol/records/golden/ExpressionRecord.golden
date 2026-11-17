@@ -11,11 +11,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue.ExpressionSecretReferenceValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,9 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
+  private static final StringValue REFERENCED_SECRETS_KEY = new StringValue("referencedSecrets");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -43,13 +49,23 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
 
+  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
+
+  private final ArrayProperty<ExpressionSecretReference> referencedSecretsProp =
+      new ArrayProperty<>(REFERENCED_SECRETS_KEY, ExpressionSecretReference::new);
+
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+
   public ExpressionRecord() {
-    super(5);
+    super(8);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(scopeKeyProp)
+        .declareProperty(referencedSecretsProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   @Override
@@ -110,6 +126,45 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getScopeKey() {
+    return scopeKeyProp.getValue();
+  }
+
+  public ExpressionRecord setScopeKey(final long scopeKey) {
+    scopeKeyProp.setValue(scopeKey);
+    return this;
+  }
+
+  @Override
+  public List<ExpressionSecretReferenceValue> getReferencedSecrets() {
+    // copy each element out of the reusable backing array so the returned list stays valid after
+    // the record is reset or another element is added
+    return referencedSecretsProp.stream()
+        .map(
+            reference ->
+                (ExpressionSecretReferenceValue)
+                    new ExpressionSecretReference()
+                        .setStoreId(reference.getStoreId())
+                        .setSecretReference(reference.getSecretReference()))
+        .collect(Collectors.toList());
+  }
+
+  public ExpressionRecord addReferencedSecret(final String storeId, final String secretReference) {
+    referencedSecretsProp.add().setStoreId(storeId).setSecretReference(secretReference);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public ExpressionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

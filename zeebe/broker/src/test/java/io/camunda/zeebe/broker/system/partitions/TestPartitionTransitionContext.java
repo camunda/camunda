@@ -7,18 +7,21 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -50,7 +53,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
@@ -81,27 +84,39 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
+  private SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private BrokerClient brokerClient;
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
   private DynamicPartitionConfig partitionConfig;
   private ControllableStreamClock clock;
-  private SecurityConfiguration securityConfig;
+  private EngineSecurityConfig securityConfig;
   private MeterRegistry transitionMeterRegistry;
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
+  private boolean migrationSnapshotTaken;
   private final ComponentTreeListener healthMetrics;
   private SnapshotCopy snapshotCopy;
   private ClusterConfigurationService clusterConfigurationService;
 
   public TestPartitionTransitionContext() {
-    transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
+    transitionMeterRegistry =
+        MicrometerUtil.wrap(
+            startupMeterRegistry,
+            PartitionKeyNames.tags(
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1)));
     healthMetrics = new HealthTreeMetrics(transitionMeterRegistry);
   }
 
   @Override
   public int getPartitionId() {
     return 1;
+  }
+
+  @Override
+  public PartitionId partitionId() {
+    return new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, getPartitionId());
   }
 
   @Override
@@ -162,6 +177,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setDiskSpaceAvailable(final boolean b) {}
 
   @Override
+  public void setPausedForTransfer(final boolean pausedForTransfer) {}
+
+  @Override
   public TopologyManager getTopologyManager() {
     return null;
   }
@@ -194,7 +212,22 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
-    return null;
+    return snapshotApiRequestHandler;
+  }
+
+  @Override
+  public void setSnapshotApiRequestHandler(
+      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+  }
+
+  @Override
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
+  }
+
+  public void setBrokerClient(final BrokerClient brokerClient) {
+    this.brokerClient = brokerClient;
   }
 
   @Override
@@ -255,11 +288,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {}
 
   @Override
-  public ExporterPhase getExporterPhase() {
-    return ExporterPhase.EXPORTING;
-  }
-
-  @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
     return exporterRepository.getExporters().values();
   }
@@ -285,7 +313,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfig() {
+  public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
   }
 
@@ -375,6 +403,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
+  public void markMigrationSnapshotTaken() {
+    migrationSnapshotTaken = true;
+  }
+
+  @Override
+  public void resetMigrationSnapshotTaken() {
+    migrationSnapshotTaken = false;
+  }
+
+  @Override
+  public boolean isMigrationSnapshotTaken() {
+    return migrationSnapshotTaken;
+  }
+
+  @Override
   public ComponentTreeListener getComponentTreeListener() {
     return healthMetrics;
   }
@@ -398,7 +441,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
-  public void setBrokerCfg(final SecurityConfiguration securityConfig) {
+  public void setSecurityConfig(final EngineSecurityConfig securityConfig) {
     this.securityConfig = securityConfig;
   }
 
@@ -478,8 +521,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public int getNodeId() {
-    return 0;
+  public BrokerMemberId getMemberId() {
+    return BrokerMemberId.from(0);
   }
 
   @Override

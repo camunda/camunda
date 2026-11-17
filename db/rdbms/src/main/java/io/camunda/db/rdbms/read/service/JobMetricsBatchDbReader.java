@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
@@ -38,7 +39,7 @@ import io.camunda.search.sort.JobErrorStatisticsSort;
 import io.camunda.search.sort.JobTimeSeriesStatisticsSort;
 import io.camunda.search.sort.JobTypeStatisticsSort;
 import io.camunda.search.sort.JobWorkerStatisticsSort;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.Collections;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -142,7 +143,9 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
             .toList();
 
     return buildSearchQueryResult(
-        entities.size(), entities, convertSort(JOB_TYPE_STATS_FIXED_SORT));
+        entities.size(),
+        restoreDisplayOrder(dbPage, entities),
+        convertSort(JOB_TYPE_STATS_FIXED_SORT));
   }
 
   @Override
@@ -180,7 +183,8 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
                             ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt())))
             .toList();
 
-    return workerStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    return workerStatsReader.buildSearchQueryResult(
+        entities.size(), workerStatsReader.restoreDisplayOrder(dbPage, entities), dbSort);
   }
 
   @Override
@@ -220,7 +224,8 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
                             ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt())))
             .toList();
 
-    return timeSeriesStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    return timeSeriesStatsReader.buildSearchQueryResult(
+        entities.size(), timeSeriesStatsReader.restoreDisplayOrder(dbPage, entities), dbSort);
   }
 
   @Override
@@ -251,12 +256,13 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
             .map(
                 result ->
                     new JobErrorStatisticsEntity(
-                        result.errorCode(),
-                        result.errorMessage(),
+                        nullToEmpty(result.errorCode()),
+                        nullToEmpty(result.errorMessage()),
                         ofNullable(result.workers()).orElse(0)))
             .toList();
 
-    return errorStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    return errorStatsReader.buildSearchQueryResult(
+        entities.size(), errorStatsReader.restoreDisplayOrder(dbPage, entities), dbSort);
   }
 
   /** Inner reader for worker statistics to provide typed AbstractEntityReader methods. */

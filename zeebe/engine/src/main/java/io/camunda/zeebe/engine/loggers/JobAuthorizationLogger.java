@@ -11,7 +11,6 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.cache.DeduplicationCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

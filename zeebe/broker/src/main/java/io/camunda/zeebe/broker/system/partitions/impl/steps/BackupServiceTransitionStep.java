@@ -109,8 +109,8 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
 
     final BackupService backupManager =
         new BackupService(
-            context.getNodeId(),
-            context.getPartitionId(),
+            context.getMemberId(),
+            context.partitionId(),
             context.getBackupStore(),
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),

@@ -8,16 +8,23 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -142,13 +149,17 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
-    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+  void shouldExtractIdAndIndexes() {
+    // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+    final Record<ProcessInstanceRecordValue> record =
         createRecord(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    final var idList = underTest.generateIds(processInstanceRecord);
 
-    assertThat(idList).isNotNull();
-    assertThat(idList).containsExactly(String.valueOf(processInstanceRecord.getKey()));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(new IdAndIndex(String.valueOf(record.getKey()), index));
   }
 
   @Test
@@ -178,6 +189,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setTreePath("444/356/111")
             .setLevel(1)
             .setPosition(333L);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -199,14 +211,14 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.POSITION, inputEntity.getPosition());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test
-  public void shouldNotUpsertNullFields() {
+  public void shouldOmitAbsentOptionalFieldsFromUpsert() {
     final FlowNodeInstanceEntity inputEntity =
         new FlowNodeInstanceEntity()
             .setId("111")
@@ -216,9 +228,10 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
-            .setFlowNodeId("flowNodeName")
+            .setFlowNodeName("flowNodeName")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -235,10 +248,81 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldUpsertNullFlowNodeNameForNormalElement() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.SERVICE_TASK)
+            .setState(FlowNodeState.ACTIVE)
+            .setFlowNodeId("flowNode1")
+            .setFlowNodeName(null)
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    // when
+    underTest.flush(index, inputEntity, mockRequest);
+    // then
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldOmitFlowNodeNameForInnerInstanceWhenNull() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .setState(FlowNodeState.COMPLETED)
+            .setFlowNodeId("adHocSubProcess#innerInstance")
+            .setFlowNodeName(null)
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    underTest.flush(index, inputEntity, mockRequest);
+
+    verify(mockRequest, times(1))
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -414,6 +498,49 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getPosition()).isNull();
     assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo(defaultTreePath);
+  }
+
+  @Test
+  public void shouldRetainStaleNameWhenAdHocInnerInstanceIsMigrated() {
+    // given
+    final long targetProcessDefinitionKey = 222L;
+    processCache.put(
+        targetProcessDefinitionKey,
+        new CachedProcessEntity(
+            "targetProcess",
+            1,
+            null,
+            List.of(),
+            Map.of("targetAdHocSubProcess", "Target ad-hoc subprocess"),
+            false,
+            Map.of()));
+
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .withElementId("targetAdHocSubProcess#innerInstance")
+            .withProcessDefinitionKey(targetProcessDefinitionKey)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                    .withValue(processInstanceRecordValue));
+
+    final FlowNodeInstanceEntity flowNodeInstanceEntity =
+        new FlowNodeInstanceEntity().setFlowNodeName("List users");
+
+    // when
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity.getFlowNodeName())
+        .describedAs(
+            "pre-migration inner-instance name survives migration, unresolved against the "
+                + "target process definition")
+        .isEqualTo("List users");
   }
 
   @ParameterizedTest

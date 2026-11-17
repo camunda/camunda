@@ -25,16 +25,10 @@ import java.util.Objects;
 public final class RemoteJobStreamErrorHandlerService extends Actor
     implements PartitionListener, RemoteStreamErrorHandler<ActivatedJob> {
   private final RemoteJobStreamErrorHandler delegate;
-  private final String name;
 
   public RemoteJobStreamErrorHandlerService(final JobStreamErrorHandler errorHandler) {
+    super("RemoteJobStreamErrorHandler");
     delegate = new RemoteJobStreamErrorHandler(errorHandler);
-    name = "RemoteJobStreamErrorHandler";
-  }
-
-  @Override
-  public String getName() {
-    return name;
   }
 
   @Override

@@ -36,6 +36,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
   private final Long rootProcessInstanceKey;
   private final Long subscriptionKey;
   private final String tenantId;
+  private final String businessId;
 
   public CorrelatedMessageSubscriptionImpl(final CorrelatedMessageSubscriptionResult item) {
     correlationKey = item.getCorrelationKey();
@@ -51,6 +52,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     subscriptionKey = ParseUtil.parseLongOrNull(item.getSubscriptionKey());
     tenantId = item.getTenantId();
+    businessId = item.getBusinessId();
   }
 
   @Override
@@ -119,6 +121,11 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         correlationKey,
@@ -133,7 +140,8 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
         processInstanceKey,
         rootProcessInstanceKey,
         subscriptionKey,
-        tenantId);
+        tenantId,
+        businessId);
   }
 
   @Override
@@ -159,6 +167,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
         && Objects.equals(
             rootProcessInstanceKey, correlatedMessageSubscription.rootProcessInstanceKey)
         && Objects.equals(subscriptionKey, correlatedMessageSubscription.subscriptionKey)
-        && Objects.equals(tenantId, correlatedMessageSubscription.tenantId);
+        && Objects.equals(tenantId, correlatedMessageSubscription.tenantId)
+        && Objects.equals(businessId, correlatedMessageSubscription.businessId);
   }
 }

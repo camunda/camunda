@@ -12,6 +12,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.search.entities.ValueTypeEnum;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ValueTypeUtilTest {
 
@@ -38,6 +40,21 @@ public class ValueTypeUtilTest {
   @Test
   public void shouldReturnLongForBooleanLikeIntegerString() {
     assertThat(ValueTypeUtil.getValueType("1")).isEqualTo(ValueTypeEnum.LONG);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"9223372036854775807", "-9223372036854775808"})
+  public void shouldReturnLongForIntegerStringAtLongBounds(final String value) {
+    assertThat(ValueTypeUtil.getValueType(value)).isEqualTo(ValueTypeEnum.LONG);
+    assertThat(ValueTypeUtil.mapValueType(value, ValueTypeEnum.LONG))
+        .isEqualTo(Long.parseLong(value));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"9223372036854775808", "18446744073709551615", "-9223372036854775809"})
+  public void shouldReturnStringForIntegerStringBeyondLongBounds(final String value) {
+    assertThat(ValueTypeUtil.getValueType(value)).isEqualTo(ValueTypeEnum.STRING);
+    assertThat(ValueTypeUtil.mapValueType(value, ValueTypeEnum.STRING)).isEqualTo(value);
   }
 
   @Test

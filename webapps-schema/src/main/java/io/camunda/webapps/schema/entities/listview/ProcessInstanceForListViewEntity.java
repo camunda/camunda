@@ -69,6 +69,26 @@ public class ProcessInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String businessId;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private OffsetDateTime suspendedDate;
+
+  /**
+   * Message of an incident raised at the process level, i.e. one that is not attached to any flow
+   * node. Incidents attached to a flow node carry their message on the corresponding {@link
+   * FlowNodeInstanceForListViewEntity} instead.
+   *
+   * <p>Attention! This field will be filled in only for data imported after v. 8.11.0.
+   */
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String errorMessage;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer storageOrdinal;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -296,6 +316,33 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public OffsetDateTime getSuspendedDate() {
+    return suspendedDate;
+  }
+
+  public ProcessInstanceForListViewEntity setSuspendedDate(final OffsetDateTime suspendedDate) {
+    this.suspendedDate = suspendedDate;
+    return this;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public ProcessInstanceForListViewEntity setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+    return this;
+  }
+
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public ProcessInstanceForListViewEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -320,7 +367,10 @@ public class ProcessInstanceForListViewEntity
         position,
         tags,
         rootProcessInstanceKey,
-        businessId);
+        businessId,
+        suspendedDate,
+        errorMessage,
+        storageOrdinal);
   }
 
   @Override
@@ -353,6 +403,9 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position)
         && Objects.equals(tags, that.tags)
-        && Objects.equals(businessId, that.businessId);
+        && Objects.equals(businessId, that.businessId)
+        && Objects.equals(suspendedDate, that.suspendedDate)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(storageOrdinal, that.storageOrdinal);
   }
 }

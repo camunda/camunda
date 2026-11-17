@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { helperText01 } from "@carbon/elements";
+import { styles } from "@carbon/elements";
 import styled from "styled-components";
 
 export const PrimaryText = styled.p`
@@ -21,9 +21,9 @@ export const SecondaryText = styled.p`
 `;
 
 export const HelperText = styled(SecondaryText)`
-  font-size: ${helperText01.fontSize} !important;
-  font-weight: ${helperText01.fontSize} !important;
-  line-height: ${helperText01.lineHeight} !important;
-  letter-spacing: ${helperText01.letterSpacing} !important;
+  font-size: ${styles.helperText01.fontSize} !important;
+  font-weight: ${styles.helperText01.fontSize} !important;
+  line-height: ${styles.helperText01.lineHeight} !important;
+  letter-spacing: ${styles.helperText01.letterSpacing} !important;
   padding: 0 !important;
 `;

@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.exporter.metrics;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc.ExporterContainerKeyNames;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;
@@ -50,7 +50,13 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** The execution time of processing a complete process instance */
+  /**
+   * The execution time of processing a complete process instance. Publishes SLO histogram buckets;
+   * derive percentiles at query time via {@code histogram_quantile()}. Client-side percentiles are
+   * intentionally not published: the Prometheus registry emits a distribution as either a histogram
+   * or a summary, and once SLO buckets are configured the percentiles would be dropped. See {@link
+   * ExecutionLatencyMetrics}.
+   */
   PROCESS_INSTANCE_EXECUTION {
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(50),
@@ -66,7 +72,7 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
       Duration.ofSeconds(15),
       Duration.ofSeconds(30),
       Duration.ofSeconds(45),
-      Duration.ofMinutes(1)
+      Duration.ofSeconds(60)
     };
 
     @Override

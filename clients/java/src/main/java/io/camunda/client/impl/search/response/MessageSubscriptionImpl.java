@@ -28,6 +28,7 @@ import java.util.Objects;
 public class MessageSubscriptionImpl implements MessageSubscription {
 
   private final Long messageSubscriptionKey;
+  private final String businessId;
   private final String processDefinitionId;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
@@ -42,10 +43,13 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String tenantId;
   private final String processDefinitionName;
   private final Integer processDefinitionVersion;
-  private final Map<String, String> extensionProperties;
+  private final Map<String, String> toolProperties;
+  private final String toolName;
+  private final String inboundConnectorType;
 
   public MessageSubscriptionImpl(final MessageSubscriptionResult item) {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
+    businessId = item.getBusinessId();
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -62,12 +66,19 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     tenantId = item.getTenantId();
     processDefinitionName = item.getProcessDefinitionName();
     processDefinitionVersion = item.getProcessDefinitionVersion();
-    extensionProperties = item.getExtensionProperties();
+    toolProperties = item.getToolProperties();
+    toolName = item.getToolName();
+    inboundConnectorType = item.getInboundConnectorType();
   }
 
   @Override
   public Long getMessageSubscriptionKey() {
     return messageSubscriptionKey;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 
   @Override
@@ -141,14 +152,25 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
-  public Map<String, String> getExtensionProperties() {
-    return extensionProperties;
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
+  }
+
+  @Override
+  public String getToolName() {
+    return toolName;
+  }
+
+  @Override
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
         messageSubscriptionKey,
+        businessId,
         processDefinitionId,
         processDefinitionKey,
         processInstanceKey,
@@ -163,7 +185,9 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         tenantId,
         processDefinitionName,
         processDefinitionVersion,
-        extensionProperties);
+        toolProperties,
+        toolName,
+        inboundConnectorType);
   }
 
   @Override
@@ -176,6 +200,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     }
     final MessageSubscriptionImpl subscription = (MessageSubscriptionImpl) o;
     return Objects.equals(messageSubscriptionKey, subscription.messageSubscriptionKey)
+        && Objects.equals(businessId, subscription.businessId)
         && Objects.equals(processDefinitionId, subscription.processDefinitionId)
         && Objects.equals(processDefinitionKey, subscription.processDefinitionKey)
         && Objects.equals(processInstanceKey, subscription.processInstanceKey)
@@ -190,6 +215,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(tenantId, subscription.tenantId)
         && Objects.equals(processDefinitionName, subscription.processDefinitionName)
         && Objects.equals(processDefinitionVersion, subscription.processDefinitionVersion)
-        && Objects.equals(extensionProperties, subscription.extensionProperties);
+        && Objects.equals(toolProperties, subscription.toolProperties)
+        && Objects.equals(toolName, subscription.toolName)
+        && Objects.equals(inboundConnectorType, subscription.inboundConnectorType);
   }
 }

@@ -23,6 +23,7 @@ const permissionTypeSchema = z.enum([
 	'CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE',
 	'CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION',
 	'CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION',
+	'CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE',
 	'CREATE_PROCESS_INSTANCE',
 	'CREATE_DECISION_INSTANCE',
 	'CREATE_TASK_LISTENER',
@@ -49,8 +50,10 @@ const permissionTypeSchema = z.enum([
 	'DELETE_TASK_LISTENER',
 	'EVALUATE',
 	'MODIFY_PROCESS_INSTANCE',
+	'SUSPEND_PROCESS_INSTANCE',
 	'CLAIM_USER_TASK',
 	'COMPLETE_USER_TASK',
+	'REVEAL',
 ]);
 type PermissionType = z.infer<typeof permissionTypeSchema>;
 
@@ -71,6 +74,7 @@ const resourceTypeSchema = z.enum([
 	'PROCESS_DEFINITION',
 	'RESOURCE',
 	'ROLE',
+	'SECRET',
 	'SYSTEM',
 	'TENANT',
 	'USER',
@@ -130,30 +134,30 @@ type GetAuthorizationResponseBody = z.infer<typeof getAuthorizationResponseBodyS
 const queryAuthorizationsResponseBodySchema = getQueryResponseBodySchema(authorizationSchema);
 type QueryAuthorizationsResponseBody = z.infer<typeof queryAuthorizationsResponseBodySchema>;
 
-const createAuthorization: Endpoint = {
+const createAuthorization = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/authorizations`,
-};
+	getUrl: () => `/${API_VERSION}/authorizations` as const,
+} as const satisfies Endpoint;
 
-const updateAuthorization: Endpoint<{authorizationKey: string}> = {
+const updateAuthorization = {
 	method: 'PUT',
-	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}`,
-};
+	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}` as const,
+} as const satisfies Endpoint<{authorizationKey: string}>;
 
-const getAuthorization: Endpoint<{authorizationKey: string}> = {
+const getAuthorization = {
 	method: 'GET',
-	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}`,
-};
+	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}` as const,
+} as const satisfies Endpoint<{authorizationKey: string}>;
 
-const deleteAuthorization: Endpoint<{authorizationKey: string}> = {
+const deleteAuthorization = {
 	method: 'DELETE',
-	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}`,
-};
+	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}` as const,
+} as const satisfies Endpoint<{authorizationKey: string}>;
 
-const queryAuthorizations: Endpoint = {
+const queryAuthorizations = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/authorizations/search`,
-};
+	getUrl: () => `/${API_VERSION}/authorizations/search` as const,
+} as const satisfies Endpoint;
 
 export {
 	permissionTypeSchema,

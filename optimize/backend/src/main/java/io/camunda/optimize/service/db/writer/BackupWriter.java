@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.service.db.writer;
 
-import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
-import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForNonImportIndices;
+import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotName;
 
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -30,23 +30,25 @@ public class BackupWriter {
     this.snapshotRepository = snapshotRepository;
   }
 
-  public void triggerSnapshotCreation(final Long backupId) {
-    final String snapshot1Name = getSnapshotNameForImportIndices(backupId);
-    final String snapshot2Name = getSnapshotNameForNonImportIndices(backupId);
-    CompletableFuture.runAsync(
-        () -> {
-          snapshotRepository.triggerSnapshot(
-              snapshot1Name, getIndexAliasesWithImportIndexFlag(true));
-          snapshotRepository.triggerSnapshot(
-              snapshot2Name, getIndexAliasesWithImportIndexFlag(false));
-        });
+  public CompletableFuture<Void> triggerSnapshotCreation(final Long backupId) {
+    final String snapshot1Name = getSnapshotName(BackupPriority.PRIORITY1, backupId);
+    final String snapshot2Name = getSnapshotName(BackupPriority.PRIORITY2, backupId);
+    return CompletableFuture.supplyAsync(
+            () -> getIndexAliasesWithBackupPriority(BackupPriority.PRIORITY1))
+        .thenCompose(aliases -> snapshotRepository.triggerSnapshot(snapshot1Name, aliases))
+        .thenComposeAsync(
+            ignored ->
+                CompletableFuture.supplyAsync(
+                        () -> getIndexAliasesWithBackupPriority(BackupPriority.PRIORITY2))
+                    .thenCompose(
+                        aliases -> snapshotRepository.triggerSnapshot(snapshot2Name, aliases)));
   }
 
   public void deleteOptimizeSnapshots(final Long backupId) {
     snapshotRepository.deleteOptimizeSnapshots(backupId);
   }
 
-  private String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
-    return mappingMetadataRepository.getIndexAliasesWithImportIndexFlag(isImportIndex);
+  private String[] getIndexAliasesWithBackupPriority(final BackupPriority backupPriority) {
+    return mappingMetadataRepository.getIndexAliasesWithBackupPriority(backupPriority);
   }
 }

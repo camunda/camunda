@@ -7,14 +7,22 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
-
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import io.zeebe.containers.ZeebeContainer;
+import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
@@ -24,35 +32,77 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class S3BackupAuthenticationIT {
   private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+  private static final String S3_NETWORK_ALIAS = "s3mock";
 
-  @Container
-  private static final MinioContainer MINIO =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", BUCKET_NAME);
+  @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
+
+  static {
+    S3.container().withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
+  }
+
+  @BeforeAll
+  static void setupBucket() {
+    final var config =
+        new Builder()
+            .withBucketName(BUCKET_NAME)
+            .withEndpoint(S3.externalEndpoint())
+            .withRegion(S3.region())
+            .withCredentials(S3.accessKey(), S3.secretKey())
+            .forcePathStyleAccess(true)
+            .build();
+    try (final var client = S3BackupStore.buildClient(config)) {
+      Awaitility.await("until bucket is created")
+          .untilAsserted(() -> client.createBucket(cfg -> cfg.bucket(BUCKET_NAME)).join());
+    }
+  }
 
   @Test
   @RegressionTest("https://github.com/camunda/camunda/issues/12433")
   void shouldConnectWithoutConfiguredCredentials() {
     // given
     final var zeebe =
-        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withNetwork(NETWORK)
-            .dependsOn(MINIO)
+            .dependsOn(S3)
             .withoutTopologyCheck()
-            .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint())
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
-            // Set env variables discovered by the AWS SDK, not Zeebe
-            .withEnv("AWS_ACCESS_KEY_ID", MINIO.accessKey())
-            .withEnv("AWS_SECRET_ACCESS_KEY", MINIO.secretKey())
-            .withEnv(CREATE_SCHEMA_ENV_VAR, "false");
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                  final var s3Config = cfg.getData().getPrimaryStorage().getBackup().getS3();
+                  cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.S3);
+                  s3Config.setBucketName(BUCKET_NAME);
+                  s3Config.setEndpoint(S3.internalEndpoint(S3_NETWORK_ALIAS));
+                  s3Config.setRegion(S3.region());
+                  s3Config.setForcePathStyleAccess(true);
+                })
+            .withEnv("AWS_ACCESS_KEY_ID", S3.accessKey())
+            .withEnv("AWS_SECRET_ACCESS_KEY", S3.secretKey())
+            .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*");
 
     // when
     zeebe.start();
 
     // then
     Assertions.assertThat(zeebe.isStarted()).isTrue();
+
+    final var partitionsActuator = PartitionsActuator.of(zeebe);
+    Awaitility.await("partition has taken its first snapshot")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                Assertions.assertThat(partitionsActuator.query().get(1).snapshotId()).isNotNull());
+
+    final var backupActuator = BackupActuator.of(zeebe);
+    final var backupId = 1L;
+    backupActuator.take(backupId);
+    Awaitility.await("backup taken with the discovered credentials must complete")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                Assertions.assertThat(backupActuator.status(backupId).getState())
+                    .isEqualTo(StateCode.COMPLETED));
 
     // cleanup
     zeebe.close();

@@ -15,6 +15,27 @@ import {createInstances, createSingleInstance} from '../zeebeClient';
 
 const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 
+/**
+ * Asserts no *open* incident: a resolved one stays searchable forever, so a
+ * test that raises and resolves one on purpose could never assert health.
+ * searchIncidentByPIK cannot express this — it waits for presence.
+ */
+export async function expectNoIncidents(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  // Retried: an incident resolved moments earlier can still read as ACTIVE.
+  await expect(async () => {
+    const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey, state: 'ACTIVE'}},
+    });
+    await assertStatusCode(res, 200);
+    expect((await res.json()).items ?? []).toHaveLength(0);
+  }).toPass(assertionOptions);
+}
+
 export async function searchIncidentByPIK(
   request: APIRequestContext,
   {processInstanceKey}: {processInstanceKey: string},
@@ -51,6 +72,7 @@ export async function searchIncidentByPIK(
 
   return localState['incidents'] as {
     incidentKey: string;
+    errorType: string;
     errorMessage: string;
     processDefinitionId: string;
     processDefinitionKey: string;
@@ -144,22 +166,27 @@ export async function createTwoDifferentIncidentsInOneProcess(
 }
 
 export async function createSingleIncidentProcessInstance(
-  localState: Record<string, unknown>,
+  localState: Record<string, unknown> = {},
   request: APIRequestContext,
 ) {
-  await test.step('Create process instance with single incidents', async () => {
-    const instance = await createSingleInstance('singleIncidentProcess', 1);
-    localState['processInstanceKey'] = instance.processInstanceKey;
-  });
-
-  await test.step('Search incident to get incidentKey', async () => {
-    const incidents = await searchIncidentByPIK(request, {
-      processInstanceKey: localState['processInstanceKey'] as string,
+  const processInstanceKey =
+    await test.step('Create process instance with single incidents', async () => {
+      const instance = await createSingleInstance('singleIncidentProcess', 1);
+      localState['processInstanceKey'] = instance.processInstanceKey; // mutation left for backward-compatibility
+      return instance.processInstanceKey;
     });
-    localState['incidentKeys'] = incidents.map(
-      (incident) => incident.incidentKey,
-    );
-  });
+
+  const incidentKeys =
+    await test.step('Search incident to get incidentKey', async () => {
+      const incidents = await searchIncidentByPIK(request, {
+        processInstanceKey,
+      });
+      const incidentKeys = incidents.map((incident) => incident.incidentKey);
+      localState['incidentKeys'] = incidentKeys; // mutation left for backward-compatibility
+      return incidentKeys;
+    });
+  // explicit object return removes parameter mutation and makes behaviour explicit and discoverable
+  return {processInstanceKey, incidentKeys};
 }
 
 /**

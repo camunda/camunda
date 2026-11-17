@@ -23,6 +23,15 @@ public class ServiceException extends RuntimeException {
     this.status = status;
   }
 
+  /**
+   * Keeps {@code cause} attached for logging and for callers that need to tell apart failures this
+   * exception's {@link Status} alone cannot distinguish. It is never rendered into an API response.
+   */
+  public ServiceException(final String message, final Status status, final Throwable cause) {
+    super(message, cause);
+    this.status = status;
+  }
+
   public Status getStatus() {
     return status;
   }
@@ -37,6 +46,7 @@ public class ServiceException extends RuntimeException {
     ABORTED,
     INTERNAL,
     NOT_FOUND,
+    NOT_ACCEPTABLE,
     ALREADY_EXISTS,
     INVALID_STATE,
     UNKNOWN

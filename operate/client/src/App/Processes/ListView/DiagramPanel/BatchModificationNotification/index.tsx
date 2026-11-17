@@ -13,7 +13,7 @@ import {Container, InlineNotification, Button} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getElementName} from 'modules/utils/elements';
-import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
+import {useBatchModificationStatisticsFilter} from 'modules/hooks/useBatchModificationStatisticsFilter';
 
 type Props = {
   sourceElementId?: string;
@@ -29,13 +29,9 @@ const BatchModificationNotification: React.FC<Props> = observer(
       processDefinitionKey,
     });
 
-    const processInstanceKeyFilter = getSelectedProcessInstancesFilter();
+    const statisticsFilter = useBatchModificationStatisticsFilter();
     const {data: instancesCount = 0} = useInstancesCount(
-      {
-        filter: {
-          processInstanceKey: processInstanceKeyFilter,
-        },
-      },
+      statisticsFilter,
       processDefinitionKey,
       sourceElementId,
     );
@@ -59,7 +55,7 @@ const BatchModificationNotification: React.FC<Props> = observer(
           title=""
           subtitle={
             sourceElementName === '' || targetElementName === ''
-              ? 'Please select where you want to move the selected instances on the diagram.'
+              ? 'Select where you want to move the selected instances on the diagram.'
               : `Modification scheduled: Move ${pluralSuffix(
                   instancesCount,
                   'instance',

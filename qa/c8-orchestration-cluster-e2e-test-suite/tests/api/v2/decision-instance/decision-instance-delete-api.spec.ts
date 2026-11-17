@@ -16,7 +16,10 @@ import {
   assertForbiddenRequest,
   encode,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   createMammalProcessInstanceAndDeployMammalDecision,
   createUser,
@@ -71,9 +74,9 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
       );
 
       const res = await request.post(
-        buildUrl(
-          `/decision-instances/${decisionEvaluationKeyToDelete}/deletion`,
-        ),
+        buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
+          decisionEvaluationKey: decisionEvaluationKeyToDelete,
+        }),
         {
           headers: jsonHeaders(token), // overrides default demo:demo
         },
@@ -94,9 +97,9 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     await test.step('Delete Decision Instance', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(
-            `/decision-instances/${decisionEvaluationKeyToDelete}/deletion`,
-          ),
+          buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
+            decisionEvaluationKey: decisionEvaluationKeyToDelete,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -111,7 +114,9 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
         decisionInstanceToDelete.decisionEvaluationInstanceKey;
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationInstanceKeyToGet}`),
+          buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+            decisionEvaluationInstanceKey: decisionEvaluationInstanceKeyToGet,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -121,7 +126,12 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
           res,
           `Decision Instance with id '${decisionEvaluationInstanceKeyToGet}' not found`,
         );
-      }).toPass(defaultAssertionOptions);
+        // The deletion command returns 204 as soon as it is accepted, but the
+        // instance stays readable until the delete propagates through the
+        // exporter into secondary storage. On the loaded nightly cluster that
+        // lag intermittently exceeds the default 30s window, so poll on the
+        // extended secondary-storage budget instead.
+      }).toPass(extendedAssertionOptions);
     });
   });
 
@@ -131,7 +141,9 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
       decisionInstanceToDelete.decisionEvaluationKey;
 
     const res = await request.post(
-      buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete}/deletion`),
+      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
+        decisionEvaluationKey: decisionEvaluationKeyToDelete,
+      }),
       {
         headers: {
           'Content-Type': 'application/json',
@@ -145,9 +157,9 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
     const notExistingDecisionEvaluationKeyToDelete = '9999999999999';
 
     const res = await request.post(
-      buildUrl(
-        `/decision-instances/${notExistingDecisionEvaluationKeyToDelete}/deletion`,
-      ),
+      buildUrl('/decision-instances/{decisionEvaluationKey}/deletion', {
+        decisionEvaluationKey: notExistingDecisionEvaluationKeyToDelete,
+      }),
       {
         headers: jsonHeaders(),
       },

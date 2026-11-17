@@ -10,72 +10,25 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
-  private final Camunda unifiedConfig;
-  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneGateway() {
-    super(
-        // Unified Configuration classes
-        UnifiedConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        PrimaryStorageBackupPropertiesOverride.class,
-        TasklistPropertiesOverride.class,
-        OperatePropertiesOverride.class,
-        BrokerBasedPropertiesOverride.class,
-        GatewayBasedPropertiesOverride.class,
-        ActorClockControlledPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        IdleStrategyPropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class,
-        // ---
-        GatewayModuleConfiguration.class,
-        CommonsModuleConfiguration.class);
+    super(GatewayModuleConfiguration.class, CommonsModuleConfiguration.class);
     // this is needed to ensure no default spring boot 4.0 security setup kicks in
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
 
-    unifiedConfig = new Camunda();
-
     unifiedConfig.getApi().getGrpc().setAddress("0.0.0.0");
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.GATEWAY);
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
+    withAdditionalProfile(Profile.GATEWAY);
 
-    securityConfig = new CamundaSecurityProperties();
-    securityConfig.getAuthentication().setUnprotectedApi(true);
-    securityConfig.getAuthorizations().setEnabled(false);
-    //noinspection resource
-    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
+    unifiedConfig.getSecurity().getAuthorizations().setEnabled(false);
 
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
@@ -103,18 +56,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     return true;
   }
 
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneGateway withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
   @Override
   public int mappedPort(final TestZeebePort port) {
     return switch (port) {
@@ -122,17 +63,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
       case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
-  }
-
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  public Camunda unifiedConfig() {
-    return unifiedConfig;
   }
 
   /**

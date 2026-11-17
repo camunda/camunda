@@ -9,6 +9,8 @@ package io.camunda.exporter.tasks.archiver;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.zeebe.util.function.TriFunction;
 import java.net.SocketTimeoutException;
 import java.util.List;
@@ -20,46 +22,64 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
 public class ArchiveByIdTaskSupplier<SortFieldType> {
-  private static final int MAX_RETRY_COUNT = 3;
 
+  private static final int MINIMUM_BATCH_SIZE = 50;
+  private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
+  private static final List<Class<? extends Throwable>> RETRYABLE_EXCEPTIONS =
+      List.of(
+          SocketTimeoutException.class,
+          ElasticsearchException.class,
+          OpenSearchException.class,
+          BatchCountMismatchException.class,
+          VersionConflictOnArchiveDeleteException.class);
+
+  private final HistoryConfiguration config;
   private final String sourceIdx;
   private final String destinationIdx;
-  private final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
+  private final BiFunction<
+          List<SortFieldType>, Integer, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
       idsSupplier;
-  private final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer;
-  private final BiFunction<String, List<String>, CompletableFuture<Long>> deleter;
+  private final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer;
+  private final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter;
   private final Executor executor;
+  private final CamundaExporterMetrics metrics;
   private final Logger logger;
 
   private final AtomicReference<ArchiveDocIdsBatch<SortFieldType>> lastSearchResponse =
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicInteger retryCount = new AtomicInteger(0);
+  private final AtomicInteger batchSize;
 
   private final AtomicLong totalArchived = new AtomicLong(0);
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
 
   public ArchiveByIdTaskSupplier(
+      final HistoryConfiguration config,
       final String sourceIdx,
       final String destinationIdx,
-      final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
+      final BiFunction<
+              List<SortFieldType>, Integer, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
           idsSupplier,
-      final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer,
-      final BiFunction<String, List<String>, CompletableFuture<Long>> deleter,
+      final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer,
+      final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter,
       final Executor executor,
+      final CamundaExporterMetrics metrics,
       final Logger logger) {
+    this.config = config;
     this.sourceIdx = sourceIdx;
     this.destinationIdx = destinationIdx;
     this.idsSupplier = idsSupplier;
     this.reindexer = reindexer;
     this.deleter = deleter;
     this.executor = executor;
+    this.metrics = metrics;
     this.logger = logger;
+    batchSize = new AtomicInteger(config.getReindexBatchSize());
   }
 
   public boolean isComplete() {
@@ -76,8 +96,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   public CompletableFuture<Long> moveNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
+    final var batchSizeForBatch = batchSize.get();
     return idsSupplier
-        .apply(getLastSearchPosition())
+        .apply(getLastSearchPosition(), batchSizeForBatch)
         .thenComposeAsync(
             response -> {
               if (response.isEmpty()) {
@@ -94,20 +115,45 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                         lastSearchResponse.set(response);
                         totalArchived.accumulateAndGet(deletedCount, Long::sum);
                         retryCount.set(0);
+                        // batch was below page size, so that implies there should
+                        // not be another batch to read, so now that we've processed
+                        // this batch we can finish
+                        if (response.documents.size() < batchSizeForBatch) {
+                          finished.set(true);
+                        }
                         return deletedCount;
                       })
-                  .exceptionally(
+                  .exceptionallyCompose(
                       ex -> {
                         if (isRetryableError(ex)
-                            && retryCount.incrementAndGet() < MAX_RETRY_COUNT) {
-                          logger.debug(
+                            && retryCount.incrementAndGet()
+                                <= config.getArchiveByIdMaxRetryAttempts()) {
+                          metrics.recordArchiverBatchRetry();
+                          adjustBatchSize(ex);
+
+                          logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "
-                                  + "retrying the batch. Error: {}",
+                                  + "retrying the batch (attempt {}/{}). Next batch size {}. Error: {}",
                               sourceIdx,
                               destinationIdx,
+                              retryCount.get(),
+                              config.getArchiveByIdMaxRetryAttempts(),
+                              batchSize.get(),
                               ex.getMessage());
-                          return 0L;
+
+                          // Whilst this is crude, we exploit the fact the ES/OS visibility is
+                          // around 2 second, and incrementing delay (default=1000ms) should give a
+                          // fighting chance to complete in the next attempt. If not will fail and
+                          // the next retry should take this over the full 2-second refresh interval
+                          final int retryDelayMs =
+                              config.getArchiveByIdRetryDelayMs() * retryCount.get();
+                          return CompletableFuture.supplyAsync(
+                              () -> 0L,
+                              CompletableFuture.delayedExecutor(
+                                  retryDelayMs, TimeUnit.MILLISECONDS, executor));
                         }
+                        // reset retry count so the next batch starts with fresh retries
+                        retryCount.set(0);
                         // re-throw unexpected exceptions
                         throw ex instanceof final RuntimeException re
                             ? re
@@ -127,53 +173,85 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     return lstResponse == null ? List.of() : lstResponse.searchAfter();
   }
 
+  private void adjustBatchSize(final Throwable ex) {
+    if (batchSize.get() <= MINIMUM_BATCH_SIZE) {
+      return;
+    }
+
+    if (shouldReduceBatchSize(ex)) {
+      batchSize.set(
+          (int) Math.max(MINIMUM_BATCH_SIZE, batchSize.get() * BATCH_SIZE_REDUCTION_FACTOR));
+    }
+  }
+
   private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {
     return reindexer
-        .apply(sourceIdx, destinationIdx, response.ids())
+        .apply(sourceIdx, destinationIdx, response.documents())
         .thenApply(
-            reindexCount -> validateProcessedCount("reindex", reindexCount, response.ids().size()));
+            reindexCount ->
+                validateProcessedCount("reindex", reindexCount, response.documents().size()));
   }
 
   private CompletableFuture<Long> delete(final ArchiveDocIdsBatch<SortFieldType> response) {
     return deleter
-        .apply(sourceIdx, response.ids())
+        .apply(sourceIdx, response.documents())
         .thenApply(
-            deleteCount -> validateProcessedCount("delete", deleteCount, response.ids().size()));
+            deleteCount ->
+                validateProcessedCount("delete", deleteCount, response.documents().size()));
   }
 
   private long validateProcessedCount(
       final String operation, final long processedCount, final int expectedCount) {
-    if (processedCount != expectedCount) {
+    if (processedCount < expectedCount) {
       throw new BatchCountMismatchException(
           operation,
           String.format(
               "The '%s' operation for a batch when archiving %s processed %d docs, however was "
                   + "expecting %d docs",
               operation, sourceIdx, processedCount, expectedCount));
+    } else if (processedCount > expectedCount) {
+      logger.warn(
+          "The '{}' operation for a batch when archiving {} processed {} docs, however was expecting {} docs",
+          operation,
+          sourceIdx,
+          processedCount,
+          expectedCount);
     }
     return processedCount;
   }
 
-  private boolean isRetryableError(final Throwable thr) {
-    if (thr != null && thr.getCause() != null) {
-      return thr.getCause() instanceof SocketTimeoutException
-          || thr.getCause() instanceof ElasticsearchException
-          || thr.getCause() instanceof OpenSearchException;
-    }
-    return false;
+  private boolean shouldReduceBatchSize(final Throwable thr) {
+    return matchesThrowableOrCause(thr, SocketTimeoutException.class);
   }
 
-  public record ArchiveDocIdsBatch<T>(List<String> ids, List<T> searchAfter) {
+  private boolean isRetryableError(final Throwable thr) {
+    return RETRYABLE_EXCEPTIONS.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
+  }
+
+  private boolean matchesThrowableOrCause(
+      final Throwable thr, final Class<? extends Throwable> throwableClass) {
+    return thr != null
+        && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
+  }
+
+  public record ArchiveDocIdsBatch<T>(List<IdWithRouting> documents, List<T> searchAfter) {
     static <T> ArchiveDocIdsBatch<T> empty() {
       return new ArchiveDocIdsBatch<>(List.of(), List.of());
     }
 
-    static <T> ArchiveDocIdsBatch<T> from(final List<String> ids, final List<T> searchAfter) {
-      return new ArchiveDocIdsBatch<>(ids, searchAfter);
+    static <T> ArchiveDocIdsBatch<T> from(
+        final List<IdWithRouting> documents, final List<T> searchAfter) {
+      return new ArchiveDocIdsBatch<>(documents, searchAfter);
     }
 
     public boolean isEmpty() {
-      return ids.isEmpty();
+      return documents.isEmpty();
+    }
+  }
+
+  public record IdWithRouting(String id, String routing, Long seqNo, Long primaryTerm) {
+    public static IdWithRouting of(final String id) {
+      return new IdWithRouting(id, null, null, null);
     }
   }
 

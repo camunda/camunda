@@ -7,8 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.validation;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.zeebe.gateway.rest.RestTest;
+import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -16,6 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,28 +38,41 @@ class ResponseValidationSpringMvcIntegrationTest {
   @RestController
   static class TestResponseValidationController {
 
+    @SuppressWarnings("NullAway")
+    private static LicenseResponse licenseResponseViaReflection(
+        final Boolean validLicense,
+        final String licenseType,
+        final Boolean isCommercial,
+        final String expiresAt) {
+      try {
+        final var ctor =
+            LicenseResponse.class.getDeclaredConstructor(
+                Boolean.class, String.class, Boolean.class, String.class);
+        ctor.setAccessible(true);
+        return ctor.newInstance(validLicense, licenseType, isCommercial, expiresAt);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     @GetMapping("/v2/test/response-validation/valid")
     public LicenseResponse validResponse() {
-      return new LicenseResponse()
+      return LicenseResponse.Builder.create()
           .validLicense(true)
           .licenseType("saas")
           .isCommercial(true)
-          .expiresAt("2025-12-31T23:59:59Z");
+          .expiresAt("2025-12-31T23:59:59Z")
+          .build();
     }
 
     @GetMapping("/v2/test/response-validation/invalid")
     public LicenseResponse invalidResponse() {
-      // Missing licenseType (violates @NotNull)
-      return new LicenseResponse()
-          .validLicense(true)
-          .isCommercial(true)
-          .expiresAt("2025-12-31T23:59:59Z");
+      return licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
     }
 
     @GetMapping("/v2/test/response-validation/all-null")
     public LicenseResponse allNullResponse() {
-      // All required fields null
-      return new LicenseResponse();
+      return licenseResponseViaReflection(null, null, null, null);
     }
 
     @GetMapping("/v2/test/response-validation/null-body")
@@ -71,6 +90,13 @@ class ResponseValidationSpringMvcIntegrationTest {
   @Import(ResponseValidationAdvice.class)
   @TestPropertySource(properties = "camunda.rest.response-validation.enabled=true")
   class ResponseValidationEnabled extends RestTest {
+
+    @MockitoBean private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
+    @BeforeEach
+    void mockSecondaryStorageInterceptor() {
+      when(secondaryStorageInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+    }
 
     @Test
     void shouldReturn500WhenResponseViolatesContract() {
@@ -155,6 +181,13 @@ class ResponseValidationSpringMvcIntegrationTest {
   @Nested
   @WebMvcTest(value = TestResponseValidationController.class)
   class ResponseValidationDisabled extends RestTest {
+
+    @MockitoBean private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
+    @BeforeEach
+    void mockSecondaryStorageInterceptor() {
+      when(secondaryStorageInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+    }
 
     @Test
     void shouldReturn200EvenWhenResponseViolatesContract() {

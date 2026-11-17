@@ -24,12 +24,15 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.LeadershipTransferCoordinatorCheck;
+import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.RaftThreadContextFactory;
+import io.atomix.raft.RebalanceConfiguration;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
@@ -38,6 +41,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AppendResponse;
@@ -45,6 +49,7 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
@@ -54,6 +59,7 @@ import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
@@ -71,6 +77,7 @@ import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -131,6 +138,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
+  private final RebalanceMetrics rebalanceMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
@@ -148,6 +156,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
+  private LeadershipTransferWriteBarrier leadershipTransferWriteBarrier =
+      LeadershipTransferWriteBarrier.NONE;
+  private LeadershipTransferCoordinatorCheck leadershipTransferCoordinatorCheck =
+      LeadershipTransferCoordinatorCheck.NONE;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -163,7 +175,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final MeterRegistry meterRegistry;
 
   // after firstCommitIndex is set it will be null
@@ -171,7 +183,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public RaftContext(
       final String name,
-      final int partitionId,
+      final PartitionId partitionId,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
@@ -191,6 +203,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
+    rebalanceMetrics = new RebalanceMetrics(name, meterRegistry);
 
     this.electionConfig = electionConfig;
     if (electionConfig.isPriorityElectionEnabled()) {
@@ -232,7 +245,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         .getLatestSnapshot()
         .ifPresent(persistedSnapshot -> currentSnapshot = persistedSnapshot);
     StateUtil.verifySnapshotLogConsistent(
-        partitionId,
+        partitionId.number(),
         getCurrentSnapshotIndex(),
         raftLog.getFirstIndex(),
         raftLog.isEmpty(),
@@ -289,18 +302,20 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   private ThreadContext createThreadContext(
       final String name,
-      final int partitionId,
+      final PartitionId partitionId,
       final RaftThreadContextFactory threadContextFactory,
       final String localMemberId) {
     final var context =
         threadContextFactory.createContext(
-            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId), LOGGER),
+            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId.number()), LOGGER),
             this::onUncaughtException);
     // in order to set the partition id once in the raft thread
     context.execute(
         () -> {
-          MDC.put("partitionId", String.valueOf(partitionId));
-          MDC.put("actor-name", name + "-" + partitionId);
+          MDC.put("partitionId", String.valueOf(partitionId.number()));
+          // matches Actor.ACTOR_PROP_PHYSICAL_TENANT
+          MDC.put("physicalTenant", partitionId.group());
+          MDC.put("actor-name", name + "-" + partitionId.number());
           MDC.put("actor-scheduler", "Broker-" + localMemberId);
           MDC.put(RAFT_ROLE_KEY, Role.INACTIVE.name());
         });
@@ -366,6 +381,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         request ->
             handleRequestOnContext(
                 request, () -> role.onTransfer(request), TransferResponse::builder));
+    protocol.registerTimeoutNowHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onTimeoutNow(request), TimeoutNowResponse::builder));
+    protocol.registerLeadershipTransferInitiateHandler(
+        request ->
+            handleRequestOnContext(
+                request,
+                () -> role.onLeadershipTransferInitiate(request),
+                LeadershipTransferInitiateResponse::builder));
     protocol.registerAppendV1Handler(
         request ->
             handleRequestOnContext(
@@ -573,7 +598,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       raftLog.setCommitIndex(commitIndex);
       this.commitIndex = commitIndex;
-      meta.storeCommitIndex(commitIndex);
       final var clusterConfig = cluster.getConfiguration();
       if (clusterConfig != null) {
         final long configurationIndex = clusterConfig.index();
@@ -581,6 +605,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           cluster.commitCurrentConfiguration();
         }
       }
+      // Persist the commit index only after the configuration it covers is persisted. This keeps
+      // the invariant that a committed configuration entry at or below the stored commit index is
+      // always recoverable from the meta store, so startup only needs to search the uncommitted
+      // part of the log for configuration entries. The reverse order would allow a crash to leave
+      // a stored commit index covering a configuration that is in neither the meta store nor,
+      // after restart, in memory.
+      meta.storeCommitIndex(commitIndex);
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
     }
@@ -869,6 +900,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
 
+    // Stop the current role before closing the log. A running role may have queued tasks on the
+    // thread context that append to the log, for example a leader coming out of joint consensus.
+    // Such tasks bail out once the role is no longer running, but if they run against a closed
+    // journal, they write into unmapped memory and crash the JVM.
+    try {
+      role.stop().get();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.error("Interrupted while stopping role {} on close", role.role(), e);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to stop role {} on close", role.role(), e);
+    }
+
     // Close the log.
     try {
       raftLog.close();
@@ -897,6 +941,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterJoinHandler();
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
+    protocol.unregisterTimeoutNowHandler();
+    protocol.unregisterLeadershipTransferInitiateHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();
@@ -923,6 +969,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public Duration getElectionTimeout() {
     return partitionConfig.getElectionTimeout();
+  }
+
+  /**
+   * Returns the configuration change timeout.
+   *
+   * @return The configuration change timeout.
+   */
+  public Duration getConfigurationChangeTimeout() {
+    return partitionConfig.getConfigurationChangeTimeout();
+  }
+
+  /**
+   * Returns the join catch-up timeout.
+   *
+   * @return The join catch-up timeout.
+   */
+  public Duration getJoinCatchUpTimeout() {
+    return partitionConfig.getJoinCatchUpTimeout();
   }
 
   /**
@@ -997,6 +1061,48 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setEntryValidator(final EntryValidator validator) {
     entryValidator = validator;
+  }
+
+  /**
+   * The broker-supplied barrier the leader uses to freeze/unfreeze the partition's writes during a
+   * coordinated leadership transfer. Defaults to {@link LeadershipTransferWriteBarrier#NONE} when
+   * no broker is attached. Must be read on the Raft thread.
+   */
+  public LeadershipTransferWriteBarrier getLeadershipTransferWriteBarrier() {
+    return leadershipTransferWriteBarrier;
+  }
+
+  /**
+   * Registers the barrier the broker attaches on its own thread. Applied on the Raft thread, so the
+   * registration only takes effect once the Raft thread picks it up.
+   */
+  public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
+    threadContext.execute(() -> leadershipTransferWriteBarrier = barrier);
+  }
+
+  /**
+   * The broker-supplied check deciding whether the node requesting a transfer is the cluster's
+   * rebalancing coordinator. Defaults to {@link LeadershipTransferCoordinatorCheck#NONE} when no
+   * broker is attached. Must be read on the Raft thread.
+   */
+  public LeadershipTransferCoordinatorCheck getLeadershipTransferCoordinatorCheck() {
+    return leadershipTransferCoordinatorCheck;
+  }
+
+  /**
+   * Registers the check the broker attaches on its own thread. Applied on the Raft thread, so the
+   * registration only takes effect once the Raft thread picks it up; the returned future completes
+   * once it has, so callers that must not proceed until the check is live can await it.
+   */
+  public CompletableFuture<Void> setLeadershipTransferCoordinatorCheck(
+      final LeadershipTransferCoordinatorCheck check) {
+    final var applied = new CompletableFuture<Void>();
+    threadContext.execute(
+        () -> {
+          leadershipTransferCoordinatorCheck = check;
+          applied.complete(null);
+        });
+    return applied;
   }
 
   /**
@@ -1109,6 +1215,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public RaftRoleMetrics getRaftRoleMetrics() {
     return raftRoleMetrics;
+  }
+
+  public RebalanceMetrics getRebalanceMetrics() {
+    return rebalanceMetrics;
   }
 
   /**
@@ -1279,12 +1389,28 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionConfig.getMinStepDownFailureCount();
   }
 
+  /**
+   * The settings bounding a coordinated leadership transfer as configured on this member. A
+   * coordinator may override them per transfer, so a transfer in flight uses whatever it resolved
+   * on acceptance rather than reading these again.
+   */
+  public RebalanceConfiguration getRebalanceConfiguration() {
+    return new RebalanceConfiguration(
+        partitionConfig.getRebalanceReplicationLagThreshold(),
+        partitionConfig.getRebalanceReplicationTimeout(),
+        partitionConfig.getRebalanceMaxTransferAttempts());
+  }
+
   public Duration getMaxQuorumResponseTimeout() {
     return partitionConfig.getMaxQuorumResponseTimeout();
   }
 
   public int getPreferSnapshotReplicationThreshold() {
     return partitionConfig.getPreferSnapshotReplicationThreshold();
+  }
+
+  public long getPromotionLagThreshold() {
+    return partitionConfig.getPromotionLagThreshold();
   }
 
   public void setPreferSnapshotReplicationThreshold(final int snapshotReplicationThreshold) {
@@ -1307,7 +1433,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public int getPartitionId() {
-    return partitionId;
+    return partitionId.number();
   }
 
   public void updateState(final State newState) {

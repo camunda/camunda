@@ -19,6 +19,7 @@ type QueryOptions<T> = {
   enabled?: boolean;
   select?: (result: QueryProcessDefinitionsResponseBody['items']) => T;
   staleTime?: number;
+  refetchInterval?: number;
 };
 
 function useProcessDefinitionsSearch<
@@ -29,6 +30,7 @@ function useProcessDefinitionsSearch<
     enabled: options?.enabled,
     select: options?.select,
     staleTime: options?.staleTime,
+    refetchInterval: options?.refetchInterval,
     queryFn: async () => {
       const {error, response} = await searchProcessDefinitions(
         options?.payload,
@@ -37,7 +39,10 @@ function useProcessDefinitionsSearch<
         throw error;
       }
 
-      if (response.page.totalItems <= response.items.length) {
+      if (
+        response.page.totalItems <= response.items.length ||
+        response.page.endCursor === null
+      ) {
         return response.items;
       }
 
@@ -45,8 +50,8 @@ function useProcessDefinitionsSearch<
         await searchProcessDefinitions({
           ...options?.payload,
           page: {
-            from: response.items.length,
-            limit: response.page.totalItems,
+            after: response.page.endCursor,
+            limit: response.page.totalItems - response.items.length,
           },
         });
       if (remainingError) {

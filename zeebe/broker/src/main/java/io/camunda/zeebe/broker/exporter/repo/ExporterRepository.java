@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.exporter.repo;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -24,13 +26,16 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ExporterRepository {
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-  private static final int NULL_PARTITION_ID = Integer.MIN_VALUE;
+  private static final PartitionId NULL_PARTITION_ID =
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 0);
   private final ExternalJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;
+  private @Nullable String licenseKey;
 
   public ExporterRepository() {
     this(new ArrayList<>());
@@ -46,6 +51,14 @@ public final class ExporterRepository {
         exporters.stream()
             .collect(Collectors.toMap(ExporterDescriptor::getId, Function.identity()));
     this.jarRepository = jarRepository;
+  }
+
+  public @Nullable String getLicenseKey() {
+    return licenseKey;
+  }
+
+  public void setLicenseKey(final @Nullable String licenseKey) {
+    this.licenseKey = licenseKey;
   }
 
   public Map<String, ExporterDescriptor> getExporters() {
@@ -103,6 +116,8 @@ public final class ExporterRepository {
               LOG,
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
+              "",
+              licenseKey,
               new SimpleMeterRegistry(),
               InstantSource.system())) {
 

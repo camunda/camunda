@@ -1,0 +1,37 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "agentType": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "elementId": {
+        "type": "keyword"
+      },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processDefinitionVersion": {
+        "type": "integer"
+      },
+      "processDefinitionVersionTag": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      }
+    }
+  }
+}

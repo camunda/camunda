@@ -54,7 +54,12 @@ public class CurrentThreadConcurrencyControl implements ConcurrencyControl {
   }
 
   @Override
-  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+  public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
     throw new UnsupportedOperationException("schedule is not supported");
+  }
+
+  @Override
+  public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
+    throw new UnsupportedOperationException("runAtFixedRate is not supported");
   }
 }

@@ -13,17 +13,26 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
+import io.camunda.zeebe.util.Either;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.verification.VerificationWithTimeout;
@@ -75,6 +84,83 @@ class StreamProcessorErrorHandlingTest {
     verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.COMMAND_REJECTION);
     verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.ERROR);
     verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  void shouldMarkRejectionErrorRecordAsNotOrdinalControlled() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenThrow(new RuntimeException());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.userCommand()
+            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    logStreamReader.next(); // command
+
+    await("should write rejection to log")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var record = logStreamReader.next();
+    final var recordMetadata = new RecordMetadata();
+    record.readMetadata(recordMetadata);
+    assertThat(recordMetadata.getIntent()).isEqualTo(ErrorIntent.CREATED);
+
+    final var errorRecord = new ErrorRecord();
+    record.readValue(errorRecord);
+    assertThat(errorRecord.getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  void shouldNotMarkUserCommandAsProcessedWhenRejectionWriteFails() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenThrow(new RuntimeException());
+
+    final var logStorage = new ListLogStorage();
+    final var logContext = streamPlatform.createLogContext(logStorage, 1);
+    // command written with working writer
+    final var commandPosition =
+        logContext
+            .setupWriter()
+            .tryWrite(
+                WriteContext.internal(),
+                List.of(
+                    RecordToWrite.userCommand()
+                        .processInstance(
+                            ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1))))
+            .get();
+    final var rejectionWriteAttempts = new AtomicInteger();
+    // log stream written with failing writer
+    final LogStreamWriter failingWriter =
+        (context, appendEntries, sourcePosition) -> {
+          rejectionWriteAttempts.incrementAndGet();
+          return Either.left(LogStreamWriter.WriteFailure.WRITE_LIMIT_EXHAUSTED);
+        };
+    final var spyLogStream = spy(logContext.logStream());
+    when(spyLogStream.newLogStreamWriter()).thenReturn(failingWriter);
+    streamPlatform.setLogContext(
+        new StreamPlatform.LogContext(spyLogStream, logContext.meterRegistry()));
+
+    // when
+    streamPlatform.startStreamProcessor();
+
+    // then
+    await("should attempt to write the rejection")
+        .untilAsserted(() -> assertThat(rejectionWriteAttempts.get()).isPositive());
+
+    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition())
+        .isLessThan(commandPosition);
   }
 
   @Test

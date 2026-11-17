@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
@@ -64,7 +64,7 @@ test.describe.serial('users CRUD', () => {
       'Please enter a valid username',
     );
     await expect(identityUsersPage.createUsernameField).toHaveAttribute(
-      'data-invalid',
+      'aria-invalid',
       'true',
     );
   });

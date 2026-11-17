@@ -8,16 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 
-public class GroupEntityAddedHandler implements ExportHandler<GroupMemberEntity, GroupRecordValue> {
+public class GroupEntityAddedHandler
+    implements MainIndexExporterHandler<GroupMemberEntity, GroupRecordValue> {
 
   private final String indexName;
 
@@ -46,7 +49,9 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupMemberEntity,
     final var groupRecord = record.getValue();
     return List.of(
         GroupIndex.JOIN_RELATION_FACTORY.createChildId(
-            groupRecord.getGroupId(), groupRecord.getEntityId(), groupRecord.getEntityType()));
+            groupRecord.getGroupId(),
+            groupRecord.getEntityId(),
+            AuthzModelMapper.fromProtocol(groupRecord.getEntityType())));
   }
 
   @Override
@@ -60,14 +65,15 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupMemberEntity,
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(value.getGroupId());
     entity
         .setMemberId(value.getEntityId())
-        .setMemberType(value.getEntityType())
+        .setMemberType(AuthzModelMapper.fromProtocol(value.getEntityType()))
         .setJoin(joinRelation);
   }
 
   @Override
-  public void flush(final GroupMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final GroupMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
+    batchRequest.addWithRouting(index, entity, String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

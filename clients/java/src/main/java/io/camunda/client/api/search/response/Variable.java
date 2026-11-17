@@ -47,4 +47,14 @@ public interface Variable {
 
   /* Check if the variable is truncated */
   Boolean isTruncated();
+
+  /**
+   * Deserializes the variable's JSON value into the given type.
+   *
+   * @param type the class to deserialize the value into
+   * @param <T> the target type
+   * @return the deserialized value
+   * @throws IllegalStateException if the variable value is truncated
+   */
+  <T> T getValueAsType(Class<T> type);
 }

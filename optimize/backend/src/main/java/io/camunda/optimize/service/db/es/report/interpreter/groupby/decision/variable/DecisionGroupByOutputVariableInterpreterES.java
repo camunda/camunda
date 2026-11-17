@@ -111,11 +111,11 @@ public class DecisionGroupByOutputVariableInterpreterES
     return Set.of(DECISION_GROUP_BY_OUTPUT_VARIABLE);
   }
 
-  public VariableAggregationServiceES getVariableAggregationService() {
+  protected VariableAggregationServiceES getVariableAggregationService() {
     return this.variableAggregationService;
   }
 
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return this.definitionService;
   }
 

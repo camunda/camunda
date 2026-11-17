@@ -27,7 +27,7 @@ import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -83,7 +83,7 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
   }
 
   private List<String> toIndices(final F filter) {
-    return List.of(getFilterTransformer(filter).getIndex().getAlias());
+    return ((IndexFilterTransformer<F>) getFilterTransformer(filter)).toIndices(filter);
   }
 
   protected List<SearchAggregator> toAggregations(final AggregationBase aggregation) {

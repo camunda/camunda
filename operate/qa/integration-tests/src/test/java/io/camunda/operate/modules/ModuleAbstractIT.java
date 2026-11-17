@@ -21,7 +21,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     },
     properties = {
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      "spring.profiles.active=test,consolidated-auth"
+      "spring.profiles.active=test,consolidated-auth,operate"
     })
 public abstract class ModuleAbstractIT {
 

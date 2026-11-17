@@ -1,8 +1,0 @@
-{
-  "description": "Add field version ",
-  "@type": "processorStep",
-  "indexName": "task",
-  "version": "8.2.2",
-  "order": 0,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.followUpDate = null;\"}}"
-}

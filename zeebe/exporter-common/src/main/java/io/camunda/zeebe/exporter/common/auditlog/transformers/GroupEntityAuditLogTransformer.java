@@ -19,6 +19,11 @@ public class GroupEntityAuditLogTransformer implements AuditLogTransformer<Group
   }
 
   @Override
+  public Class<GroupRecordValue> getRecordValueType() {
+    return GroupRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<GroupRecordValue> record, final AuditLogEntry log) {
     final GroupRecordValue value = record.getValue();
     log.setEntityKey(value.getGroupId())

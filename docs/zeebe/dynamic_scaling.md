@@ -80,7 +80,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 ### Scaling steps
 
-1. A client sends a [ClusterConfigurationManagementRequest](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/api/ClusterConfigurationManagementApi.java) as a HTTP PATCH request at `/actuator/cluster/` on the management port.
+1. A client sends a [ClusterConfigurationManagementRequest](../../zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/impl/api/ClusterConfigurationManagementApi.java) as a HTTP PATCH request at `/actuator/cluster/` on the management port.
 
    If new brokers need to be added, it can be done in the same command, by specifying the ids of the brokers to add:
    - with brokers:
@@ -118,7 +118,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 The new partitions will be distributed using `RoundRobinPartitionDistributor`, so that they are evenly spread across all brokers.
 
-2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
+2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/impl/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
    For a pure scaling operation, the generated `ClusterChangeOperation` will be:
 
    - `StartPartitionScaleUp` to the coordinator broker, which will send a command to partition 1
@@ -206,6 +206,49 @@ When the first partition asks for a *snapshot for bootstrap*, on partition 1 the
 - The snapshot used for bootstrap contains already the changes to `RoutingState` so that the new partitions are already in `RoutingState.desiredPartitions`
 - Global state (process definitions, decisions, forms) marked with `ColumnFamilyScope.GLOBAL` is automatically included in new partitions
 - Partition-specific state (process instances, jobs, message subscriptions) remains on original partitions until the relocation phase is implemented
+
+### Dumping the raw configuration
+
+Every other `/actuator/cluster` endpoint maps `CurrentClusterConfiguration` onto the published API
+types before answering. When a response looks wrong, that mapping is as likely a suspect as the
+configuration itself, so `/actuator/cluster/dump` skips it and serializes the in-memory model
+directly:
+
+```bash
+curl -s 'http://localhost:9600/actuator/cluster/dump' | jq
+```
+
+The document is the model: record components and nothing else, so derived helpers like
+`clusterSize()` or `isUninitialized()` do not appear. Records that share the same components —
+`PartitionJoinOperation` and `PartitionLeaveOperation`, for instance — carry an `@type` naming which
+one they are. Neither of those is configured per type: `ClusterConfigurationJsonSerializer` tells
+Jackson that a sealed type carries its type name and that a record's properties are its components,
+and both rules then hold for whatever the model grows. Identifiers are the one thing named
+individually: `MemberId` and `OperationId` render as scalars, in map keys and values alike, so the
+same identifier does not read one way as a key and another as a value.
+
+The JSON round-trips. `ClusterConfigurationJsonSerializer.fromJson` reads a dump back into the
+model, and a property test over generated configurations asserts that what comes back equals what
+went out. That is what the format is held to: a value rendered as an empty object, a dropped
+component, an identifier flattened to the wrong shape, or a variant that cannot be told apart from
+its siblings all fail there rather than in front of whoever is reading a dump during an incident.
+
+Setting `Accept: application/x-protobuf` returns the same configuration in the binary encoding
+brokers gossip and persist, which is the form to attach to a ticket:
+
+```bash
+curl -sOJ -H 'Accept: application/x-protobuf' 'http://localhost:9600/actuator/cluster/dump'
+protoc --decode topology_protocol.CurrentClusterConfiguration \
+  proto/topology.proto < cluster-config.pb
+```
+
+`proto/topology.proto` ships on the classpath, so it is available wherever the distribution is
+unpacked. Any other `Accept` value is refused with a 406.
+
+The JSON shape is the internal model and changes whenever the model does. That is why the endpoint
+is deliberately absent from `zeebe/dynamic-config/openapi/src/main/resources/api/cluster-api.yaml` — it is a
+debugging aid, not a contract. Note also that the configuration is always fetched from the
+coordinator, so querying different nodes returns the same content.
 
 ## Current Limitations
 

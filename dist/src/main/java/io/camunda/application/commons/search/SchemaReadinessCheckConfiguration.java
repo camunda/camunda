@@ -8,9 +8,9 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
-import io.camunda.search.schema.SchemaManagerContainer;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,14 +19,15 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnAnyHttpGatewayEnabled
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
+  SecondaryStorageType.opensearch,
+  SecondaryStorageType.rdbms
 })
 public class SchemaReadinessCheckConfiguration {
 
   @Bean
   @Qualifier(SchemaReadinessCheck.SCHEMA_READINESS_CHECK)
   public SchemaReadinessCheck schemaReadinessCheck(
-      final SchemaManagerContainer schemaManagerContainer) {
-    return new SchemaReadinessCheck(schemaManagerContainer);
+      final SecondaryStorageReadiness secondaryStorageReadiness) {
+    return new SchemaReadinessCheck(secondaryStorageReadiness);
   }
 }

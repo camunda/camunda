@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+export {AgenticControlPlane} from './AgenticControlPlane';
 export {Analysis} from './Analysis';
 export {Header} from './Header';
 export {PrivateRoute} from './PrivateRoute';

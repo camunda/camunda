@@ -28,6 +28,7 @@ test.describe('variables and incidents', () => {
       mockProcessesResponses({
         processDefinitions: [
           {
+            state: 'ACTIVE',
             processDefinitionId: 'order-process',
             version: 1,
             name: 'order-process',
@@ -56,6 +57,7 @@ test.describe('variables and incidents', () => {
               processDefinitionVersion: 2,
               startDate: '2023-09-29T07:16:22.701+0000',
               endDate: null,
+              suspendedDate: null,
               state: 'ACTIVE',
               processDefinitionId: 'order-process',
               tenantId: '<default>',
@@ -63,6 +65,7 @@ test.describe('variables and incidents', () => {
               processDefinitionVersionTag: null,
               rootProcessInstanceKey: null,
               tags: [],
+              businessId: null,
               parentProcessInstanceKey: null,
               parentElementInstanceKey: null,
             },
@@ -155,9 +158,7 @@ test.describe('variables and incidents', () => {
 
     await editVariableButton.click();
 
-    await processInstancePage.variablesEditor
-      .getEditor('orderValue')
-      .click();
+    await processInstancePage.variablesEditor.getEditor('orderValue').click();
     await processInstancePage.variablesEditor.waitForEditorToLoad();
 
     await processInstancePage.variablesEditor.clear();

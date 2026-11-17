@@ -30,6 +30,7 @@ import io.camunda.optimize.rest.security.oauth.ScopeValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
@@ -46,6 +47,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -60,6 +62,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenValidator;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
@@ -79,17 +82,28 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 
+// Active only when an operator explicitly opts back into the legacy stack
+// (optimize.security.csl.enabled=false); CSL is the default since 8.10 (camunda/camunda#58483).
+// The flag and this legacy stack are removed together at 8.11 (camunda/camunda#58484).
+// https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @EnableWebSecurity
 @Conditional(CCSaaSCondition.class)
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "false",
+    matchIfMissing = false)
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
+  private static final String ORIGINAL_USER_ID_CLAIM = "https://camunda.com/originalUserId";
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
-  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
+  private static final List<String> ALLOWED_ORG_ROLES =
+      Arrays.asList("admin", "analyst", "owner", "supportagent");
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
+  private final UserIdMigrationService userIdMigrationService;
 
   public CCSaaSSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
@@ -97,7 +111,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
       final SessionService sessionService,
       final AuthCookieService authCookieService,
       final ClientRegistrationRepository clientRegistrationRepository,
-      final OAuth2AuthorizedClientService oAuth2AuthorizedClientService) {
+      final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
+      final UserIdMigrationService userIdMigrationService) {
     super(
         configurationService,
         preAuthenticatedAuthenticationProvider,
@@ -105,6 +120,21 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         authCookieService);
     this.clientRegistrationRepository = clientRegistrationRepository;
     this.oAuth2AuthorizedClientService = oAuth2AuthorizedClientService;
+    this.userIdMigrationService = userIdMigrationService;
+  }
+
+  /**
+   * Keeps Spring Boot from mapping {@link AuthenticationCookieFilter} onto {@code /*}, which it
+   * does for any {@code Filter} bean. The filter belongs only in the OAuth2 chain, where {@link
+   * #configureWebSecurity} adds it.
+   */
+  @Bean
+  public FilterRegistrationBean<AuthenticationCookieFilter> authenticationCookieFilterRegistration(
+      final AuthenticationCookieFilter filter) {
+    final FilterRegistrationBean<AuthenticationCookieFilter> registration =
+        new FilterRegistrationBean<>(filter);
+    registration.setEnabled(false);
+    return registration;
   }
 
   @Bean
@@ -241,19 +271,21 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(clientRegistration -> createIdTokenValidators());
+    decoderFactory.setJwtValidatorFactory(this::createIdTokenValidators);
     return decoderFactory;
   }
 
   /** Creates JWT validators specifically for ID token validation during OAuth2 login */
   @SuppressWarnings("unchecked")
-  private OAuth2TokenValidator<Jwt> createIdTokenValidators() {
-    // Only include role validation for ID tokens
+  OAuth2TokenValidator<Jwt> createIdTokenValidators(final ClientRegistration clientRegistration) {
+    // Restores the issuer/audience checks Spring's OIDC login normally applies (OIDC Core
+    // §3.1.3.7), which this class's custom validator factory would otherwise silently drop.
+    final OAuth2TokenValidator<Jwt> oidcIdTokenValidator =
+        new OidcIdTokenValidator(clientRegistration);
     final OAuth2TokenValidator<Jwt> roleValidator =
         new RoleValidator(ALLOWED_ORG_ROLES, getAuth0Configuration().getOrganizationId());
 
-    // The role validation uses organization claims which are present in ID tokens
-    return JwtValidators.createDefaultWithValidators(roleValidator);
+    return JwtValidators.createDefaultWithValidators(oidcIdTokenValidator, roleValidator);
   }
 
   @SuppressWarnings("unchecked")
@@ -306,6 +338,11 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
       final String sessionToken = sessionService.createAuthToken(userId);
 
       if (hasAccess(user)) {
+        if (user.getIdToken().getClaim(ORIGINAL_USER_ID_CLAIM) instanceof String originalUserId
+            && !originalUserId.equals(userId)) {
+          userIdMigrationService.migrateUserIdIfNeeded(userId, originalUserId);
+        }
+
         // spring security internally stores the access token as an authorized client, we retrieve
         // it here to store it
         // in a cookie to allow potential other Optimize webapps to reuse it and keep the server

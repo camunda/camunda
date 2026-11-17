@@ -18,10 +18,11 @@ import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -35,13 +36,13 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class ProcessDefinitionTools {
 
-  private final ProcessDefinitionServices processDefinitionServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessDefinitionTools(
-      final ProcessDefinitionServices processDefinitionServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.processDefinitionServices = processDefinitionServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -58,9 +59,11 @@ public class ProcessDefinitionTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(
-              processDefinitionServices.search(
-                  processDefinitionQuery.get(),
-                  authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .processDefinitionServices(PhysicalTenantContext.current())
+                  .search(
+                      processDefinitionQuery.get(),
+                      authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -77,8 +80,10 @@ public class ProcessDefinitionTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessDefinition(
-              processDefinitionServices.getByKey(
-                  processDefinitionKey, authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .processDefinitionServices(PhysicalTenantContext.current())
+                  .getByKey(
+                      processDefinitionKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -94,7 +99,8 @@ public class ProcessDefinitionTools {
           final Long processDefinitionKey) {
     try {
       final var xml =
-          processDefinitionServices
+          serviceRegistry
+              .processDefinitionServices(PhysicalTenantContext.current())
               .getProcessDefinitionXml(
                   processDefinitionKey, authenticationProvider.getCamundaAuthentication())
               .orElseThrow(

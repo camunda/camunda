@@ -12,7 +12,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +43,13 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
 
   @Override
   public CamundaClient getCamundaClient(final String username) {
-    return cachedClients.get(username);
+    final var client = cachedClients.get(username);
+    if (client == null) {
+      throw new IllegalStateException(
+          "No Camunda client cached for username '%s' in %s. Ensure a @UserDefinition with this username exists and that the test is configured for basic auth."
+              .formatted(username, getClass().getSimpleName()));
+    }
+    return client;
   }
 
   @Override

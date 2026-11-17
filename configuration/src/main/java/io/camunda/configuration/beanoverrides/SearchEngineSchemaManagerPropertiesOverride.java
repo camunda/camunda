@@ -7,11 +7,18 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
+
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.documentbased.SchemaManagerRetry;
+import io.camunda.search.schema.config.SchemaManagerConfiguration.SchemaManagerRetryConfiguration;
+import java.util.Set;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,6 +35,15 @@ import org.springframework.context.annotation.Primary;
   SecondaryStorageType.opensearch
 })
 public class SearchEngineSchemaManagerPropertiesOverride {
+
+  private static final String HEALTH_CHECK_ENABLED_PROPERTY =
+      "camunda.database.schema-manager.healthCheckEnabled";
+  private static final Set<String> LEGACY_HEALTH_CHECK_ENABLED_PROPERTIES =
+      Set.of(
+          "camunda.operate.elasticsearch.healthCheckEnabled",
+          "camunda.operate.opensearch.healthCheckEnabled",
+          "camunda.tasklist.elasticsearch.healthCheckEnabled",
+          "camunda.tasklist.openSearch.healthCheckEnabled");
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacySearchEngineSchemaManagerProperties legacySearchEngineSchemaManagerProperties;
@@ -46,10 +62,42 @@ public class SearchEngineSchemaManagerPropertiesOverride {
   public SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties() {
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
     BeanUtils.copyProperties(legacySearchEngineSchemaManagerProperties, override);
-
-    override.setVersionCheckRestrictionEnabled(
-        unifiedConfiguration.getCamunda().getSystem().getUpgrade().getEnableVersionCheck());
-
+    applyTo(unifiedConfiguration.getCamunda(), override);
     return override;
+  }
+
+  public static void applyTo(
+      final Camunda camunda, final SearchEngineSchemaManagerProperties override) {
+    override.setVersionCheckRestrictionEnabled(
+        camunda.getSystem().getUpgrade().getEnableVersionCheck());
+
+    camunda
+        .getData()
+        .getSecondaryStorage()
+        .elasticsearchOrOpensearch()
+        .ifPresent(
+            secondaryStorage -> {
+              override.setPerformCleanup(secondaryStorage.isPerformCleanup());
+              override.setCreateSchema(secondaryStorage.isCreateSchema());
+              override.setHealthCheckEnabled(secondaryStorage.isHealthCheckEnabled());
+              override.setRetry(toRetryConfiguration(secondaryStorage.getRetry()));
+            });
+
+    override.setHealthCheckEnabled(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            HEALTH_CHECK_ENABLED_PROPERTY,
+            override.isHealthCheckEnabled(),
+            Boolean.class,
+            SUPPORTED,
+            LEGACY_HEALTH_CHECK_ENABLED_PROPERTIES));
+  }
+
+  private static SchemaManagerRetryConfiguration toRetryConfiguration(
+      final SchemaManagerRetry retry) {
+    final var converted = new SchemaManagerRetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return converted;
   }
 }

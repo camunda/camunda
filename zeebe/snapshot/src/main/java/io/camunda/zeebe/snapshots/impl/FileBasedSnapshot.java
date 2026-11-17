@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final ImmutableChecksumsSFV checksums;
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
+  private final long metadataSizeBytes;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
@@ -51,6 +53,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final ImmutableChecksumsSFV checksums,
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
+      final long metadataSizeBytes,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
       final ConcurrencyControl actor) {
     this.directory = directory;
@@ -58,6 +61,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.checksums = checksums;
     this.snapshotId = snapshotId;
     this.metadata = metadata;
+    this.metadataSizeBytes = metadataSizeBytes;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
   }
@@ -130,14 +134,18 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
+  public long getTotalSizeInBytes() {
+    return metadata.totalSizeBytes() + metadataSizeBytes;
+  }
+
+  @Override
   public ActorFuture<SnapshotReservation> reserve() {
     final CompletableActorFuture<SnapshotReservation> snapshotLocked =
         new CompletableActorFuture<>();
     actor.run(
         () -> {
-          if (!deleted) {
-            final FileBasedSnapshotReservation reservation = new FileBasedSnapshotReservation(this);
-            reservations.add(reservation);
+          final var reservation = reserveOnActor();
+          if (reservation != null) {
             snapshotLocked.complete(reservation);
           } else {
             snapshotLocked.completeExceptionally(
@@ -147,6 +155,25 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
           }
         });
     return snapshotLocked;
+  }
+
+  /**
+   * Reserves this snapshot immediately; must be called on the snapshot store's actor.
+   *
+   * @return the reservation, or null if the snapshot is deleted
+   */
+  @Nullable FileBasedSnapshotReservation reserveOnActor() {
+    if (deleted) {
+      return null;
+    }
+    final var reservation = new FileBasedSnapshotReservation(this);
+    reservations.add(reservation);
+    return reservation;
+  }
+
+  /** Releases the reservation immediately; must be called on the snapshot store's actor. */
+  void removeReservationOnActor(final FileBasedSnapshotReservation reservation) {
+    reservations.remove(reservation);
   }
 
   @Override
@@ -220,7 +247,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {
     return actor.call(
         () -> {
-          reservations.remove(reservation);
+          removeReservationOnActor(reservation);
           return null;
         });
   }

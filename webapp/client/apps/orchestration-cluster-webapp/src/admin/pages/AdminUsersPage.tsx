@@ -1,0 +1,197 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useCallback, useMemo, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Pencil, Trash2} from '@camunda/design-system/icons';
+import {
+	Button,
+	DataTable,
+	Label,
+	PageHeader,
+	PageLayout,
+	SearchInput,
+	type DataTableColumn,
+	type DataTableRowAction,
+	type SortingConfig,
+} from '@camunda/design-system';
+import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
+import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
+import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
+import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
+import {CreateUserModal} from '#/admin/modules/users/CreateUserModal';
+import {EditUserModal} from '#/admin/modules/users/EditUserModal';
+import {DeleteUserModal} from '#/admin/modules/users/DeleteUserModal';
+import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type UsersSearch} from '#/admin/modules/users/searchSchema';
+import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
+import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
+
+type SortingState = NonNullable<SortingConfig['sortState']>;
+
+type ModalState = {type: 'create'} | {type: 'edit'; user: User} | {type: 'delete'; user: User} | null;
+
+type AdminUsersPageProps = {
+	users: User[];
+	totalItems: number;
+	search: UsersSearch;
+	onSearchChange: (next: Partial<UsersSearch>) => void;
+};
+
+const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, search, onSearchChange}) => {
+	const detailPath = useAdminDetailPath();
+	const {t} = useTranslation();
+	const appliedSearchTerm = search.search ?? '';
+	const [searchDraft, setSearchDraft] = useDebouncedUrlFilter(appliedSearchTerm, (search) =>
+		onSearchChange({search, page: undefined}),
+	);
+	const [modalState, setModalState] = useState<ModalState>(null);
+
+	const closeModal = useCallback(() => setModalState(null), []);
+
+	const columns = useMemo<DataTableColumn<User>[]>(
+		() => [
+			{accessorKey: 'username', header: t('admin.users.username')},
+			{accessorKey: 'name', header: t('admin.users.name')},
+			{accessorKey: 'email', header: t('admin.users.email')},
+		],
+		[t],
+	);
+
+	const rowActions = useMemo<DataTableRowAction<User>[]>(
+		() => [
+			{
+				id: 'edit',
+				label: t('admin.users.editUser'),
+				icon: <Pencil aria-hidden />,
+				iconOnly: true,
+				onClick: (user) => setModalState({type: 'edit', user}),
+			},
+			{
+				id: 'delete',
+				label: t('admin.users.deleteUser'),
+				icon: <Trash2 aria-hidden />,
+				iconOnly: true,
+				variant: 'destructive',
+				onClick: (user) => setModalState({type: 'delete', user}),
+			},
+		],
+		[t],
+	);
+
+	const sortState = useMemo<SortingState>(
+		() => [{id: search.sortField ?? 'username', desc: search.sortOrder === 'DESC'}],
+		[search.sortField, search.sortOrder],
+	);
+
+	const handleSortingChange = useCallback(
+		(state: SortingState) => {
+			const [sorted] = state;
+
+			onSearchChange({
+				sortField: sorted?.id as UsersSearch['sortField'],
+				sortOrder: sorted === undefined ? undefined : sorted.desc ? 'DESC' : 'ASC',
+				page: undefined,
+			});
+		},
+		[onSearchChange],
+	);
+
+	const handlePaginationChange = useCallback(
+		({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => {
+			const nextPageSize = pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as UsersSearch['pageSize']);
+			const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
+
+			onSearchChange({
+				pageSize: nextPageSize,
+				page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
+			});
+		},
+		[onSearchChange, search.pageSize],
+	);
+
+	const title = t('admin.headerNavItemUsers');
+	const isEmpty = totalItems === 0 && appliedSearchTerm === '';
+
+	return (
+		<PageLayout id="main-content" tabIndex={-1}>
+			<div className="flex flex-col gap-6">
+				<div className="flex flex-col gap-1">
+					<PageHeader title={title} />
+					<p className="text-sm leading-5 text-muted-foreground">
+						{t('admin.users.guideBody')}
+						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
+							<a href={GUIDE_URLS.users} target="_blank" rel="noopener noreferrer">
+								{t('admin.users.guideLinkLabel')}
+							</a>
+						</Button>
+					</p>
+				</div>
+
+				{isEmpty ? (
+					<CreateEmptyState
+						resource={t('admin.users.resourceSingular')}
+						resources={t('admin.users.resourcePlural')}
+						guideUrl={GUIDE_URLS.users}
+						onCreate={() => setModalState({type: 'create'})}
+					/>
+				) : (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+							<div className="sm:flex-1">
+								<Label htmlFor="users-search" className="sr-only">
+									{t('admin.users.searchByUsername')}
+								</Label>
+								<SearchInput
+									id="users-search"
+									className="w-full sm:max-w-sm sm:min-w-48"
+									placeholder={t('admin.users.searchByUsername')}
+									value={searchDraft}
+									onChange={(event) => setSearchDraft(event.target.value)}
+									onClear={() => setSearchDraft('')}
+								/>
+							</div>
+							<Button type="button" onClick={() => setModalState({type: 'create'})}>
+								{t('admin.users.createUser')}
+							</Button>
+						</div>
+						<DataTable
+							aria-label={title}
+							className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+							columns={columns}
+							data={users}
+							getRowId={(user) => user.username}
+							rowHref={(user) => detailPath.user(user.username)}
+							linkComponent={RouterRowLink}
+							rowActions={rowActions}
+							sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
+							pagination={{
+								manual: true,
+								pageSizes: [...PAGE_SIZES],
+								defaultPageSize: DEFAULT_PAGE_SIZE,
+								pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+								pageIndex: (search.page ?? 1) - 1,
+								rowCount: totalItems,
+								onPaginationChange: handlePaginationChange,
+							}}
+							emptyState={t('admin.users.noUsersFound')}
+						/>
+					</div>
+				)}
+			</div>
+
+			{modalState?.type === 'create' && <CreateUserModal isOpen onClose={closeModal} />}
+			{modalState?.type === 'edit' && <EditUserModal isOpen user={modalState.user} onClose={closeModal} />}
+			{modalState?.type === 'delete' && (
+				<DeleteUserModal isOpen username={modalState.user.username} onClose={closeModal} />
+			)}
+		</PageLayout>
+	);
+};
+
+export {AdminUsersPage};
+export type {AdminUsersPageProps};

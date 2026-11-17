@@ -25,6 +25,7 @@ import co.elastic.clients.elasticsearch.snapshot.SnapshotShardFailure;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotSort;
 import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.BackupException.DuplicateBackupIdException;
 import io.camunda.webapps.backup.BackupException.InvalidRequestException;
 import io.camunda.webapps.backup.BackupException.MissingRepositoryException;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
@@ -56,6 +57,8 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
+  public static final String SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE =
+      "snapshot_name_already_in_use_exception";
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   private final ElasticsearchClient esClient;
@@ -108,7 +111,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   public void validateRepositoryExists(final String repositoryName) {
     try {
       final var repository = esClient.snapshot().getRepository(r -> r.name(repositoryName));
-      if (repository.result().isEmpty()) {
+      if (repository.repositories().isEmpty()) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
         throw new MissingRepositoryException(reason);
@@ -149,7 +152,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                 "A backup with ID [%s] already exists. Found snapshots: [%s]",
                 backupId,
                 response.snapshots().stream().map(SnapshotInfo::snapshot).collect(joining(", ")));
-        throw new InvalidRequestException(reason);
+        throw new DuplicateBackupIdException(reason);
       }
     } catch (final IOException ex) {
       final String reason =
@@ -200,7 +203,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                               // setting this to true to not receive an exception, but only the list
                               // of available indices
                               .ignoreUnavailable(true)));
-      return response.result().keySet();
+      return response.indices().keySet();
     } catch (final IOException e) {
       throw new BackupRepositoryConnectionException("Unable to connect to Elasticsearch", e);
     }
@@ -345,6 +348,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   private boolean isRepositoryMissingException(final Exception e) {
     return isErrorType(e, REPOSITORY_MISSING_EXCEPTION_TYPE);
+  }
+
+  private boolean isSnapshotNameAlreadyInUseException(final Exception e) {
+    return isErrorType(e, SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE);
   }
 
   // Check: see inner
@@ -559,18 +566,32 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         // This is thrown even if the backup is still running
         final int snapshotTimeout = backupProps.snapshotTimeout();
         LOGGER.warn(
-            "Socket timeout while creating snapshot [{}] for backup id [{}]. Start waiting with polling timeout, {}",
+            "The Elasticsearch HTTP connection timed out while waiting for snapshot [{}] "
+                + "(backup id [{}]) to complete. The snapshot is likely still running in "
+                + "Elasticsearch. Polling will continue {}. "
+                + "If socket timeouts occur repeatedly, consider increasing the socket timeout via "
+                + "CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT "
+                + "and consider doubling or tripling the current value.",
             snapshotRequest.snapshotName(),
             backupId,
-            (snapshotTimeout == 0)
-                ? "until completion."
-                : "at most " + snapshotTimeout + " seconds.");
+            snapshotTimeout == 0
+                ? "until completion"
+                : "for at most " + snapshotTimeout + " seconds");
         if (isSnapshotFinishedWithinTimeout(
             snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
           onSuccess.run();
         } else {
           onFailure.run();
         }
+      } else if (isSnapshotNameAlreadyInUseException(ex)) {
+        LOGGER.warn(
+            "Snapshot [{}] for backup id [{}] already exists in Elasticsearch. "
+                + "A previous backup attempt with the same ID may still be in the process of being deleted. "
+                + "To retry with the same backup ID, wait for the deletion to complete first. "
+                + "To proceed immediately, use a different backup ID.",
+            snapshotRequest.snapshotName(),
+            backupId);
+        onFailure.run();
       } else {
         LOGGER.error(
             "Exception while creating snapshot [{}] for backup id [{}].",

@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -42,17 +43,18 @@ public class TenantAwareTimerStartEventTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               config ->
                   config
                       .getInitialization()
                       .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(USERNAME))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(USERNAME)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private long processDefinitionKey;
 

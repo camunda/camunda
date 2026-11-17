@@ -57,6 +57,7 @@ import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.AddBlockResponse;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
@@ -66,10 +67,14 @@ import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.GetIndicesSettingsResponse;
 import co.elastic.clients.elasticsearch.indices.GetMappingRequest.Builder;
 import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.IndexState;
+import co.elastic.clients.elasticsearch.indices.IndicesBlockOptions;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.PutTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.RolloverRequest;
 import co.elastic.clients.elasticsearch.indices.RolloverResponse;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
@@ -86,6 +91,10 @@ import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.DefaultTransportOptions;
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Response;
+import co.elastic.clients.transport.rest5_client.low_level.ResponseException;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -121,13 +130,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseException;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -145,14 +150,14 @@ import org.springframework.context.ApplicationContext;
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
-  private RestClient restClient;
+  private Rest5Client restClient;
   private final ObjectMapper objectMapper;
   private ElasticsearchClient esClient;
   private ElasticsearchAsyncClient elasticsearchAsyncClient;
   private TransportOptionsProvider transportOptionsProvider;
 
   public OptimizeElasticsearchClient(
-      final RestClient restClient,
+      final Rest5Client restClient,
       final ObjectMapper objectMapper,
       final ElasticsearchClient esClient,
       final OptimizeIndexNameService indexNameService) {
@@ -160,7 +165,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   public OptimizeElasticsearchClient(
-      final RestClient restClient,
+      final Rest5Client restClient,
       final ObjectMapper objectMapper,
       final ElasticsearchClient esClient,
       final OptimizeIndexNameService indexNameService,
@@ -346,7 +351,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public final boolean exists(final GetIndexRequest getRequest) throws IOException {
     try {
-      return !esWithTransportOptions().indices().get(getRequest).result().isEmpty();
+      return !esWithTransportOptions().indices().get(getRequest).indices().isEmpty();
     } catch (final ElasticsearchException e) {
       if (e.getMessage().contains("index_not_found_exception")) {
         return false;
@@ -427,7 +432,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   @Override
   public Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) {
     try {
-      return getAlias(indexNamePattern).result().entrySet().stream()
+      return getAlias(indexNamePattern).aliases().entrySet().stream()
           .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().aliases().keySet()));
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -440,7 +445,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       return esWithTransportOptions()
           .indices()
           .getAlias((b) -> b.name(aliasName))
-          .result()
+          .aliases()
           .keySet();
     } catch (final ElasticsearchException e) {
       if (e.response().status() == 404) {
@@ -525,7 +530,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                 GetIndexRequest.of(r -> r.index("*"))
                                     .index()
                                     .toArray(new String[] {}))))))
-        .result()
+        .indices()
         .keySet()
         .stream()
         .toList();
@@ -569,7 +574,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                           .collect(
                                               Collectors.toMap(
                                                   Entry::getKey, e -> JsonData.of(e.getValue()))))
-                                  .source(script.scriptString())
+                                  .source(src -> src.scriptString(script.scriptString()))
                                   .lang(ScriptLanguage.Painless))
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
           Object.class);
@@ -588,6 +593,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       final String bulkRequestName,
       final List<ImportRequestDto> importRequestDtos,
       final Boolean retryFailedRequestsOnNestedDocLimit) {
+    if (importRequestDtos.isEmpty()) {
+      return;
+    }
     final BulkRequest bulkRequest =
         BulkRequest.of(
             b -> {
@@ -694,6 +702,70 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     deleteIndexByRawIndexNames("_all");
   }
 
+  @Override
+  public void addWriteBlock(final String rawIndexName) {
+    final AddBlockResponse response;
+    try {
+      response =
+          esWithTransportOptions()
+              .indices()
+              .addBlock(b -> b.index(rawIndexName).block(IndicesBlockOptions.Write));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not add write block to index " + rawIndexName, e);
+    }
+    if (!response.acknowledged() || !response.shardsAcknowledged()) {
+      throw new OptimizeRuntimeException(
+          "The write block on index " + rawIndexName + " was not acknowledged by all shards");
+    }
+  }
+
+  @Override
+  public boolean hasWriteBlock(final String rawIndexName) {
+    try {
+      final IndexState index =
+          esWithTransportOptions()
+              .indices()
+              .getSettings(g -> g.index(rawIndexName).name("index.blocks.write"))
+              .get(rawIndexName);
+      return index != null && isWriteBlocked(index.settings());
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not read the settings of index " + rawIndexName, e);
+    }
+  }
+
+  @Override
+  public void refreshOrFail(final String rawIndexName) {
+    final RefreshResponse response;
+    try {
+      response = esWithTransportOptions().indices().refresh(r -> r.index(rawIndexName));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not refresh index " + rawIndexName, e);
+    }
+    if (response.shards().failed().intValue() > 0) {
+      throw new OptimizeRuntimeException("Not all shards of index " + rawIndexName + " refreshed");
+    }
+  }
+
+  private static boolean isWriteBlocked(final IndexSettings settings) {
+    if (settings == null) {
+      return false;
+    }
+    final IndexSettings indexSettings = settings.index() != null ? settings.index() : settings;
+    return indexSettings.blocks() != null && Boolean.TRUE.equals(indexSettings.blocks().write());
+  }
+
+  @Override
+  public void removeWriteBlock(final String rawIndexName) {
+    try {
+      esWithTransportOptions()
+          .indices()
+          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Could not remove write block from index " + rawIndexName, e);
+    }
+  }
+
   public long count(final String[] indexNames, final BoolQuery.Builder query) throws IOException {
     return Objects.requireNonNull(
             count(
@@ -757,7 +829,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     try {
       final Request request = new Request(HttpPost.METHOD_NAME, path);
       final HttpEntity entity =
-          new NStringEntity(extractQuery(searchRequest), ContentType.APPLICATION_JSON);
+          new StringEntity(extractQuery(searchRequest), ContentType.APPLICATION_JSON);
       request.setEntity(entity);
       final Response response = restClient.performRequest(request);
       final Map map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
@@ -835,7 +907,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                               createDefaultScriptWithPrimitiveParams(
                                                   requestDto.getScriptData().scriptString(),
                                                   requestDto.getScriptData().params())))
-                              .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+                              .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                              .requireAlias(requestDto.isRequireAlias())));
       default -> throw new IllegalStateException("Unexpected value: " + requestDto.getType());
     }
   }
@@ -845,7 +918,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return Script.of(
         b ->
             b.lang(ScriptLanguage.Painless)
-                .source(inlineUpdateScript)
+                .source(src -> src.scriptString(inlineUpdateScript))
                 .params(
                     params.entrySet().stream()
                         .collect(Collectors.toMap(Entry::getKey, e -> JsonData.of(e.getValue())))));
@@ -874,12 +947,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                   failedOperationIds.size(),
                   itemName,
                   getHintForErrorMsg(bulkResponse),
-                  bulkResponse.items().stream()
-                      .filter(i -> Objects.nonNull(i.error()))
-                      .map(
-                          i ->
-                              i.operationType() + " " + i.error().type() + " " + i.error().reason())
-                      .collect(Collectors.joining(" , "))));
+                  describeFailedItems(bulkResponse)));
         }
       } catch (final IOException e) {
         final String reason =
@@ -901,6 +969,13 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           + "See Optimize documentation for details.";
     }
     return "";
+  }
+
+  static String describeFailedItems(final BulkResponse bulkResponse) {
+    return bulkResponse.items().stream()
+        .filter(i -> Objects.nonNull(i.error()))
+        .map(i -> i.operationType() + " " + i.error().type() + " " + i.error().reason())
+        .collect(Collectors.joining(" , "));
   }
 
   private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
@@ -927,6 +1002,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         }
         if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
           final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
+          recordNestedLimitSkippedDocuments(itemName, failedOperationIds.size());
           LOG.warn(
               "There were failures while performing bulk on {} due to the nested document limit being reached."
                   + " Removing {} failed items and retrying",
@@ -952,7 +1028,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           }
         } else {
           throw new OptimizeRuntimeException(
-              String.format("There were failures while performing bulk on %s", itemName));
+              String.format(
+                  "There were failures while performing bulk on %s. Message: %s",
+                  itemName, describeFailedItems(bulkResponse)));
         }
       } catch (final IOException e) {
         final String reason =
@@ -1014,21 +1092,30 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
+    // Close both the transport and restClient before creating new ones. Attempt both closes even
+    // if one fails to avoid leaking file descriptors in the error path.
     try {
       esWithTransportOptions()._transport().close();
-      final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
-      esClient =
-          ElasticsearchClientBuilder.build(
-              configurationService, objectMapper, new PluginRepository());
-      restClient =
-          ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
-      indexNameService = context.getBean(OptimizeIndexNameService.class);
-      transportOptionsProvider = new TransportOptionsProvider(configurationService);
-      elasticsearchAsyncClient =
-          new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
     } catch (final IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      try {
+        restClient.close();
+      } catch (final IOException e) {
+        LOG.warn("Failed to close old RestClient during configuration reload", e);
+      }
     }
+
+    final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    esClient =
+        ElasticsearchClientBuilder.build(
+            configurationService, objectMapper, new PluginRepository());
+    restClient =
+        ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
+    indexNameService = context.getBean(OptimizeIndexNameService.class);
+    transportOptionsProvider = new TransportOptionsProvider(configurationService);
+    elasticsearchAsyncClient =
+        new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
   }
 
   public final <T> SearchResponse<T> searchWithoutPrefixing(

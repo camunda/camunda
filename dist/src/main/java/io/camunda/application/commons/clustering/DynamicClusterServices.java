@@ -17,8 +17,13 @@ import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
+import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.GatewayClusterConfigurationServiceImpl;
+import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
+import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +60,8 @@ public class DynamicClusterServices {
         gossiperConfig.getSyncDelay(),
         gossiperConfig.getSyncRequestTimeout(),
         gossiperConfig.getGossipFanout(),
-        gossiperConfig.getSyncInitializerDelay());
+        gossiperConfig.getSyncInitializerDelay(),
+        gossiperConfig.getBootstrapTimeout());
   }
 
   @Bean
@@ -63,7 +69,7 @@ public class DynamicClusterServices {
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
       final ClusterConfigurationGossiperConfig configManagerCfg) {
     final var service =
-        new GatewayClusterConfigurationService(
+        new GatewayClusterConfigurationServiceImpl(
             clusterCommunicationService, clusterMembershipService, configManagerCfg, meterRegistry);
     scheduler.submitActor(service).join();
     return service;
@@ -76,6 +82,9 @@ public class DynamicClusterServices {
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
+    // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
+    // event fires between the actor's initial snapshot and listener registration.
+    brokerTopologyManager.initializeTopologyFromMembership();
     return brokerTopologyManager;
   }
 
@@ -87,16 +96,43 @@ public class DynamicClusterServices {
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
+    // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
+    // event fires between the actor's initial snapshot and listener registration.
+    brokerTopologyManager.initializeTopologyFromMembership();
     gatewayClusterConfigurationService.addUpdateListener(brokerTopologyManager);
     return brokerTopologyManager;
   }
 
   @Bean
+  public ProtoBufSerializer clusterConfigurationSerializer() {
+    return new ProtoBufSerializer();
+  }
+
+  @Bean
   public ClusterConfigurationManagementRequestSender clusterManagementRequestSender(
-      final BrokerTopologyManager brokerTopologyManager) {
+      final BrokerTopologyManager brokerTopologyManager,
+      final ProtoBufSerializer clusterConfigurationSerializer) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
-        ClusterConfigurationCoordinatorSupplier.of(brokerTopologyManager::getClusterConfiguration),
-        new ProtoBufSerializer());
+        ClusterConfigurationCoordinatorSupplier.from(
+            brokerTopologyManager::getClusterConfiguration),
+        clusterConfigurationSerializer,
+        clusterMembershipService.getLocalMember().id());
+  }
+
+  @Bean
+  public ExportingStateController exportingStateController(
+      final ClusterConfigurationManagementRequestSender clusterManagementRequestSender) {
+    return new DynamicConfigExportingStateController(clusterManagementRequestSender);
+  }
+
+  @Bean
+  public RebalanceRequestSender rebalanceRequestSender(
+      final BrokerTopologyManager brokerTopologyManager) {
+    return new RebalanceRequestSender(
+        clusterCommunicationService,
+        ClusterConfigurationCoordinatorSupplier.from(
+            brokerTopologyManager::getClusterConfiguration),
+        new ProtoBufRebalanceSerializer());
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.GLOBAL_TASK_LISTENER_READ_AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 
@@ -16,8 +16,8 @@ import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -33,12 +33,14 @@ public final class GlobalListenerServices
   private final GlobalListenerSearchClient globalListenerSearchClient;
 
   public GlobalListenerServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GlobalListenerSearchClient globalListenerSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -59,7 +61,8 @@ public final class GlobalListenerServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
+                        withRequiredAuthorization(
+                            GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
                 .getGlobalListener(
                     request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
   }

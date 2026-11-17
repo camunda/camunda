@@ -83,7 +83,7 @@ final class StandaloneBackupManagerIT {
 
       // WHEN
       // Start the backup process with a specific backup ID
-      backupManager.withBackupId(BACKUP_ID).start();
+      backupManager.withBackupId(BACKUP_ID).withSkipSchemaCheck(true).start();
 
       // Wait for snapshots to be completed
       final List<String> snapshots = waitForSnapshotsToBeCompleted(strategy, SNAPSHOT_NAME_PREFIX);

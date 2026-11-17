@@ -14,18 +14,22 @@ import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.util.StringUtils;
 
+@NullMarked
 public class WebappsConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -33,6 +37,7 @@ public class WebappsConfigurationInitializer
   private static final Set<String> WEBAPPS_PROFILES =
       Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
+  private static final String OPERATE_TASKLIST_URL_PROPERTY = "camunda.operate.tasklist-url";
   private static final String AUTHORIZATIONS_ENABLED_PROPERTY =
       "camunda.security.authorizations.enabled";
   private static final String MULTITENANCY_CHECKSENABLED_PROPERTY =
@@ -53,7 +58,8 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
       propertyMap.put("camunda.webapps.login-delegated", isLoginDelegated(context));
-      propertyMap.put("server.servlet.session.cookie.name", WebSecurityConfig.SESSION_COOKIE);
+      propertyMap.put(
+          "server.servlet.session.cookie.name", CamundaSecurityFilterChainConstants.SESSION_COOKIE);
     }
 
     // locations and home page
@@ -84,19 +90,20 @@ public class WebappsConfigurationInitializer
 
     if (activeProfiles.contains(TASKLIST.getId())) {
       if (WebappsHelper.isTasklistUiEnabled(environment)) {
-        locations.add(DEFAULT_RESOURCES_LOCATION + "tasklist/");
+        locations.add(DEFAULT_RESOURCES_LOCATION + "webapp/");
         if (defaultWebapp == null) {
           defaultWebapp = TASKLIST.getId();
         }
-      }
 
-      if (activeProfiles.contains(STANDALONE.getId())) {
-        propertyMap.putAll(
-            Map.of(
-                AUTHORIZATIONS_ENABLED_PROPERTY,
-                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
-                MULTITENANCY_CHECKSENABLED_PROPERTY,
-                "${camunda.tasklist.multiTenancy.enabled:false}"));
+        // Operate links to Tasklist only when both UIs are served by this application; as a
+        // default property source, an explicit camunda.operate.tasklist-url still takes precedence.
+        // Spring Boot treats a context path of "/" as root, so a plain join would give //tasklist
+        if (activeProfiles.contains(OPERATE.getId())
+            && WebappsHelper.isOperateUiEnabled(environment)) {
+          propertyMap.put(
+              OPERATE_TASKLIST_URL_PROPERTY,
+              operateTasklistUrl(environment.getProperty("server.servlet.context-path")));
+        }
       }
     }
 
@@ -120,10 +127,16 @@ public class WebappsConfigurationInitializer
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
   }
 
+  private static String operateTasklistUrl(@Nullable final String contextPath) {
+    if (contextPath == null) {
+      return "/tasklist";
+    }
+    return StringUtils.trimTrailingCharacter(contextPath.strip(), '/') + "/tasklist";
+  }
+
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
     final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
-    return authenticationMethod.isPresent()
-        && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
+    return AuthenticationMethod.OIDC.equals(authenticationMethod);
   }
 }

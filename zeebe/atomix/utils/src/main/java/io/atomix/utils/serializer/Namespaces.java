@@ -16,12 +16,10 @@
  */
 package io.atomix.utils.serializer;
 
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multisets;
 import com.google.common.collect.Sets;
 import io.atomix.utils.Version;
@@ -33,8 +31,10 @@ import io.atomix.utils.serializer.serializers.ByteBufferSerializer;
 import io.atomix.utils.serializer.serializers.ImmutableListSerializer;
 import io.atomix.utils.serializer.serializers.ImmutableMapSerializer;
 import io.atomix.utils.serializer.serializers.ImmutableSetSerializer;
+import io.atomix.utils.serializer.serializers.SimpleImmutableEntrySerializer;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,7 +91,7 @@ public final class Namespaces {
           .register(HashMultiset.class)
           .register(Multisets.immutableEntry("", 0).getClass())
           .register(Sets.class)
-          .register(new JavaSerializer(), Maps.immutableEntry("a", "b").getClass())
+          .register(new SimpleImmutableEntrySerializer(), SimpleImmutableEntry.class)
           .register(new ArraysAsListSerializer(), Arrays.asList().getClass())
           .register(Collections.singletonList(1).getClass())
           .register(Duration.class)

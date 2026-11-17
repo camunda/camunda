@@ -48,6 +48,11 @@ public final class BrokerCorrelateMessageRequest
     return this;
   }
 
+  public BrokerCorrelateMessageRequest setBusinessId(final String businessId) {
+    requestDto.setBusinessId(businessId != null ? businessId : "");
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

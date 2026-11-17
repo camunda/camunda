@@ -16,10 +16,14 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {VersionTag} from './styled';
+import {VersionTag, DrainingTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useDrainingProcessDefinitions} from 'modules/queries/processDefinitions/useDrainingProcessDefinitions';
+import {DRAINING_MESSAGES} from 'modules/utils/draining';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {getWaitStateLabel} from 'modules/utils/waitStates';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
@@ -33,6 +37,7 @@ const headerColumns = [
   'Process Instance Key',
   'Version',
   'Version Tag',
+  'Business ID',
   'Tenant',
   'Start Date',
   'End Date',
@@ -70,6 +75,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     processInstanceKey,
     processDefinitionVersion,
     processDefinitionVersionTag,
+    businessId,
     tenantId,
     startDate,
     endDate,
@@ -77,13 +83,17 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     hasIncident,
     processDefinitionId,
   } = processInstance;
-  const showReducedContent = useMatchMedia(isWidthBelowBreakpoint('lg'));
+  const showReducedContent = useMatchMedia(isWidthBelowBreakpoint('xlg'));
 
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data: draining} = useDrainingProcessDefinitions();
+  const isDraining =
+    processDefinitionKey !== undefined &&
+    !!draining?.byKey.has(processDefinitionKey);
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
@@ -93,6 +103,9 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
       enabled: hasIncident,
     },
   );
+  const {data: waitStateStatistics} = useWaitStateStatistics({
+    enabled: getClientConfig().waitStatesEnabled,
+  });
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -104,19 +117,29 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
-  const processInstanceState = hasIncident ? 'INCIDENT' : state;
-
+  const hasBusinessId = !isNil(businessId);
+  const processInstanceState =
+    state === 'SUSPENDED' ? 'SUSPENDED' : hasIncident ? 'INCIDENT' : state;
+  const processLevelWaitingCount =
+    waitStateStatistics?.find(
+      ({elementId}) => elementId === processDefinitionId,
+    )?.waitingCount ?? 0;
+  const waitStateLabel = getWaitStateLabel(processLevelWaitingCount);
   return (
     <InstanceHeader
       state={processInstanceState}
       instanceName={getProcessDefinitionName(processInstance)}
       incidentsCount={hasIncident ? incidentsCount : 0}
+      nameSubtitle={waitStateLabel ?? undefined}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;
         }
         if (name === 'Version Tag') {
           return hasVersionTag;
+        }
+        if (name === 'Business ID') {
+          return hasBusinessId;
         }
         if (name === 'End Date') {
           return endDate !== null && !showReducedContent;
@@ -136,6 +159,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                 processDefinitionVersion: processDefinitionVersion?.toString(),
                 processDefinitionId,
                 active: true,
+                suspended: true,
                 incidents: true,
                 ...(isMultiTenancyEnabled
                   ? {
@@ -166,6 +190,11 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
           ),
         },
         {
+          hidden: !hasBusinessId,
+          title: businessId ?? undefined,
+          content: businessId,
+        },
+        {
           hidden: !isMultiTenancyEnabled,
           title: tenantName,
           content: tenantName,
@@ -194,6 +223,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   to={Locations.processes({
                     parentProcessInstanceKey: processInstanceKey,
                     active: true,
+                    suspended: true,
                     incidents: true,
                     canceled: true,
                     completed: true,
@@ -218,10 +248,18 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         },
       ]}
       additionalContent={
-        <ProcessInstanceOperations
-          isCollapsed={showReducedContent}
-          processInstance={processInstance}
-        />
+        <>
+          {isDraining && (
+            <DrainingTag
+              description={DRAINING_MESSAGES.version}
+              align="bottom-right"
+            />
+          )}
+          <ProcessInstanceOperations
+            isCollapsed={showReducedContent}
+            processInstance={processInstance}
+          />
+        </>
       }
     />
   );

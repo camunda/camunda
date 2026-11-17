@@ -43,8 +43,7 @@ type Props = {
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
   selectedElementOverlay?:
-    | React.ReactElement<SelectedElementOverlayProps>
-    | false;
+    React.ReactElement<SelectedElementOverlayProps> | false;
   highlightedSequenceFlows?: string[];
   highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
@@ -227,7 +226,12 @@ const Diagram: React.FC<Props> = observer(
         ref={diagramRef}
         $isFullscreen={isFullscreen}
       >
-        <DiagramCanvas ref={diagramCanvasRef} data-testid="diagram-canvas" />
+        <DiagramCanvas
+          ref={diagramCanvasRef}
+          data-testid="diagram-canvas"
+          role="region"
+          aria-label="Diagram"
+        />
         {isDiagramRendered && (
           <>
             <DiagramControls

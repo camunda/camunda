@@ -11,7 +11,7 @@ import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAgg
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 

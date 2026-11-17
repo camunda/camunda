@@ -80,6 +80,11 @@ public interface ActivatedJob {
   int getRetries();
 
   /**
+   * @return the priority of the job; higher values indicate higher priority
+   */
+  int getPriority();
+
+  /**
    * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
    *     * is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the
    *     job is handed to another worker and the work is performed twice.
@@ -136,6 +141,12 @@ public interface ActivatedJob {
   String getTenantId();
 
   /**
+   * @return the identifier of the physical tenant that the job-activation request was routed to;
+   *     the default physical tenant when the request did not specify one
+   */
+  String getPhysicalTenantId();
+
+  /**
    * @return de-serialized document references if the provided variable name is present among the
    *     available variables and can be parsed as document reference
    * @throws ClientException if the variable is missing or if the variable cannot be parsed * as
@@ -160,4 +171,23 @@ public interface ActivatedJob {
    *     pre-8.9 data)
    */
   Long getRootProcessInstanceKey();
+
+  /**
+   * The business ID of the owning process instance, inherited when the job was created.
+   *
+   * <p><b>Note:</b> This field is only available when using the REST API. When using the gRPC API,
+   * this method returns {@code null}.
+   *
+   * @return the business ID, or {@code null} if not available (gRPC API, jobs created before
+   *     version 8.10, or when the owning process instance has no business ID)
+   */
+  String getBusinessId();
+
+  /**
+   * The lease token identifying this activation. Pass it along to commands (e.g. complete, fail,
+   * throw-error, update-timeout) to fence them against superseded activations of the same job.
+   *
+   * @return the lease token, or {@code null} if the job was activated without a lease
+   */
+  String getJobLeaseToken();
 }

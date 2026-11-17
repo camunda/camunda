@@ -17,6 +17,7 @@ package io.camunda.client.spring.annotation.processor;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -35,12 +36,53 @@ public abstract class AbstractCamundaAnnotationProcessor
 
   protected abstract void configureFor(final BeanInfo beanInfo);
 
-  protected abstract void start(CamundaClient client);
+  /**
+   * Discards any configuration discovered by previous {@link #configureFor(BeanInfo)} calls, so a
+   * re-scan starts from an empty set. {@link #onStart(CamundaClient, String)} runs once per client
+   * in multi-client mode and re-scans each time; without clearing, subclasses that accumulate
+   * discovered values in a collection would register every type again for each subsequent client.
+   * Subclasses that keep such a collection override this to clear it; defaults to a no-op.
+   */
+  protected void clearDiscovered() {}
 
-  protected abstract void stop(CamundaClient client);
+  /**
+   * Starts the processor for a client. Subclasses override this (or the {@link
+   * #start(CamundaClient, String)} overload). Defaults to a no-op.
+   */
+  protected void start(final CamundaClient client) {}
+
+  /**
+   * Stops the processor for a client. Subclasses override this (or the {@link #stop(CamundaClient,
+   * String)} overload). Defaults to a no-op.
+   */
+  protected void stop(final CamundaClient client) {}
+
+  /**
+   * Starts the processor for a client, carrying its configured name in multi-client mode. Defaults
+   * to the single-client {@link #start(CamundaClient)} for backwards compatibility.
+   */
+  protected void start(final CamundaClient client, final String clientName) {
+    start(client);
+  }
+
+  /**
+   * Stops the processor for a client, carrying its configured name in multi-client mode. Defaults
+   * to the single-client {@link #stop(CamundaClient)} for backwards compatibility.
+   */
+  protected void stop(final CamundaClient client, final String clientName) {
+    stop(client);
+  }
 
   @Override
   public void onStart(final CamundaClient client) {
+    onStart(client, CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME);
+  }
+
+  @Override
+  public void onStart(final CamundaClient client, final String clientName) {
+    // re-scanning happens once per client, so drop anything discovered for a previous client to
+    // avoid registering the same types again (see clearDiscovered)
+    clearDiscovered();
     for (final String beanName : applicationContext.getBeanDefinitionNames()) {
       final Class<?> beanType = applicationContext.getType(beanName, false);
       if (beanType != null) {
@@ -56,11 +98,16 @@ public abstract class AbstractCamundaAnnotationProcessor
         }
       }
     }
-    start(client);
+    start(client, clientName);
   }
 
   @Override
   public void onStop(final CamundaClient client) {
-    stop(client);
+    onStop(client, CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME);
+  }
+
+  @Override
+  public void onStop(final CamundaClient client, final String clientName) {
+    stop(client, clientName);
   }
 }

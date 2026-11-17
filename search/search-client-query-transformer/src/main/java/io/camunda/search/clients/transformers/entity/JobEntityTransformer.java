@@ -26,6 +26,7 @@ public class JobEntityTransformer
         .kind(toJobKind(value.getJobKind()))
         .listenerEventType(toListenerEventType(value.getListenerEventType()))
         .retries(value.getRetries())
+        .priority(value.getPriority())
         .isDenied(value.isDenied())
         .deniedReason(value.getDeniedReason())
         .hasFailedWithRetriesLeft(value.isJobFailedWithRetriesLeft())
@@ -38,6 +39,8 @@ public class JobEntityTransformer
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
         .rootProcessInstanceKey(value.getRootProcessInstanceKey())
+        .businessId(value.getBusinessId())
+        .storageOrdinal(value.getStorageOrdinal())
         .elementId(value.getFlowNodeId())
         .elementInstanceKey(value.getFlowNodeInstanceId())
         .tenantId(value.getTenantId())
@@ -56,6 +59,7 @@ public class JobEntityTransformer
       case "BEFORE_ALL" -> ListenerEventType.BEFORE_ALL;
       case "START" -> ListenerEventType.START;
       case "END" -> ListenerEventType.END;
+      case "CANCEL" -> ListenerEventType.CANCEL;
       case "CREATING" -> ListenerEventType.CREATING;
       case "ASSIGNING" -> ListenerEventType.ASSIGNING;
       case "UPDATING" -> ListenerEventType.UPDATING;
@@ -86,7 +90,9 @@ public class JobEntityTransformer
       case "CREATED" -> JobState.CREATED;
       case "COMPLETED" -> JobState.COMPLETED;
       case "FAILED" -> JobState.FAILED;
+      case "PRIORITY_UPDATED" -> JobState.PRIORITY_UPDATED;
       case "RETRIES_UPDATED" -> JobState.RETRIES_UPDATED;
+      case "TIMEOUT_UPDATED" -> JobState.TIMEOUT_UPDATED;
       case "TIMED_OUT" -> JobState.TIMED_OUT;
       case "CANCELED" -> JobState.CANCELED;
       case "ERROR_THROWN" -> JobState.ERROR_THROWN;

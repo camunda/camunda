@@ -15,12 +15,22 @@
  */
 package io.camunda.client.util;
 
+import static io.camunda.client.impl.http.HttpClientFactory.CLUSTER_API_PATH;
 import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 
 public class RestGatewayPaths {
 
   private static final String URL_AUTHORIZATION = REST_API_PATH + "/authorizations/%s";
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
+  private static final String URL_AGENT_DEFINITION = REST_API_PATH + "/agent-definitions/%s";
+  private static final String URL_AGENT_DEFINITIONS_SEARCH =
+      REST_API_PATH + "/agent-definitions/search";
+  private static final String URL_AGENT_INSTANCES = REST_API_PATH + "/agent-instances";
+  private static final String URL_AGENT_INSTANCE = REST_API_PATH + "/agent-instances/%s";
+  private static final String URL_AGENT_HISTORY_SEARCH =
+      REST_API_PATH + "/agent-instances/%s/history/search";
+  private static final String URL_AGENT_INSTANCES_SEARCH =
+      REST_API_PATH + "/agent-instances/search";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
   private static final String URL_BATCH_OPERATIONS_SEARCH =
       REST_API_PATH + "/batch-operations/search";
@@ -38,7 +48,8 @@ public class RestGatewayPaths {
   private static final String URL_CLUSTER_VARIABLES_UPDATE_TENANT =
       URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
   private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
-  private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
+  private static final String URL_CLOCK = REST_API_PATH + "/clock";
+  private static final String URL_CLOCK_ADD = REST_API_PATH + "/clock/add";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
   private static final String URL_CONDITIONAL_EVALUATION =
       REST_API_PATH + "/conditionals/evaluation";
@@ -72,13 +83,23 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/%s/cancellation";
   private static final String URL_PROCESS_INSTANCE_DELETION =
       REST_API_PATH + "/process-instances/%s/deletion";
+  private static final String URL_PROCESS_INSTANCE_SUSPENSION =
+      REST_API_PATH + "/process-instances/%s/suspension";
+  private static final String URL_PROCESS_INSTANCE_RESUMPTION =
+      REST_API_PATH + "/process-instances/%s/resumption";
   private static final String URL_PROCESS_INSTANCE_CALL_HIERARCHY =
       REST_API_PATH + "/process-instances/%s/call-hierarchy";
   private static final String URL_PROCESS_INSTANCE_SEQUENCE_FLOWS =
       REST_API_PATH + "/process-instances/%s/sequence-flows";
+  private static final String URL_PROCESS_INSTANCE_WAIT_STATE_STATISTICS =
+      REST_API_PATH + "/process-instances/%s/statistics/wait-states";
   private static final String URL_PROCESS_INSTANCES = REST_API_PATH + "/process-instances";
   private static final String URL_PROCESS_INSTANCES_CANCELLATION =
       REST_API_PATH + "/process-instances/cancellation";
+  private static final String URL_PROCESS_INSTANCES_SUSPENSION =
+      REST_API_PATH + "/process-instances/suspension";
+  private static final String URL_PROCESS_INSTANCES_RESUMPTION =
+      REST_API_PATH + "/process-instances/resumption";
   private static final String URL_PROCESS_INSTANCES_DELETION =
       REST_API_PATH + "/process-instances/deletion";
   private static final String URL_PROCESS_INSTANCES_INCIDENT_RESOLUTION =
@@ -87,14 +108,18 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/migration";
   private static final String URL_PROCESS_INSTANCES_MODIFICATION =
       REST_API_PATH + "/process-instances/modification";
+  private static final String URL_JOBS_BATCH_UPDATE = REST_API_PATH + "/jobs/batch-update";
   private static final String URL_RESOURCE_DELETION = REST_API_PATH + "/resources/%s/deletion";
   private static final String URL_ROLE = REST_API_PATH + "/roles/%s";
   private static final String URL_ROLES = REST_API_PATH + "/roles";
+  private static final String URL_SECRETS = REST_API_PATH + "/secrets";
+  private static final String URL_SECRETS_RESOLVE = URL_SECRETS + "/resolve";
+  private static final String URL_SECRETS_LIST = URL_SECRETS + "/list";
   private static final String URL_SIGNAL_BROADCAST = REST_API_PATH + "/signals/broadcast";
   private static final String URL_TENANT = REST_API_PATH + "/tenants/%s";
   private static final String URL_TENANTS = REST_API_PATH + "/tenants";
   private static final String URL_TOPOLOGY = REST_API_PATH + "/topology";
-  private static final String URL_STATUS = REST_API_PATH + "/status";
+  private static final String URL_STATUS = CLUSTER_API_PATH + "/status";
   private static final String URL_USAGE_METRICS = REST_API_PATH + "/system/usage-metrics";
   private static final String URL_USER = REST_API_PATH + "/users/%s";
   private static final String URL_USERS = REST_API_PATH + "/users";
@@ -104,6 +129,7 @@ public class RestGatewayPaths {
   private static final String URL_USER_TASK_COMPLETION =
       REST_API_PATH + "/user-tasks/%s/completion";
   private static final String URL_USER_TASK_FORM = REST_API_PATH + "/user-tasks/%s/form";
+  private static final String URL_USER_TASK_LOOKUP = REST_API_PATH + "/user-tasks/%s/lookup";
   private static final String URL_USER_TASK_UNASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
@@ -112,6 +138,10 @@ public class RestGatewayPaths {
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
   private static final String URL_AUDIT_LOG_GET = REST_API_PATH + "/audit-logs/%s";
   private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
+  private static final String URL_ELEMENT_INSTANCE_WAIT_STATE_SEARCH =
+      REST_API_PATH + "/element-instances/wait-states/search";
+  private static final String URL_CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH =
+      REST_API_PATH + "/correlated-message-subscriptions/search";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_STATISTICS =
       REST_API_PATH + "/process-definitions/statistics/process-instances";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
@@ -120,6 +150,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
   private static final String URL_RESOURCE = REST_API_PATH + "/resources/%s";
   private static final String URL_RESOURCE_CONTENT = URL_RESOURCE + "/content";
+  private static final String URL_RESOURCE_CONTENT_BINARY = URL_RESOURCE + "/content/binary";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
       REST_API_PATH + "/incidents/statistics/process-instances-by-error";
   private static final String URL_GLOBAL_JOB_STATISTICS = REST_API_PATH + "/jobs/statistics/global";
@@ -191,10 +222,24 @@ public class RestGatewayPaths {
   }
 
   /**
+   * @return get clock request URL
+   */
+  public static String getClockUrl() {
+    return URL_CLOCK;
+  }
+
+  /**
    * @return pin clock request URL
    */
   public static String getClockPinUrl() {
-    return URL_CLOCK_PIN;
+    return URL_CLOCK;
+  }
+
+  /**
+   * @return add clock request URL
+   */
+  public static String getClockAddUrl() {
+    return URL_CLOCK_ADD;
   }
 
   /**
@@ -220,8 +265,24 @@ public class RestGatewayPaths {
     return String.format(URL_PROCESS_INSTANCE_DELETION, processInstanceKey);
   }
 
+  public static String getSuspendProcessInstanceUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_SUSPENSION, processInstanceKey);
+  }
+
+  public static String getResumeProcessInstanceUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_RESUMPTION, processInstanceKey);
+  }
+
   public static String getBroadcastSignalUrl() {
     return URL_SIGNAL_BROADCAST;
+  }
+
+  public static String getSecretsResolveUrl() {
+    return URL_SECRETS_RESOLVE;
+  }
+
+  public static String getSecretsListUrl() {
+    return URL_SECRETS_LIST;
   }
 
   public static String getEvaluateConditionalUrl() {
@@ -271,6 +332,10 @@ public class RestGatewayPaths {
     return String.format(URL_PROCESS_INSTANCE_CALL_HIERARCHY, processInstanceKey);
   }
 
+  public static String getProcessInstanceWaitStateStatisticsUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_WAIT_STATE_STATISTICS, processInstanceKey);
+  }
+
   public static String getProcessInstancesUrl(final long processInstanceKey) {
     return String.format(URL_PROCESS_INSTANCE, processInstanceKey);
   }
@@ -307,6 +372,14 @@ public class RestGatewayPaths {
     return URL_PROCESS_INSTANCES_CANCELLATION;
   }
 
+  public static String getProcessInstancesSuspendUrl() {
+    return URL_PROCESS_INSTANCES_SUSPENSION;
+  }
+
+  public static String getProcessInstancesResumeUrl() {
+    return URL_PROCESS_INSTANCES_RESUMPTION;
+  }
+
   public static String getProcessInstancesDeletionUrl() {
     return URL_PROCESS_INSTANCES_DELETION;
   }
@@ -325,6 +398,10 @@ public class RestGatewayPaths {
 
   public static String getProcessInstancesModifyUrl() {
     return URL_PROCESS_INSTANCES_MODIFICATION;
+  }
+
+  public static String getJobsBatchUpdateUrl() {
+    return URL_JOBS_BATCH_UPDATE;
   }
 
   public static String getAuthorizationsUrl() {
@@ -387,6 +464,10 @@ public class RestGatewayPaths {
     return String.format(URL_USER_TASK, userTaskKey);
   }
 
+  public static String getUserTaskLookupUrl(final long userTaskKey) {
+    return String.format(URL_USER_TASK_LOOKUP, userTaskKey);
+  }
+
   public static String getElementInstanceUrl(final long elementInstanceKey) {
     return String.format(URL_ELEMENT_INSTANCE, elementInstanceKey);
   }
@@ -433,6 +514,14 @@ public class RestGatewayPaths {
     return String.format(URL_AUDIT_LOG_SEARCH);
   }
 
+  public static String getElementInstanceWaitStateSearchUrl() {
+    return URL_ELEMENT_INSTANCE_WAIT_STATE_SEARCH;
+  }
+
+  public static String getCorrelatedMessageSubscriptionsSearchUrl() {
+    return URL_CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH;
+  }
+
   public static String getUserTaskAuditLogSearchUrl(final long userTaskKey) {
     return String.format(URL_USER_TASK_AUDIT_LOG, userTaskKey);
   }
@@ -461,6 +550,10 @@ public class RestGatewayPaths {
     return String.format(URL_RESOURCE_CONTENT, resourceKey);
   }
 
+  public static String getResourceContentBinaryUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE_CONTENT_BINARY, resourceKey);
+  }
+
   public static String getGlobalJobStatisticsUrl() {
     return URL_GLOBAL_JOB_STATISTICS;
   }
@@ -479,6 +572,30 @@ public class RestGatewayPaths {
 
   public static String getJobErrorStatisticsUrl() {
     return URL_JOB_ERROR_STATISTICS;
+  }
+
+  public static String getAgentDefinitionUrl(final long agentDefinitionKey) {
+    return String.format(URL_AGENT_DEFINITION, agentDefinitionKey);
+  }
+
+  public static String getAgentDefinitionsSearchUrl() {
+    return URL_AGENT_DEFINITIONS_SEARCH;
+  }
+
+  public static String getAgentInstancesUrl() {
+    return URL_AGENT_INSTANCES;
+  }
+
+  public static String getAgentInstanceUrl(final long agentInstanceKey) {
+    return String.format(URL_AGENT_INSTANCE, agentInstanceKey);
+  }
+
+  public static String getAgentHistorySearchUrl(final long agentInstanceKey) {
+    return String.format(URL_AGENT_HISTORY_SEARCH, agentInstanceKey);
+  }
+
+  public static String getAgentInstancesSearchUrl() {
+    return URL_AGENT_INSTANCES_SEARCH;
   }
 
   public static String getResourceDeletionUrl(final long resourceKey) {

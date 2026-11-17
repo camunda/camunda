@@ -79,7 +79,10 @@ export interface ValidationScenario {
   target?: string; // field or parameter
 
   requestBody?: any;
+  /** Values substituted into the path template's `{placeholder}` tokens - buildUrl's 2nd argument */
   params?: Record<string, string>;
+  /** Values appended to the URL as `?key=value` - buildUrl's 3rd argument */
+  query?: Record<string, string>;
   expectedStatus: number; // usually 400
   description: string;
   headersAuth: boolean; // whether to send auth headers

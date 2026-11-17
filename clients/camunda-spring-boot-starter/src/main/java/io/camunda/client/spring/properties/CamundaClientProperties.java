@@ -43,6 +43,9 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientAuthProperties auth = new CamundaClientAuthProperties();
 
+  @NestedConfigurationProperty
+  private CamundaClientMtlsProperties mtls = new CamundaClientMtlsProperties();
+
   /** The number of threads for invocation of job workers. */
   private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
 
@@ -52,6 +55,9 @@ public class CamundaClientProperties {
   /**
    * A custom <code>maxMessageSize</code> sets the maximum inbound message size the client can
    * receive from Camunda. It specifies the <code>maxInboundMessageSize</code> of the gRPC channel.
+   * For document downloads, it is the size of the buffer that holds the content until the
+   * application reads it, not a limit on the document size. The buffer can grow larger if the
+   * application reads more slowly than the network delivers the content.
    */
   private DataSize maxMessageSize = DataSize.ofBytes(DEFAULT_MAX_MESSAGE_SIZE);
 
@@ -99,8 +105,25 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientDeploymentProperties deployment = new CamundaClientDeploymentProperties();
 
+  @NestedConfigurationProperty
+  private CamundaClientClusterVariablesProperties clusterVariables =
+      new CamundaClientClusterVariablesProperties();
+
   /** The tenant ID used for tenant-aware commands when no tenant ID is set. */
   private String tenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+
+  /**
+   * The physical tenant ID sent as the {@code Camunda-Physical-Tenant} gRPC header on every
+   * outgoing call. When {@code null} the header is omitted.
+   */
+  private String physicalTenantId;
+
+  /**
+   * If true, prefixes the REST base path with the physical tenant path when a physical tenant ID is
+   * set. Set to false to use the configured REST address as is, for example behind a reverse proxy
+   * that already routes to the physical tenant.
+   */
+  private boolean prefixPhysicalTenantPath = DEFAULT_PREFIX_PHYSICAL_TENANT_PATH;
 
   /** The request timeout to use when not overridden by a specific command. */
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
@@ -152,6 +175,22 @@ public class CamundaClientProperties {
 
   public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+  }
+
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  public void setPhysicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+  }
+
+  public boolean getPrefixPhysicalTenantPath() {
+    return prefixPhysicalTenantPath;
+  }
+
+  public void setPrefixPhysicalTenantPath(final boolean prefixPhysicalTenantPath) {
+    this.prefixPhysicalTenantPath = prefixPhysicalTenantPath;
   }
 
   public CamundaClientWorkerProperties getWorker() {
@@ -252,6 +291,14 @@ public class CamundaClientProperties {
     this.deployment = deployment;
   }
 
+  public CamundaClientClusterVariablesProperties getClusterVariables() {
+    return clusterVariables;
+  }
+
+  public void setClusterVariables(final CamundaClientClusterVariablesProperties clusterVariables) {
+    this.clusterVariables = clusterVariables;
+  }
+
   public ClientMode getMode() {
     return mode;
   }
@@ -266,6 +313,14 @@ public class CamundaClientProperties {
 
   public void setAuth(final CamundaClientAuthProperties auth) {
     this.auth = auth;
+  }
+
+  public CamundaClientMtlsProperties getMtls() {
+    return mtls;
+  }
+
+  public void setMtls(final CamundaClientMtlsProperties mtls) {
+    this.mtls = mtls;
   }
 
   public boolean getEnabled() {
@@ -333,6 +388,8 @@ public class CamundaClientProperties {
         + restAddress
         + ", deployment="
         + deployment
+        + ", clusterVariables="
+        + clusterVariables
         + ", tenantId='"
         + tenantId
         + '\''

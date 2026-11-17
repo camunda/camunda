@@ -16,15 +16,18 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -61,7 +64,8 @@ public class UserQueryControllerTest extends RestControllerTest {
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   private static final SearchQueryResult<UserEntity> SEARCH_QUERY_RESULT =
       new Builder<UserEntity>()
@@ -75,13 +79,15 @@ public class UserQueryControllerTest extends RestControllerTest {
   @MockitoBean RoleServices roleServices;
   @MockitoBean PasswordEncoder passwordEncoder;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private SecurityConfiguration securityConfiguration;
+  @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.userServices(any())).thenReturn(userServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -188,6 +194,52 @@ public class UserQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices).search(eq(new UserQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchUsersWithOrOperator() {
+    // given
+    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+
+    final var orFilters =
+        List.of(
+            new UserFilter.Builder().nameOperations(Operation.eq("Name A")).build(),
+            new UserFilter.Builder()
+                .nameOperations(Operation.eq("Name B"))
+                .emailOperations(Operation.eq("b@example.com"))
+                .build());
+
+    final var expectedFilter =
+        new UserFilter.Builder().usernameOperations(Operation.eq("user-top"));
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri(USERS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "username": "user-top",
+                "$or": [
+                  { "name": "Name A" },
+                  { "name": "Name B", "email": "b@example.com" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userServices)
+        .search(eq(new UserQuery.Builder().filter(expectedFilter.build()).build()), any());
   }
 
   @Test

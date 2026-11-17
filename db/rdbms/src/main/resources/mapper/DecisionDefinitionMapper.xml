@@ -124,20 +124,28 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionDefinitionEntity">
     <constructor>
-      <idArg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <idArg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"
+        name="decisionDefinitionKey"/>
       <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionDefinitionId"/>
       <arg column="NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="VERSION" javaType="java.lang.Integer"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="name"/>
+      <arg column="VERSION" javaType="java.lang.Integer" name="version"/>
       <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionRequirementsId"/>
+      <arg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"
+        name="decisionRequirementsKey"/>
       <arg column="DECISION_REQUIREMENTS_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="DECISION_REQUIREMENTS_VERSION" javaType="java.lang.Integer"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="decisionRequirementsName"/>
+      <arg column="DECISION_REQUIREMENTS_VERSION" javaType="java.lang.Integer"
+        name="decisionRequirementsVersion"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
     </constructor>
   </resultMap>
 

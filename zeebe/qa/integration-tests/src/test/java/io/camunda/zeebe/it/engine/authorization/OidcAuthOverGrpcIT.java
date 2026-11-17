@@ -17,8 +17,8 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -58,7 +59,7 @@ public class OidcAuthOverGrpcIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
@@ -77,23 +78,20 @@ public class OidcAuthOverGrpcIT {
               "http://" + CONTAINER.getHttpHostAddress())
           .withSecurityConfig(
               c -> {
+                c.getAuthentication()
+                    .getOidc()
+                    .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com/sso-callback");
                 c.getAuthorizations().setEnabled(true);
-
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
-
                 c.getInitialization()
                     .setMappingRules(
                         List.of(
                             new ConfiguredMappingRule(
                                 DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
-                c.getInitialization()
-                    .getDefaultRoles()
-                    .put("admin", Map.of("mappingRules", List.of(DEFAULT_USER_ID)));
+                final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("mappingRules", List.of(DEFAULT_USER_ID)));
+                c.getInitialization().setDefaultRoles(defaultRoles);
               });
 
   @BeforeAll

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {createProcessInstance} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -18,6 +18,9 @@ import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/c
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
+import {mockSuspendProcessInstance} from 'modules/mocks/api/v2/processInstances/suspendProcessInstance';
+import {mockResumeProcessInstance} from 'modules/mocks/api/v2/processInstances/resumeProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -220,7 +223,7 @@ describe('ProcessInstanceOperations', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: "Couldn't create operation",
       isDismissable: true,
     });
   });
@@ -271,7 +274,7 @@ describe('ProcessInstanceOperations', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'warning',
       title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
+      subtitle: 'Contact the administrator if you need access.',
       isDismissable: true,
     });
   });
@@ -288,7 +291,7 @@ describe('ProcessInstanceOperations', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
-    await user.click(screen.getByRole('button', {name: 'danger Delete'}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
@@ -310,12 +313,125 @@ describe('ProcessInstanceOperations', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
-    await user.click(screen.getByRole('button', {name: 'danger Delete'}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'info',
       title: 'Instance is scheduled for deletion',
       isDismissable: true,
     });
+  });
+
+  it('should suspend an active root instance', async () => {
+    mockSuspendProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Suspend Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance suspended',
+        isDismissable: true,
+      });
+    });
+  });
+
+  it('should allow suspending an active child instance independently of its parent', async () => {
+    const activeChildInstance = createProcessInstance({
+      state: 'ACTIVE',
+      parentProcessInstanceKey: '111111111',
+    });
+    mockSuspendProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...activeChildInstance,
+      state: 'SUSPENDED',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={activeChildInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Suspend Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance suspended',
+        isDismissable: true,
+      });
+    });
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+  });
+
+  it('should resume a suspended root instance', async () => {
+    const suspendedInstance = createProcessInstance({
+      state: 'SUSPENDED',
+      parentProcessInstanceKey: null,
+    });
+    mockResumeProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...suspendedInstance,
+      state: 'ACTIVE',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={suspendedInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: /Resume Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance resumed',
+        isDismissable: true,
+      });
+    });
+  });
+
+  it('should allow resuming a suspended child instance independently of its parent', async () => {
+    const suspendedChildInstance = createProcessInstance({
+      state: 'SUSPENDED',
+      parentProcessInstanceKey: '111111111',
+    });
+    mockResumeProcessInstance().withSuccess(null);
+    mockFetchProcessInstance().withSuccess({
+      ...suspendedChildInstance,
+      state: 'ACTIVE',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={suspendedChildInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Resume Instance/}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance resumed',
+        isDismissable: true,
+      });
+    });
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
   });
 });

@@ -21,11 +21,9 @@ import io.camunda.authentication.config.AbstractWebSecurityConfigTest;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
-import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
-import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.oidc.CachingOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +45,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * Regression test for the customer's reported bearer-token scenario: when a JWT does not carry the
  * configured {@code groups} claim and UserInfo augmentation is enabled, the missing {@code groups}
  * claim is obtained from the OIDC {@code /userinfo} response and merged into the claims passed to
- * {@link TokenClaimsConverter}. Authorizations that depend on {@code groups} therefore work for
+ * {@link LazyTokenClaimsConverter}. Authorizations that depend on {@code groups} therefore work for
  * bearer-token authentication as expected.
  *
  * <p>Also verifies the cache is consulted for repeated calls with the same token within the TTL.
@@ -63,9 +61,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
       "camunda.security.authentication.oidc.groups-claim=groups",
       "camunda.security.authentication.oidc.user-info-augmentation.enabled=true",
     })
@@ -76,20 +74,17 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
       WireMockExtension.newInstance().configureStaticDsl(true).build();
 
   @Autowired private OidcTokenAuthenticationConverter converter;
-  @Autowired private OidcClaimsProvider oidcClaimsProvider;
 
-  @MockitoBean private TokenClaimsConverter tokenClaimsConverter;
+  @MockitoBean private LazyTokenClaimsConverter tokenClaimsConverter;
 
   @BeforeEach
   void resetStateBetweenTests() {
-    // Reset both the shared WireMock request journal and the process-wide
-    // CachingOidcClaimsProvider cache so test methods don't observe state from
-    // previous tests. This lets tests choose arbitrary jti / sub values without
-    // worrying about cross-test cache collisions.
+    // Reset the shared WireMock request journal between tests. Cross-test cache
+    // collisions are not a concern because each test uses distinct token values.
     wireMock.resetRequests();
-    if (oidcClaimsProvider instanceof final CachingOidcClaimsProvider caching) {
-      caching.invalidateCache();
-    }
+    // Issuer discovery happens on first use rather than at startup, so the document has to be
+    // served per test — the extension drops stub mappings between tests.
+    stubDiscovery();
   }
 
   @DynamicPropertySource
@@ -99,7 +94,10 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     registry.add(
         "camunda.security.authentication.oidc.jwk-set-uri",
         () -> "http://localhost:" + wireMock.getPort() + "/issuer/jwks");
+  }
 
+  private static void stubDiscovery() {
+    final var issuerUri = "http://localhost:" + wireMock.getPort() + "/issuer";
     final var openidConfig =
         "{\"issuer\":\""
             + issuerUri
@@ -121,7 +119,7 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
   }
 
   @Test
-  void groupsFromUserInfoShouldReachTokenClaimsConverterButCurrentlyDoNot() {
+  void groupsFromUserInfoShouldReachLazyTokenClaimsConverter() {
     // The IdP is configured to return the groups on /userinfo (common SaaS IdP pattern).
     wireMock.stubFor(
         get(urlMatching(".*/userinfo"))
@@ -148,15 +146,10 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
     verify(tokenClaimsConverter).convert(claimsCaptor.capture());
 
-    // The customer's acceptance criterion: groups must arrive at TokenClaimsConverter so that
-    // MembershipService.resolveMemberships(...) can grant group-based authorizations. On current
-    // code this assertion fails because only JWT claims are passed through.
     assertThat(claimsCaptor.getValue())
         .containsEntry("sub", "alice")
         .containsEntry("groups", List.of("engineering"));
 
-    // Additionally: /userinfo should have been consulted at least once. On current code it is
-    // never called for bearer-token flows.
     wireMock.verify(exactly(1), getRequestedFor(urlMatching(".*/userinfo")));
   }
 

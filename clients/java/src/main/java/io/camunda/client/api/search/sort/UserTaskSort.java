@@ -30,4 +30,6 @@ public interface UserTaskSort extends SearchRequestSort<UserTaskSort> {
   UserTaskSort priority();
 
   UserTaskSort name();
+
+  UserTaskSort businessId();
 }

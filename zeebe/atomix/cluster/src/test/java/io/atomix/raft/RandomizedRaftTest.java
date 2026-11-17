@@ -35,6 +35,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.PropertyDefaults;
 import net.jqwik.api.Provide;
 import net.jqwik.api.ShrinkingMode;
+import net.jqwik.api.Tag;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PropertyDefaults(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+@Tag("randomized")
 public class RandomizedRaftTest {
 
   private static final int OPERATION_SIZE = 10000;
@@ -204,6 +206,7 @@ public class RandomizedRaftTest {
       }
       operation.run(raftContexts, member);
       raftContexts.assertAtMostOneLeader();
+      raftContexts.assertAtMostOneVotePerMemberAndTerm();
 
       if (step % 100 == 0) { // reading logs after every operation can be too slow
         raftContexts.assertAllLogsEqual();
@@ -231,6 +234,7 @@ public class RandomizedRaftTest {
     }
 
     raftContexts.assertAtMostOneLeader();
+    raftContexts.assertAtMostOneVotePerMemberAndTerm();
     raftContexts.assertAllLogsEqual();
 
     // when - no more message loss

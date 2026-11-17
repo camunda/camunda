@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import net.jcip.annotations.NotThreadSafe;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,6 +26,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 @NotThreadSafe
 final class LogStreamReaderImpl implements LogStreamReader {
   private final LogStorageReader reader;
+  private final Consumer<LogStreamReader> onClose;
 
   private LoggedEventImpl currentEvent;
   private DirectBuffer currentEventBuffer;
@@ -35,7 +37,17 @@ final class LogStreamReaderImpl implements LogStreamReader {
   private int nextEventOffset;
 
   LogStreamReaderImpl(final LogStorageReader reader) {
+    this(reader, ignored -> {});
+  }
+
+  /**
+   * @param onClose notified with {@code this} when {@link #close()} runs, so a caller that tracks
+   *     every reader it creates (e.g. {@link LogStreamImpl}) can stop tracking this one instead of
+   *     holding onto it for the life of the process.
+   */
+  LogStreamReaderImpl(final LogStorageReader reader, final Consumer<LogStreamReader> onClose) {
     this.reader = reader;
+    this.onClose = onClose;
 
     reset();
     seekToFirstEvent();
@@ -154,6 +166,7 @@ final class LogStreamReaderImpl implements LogStreamReader {
   public void close() {
     reset();
     reader.close();
+    onClose.accept(this);
   }
 
   private long getCurrentPosition() {

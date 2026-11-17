@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -16,7 +17,8 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.util.List;
 
-public class ResourceDeletedHandler implements ExportHandler<DeployedResourceEntity, Resource> {
+public class ResourceDeletedHandler
+    implements MainIndexExporterHandler<DeployedResourceEntity, Resource> {
 
   private static final ResourceIntent SUPPORTED_INTENT = ResourceIntent.DELETED;
   private final String indexName;
@@ -57,9 +59,10 @@ public class ResourceDeletedHandler implements ExportHandler<DeployedResourceEnt
   }
 
   @Override
-  public void flush(final DeployedResourceEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final DeployedResourceEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

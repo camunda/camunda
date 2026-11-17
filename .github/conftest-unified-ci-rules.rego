@@ -21,15 +21,15 @@ warn[msg] {
     # only enforced on workflows that opted-in
     input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
-    count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 30)) > 0
+    count(get_jobs_with_timeoutminutes_higher_than(input, 30)) > 0
 
     msg := sprintf("There are GitHub Actions jobs with too high (>30) timeout-minutes! Affected job IDs: %s",
-        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 30))])
+        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input, 30))])
 }
 
 deny[msg] {
-    # only enforced on workflows that opted-in
-    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
+    is_push_or_schedule_or_bestpractices_workflow
+    not is_generated_agentic_workflow
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
@@ -127,6 +127,16 @@ warn[msg] {
         [concat(", ", get_jobs_without_printmetadata(input.jobs))])
 }
 
+deny[msg] {
+    # only enforced on Unified CI
+    input.name == "CI"
+
+    count(get_jobs_without_monitor_as_first_step(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs in Unified CI without start-build-monitor as first step! Affected job IDs: %s",
+        [concat(", ", get_jobs_without_monitor_as_first_step(input.jobs))])
+}
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -141,16 +151,56 @@ get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
     }
 }
 
-get_jobs_with_timeoutminutes_higher_than(jobInput, max_timeout) = jobs_without_timeoutminutes {
-    jobs_without_timeoutminutes := { job_id |
-        job := jobInput[job_id]
+get_jobs_with_timeoutminutes_higher_than(wf, max_timeout) = jobs_over_timeoutminutes {
+    jobs_over_timeoutminutes := jobs_over_own_timeoutminutes(wf, max_timeout) | jobs_over_caller_timeoutminutes(wf, max_timeout)
+}
 
-        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+jobs_over_own_timeoutminutes(wf, max_timeout) = jobs_over {
+    jobs_over := { job_id |
+        job := wf.jobs[job_id]
+
+        # jobs that invoke a reusable workflow are checked separately, by
+        # jobs_over_caller_timeoutminutes below, since they have no own timeout-minutes field
         not job.uses
 
-        # check if timeout-minutes is higher than allowed maximum
-        job["timeout-minutes"] > max_timeout
+        # check if timeout-minutes is higher than allowed maximum.
+        resolved_timeoutminutes(wf, job) > max_timeout
     }
+}
+
+is_scheduled_release_load_tests_versions_job(job_id) {
+    input.name == "Scheduled Camunda Release Load Tests"
+    job_id == "versions"
+}
+
+# A caller job (uses: a reusable workflow) has no own timeout-minutes field, but can still pass a
+# literal timeout-minutes value through `with:` to a reusable workflow that exposes it as an input.
+jobs_over_caller_timeoutminutes(wf, max_timeout) = jobs_over {
+    jobs_over := { job_id |
+        job := wf.jobs[job_id]
+        job.uses
+        is_number(job.with["timeout-minutes"])
+        job.with["timeout-minutes"] > max_timeout
+    }
+}
+
+# Resolves a job's timeout-minutes to a number for the cap check. A literal resolves to itself;
+# a bare `${{ inputs.<name> }}` expression resolves to that input's declared default (comparing
+# the raw string to a number would always be "too high" -- Rego ranks strings above numbers).
+# Anything else unresolvable is left out of enforcement, same as the `not job.uses` exemption.
+resolved_timeoutminutes(wf, job) = value {
+    is_number(job["timeout-minutes"])
+    value := job["timeout-minutes"]
+}
+
+resolved_timeoutminutes(wf, job) = value {
+    is_string(job["timeout-minutes"])
+    matches := regex.find_all_string_submatch_n(`^\$\{\{\s*inputs\.([A-Za-z0-9_-]+)\s*\}\}$`, job["timeout-minutes"], 1)
+    count(matches) > 0
+    input_name := matches[0][1]
+    # The "on" key is parsed as the boolean `true` (YAML 1.1 bareword quirk) -- see
+    # conftest-gha-best-practices.rego for the same workaround elsewhere in this repo.
+    value := to_number(wf["true"].workflow_call.inputs[input_name].default)
 }
 
 get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
@@ -165,12 +215,31 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "get-snapshot-docker-version-tag"
         job_id != "observe-aborted-jobs"
         job_id != "setup-tests"
-        job_id != "utils-flaky-tests-summary"
+        job_id != "detect-new-flaky-tests"
         job_id != "fe-unit-tests-merge"
         job_id != "operate-fe-visual-regression-merge"
+        job_id != "generate-db-versions"
+        job_id != "generate-matrix"
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
         job_id != "format-identifier"
         job_id != "should-run"
+        # observed via a dependent observer job to avoid registering Vault
+        # secrets in the data-producing job's scope, which would cause GHA's
+        # cross-job output substring guard to drop `stale_data` (the masked
+        # gcloud_sa_key value contains `camunda`, which matches every PR URL
+        # in the stale_data JSON). See `observe-collect-status` job in
+        # stale-backport-tracker.yml. Follow-up: amend this rule to accept a
+        # dependent observer job natively instead of maintaining whitelist.
+        job_id != "collect-stale-backports"
+        # observed via a dependent observer job because it runs a coding agent
+        # with a shell: anything secret-bearing scheduled after that step could
+        # be reached through $GITHUB_ENV, $GITHUB_PATH or the checked-out
+        # action itself. See `flaky-review-observe` in
+        # c8-orchestration-cluster-flakiness-fix.yml.
+        job_id != "flaky-review-agent"
+        job_id != "compute-matrix"
+        # static outputs only
+        not is_scheduled_release_load_tests_versions_job(job_id)
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
@@ -248,6 +317,37 @@ get_jobs_with_flaky_outputs(jobInput) = jobs_with_flaky_outputs {
     }
 }
 
+get_jobs_without_monitor_as_first_step(jobInput) = result {
+    result := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on special control-flow jobs
+        job_id != "detect-changes"
+        job_id != "check-results"
+        job_id != "test-summary"
+        job_id != "get-concurrency-group-dynamically"
+        job_id != "get-snapshot-docker-version-tag"
+        job_id != "observe-aborted-jobs"
+        job_id != "setup-tests"
+        job_id != "detect-new-flaky-tests"
+        job_id != "fe-unit-tests-merge"
+        job_id != "operate-fe-visual-regression-merge"
+        job_id != "generate-db-versions"
+        job_id != "generate-matrix"
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        # check that the first step uses start-build-monitor
+        not job_has_monitor_as_first_step(job)
+    }
+}
+
+job_has_monitor_as_first_step(job) {
+    step := job.steps[0]
+    startswith(step.uses, "camunda/infra-global-github-actions/start-build-monitor@")
+}
+
 get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
     jobs_without_printmetadata := { job_id |
         job := jobInput[job_id]
@@ -272,4 +372,23 @@ get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
         }
         count(printmetadata_steps) == 0
     }
+}
+
+# multiple functions with the same name act as logical OR
+is_push_or_schedule_or_bestpractices_workflow {
+    # "on:" is parsed as boolean true by the YAML 1.1 parser
+    input["true"].push
+}
+is_push_or_schedule_or_bestpractices_workflow {
+    # "on:" is parsed as boolean true by the YAML 1.1 parser
+    input["true"].schedule
+}
+is_push_or_schedule_or_bestpractices_workflow {
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
+}
+
+# we ignore generatic GitHub Agentic workflow files as we do not control them
+is_generated_agentic_workflow {
+    regex.match("(^|/)[^/]+\\.lock\\.ya?ml$", data.conftest.file.name)
 }

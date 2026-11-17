@@ -1,5 +1,5 @@
 # type: Preview Environment
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Preview Environment Build and Deploy
 
@@ -28,6 +28,13 @@ on:
         required: false
         type: string
         default: ''
+      ref:
+        description: |
+          Git ref for checkout and ArgoCD revision.
+          Required for cross-branch calls since reusable workflows inherit the caller's ref.
+        required: false
+        type: string
+        default: ''
     outputs:
       host-name:
         description: "Hostname of the deployed preview environment (e.g., smoke-123.camunda.camunda.cloud)"
@@ -39,6 +46,40 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}-${{ inputs.app-name }}
 
 jobs:
+  resolve-image-tag:
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For pull_request: check label conditions
+    if: >
+      inputs.app-name != '' || (
+        github.event.pull_request.state != 'closed' && (
+          contains(github.event.label.name, 'deploy-preview') ||
+          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+        )
+      )
+    name: Resolve Image Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+      checkout-ref: ${{ steps.resolve.outputs.checkout-ref }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.sha }}
+        persist-credentials: false
+
+    - name: Resolve image tag
+      id: resolve
+      run: |
+        SHA=$(git rev-parse HEAD)
+        # Web Modeler derives the preview cluster version from this tag and rejects
+        # anything that does not parse as semver >= 8.8, hence the version prefix.
+        # Taken from the root pom, which inherits its version from the parent.
+        VERSION=$(grep -m1 -oE '<version>[^<]+</version>' pom.xml | sed -E 's:</?version>::g')
+        echo "image-tag=${VERSION}-pr-${SHA:0:12}" >> "$GITHUB_OUTPUT"
+        echo "checkout-ref=${SHA}" >> "$GITHUB_OUTPUT"
+
   build-camunda:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
     # For pull_request: check label conditions
@@ -50,11 +91,15 @@ jobs:
         )
       )
     name: Build Camunda
+    needs: [resolve-image-tag]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     steps:
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
+        persist-credentials: false
 
     - uses: ./.github/actions/setup-build
       with:
@@ -78,7 +123,7 @@ jobs:
         platforms: linux/amd64
         dockerfile: camunda.Dockerfile
         push: true
-        version: pr-${{ github.event.pull_request.head.sha || github.sha }}
+        version: ${{ needs.resolve-image-tag.outputs.image-tag }}
 
     - name: Observe build status
       if: always()
@@ -102,12 +147,13 @@ jobs:
         )
       )
     name: Build Optimize
+    needs: [resolve-image-tag]
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ github.head_ref || github.ref_name }}
+      branch: ${{ inputs.ref || github.head_ref || github.ref_name }}
       pushDocker: true
-      version: pr-${{ github.event.pull_request.head.sha || github.sha }}
+      version: ${{ needs.resolve-image-tag.outputs.image-tag }}
 
   deploy-preview:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
@@ -121,6 +167,7 @@ jobs:
       )
     name: Deploy Preview Environment C8SM
     needs:
+    - resolve-image-tag
     - build-camunda
     - build-optimize
     # permission needed for the camunda/infra-global-github-actions/preview-env/create
@@ -134,6 +181,14 @@ jobs:
     outputs:
       host-name: ${{ steps.set-host-name.outputs.host-name }}
     steps:
+    #########################################################################
+    # Checkout the same ref used for image tagging to ensure chart files match
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
+        persist-credentials: false
+
     #########################################################################
     # Validate app-name length (only for workflow_call input)
     - name: Validate app-name length
@@ -150,7 +205,7 @@ jobs:
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       if: inputs.app-name == ''
-      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name-1.0.0
       with:
         branch: ${{ github.head_ref }}
         max_length: '15'
@@ -175,7 +230,7 @@ jobs:
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -183,12 +238,6 @@ jobs:
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
-
-    #########################################################################
-    # Setup: checkout code. This is required because we are using
-    # composite actions and deployment manifests.
-    - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
@@ -210,18 +259,18 @@ jobs:
           --helm-set git.branch=${revision} \
           --upsert ${label_args} ${helm_extra}" >> "$GITHUB_ENV"
       env:
-        docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
+        docker_tag: ${{ needs.resolve-image-tag.outputs.image-tag }}
         helm_extra_args: ${{ inputs.helm-extra-args }}
         labels: ${{ inputs.labels }}
-        revision: ${{ github.head_ref || github.ref_name }}
+        revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
 
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for c8sm
-      uses: camunda/infra-global-github-actions/preview-env/create@main
+      uses: camunda/infra-global-github-actions/preview-env/create@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
       with:
-        revision: ${{ github.head_ref || github.ref_name }}
+        revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
         app_url: https://${{ steps.set-host-name.outputs.host-name }}
@@ -254,12 +303,14 @@ jobs:
     steps:
     - name: Check PR for merge conflicts
       if: github.event_name == 'pull_request'
-      uses: camunda/infra-global-github-actions/preview-env/conflicts@main
+      uses: camunda/infra-global-github-actions/preview-env/conflicts@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
 
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Observe build status
       if: always()
@@ -296,10 +347,12 @@ jobs:
     timeout-minutes: 5
     needs: [deploy-preview]
     steps:
-    - uses: camunda/infra-global-github-actions/preview-env/comment@main
+    - uses: camunda/infra-global-github-actions/preview-env/comment@742815e8e42387c77e70b69f8747141dbf216607 # preview-env-1.1.2
 
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Observe build status
       if: always()

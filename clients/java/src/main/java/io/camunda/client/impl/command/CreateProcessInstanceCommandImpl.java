@@ -93,13 +93,6 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   protected CreateProcessInstanceCommandImpl setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
-    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
-    // gRPC and REST handle setting variables differently:
-    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
-    //    The engine checks if the provided String can be transformed into a Map, if not it
-    //    throws an error.
-    // - For REST commands, users have to provide a valid JSON Object String.
-    //    Otherwise, the client throws an exception already.
     if (useRest) {
       httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
     }
@@ -200,6 +193,15 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 latestVersion() {
     return version(LATEST_VERSION);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 versionTag(final String versionTag) {
+    ArgumentUtil.ensureNotNullNorEmpty("versionTag", versionTag);
+    grpcRequestObjectBuilder.setVersionTag(versionTag);
+    httpRequestObject.setProcessDefinitionVersion(null);
+    httpRequestObject.setProcessDefinitionVersionTag(versionTag);
+    return this;
   }
 
   @Override

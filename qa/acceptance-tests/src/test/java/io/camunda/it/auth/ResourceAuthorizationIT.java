@@ -200,4 +200,109 @@ class ResourceAuthorizationIT {
     assertThat(problemException.details().getDetail())
         .isEqualTo("Unauthorized to perform operation 'READ' on resource 'RESOURCE'");
   }
+
+  @Test
+  void shouldGetResourceContentBinaryWhenAuthorizedByResourceId(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when
+    final var content =
+        userClient.newResourceContentBinaryGetRequest(RESOURCE_KEY_TENANT_A.get()).send().join();
+
+    // then
+    assertThat(content).isNotNull().isNotEmpty();
+  }
+
+  @Test
+  void shouldReturnNotFoundForGetResourceContentBinaryWhenNotAssignedToTenant(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // given - restricted user is only a member of TENANT_A, not TENANT_B
+
+    // when
+    final ThrowingCallable executeGet =
+        () ->
+            userClient
+                .newResourceContentBinaryGetRequest(RESOURCE_KEY_TENANT_B.get())
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(404);
+  }
+
+  @Test
+  void shouldReturnForbiddenForGetResourceContentBinaryWhenUnauthorizedByResourceId(
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeGet =
+        () ->
+            userClient
+                .newResourceContentBinaryGetRequest(RESOURCE_KEY_TENANT_A.get())
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'RESOURCE'");
+  }
+
+  @Test
+  void shouldSearchResourcesWhenAuthorizedByResourceId(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when
+    final var results = userClient.newResourceSearchRequest().send().join();
+
+    // then
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getResourceId()).isEqualTo(RESOURCE_ID);
+    assertThat(results.items().getFirst().getTenantId()).isEqualTo(TENANT_A.getId());
+  }
+
+  @Test
+  void shouldReturnEmptyForSearchResourcesWhenUnauthorizedByResourceId(
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
+    // when
+    final var results = userClient.newResourceSearchRequest().send().join();
+
+    // then
+    assertThat(results.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSearchResourcesFilteredByTenantWhenAuthorized(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when - restricted user is only a member of TENANT_A
+    final var results =
+        userClient
+            .newResourceSearchRequest()
+            .filter(f -> f.tenantId(TENANT_A.getId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getResourceId()).isEqualTo(RESOURCE_ID);
+    assertThat(results.items().getFirst().getTenantId()).isEqualTo(TENANT_A.getId());
+  }
+
+  @Test
+  void shouldReturnEmptyForSearchResourcesWhenFilteredByUnauthorizedTenant(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when - restricted user is only a member of TENANT_A, not TENANT_B
+    final var results =
+        userClient
+            .newResourceSearchRequest()
+            .filter(f -> f.tenantId(TENANT_B.getId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).isEmpty();
+  }
 }

@@ -7,28 +7,64 @@
  */
 
 import {type QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {useInfiniteQuery} from '@tanstack/react-query';
+import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
+import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
+import {modificationsStore} from 'modules/stores/modifications';
+import {TOKEN_OPERATIONS} from 'modules/constants';
+import {useHasMultipleInstances} from 'modules/hooks/elementMetadata';
 import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
 
-function useVariables(options?: {refetchInterval?: number | false}) {
+const DOCUMENT_VALUE_FILTER = '*camunda.document.type*';
+
+function useVariables(options?: {
+  refetchInterval?: number | false;
+  documentsOnly?: boolean;
+  keepPreviousResults?: boolean;
+  searchTerm?: string;
+}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
-  const {refetchInterval = false} = options ?? {};
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const hasMultipleInstances = useHasMultipleInstances();
+  const isPendingAddTokenScope = modificationsStore.elementModifications.some(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+      modification.scopeId === scopeKey,
+  );
+  const isVariableSearchEnabled =
+    !isPlaceholderSelected && !isPendingAddTokenScope && !hasMultipleInstances;
+  const {
+    refetchInterval = false,
+    documentsOnly = false,
+    keepPreviousResults = false,
+    searchTerm,
+  } = options ?? {};
+  const valueFilter = documentsOnly ? DOCUMENT_VALUE_FILTER : undefined;
+  const trimmedSearchTerm = searchTerm?.trim();
+  const nameFilter =
+    trimmedSearchTerm !== undefined && trimmedSearchTerm !== ''
+      ? `*${trimmedSearchTerm}*`
+      : undefined;
   const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({
       processInstanceKey: processInstanceId,
       scopeKey,
+      value: valueFilter,
+      name: nameFilter,
     }),
+    enabled: isVariableSearchEnabled,
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
           processInstanceKey: {$eq: processInstanceId},
           scopeKey: {$eq: scopeKey ?? undefined},
+          value: valueFilter !== undefined ? {$like: valueFilter} : undefined,
+          name: nameFilter !== undefined ? {$like: nameFilter} : undefined,
         },
         page: {
           from: pageParam,
@@ -63,15 +99,15 @@ function useVariables(options?: {refetchInterval?: number | false}) {
 
       return previousPage;
     },
+    placeholderData: keepPreviousResults ? keepPreviousData : undefined,
     refetchInterval,
   });
   const displayStatus = useDisplayStatus({
     scopeKey,
     isLoading: result.isLoading,
-    isFetchingNextPage: result.isFetchingNextPage,
-    isFetchingPreviousPage: result.isFetchingPreviousPage,
+    isFetching: result.isFetching,
     isFetched: result.isFetched,
-    isError: result.isError,
+    isError: isVariableSearchEnabled && result.isError,
     hasItems: (result.data?.pages?.[0]?.items?.length ?? 0) > 0,
   });
   return Object.assign(result, {displayStatus});

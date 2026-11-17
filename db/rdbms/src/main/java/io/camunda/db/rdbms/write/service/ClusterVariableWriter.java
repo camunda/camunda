@@ -27,30 +27,33 @@ public class ClusterVariableWriter implements RdbmsWriter {
   }
 
   public void create(final ClusterVariableDbModel clusterVariable) {
+    final var truncated = truncate(clusterVariable);
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.CLUSTER_VARIABLE,
             WriteStatementType.INSERT,
             clusterVariable.id(),
             "io.camunda.db.rdbms.sql.ClusterVariableMapper.insert",
-            clusterVariable.truncateValue(
-                vendorDatabaseProperties.variableValuePreviewSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+            truncated));
+    enqueueMetadataInsert(clusterVariable.id(), truncated);
   }
 
   public void update(final ClusterVariableDbModel clusterVariable) {
+    final var truncated = truncate(clusterVariable);
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.CLUSTER_VARIABLE,
             WriteStatementType.UPDATE,
             clusterVariable.id(),
             "io.camunda.db.rdbms.sql.ClusterVariableMapper.update",
-            clusterVariable.truncateValue(
-                vendorDatabaseProperties.variableValuePreviewSize(),
-                vendorDatabaseProperties.charColumnMaxBytes())));
+            truncated));
+    // metadata is replaced via delete+insert, so the prior rows are always cleared first
+    enqueueMetadataDelete(clusterVariable.id());
+    enqueueMetadataInsert(clusterVariable.id(), truncated);
   }
 
   public void delete(final ClusterVariableDbModel clusterVariable) {
+    enqueueMetadataDelete(clusterVariable.id());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.CLUSTER_VARIABLE,
@@ -58,5 +61,34 @@ public class ClusterVariableWriter implements RdbmsWriter {
             clusterVariable.id(),
             "io.camunda.db.rdbms.sql.ClusterVariableMapper.delete",
             clusterVariable));
+  }
+
+  private ClusterVariableDbModel truncate(final ClusterVariableDbModel clusterVariable) {
+    return clusterVariable.truncateValue(
+        vendorDatabaseProperties.variableValuePreviewSize(),
+        vendorDatabaseProperties.charColumnMaxBytes());
+  }
+
+  private void enqueueMetadataInsert(final String id, final ClusterVariableDbModel truncated) {
+    if (truncated.metadata().isEmpty()) {
+      return;
+    }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.CLUSTER_VARIABLE,
+            WriteStatementType.INSERT,
+            id,
+            "io.camunda.db.rdbms.sql.ClusterVariableMapper.insertMetadata",
+            truncated));
+  }
+
+  private void enqueueMetadataDelete(final String id) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.CLUSTER_VARIABLE,
+            WriteStatementType.DELETE,
+            id,
+            "io.camunda.db.rdbms.sql.ClusterVariableMapper.deleteMetadata",
+            id));
   }
 }

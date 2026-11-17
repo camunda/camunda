@@ -7,6 +7,12 @@ paths:
       tags:
         - Incident
       operationId: searchIncidents
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search incidents
       description: |
         Search for incidents based on given criteria.
@@ -32,6 +38,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /incidents/{incidentKey}:
     get:
@@ -39,6 +46,11 @@ paths:
       tags:
         - Incident
       operationId: getIncident
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get incident
       description: |
         Returns incident as JSON.
@@ -71,6 +83,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /incidents/{incidentKey}/resolution:
     post:
@@ -78,6 +91,11 @@ paths:
       tags:
         - Incident
       operationId: resolveIncident
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Resolve incident
       description: |
         Marks the incident as resolved; most likely a call to Update job will be necessary
@@ -119,6 +137,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
+      x-scope: physical-tenant
 
   /incidents/statistics/process-instances-by-error:
     post:
@@ -126,6 +145,11 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByError
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process instance statistics by error
       description: |
         Returns statistics for active process instances that currently have active incidents,
@@ -154,6 +178,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /incidents/statistics/process-instances-by-definition:
     post:
@@ -161,6 +186,11 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByDefinition
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process instance statistics by definition
       description: |
         Returns statistics for active process instances with incidents, grouped by process
@@ -190,6 +220,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -210,6 +241,11 @@ components:
           description: The incident search filters.
           allOf:
             - $ref: '#/components/schemas/IncidentFilter'
+      x-properties-added-in-version:
+        - propertyName: sort
+          addedInVersion: "8.6"
+        - propertyName: filter
+          addedInVersion: "8.6"
 
     IncidentFilter:
       description: Incident search filter.
@@ -224,7 +260,12 @@ components:
           allOf:
             - $ref: '#/components/schemas/IncidentErrorTypeFilterProperty'
         errorMessage:
-          description: The error message of this incident.
+          description: >
+            The error message of this incident. For `$eq`, `$neq`, `$in`, and `$notIn`,
+            matching is case-insensitive and matches if the incident's error message
+            contains the given value as a phrase, not necessarily the entire error
+            message. `$like` matches on individual words of the error message and does
+            not support multi-word patterns.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         elementId:
@@ -263,6 +304,13 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
           description: The job key, if exists, associated with this incident.
+      x-properties-added-in-version:
+        - propertyName: elementId
+          addedInVersion: "8.8"
+        - propertyName: incidentKey
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
 
     IncidentErrorTypeFilterProperty:
       description: IncidentErrorTypeEnum with full advanced search capabilities.
@@ -302,6 +350,19 @@ components:
             $ref: "#/components/schemas/IncidentErrorTypeEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
+        - propertyName: "$like"
+          addedInVersion: "8.9"
 
     IncidentErrorTypeEnum:
       description: Incident error type with a defined set of values.
@@ -319,6 +380,7 @@ components:
         - JOB_NO_RETRIES
         - MESSAGE_SIZE_EXCEEDED
         - RESOURCE_NOT_FOUND
+        - SECRET_RESOLUTION_ERROR
         - TASK_LISTENER_NO_RETRIES
         - UNHANDLED_ERROR_EVENT
         - UNKNOWN
@@ -362,6 +424,19 @@ components:
             $ref: "#/components/schemas/IncidentStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
+        - propertyName: "$like"
+          addedInVersion: "8.9"
 
     IncidentStateEnum:
       description: Incident states with a defined set of values.
@@ -408,6 +483,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentResult'
+      x-properties-added-in-version:
+        - propertyName: items
+          addedInVersion: "8.6"
 
     IncidentResult:
       type: object
@@ -425,6 +503,7 @@ components:
         - rootProcessInstanceKey
         - jobKey
         - tenantId
+        - storageOrdinal
       properties:
         processDefinitionId:
           allOf:
@@ -482,6 +561,42 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
+        storageOrdinal:
+          description: |
+            The storage ordinal this incident's data belongs to. This is `null` for
+            data exported before storage ordinals were introduced in version 8.11.
+          nullable: true
+          type: integer
+          format: int32
+      x-properties-added-in-version:
+        - propertyName: processDefinitionId
+          addedInVersion: "8.6"
+        - propertyName: errorType
+          addedInVersion: "8.6"
+        - propertyName: errorMessage
+          addedInVersion: "8.6"
+        - propertyName: elementId
+          addedInVersion: "8.8"
+        - propertyName: creationTime
+          addedInVersion: "8.6"
+        - propertyName: state
+          addedInVersion: "8.6"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: incidentKey
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.6"
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: jobKey
+          addedInVersion: "8.6"
+        - propertyName: storageOrdinal
+          addedInVersion: "8.11"
 
     IncidentResolutionRequest:
       type: object
@@ -489,6 +604,9 @@ components:
       properties:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.8"
 
     IncidentProcessInstanceStatisticsByErrorQuery:
       type: object

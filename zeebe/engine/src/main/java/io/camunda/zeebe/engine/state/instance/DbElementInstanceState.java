@@ -442,6 +442,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public ElementInstance getInstance(final long key) {
+    if (key < 0) {
+      // -1 marks "no instance" so we skip the lookup
+      return null;
+    }
     elementInstanceKey.wrapLong(key);
     return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
   }

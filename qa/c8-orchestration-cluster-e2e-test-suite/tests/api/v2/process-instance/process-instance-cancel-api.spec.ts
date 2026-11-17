@@ -44,9 +44,11 @@ test.describe.parallel('Cancel Process instance Tests', () => {
     });
 
     await test.step('Cancel Process Instance', async () => {
-      const processInstanceKey = localState['processInstanceKey'];
+      const processInstanceKey = localState['processInstanceKey'] as string;
       const res = await request.post(
-        buildUrl(`/process-instances/${processInstanceKey}/cancellation`),
+        buildUrl('/process-instances/{processInstanceKey}/cancellation', {
+          processInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -59,7 +61,9 @@ test.describe.parallel('Cancel Process instance Tests', () => {
   test('Cancel Process Instance - Not Found', async ({request}) => {
     const fakeProcessInstanceKey = '2251799813704885';
     const res = await request.post(
-      buildUrl(`/process-instances/${fakeProcessInstanceKey}/cancellation`),
+      buildUrl('/process-instances/{processInstanceKey}/cancellation', {
+        processInstanceKey: fakeProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -76,7 +80,9 @@ test.describe.parallel('Cancel Process instance Tests', () => {
   }) => {
     const invalidProcessInstanceKey = 'invalidKey';
     const res = await request.post(
-      buildUrl(`/process-instances/${invalidProcessInstanceKey}/cancellation`),
+      buildUrl('/process-instances/{processInstanceKey}/cancellation', {
+        processInstanceKey: invalidProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -90,7 +96,9 @@ test.describe.parallel('Cancel Process instance Tests', () => {
 
   test('Cancel Process Instance - Unauthorized', async ({request}) => {
     const res = await request.post(
-      buildUrl(`/process-instances/2251799813704885/cancellation`),
+      buildUrl('/process-instances/{processInstanceKey}/cancellation', {
+        processInstanceKey: '2251799813704885',
+      }),
       {
         // No auth headers
         headers: {
@@ -127,9 +135,11 @@ test.describe.parallel('Cancel Process instance Tests', () => {
     });
 
     await test.step('Then cancel it', async () => {
-      const processInstanceKey = localState['processInstanceKey'];
+      const processInstanceKey = localState['processInstanceKey'] as string;
       const res = await request.post(
-        buildUrl(`/process-instances/${processInstanceKey}/cancellation`),
+        buildUrl('/process-instances/{processInstanceKey}/cancellation', {
+          processInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -139,9 +149,11 @@ test.describe.parallel('Cancel Process instance Tests', () => {
     });
 
     await test.step('Then try to cancel it again', async () => {
-      const processInstanceKey = localState['processInstanceKey'];
+      const processInstanceKey = localState['processInstanceKey'] as string;
       const res = await request.post(
-        buildUrl(`/process-instances/${processInstanceKey}/cancellation`),
+        buildUrl('/process-instances/{processInstanceKey}/cancellation', {
+          processInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
         },

@@ -12,7 +12,7 @@ function getForbiddenPermissionsError(
 ) {
   return {
     message: `Missing permissions to access ${resource}`,
-    additionalInfo: `Please contact your organization owner or admin to give you the necessary permissions to access ${resourceDescription}`,
+    additionalInfo: `Contact your organization owner or admin to give you the necessary permissions to access ${resourceDescription}`,
   } as const;
 }
 

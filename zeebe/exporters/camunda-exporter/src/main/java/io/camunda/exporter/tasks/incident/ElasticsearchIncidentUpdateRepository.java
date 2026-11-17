@@ -14,6 +14,8 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -21,6 +23,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -33,6 +36,7 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,7 +46,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -56,31 +63,52 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
   private final int partitionId;
   private final String pendingUpdateAlias;
+  private final String pendingUpdateFullQualifiedName;
   private final String incidentAlias;
   private final String listViewAlias;
   private final String listViewFullQualifiedName;
   private final String flowNodeAlias;
   private final String operationAlias;
+  private final LongSupplier exportedPosition;
 
   public ElasticsearchIncidentUpdateRepository(
       final int partitionId,
       final String pendingUpdateAlias,
+      final String pendingUpdateFullQualifiedName,
       final String incidentAlias,
       final String listViewAlias,
       final String listViewFullQualifiedName,
       final String flowNodeAlias,
       final String operationAlias,
+      final LongSupplier exportedPosition,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
     super(client, executor, logger);
     this.partitionId = partitionId;
     this.pendingUpdateAlias = pendingUpdateAlias;
+    this.pendingUpdateFullQualifiedName = pendingUpdateFullQualifiedName;
     this.incidentAlias = incidentAlias;
     this.listViewAlias = listViewAlias;
     this.listViewFullQualifiedName = listViewFullQualifiedName;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
+    this.exportedPosition = exportedPosition;
+  }
+
+  @Override
+  public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+    final var query = createPendingIncidentsBatchQuery(fromPosition);
+
+    final CountRequest countRequest =
+        new CountRequest.Builder()
+            .index(pendingUpdateAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.count(countRequest).thenApplyAsync(r -> Math.toIntExact(r.count()), executor);
   }
 
   @Override
@@ -89,13 +117,25 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     final var query = createPendingIncidentsBatchQuery(fromPosition);
     final var request = createPendingIncidentsBatchRequest(size, query);
 
-    return client
-        .search(request, PendingIncidentUpdate.class)
+    // Force a refresh of the post-importer-queue write index before reading the batch so that all
+    // of its shards expose their acknowledged writes. New entries are written with routing by
+    // partition id, so a single partition's entries co-locate on one shard and cannot exhibit
+    // refresh skew. This refresh remains load-bearing for the unrouted tail — legacy documents
+    // predating this change, restored backups, and entries written by older brokers during a
+    // rolling upgrade — which are still scattered across shards that refresh on independent
+    // timers. Without
+    // it, for those unrouted entries a higher-position entry on an already-refreshed shard could be
+    // returned while a lower-position entry on a not-yet-refreshed shard is still invisible; the
+    // cursor would then advance past the lower entry and, because the lower bound is strict, never
+    // revisit it. See https://github.com/camunda/camunda/issues/56117. Expected to become removable
+    // once routed writes are the norm.
+    return refreshPostImporterQueueIndex()
+        .thenComposeAsync(ignored -> client.search(request, PendingIncidentUpdate.class), executor)
         .thenApplyAsync(this::createPendingIncidentBatch, executor);
   }
 
   @Override
-  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds) {
     final var request = createIncidentDocumentsRequest(incidentIds);
 
@@ -186,29 +226,15 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
 
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
-    final var updates = bulk.stream().map(this::createUpdateOperation).toList();
-    final var request =
-        new BulkRequest.Builder()
-            .operations(updates)
-            .source(s -> s.fetch(false))
-            .refresh(Refresh.WaitFor)
-            .build();
+    final var docUpdatesStream = bulk.stream();
+    return bulkUpdate(
+        docUpdatesStream, Refresh.WaitFor, this::extractUpdatedIdsDetectingPartialUpdate);
+  }
 
-    return client
-        .bulk(request)
-        .thenComposeAsync(
-            r -> {
-              if (r.errors()) {
-                return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
-              }
-
-              return CompletableFuture.completedFuture(
-                  r.items().stream()
-                      .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
-                      .map(BulkResponseItem::id)
-                      .toList());
-            },
-            executor);
+  @Override
+  public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate bulk) {
+    final var docUpdatesStream = bulk.stream();
+    return bulkUpdate(docUpdatesStream, Refresh.False, this::extractUpdatedIds);
   }
 
   @Override
@@ -246,6 +272,84 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
+  private CompletableFuture<List<String>> bulkUpdate(
+      final Stream<? extends IncidentTaskUpdate> docUpdatesStream,
+      final Refresh refresh,
+      final Function<BulkResponse, CompletableFuture<List<String>>> responseHandler) {
+    final var updates = docUpdatesStream.map(this::createUpdateOperation).toList();
+    if (updates.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    final var request =
+        new BulkRequest.Builder()
+            .operations(updates)
+            .source(s -> s.fetch(false))
+            .refresh(refresh)
+            .build();
+
+    return client
+        .bulk(request)
+        .exceptionallyCompose(error -> CompletableFuture.failedFuture(translateBulkFailure(error)))
+        .thenComposeAsync(responseHandler, executor);
+  }
+
+  private CompletableFuture<List<String>> extractUpdatedIds(final BulkResponse response) {
+    if (response.errors()) {
+      return CompletableFuture.failedFuture(collectBulkErrors(response.items()));
+    }
+
+    return CompletableFuture.completedFuture(collectUpdatedIds(response));
+  }
+
+  private CompletableFuture<List<String>> extractUpdatedIdsDetectingPartialUpdate(
+      final BulkResponse response) {
+    final var updatedIds = collectUpdatedIds(response);
+    if (response.errors()) {
+      if (!updatedIds.isEmpty()) {
+        return CompletableFuture.failedFuture(
+            new IncidentPartialBulkUpdateException(
+                collectBulkErrorsIntoMessage(response.items()), updatedIds));
+      } else {
+        return CompletableFuture.failedFuture(collectBulkErrors(response.items()));
+      }
+    }
+
+    return CompletableFuture.completedFuture(updatedIds);
+  }
+
+  private List<String> collectUpdatedIds(final BulkResponse response) {
+    return response.items().stream()
+        .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
+        .map(BulkResponseItem::id)
+        .toList();
+  }
+
+  private CompletionStage<RefreshResponse> refreshPostImporterQueueIndex() {
+    return client
+        .indices()
+        .refresh(
+            r ->
+                r.index(pendingUpdateFullQualifiedName)
+                    .ignoreUnavailable(true)
+                    .allowNoIndices(true))
+        .thenComposeAsync(this::failOnPartialRefresh, executor);
+  }
+
+  private CompletionStage<RefreshResponse> failOnPartialRefresh(final RefreshResponse response) {
+    final int failed =
+        response.shards() != null && response.shards().failed() != null
+            ? response.shards().failed().intValue()
+            : 0;
+    if (failed > 0) {
+      return CompletableFuture.failedFuture(
+          new ExporterException(
+              "Refresh of %s failed on %d shard(s); aborting batch to avoid skipping pending updates"
+                  .formatted(pendingUpdateFullQualifiedName, failed)));
+    }
+    return CompletableFuture.completedFuture(response);
+  }
+
   private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {
     final var piKeyQ =
         QueryBuilders.terms(
@@ -265,7 +369,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     return QueryBuilders.bool(b -> b.must(piKeyQ, typeQ, stateQ));
   }
 
-  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+  private BulkOperation createUpdateOperation(final IncidentTaskUpdate update) {
     return new UpdateOperation.Builder<>()
         .index(update.index())
         .id(update.id())
@@ -286,18 +390,16 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         .allowNoIndices(true)
         .ignoreUnavailable(true)
         .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
-        .size(incidentIds.size())
+        // ask for more documents in case there are duplicates
+        .size(10_000)
         .build();
   }
 
-  private Map<String, IncidentDocument> createIncidentDocuments(
+  private Collection<IncidentDocument> createIncidentDocuments(
       final SearchResponse<IncidentEntity> response) {
-    final Map<String, IncidentDocument> documents = new HashMap<>();
-    for (final var hit : response.hits().hits()) {
-      documents.put(hit.id(), new IncidentDocument(hit.id(), hit.index(), hit.source()));
-    }
-
-    return documents;
+    return response.hits().hits().stream()
+        .map(hit -> new IncidentDocument(hit.id(), hit.index(), hit.source()))
+        .toList();
   }
 
   private SearchRequest createPendingIncidentsBatchRequest(final int size, final Query query) {
@@ -314,6 +416,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         .query(query)
         .ignoreUnavailable(true)
         .allowNoIndices(true)
+        .allowPartialSearchResults(false)
         .source(s -> s.filter(sourceFilter))
         .sort(s -> s.field(f -> f.field(PostImporterQueueTemplate.POSITION).order(SortOrder.Asc)))
         .size(size)
@@ -324,8 +427,11 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     final var positionQ =
         QueryBuilders.range(
             r ->
-                r.number(
-                    n -> n.field(PostImporterQueueTemplate.POSITION).gt((double) fromPosition)));
+                r.longNumber(
+                    n ->
+                        n.field(PostImporterQueueTemplate.POSITION)
+                            .gt(fromPosition)
+                            .lte(exportedPosition.getAsLong())));
     final var typeQ =
         QueryBuilders.term(
             t ->

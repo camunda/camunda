@@ -154,8 +154,14 @@ You can find a solution [here](https://stackoverflow.com/a/17437601).
 
 ## E2E testing
 
-Ensure the backend is started with `yarn start-backend` and the frontend with `yarn start` before running the tests.
+The Playwright suite in `e2e/` runs against a real stack. Start the backend with `yarn start-backend`
+(Playwright starts the frontend dev server itself if it is not running), then:
 
 ```bash
-yarn run e2e
+yarn e2e          # seeds the test data on first run, then runs all tests
+yarn e2e:ui       # Playwright UI mode for debugging
+yarn e2e:seed     # only seed the minimal dataset, e.g. for local development
+yarn e2e:lint     # ESLint + TypeScript for the tests
 ```
+
+See [e2e/AGENTS.md](e2e/AGENTS.md) for the conventions.

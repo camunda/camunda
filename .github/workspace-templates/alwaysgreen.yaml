@@ -1,0 +1,28 @@
+name: alwaysgreen
+description: "Cross-repo fix workspace for AlwaysGreen pipeline failures"
+purpose: |
+  You are fixing a failure in the Camunda AlwaysGreen pipeline
+  (docker-build-helm-integration.yml in camunda/camunda).
+
+  The failing job identifies the surface that broke, not the repository that needs
+  the change. A Playwright job failing does not mean the test is wrong: the most
+  frequent SM e2e failure is a Keycloak deploy problem. Read FIX-AGENT.md in the
+  workspace root before doing anything else.
+
+repos:
+  - url: https://github.com/camunda/camunda.git
+    path: camunda
+    default_branch: main
+  - url: https://github.com/camunda/c8-cross-component-e2e-tests.git
+    path: c8-cross-component-e2e-tests
+    default_branch: main
+  - url: https://github.com/camunda/camunda-platform-helm.git
+    path: camunda-platform-helm
+    default_branch: main
+  - url: https://github.com/camunda/camunda-docs.git
+    path: camunda-docs
+    default_branch: main
+
+derive:
+  agents_from: AGENTS.md
+  ai_guidance: alwaysgreen.guidance.md

@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {createPortal} from 'react-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {OperationItem} from 'modules/components/OperationItem';
 import {CancelConfirmationModal} from './CancelConfirmationModal';
@@ -15,12 +16,14 @@ type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
   onExecute: () => void;
   disabled?: boolean;
+  title?: string;
 };
 
 const Cancel: React.FC<Props> = ({
   processInstanceKey,
   onExecute,
   disabled = false,
+  title = 'Cancel Instance',
 }) => {
   const [isCancellationModalVisible, setIsCancellationModalVisible] =
     useState(false);
@@ -29,21 +32,23 @@ const Cancel: React.FC<Props> = ({
       <OperationItem
         type="CANCEL_PROCESS_INSTANCE"
         onClick={() => setIsCancellationModalVisible(true)}
-        title={`Cancel Instance ${processInstanceKey}`}
+        title={title}
         disabled={disabled}
         size="sm"
       />
-      {isCancellationModalVisible && (
-        <CancelConfirmationModal
-          processInstanceKey={processInstanceKey}
-          open={isCancellationModalVisible}
-          onConfirm={() => {
-            setIsCancellationModalVisible(false);
-            onExecute();
-          }}
-          onCancel={() => setIsCancellationModalVisible(false)}
-        />
-      )}
+      {isCancellationModalVisible &&
+        createPortal(
+          <CancelConfirmationModal
+            processInstanceKey={processInstanceKey}
+            open={isCancellationModalVisible}
+            onConfirm={() => {
+              setIsCancellationModalVisible(false);
+              onExecute();
+            }}
+            onCancel={() => setIsCancellationModalVisible(false)}
+          />,
+          document.body,
+        )}
     </>
   );
 };

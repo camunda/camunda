@@ -11,6 +11,7 @@ import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithBusinessId;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static io.camunda.search.schema.config.IndexConfiguration.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +20,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
@@ -33,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,6 +53,12 @@ class UserTaskSearchIT {
   private static OffsetDateTime defaultProcessTaskDate;
   private static final String LARGE_VAR_NAME = "largeVariable";
   private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
+  // the two plain "process" instances carry distinct businessIds so the filter/sort can be
+  // asserted deterministically; the parent process carries a non-"order-*" businessId that the
+  // child user task inherits (mirroring the rootProcessInstanceKey child-inheritance test)
+  private static final String BUSINESS_ID_1 = "order-001";
+  private static final String BUSINESS_ID_2 = "order-002";
+  private static final String CHILD_PARENT_BUSINESS_ID = "biz-parent-001";
 
   private static CamundaClient camundaClient;
 
@@ -74,9 +84,9 @@ class UserTaskSearchIT {
     deployProcessFromResourcePath(
         "/process/parent_with_child_usertask.bpmn", "parent_with_child_usertask.bpmn");
 
-    startProcessInstance(camundaClient, "process");
+    startProcessInstanceWithBusinessId(camundaClient, "process", BUSINESS_ID_1);
     startProcessInstance(camundaClient, "process-2");
-    startProcessInstance(camundaClient, "process");
+    startProcessInstanceWithBusinessId(camundaClient, "process", BUSINESS_ID_2);
     startProcessInstance(camundaClient, "process-3");
     startProcessInstance(camundaClient, "bpmProcessVariable");
     startProcessInstance(camundaClient, "processWithForm");
@@ -89,7 +99,9 @@ class UserTaskSearchIT {
 
     // Start parent process that calls child process with user task
     parentProcessInstanceKey =
-        startProcessInstance(camundaClient, "parentWithChildUserTask").getProcessInstanceKey();
+        startProcessInstanceWithBusinessId(
+                camundaClient, "parentWithChildUserTask", CHILD_PARENT_BUSINESS_ID)
+            .getProcessInstanceKey();
 
     startProcessInstance(camundaClient, "processWithOverlappingVars");
 
@@ -485,6 +497,21 @@ class UserTaskSearchIT {
   }
 
   @Test
+  public void shouldRetrieveTaskByIsSuspendedFalse() {
+    final var result =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.isSuspended(false)).send().join();
+    assertThat(result.items()).isNotEmpty();
+    result.items().forEach(item -> assertThat(item.isSuspended()).isFalse());
+  }
+
+  @Test
+  public void shouldNotRetrieveAnyTaskByIsSuspendedTrue() {
+    final var result =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.isSuspended(true)).send().join();
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
   public void shouldRetrieveTaskByTaskDefinitionId() {
     final var result =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("test-2")).send().join();
@@ -493,7 +520,7 @@ class UserTaskSearchIT {
   }
 
   @Test
-  public void shouldRetrieveTaskByBpmnDefinitionId() {
+  public void shouldRetrieveTaskByBpmnProcessId() {
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
@@ -502,6 +529,151 @@ class UserTaskSearchIT {
             .join();
     assertThat(result.items()).hasSize(2);
     result.items().forEach(item -> assertThat(item.getBpmnProcessId()).isEqualTo("process"));
+  }
+
+  @Test
+  void shouldRetrieveTaskByBpmnProcessIdIn() {
+    // when - "process-2" and "process-3" each have exactly one task
+    final Consumer<StringProperty> inFilter = b -> b.in("process-2", "process-3");
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId(inFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    result
+        .items()
+        .forEach(item -> assertThat(item.getBpmnProcessId()).isIn("process-2", "process-3"));
+  }
+
+  @Test
+  void shouldRetrieveTaskByBpmnProcessIdLike() {
+    // when - "process-?" matches "process-2" and "process-3" (single char after dash)
+    final Consumer<StringProperty> likeFilter = b -> b.like("process-?");
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId(likeFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    result.items().forEach(item -> assertThat(item.getBpmnProcessId()).startsWith("process-"));
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessDefinitionKey() {
+    // given - use a process with exactly one task to get an unambiguous processDefinitionKey
+    final var taskSearch =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-2"))
+            .send()
+            .join();
+    assertThat(taskSearch.items()).hasSize(1);
+    final var processDefinitionKey = taskSearch.items().getFirst().getProcessDefinitionKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.processDefinitionKey(processDefinitionKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    result
+        .items()
+        .forEach(
+            item -> assertThat(item.getProcessDefinitionKey()).isEqualTo(processDefinitionKey));
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessDefinitionKeyIn() {
+    // given - "process-2" and "process-3" each have exactly one task
+    final var key2 =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-2"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final var key3 =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-3"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.processDefinitionKey(b -> b.in(key2, key3)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    result.items().forEach(item -> assertThat(item.getProcessDefinitionKey()).isIn(key2, key3));
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessInstanceKey() {
+    // when - childProcessInstanceKey has exactly one user task
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.processInstanceKey(childProcessInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey())
+        .isEqualTo(childProcessInstanceKey);
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessInstanceKeyIn() {
+    // given - "process-2" has exactly one task; childProcessInstanceKey also has exactly one task
+    final var process2InstanceKey =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-2"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f -> f.processInstanceKey(b -> b.in(childProcessInstanceKey, process2InstanceKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    result
+        .items()
+        .forEach(
+            item ->
+                assertThat(item.getProcessInstanceKey())
+                    .isIn(childProcessInstanceKey, process2InstanceKey));
   }
 
   @Test
@@ -723,6 +895,78 @@ class UserTaskSearchIT {
                       variable.getName())
                   .isEqualTo(childProcessInstanceKey);
             });
+  }
+
+  @Test
+  void shouldReturnUserTaskBusinessIdInheritedFromOwningInstance() {
+    // when - get the child user task from a call activity whose parent was started with a
+    // businessId
+    final var childUserTask = camundaClient.newUserTaskGetRequest(childUserTaskKey).send().join();
+
+    // then - the child instance inherits the owning (parent) instance's businessId, and the user
+    // task is stamped from its owning instance (mirroring rootProcessInstanceKey inheritance)
+    assertThat(childUserTask.getBusinessId()).isEqualTo(CHILD_PARENT_BUSINESS_ID);
+  }
+
+  @Test
+  void shouldRetrieveUserTaskByBusinessId() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(BUSINESS_ID_1))
+            .send()
+            .join();
+
+    // then - only the "process" instance started with that businessId matches
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getBusinessId()).isEqualTo(BUSINESS_ID_1);
+    assertThat(result.items().getFirst().getBpmnProcessId()).isEqualTo("process");
+  }
+
+  @Test
+  void shouldRetrieveUserTaskByBusinessIdLike() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .send()
+            .join();
+
+    // then - both "process" instances carry an "order-*" businessId
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting(UserTask::getBusinessId)
+        .containsExactlyInAnyOrder(BUSINESS_ID_1, BUSINESS_ID_2);
+  }
+
+  @Test
+  void shouldSortUserTasksByBusinessId() {
+    // when - filter to the in-process tasks carrying an "order-*" businessId (the rest are null,
+    // which sorts inconsistently across backends) and order by businessId
+    final var resultAsc =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().asc())
+            .send()
+            .join();
+    final var resultDesc =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(resultAsc.items()).hasSize(2);
+    assertThat(resultDesc.items()).hasSize(2);
+    assertThat(resultAsc.items().getFirst().getBusinessId()).isEqualTo(BUSINESS_ID_1);
+    assertThat(resultAsc.items().getLast().getBusinessId()).isEqualTo(BUSINESS_ID_2);
+    assertThat(resultDesc.items().getFirst().getBusinessId()).isEqualTo(BUSINESS_ID_2);
+    assertThat(resultDesc.items().getLast().getBusinessId()).isEqualTo(BUSINESS_ID_1);
   }
 
   @Test
@@ -1661,6 +1905,88 @@ class UserTaskSearchIT {
                       .join();
               assertThat(resultComplete.items()).hasSize(1);
             });
+  }
+
+  @Test
+  public void shouldRetrieveTasksByOrFilter() {
+    // given - two element ids identifying disjoint subsets of tasks
+    final long element2Count = countUserTasks(f -> f.elementId("test-2"));
+    final long element3Count = countUserTasks(f -> f.elementId("test-3"));
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(sub -> sub.elementId("test-2"), sub -> sub.elementId("test-3"))))
+            .send()
+            .join();
+
+    // then - the union equals the sum of the two disjoint subsets
+    assertThat(result.page().totalItems()).isPositive().isEqualTo(element2Count + element3Count);
+    assertThat(result.items())
+        .allMatch(ut -> "test-2".equals(ut.getElementId()) || "test-3".equals(ut.getElementId()));
+  }
+
+  @Test
+  public void shouldCombineTopLevelFilterAndOrFilterWithAnd() {
+    // given
+    final long element2Count = countUserTasks(f -> f.elementId("test-2"));
+
+    // when - the top-level element id excludes one of the two $or alternatives
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.elementId("test-2")
+                        .orFilters(
+                            List.of(
+                                sub -> sub.elementId("test-2"), sub -> sub.elementId("test-3"))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(element2Count);
+    assertThat(result.items()).isNotEmpty().allMatch(ut -> "test-2".equals(ut.getElementId()));
+  }
+
+  @Test
+  public void shouldRetrieveTasksByOrFilterOnLocalVariables() {
+    // given - no single task carries both variables, see
+    // shouldNotRetrieveTaskIfNotAllLocalVariablesMatch
+    final long task02Count = countUserTasks(f -> f.localVariables(Map.of("task02", "1")));
+    final long task01Count = countUserTasks(f -> f.localVariables(Map.of("task01", "\"test\"")));
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            sub -> sub.localVariables(Map.of("task02", "1")),
+                            sub -> sub.localVariables(Map.of("task01", "\"test\"")))))
+            .send()
+            .join();
+
+    // then
+    assertThat(task02Count).isPositive();
+    assertThat(task01Count).isPositive();
+    assertThat(result.page().totalItems()).isEqualTo(task02Count + task01Count);
+  }
+
+  private static long countUserTasks(final Consumer<UserTaskFilter> filter) {
+    return camundaClient
+        .newUserTaskSearchRequest()
+        .filter(filter)
+        .send()
+        .join()
+        .page()
+        .totalItems();
   }
 
   /**

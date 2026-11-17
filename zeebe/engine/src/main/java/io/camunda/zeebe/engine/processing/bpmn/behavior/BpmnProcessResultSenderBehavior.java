@@ -70,7 +70,7 @@ public final class BpmnProcessResultSenderBehavior {
         .setTags(context.getTags())
         .setBusinessId(context.getBusinessId());
 
-    responseWriter.writeResponse(
+    responseWriter.writeAcceptedResponse(
         context.getProcessInstanceKey(),
         ProcessInstanceResultIntent.COMPLETED,
         resultRecord,

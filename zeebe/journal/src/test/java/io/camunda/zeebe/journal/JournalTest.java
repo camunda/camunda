@@ -22,12 +22,11 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -43,17 +42,17 @@ final class JournalTest {
   final JournalMetaStore metaStore = new MockJournalMetastore();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private byte[] entry;
-  private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
-  private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
+  private DirectBufferWriter recordDataWriter;
+  private DirectBufferWriter otherRecordDataWriter;
   private Journal journal;
 
   @BeforeEach
   void setup() {
     entry = "TestData".getBytes();
-    recordDataWriter.wrap(new UnsafeBuffer(entry));
+    recordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entry));
 
     final var entryOther = "TestData".getBytes();
-    otherRecordDataWriter.wrap(new UnsafeBuffer(entryOther));
+    otherRecordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entryOther));
 
     journal = openJournal();
   }
@@ -148,7 +147,7 @@ final class JournalTest {
     for (int i = 0; i < 10; i++) {
       // given
       entry = ("TestData" + i).getBytes();
-      recordDataWriter.wrap(new UnsafeBuffer(entry));
+      recordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entry));
 
       // when
       final var recordAppended = journal.append(i + 10, recordDataWriter);
@@ -229,7 +228,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldTruncate() {
+  void shouldTruncate() throws Exception {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -242,10 +241,16 @@ final class JournalTest {
     // when
     journal.deleteAfter(1);
 
-    // then
+    // then - nothing was flushed, so the truncation must not claim entry 1 as flushed
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    assertThat(metaStore.loadLastFlushedIndex()).isOne();
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
     assertThat(reader.hasNext()).isFalse();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isOne();
   }
 
   @Test
@@ -481,7 +486,8 @@ final class JournalTest {
   @Test
   void shouldInvalidateAllEntries() throws Exception {
     // given
-    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.append(recordDataWriter);
@@ -489,7 +495,8 @@ final class JournalTest {
 
     // when
     journal.deleteAfter(firstRecord.index());
-    recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.close();
@@ -505,11 +512,18 @@ final class JournalTest {
   @Test
   void shouldDetectCorruptedEntry() throws Exception {
     // given
-    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     journal.append(recordDataWriter);
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
-    final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
-    final File log = Objects.requireNonNull(dataFile.listFiles())[0];
+    final Path dataFile;
+    try (final var stream = Files.list(directory)) {
+      dataFile = stream.findFirst().orElseThrow();
+    }
+    final Path log;
+    try (final var stream = Files.list(dataFile)) {
+      log = stream.findFirst().orElseThrow();
+    }
 
     // when
     journal.close();
@@ -524,18 +538,26 @@ final class JournalTest {
   @Test
   void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
-    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
-    final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
-    final File log = Objects.requireNonNull(dataFile.listFiles())[0];
+    final Path dataFile;
+    try (final var stream = Files.list(directory)) {
+      dataFile = stream.findFirst().orElseThrow();
+    }
+    final Path log;
+    try (final var stream = Files.list(dataFile)) {
+      log = stream.findFirst().orElseThrow();
+    }
 
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
     metaStore.storeLastFlushedIndex(firstRecord.index());
     journal = openJournal();
-    recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var lastRecord = journal.append(recordDataWriter);
     final var reader = journal.openReader();
 
@@ -564,13 +586,14 @@ final class JournalTest {
 
     if (record instanceof final PersistedJournalRecord p) {
       return new PersistedJournalRecord(
-          p.metadata(), data, BufferUtil.cloneBuffer(p.serializedRecord()));
+          p.metadata(), data, BufferUtil.cloneBuffer(p.serializedRecord()), p.size());
     }
 
     return new PersistedJournalRecord(
         new RecordMetadata(record.checksum(), data.data().capacity()),
         data,
-        BufferUtil.cloneBuffer(record.serializedRecord()));
+        BufferUtil.cloneBuffer(record.serializedRecord()),
+        record.size());
   }
 
   private SegmentedJournal openJournal() {
@@ -580,7 +603,7 @@ final class JournalTest {
   private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
     final var builder =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data").toFile())
+            .withDirectory(directory.resolve("data"))
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)
             .withJournalIndexDensity(5);

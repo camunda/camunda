@@ -18,7 +18,5 @@ public interface DecisionDefinitionReader {
       final List<String> decisionDefinitionVersions,
       final List<String> tenantIds);
 
-  List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions();
-
   String getLatestVersionToKey(String key);
 }

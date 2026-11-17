@@ -11,6 +11,9 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSI
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -23,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
 import java.util.Date;
@@ -143,8 +147,11 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
@@ -158,11 +165,9 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withValue(processInstanceRecordValue));
 
-    // when
-    final var idList = underTest.generateIds(processInstanceRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(processInstanceRecord.getKey()));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, processInstanceRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(processInstanceRecord.getKey()), index));
   }
 
   @Test
@@ -187,6 +192,7 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
             .setActivityId("A")
             .setActivityType(FlowNodeType.CALL_ACTIVITY)
             .setActivityState(FlowNodeState.ACTIVE);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -196,12 +202,12 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,
@@ -305,5 +311,49 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
     underTest.updateEntity(processInstanceRecord, entity);
 
     assertThat(entity.getActivityState()).isEqualTo(FlowNodeState.TERMINATED);
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecordWhenNotMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(42)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenMainIndex() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX)
+                            .build()));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

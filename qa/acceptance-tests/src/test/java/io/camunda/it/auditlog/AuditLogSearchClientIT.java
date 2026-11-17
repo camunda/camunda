@@ -26,10 +26,10 @@ import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -37,10 +37,8 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogSearchClientIT {
 
   @MultiDbTestApplication
@@ -722,6 +720,48 @@ public class AuditLogSearchClientIT {
             });
   }
 
+  @Test
+  void shouldSearchAuditLogsByInboundChannelTypeNotPresent(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.inboundChannelType(p -> p.exists(false)))
+            .page(p -> p.limit(5))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLogItems.items())
+        .allSatisfy(
+            log -> {
+              assertThat(log.getInboundChannelType()).isNull();
+            });
+  }
+
+  @Test
+  void shouldSearchAuditLogsByInboundChannelToolNameNotPresent(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.inboundChannelToolName(p -> p.exists(false)))
+            .page(p -> p.limit(5))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLogItems.items())
+        .allSatisfy(
+            log -> {
+              assertThat(log.getInboundChannelToolName()).isNull();
+            });
+  }
+
   // ========================================================================================
   // Helper Methods
   // ========================================================================================
@@ -752,7 +792,7 @@ public class AuditLogSearchClientIT {
       final CamundaClient client, final Consumer<AuditLogFilter> auditLogFilterConsumer) {
     return Awaitility.await("Audit log entry is created")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var auditLogItems =

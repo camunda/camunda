@@ -19,6 +19,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
@@ -29,12 +30,11 @@ jobs:
     permissions:
       contents: read
     env:
-      TEST_OWNER: Orchestration Cluster
       TEST_PRODUCT: Orchestration Cluster
       TEST_TYPE: CI Helper
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata

@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ColorPicker} from 'components';
+
 import {determineBarColor} from '../colorsUtils';
 import {
   createDatasetOptions,
@@ -90,11 +92,12 @@ it('should create dataset option for pie reports', () => {
     isStriped: false,
     isDark: false,
   });
+  const pieColors = ColorPicker.getGeneratedColors(data.length);
   expect(options).toEqual({
-    backgroundColor: ['#aec7e9', '#6391d2'],
+    backgroundColor: pieColors,
     borderColor: '#fff',
     borderWidth: undefined,
-    hoverBackgroundColor: ['#aec7e9', '#6391d2'],
+    hoverBackgroundColor: pieColors,
   });
 });
 
@@ -201,6 +204,35 @@ it('should switch tooltip alignment of an item when surpassing 70% of the availa
   getPixelForValue.mockReturnValueOnce(19);
   const newAlignment = chartConfig.plugins.datalabels.align(context);
   expect(newAlignment).toBe('start');
+});
+
+it('should enforce legible group-by axis ticks for agentic control reports', () => {
+  const chartConfig = createBarOptions({
+    configuration: {},
+    measures: [{property: 'frequency', data: []}],
+    agenticControlReport: true,
+  });
+
+  const ticks = chartConfig.scales['x'].ticks;
+  // long category/date labels are rotated rather than truncated/overlapped
+  expect(ticks.maxRotation).toBe(45);
+  expect(ticks.minRotation).toBe(0);
+  expect(ticks.autoSkip).toBe(true);
+  // and the tick font never shrinks below the legibility floor (height 64 / 32 = 2 -> 11)
+  expect(ticks.font({chart: {height: 64}}).size).toBe(11);
+});
+
+it('should leave group-by axis ticks unchanged for non-agentic reports', () => {
+  const chartConfig = createBarOptions({
+    configuration: {},
+    measures: [{property: 'frequency', data: []}],
+  });
+
+  const ticks = chartConfig.scales['x'].ticks;
+  expect(ticks.maxRotation).toBeUndefined();
+  expect(ticks.minRotation).toBeUndefined();
+  // the default font formula has no floor, so a short chart yields a sub-11 size
+  expect(ticks.font({chart: {height: 64}}).size).toBe(2);
 });
 
 it('should set axis-0 scale step to integers if chart has frequency measure', () => {

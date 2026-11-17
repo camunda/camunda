@@ -36,13 +36,14 @@ public final class ExporterMetadata {
   @JsonIgnore private final ObjectWriter objectWriter;
   @JsonIgnore private final ObjectReader objectReader;
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
+  @JsonIgnore private volatile long lastFlushedPosition = UNSET_POSITION;
   private Map<TaskImplementation, Long> firstUserTaskKeys =
-      new HashMap<>() {
-        {
-          put(TaskImplementation.ZEEBE_USER_TASK, (long) UNSET_POSITION);
-          put(TaskImplementation.JOB_WORKER, (long) UNSET_POSITION);
-        }
-      };
+      new HashMap<>(
+          Map.of(
+              TaskImplementation.ZEEBE_USER_TASK,
+              (long) UNSET_POSITION,
+              TaskImplementation.JOB_WORKER,
+              (long) UNSET_POSITION));
   private long firstProcessMessageSubscriptionKey = UNSET_POSITION;
 
   public ExporterMetadata(final ObjectMapper objectMapper) {
@@ -59,6 +60,16 @@ public final class ExporterMetadata {
     INCIDENT_POSITION_SETTER.updateAndGet(
         this,
         prev -> updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
+  }
+
+  @JsonIgnore
+  public long getLastFlushedPosition() {
+    return lastFlushedPosition;
+  }
+
+  @JsonIgnore
+  public void setLastFlushedPosition(final long lastFlushedPosition) {
+    this.lastFlushedPosition = lastFlushedPosition;
   }
 
   public long getFirstUserTaskKey(final TaskImplementation implementation) {

@@ -10,15 +10,36 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from '../../utils/sleep';
 
 type ProcessInstance = {processInstanceKey: number};
 
+// The rendered rows are capped at the 50-row page size, so comparing
+// processInstancesTable.count() across a filter change gives a false result
+// once a result set exceeds one page. The panel heading reports the TOTAL match
+// count (e.g. "Process Instances - 1497 results"); parse that instead when
+// asserting a filter grew or shrank the result set.
+async function readTotalResultsCount(
+  page: import('@playwright/test').Page,
+): Promise<number> {
+  const heading = page
+    .getByRole('heading', {name: /\d[\d,]*\s+results?/})
+    .first();
+  await expect(heading).toBeVisible({timeout: 30000});
+  const text = await heading.innerText();
+  const match = text.match(/([\d,]+)\s+results?/);
+  if (match === null) {
+    throw new Error(`Unable to parse results count from heading: "${text}"`);
+  }
+  return Number(match[1].replace(/,/g, ''));
+}
+
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
+let orderProcessFiltersValue: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -33,11 +54,12 @@ test.beforeAll(async () => {
   await createInstances('processWithMultipleVersions', 2, 1);
 
   await deploy(['./resources/orderProcess_v_1.bpmn']);
+  orderProcessFiltersValue = Date.now().toString();
   orderProcessInstance = {
     processInstanceKey: Number(
       (
         await createSingleInstance('orderProcess', 1, {
-          filtersTest: 123,
+          filtersTest: Number(orderProcessFiltersValue),
         })
       ).processInstanceKey,
     ),
@@ -68,9 +90,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instances Filters', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
@@ -80,8 +101,7 @@ test.describe('Process Instances Filters', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // skipped due to bug 45156: https://github.com/camunda/camunda/issues/45156
-  test.skip('Interaction between diagram and filters', async ({
+  test('Interaction between diagram and filters', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
     page,
@@ -146,6 +166,67 @@ test.describe('Process Instances Filters', () => {
     });
   });
 
+  test('Variable filtering via inline single-condition form', async ({
+    page,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+  }) => {
+    test.slow();
+    const orderProcessInstanceKey =
+      orderProcessInstance.processInstanceKey.toString();
+
+    await test.step('Open Variables filter and use inline form', async () => {
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await expect(
+        operateFiltersPanelPage.singleConditionNameInput,
+      ).toBeVisible();
+      await expect(
+        operateFiltersPanelPage.singleConditionValueInput,
+      ).toBeVisible();
+
+      await operateFiltersPanelPage.fillSingleConditionInline(
+        'filtersTest',
+        orderProcessFiltersValue,
+      );
+    });
+
+    await test.step('Inline filter narrows the list', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30_000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        // The filtered instance is indexed asynchronously; allow more
+        // reload-and-recheck cycles before failing.
+        maxRetries: 5,
+      });
+      await expect(
+        operateProcessesPage.processInstancesTable.getByText(
+          orderProcessInstanceKey,
+          {exact: true},
+        ),
+      ).toBeVisible({timeout: 60000});
+    });
+
+    await test.step('Escalating to modal pre-fills the inline values', async () => {
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await expect(
+        operateFiltersPanelPage.getConditionRowNameInput(0),
+      ).toHaveValue('filtersTest');
+      await expect(
+        operateFiltersPanelPage.getConditionRowValueInput(0),
+      ).toHaveValue(orderProcessFiltersValue);
+      await operateFiltersPanelPage.variableFilterDialog
+        .getByRole('button', {name: 'Cancel'})
+        .click();
+    });
+  });
+
   test('Variable filtering with single and multiple values', async ({
     page,
     operateProcessesPage,
@@ -168,25 +249,15 @@ test.describe('Process Instances Filters', () => {
       await sleep(200);
     });
 
-    await test.step('Add Variable Filter', async () => {
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-      await operateFiltersPanelPage.fillVariableValueFilter('123');
-    });
-
-    await test.step('Open json editor modal and check content', async () => {
-      await operateFiltersPanelPage.clickJsonEditorModal();
-      await expect(
-        operateFiltersPanelPage.dialogEditVariableValueText,
-      ).toBeVisible();
-      await expect(
-        operateFiltersPanelPage.variableEditorDialog.getByText('123'),
-      ).toBeVisible();
-    });
-
-    await test.step('Close modal', async () => {
-      await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
+    await test.step('Add Variable Filter via modal', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(
+        0,
+        'filtersTest',
+        orderProcessFiltersValue,
+      );
+      await operateFiltersPanelPage.applyVariableFilter();
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
@@ -196,9 +267,6 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Variable');
-          await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-          await operateFiltersPanelPage.fillVariableValueFilter('123');
         },
       });
       await expect(
@@ -217,28 +285,40 @@ test.describe('Process Instances Filters', () => {
       ).toBeHidden();
     });
 
-    await test.step('Switch to multiple mode and add multiple variables', async () => {
-      await operateFiltersPanelPage.clickMultipleVariablesSwitch();
-      await operateFiltersPanelPage.variableNameFilter.fill('filtersTest');
-      await operateFiltersPanelPage.variableValueFilter.fill('123, 456');
-    });
-
-    await test.step('Open editor modal and check content', async () => {
-      await operateFiltersPanelPage.clickJsonEditorModal();
+    await test.step('Re-open modal and verify JSON editor', async () => {
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.openJsonEditorForRow(0);
       await expect(
-        operateFiltersPanelPage.dialogEditMultipleVariableValueText,
+        operateFiltersPanelPage.variableFilterDialog.getByText(
+          'Edit value: filtersTest',
+        ),
       ).toBeVisible();
       await expect(
-        operateFiltersPanelPage.variableEditorDialog.getByText('123, 456'),
+        operateFiltersPanelPage.variableFilterDialog.getByText(
+          orderProcessFiltersValue,
+        ),
       ).toBeVisible();
+      await operateFiltersPanelPage.cancelVariableFilterModal();
+      await operateFiltersPanelPage.cancelVariableFilterModal();
+      // The second Cancel closes the modal via a route change. Without waiting
+      // for it to fully unmount, the next step's openVariableFilterModal() can
+      // observe the still-closing dialog as "visible", skip re-opening it, and
+      // then time out looking for the operator control once the close settles.
+      await expect(operateFiltersPanelPage.variableFilterDialog).toBeHidden();
     });
 
-    await test.step('Close modal', async () => {
-      await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
+    await test.step('Edit condition to use oneOf operator for multiple values', async () => {
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.selectOperator(0, 'is one of');
+      await operateFiltersPanelPage.fillConditionRow(
+        0,
+        'filtersTest',
+        `[${orderProcessFiltersValue}, 456]`,
+      );
+      await operateFiltersPanelPage.applyVariableFilter();
     });
 
-    await test.step('Check that process instances table is filtered correctly', async () => {
+    await test.step('Check that oneOf filter matches both values', async () => {
       await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
@@ -304,9 +384,10 @@ test.describe('Process Instances Filters', () => {
     await test.step('Filter by End Date Range and assert results', async () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
-      const endDate = await operateProcessesPage.endDateCell.innerText();
+      let totalBefore = await readTotalResultsCount(page);
+      const endDate = await (
+        await operateProcessesPage.getEndDateCell()
+      ).innerText();
       const day =
         endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
 
@@ -317,27 +398,40 @@ test.describe('Process Instances Filters', () => {
       });
       await operateFiltersPanelPage.clickApply();
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeLessThan(totalBefore);
 
-      currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      totalBefore = await readTotalResultsCount(page);
       await operateFiltersPanelPage.clickResetFilters();
       await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeGreaterThan(currentRowCount);
+        .poll(() => readTotalResultsCount(page), {timeout: 30000})
+        .toBeGreaterThan(totalBefore);
     });
 
     await test.step('Filter by Error Message and assert results', async () => {
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
+      const totalBefore = await readTotalResultsCount(page);
+      // Match the real incident raised by processWithAnError (its message
+      // subscription uses correlationKey "=nonExistingClientId", which cannot
+      // be resolved). Filtering by an error message that no instance has would
+      // yield an empty result set rather than exercising the filter.
       await operateFiltersPanelPage.displayOptionalFilter('Error Message');
       await operateFiltersPanelPage.fillErrorMessageFilter(
-        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
+        "Failed to extract the correlation key for 'nonExistingClientId'",
       );
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
+      // The debounced text filter can fail to commit its search on first apply
+      // under load, leaving the count unchanged; the filter is persisted to the
+      // URL, so a reload re-runs it (same recovery the later error-message
+      // steps in this test use).
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() => readTotalResultsCount(page), {timeout: 30000})
+            .toBeLessThan(totalBefore);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Filter by Start Date Range and assert results', async () => {
@@ -411,9 +505,10 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Filter by variable and assert results', async () => {
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-      await operateFiltersPanelPage.fillVariableValueFilter('604');
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', '604');
+      await operateFiltersPanelPage.applyVariableFilter();
 
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
@@ -424,7 +519,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           const variableProcessInstanceKeys = new Set<string>();
           for (const element of await operateProcessesPage.processInstancesTable
-            .getByTestId('cell-processInstanceKey')
+            .getByRole('link', {name: /^View instance \d+$/})
             .elementHandles()) {
             variableProcessInstanceKeys.add(await element.innerText());
           }
@@ -582,7 +677,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
     });
 
-    await test.step('Filter by variable and operation id and assert results', async () => {
+    await test.step('Filter by variable and batch operation key and assert results', async () => {
       const processToCancelMeowInstance = {
         processInstanceKey: Number(
           (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
@@ -618,7 +713,12 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the "Select all
+      // rows" checkbox renders.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+
+      await operateProcessesPage.selectAllProcessInstances();
 
       await operateProcessesPage.clickCancelBatchOperationButton();
 
@@ -636,11 +736,13 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await expect(operateOperationsDetailsPage.state).toBeVisible();
         },
+        maxRetries: 5,
       });
 
-      const operationId =
-        await operateOperationsDetailsPage.getBatchOperationId();
+      const batchOperationKey =
+        await operateOperationsDetailsPage.getBatchOperationKey();
 
       await page.goto(`operate/processes`);
 
@@ -657,8 +759,12 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-      await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Batch Operation Key',
+      );
+      await operateFiltersPanelPage.fillBatchOperationKeyFilter(
+        batchOperationKey,
+      );
 
       await waitForAssertion({
         assertion: async () => {
@@ -666,14 +772,19 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-          await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Batch Operation Key',
+          );
+          await operateFiltersPanelPage.fillBatchOperationKeyFilter(
+            batchOperationKey,
+          );
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('sound');
-      await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'sound', '"meow"');
+      await operateFiltersPanelPage.applyVariableFilter();
 
       await waitForAssertion({
         assertion: async () => {
@@ -778,9 +889,17 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-      await operateFiltersPanelPage.fillVariableValueFilter('604');
+      // The process-instance-key filter is written to the URL on a debounce.
+      // Opening the variable filter modal navigates using the current URL, so
+      // opening it before that write commits drops the key from the query and
+      // the combined filter then matches the wrong result set. Wait for the URL
+      // to carry the key before leaving this filter.
+      await expect(page).toHaveURL(/[?&]processInstanceKey=/);
+
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', '604');
+      await operateFiltersPanelPage.applyVariableFilter();
 
       await waitForAssertion({
         assertion: async () => {
@@ -797,7 +916,6 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateFiltersPanelPage.processInstanceKeysFilter,
       ).toBeHidden();
-      await expect(operateFiltersPanelPage.variableNameFilter).toBeHidden();
       await operateFiltersPanelPage.validateCheckedState(
         [
           operateFiltersPanelPage.activeInstancesCheckbox,

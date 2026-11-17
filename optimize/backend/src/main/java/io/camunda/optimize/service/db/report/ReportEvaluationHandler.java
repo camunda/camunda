@@ -17,8 +17,10 @@ import static java.util.stream.Collectors.mapping;
 import io.camunda.optimize.MetricEnum;
 import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.TenantDto;
+import io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
@@ -35,6 +37,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -50,9 +54,12 @@ import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import io.micrometer.core.instrument.Tags;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -163,49 +170,156 @@ public abstract class ReportEvaluationHandler {
     // from all tenants the given definition currently exists on
     if (reportEvaluationInfo.getReport().getData()
         instanceof final ProcessReportDataDto processReportData) {
-      if (processReportData.isManagementReport()) {
-        final List<ReportDataDefinitionDto> definitionsForManagementReport =
-            definitionService
-                .getFullyImportedDefinitions(
-                    DefinitionType.PROCESS, reportEvaluationInfo.getUserId())
-                .stream()
-                .map(
-                    def ->
-                        new ReportDataDefinitionDto(
-                            def.getKey(),
-                            def.getName(),
-                            List.of(ALL_VERSIONS),
-                            def.getTenants().stream()
-                                .map(TenantDto::getId)
-                                .collect(Collectors.toList()),
-                            def.getName()))
-                .collect(Collectors.toList());
-        processReportData.setDefinitions(definitionsForManagementReport);
+      if (processReportData.isAgenticControlReport() || processReportData.isBusinessValueReport()) {
+        final List<ReportDataDefinitionDto> scopedDefinitions =
+            Optional.ofNullable(reportEvaluationInfo.getAdditionalFilters())
+                .map(AdditionalProcessReportEvaluationFilterDto::getDefinitions)
+                .orElse(List.of());
+
+        if (!scopedDefinitions.isEmpty()) {
+          // L1: one or more processes selected — validate tenant access for each and combine.
+          // The versions requested by the caller (e.g. a specific version selected in the
+          // Agentic Control Plane version filter) are preserved; an empty version list falls
+          // back to ALL_VERSIONS to keep the previous "all versions" behavior.
+          final List<ReportDataDefinitionDto> validatedDefs =
+              scopedDefinitions.stream()
+                  .flatMap(
+                      scopedDef ->
+                          definitionService
+                              .getDefinitionWithAvailableTenants(
+                                  DefinitionType.PROCESS,
+                                  scopedDef.getKey(),
+                                  reportEvaluationInfo.getUserId())
+                              .stream()
+                              .map(
+                                  def ->
+                                      toReportDataDefinitionDto(
+                                          def, scopedDef.getVersions(), scopedDef.getTenantIds())))
+                  .toList();
+          applyNamesFromResolvedTenants(validatedDefs, reportEvaluationInfo.getUserId());
+          processReportData.setDefinitions(validatedDefs);
+          // Heatmap tiles render on top of the BPMN diagram, so the frontend needs the definition
+          // XML in the report configuration. Unlike normal reports, agentic reports are stored with
+          // an empty definition list, so the XML is never persisted; and the standard XML refresh
+          // in updateAndSetLatestReportDefinitionXml runs before the definitions are injected here.
+          // Load and set it now so the diagram is available at render time.
+          populateHeatmapXml(processReportData, validatedDefs);
+        } else {
+          // L0: no process selected — fetch all fully-imported definitions
+          processReportData.setDefinitions(
+              allFullyImportedProcessDefinitions(reportEvaluationInfo.getUserId()));
+        }
+      } else if (processReportData.isManagementReport()) {
+        processReportData.setDefinitions(
+            allFullyImportedProcessDefinitions(reportEvaluationInfo.getUserId()));
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
         final String key =
             ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
-        final List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
+        processReportData.setDefinitions(
             definitionService
                 .getDefinitionWithAvailableTenants(
                     DefinitionType.PROCESS, key, reportEvaluationInfo.getUserId())
                 .stream()
-                .map(
-                    def ->
-                        new ReportDataDefinitionDto(
-                            def.getKey(),
-                            def.getName(),
-                            List.of(ALL_VERSIONS),
-                            def.getTenants().stream()
-                                .map(TenantDto::getId)
-                                .collect(Collectors.toList()),
-                            def.getName()))
-                .collect(Collectors.toList());
-
-        processReportData.setDefinitions(definitionForInstantPreviewReport);
+                .map(this::toReportDataDefinitionDto)
+                .toList());
       }
     }
+  }
+
+  private void populateHeatmapXml(
+      final ProcessReportDataDto processReportData,
+      final List<ReportDataDefinitionDto> definitions) {
+    if (processReportData.getVisualization() != ProcessVisualization.HEAT
+        || definitions.isEmpty()) {
+      return;
+    }
+    final ReportDataDefinitionDto primaryDefinition = definitions.get(0);
+    definitionService
+        .getDefinitionWithXmlAsService(
+            DefinitionType.PROCESS,
+            primaryDefinition.getKey(),
+            primaryDefinition.getVersions(),
+            primaryDefinition.getTenantIds())
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .map(ProcessDefinitionOptimizeDto::getBpmn20Xml)
+        .ifPresent(xml -> processReportData.getConfiguration().setXml(xml));
+  }
+
+  private List<ReportDataDefinitionDto> allFullyImportedProcessDefinitions(final String userId) {
+    return definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, userId).stream()
+        .map(this::toReportDataDefinitionDto)
+        .toList();
+  }
+
+  /**
+   * {@code getDefinitionWithAvailableTenants} picks the definition name across all tenants before
+   * authorization narrows the tenant list, so the name can come from a tenant the user cannot see.
+   * Re-resolve each name within the definition's resolved tenants only, with one lookup per
+   * distinct tenant set rather than per definition; without a match the name is cleared and labels
+   * fall back to the process id.
+   */
+  private void applyNamesFromResolvedTenants(
+      final List<ReportDataDefinitionDto> definitions, final String userId) {
+    definitions.stream()
+        .collect(Collectors.groupingBy(definition -> new HashSet<>(definition.getTenantIds())))
+        .forEach(
+            (tenantIds, definitionsInTenants) -> {
+              final Map<String, String> namesByKey =
+                  definitionService
+                      .getFullyImportedDefinitions(
+                          DefinitionType.PROCESS,
+                          definitionsInTenants.stream()
+                              .map(ReportDataDefinitionDto::getKey)
+                              .collect(Collectors.toSet()),
+                          new ArrayList<>(tenantIds),
+                          userId)
+                      .stream()
+                      .filter(definition -> definition.getName() != null)
+                      .collect(
+                          Collectors.toMap(
+                              DefinitionResponseDto::getKey,
+                              DefinitionResponseDto::getName,
+                              (first, second) -> first));
+              definitionsInTenants.forEach(
+                  definition -> {
+                    final String name = namesByKey.get(definition.getKey());
+                    definition.setName(name);
+                    definition.setDisplayName(name);
+                  });
+            });
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(final DefinitionResponseDto def) {
+    return toReportDataDefinitionDto(def, List.of(ALL_VERSIONS));
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(
+      final DefinitionResponseDto def, final List<String> versions) {
+    return toReportDataDefinitionDto(def, versions, null);
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(
+      final DefinitionResponseDto def,
+      final List<String> versions,
+      final List<String> requestedTenantIds) {
+    final List<String> resolvedVersions =
+        versions == null || versions.isEmpty() ? List.of(ALL_VERSIONS) : versions;
+    final List<String> availableTenantIds =
+        def.getTenants().stream().map(TenantDto::getId).toList();
+    // An unscoped definition deserializes tenantIds to DEFAULT_TENANT_IDS ([null]); treat that (and
+    // any all-null list) as "no scope" so unscoped/agentic reports keep all available tenants.
+    final Set<String> scopedTenantIds =
+        requestedTenantIds == null
+            ? Set.of()
+            : requestedTenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+    final List<String> resolvedTenantIds =
+        scopedTenantIds.isEmpty()
+            ? availableTenantIds
+            : availableTenantIds.stream().filter(scopedTenantIds::contains).toList();
+    return new ReportDataDefinitionDto(
+        def.getKey(), def.getName(), resolvedVersions, resolvedTenantIds, def.getName());
   }
 
   private CombinedReportEvaluationResult evaluateCombinedReport(
@@ -259,8 +373,7 @@ public abstract class ReportEvaluationHandler {
     final List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
         reportService.getAllSingleProcessReportsForIdsOmitXml(singleReportIds).stream()
             .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-            .peek(
-                reportDefinition -> addAdditionalFiltersForReport(evaluationInfo, reportDefinition))
+            .peek(reportDefinition -> applyEvaluationOverrides(evaluationInfo, reportDefinition))
             .collect(Collectors.toList());
 
     if (foundSingleReports.size() != singleReportIds.size()) {
@@ -278,7 +391,7 @@ public abstract class ReportEvaluationHandler {
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(
       final ReportEvaluationInfo evaluationInfo, final RoleType currentUserRole) {
-    addAdditionalFiltersForReport(evaluationInfo, evaluationInfo.getReport());
+    applyEvaluationOverrides(evaluationInfo, evaluationInfo.getReport());
     addHiddenFlowNodeIds(evaluationInfo);
     try {
       final ReportEvaluationContext<SingleReportDefinitionDto<SingleReportDataDto>> context =
@@ -300,7 +413,7 @@ public abstract class ReportEvaluationHandler {
     }
   }
 
-  private void addAdditionalFiltersForReport(
+  private void applyEvaluationOverrides(
       final ReportEvaluationInfo evaluationInfo, final ReportDefinitionDto<?> reportDefinition) {
     if (evaluationInfo.isSharedReport()) {
       addAdditionalFiltersForReport(reportDefinition, evaluationInfo.getAdditionalFilters());
@@ -308,6 +421,7 @@ public abstract class ReportEvaluationHandler {
       addAdditionalFiltersForAuthorizedReport(
           evaluationInfo.getUserId(), reportDefinition, evaluationInfo.getAdditionalFilters());
     }
+    overrideGroupByDateUnit(reportDefinition, evaluationInfo.getAdditionalFilters());
   }
 
   private void addHiddenFlowNodeIds(final ReportEvaluationInfo evaluationInfo) {
@@ -394,6 +508,22 @@ public abstract class ReportEvaluationHandler {
             "Cannot add additional filters to report [{}] as it is not a process report",
             reportDefinitionDto.getId());
       }
+    }
+  }
+
+  private void overrideGroupByDateUnit(
+      final ReportDefinitionDto<?> reportDefinitionDto,
+      final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    if (additionalFilters == null || additionalFilters.getGroupByDateUnit() == null) {
+      return;
+    }
+    if (!(reportDefinitionDto
+        instanceof final SingleProcessReportDefinitionRequestDto definitionDto)) {
+      return;
+    }
+    if (definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
+        && endDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
+      dateValue.setUnit(additionalFilters.getGroupByDateUnit());
     }
   }
 }

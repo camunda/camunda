@@ -11,8 +11,14 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.SequencedCollection;
 
-/** Manages backup of a partition * */
-public interface BackupManager {
+/**
+ * Manages backup of a partition. This is the full, read-write view of a partition's backups: it
+ * inherits the read-only query operations from {@link ReadOnlyBackupManager} and adds the mutating
+ * operations (take, delete, sync, clear). Only a partition leader with access to its RocksDB state
+ * can serve this interface. A member serving requests while in recovery mode exposes just the
+ * {@link ReadOnlyBackupManager} query subset instead — see {@code ReadOnlyBackupService}.
+ */
+public interface BackupManager extends ReadOnlyBackupManager {
 
   /**
    * Takes backup with id checkpointId using the provided partition count. The method returns
@@ -29,23 +35,6 @@ public interface BackupManager {
   ActorFuture<Void> takeBackup(final long checkpointId, BackupDescriptor backupDescriptor);
 
   /**
-   * Get the status of the backup
-   *
-   * @param checkpointId id of the backup to get status for
-   * @return backup status
-   */
-  ActorFuture<BackupStatus> getBackupStatus(long checkpointId);
-
-  /**
-   * Get all available backups where status is one of {@link BackupStatusCode#COMPLETED}, {@link
-   * BackupStatusCode#FAILED}, {@link BackupStatusCode#IN_PROGRESS}
-   *
-   * @param pattern null, empty, a prefix ending in '*' or an exact backup id
-   * @return all backups with ids matching the pattern
-   */
-  ActorFuture<Collection<BackupStatus>> listBackups(final String pattern);
-
-  /**
    * Deletes the backup.
    *
    * @param checkpointId id of the backup to delete
@@ -58,11 +47,17 @@ public interface BackupManager {
   /** Close Backup manager */
   ActorFuture<Void> closeAsync();
 
+  /**
+   * Marks the backups a previous leader left in progress as failed.
+   *
+   * @param lastCheckpointId the latest checkpoint of the partition; newer backups are not touched
+   */
   void failInProgressBackup(long lastCheckpointId);
 
   /**
    * Creates a backup with failed status. This is used when a backup cannot be taken due to system
-   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded.
+   * constraints (e.g., scaling in progress) but the backup entry needs to be recorded. Releases the
+   * snapshot reserved for the checkpoint, as no backup will use it.
    *
    * @param checkpointId id of the backup to create
    * @param backupDescriptor descriptor of the checkpoint triggering the backup
@@ -70,11 +65,6 @@ public interface BackupManager {
    */
   void createFailedBackup(
       final long checkpointId, BackupDescriptor backupDescriptor, String failureReason);
-
-  /**
-   * @return all backup ranges for the partition
-   */
-  ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
 
   /**
    * Force-write the backup metadata file for this partition using the provided checkpoints and
@@ -91,4 +81,10 @@ public interface BackupManager {
    * @return future which will be completed after the CLEAR_STATE command is written to the log
    */
   ActorFuture<Void> requestStateClear();
+
+  /**
+   * Releases the reservation of a snapshot that was reserved for a checkpoint which does not take a
+   * backup, e.g. because the checkpoint was ignored.
+   */
+  void releaseSnapshotReservation(long checkpointId, String snapshotId);
 }

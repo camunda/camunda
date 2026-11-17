@@ -7,10 +7,12 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -21,6 +23,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.get.GetResult;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -100,6 +103,19 @@ public class OpensearchReaderUtil {
 
   public static <T> Optional<T> processGetResponse(final GetResult<T> getResponse) {
     return Optional.ofNullable(getResponse).filter(GetResult::found).map(GetResult::source);
+  }
+
+  /*
+   Returns an iterator to extract all results from a given search (using search_after instead of scrolls).
+
+   This is done in a lazy fashion so we do not read everything into memory at once.
+  */
+  public static <T> Iterator<List<T>> searchIterator(
+      final OptimizeOpenSearchClient osClient,
+      final SearchRequest searchRequest,
+      final Class<T> itemClass,
+      final String errorMessage) {
+    return new SearchAfterIterator<>(osClient, searchRequest, itemClass, errorMessage);
   }
 
   public static <T> Collection<? extends T> mapHits(

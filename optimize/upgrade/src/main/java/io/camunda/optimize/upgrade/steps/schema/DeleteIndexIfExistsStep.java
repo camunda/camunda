@@ -27,7 +27,7 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
+  protected void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     schemaUpgradeClient.getAliases(indexAlias).stream()

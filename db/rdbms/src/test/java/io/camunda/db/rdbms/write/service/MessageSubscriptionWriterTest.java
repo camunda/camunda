@@ -7,10 +7,13 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -18,13 +21,21 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class MessageSubscriptionWriterTest {
 
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
   private final MessageSubscriptionMapper mapper = mock(MessageSubscriptionMapper.class);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
   private final MessageSubscriptionWriter writer =
-      new MessageSubscriptionWriter(executionQueue, mapper);
+      new MessageSubscriptionWriter(executionQueue, mapper, vendorDatabaseProperties);
+
+  MessageSubscriptionWriterTest() {
+    when(vendorDatabaseProperties.userCharColumnSize()).thenReturn(Integer.MAX_VALUE);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(null);
+  }
 
   @Test
   void shouldCreateMessageSubscription() {
@@ -58,5 +69,70 @@ class MessageSubscriptionWriterTest {
                     model.messageSubscriptionKey(),
                     "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.update",
                     model)));
+  }
+
+  @Test
+  void shouldNotTruncateToolFieldsWhenWithinLimit() {
+    // given
+    when(vendorDatabaseProperties.userCharColumnSize()).thenReturn(100);
+    final var model =
+        new MessageSubscriptionDbModel.Builder()
+            .messageSubscriptionKey(1L)
+            .toolName("short")
+            .inboundConnectorType("short")
+            .build();
+
+    // when
+    writer.create(model);
+
+    // then
+    assertThat(model.toolName()).isEqualTo("short");
+    assertThat(model.inboundConnectorType()).isEqualTo("short");
+  }
+
+  @Test
+  void shouldTruncateToolNameAndInboundConnectorTypeOnCreateWhenExceedingCharLimit() {
+    // given
+    when(vendorDatabaseProperties.userCharColumnSize()).thenReturn(5);
+    final var model =
+        new MessageSubscriptionDbModel.Builder()
+            .messageSubscriptionKey(1L)
+            .toolName("toolname-exceeds-limit")
+            .inboundConnectorType("connector-exceeds-limit")
+            .build();
+
+    // when
+    writer.create(model);
+
+    // then — the queued model (a new instance) carries the truncated values; the original is
+    // untouched since MessageSubscriptionDbModel is immutable
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    verify(executionQueue).executeInQueue(captor.capture());
+    final var queuedModel = (MessageSubscriptionDbModel) captor.getValue().parameter();
+    assertThat(queuedModel.toolName()).hasSize(5);
+    assertThat(queuedModel.inboundConnectorType()).hasSize(5);
+  }
+
+  @Test
+  void shouldTruncateToolFieldsOnUpdateWhenExceedingCharLimit() {
+    // given
+    when(vendorDatabaseProperties.userCharColumnSize()).thenReturn(5);
+    final var model =
+        new MessageSubscriptionDbModel.Builder()
+            .messageSubscriptionKey(1L)
+            .toolName("toolname-exceeds-limit")
+            .inboundConnectorType("connector-exceeds-limit")
+            .build();
+
+    // when
+    writer.update(model);
+
+    // then — the queued model (a new instance) carries the truncated values; the original is
+    // untouched since MessageSubscriptionDbModel is immutable
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    verify(executionQueue).executeInQueue(captor.capture());
+    final var queuedModel = (MessageSubscriptionDbModel) captor.getValue().parameter();
+    assertThat(queuedModel.toolName()).hasSize(5);
+    assertThat(queuedModel.inboundConnectorType()).hasSize(5);
   }
 }

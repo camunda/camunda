@@ -16,20 +16,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 public final class StringUtil {
 
-  /** Helper functions that removes nulls and empty strings and trims all remaining strings */
-  public static final UnaryOperator<List<String>> LIST_SANITIZER =
-      input ->
-          Optional.ofNullable(input).orElse(Collections.emptyList()).stream()
-              .filter(Objects::nonNull)
-              .map(String::trim)
-              .filter(not(String::isEmpty))
-              .collect(toList());
-
   public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+
+  /** Helper functions that removes nulls and empty strings and trims all remaining strings */
+  public static List<String> sanitizeList(@Nullable final List<? extends @Nullable String> input) {
+    return Optional.ofNullable(input).orElse(Collections.emptyList()).stream()
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .filter(not(String::isEmpty))
+        .collect(toList());
+  }
 
   public static byte[] getBytes(final String value) {
     return getBytes(value, DEFAULT_CHARSET);

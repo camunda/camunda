@@ -846,4 +846,47 @@ public class ElementInstanceSearchIT {
     // then
     assertThat(result.items()).isEmpty();
   }
+
+  @Test
+  void shouldRetrieveElementInstancesByOrFilter() {
+    // given - element instances exist whose elementId starts with "Event_" and others
+    // whose elementId starts with "Activity_". Find counts for each subset to validate the union.
+    final long eventCount =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(b -> b.like("Event_*")))
+            .send()
+            .join()
+            .page()
+            .totalItems();
+    final long activityCount =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(b -> b.like("Activity_*")))
+            .send()
+            .join()
+            .page()
+            .totalItems();
+
+    // when - $or over the two patterns
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            sub -> sub.elementId(b -> b.like("Event_*")),
+                            sub -> sub.elementId(b -> b.like("Activity_*")))))
+            .send()
+            .join();
+
+    // then - the union should equal the sum of the two disjoint subsets
+    assertThat(result.page().totalItems()).isEqualTo(eventCount + activityCount);
+    assertThat(result.items())
+        .allMatch(
+            ei ->
+                ei.getElementId().startsWith("Event_")
+                    || ei.getElementId().startsWith("Activity_"));
+  }
 }

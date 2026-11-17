@@ -1,5 +1,5 @@
 {
-	"name": "@camunda/client-components",
+	"name": "@camunda/webapp-client",
 	"description": "Camunda JS/TS monorepo",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
 	"type": "module",
@@ -10,23 +10,33 @@
 		"url": "git+https://github.com/camunda/camunda.git"
 	},
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"apps/*"
 	],
 	"scripts": {
-		"lint": "eslint .",
+		"dev:oc": "npm run dev -w @camunda/orchestration-cluster-webapp",
+		"lint:oxlint": "oxlint --type-aware .",
+		"lint:prettier": "prettier -c .",
+		"lint:knip": "npm run lint:knip -w @camunda/orchestration-cluster-webapp",
+		"lint": "npm run lint:oxlint && npm run lint:prettier && npm run lint:knip",
 		"typecheck": "npm run typecheck --workspaces --if-present",
-		"format": "npm run format --workspaces --if-present",
+		"test:unit": "npm run test:unit --workspaces --if-present",
+		"format": "prettier --write .",
 		"build": "npm run build --workspaces --if-present",
 		"prepublishOnly": "node scripts/prepublishOnly.js",
-		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"
+		"publish:oc-saas-notifications": "npm publish -w @camunda/oc-saas-notifications",
+		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas",
+		"publish:session-heartbeat": "npm run prepublishOnly && npm publish -w @camunda/session-heartbeat",
+		"prettier:format": "prettier --write ."
 	},
-	"packageManager": "npm@11.12.1",
+	"packageManager": "npm@12.2.2",
 	"devDependencies": {
-		"@eslint/js": "9.39.4",
-		"eslint": "9.39.4",
+		"@camunda/design-system": "0.82.0",
+		"@tanstack/eslint-plugin-query": "5.105.3",
 		"eslint-plugin-license-header": "0.9.0",
-		"globals": "17.4.0",
-		"prettier": "3.8.2",
-		"typescript-eslint": "8.58.1"
-	}
+		"oxlint": "1.93.0",
+		"oxlint-tsgolint": "7.0.2007",
+		"prettier": "3.10.1"
+	},
+	"version": "8.11.0-SNAPSHOT"
 }

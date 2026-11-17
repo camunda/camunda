@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -24,11 +24,16 @@
     <version.java>17</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
     <!-- Override Spring Boot version for 3.x compatibility -->
-    <version.spring-boot>3.5.11</version.spring-boot>
+    <version.spring-boot>3.5.16</version.spring-boot>
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
-    <version.spring>6.2.16</version.spring>
-    <version.roaster>2.31.0.Final</version.roaster>
-    <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
+    <version.spring>6.2.19</version.spring>
+    <!-- Test-only: keep in sync with micrometer.version managed by spring-boot-dependencies for
+         version.spring-boot above. Tests run on the Micrometer Spring Boot 3.x users get, so calls
+         to newer Micrometer APIs fail here instead of with NoSuchMethodError in users' apps
+         (https://github.com/camunda/camunda/issues/59640). Not a dependency: it is never compiled
+         against or published, so it must not be declared in <dependencies>. -->
+    <version.micrometer-spring-boot-3>1.17.2</version.micrometer-spring-boot-3>
+    <version.aspectjweaver>1.9.27</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
     <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
   </properties>
@@ -147,8 +152,36 @@
             <!-- Exclude tests that use Jackson 3.x (tools.jackson.*) which is not available in Spring Boot 3.x -->
             <exclude>io/camunda/client/impl/CamundaObjectMapperTest.java</exclude>
             <exclude>io/camunda/client/spring/configuration/JsonMapperConfigurationTest.java</exclude>
+            <!-- Exclude test that uses org.springframework.boot.health.contributor, which is a
+                 Spring Boot 4.x-only package; Spring Boot 3.x has its own
+                 CamundaClientHealthIndicator override under org.springframework.boot.actuate.health -->
+            <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java</exclude>
           </testExcludes>
         </configuration>
+      </plugin>
+
+      <!-- Build this module's own sources jar before the package phase, so the shade plugin
+           (createSourcesJar) can merge it with the base module sources. Reuses the release
+           parent's "attach-sources" execution id to move it from package to prepare-package. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <!-- Build the sources jar on disk for shade (createSourcesJar) to consume, but do not
+                 attach it: the deploy command's source:jar already attaches the sources artifact and
+                 shade attaches the shaded one. Attaching here too triggers "duplicated artifacts
+                 attached" under maven-source-plugin < 3.4.0. -->
+            <configuration>
+              <attach>false</attach>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Shade plugin to include and relocate classes from camunda-spring-boot-starter -->
@@ -163,6 +196,9 @@
             <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
+              <!-- Also shade the sources jar so it carries the base module sources plus our
+                   overrides, instead of only this module's few files (see #48090). -->
+              <createSourcesJar>true</createSourcesJar>
               <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
               <artifactSet>
                 <includes>
@@ -177,10 +213,17 @@
                     <!-- Exclude classes that we override with Spring Boot 3 versions -->
                     <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class</exclude>
-                    <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
                     <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.class</exclude>
+                    <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.class</exclude>
+                    <!-- The same overrides in the shaded sources jar (createSourcesJar). Filters
+                         match by literal path, so the .class excludes above don't cover .java. -->
+                    <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.java</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.java</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.java</exclude>
+                    <exclude>io/camunda/client/spring/properties/CamundaClientPropertiesPostProcessor.java</exclude>
                     <!-- Exclude META-INF services that we override -->
                     <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
+                    <exclude>META-INF/spring.factories</exclude>
                   </excludes>
                 </filter>
               </filters>
@@ -321,11 +364,36 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
+            <!-- Overriding <excludes> drops Surefire's default, which keeps nested classes from being scheduled on their own -->
+            <exclude>**/*$*</exclude>
             <!-- Exclude tests that require file system access to configuration metadata in JAR -->
             <!-- Low risk on those, given they are not tightly coupled to spring classes -->
             <exclude>**/configurationMetadata/AlignmentTest.java</exclude>
             <exclude>**/configurationMetadata/FormattingTest.java</exclude>
           </excludes>
+          <!-- Swap the compile-time Micrometer for Spring Boot 3's, see version.micrometer-spring-boot-3 -->
+          <classpathDependencyExcludes>
+            <classpathDependencyExclude>io.micrometer:micrometer-core</classpathDependencyExclude>
+            <classpathDependencyExclude>io.micrometer:micrometer-commons</classpathDependencyExclude>
+            <classpathDependencyExclude>io.micrometer:micrometer-observation</classpathDependencyExclude>
+          </classpathDependencyExcludes>
+          <additionalClasspathDependencies>
+            <additionalClasspathDependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-core</artifactId>
+              <version>${version.micrometer-spring-boot-3}</version>
+            </additionalClasspathDependency>
+            <additionalClasspathDependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-commons</artifactId>
+              <version>${version.micrometer-spring-boot-3}</version>
+            </additionalClasspathDependency>
+            <additionalClasspathDependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-observation</artifactId>
+              <version>${version.micrometer-spring-boot-3}</version>
+            </additionalClasspathDependency>
+          </additionalClasspathDependencies>
         </configuration>
       </plugin>
     </plugins>

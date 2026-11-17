@@ -31,22 +31,29 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.SUSPENDED_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.TAGS;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ProcessInstanceFilterTransformer
     extends IndexFilterTransformer<ProcessInstanceFilter> {
+
+  private static final Set<String> RUNNING_PROCESS_INSTANCE_STATES =
+      Set.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
 
   private final ServiceTransformers transformers;
 
@@ -54,6 +61,28 @@ public final class ProcessInstanceFilterTransformer
       final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
     this.transformers = transformers;
+  }
+
+  @Override
+  protected boolean matchesOnlyRuntimeData(final ProcessInstanceFilter filter) {
+    return matchesOnlyRunningProcessInstances(filter)
+        || allMatch(
+            filter.orFilters(),
+            ProcessInstanceFilterTransformer::matchesOnlyRunningProcessInstances);
+  }
+
+  /**
+   * Returns true if the filter matches only process instances that have not ended. An instance with
+   * an incident has not ended: ending an instance resolves its incidents.
+   */
+  static boolean matchesOnlyRunningProcessInstances(
+      final List<Operation<String>> stateOperations, final Boolean hasIncident) {
+    return restrictsTo(stateOperations, RUNNING_PROCESS_INSTANCE_STATES)
+        || Boolean.TRUE.equals(hasIncident);
+  }
+
+  private static boolean matchesOnlyRunningProcessInstances(final ProcessInstanceFilter filter) {
+    return matchesOnlyRunningProcessInstances(filter.stateOperations(), filter.hasIncident());
   }
 
   public ArrayList<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {
@@ -74,6 +103,7 @@ public final class ProcessInstanceFilterTransformer
     queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
     queries.addAll(stringOperations(STATE, filter.stateOperations()));
     Optional.ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
+    queries.addAll(dateTimeOperations(SUSPENDED_DATE, filter.suspendedDateOperations()));
     queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
 
     if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
@@ -82,8 +112,8 @@ public final class ProcessInstanceFilterTransformer
     }
 
     if (filter.errorMessageOperations() != null && !filter.errorMessageOperations().isEmpty()) {
-      queries.addAll(
-          stringMatchPhraseWithHasChildOperations(
+      queries.add(
+          stringMatchPhraseInSingleHasChildOrSelf(
               ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION));
     }
 
@@ -128,17 +158,17 @@ public final class ProcessInstanceFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 
   private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {
     final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
 
-    Optional.of(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-        .ifPresent(flowNodeInstanceQueries::addAll);
-    Optional.of(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-        .ifPresent(flowNodeInstanceQueries::addAll);
+    flowNodeInstanceQueries.addAll(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()));
+    flowNodeInstanceQueries.addAll(
+        stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
 

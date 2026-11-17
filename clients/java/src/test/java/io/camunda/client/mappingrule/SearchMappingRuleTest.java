@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.filter.MappingRuleFilterBase;
 import io.camunda.client.protocol.rest.MappingRuleFilter;
 import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
 import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest;
@@ -26,7 +27,12 @@ import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest.FieldEn
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 public class SearchMappingRuleTest extends ClientRestTest {
@@ -85,7 +91,25 @@ public class SearchMappingRuleTest extends ClientRestTest {
 
     final MappingRuleFilter filter = requestBody.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getMappingRuleId()).isEqualTo("rule123");
+    assertThat(filter.getMappingRuleId().get$Eq()).isEqualTo("rule123");
+  }
+
+  @Test
+  void shouldSearchMappingRulesByMappingRuleIdLike() {
+    // when
+    client
+        .newMappingRulesSearchRequest()
+        .filter(f -> f.mappingRuleId(b -> b.like("rule*")))
+        .send()
+        .join();
+
+    // then
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getMappingRuleId().get$Like()).isEqualTo("rule*");
   }
 
   @Test
@@ -99,7 +123,7 @@ public class SearchMappingRuleTest extends ClientRestTest {
 
     final MappingRuleFilter filter = requestBody.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getName()).isEqualTo("ruleName");
+    assertThat(filter.getName().get$Eq()).isEqualTo("ruleName");
   }
 
   @Test
@@ -144,7 +168,7 @@ public class SearchMappingRuleTest extends ClientRestTest {
         gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
     final MappingRuleFilter filter = requestBody.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getMappingRuleId()).isEqualTo("rule123");
+    assertThat(filter.getMappingRuleId().get$Eq()).isEqualTo("rule123");
 
     assertThat(requestBody.getSort()).isEmpty();
     assertThat(requestBody.getPage()).isNull();
@@ -185,5 +209,55 @@ public class SearchMappingRuleTest extends ClientRestTest {
 
     assertThat(requestBody.getFilter()).isNull();
     assertThat(requestBody.getSort()).isEmpty();
+  }
+
+  @Test
+  void shouldSearchMappingRulesWithOrFilters() {
+    // when
+    client
+        .newMappingRulesSearchRequest()
+        .filter(
+            fn ->
+                fn.orFilters(
+                    Arrays.asList(
+                        f1 -> f1.mappingRuleId("rule-1"), f2 -> f2.mappingRuleId("rule-2"))))
+        .send()
+        .join();
+
+    // then
+    final MappingRuleSearchQueryRequest request =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+    final MappingRuleFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getMappingRuleId().get$Eq()).isEqualTo("rule-1");
+    assertThat(filter.get$Or().get(1).getMappingRuleId().get$Eq()).isEqualTo("rule-2");
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(MappingRuleFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.MappingRuleFilter.class);
+
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }

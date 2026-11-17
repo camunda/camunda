@@ -8,23 +8,19 @@
 
 package io.camunda.application.commons.service;
 
-import io.camunda.application.commons.service.ManagementServicesConfiguration.LicenseKeyProperties;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.CamundaLicense;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties({LicenseKeyProperties.class})
 public class ManagementServicesConfiguration {
-  private final LicenseKeyProperties licenseKeyProperties;
 
-  @Autowired
-  public ManagementServicesConfiguration(final LicenseKeyProperties licenseKeyProperties) {
-    this.licenseKeyProperties = licenseKeyProperties;
+  private final UnifiedConfiguration unifiedConfiguration;
+
+  public ManagementServicesConfiguration(final UnifiedConfiguration unifiedConfiguration) {
+    this.unifiedConfiguration = unifiedConfiguration;
   }
 
   @Bean
@@ -34,9 +30,6 @@ public class ManagementServicesConfiguration {
 
   @Bean
   public CamundaLicense camundaLicense() {
-    return new CamundaLicense(licenseKeyProperties.key());
+    return new CamundaLicense(unifiedConfiguration.getCamunda().getLicense().getKey());
   }
-
-  @ConfigurationProperties("camunda.license")
-  public record LicenseKeyProperties(String key) {}
 }

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -17,13 +19,16 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import io.camunda.zeebe.util.FileUtil;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +43,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private final FileBasedSnapshotId snapshotId;
   private int expectedTotalCount;
-  private FileBasedSnapshotMetadata metadata;
-  private ByteBuffer metadataBuffer;
+  private @Nullable FileBasedSnapshotMetadata metadata;
+  private @Nullable ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
-  private SfvChecksumImpl checksumCollection;
+  private final IncrementalChecksums incrementalChecksums = new IncrementalChecksums();
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -66,7 +71,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     return actor.call(
         () -> {
           applyInternal(snapshotChunk);
-          return null;
+          return unit();
         });
   }
 
@@ -102,11 +107,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
-    if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
-    }
-    checksumCollection.updateFromBytes(
-        snapshotFile.getFileName().toString(), snapshotChunk.getContent());
+    incrementalChecksums.update(snapshotChunk);
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
       try {
@@ -122,8 +123,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       metadataBuffer = ByteBuffer.allocate(Math.toIntExact(chunk.getTotalFileSize()));
     }
 
-    metadataBuffer.put(Math.toIntExact(chunk.getFileBlockPosition()), chunk.getContent());
-    writtenMetadataBytes += chunk.getContent().length;
+    final var content = chunk.getContentBuffer();
+    final var contentLength = content.remaining();
+    metadataBuffer.put(
+        Math.toIntExact(chunk.getFileBlockPosition()), content, content.position(), contentLength);
+    writtenMetadataBytes += contentLength;
 
     if (writtenMetadataBytes == chunk.getTotalFileSize()) {
       metadata = FileBasedSnapshotMetadata.decode(metadataBuffer.array());
@@ -134,7 +138,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       final SnapshotChunk snapshotChunk, final String snapshotId, final String chunkName)
       throws SnapshotWriteException {
     final long expectedChecksum = snapshotChunk.getChecksum();
-    final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContent());
+    final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContentBuffer());
 
     if (expectedChecksum != actualChecksum) {
       throw new SnapshotWriteException(
@@ -178,17 +182,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try (final var channel =
         FileChannel.open(snapshotFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
-      final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
+      channel.position(snapshotChunk.getFileBlockPosition());
 
+      final var buffer = snapshotChunk.getContentBuffer();
       while (buffer.hasRemaining()) {
-        final int newLimit = Math.min(buffer.capacity(), buffer.position() + BLOCK_SIZE);
-        channel.position(snapshotChunk.getFileBlockPosition() + buffer.position());
-        channel.write(buffer.limit(newLimit));
-        buffer.limit(buffer.capacity());
+        //noinspection ResultOfMethodCallIgnored
+        channel.write(buffer);
       }
 
-      channel.force(true);
-
+      if (snapshotChunk.getTotalFileSize()
+          == snapshotChunk.getFileBlockPosition() + snapshotChunk.getContentLength()) {
+        channel.force(true);
+      }
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
@@ -203,7 +208,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     actor.run(
         () -> {
           abortInternal();
-          abortFuture.complete(null);
+          abortFuture.complete(unit());
         });
     return abortFuture;
   }
@@ -248,10 +253,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     final var files = directory.toFile().listFiles();
-    try {
-      Objects.requireNonNull(files, "No chunks have been applied yet");
-    } catch (final Exception e) {
-      future.completeExceptionally(e);
+    if (files == null) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Cannot persist snapshot '%s': directory %s is missing or unreadable (the snapshot was aborted, no chunk was applied yet, or an I/O error occurred)",
+                  snapshotId.getSnapshotIdAsString(), directory)));
       return;
     }
 
@@ -265,25 +272,35 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     try {
-      if (metadata == null) {
-        // backward compatibility
-        metadata =
-            new FileBasedSnapshotMetadata(
-                FileBasedSnapshotStoreImpl.VERSION,
-                snapshotId.getProcessedPosition(),
-                snapshotId.getExportedPosition(),
-                Long.MAX_VALUE,
-                Long.MAX_VALUE,
-                false);
+      var persistedMetadata =
+          Objects.requireNonNull(metadata, "Expected the received snapshot to contain metadata");
+      if (persistedMetadata.totalSizeBytes() == 0) {
+        persistedMetadata = persistedMetadata.withTotalSizeBytes(sumDataFileSizes(files));
       }
+      metadata = persistedMetadata;
       final PersistedSnapshot value =
-          snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);
+          snapshotStore.persistNewSnapshot(
+              directory,
+              snapshotId,
+              incrementalChecksums.complete(),
+              persistedMetadata,
+              writtenMetadataBytes);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private static long sumDataFileSizes(final File[] files) throws IOException {
+    var totalSize = 0L;
+    for (final var file : files) {
+      if (file.isFile() && !file.getName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
+        totalSize += Files.size(file.toPath());
+      }
+    }
+    return totalSize;
   }
 
   @Override

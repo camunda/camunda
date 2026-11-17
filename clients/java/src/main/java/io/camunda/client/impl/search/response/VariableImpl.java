@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.search.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.VariableResult;
@@ -30,8 +32,9 @@ public class VariableImpl implements Variable {
   private final Long rootProcessInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
+  @JsonIgnore private final JsonMapper jsonMapper;
 
-  public VariableImpl(final VariableSearchResult item) {
+  public VariableImpl(final VariableSearchResult item, final JsonMapper jsonMapper) {
     variableKey = ParseUtil.parseLongOrNull(item.getVariableKey());
     name = item.getName();
     value = item.getValue();
@@ -40,9 +43,10 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
+    this.jsonMapper = jsonMapper;
   }
 
-  public VariableImpl(final VariableResult item) {
+  public VariableImpl(final VariableResult item, final JsonMapper jsonMapper) {
     variableKey = ParseUtil.parseLongOrNull(item.getVariableKey());
     name = item.getName();
     value = item.getValue();
@@ -51,6 +55,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -91,5 +96,13 @@ public class VariableImpl implements Variable {
   @Override
   public Boolean isTruncated() {
     return isTruncated;
+  }
+
+  @Override
+  public <T> T getValueAsType(final Class<T> type) {
+    if (Boolean.TRUE.equals(isTruncated())) {
+      throw new IllegalStateException("Cannot return truncated value as type " + type);
+    }
+    return jsonMapper.fromJson(value, type);
   }
 }

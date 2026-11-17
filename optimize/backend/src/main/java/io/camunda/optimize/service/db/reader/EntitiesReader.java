@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.reader.ReportReader.REPORT_DATA_XML
 
 import io.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -54,5 +55,22 @@ public interface EntitiesReader {
       }
     }
     return reportEntity.getName();
+  }
+
+  default String getLocalizedDashboardName(
+      final LocalizationService localizationService,
+      final DashboardDefinitionRestDto dashboardEntity,
+      final String locale) {
+    if (dashboardEntity.isInstantPreviewDashboard()) {
+      return localizationService.getLocalizationForInstantPreviewDashboardCode(
+          locale, dashboardEntity.getName());
+    } else if (dashboardEntity.isManagementDashboard()) {
+      return localizationService.getLocalizationForManagementDashboardCode(
+          locale, dashboardEntity.getName());
+    } else if (dashboardEntity.isAgenticControlDashboard()) {
+      return localizationService.getLocalizationForAgenticControlDashboardCode(
+          locale, dashboardEntity.getName());
+    }
+    return dashboardEntity.getName();
   }
 }

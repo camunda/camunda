@@ -25,6 +25,7 @@ import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.EvaluateExpressionResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import java.time.Duration;
@@ -66,6 +67,12 @@ public class EvaluateExpressionCommandImpl
   @Override
   protected EvaluateExpressionCommandStep2 setVariablesInternal(final String variables) {
     request.setVariables(objectMapper.fromJsonAsMap(variables));
+    return this;
+  }
+
+  @Override
+  public EvaluateExpressionCommandStep2 scopeKey(final long scopeKey) {
+    request.setScopeKey(ParseUtil.keyToString(scopeKey));
     return this;
   }
 

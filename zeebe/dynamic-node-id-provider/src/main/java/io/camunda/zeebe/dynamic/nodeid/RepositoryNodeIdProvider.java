@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
@@ -20,7 +19,6 @@ import java.time.InstantSource;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +27,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private final NodeIdRepository nodeIdRepository;
   private final InstantSource clock;
-  private volatile StoredLease.Initialized currentLease;
+  private volatile StoredLease.@Nullable Initialized currentLease;
   private final Duration leaseDuration;
   private final Duration readinessCheckTimeout;
   private final Duration expiredLeaseThreshold;
@@ -47,8 +46,9 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final ScheduledExecutorService executor;
   private final ExponentialBackoffRetryDelay backoff;
   private final Duration renewalDelay;
-  private ScheduledFuture<?> renewalTask;
+  private @Nullable ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
+  private final @Nullable String zone;
   private VersionMappings knownVersionMappings = VersionMappings.empty();
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
@@ -63,6 +63,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final Duration readinessCheckTimeout,
       final Duration expiredLeaseThreshold,
       final String taskId,
+      final @Nullable String zone,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
@@ -73,6 +74,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     this.expiredLeaseThreshold =
         Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
+    this.zone = zone;
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
     renewalDelay = leaseDuration.dividedBy(3);
@@ -90,22 +92,28 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> initialize(final int clusterSize) {
-    final var availableNodeIdCount = nodeIdRepository.initialize(clusterSize);
+  public CompletableFuture<Void> initialize(final int brokerCountInZone) {
+    final var availableNodeIdCount = nodeIdRepository.initialize(brokerCountInZone);
     return CompletableFuture.runAsync(() -> acquireInitialLease(availableNodeIdCount), executor)
         .thenRun(this::startRenewalTimer)
-        .thenRun(() -> scheduleReadinessCheck(clusterSize));
+        .thenRun(() -> scheduleReadinessCheck(brokerCountInZone));
   }
 
   @Override
-  public CompletableFuture<Void> scale(final int newClusterSize) {
+  public CompletableFuture<Void> scale(final int brokerCountInZone) {
     return CompletableFuture.runAsync(
-        () -> nodeIdRepository.scale(newClusterSize), backgroundTaskExecutor);
+        () -> nodeIdRepository.scale(brokerCountInZone), backgroundTaskExecutor);
   }
 
   @Override
   public NodeInstance currentNodeInstance() {
-    return getCurrentLease().lease().nodeInstance();
+    final var lease = getCurrentLease();
+    if (lease == null) {
+      throw new IllegalStateException(
+          "Current lease is not available; the provider may not be initialized yet, "
+              + "the lease may have been lost, or shutdown may be in progress");
+    }
+    return lease.lease().nodeInstance();
   }
 
   /**
@@ -136,8 +144,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
-  public void setMembers(final Set<Member> currentMembers) {
-    executor.execute(() -> updateVersionMappings(currentMembers));
+  public void setMemberVersions(final Map<MemberId, Version> memberVersions) {
+    executor.execute(() -> updateVersionMappings(memberVersions));
   }
 
   @Override
@@ -156,9 +164,14 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       return;
     }
 
+    final var lease = currentLease;
+    if (lease == null) {
+      throw new IllegalStateException("Current lease is null during readiness check");
+    }
+
     new RepositoryNodeIdProviderReadinessChecker(
             clusterSize,
-            currentLease.node(),
+            lease.node(),
             nodeIdRepository,
             Duration.ofSeconds(5),
             readinessCheckTimeout)
@@ -181,7 +194,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  public Initialized getCurrentLease() {
+  public @Nullable Initialized getCurrentLease() {
     return currentLease;
   }
 
@@ -256,7 +269,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     backoff.reset();
   }
 
-  private StoredLease tryAcquireLeaseForNode(final int nodeId) {
+  private @Nullable StoredLease tryAcquireLeaseForNode(final int nodeId) {
     try {
       final var storedLease = nodeIdRepository.getLease(nodeId);
       currentLease = tryAcquireInitialLease(storedLease);
@@ -267,8 +280,9 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
   }
 
-  private boolean wasGracefullyShutdown(final StoredLease storedLease) {
+  private boolean wasGracefullyShutdown(final @Nullable StoredLease storedLease) {
     return switch (storedLease) {
+      case null -> true;
       case final StoredLease.Uninitialized u -> true;
       case final StoredLease.Initialized initialized ->
           initialized.lease().isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
@@ -310,7 +324,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     return currentCount;
   }
 
-  private StoredLease.Initialized tryAcquireInitialLease(final StoredLease lease) {
+  private StoredLease.@Nullable Initialized tryAcquireInitialLease(final StoredLease lease) {
     try {
       final var newLease = lease.acquireInitialLease(taskId, clock, leaseDuration);
       return newLease.map(value -> nodeIdRepository.acquire(value, lease.eTag())).orElse(null);
@@ -320,12 +334,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
   }
 
-  private void updateVersionMappings(final Set<Member> currentMembers) {
+  private void updateVersionMappings(final Map<MemberId, Version> memberVersions) {
     final var nodeInstances =
-        currentMembers.stream()
-            .filter(m -> isBroker(m.id()))
-            .map(m -> Map.entry(Integer.parseInt(m.id().id()), Version.of(m.nodeVersion())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        memberVersions.entrySet().stream()
+            // leases are per zone, but members of different zones share the same nodeIdx
+            .filter(e -> isBroker(e.getKey()) && e.getKey().isInZone(zone))
+            .collect(Collectors.toMap(e -> e.getKey().nodeIdx(), Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
     LOG.trace("Updating known version mappings to {}", knownVersionMappings);
   }
@@ -333,9 +347,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private boolean isBroker(final MemberId memberId) {
     // TODO improve the way we identify brokers vs gateways
     try {
-      final var id = Integer.parseInt(memberId.id());
-      return id >= 0;
-    } catch (final NumberFormatException e) {
+      return memberId.nodeIdx() >= 0;
+    } catch (final Exception e) {
       return false;
     }
   }

@@ -9,7 +9,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
-import {loadVariables} from 'services';
+import {loadVariables, formatters} from 'services';
 
 import {Number} from './Number';
 import ProgressBar from './ProgressBar';
@@ -22,6 +22,7 @@ jest.mock('services', () => {
       convertDurationToSingleNumber: () => 12,
       frequency: (data) => data,
       duration: (data) => data,
+      compact: (v) => (v == null ? '--' : `${v}K`),
     },
     reportConfig: {
       view: [
@@ -177,6 +178,70 @@ it('should show the variable label if it exists', () => {
   expect(node).toIncludeText('FooLabel - Avg');
 });
 
+it('should override the subtitle with configuration.subtitle when set', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {configuration: {subtitle: {$set: 'My custom subtitle'}}},
+      })}
+    />
+  );
+
+  // the override is rendered outside the fitted container so it does not shrink the number
+  expect(node.find('.container .label').exists()).toBe(false);
+  expect(node.find('.subtitle').text()).toBe('My custom subtitle');
+  expect(node).not.toIncludeText('Process instance Count');
+});
+
+it('should not apply a whitespace-only subtitle override and keep the fallback label', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {configuration: {subtitle: {$set: '   '}}},
+      })}
+    />
+  );
+
+  // a blank override must not suppress the normal label nor render an empty subtitle
+  expect(node.find('.subtitle').exists()).toBe(false);
+  expect(node.find('.container .label').exists()).toBe(true);
+});
+
+it('should trim the subtitle override before rendering', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {configuration: {subtitle: {$set: '  My custom subtitle  '}}},
+      })}
+    />
+  );
+
+  expect(node.find('.subtitle').text()).toBe('My custom subtitle');
+});
+
+it('should not apply the subtitle override for multi-measure reports', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {
+          configuration: {subtitle: {$set: 'My custom subtitle'}},
+          view: {properties: {$set: ['frequency', 'duration']}},
+        },
+        result: {
+          measures: {
+            $set: [
+              {data: 26, property: 'frequency'},
+              {data: 42, property: 'frequency'},
+            ],
+          },
+        },
+      })}
+    />
+  );
+
+  expect(node).not.toIncludeText('My custom subtitle');
+});
+
 it('should call loadVariables for process variable report', () => {
   shallow(<Number report={variableReport} {...props} />);
 
@@ -187,5 +252,113 @@ it('should call loadVariables for process variable report', () => {
     processesToQuery: [
       {processDefinitionKey: 'aKey', processDefinitionVersions: ['1'], tenantIds: ['tenantId']},
     ],
+  });
+});
+
+it('should apply valueFormat from configuration instead of measure property', () => {
+  const node = shallow(
+    <Number
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          configuration: {targetValue: {active: false}, valueFormat: 'compact'},
+        },
+        result: {measures: [{property: 'totalTokens', data: 150000}]},
+      }}
+    />
+  );
+
+  expect(node.find('.data')).toIncludeText('150000K');
+});
+
+it('should fall back to measure property formatter when valueFormat is not set', () => {
+  const node = shallow(
+    <Number
+      report={{
+        ...report,
+        result: {measures: [{property: 'frequency', data: 42}]},
+      }}
+    />
+  );
+
+  expect(node.find('.data')).toIncludeText('42');
+});
+
+describe('agentic control plane duration formatting', () => {
+  const durationReport = update(report, {
+    data: {view: {properties: {$set: ['duration']}}},
+    result: {
+      measures: {
+        $set: [{data: 5000, property: 'duration', aggregationType: {type: 'avg', value: null}}],
+      },
+    },
+  });
+
+  it('should request short duration notation for agentic control reports', () => {
+    const durationSpy = jest.fn((value) => `${value}-short`);
+    const original = formatters.duration;
+    formatters.duration = durationSpy;
+
+    try {
+      shallow(
+        <Number report={update(durationReport, {data: {agenticControlReport: {$set: true}}})} />
+      );
+
+      // the third positional argument (shortNotation) is true only for agentic tiles
+      expect(durationSpy).toHaveBeenCalledWith(5000, undefined, true);
+    } finally {
+      formatters.duration = original;
+    }
+  });
+
+  it('should keep verbose duration notation for non-agentic reports', () => {
+    const durationSpy = jest.fn((value) => `${value}-verbose`);
+    const original = formatters.duration;
+    formatters.duration = durationSpy;
+
+    try {
+      shallow(<Number report={durationReport} />);
+
+      expect(durationSpy).toHaveBeenCalledWith(5000, undefined, undefined);
+    } finally {
+      formatters.duration = original;
+    }
+  });
+});
+
+describe('overlay prop', () => {
+  const overlay = <span className="testBadge">delta</span>;
+
+  it('should render overlay inside the first .data element', () => {
+    const node = shallow(<Number report={report} overlay={overlay} />);
+
+    expect(node.find('.data').first().find('.testBadge')).toExist();
+  });
+
+  it('should not render overlay in subsequent .data elements for multi-measure reports', () => {
+    const multiMeasureReport = {
+      ...report,
+      data: {
+        ...report.data,
+        view: {properties: ['frequency', 'duration']},
+      },
+      result: {
+        measures: [
+          {data: 10, property: 'frequency'},
+          {data: 500, property: 'duration', aggregationType: {type: 'avg', value: null}},
+        ],
+      },
+    };
+    const node = shallow(<Number report={multiMeasureReport} overlay={overlay} />);
+
+    expect(node.find('.data').at(0).find('.testBadge')).toExist();
+    expect(node.find('.data').at(1).find('.testBadge')).not.toExist();
+  });
+
+  it('should render nothing in .data when overlay is not provided', () => {
+    const node = shallow(<Number report={report} />);
+
+    expect(node.find('.data').first().find('.testBadge')).not.toExist();
   });
 });

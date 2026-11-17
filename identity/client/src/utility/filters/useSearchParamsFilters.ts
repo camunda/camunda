@@ -7,22 +7,26 @@
  */
 
 import { createSearchParamsSync } from "src/utility/filters/searchParamsFilters";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
-
+import { useSearchParams } from "react-router-dom";
+import { useCallback, useMemo } from "react";
 function useSearchParamsFilters<T>(
   querySync: ReturnType<typeof createSearchParamsSync<T>>,
 ) {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const searchParamsFilters = useMemo(() => {
-    return querySync.parse(location.search);
-  }, [location.search, querySync]);
+    return querySync.parse(searchParams);
+  }, [searchParams, querySync]);
 
-  const setSearchParamsFilters = (next: T) => {
-    void navigate({ search: querySync.serialize(next) }, { replace: true });
-  };
+  const setSearchParamsFilters = useCallback(
+    (next: T) => {
+      const search = querySync.serialize(next);
+      if (search === searchParams.toString()) return;
+
+      void setSearchParams(search, { replace: true });
+    },
+    [searchParams, setSearchParams, querySync],
+  );
 
   return { searchParamsFilters, setSearchParamsFilters };
 }

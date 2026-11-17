@@ -13,6 +13,11 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.state.agentdefinition.DbAgentDefinitionState;
+import io.camunda.zeebe.engine.state.agenthistory.DbAgentHistoryState;
+import io.camunda.zeebe.engine.state.agentinstance.DbAgentInstanceState;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
@@ -44,13 +49,19 @@ import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableAgentDefinitionState;
+import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
+import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
@@ -73,32 +84,45 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceAskState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutablePolicyState;
+import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
+import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyUpdateState;
+import io.camunda.zeebe.engine.state.probe.DbProbeState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.suspension.DbSuspensionState;
 import io.camunda.zeebe.engine.state.tenant.DbTenantState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -112,15 +136,21 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
   private final MutableClusterVariableState clusterVariableState;
+  private final MutableAgentHistoryState agentHistoryState;
+  private final MutableAgentInstanceState agentInstanceState;
+  private final MutableAgentDefinitionState agentDefinitionState;
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
   private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
+  private final DbMessageStartProcessInstanceDedupState messageStartProcessInstanceDedupState;
+  private final DbMessageStartProcessInstanceAskState messageStartProcessInstanceAskState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final DbMessageCorrelationState messageCorrelationState;
   private final MutableIncidentState incidentState;
   private final MutableBannedInstanceState bannedInstanceState;
+  private final MutableSuspensionState suspensionState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
   private final MutableFormState formState;
@@ -131,6 +161,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
   private final MutableClockState clockState;
+  private final MutablePolicyState policyState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
@@ -146,6 +177,9 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
+  private final MutableSecretReferenceState secretReferenceState;
+  private final MutablePolicyUpdateState policyUpdateState;
+  private final MutableProbeState probeState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -155,6 +189,7 @@ public class ProcessingDbState implements MutableProcessingState {
       final KeyGenerator keyGenerator,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final TransientPendingMessageStartProcessInstanceAskState transientAskState,
       final EngineConfiguration config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
@@ -164,8 +199,16 @@ public class ProcessingDbState implements MutableProcessingState {
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
-    processState =
-        new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
+    agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
+    agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
+    agentDefinitionState = new DbAgentDefinitionState(zeebeDb, transactionContext);
+    // Transformation only parses expressions — the clock is never consulted. A fixed epoch
+    // clock satisfies the ExpressionLanguage constructor contract while keeping cache-miss
+    // rebuilds deterministic during replay.
+    final BpmnTransformer stateTransformer =
+        BpmnFactory.createTransformer(
+            InstantSource.fixed(Instant.EPOCH), expressionLanguageMetrics, Integer.MAX_VALUE);
+    processState = new DbProcessState(zeebeDb, transactionContext, config, stateTransformer);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
@@ -178,12 +221,17 @@ public class ProcessingDbState implements MutableProcessingState {
             zeebeDb, transactionContext, transientMessageSubscriptionState, clock);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
+    messageStartProcessInstanceDedupState =
+        new DbMessageStartProcessInstanceDedupState(zeebeDb, transactionContext);
+    messageStartProcessInstanceAskState =
+        new DbMessageStartProcessInstanceAskState(zeebeDb, transactionContext, transientAskState);
     processMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
     messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext);
+    suspensionState = new DbSuspensionState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
     resourceState = new DbResourceState(zeebeDb, transactionContext, config);
@@ -195,10 +243,11 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
+    policyState = new DbPolicyState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
-    groupState = new DbGroupState(zeebeDb, transactionContext);
+    groupState = new DbGroupState(zeebeDb, transactionContext, config);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingRuleState = new DbMappingRuleState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
@@ -209,6 +258,9 @@ public class ProcessingDbState implements MutableProcessingState {
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
+    secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
+    policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
+    probeState = new DbProbeState(zeebeDb, transactionContext);
     if (config.isJobMetricsExportEnabled()) {
       jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
     } else {
@@ -218,10 +270,10 @@ public class ProcessingDbState implements MutableProcessingState {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    messageSubscriptionState.onRecovered(context);
-    processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
     messageState.onRecovered(context);
+    messageStartProcessInstanceAskState.onRecovered(context);
+    messageStartProcessInstanceDedupState.onRecovered(context);
   }
 
   @Override
@@ -255,6 +307,16 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableMessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState() {
+    return messageStartProcessInstanceDedupState;
+  }
+
+  @Override
+  public MutableMessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState() {
+    return messageStartProcessInstanceAskState;
+  }
+
+  @Override
   public MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
   }
@@ -275,6 +337,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableSuspensionState getSuspensionState() {
+    return suspensionState;
+  }
+
+  @Override
   public MutableVariableState getVariableState() {
     return variableState;
   }
@@ -282,6 +349,21 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClusterVariableState getClusterVariableState() {
     return clusterVariableState;
+  }
+
+  @Override
+  public MutableAgentHistoryState getAgentHistoryState() {
+    return agentHistoryState;
+  }
+
+  @Override
+  public MutableAgentInstanceState getAgentInstanceState() {
+    return agentInstanceState;
+  }
+
+  @Override
+  public MutableAgentDefinitionState getAgentDefinitionState() {
+    return agentDefinitionState;
   }
 
   @Override
@@ -360,6 +442,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutablePolicyState getPolicyState() {
+    return policyState;
+  }
+
+  @Override
   public MutableRoleState getRoleState() {
     return roleState;
   }
@@ -417,6 +504,21 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableJobMetricsState getJobMetricsState() {
     return jobMetricsState;
+  }
+
+  @Override
+  public MutableSecretReferenceState getSecretReferenceState() {
+    return secretReferenceState;
+  }
+
+  @Override
+  public MutablePolicyUpdateState getPolicyUpdateState() {
+    return policyUpdateState;
+  }
+
+  @Override
+  public MutableProbeState getProbeState() {
+    return probeState;
   }
 
   @Override

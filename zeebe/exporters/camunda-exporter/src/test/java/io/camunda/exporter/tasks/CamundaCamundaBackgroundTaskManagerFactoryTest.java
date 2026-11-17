@@ -26,6 +26,7 @@ import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
+import io.camunda.exporter.tasks.incident.PendingIncidentUpdateCountTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
@@ -63,7 +64,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
   }
 
   @Test
-  void shouldScheduleProcessInstanceArchiverTaskWhenConfigEnabled() {
+  void shouldScheduleProcessInstanceArchiverJobTaskWhenConfigEnabled() {
     // given
     config.getHistory().setProcessInstanceEnabled(true);
 
@@ -73,7 +74,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     // then
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
-        .as("Should contain ProcessInstancesArchiverJob when config is enabled")
+        .as("Should contain ProcessInstanceArchiverJob when config is enabled")
         .anyMatch(task -> isProcessInstanceArchiverTask(task));
   }
 
@@ -172,8 +173,9 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(10)
+        .hasSize(11)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
+        .anyMatch(task -> isTaskOfType(task, PendingIncidentUpdateCountTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, JobBatchMetricsArchiverJob.class))
@@ -197,7 +199,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(11)
+        .hasSize(12)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -213,7 +215,7 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(12)
+        .hasSize(13)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 

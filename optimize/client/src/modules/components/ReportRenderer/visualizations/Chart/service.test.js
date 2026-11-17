@@ -9,6 +9,7 @@
 import {
   formatTooltip,
   formatTooltipTitle,
+  getAxisIdx,
   getLabel,
   getTooltipLabelColor,
   hasReportPersistedTooltips,
@@ -135,6 +136,29 @@ describe('getLabel', () => {
     expect(getLabel({property: 'duration', userTaskDurationTime: 'idle'})).toBe(
       'Unassigned Duration'
     );
+  });
+
+  it('should return distinct labels for token properties', () => {
+    expect(getLabel({property: 'inputTokens', aggregationType: {type: 'sum'}})).toBe(
+      'Input tokens - Sum'
+    );
+    expect(getLabel({property: 'outputTokens', aggregationType: {type: 'sum'}})).toBe(
+      'Output tokens - Sum'
+    );
+  });
+});
+
+describe('getAxisIdx', () => {
+  it('should use a single axis for token measures', () => {
+    const measures = [{property: 'inputTokens'}, {property: 'outputTokens'}];
+    expect(getAxisIdx(measures, 0)).toBe(0);
+    expect(getAxisIdx(measures, 1)).toBe(0);
+  });
+
+  it('should use a second axis for the duration measure when mixed with frequency', () => {
+    const measures = [{property: 'frequency'}, {property: 'duration'}];
+    expect(getAxisIdx(measures, 0)).toBe(0);
+    expect(getAxisIdx(measures, 1)).toBe(1);
   });
 });
 

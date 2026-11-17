@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.prefix;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -20,12 +21,14 @@ import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTem
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class FlownodeInstanceFilterTransformer
     extends IndexFilterTransformer<FlowNodeInstanceFilter> {
@@ -35,7 +38,31 @@ public class FlownodeInstanceFilterTransformer
   }
 
   @Override
+  protected boolean matchesOnlyRuntimeData(final FlowNodeInstanceFilter filter) {
+    return matchesOnlyActiveFlowNodeInstances(filter)
+        || allMatch(
+            filter.orFilters(),
+            FlownodeInstanceFilterTransformer::matchesOnlyActiveFlowNodeInstances);
+  }
+
+  private static boolean matchesOnlyActiveFlowNodeInstances(final FlowNodeInstanceFilter filter) {
+    return restrictsTo(filter.stateOperations(), Set.of(FlowNodeState.ACTIVE.name()));
+  }
+
+  @Override
   public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      queries.add(or(orQueries));
+    }
+
+    return and(queries);
+  }
+
+  private List<SearchQuery> toSearchQueryFields(final FlowNodeInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.flowNodeInstanceKeys())).ifPresent(queries::add);
     ofNullable(longTerms(PROCESS_INSTANCE_KEY, filter.processInstanceKeys()))
@@ -61,7 +88,7 @@ public class FlownodeInstanceFilterTransformer
     } else {
       ofNullable(stringTerms(TREE_PATH, filter.treePaths())).ifPresent(queries::add);
     }
-    return and(queries);
+    return queries;
   }
 
   private SearchQuery getTypeQuery(final List<FlowNodeType> types) {
@@ -69,7 +96,8 @@ public class FlownodeInstanceFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

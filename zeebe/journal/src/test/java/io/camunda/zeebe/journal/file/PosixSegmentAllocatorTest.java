@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -42,7 +44,8 @@ final class PosixSegmentAllocatorTest {
   }
 
   @Test
-  void shouldPreallocateFile(final @TempDir Path tmpDir) throws IOException {
+  @EnabledOnOs(OS.LINUX)
+  void shouldUsePosixFallocateOnLinux(final @TempDir Path tmpDir) throws IOException {
     // given
     final var allocator =
         new PosixSegmentAllocator(

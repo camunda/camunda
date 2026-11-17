@@ -53,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow.Subscriber;
@@ -102,7 +103,7 @@ class IncidentNotifierTest {
         .thenReturn(
             Optional.of(
                 new CachedProcessEntity(
-                    processName, processVersion, processVersionTag, null, null, false)));
+                    processName, processVersion, processVersionTag, null, null, false, Map.of())));
   }
 
   @Test

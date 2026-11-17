@@ -19,10 +19,11 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MappingRuleFilter.Builder;
 import io.camunda.search.filter.MappingRuleFilter.Claim;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.search.filter.Operation;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import java.util.List;
@@ -62,8 +63,12 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
             (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.claimValue("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.name("foobar"),
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.names("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
+                f -> f.nameOperations(Operation.like("*foobar*")),
+            SearchQuery.of(q -> q.wildcard(w -> w.field("name").value("*foobar*")))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
                 f -> f.mappingRuleIds(Set.of("id1", "id2")),
@@ -92,7 +97,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.mappingRule().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.mappingRule().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -117,7 +122,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.mappingRule().read());
+    final var authorization = RequiredAuthorization.of(a -> a.mappingRule().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -165,7 +170,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.mappingRule().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.mappingRule().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);

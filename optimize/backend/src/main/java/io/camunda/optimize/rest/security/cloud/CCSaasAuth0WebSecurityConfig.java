@@ -11,6 +11,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -22,8 +23,18 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
+// Active only when an operator explicitly opts back into the legacy stack
+// (optimize.security.csl.enabled=false); CSL is the default since 8.10 (camunda/camunda#58483).
+// Otherwise CSL adopts this legacy Auth0 ClientRegistrationRepository via @ConditionalOnMissingBean
+// and its sso-callback redirect overrides camunda.security.*.oidc config. The flag and this legacy
+// stack are removed together at 8.11 (camunda/camunda#58484).
+// https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @Conditional(CCSaaSCondition.class)
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "false",
+    matchIfMissing = false)
 public class CCSaasAuth0WebSecurityConfig {
 
   public static final String OAUTH_AUTH_ENDPOINT = "/sso";
@@ -74,7 +85,11 @@ public class CCSaasAuth0WebSecurityConfig {
             .clientSecret(getAuth0Configuration().getClientSecret())
             .jwkSetUri(
                 String.format(
-                    URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
+                    URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT))
+            // Auth0 login id_tokens carry the custom domain (the one the authorization endpoint
+            // above also uses) as their `iss` claim; used by CCSaaSSecurityConfigurerAdapter's
+            // idTokenDecoderFactory to validate it.
+            .issuerUri(buildAuth0CustomDomainUrl("/"));
     return new InMemoryClientRegistrationRepository(List.of(builder.build()));
   }
 

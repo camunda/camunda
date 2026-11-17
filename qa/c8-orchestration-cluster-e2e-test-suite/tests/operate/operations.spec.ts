@@ -15,9 +15,9 @@ import {
   createSingleInstance,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from 'utils/sleep';
+import {jsonHeaders} from 'utils/http';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -60,10 +60,11 @@ test.beforeAll(async () => {
 });
 
 test.describe('Operations', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
+    // Operate can be slow to render its header banner on first load under
+    // load; give it a wider budget than the default expect timeout.
+    await expect(operateHomePage.operateBanner).toBeVisible({timeout: 90000});
     await operateHomePage.clickProcessesTab();
   });
 
@@ -95,8 +96,11 @@ test.describe('Operations', () => {
         instance.processInstanceKey,
       );
 
-      await expect(operateProcessesPage.singleOperationSpinner).toBeVisible();
-      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden({
+      const operationSpinner = operateProcessesPage.getSingleOperationSpinner(
+        instance.processInstanceKey,
+      );
+      await expect(operationSpinner).toBeVisible();
+      await expect(operationSpinner).toBeHidden({
         timeout: 60000,
       });
     });
@@ -108,9 +112,19 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.applyButton.click();
 
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
+      // The cancel operation + index update is async. A page reload forces a
+      // fresh backend query so stale index state does not cause a spurious
+      // failure on slow runners.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Validate canceled instance details', async () => {
@@ -124,7 +138,10 @@ test.describe('Operations', () => {
 
       await expect(instanceRow.getByText(instance.bpmnProcessId)).toBeVisible();
       await expect(
-        instanceRow.getByText(instance.processInstanceKey),
+        instanceRow.getByRole('link', {
+          name: `View instance ${instance.processInstanceKey}`,
+          exact: true,
+        }),
       ).toBeVisible();
     });
   });
@@ -152,29 +169,22 @@ test.describe('Operations', () => {
     });
 
     await test.step('Select all instances and retry', async () => {
-      await operateProcessesPage.selectAllRowsCheckbox.click();
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the row-selection
+      // checkboxes render.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
 
-      await operateProcessesPage.retryButton.click();
+      // Wait for the re-query the filter toggle triggers to land before
+      // selecting: its result resets the row selection.
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
 
-      await operateProcessesPage.applyButton.click();
-      await sleep(1000);
-
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage('Resolve Incident'),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.retryAllProcessInstancesInBatch();
     });
 
     await test.step('Cancel all instances', async () => {
-      await operateProcessesPage.selectAllRowsCheckbox.click();
-
-      await operateProcessesPage.cancelButton.click();
-      await operateProcessesPage.applyButton.click();
-
-      await expect(
-        operateProcessesPage.batchOperationStartedMessage(
-          'Cancel Process Instance',
-        ),
-      ).toBeVisible({timeout: 60000});
+      await operateProcessesPage.cancelAllProcessInstancesInBatch();
 
       // Apply filters to show canceled instances with retries
       await waitForAssertion({
@@ -221,6 +231,119 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
+      });
+    });
+  });
+});
+
+let deleteTestData: {
+  instances: ProcessInstance[];
+};
+
+const batchDeleteProcessId = `batchDeleteProcess-${runSuffix}`;
+
+test.beforeAll(async ({request}) => {
+  await deployWithSubstitutions('./resources/batch_delete_process.bpmn', {
+    batchDeleteProcess: batchDeleteProcessId,
+  });
+
+  const instances = await createInstances(batchDeleteProcessId, 1, 5);
+  deleteTestData = {
+    instances: instances.map((instance) => ({
+      processInstanceKey: instance.processInstanceKey,
+      bpmnProcessId: batchDeleteProcessId,
+    })),
+  };
+
+  // Poll until all instances are COMPLETED and indexed in the search backend
+  // before the test runs. Avoids a fixed sleep that is too short on slow runners
+  // and wastes time on fast ones.
+  const instanceKeys = instances.map((i) => i.processInstanceKey.toString());
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/process-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'COMPLETED',
+              processInstanceKey: {$in: instanceKeys},
+            },
+          },
+        });
+        if (response.status() !== 200) {
+          throw new Error(
+            `process-instances/search returned ${response.status()}: ${await response.text()}`,
+          );
+        }
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBe(instances.length);
+});
+
+test.describe('Delete Operations', () => {
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+    await operateHomePage.clickProcessesTab();
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('Delete completed instances in batch', async ({
+    operateProcessesPage,
+    operateFiltersPanelPage,
+    page,
+  }) => {
+    test.slow();
+    const instances = deleteTestData.instances;
+
+    await test.step('Enable finished instances filter and filter by process instance keys', async () => {
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      await expect(operateProcessesPage.dataList).toBeVisible();
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+        instances.map((instance) => instance.processInstanceKey).join(','),
+      );
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
+    });
+
+    await test.step('Delete all completed instances in batch', async () => {
+      // Batch selection is disabled while the "Suspended" state filter is
+      // active (the default processes view). Turn it off so the row-selection
+      // checkboxes render.
+      await operateFiltersPanelPage.clickSuspendedInstancesCheckbox();
+
+      // Wait for the re-query the filter toggle triggers to land before
+      // selecting: its result resets the row selection.
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
+
+      await operateProcessesPage.deleteSelectedInstancesInBatch();
+    });
+
+    await test.step('Verify instances are removed from the list after deletion', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
       });
     });
   });

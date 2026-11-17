@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -312,6 +313,10 @@ class ConditionalBehaviorEngineTest {
 
   @Test
   void shouldKeepScenarioAliveWhenActionThrows() {
+    // Use a short reset timeout so repeated retries complete quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
     final AtomicInteger actionCount = new AtomicInteger(0);
     final AtomicBoolean gate = new AtomicBoolean(true);
 
@@ -330,11 +335,17 @@ class ConditionalBehaviorEngineTest {
               throw new RuntimeException("action failed");
             });
 
-    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
   }
 
   @Test
   void shouldRetryFailedActionWithoutAdvancingChain() {
+    // Use a short reset timeout so repeated retries complete quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
     final AtomicInteger failCount = new AtomicInteger(2);
     final List<String> sequence = Collections.synchronizedList(new ArrayList<>());
     final AtomicBoolean gate = new AtomicBoolean(true);
@@ -366,6 +377,7 @@ class ConditionalBehaviorEngineTest {
             });
 
     await()
+        .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               assertThat(sequence).hasSizeGreaterThanOrEqualTo(4);
@@ -448,5 +460,32 @@ class ConditionalBehaviorEngineTest {
     await()
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(2));
+  }
+
+  @Test
+  void shouldApplyFixedBackoffOnRepeatedActionFailures() {
+    // Use a short resetTimeout so the test completes quickly
+    engine.stop();
+    engine = new ConditionalBehaviorEngine(Duration.ofMillis(300));
+
+    final List<Long> failureTimestampsNanos = new CopyOnWriteArrayList<>();
+
+    engine
+        .when(() -> {})
+        .then(
+            () -> {
+              failureTimestampsNanos.add(System.nanoTime());
+              throw new RuntimeException("repeated failure");
+            });
+
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(failureTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
+
+    final long gapMillis =
+        TimeUnit.NANOSECONDS.toMillis(
+            failureTimestampsNanos.get(1) - failureTimestampsNanos.get(0));
+    // Backoff is fixed at resetTimeout (300ms) — not exponential
+    assertThat(gapMillis).isGreaterThanOrEqualTo(250);
   }
 }

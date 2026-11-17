@@ -38,6 +38,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,6 +86,11 @@ class VariableToolsTest extends OperationalToolsTest {
 
   @Captor private ArgumentCaptor<VariableQuery> queryCaptor;
 
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.variableServices(any())).thenReturn(variableServices);
+  }
+
   private void assertExampleVariable(final VariableResult variable) {
     assertThat(variable.getVariableKey()).isEqualTo("123");
     assertThat(variable.getName()).isEqualTo("demoVar");
@@ -113,8 +119,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getVariable")
+              CallToolRequest.builder("getVariable")
                   .arguments(Map.of("variableKey", 123L))
                   .build());
 
@@ -140,8 +145,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getVariable")
+              CallToolRequest.builder("getVariable")
                   .arguments(Map.of("variableKey", 123L))
                   .build());
 
@@ -162,8 +166,7 @@ class VariableToolsTest extends OperationalToolsTest {
     void shouldFailGetVariableByKeyOnMissingKey() {
       // when
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getVariable").arguments(Map.of()).build());
+          mcpClient.callTool(CallToolRequest.builder("getVariable").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -184,8 +187,7 @@ class VariableToolsTest extends OperationalToolsTest {
       final var arguments = new HashMap<String, Object>();
       arguments.put("variableKey", null);
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getVariable").arguments(arguments).build());
+          mcpClient.callTool(CallToolRequest.builder("getVariable").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -205,10 +207,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getVariable")
-                  .arguments(Map.of("variableKey", -3L))
-                  .build());
+              CallToolRequest.builder("getVariable").arguments(Map.of("variableKey", -3L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -236,8 +235,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(
                       Map.of(
                           "filter",
@@ -283,8 +281,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(
                       Map.of(
                           "filter",
@@ -351,7 +348,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("searchVariables").arguments(Map.of()).build());
+              CallToolRequest.builder("searchVariables").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -370,8 +367,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
                   .build());
 
@@ -393,8 +389,7 @@ class VariableToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(Map.of("filter", Map.of("variableKey", "abc")))
                   .build());
 

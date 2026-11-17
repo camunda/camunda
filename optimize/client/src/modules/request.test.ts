@@ -16,6 +16,7 @@ import {
   addHandler,
   removeHandler,
 } from './request';
+import {resetCsrfTokenFetch} from './csrf';
 
 const successResponse = {
   status: 200,
@@ -223,6 +224,94 @@ describe('request', () => {
         message: 'Unknown error',
       });
     }
+  });
+});
+
+describe('CSRF (ADR-0038)', () => {
+  beforeEach(() => {
+    fetch.mockClear();
+    sessionStorage.clear();
+    resetCsrfTokenFetch();
+    fetch.mockReturnValue(Promise.resolve(successResponse));
+  });
+
+  it('attaches the X-CSRF-TOKEN header on state-changing requests when a token is stored', async () => {
+    sessionStorage.setItem('X-CSRF-TOKEN', 'tok');
+
+    await post(url, 'body');
+
+    const {headers} = fetch.mock.calls[0][1];
+    expect(headers['X-CSRF-TOKEN']).toBe('tok');
+  });
+
+  it('does not attach the token on GET requests', async () => {
+    sessionStorage.setItem('X-CSRF-TOKEN', 'tok');
+
+    await get(url);
+
+    const {headers} = fetch.mock.calls[0][1];
+    expect(headers['X-CSRF-TOKEN']).toBeUndefined();
+  });
+
+  it('does not attach the token on state-changing requests when none is stored (legacy-safe)', async () => {
+    await post(url, 'body');
+
+    const {headers} = fetch.mock.lastCall[1];
+    expect(headers['X-CSRF-TOKEN']).toBeUndefined();
+  });
+
+  it('fetches a token before the first state-changing request when none is stored', async () => {
+    fetch.mockReturnValueOnce(
+      Promise.resolve({ok: true, status: 200, headers: {get: () => 'fresh'}})
+    );
+
+    await post(url, 'body');
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[0][0]).toBe('api/identity/current/user');
+    const {headers} = fetch.mock.calls[1][1];
+    expect(headers['X-CSRF-TOKEN']).toBe('fresh');
+  });
+
+  it('fetches a token only once per page load when the server issues none', async () => {
+    await post(url, 'body');
+    await post(url, 'body');
+
+    const tokenFetches = fetch.mock.calls.filter(
+      ([target]) => target === 'api/identity/current/user'
+    );
+    expect(tokenFetches).toHaveLength(1);
+  });
+
+  it('does not fetch a token on public share pages', async () => {
+    window.history.pushState({}, '', '/external/');
+
+    await post(url, 'body');
+
+    window.history.pushState({}, '', '/');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe(url);
+  });
+
+  it('stores the X-CSRF-TOKEN from a successful response header', async () => {
+    fetch.mockReturnValueOnce(
+      Promise.resolve({ok: true, status: 200, headers: {get: () => 'newtok'}})
+    );
+
+    await get(url);
+
+    expect(sessionStorage.getItem('X-CSRF-TOKEN')).toBe('newtok');
+  });
+
+  it('does not store a token issued on a non-ok response', async () => {
+    sessionStorage.setItem('X-CSRF-TOKEN', 'valid');
+    fetch.mockReturnValueOnce(
+      Promise.resolve({ok: false, status: 401, headers: {get: () => 'stale'}})
+    );
+
+    await expect(get(url)).rejects.toBeDefined();
+
+    expect(sessionStorage.getItem('X-CSRF-TOKEN')).toBe('valid');
   });
 });
 

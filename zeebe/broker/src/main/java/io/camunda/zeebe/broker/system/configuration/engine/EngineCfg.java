@@ -10,6 +10,9 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration.InputMappingMode;
+import io.camunda.zeebe.engine.EngineConfiguration.OutputMappingMode;
+import org.jspecify.annotations.Nullable;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -18,13 +21,22 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
+  private SecretResolutionCfg secretResolution = new SecretResolutionCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private EngineConfiguration.InputMappingMode inputMappingMode =
+      EngineConfiguration.InputMappingMode.COMBINED;
+  private @Nullable InputMappingMode inputComparisonMode = null;
+  private EngineConfiguration.OutputMappingMode outputMappingMode =
+      EngineConfiguration.OutputMappingMode.COMBINED;
+  private @Nullable OutputMappingMode outputComparisonMode = null;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
+  private StartupCfg startup = new StartupCfg();
+  private StorageOrdinalsCfg storageOrdinals = new StorageOrdinalsCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -33,12 +45,15 @@ public final class EngineCfg implements ConfigurationEntry {
     jobs.init(globalConfig, brokerBase);
     jobMetrics.init(globalConfig, brokerBase);
     batchOperations.init(globalConfig, brokerBase);
+    secretResolution.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
     usageMetrics.init(globalConfig, brokerBase);
     globalListeners.init(globalConfig, brokerBase);
     expression.init(globalConfig, brokerBase);
     processInstanceCreation.init(globalConfig, brokerBase);
+    startup.init(globalConfig, brokerBase);
+    storageOrdinals.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -81,6 +96,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.batchOperations = batchOperations;
   }
 
+  public SecretResolutionCfg getSecretResolution() {
+    return secretResolution;
+  }
+
+  public void setSecretResolution(final SecretResolutionCfg secretResolution) {
+    this.secretResolution = secretResolution;
+  }
+
   public UsageMetricsCfg getUsageMetrics() {
     return usageMetrics;
   }
@@ -103,6 +126,38 @@ public final class EngineCfg implements ConfigurationEntry {
 
   public void setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+  }
+
+  public EngineConfiguration.InputMappingMode getInputMappingMode() {
+    return inputMappingMode;
+  }
+
+  public void setInputMappingMode(final EngineConfiguration.InputMappingMode inputMappingMode) {
+    this.inputMappingMode = inputMappingMode;
+  }
+
+  public @Nullable InputMappingMode getInputComparisonMode() {
+    return inputComparisonMode;
+  }
+
+  public void setInputComparisonMode(final @Nullable InputMappingMode inputComparisonMode) {
+    this.inputComparisonMode = inputComparisonMode;
+  }
+
+  public EngineConfiguration.OutputMappingMode getOutputMappingMode() {
+    return outputMappingMode;
+  }
+
+  public void setOutputMappingMode(final EngineConfiguration.OutputMappingMode outputMappingMode) {
+    this.outputMappingMode = outputMappingMode;
+  }
+
+  public @Nullable OutputMappingMode getOutputComparisonMode() {
+    return outputComparisonMode;
+  }
+
+  public void setOutputComparisonMode(final @Nullable OutputMappingMode outputComparisonMode) {
+    this.outputComparisonMode = outputComparisonMode;
   }
 
   public GlobalListenersCfg getGlobalListeners() {
@@ -137,6 +192,22 @@ public final class EngineCfg implements ConfigurationEntry {
     this.processInstanceCreation = processInstanceCreation;
   }
 
+  public StartupCfg getStartup() {
+    return startup;
+  }
+
+  public void setStartup(final StartupCfg startupCfg) {
+    startup = startupCfg;
+  }
+
+  public StorageOrdinalsCfg getStorageOrdinals() {
+    return storageOrdinals;
+  }
+
+  public void setStorageOrdinals(final StorageOrdinalsCfg storageOrdinals) {
+    this.storageOrdinals = storageOrdinals;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -154,6 +225,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobMetrics
         + ", batchOperations="
         + batchOperations
+        + ", secretResolution="
+        + secretResolution
         + ", usageMetrics="
         + usageMetrics
         + ", distribution="
@@ -164,6 +237,18 @@ public final class EngineCfg implements ConfigurationEntry {
         + expression
         + ", processInstanceCreation="
         + processInstanceCreation
+        + ", startup="
+        + startup
+        + ", storageOrdinals="
+        + storageOrdinals
+        + ", inputMappingMode="
+        + inputMappingMode
+        + ", inputComparisonMode="
+        + inputComparisonMode
+        + ", outputMappingMode="
+        + outputMappingMode
+        + ", outputComparisonMode="
+        + outputComparisonMode
         + '}';
   }
 
@@ -171,12 +256,17 @@ public final class EngineCfg implements ConfigurationEntry {
     return new EngineConfiguration()
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
+        .setMessagesPendingSubscriptionRecoveryBatchLimit(
+            messages.getPendingSubscriptionRecoveryBatchLimit())
         .setDrgCacheCapacity(caches.getDrgCacheCapacity())
         .setFormCacheCapacity(caches.getFormCacheCapacity())
         .setResourceCacheCapacity(caches.getResourceCacheCapacity())
         .setProcessCacheCapacity(caches.getProcessCacheCapacity())
+        .setProcessCacheSoftValues(caches.isProcessCacheSoftValues())
         .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
         .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
+        .setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity())
+        .setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
@@ -191,6 +281,13 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryInitialDelay(batchOperations.getQueryRetryInitialDelay())
         .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
+        .setSecretResolutionInterval(secretResolution.getInterval())
+        .setSecretResolutionRetryMaxAttempts(secretResolution.getRetryMaxAttempts())
+        .setSecretResolutionRetryInitialDelay(secretResolution.getRetryInitialDelay())
+        .setSecretResolutionRetryMaxDelay(secretResolution.getRetryMaxDelay())
+        .setSecretResolutionRetryBackoffFactor(secretResolution.getRetryBackoffFactor())
+        .setSecretResolutionBatchLimit(secretResolution.getBatchResolutionLimit())
+        .setSecretResolutionWakeDelay(secretResolution.getWakeDelay())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
@@ -205,6 +302,23 @@ public final class EngineCfg implements ConfigurationEntry {
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
-        .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent());
+        .setMessageStartDedupExpirationSweepInterval(
+            processInstanceCreation.getMessageStartDedupExpirationSweepInterval())
+        .setMessageStartDedupExpirationSweepBatchLimit(
+            processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit())
+        .setMessageStartAskRetryInterval(processInstanceCreation.getMessageStartAskRetryInterval())
+        .setMessageStartLockReleasePollInterval(
+            processInstanceCreation.getMessageStartLockReleasePollInterval())
+        .setMessageStartLockReleasePollBatchLimit(
+            processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
+        .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
+        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
+        .setEnableProcessDefinitionRestore(startup.isProcessDefinitionRestoreEnabled())
+        .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
+        .setFixedStorageOrdinals(storageOrdinals.getFixedStorageOrdinals())
+        .setInputMappingMode(inputMappingMode)
+        .setInputComparisonMode(inputComparisonMode)
+        .setOutputMappingMode(outputMappingMode)
+        .setOutputComparisonMode(outputComparisonMode);
   }
 }

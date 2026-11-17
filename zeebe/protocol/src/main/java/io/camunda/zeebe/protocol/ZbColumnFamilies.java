@@ -165,6 +165,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY(74, PARTITION_LOCAL),
   PROCESS_SUBSCRIPTION_BY_KEY(75, PARTITION_LOCAL),
 
+  /**
+   * @deprecated use {@link #JOB_ACTIVATABLE_BY_PRIORITY}; retained drain-only for pre-8.10 jobs
+   */
+  @Deprecated
   JOB_ACTIVATABLE(76, PARTITION_LOCAL),
 
   SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY(77, PARTITION_LOCAL),
@@ -276,7 +280,174 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   BACKUP_RANGES(141, PARTITION_LOCAL),
 
   // root process instance counter
-  ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL);
+  ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL),
+
+  // agent instances (scoped to a process instance, which lives on a single partition)
+  AGENT_INSTANCES(143, PARTITION_LOCAL),
+
+  // metadata in a command distribuation record
+  COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL),
+
+  // dedup state for the cross-partition message-start handshake on P_B; keyed by
+  // (processDefinitionKey, messageKey) and stores the resulting processInstanceKey and a deletion
+  // deadline (epoch millis) taken directly from the request's messageDeadline (= publishTime + ttl
+  // on P_K), so the dedup row on P_B and the buffered message on P_K share the same lifetime
+  // without any engine-internal time coupling. Lookups treat `deletionDeadline <= now` as a miss;
+  // a scheduled sweeper removes such rows. PI lifecycle is intentionally not a signal — the
+  // deadline bounds P_K's retry window, not the PI's lifetime.
+  CROSS_PARTITION_MESSAGE_START_DEDUP(145, PARTITION_LOCAL),
+
+  // Pending cross-partition message-start asks on P_K. Keyed by (messageKey, processDefinitionKey).
+  // Stores the full ask payload so retries can resend without re-reading the original message.
+  // Used in conjunction with a transient last-sent-timestamp tracker that is rebuilt from this CF
+  // on recovery — entries exist iff an ask is outstanding; cleared when any reply is applied.
+  CROSS_PARTITION_MESSAGE_START_ASK(146, PARTITION_LOCAL),
+
+  // Marks a process-correlation-key lock entry on P_K as cross-partition: the holding instance was
+  // created via the cross-partition message-start handshake. Keyed by (bpmnProcessId,
+  // correlationKey) — the same pair as the existing local correlation-key lock — and stores the
+  // holder instance's (processInstanceKey, tenantId) so the pull-based release loop can ask P_B
+  // whether that specific instance is still active (the target partition is derived from the
+  // instance key) and pick up the next buffered message for the correlation key once released. An
+  // entry is "cross-partition" iff this CF has a value for the lock; local-PI lock entries are
+  // absent from this CF and continue to be released by today's local completion path.
+  CROSS_PARTITION_MESSAGE_START_LOCK(147, PARTITION_LOCAL),
+
+  JOB_ACTIVATABLE_BY_PRIORITY(148, PARTITION_LOCAL),
+
+  // Secondary index over buffered messages by Business ID, keyed by (tenantId, businessId,
+  // messageKey). Maintained on the buffered message's own lifecycle: an entry is written when a
+  // message that carries a businessId is buffered and removed when that message expires. It lets a
+  // same-partition message-start that was skipped on Business-ID uniqueness be found again by the
+  // freed businessId: when a holder instance completes/terminates, the post-transition re-drive
+  // looks up blocked starts by businessId here and re-attempts the ordinary local start. Mirrors
+  // the
+  // correlation-key buffer's completion-driven re-drive (see ADR 0002 D5).
+  MESSAGE_BY_BUSINESS_ID(149, PARTITION_LOCAL),
+  // agent history items keyed by history item key
+  AGENT_HISTORY(150, PARTITION_LOCAL),
+  // secondary index: (jobKey, jobLeaseToken, historyItemKey) → ∅; supports prefix iteration by job
+  // key or job key + lease
+  AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
+  // secondary index: (processInstanceKey, agentInstanceKey) → ∅; supports prefix iteration by
+  // process instance key to find every agent instance still associated with it
+  AGENT_INSTANCES_BY_PROCESS_INSTANCE_KEY(152, PARTITION_LOCAL),
+  // pending secret references: (storeId, secretReference) → ∅
+  PENDING_SECRET_REFERENCES(153, PARTITION_LOCAL),
+  // secondary index: (jobKey, storeId, secretReference) → ∅; supports prefix iteration by job key
+  SECRET_REFERENCES_BY_JOB(154, PARTITION_LOCAL),
+  // secondary index: (storeId, secretReference, jobKey) → ∅; supports prefix iteration by (storeId,
+  // secretReference)
+  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL),
+  // suspension marker: processInstanceKey -> State (SUSPENDED/RESUMING); presence of an entry
+  // means the process instance has a suspension marker (either SUSPENDED or still draining as
+  // RESUMING) — the marker is only removed once resuming has fully completed
+  SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
+  // (processInstanceKey, bufferedCommandKey) -> BufferedCommandRecord; the composite key supports
+  // FIFO prefix iteration of buffered commands for a process instance (bufferedCommandKey is
+  // KeyGenerator-issued and therefore monotonically increasing, so key order == FIFO insertion
+  // order), and also stores the record directly so a visit/drain never needs a second point lookup
+  BUFFERED_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159, PARTITION_LOCAL),
+
+  // holder processInstanceKey -> (bpmnProcessId, correlationKey, tenantId, messageKey).
+  // Origin entry for a cross-partition message-start holder, written on P_B so it can push a
+  // RELEASE to P_K (addressed by messageKey's partition bits) when the holder completes/terminates.
+  // Present only on P_B — the symmetric STARTED on P_K writes nothing here. See
+  // CrossPartitionMessageStartHolderOrigin and the STARTED / PUSHED appliers for the full
+  // write/delete lifecycle and the migration rationale.
+  CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN(160, PARTITION_LOCAL),
+
+  // (processDefinitionKey, elementId) -> agentDefinitionKey. Minted once per AI agent element at
+  // deploy time and replicated identically to every partition (like process/decision/form
+  // definitions), so this is GLOBAL rather than PARTITION_LOCAL.
+  AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID(161, GLOBAL),
+
+  // agentDefinitionKey -> DbAgentDefinition (the full AgentDefinitionRecord). Populated alongside
+  // AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID at deploy time, so the record can
+  // be fully retrieved, without re-deriving it from the parsed BPMN model. GLOBAL for the same
+  // reason as the sibling CF above.
+  AGENT_DEFINITION_BY_KEY(162, GLOBAL),
+
+  /**
+   * Indexes every job of a process instance, keyed [processInstanceKey | jobKey], so resume can
+   * find a suspended instance's jobs by an ordered prefix scan from its resume cursor. Only resume
+   * reads it; suspend still walks the element instance tree.
+   *
+   * <p>Filled at job creation (8.10+); backfilled on suspension for older jobs, so it is complete
+   * for every currently {@code SUSPENDED} job but not an authoritative "all jobs of this instance"
+   * list.
+   */
+  JOBS_BY_PROCESS_INSTANCE(163, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> agentHistoryKey. Records every history item ever
+  // committed for an agent instance, so a later job resending an id that an earlier, already-
+  // completed job committed can still be recognized as a duplicate — pending state alone can't do
+  // this, since a committed item is deleted from it. Retained for the agent instance's whole
+  // lifetime and deleted in one pass when the instance completes (see
+  // AgentInstanceCompletedApplier).
+  AGENT_HISTORY_COMMITTED_IDS(164, PARTITION_LOCAL),
+
+  // (agentInstanceKey, historyItemId) -> ∅. Records every history item whose metrics were ever
+  // accumulated for an agent instance, independent of AGENT_HISTORY_COMMITTED_IDS: a discarded
+  // item leaves no trace in that store, so a later job resending the same id would otherwise
+  // re-accumulate its metrics. Written when an item is first created (see
+  // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
+  // instance completes (see AgentInstanceCompletedApplier).
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  /**
+   * Tracks the user tasks a suspension walk has suspended, keyed [processInstanceKey |
+   * userTaskKey], so overlapping walks suspend each task once and resume can find them by an
+   * ordered prefix scan from its resume cursor. Cleared when the task is resumed or deleted.
+   */
+  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+
+  /**
+   * probeKey -> the probe, its lifecycle state ({@code ACTIVATABLE}, {@code
+   * WAITING_FOR_SECRET_RESOLUTION} or {@code ACTIVATED}) and the worker of the poll that collected
+   * it. A probe lives only on the partition that created it, until it ends.
+   */
+  PROBES(167, PARTITION_LOCAL),
+
+  /**
+   * [[probeId | probeKey] | tenantId] -> ∅: the probes that wait for a poll, found by a prefix scan
+   * on the probe ID, as jobs by their type in {@link #JOB_ACTIVATABLE_BY_PRIORITY}, without the
+   * priority.
+   */
+  PROBES_ACTIVATABLE(168, PARTITION_LOCAL),
+
+  /** [deadline | probeKey] -> ∅: the probes in deadline order, for the time-out scheduler. */
+  PROBE_DEADLINES(169, PARTITION_LOCAL),
+
+  /**
+   * The open policy update of the partition, keyed [updateId]: its identifiers and how many of its
+   * chunks are buffered. Only partition 1 holds one. Removed when the policy version is committed.
+   */
+  POLICY_UPDATE(170, PARTITION_LOCAL),
+
+  /**
+   * The buffered chunks of the open policy update, keyed [updateId | chunkIndex]. Removed with the
+   * update when the policy version is committed.
+   */
+  POLICY_UPDATE_CHUNK(171, PARTITION_LOCAL),
+
+  /**
+   * The committed policy of a partition that Hub manages, as a single row under a constant key.
+   * Global, so a partition added by scaling starts with the current policy version. An update that
+   * is still being applied is not part of it: that only exists on partition 1.
+   */
+  POLICY(172, GLOBAL),
+
+  /**
+   * Reserved for the committed cluster behavior: a single entry, the set of enabled capabilities
+   * and the behavior version. Global, so a partition added by scaling starts with the current set;
+   * each partition still commits independently. Not used yet.
+   */
+  COMMITTED_CLUSTER_BEHAVIOR(173, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

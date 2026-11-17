@@ -11,4 +11,5 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import java.util.List;
 
 public record ProcessDefinitionLatestVersionAggregationResult(
-    List<ProcessDefinitionEntity> items, String endCursor) implements AggregationResultBase {}
+    List<ProcessDefinitionEntity> items, int totalItems, String endCursor)
+    implements AggregationResultBase, HasTotalItems {}

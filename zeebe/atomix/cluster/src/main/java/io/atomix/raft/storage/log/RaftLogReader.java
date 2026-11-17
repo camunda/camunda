@@ -47,6 +47,14 @@ public interface RaftLogReader extends java.util.Iterator<IndexedRaftLogEntry>, 
    */
   long seekToAsqn(final long asqn);
 
+  /**
+   * Returns the total bytes of entries between the reader's current position and the end of the
+   * log.
+   *
+   * @return the bytes until the end of the log
+   */
+  long bytesUntilEnd();
+
   @Override
   void close();
 }

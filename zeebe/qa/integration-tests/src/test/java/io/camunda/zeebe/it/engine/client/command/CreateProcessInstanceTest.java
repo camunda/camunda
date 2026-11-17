@@ -378,33 +378,16 @@ public final class CreateProcessInstanceTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldRejectCompleteJobIfVariablesAreInvalid(
-      final boolean useRest, final TestInfo testInfo) {
-    // given
-    deployProcesses(testInfo, useRest);
-
-    // when
-    if (useRest) {
-      assertThatThrownBy(
-              () ->
-                  getCommand(client, useRest)
-                      .bpmnProcessId(processId)
-                      .latestVersion()
-                      .variables("[]")
-                      .send()
-                      .join())
-          .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>'");
-    } else {
-      assertThatThrownBy(
-              () ->
-                  getCommand(client, useRest)
-                      .bpmnProcessId(processId)
-                      .latestVersion()
-                      .variables("[]")
-                      .send()
-                      .join())
-          .hasMessageContaining("Expected variables to be valid msgpack, but it could not be read");
-    }
+  public void shouldRejectIfVariablesAreInvalid(final boolean useRest) {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                getCommand(client, useRest)
+                    .bpmnProcessId("process")
+                    .latestVersion()
+                    .variables("[]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("variables must be a JSON object, but was: []");
   }
 
   @ParameterizedTest

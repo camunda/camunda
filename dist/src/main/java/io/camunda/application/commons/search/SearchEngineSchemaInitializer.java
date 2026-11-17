@@ -7,117 +7,296 @@
  */
 package io.camunda.application.commons.search;
 
+import static java.util.Objects.requireNonNull;
+
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
+import io.camunda.application.commons.pt.SchemaInitializationStatus;
+import io.camunda.application.commons.pt.SchemaInitializer;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
-public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
+/**
+ * Binds the Elasticsearch/OpenSearch schema managers to {@link PerTenantSchemaInitialization},
+ * which owns the retry loop, the startup gate and the per-tenant state. This class only supplies
+ * the storage-specific parts: what one attempt does, which failures retrying cannot repair, and
+ * whether this node holds startup at the gate.
+ */
+@NullMarked
+public class SearchEngineSchemaInitializer
+    implements InitializingBean, DisposableBean, SchemaManagerContainer, SchemaInitializer {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
-  private final SearchEngineConfiguration searchEngineConfiguration;
-  private final SchemaManagerMetrics schemaManagerMetrics;
-  private final boolean awaitSchemaInitialization;
-  private final AtomicBoolean isShutdown = new AtomicBoolean(false);
-  private final AtomicBoolean initialized = new AtomicBoolean(false);
+  private final Map<String, SearchEngineConfiguration> configs;
+  private final Map<String, IndexDescriptors> descriptors;
+  private final MeterRegistry meterRegistry;
+  private final boolean holdsStartup;
+  private final PerTenantSchemaInitialization initialization;
+
+  /**
+   * One entry per tenant that currently holds a client: added by the tenant's own task on its first
+   * attempt, removed when the schema is applied or when the node shuts down. A tenant that keeps
+   * failing keeps its entry, and its client, for its next attempt.
+   */
+  private final Map<String, ClientAdapter> clientsByTenant = new ConcurrentHashMap<>();
+
+  private final Map<String, ReentrantLock> attemptLocks = new ConcurrentHashMap<>();
+
+  /**
+   * @param holdsStartup whether this node keeps its listening socket closed until a physical tenant
+   *     is serviceable. Only a node with an HTTP gateway does; every other node has no consumer
+   *     that benefits from waiting. It also decides whether the node can abort: the abort belongs
+   *     to the gate, so a node that does not wait at one stays up with every tenant degraded, as it
+   *     does today.
+   * @param recovering whether a physical tenant is being recovered. Creating the indices of a
+   *     tenant mid-recovery is not merely redundant work: an Elasticsearch/OpenSearch snapshot
+   *     cannot be restored into indices that already exist, so a node restarted during a restore
+   *     would break the very restore it came back up into. The tenant is left alone until it
+   *     returns to processing mode, and its schema is applied then.
+   */
+  public SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final Predicate<String> recovering) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(
+            tenantId ->
+                recovering.test(tenantId)
+                    ? PerTenantSchemaInitialization.Deferral.DEFERRED
+                    : PerTenantSchemaInitialization.Deferral.NONE));
+  }
 
   public SearchEngineSchemaInitializer(
-      final SearchEngineConfiguration searchEngineConfiguration,
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
-      final boolean awaitSchemaInitialization) {
-    this.searchEngineConfiguration = searchEngineConfiguration;
-    schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
-    this.awaitSchemaInitialization = awaitSchemaInitialization;
+      final boolean holdsStartup,
+      final SchemaInitializationRecoveryCheck recoveryCheck) {
+    this(
+        configsByTenant,
+        descriptorsByTenant,
+        meterRegistry,
+        holdsStartup,
+        DeferralCheck.of(recoveryCheck::shouldDefer));
+  }
+
+  private SearchEngineSchemaInitializer(
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
+      final MeterRegistry meterRegistry,
+      final boolean holdsStartup,
+      final DeferralCheck deferral) {
+    configs = configsByTenant;
+    descriptors = descriptorsByTenant;
+    this.meterRegistry = meterRegistry;
+    this.holdsStartup = holdsStartup;
+    initialization =
+        new PerTenantSchemaInitialization(
+            configs.keySet(),
+            this::initializeTenant,
+            SearchEngineSchemaInitializer::isTerminal,
+            tenantId -> requireNonNull(configs.get(tenantId)).schemaManager().getRetry(),
+            deferral);
   }
 
   @Override
-  public void afterPropertiesSet() throws Exception {
-    LOGGER.info("Initializing search engine schema...");
-    final var executor = Executors.newSingleThreadExecutor();
-    if (!addShutdownHook(executor)) {
+  public void afterPropertiesSet() {
+    LOGGER.info(
+        "Initializing search engine schema for {} physical tenant(s): {}",
+        configs.size(),
+        configs.keySet());
+
+    if (!addShutdownHook()) {
       // skipping schema initialization as JVM is shutting down
       return;
     }
-    final var future = CompletableFuture.runAsync(this::startupSchemaManager, executor);
-    if (awaitSchemaInitialization) {
-      synchronousSchemaInitialization(future, executor);
-    } else {
-      asyncSchemaInitialization(future, executor);
+
+    initialization.start();
+
+    if (!holdsStartup) {
+      LOGGER.info(
+          "No HTTP gateway is enabled on this node, so schema initialization continues in the"
+              + " background and startup is not held.");
+      return;
     }
+
+    LOGGER.info(
+        "Holding startup until a physical tenant is serviceable, so that no client reaches this"
+            + " node before it can answer.");
+    initialization.awaitGate();
   }
 
+  @Override
+  public void destroy() {
+    // Stop the tasks before taking their clients away, so that a task still mid-attempt fails
+    // against a closed client only after it has already been told to stop, where the failure is
+    // logged as a shutdown and not as a degraded tenant.
+    initialization.close();
+    clientsByTenant.keySet().forEach(this::releaseClientOf);
+  }
+
+  @Override
+  public boolean isInitialized(final String physicalTenantId) {
+    return initialization.isInitialized(physicalTenantId);
+  }
+
+  /** Applies one tenant schema attempt without using the startup retry loop. */
+  @Override
+  public void initializeNow(final String physicalTenantId) {
+    initialization.initializeNow(physicalTenantId);
+  }
+
+  /** Where each physical tenant's schema initialization stands, in configuration order. */
+  @Override
+  public Map<String, SchemaInitializationStatus> statuses() {
+    return initialization.statuses();
+  }
+
+  /**
+   * Returns true if the schema initialization completed successfully for <em>all</em> physical
+   * tenants. This can be used by dependent components to check if they should proceed with their
+   * initialization.
+   *
+   * @return true if schema initialization completed successfully for all tenants, false otherwise
+   */
+  @Override
+  public boolean isInitialized() {
+    return !configs.isEmpty() && configs.keySet().stream().allMatch(this::isInitialized);
+  }
+
+  /**
+   * One attempt at applying a tenant's schema. Any failure propagates to the retry loop.
+   *
+   * <p>The client is built once per tenant and reused across that tenant's attempts, not rebuilt on
+   * each one: building it opens a connection pool and its I/O threads, and a tenant whose storage
+   * is down retries for as long as the node runs, so per-attempt rebuilding would churn both every
+   * backoff interval indefinitely. It is released as soon as the schema is applied, which is the
+   * only point at which this tenant has no further use for it.
+   */
   @VisibleForTesting
-  void synchronousSchemaInitialization(
-      final CompletableFuture<Void> future, final ExecutorService executor) throws Exception {
+  void initializeTenant(final String physicalTenantId) {
+    final var lock = attemptLocks.computeIfAbsent(physicalTenantId, ignored -> new ReentrantLock());
+    lock.lock();
     try {
-      future.get();
-      LOGGER.info("Search engine schema initialization complete.");
-    } catch (final InterruptedException ie) {
-      LOGGER.debug(
-          "Schema initialization task was interrupted. Shutdown signal is caught={}",
-          isShutdown.get(),
-          ie);
-      if (!isShutdown.get()) {
-        // Only re-interrupt if this is not a shutdown-triggered interrupt.
-        // During shutdown, we must let Spring finish context refresh so that
-        // Broker can perform a graceful shutdown.
-        Thread.currentThread().interrupt();
-      }
-    } catch (final Exception e) {
-      if (isShutdown.get()) {
-        LOGGER.debug("Schema initialization interrupted with shutdown.", e);
-        return;
-      }
-      throw e;
+      initializeTenantExclusively(physicalTenantId);
     } finally {
-      executor.close();
+      lock.unlock();
+    }
+  }
+
+  private void initializeTenantExclusively(final String physicalTenantId) {
+    final SearchEngineConfiguration configuration = requireNonNull(configs.get(physicalTenantId));
+    final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
+    if (indexDescriptors == null) {
+      // A wiring defect rather than a storage failure: no amount of retrying produces descriptors,
+      // and left unclassified it would log a stack trace every backoff interval forever.
+      throw new TerminalSchemaInitializationException(
+          "No index descriptors are configured for physical tenant '" + physicalTenantId + "'");
+    }
+
+    final ClientAdapter clientAdapter =
+        clientsByTenant.computeIfAbsent(physicalTenantId, id -> newClientAdapter(configuration));
+    try (final SchemaManager schemaManager =
+        new SchemaManager(
+            clientAdapter.getSearchEngineClient(),
+            indexDescriptors.indices(),
+            indexDescriptors.templates(),
+            configuration,
+            clientAdapter.objectMapper(),
+            new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
+      schemaManager.startupOnce();
+    }
+    if (configuration.schemaManager().isCreateSchema()
+        && configuration.schemaManager().isHealthCheckEnabled()
+        && !clientAdapter.getSearchEngineClient().isHealthy()) {
+      // Not terminal: a red/unreachable cluster right after schema creation may still turn
+      // yellow/green shortly after, so this attempt is retried like any other storage failure.
+      // A missing 'monitor' privilege is the one health-check failure classified terminal, in
+      // isTerminal() below.
+      throw new SchemaNotReadyException(
+          "Cluster health check failed for physical tenant '"
+              + physicalTenantId
+              + "' after schema"
+              + " initialization.");
+    }
+    releaseClientOf(physicalTenantId);
+  }
+
+  /**
+   * Releases a tenant's client, if it still holds one. Removing before closing is what makes this
+   * safe to call from the tenant's own task and from {@link #destroy()} concurrently: whichever
+   * gets the adapter closes it, and the other gets nothing.
+   */
+  private void releaseClientOf(final String physicalTenantId) {
+    final ClientAdapter clientAdapter = clientsByTenant.remove(physicalTenantId);
+    if (clientAdapter != null) {
+      closeQuietly(clientAdapter, physicalTenantId);
+    }
+  }
+
+  /**
+   * Building the client performs no I/O, so a failure here is a static misconfiguration — an
+   * unsupported database type, or connect settings that cannot be turned into a client. Retrying it
+   * would never succeed, hence the terminal marker.
+   */
+  private static ClientAdapter newClientAdapter(final SearchEngineConfiguration configuration) {
+    try {
+      return ClientAdapter.of(configuration.connect());
+    } catch (final Exception e) {
+      throw new TerminalSchemaInitializationException("Failed to build the search client", e);
     }
   }
 
   @VisibleForTesting
-  void asyncSchemaInitialization(
-      final CompletableFuture<Void> future, final ExecutorService executor) {
-    future.whenCompleteAsync(
-        (result, error) -> {
-          if (error != null) {
-            LOGGER.warn("Failed to initialize search engine schema", error);
-          } else {
-            LOGGER.info("Search engine schema initialization complete.");
-          }
-          executor.close();
-        });
+  static void closeQuietly(final ClientAdapter clientAdapter, final String physicalTenantId) {
+    try {
+      clientAdapter.close();
+    } catch (final Exception e) {
+      // A client that cannot be released does not invalidate a schema that was applied, and
+      // failing here would retry an initialization that already succeeded.
+      LOGGER.debug(
+          "Failed to close the search client of physical tenant '{}'", physicalTenantId, e);
+    }
   }
 
-  private void startupSchemaManager() {
-    final var indexDescriptors =
-        new IndexDescriptors(
-            searchEngineConfiguration.connect().getIndexPrefix(),
-            searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
-    try (final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
-        final SchemaManager schemaManager =
-            new SchemaManager(
-                    clientAdapter.getSearchEngineClient(),
-                    indexDescriptors.indices(),
-                    indexDescriptors.templates(),
-                    searchEngineConfiguration,
-                    clientAdapter.objectMapper())
-                .withMetrics(schemaManagerMetrics)) {
-      schemaManager.startup();
-      initialized.set(true);
-    } catch (final IOException e) {
-      LOGGER.debug("Failed to close the search client", e);
-    }
+  /**
+   * A schema that the running version cannot migrate stays incompatible however often it is
+   * retried, so this is terminal too. A missing 'monitor' cluster privilege is also terminal: no
+   * amount of retrying grants the permission. So is a schema the descriptors cannot validate
+   * against the cluster: that diff is deterministic. Everything else — an unreachable cluster, a
+   * rejected request, a cluster that has not yet turned yellow/green — is retried, because it may
+   * be repaired without restarting the node.
+   */
+  @VisibleForTesting
+  static boolean isTerminal(final Throwable failure) {
+    return failure instanceof IncompatibleVersionException
+        || failure instanceof TerminalSchemaInitializationException
+        || failure instanceof SearchEngineHealthCheckPermissionException
+        || failure instanceof IndexSchemaValidationException;
   }
 
   /**
@@ -126,16 +305,14 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
    * @return true if the shutdown hook was added successfully, false if the JVM is already shutting
    *     down
    */
-  private boolean addShutdownHook(final ExecutorService executor) {
+  private boolean addShutdownHook() {
     try {
       Runtime.getRuntime()
           .addShutdownHook(
               new Thread(
                   () -> {
                     LOGGER.trace("Shutdown hook triggered");
-                    if (isShutdown.compareAndSet(false, true)) {
-                      executor.shutdownNow();
-                    }
+                    initialization.close();
                   }));
       return true;
     } catch (final IllegalStateException e) {
@@ -146,14 +323,23 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     }
   }
 
-  /**
-   * Returns true if the schema initialization completed successfully. This can be used by dependent
-   * components to check if they should proceed with their initialization.
-   *
-   * @return true if schema initialization completed successfully, false otherwise
-   */
-  @Override
-  public boolean isInitialized() {
-    return initialized.get();
+  /** Marks a failure that no amount of retrying can repair. */
+  static final class TerminalSchemaInitializationException extends RuntimeException {
+
+    TerminalSchemaInitializationException(final String message) {
+      super(message);
+    }
+
+    TerminalSchemaInitializationException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  /** A retryable failure: the cluster health check did not pass after schema initialization. */
+  static final class SchemaNotReadyException extends RuntimeException {
+
+    SchemaNotReadyException(final String message) {
+      super(message);
+    }
   }
 }

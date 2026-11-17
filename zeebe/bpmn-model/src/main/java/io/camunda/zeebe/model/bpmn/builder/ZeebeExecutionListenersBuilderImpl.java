@@ -75,6 +75,21 @@ public class ZeebeExecutionListenersBuilderImpl<B extends AbstractBaseElementBui
   }
 
   @Override
+  public B zeebeCancelExecutionListener(final String type, final String retries) {
+    final ZeebeExecutionListener listener = createZeebeExecutionListener();
+    listener.setEventType(ZeebeExecutionListenerEventType.cancel);
+    listener.setType(type);
+    listener.setRetries(retries);
+
+    return elementBuilder;
+  }
+
+  @Override
+  public B zeebeCancelExecutionListener(final String type) {
+    return zeebeCancelExecutionListener(type, ZeebeExecutionListener.DEFAULT_RETRIES);
+  }
+
+  @Override
   public B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     final ZeebeExecutionListener listener = createZeebeExecutionListener();

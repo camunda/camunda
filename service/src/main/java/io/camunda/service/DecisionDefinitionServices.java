@@ -8,15 +8,15 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.search.core.SearchQueryService;
@@ -39,6 +39,7 @@ public final class DecisionDefinitionServices
   private final DecisionRequirementsServices decisionRequirementServices;
 
   public DecisionDefinitionServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
@@ -46,6 +47,7 @@ public final class DecisionDefinitionServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -95,7 +97,7 @@ public final class DecisionDefinitionServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             DECISION_DEFINITION_READ_AUTHORIZATION,
                             DecisionDefinitionEntity::decisionDefinitionId)))
                 .getDecisionDefinition(decisionKey));

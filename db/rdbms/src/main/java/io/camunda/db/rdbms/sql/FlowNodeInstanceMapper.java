@@ -22,6 +22,8 @@ public interface FlowNodeInstanceMapper extends ProcessInstanceDependantMapper {
 
   void updateIncident(UpdateIncidentDto dto);
 
+  void updateNameIfNull(UpdateNameDto dto);
+
   Long count(FlowNodeInstanceDbQuery filter);
 
   List<FlowNodeInstanceDbModel> search(FlowNodeInstanceDbQuery filter);
@@ -32,4 +34,6 @@ public interface FlowNodeInstanceMapper extends ProcessInstanceDependantMapper {
       OffsetDateTime endDate) {}
 
   record UpdateIncidentDto(long flowNodeInstanceKey, Long incidentKey) {}
+
+  record UpdateNameDto(long flowNodeInstanceKey, String flowNodeName) {}
 }

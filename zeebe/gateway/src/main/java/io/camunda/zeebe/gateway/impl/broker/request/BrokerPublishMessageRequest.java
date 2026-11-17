@@ -51,6 +51,11 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Mess
     return this;
   }
 
+  public BrokerPublishMessageRequest setBusinessId(final String businessId) {
+    requestDto.setBusinessId(businessId != null ? businessId : "");
+    return this;
+  }
+
   @Override
   public MessageRecord getRequestWriter() {
     return requestDto;

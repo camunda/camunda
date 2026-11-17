@@ -36,6 +36,7 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
 
   private static final String DEFAULT_CONNECTOR_POLLING_INTERVAL_IN_MILLIS = "500";
+  private static final String DEFAULT_SECRET_FILTER_MODE = "DISABLED";
 
   private static final String CONNECTORS_READY_ENDPOINT = "/actuator/health/readiness";
 
@@ -56,6 +57,7 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
             DEFAULT_CONNECTOR_POLLING_INTERVAL_IN_MILLIS)
         .withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
         .withEnv(CONNECTORS_ENV_SECRET_PREFIX, "")
+        .withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_SECRET_FILTER_MODE, DEFAULT_SECRET_FILTER_MODE)
         .addExposedPorts(ContainerRuntimePorts.CONNECTORS_REST_API);
   }
 

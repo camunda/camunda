@@ -76,6 +76,10 @@ public final class RaftOperation {
     return operations;
   }
 
+  // Reconfiguration operations (join, promote, demote, leave) are deliberately not part of these
+  // random operation lists: randomly reconfiguring arbitrary members would make the properties'
+  // goals meaningless. Properties drive them explicitly and retry on failure, see
+  // RandomizedRaftJoinTest and RandomizedRaftScaleDownTest.
   public static List<RaftOperation> getDefaultRaftOperations() {
     final List<RaftOperation> defaultRaftOperation = new ArrayList<>();
     defaultRaftOperation.add(
@@ -96,6 +100,8 @@ public final class RaftOperation {
         RaftOperation.of(
             "Drop next message",
             (raftContexts, m) -> raftContexts.getServerProtocol(m).dropNextMessage()));
+    defaultRaftOperation.add(
+        RaftOperation.of("Transfer leadership", ControllableRaftContexts::transferLeadershipTo));
     return defaultRaftOperation;
   }
 }

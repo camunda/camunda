@@ -11,10 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -28,6 +31,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
+import org.agrona.collections.MutableLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -35,12 +39,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ExporterContainerTest {
 
   private static final String EXPORTER_ID = "fakeExporter";
-  private static final int PARTITION_ID = 123;
+  private static final PartitionId PARTITION_ID =
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 123);
   private static final String REGISTERED_COUNTER_NAME = "zeebe_exporter_counter";
 
   private ExporterContainerRuntime runtime;
@@ -197,6 +204,84 @@ final class ExporterContainerTest {
     }
   }
 
+  /**
+   * Exporter that always throws {@link ExporterException} with {@link
+   * ExporterException.Compensation#REOPEN} and tracks how many times {@link #open} was called.
+   */
+  public static final class ReopenThrowingExporter extends FakeExporter {
+
+    private int openCount;
+
+    @Override
+    public void open(final Controller controller) {
+      super.open(controller);
+      openCount++;
+    }
+
+    public int getOpenCount() {
+      return openCount;
+    }
+
+    @Override
+    public void export(final Record<?> record) {
+      throw new ExporterException(
+          "position mismatch detected", ExporterException.Compensation.REOPEN);
+    }
+  }
+
+  /**
+   * Exporter that throws a {@link ExporterException.Compensation#REOPEN} exception on export, and
+   * requests a replay on the reopen's {@link #open}, simulating a real position-mismatch recovery
+   * (e.g. the RDBMS exporter re-syncing after an async DB failover).
+   */
+  public static final class ReplayRequestingReopenExporter extends FakeExporter {
+
+    private int openCount;
+
+    @Override
+    public void open(final Controller controller) {
+      super.open(controller);
+      openCount++;
+      if (openCount > 1) {
+        controller.requestReplay(0L);
+      }
+    }
+
+    public int getOpenCount() {
+      return openCount;
+    }
+
+    @Override
+    public void export(final Record<?> record) {
+      throw new ExporterException(
+          "position mismatch detected", ExporterException.Compensation.REOPEN);
+    }
+  }
+
+  /**
+   * Exporter that always throws a plain {@link ExporterException} (defaulting to {@link
+   * ExporterException.Compensation#RETRY}) and tracks how many times {@link #open} was called.
+   */
+  public static final class RetryThrowingExporter extends FakeExporter {
+
+    private int openCount;
+
+    @Override
+    public void open(final Controller controller) {
+      super.open(controller);
+      openCount++;
+    }
+
+    public int getOpenCount() {
+      return openCount;
+    }
+
+    @Override
+    public void export(final Record<?> record) {
+      throw new ExporterException("export failed");
+    }
+  }
+
   @Nested
   class WithDefaultInitialization {
 
@@ -225,9 +310,37 @@ final class ExporterContainerTest {
       assertThat(exporter.getContext().getLogger()).isNotNull();
       assertThat(exporter.getContext().getConfiguration()).isNotNull();
       assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo(EXPORTER_ID);
-      assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID);
+      assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID.number());
       assertThat(exporter.getContext().getConfiguration().getArguments())
           .isEqualTo(Map.of("key", "value"));
+    }
+
+    @Test
+    void shouldExposeDefaultPhysicalTenantIdToExporter() throws Exception {
+      // when
+      exporterContainer.configureExporter();
+
+      // then
+      assertThat(exporter.getContext().getPhysicalTenantId())
+          .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    }
+
+    @Test
+    void shouldExposeExplicitPhysicalTenantIdToExporter() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  "tenantExporter", FakeExporter.class, Map.of("key", "value"));
+      final var container = runtime.newContainer(descriptor, new PartitionId("tenant-a", 1));
+      final var tenantExporter = (FakeExporter) container.getExporter();
+
+      // when
+      container.configureExporter();
+
+      // then
+      assertThat(tenantExporter.getContext().getPhysicalTenantId()).isEqualTo("tenant-a");
     }
 
     @Test
@@ -306,7 +419,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull();
       assertThat(exporter.getRecord()).isEqualTo(mockedRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -330,7 +443,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull();
       assertThat(exporter.getRecord()).isEqualTo(secondRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -375,8 +488,8 @@ final class ExporterContainerTest {
 
       // then
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
-      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(-1L);
     }
 
     @Test
@@ -405,14 +518,19 @@ final class ExporterContainerTest {
       assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(2);
     }
 
-    @Test
-    void shouldNotUpdateExporterPositionIfSoftPaused() throws Exception {
-      // given
+    @ParameterizedTest
+    @EnumSource(
+        value = ExporterPhase.class,
+        names = {"SOFT_PAUSED", "PAUSED"})
+    void shouldNotUpdateExporterPositionIfPaused(final ExporterPhase phase) throws Exception {
+      // given - nothing guarantees an exporter won't call updateLastExportedRecordPosition from a
+      // background task while paused, so the guard must hold regardless of what the exporter
+      // itself does
       exporterContainer.configureExporter();
       runtime.getState().setPosition(EXPORTER_ID, 0);
       exporterContainer.initMetadata();
       exporterContainer.openExporter();
-      exporterContainer.softPauseExporter();
+      pause(phase);
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -425,17 +543,20 @@ final class ExporterContainerTest {
 
       // then
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
-    @Test
-    void shouldUpdatePositionWhenResumedAfterSoftPaused() throws Exception {
+    @ParameterizedTest
+    @EnumSource(
+        value = ExporterPhase.class,
+        names = {"SOFT_PAUSED", "PAUSED"})
+    void shouldUpdatePositionWhenResumedAfterPause(final ExporterPhase phase) throws Exception {
       // given
       exporterContainer.configureExporter();
       runtime.getState().setPosition(EXPORTER_ID, 0);
       exporterContainer.initMetadata();
       exporterContainer.openExporter();
-      exporterContainer.softPauseExporter();
+      pause(phase);
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -447,17 +568,52 @@ final class ExporterContainerTest {
       awaitPreviousCall();
 
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
       assertThat(exporterContainer.readMetadata()).isNotPresent();
 
       // when
-      exporterContainer.undoSoftPauseExporter();
+      exporterContainer.resumeExporter();
       awaitPreviousCall();
 
       // then
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
       assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
+    }
+
+    private void pause(final ExporterPhase phase) {
+      if (phase == ExporterPhase.SOFT_PAUSED) {
+        exporterContainer.softPauseExporter();
+      } else {
+        exporterContainer.hardPauseExporter();
+      }
+    }
+
+    @Test
+    void shouldNotPersistPositionZeroOnResumeWithoutAcknowledgment() throws Exception {
+      // given - a fresh exporter that never acknowledges (e.g. BlockingExporter)
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+      exporterContainer.softPauseExporter();
+
+      // when
+      exporterContainer.resumeExporter();
+      awaitPreviousCall();
+
+      // then - position 0 must never be persisted, see #52257. Inspect the raw stored value
+      // since getPosition() normalizes 0 to VALUE_NOT_FOUND on read.
+      final var rawStoredPosition = new MutableLong(Long.MIN_VALUE);
+      runtime
+          .getState()
+          .visitExporterState(
+              (id, entry) -> {
+                if (EXPORTER_ID.equals(id)) {
+                  rawStoredPosition.set(entry.getPosition());
+                }
+              });
+      assertThat(rawStoredPosition.get()).isEqualTo(-1L);
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -477,7 +633,7 @@ final class ExporterContainerTest {
 
       // then
       assertThat(exporter.getRecord()).isNull();
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1L);
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
     }
 
@@ -529,7 +685,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull();
       assertThat(exporter.getRecord()).isEqualTo(firstRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -804,6 +960,76 @@ final class ExporterContainerTest {
   }
 
   @Nested
+  class RequestReplay {
+
+    private static final long INITIAL_POSITION = 10L;
+    private static final long REPLAY_POSITION = 5L;
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) throws ExporterLoadException {
+      runtime = new ExporterContainerRuntime(storagePath);
+    }
+
+    @Test
+    void shouldRequestReplaySuccessfully() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+      exporterContainer =
+          runtime.newContainer(
+              descriptor,
+              PARTITION_ID,
+              new ExporterInitializationInfo(0, null),
+              new SimpleMeterRegistry(),
+              pos -> true);
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, INITIAL_POSITION);
+      exporterContainer.initMetadata();
+
+      // when
+      final boolean result = exporterContainer.requestReplay(REPLAY_POSITION);
+
+      // then
+      assertThat(result).isTrue();
+      assertThat(exporterContainer.getPosition()).isEqualTo(REPLAY_POSITION);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(REPLAY_POSITION);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(REPLAY_POSITION);
+    }
+
+    @Test
+    void shouldNotUpdateStateWhenReplayRequestIsRejected() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+      exporterContainer =
+          runtime.newContainer(
+              descriptor,
+              PARTITION_ID,
+              new ExporterInitializationInfo(0, null),
+              new SimpleMeterRegistry(),
+              pos -> false);
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, INITIAL_POSITION);
+      exporterContainer.initMetadata();
+
+      // when
+      final boolean result = exporterContainer.requestReplay(REPLAY_POSITION);
+
+      // then
+      assertThat(result).isFalse();
+      assertThat(exporterContainer.getPosition()).isEqualTo(INITIAL_POSITION);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(INITIAL_POSITION);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(INITIAL_POSITION);
+    }
+  }
+
+  @Nested
   class RecordFilterConditions {
 
     @BeforeEach
@@ -847,7 +1073,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNull();
       // filtered record still advances committed position
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -873,7 +1099,7 @@ final class ExporterContainerTest {
       // then
       assertThat(exporter.getRecord()).isNull();
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -899,7 +1125,7 @@ final class ExporterContainerTest {
       // then
       assertThat(exporter.getRecord()).isNull();
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -925,7 +1151,7 @@ final class ExporterContainerTest {
       // then
       assertThat(exporter.getRecord()).isNull();
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -952,7 +1178,121 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull().isEqualTo(mockedRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
       // committed position is still previous value until record is acknowledged
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
+    }
+  }
+
+  @Nested
+  class ExporterExceptionHandling {
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) {
+      runtime = new ExporterContainerRuntime(storagePath);
+    }
+
+    @Test
+    void shouldReopenExporterWhenExporterExceptionWithReopenCompensationIsThrown()
+        throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, ReopenThrowingExporter.class, Map.of());
+      exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
+      final var throwingExporter = (ReopenThrowingExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter(); // first open: openCount = 1
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      final ExportOutcome outcome = exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then — the REOPEN compensation triggers close() + openExporter() inside exportRecord();
+      // since the reopen did not request a replay, the record is retried, not abandoned
+      assertThat(outcome).isEqualTo(ExportOutcome.RETRY);
+      assertThat(throwingExporter.isClosed())
+          .describedAs("exporter was closed as part of reopen")
+          .isTrue();
+      assertThat(throwingExporter.getOpenCount())
+          .describedAs("exporter was opened twice: once on startup, once on reopen")
+          .isEqualTo(2);
+    }
+
+    @Test
+    void shouldAbortRecordWhenReopenAcceptsMidRunReplayRequest() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, ReplayRequestingReopenExporter.class, Map.of());
+      exporterContainer =
+          runtime.newContainer(
+              descriptor,
+              PARTITION_ID,
+              new ExporterInitializationInfo(0, null),
+              new SimpleMeterRegistry(),
+              pos -> true);
+      final var throwingExporter = (ReplayRequestingReopenExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter(); // first open: openCount = 1
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      final ExportOutcome outcome = exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then — reopen accepted a replay, so the current record is abandoned rather than retried,
+      // letting the rewound log reader redeliver it (and anything missed before it) in order
+      assertThat(outcome).isEqualTo(ExportOutcome.ABORT_REPLAY);
+      assertThat(throwingExporter.getOpenCount())
+          .describedAs("exporter was opened twice: once on startup, once on reopen")
+          .isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotReopenExporterWhenExporterExceptionWithRetryCompensationIsThrown()
+        throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(EXPORTER_ID, RetryThrowingExporter.class, Map.of());
+      exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
+      final var throwingExporter = (RetryThrowingExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter(); // first open: openCount = 1
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      final ExportOutcome outcome = exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then — the RETRY compensation only logs the error; no close/reopen occurs
+      assertThat(outcome).isEqualTo(ExportOutcome.RETRY);
+      assertThat(throwingExporter.isClosed())
+          .describedAs("exporter was not closed for a RETRY compensation")
+          .isFalse();
+      assertThat(throwingExporter.getOpenCount())
+          .describedAs("exporter was opened exactly once (no reopen)")
+          .isEqualTo(1);
     }
   }
 }

@@ -12,7 +12,7 @@ import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 

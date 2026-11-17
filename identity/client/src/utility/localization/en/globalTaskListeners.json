@@ -44,8 +44,10 @@
   "eventTypeCanceling": "Canceling",
   "selectEventTypes": "Choose events",
   "retriesHelperText": "Number of retries for the listener (minimum 1)",
+  "retriesMin": "Retries must be at least 1",
   "priority": "Priority",
   "priorityHelperText": "Execution priority (higher values run first)",
+  "priorityMin": "Priority must be 0 or higher",
   "createError": "We're having trouble creating the user task listener",
   "updateError": "We're having trouble updating the user task listener",
   "deleteError": "We're having trouble deleting the user task listener"

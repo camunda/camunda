@@ -34,7 +34,9 @@ const InfiniteScroller: React.FC<Props> = ({
   // over the initial callbacks.
   const onVerticalScrollStartReachRef = useRef(onVerticalScrollStartReach);
   const onVerticalScrollEndReachRef = useRef(onVerticalScrollEndReach);
+  // eslint-disable-next-line react-hooks/refs
   onVerticalScrollStartReachRef.current = onVerticalScrollStartReach;
+  // eslint-disable-next-line react-hooks/refs
   onVerticalScrollEndReachRef.current = onVerticalScrollEndReach;
 
   const observeIntersections = (node: HTMLElement) => {

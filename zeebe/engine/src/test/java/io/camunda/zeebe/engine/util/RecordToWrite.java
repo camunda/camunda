@@ -8,10 +8,16 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -19,19 +25,34 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -39,16 +60,30 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
@@ -56,15 +91,21 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
+import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public final class RecordToWrite implements LogAppendEntry {
 
@@ -86,6 +127,27 @@ public final class RecordToWrite implements LogAppendEntry {
     recordMetadata.authorization(
         AuthorizationUtil.getAuthInfo(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     return new RecordToWrite(recordMetadata);
+  }
+
+  /** Like a command written by the broker itself: no authorization claims, no request. */
+  public static RecordToWrite commandWithoutClaims() {
+    return new RecordToWrite(new RecordMetadata().recordType(RecordType.COMMAND));
+  }
+
+  /** Like a follow-up command written by the engine: copied claims, but no request metadata. */
+  public static RecordToWrite commandWithClaims(final AuthInfo authInfo) {
+    return new RecordToWrite(
+        new RecordMetadata().recordType(RecordType.COMMAND).authorization(authInfo));
+  }
+
+  /** Like a command sent by a client through the gateway: user claims and request metadata. */
+  public static RecordToWrite commandFromRequest(final String username) {
+    return new RecordToWrite(
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .requestId(1L)
+            .requestStreamId(1)
+            .authorization(AuthorizationUtil.getAuthInfo(username)));
   }
 
   public static RecordToWrite event() {
@@ -135,6 +197,29 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
+  public RecordToWrite secretReference(
+      final SecretReferenceIntent intent, final SecretReferenceRecordValue value) {
+    recordMetadata.valueType(ValueType.SECRET_REFERENCE).intent(intent);
+    unifiedRecordValue = (SecretReferenceRecord) value;
+    return this;
+  }
+
+  public RecordToWrite messageStartProcessInstanceRequest(
+      final MessageStartProcessInstanceRequestIntent intent,
+      final MessageStartProcessInstanceRequestRecordValue request) {
+    recordMetadata.valueType(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST).intent(intent);
+    unifiedRecordValue = (MessageStartProcessInstanceRequestRecord) request;
+    return this;
+  }
+
+  public RecordToWrite messageStartCorrelationKeyLockRelease(
+      final MessageStartCorrelationKeyLockReleaseIntent intent,
+      final MessageStartCorrelationKeyLockReleaseRecordValue query) {
+    recordMetadata.valueType(ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE).intent(intent);
+    unifiedRecordValue = (MessageStartCorrelationKeyLockReleaseRecord) query;
+    return this;
+  }
+
   public RecordToWrite processMessageSubscription(
       final ProcessMessageSubscriptionIntent intent,
       final ProcessMessageSubscriptionRecordValue message) {
@@ -149,6 +234,21 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
+  public RecordToWrite signalSubscription(
+      final SignalSubscriptionIntent intent, final SignalSubscriptionRecordValue value) {
+    recordMetadata.valueType(ValueType.SIGNAL_SUBSCRIPTION).intent(intent);
+    unifiedRecordValue = (SignalSubscriptionRecord) value;
+    return this;
+  }
+
+  public RecordToWrite messageStartEventSubscription(
+      final MessageStartEventSubscriptionIntent intent,
+      final MessageStartEventSubscriptionRecordValue value) {
+    recordMetadata.valueType(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION).intent(intent);
+    unifiedRecordValue = (MessageStartEventSubscriptionRecord) value;
+    return this;
+  }
+
   public RecordToWrite processInstance(
       final ProcessInstanceIntent intent, final ProcessInstanceRecordValue value) {
     recordMetadata.valueType(ValueType.PROCESS_INSTANCE).intent(intent);
@@ -160,6 +260,32 @@ public final class RecordToWrite implements LogAppendEntry {
       final ProcessInstanceCreationIntent intent, final ProcessInstanceCreationRecordValue value) {
     recordMetadata.valueType(ValueType.PROCESS_INSTANCE_CREATION).intent(intent);
     unifiedRecordValue = (ProcessInstanceCreationRecord) value;
+    return this;
+  }
+
+  public RecordToWrite process(final ProcessIntent intent, final Process value) {
+    recordMetadata.valueType(ValueType.PROCESS).intent(intent);
+    unifiedRecordValue = (ProcessRecord) value;
+    return this;
+  }
+
+  public RecordToWrite policyUpdate(
+      final PolicyUpdateIntent intent, final PolicyUpdateRecord value) {
+    recordMetadata.valueType(ValueType.POLICY_UPDATE).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite probe(final ProbeIntent intent, final ProbeRecord value) {
+    recordMetadata.valueType(ValueType.PROBE).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite processDefinitionRestore(
+      final ProcessDefinitionRestoreIntent intent, final ProcessDefinitionRestoreRecord value) {
+    recordMetadata.valueType(ValueType.PROCESS_DEFINITION_RESTORE).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 
@@ -213,6 +339,20 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
+  public RecordToWrite agentHistory(
+      final AgentHistoryIntent intent, final AgentHistoryRecordValue value) {
+    recordMetadata.valueType(ValueType.AGENT_HISTORY).intent(intent);
+    unifiedRecordValue = (AgentHistoryRecord) value;
+    return this;
+  }
+
+  public RecordToWrite agentInstance(
+      final AgentInstanceIntent intent, final AgentInstanceRecordValue value) {
+    recordMetadata.valueType(ValueType.AGENT_INSTANCE).intent(intent);
+    unifiedRecordValue = (AgentInstanceRecord) value;
+    return this;
+  }
+
   public RecordToWrite conditional(
       final ConditionalSubscriptionIntent intent, final ConditionalSubscriptionRecordValue value) {
     recordMetadata.valueType(ValueType.CONDITIONAL_SUBSCRIPTION).intent(intent);
@@ -224,6 +364,38 @@ public final class RecordToWrite implements LogAppendEntry {
       final GlobalListenerBatchIntent intent, final GlobalListenerBatchRecordValue value) {
     recordMetadata.valueType(ValueType.GLOBAL_LISTENER_BATCH).intent(intent);
     unifiedRecordValue = (GlobalListenerBatchRecord) value;
+    return this;
+  }
+
+  public RecordToWrite bufferedCommand(
+      final BufferedCommandIntent intent, final BufferedCommandRecord value) {
+    recordMetadata.valueType(ValueType.BUFFERED_COMMAND).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite userTask(final UserTaskIntent intent, final UserTaskRecord value) {
+    recordMetadata.valueType(ValueType.USER_TASK).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite role(final RoleIntent intent, final RoleRecord value) {
+    recordMetadata.valueType(ValueType.ROLE).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite tenant(final TenantIntent intent, final TenantRecord value) {
+    recordMetadata.valueType(ValueType.TENANT).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite elementInstanceWalk(
+      final ElementInstanceWalkIntent intent, final ElementInstanceWalkRecord value) {
+    recordMetadata.valueType(ValueType.ELEMENT_INSTANCE_WALK).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 
@@ -266,6 +438,11 @@ public final class RecordToWrite implements LogAppendEntry {
 
   public RecordToWrite key(final long key) {
     this.key = key;
+    return this;
+  }
+
+  public RecordToWrite recordVersion(final int recordVersion) {
+    recordMetadata.recordVersion(recordVersion);
     return this;
   }
 

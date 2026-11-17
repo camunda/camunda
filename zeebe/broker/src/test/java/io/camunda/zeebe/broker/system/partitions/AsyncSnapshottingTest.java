@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -32,12 +35,12 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,7 +71,7 @@ public final class AsyncSnapshottingTest {
     final var meterRegistry = new SimpleMeterRegistry();
     persistedSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, rootDirectory, snapshotPath -> Map.of(), meterRegistry);
+            0, partitionId, rootDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
     positionSupplier =
@@ -128,7 +131,7 @@ public final class AsyncSnapshottingTest {
   private void createSnapshotDirector(final StreamProcessorMode mode) {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             mockStreamProcessor,
             snapshotController,
             mode,
@@ -146,6 +149,36 @@ public final class AsyncSnapshottingTest {
 
     // when
     setCommitPosition(100L);
+
+    // then
+    assertThat(snapshot.join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
+  }
+
+  @Test
+  public void shouldNotPersistSnapshotUntilLastProcessedPositionIsCommitted() {
+    // given a processor that processed a record above the commit index whose result wrote nothing,
+    // leaving the written position behind the processed one
+    when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(50L));
+    when(mockStreamProcessor.getLastWrittenPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(10L));
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+    verify(mockStreamProcessor, timeout(10000)).getLastWrittenPositionAsync();
+
+    // when only the written position is committed
+    setCommitPosition(10L);
+
+    // then the snapshot is held back, because the state it captured includes position 50
+    Awaitility.await("the snapshot is not persisted")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !snapshot.isDone());
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).isEmpty();
+
+    // when the processed position is committed too
+    setCommitPosition(50L);
 
     // then
     assertThat(snapshot.join()).isNotNull();
@@ -248,7 +281,7 @@ public final class AsyncSnapshottingTest {
 
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             mockStreamProcessor,
             snapshotController,
             StreamProcessorMode.PROCESSING,
@@ -276,7 +309,7 @@ public final class AsyncSnapshottingTest {
 
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
-            1,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             mockStreamProcessor,
             snapshotController,
             StreamProcessorMode.REPLAY,

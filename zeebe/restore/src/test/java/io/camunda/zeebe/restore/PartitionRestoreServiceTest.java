@@ -12,14 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
@@ -27,11 +29,11 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator.BackupNotValidException;
-import io.camunda.zeebe.restore.RestoreManager.ValidatePartitionCount;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
@@ -44,8 +46,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +64,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @Timeout(value = 60)
 class PartitionRestoreServiceTest {
@@ -71,6 +78,7 @@ class PartitionRestoreServiceTest {
   private TestRestorableBackupStore backupStore;
   private SegmentedJournal journal;
   private PartitionRestoreService restoreService;
+  private RaftPartition raftPartition;
   private FileBasedSnapshotStore snapshotStore;
   private BackupService backupService;
   private final int nodeId = 1;
@@ -93,17 +101,21 @@ class PartitionRestoreServiceTest {
 
     snapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, dataDirectory, snapshotPath -> Map.of(), meterRegistry);
+            0, partitionId, dataDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
-    final var raftPartition =
+            new PartitionId("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
+    raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile(), meterRegistry);
     restoreService =
         new PartitionRestoreService(
-            backupStore, raftPartition, nodeId, snapshotPath -> Map.of(), meterRegistry);
+            backupStore,
+            raftPartition,
+            nodeId,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            meterRegistry);
 
     journal =
         SegmentedJournal.builder(meterRegistry)
@@ -114,8 +126,8 @@ class PartitionRestoreServiceTest {
 
     backupService =
         new BackupService(
-            nodeId,
-            partitionId,
+            BrokerMemberId.from(nodeId),
+            new PartitionId("raft", partitionId),
             backupStore,
             snapshotStore,
             dataDirectory,
@@ -238,6 +250,66 @@ class PartitionRestoreServiceTest {
         .hasMessageContaining("Expected backup to have 2 partitions, but has 1");
   }
 
+  @ParameterizedTest(name = "up to position {0}")
+  @ValueSource(longs = {5, 6, 8})
+  void shouldRestoreUpToTheCheckpointPositionInTheLastBackup(final long checkpointPosition)
+      throws Exception {
+    // given - backups at positions 4 and 8 with a marker at 6 between them; the restore can end
+    // anywhere from the first position after the previous backup up to the last backup's own
+    appendRecord(1, "data");
+    appendRecord(2, "data");
+    appendRecord(3, "data");
+    appendRecord(4, "checkpoint");
+    takeSnapshot(2, 3);
+    takeBackup(1, 4);
+    appendRecord(5, "data");
+    appendRecord(6, "marker");
+    appendRecord(7, "data");
+    appendRecord(8, "checkpoint");
+    takeBackup(2, 8);
+
+    // when
+    restoreService.restore(restoreUpTo(checkpointPosition, 1L, 2L), BackupValidator.none());
+
+    // then
+    assertThat(lastRestoredPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
+  void shouldRestoreTheOnlyBackupUpToItsCheckpointPosition() throws Exception {
+    // given
+    appendRecord(1, "data");
+    appendRecord(2, "data");
+    appendRecord(3, "checkpoint");
+    takeSnapshot(1, 2);
+    takeBackup(1, 3);
+
+    // when
+    restoreService.restore(restoreUpTo(3, 1L), BackupValidator.none());
+
+    // then
+    assertThat(lastRestoredPosition()).isEqualTo(3);
+  }
+
+  private static PartitionRestore restoreUpTo(
+      final long checkpointPosition, final Long... backupIds) {
+    return new PartitionRestore(
+        new TreeSet<>(List.of(backupIds)), OptionalLong.of(checkpointPosition));
+  }
+
+  private long lastRestoredPosition() {
+    try (final var restoredJournal =
+            SegmentedJournal.builder(meterRegistry)
+                .withDirectory(dataDirectoryToRestore.toFile())
+                .withName(raftPartition.name())
+                .withMetaStore(mock(JournalMetaStore.class))
+                .build();
+        final var reader = restoredJournal.openReader()) {
+      reader.seekToLast();
+      return reader.next().asqn();
+    }
+  }
+
   private Set<String> getRegularFiles(final Path directory) throws IOException {
     final Set<String> restoredSegmentFiles;
     try (final var stream = Files.list(directory)) {
@@ -265,7 +337,7 @@ class PartitionRestoreServiceTest {
   }
 
   private void appendRecord(final long asqn, final String data) {
-    journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    journal.append(asqn, new DirectBufferWriter(new UnsafeBuffer(data.getBytes())));
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {

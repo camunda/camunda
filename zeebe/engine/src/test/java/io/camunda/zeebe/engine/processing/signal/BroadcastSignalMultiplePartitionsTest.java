@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -33,6 +33,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,13 +58,14 @@ public class BroadcastSignalMultiplePartitionsTest {
   public static final EngineRule ENGINE =
       EngineRule.multiplePartition(PARTITION_COUNT)
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -176,6 +178,72 @@ public class BroadcastSignalMultiplePartitionsTest {
         .hasSize(1)
         .extracting(r -> r.getValue().getElementId(), Record::getPartitionId)
         .containsOnly(tuple(processId, 1));
+  }
+
+  @Test
+  // Regression for the NPE in SignalBroadcastProcessor#activateElement introduced while adding
+  // suspension gating (#57523): a distributed BROADCAST that has BOTH a signal start event
+  // subscription (catchEventInstanceKey == -1) AND a suspended catch-event subscription for the
+  // SAME signal used to dereference a null element instance when resolving the suspension state
+  // for the start-event subscription.
+  public void shouldTriggerSignalStartEventWhileAnotherInstanceIsSuspended() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var signalName = newRandomSignal();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .signal(signalName)
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+    waitForSignalSubscriptions(signalName, PARTITION_COUNT);
+
+    // a second process subscribed to the SAME signal, then suspended, so this one broadcast
+    // fans out to both a start-event subscription and a suspended catch-event subscription
+    final String suspendedProcessId = Strings.newRandomValidBpmnId();
+    deployProcess(suspendedProcessId, "catch_suspended", signalName);
+    final long suspendedInstanceKey = createProcessInstance(suspendedProcessId);
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withBpmnProcessId(suspendedProcessId)
+        .await();
+    ENGINE
+        .processInstance()
+        .withInstanceKey(suspendedInstanceKey)
+        .suspend(DEFAULT_USER.getUsername());
+
+    // when
+    final var broadcastedSignal =
+        ENGINE.signal().withSignalName(signalName).broadcast(DEFAULT_USER.getUsername());
+
+    // then - no NPE on any partition, and the start event still activates exactly once
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getKey() == broadcastedSignal.getKey()
+                            && r.getIntent().equals(CommandDistributionIntent.FINISHED))
+                .processInstanceRecords()
+                .withBpmnProcessId(processId)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .hasSize(1)
+        .extracting(r -> r.getValue().getElementId(), Record::getPartitionId)
+        .containsOnly(tuple(processId, 1));
+
+    // and - the suspended instance's catch event is skipped, not activated
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .processInstanceRecords()
+                        .withProcessInstanceKey(suspendedInstanceKey)
+                        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
+                        .withElementId("catch_suspended")
+                        .exists()))
+        .isFalse();
   }
 
   @Test

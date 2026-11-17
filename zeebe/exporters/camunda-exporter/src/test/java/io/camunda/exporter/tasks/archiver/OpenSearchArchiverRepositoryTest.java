@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -24,18 +25,27 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
@@ -101,6 +111,219 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         Runnable::run,
         metrics,
         LOGGER);
+  }
+
+  @Test
+  public void shouldSearchReindexThenNotBulkDeleteWhenMovingDocumentsByIdIfReindexingFails()
+      throws IOException {
+    // given
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse("4", "5", "6")));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Error reindexing")));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withMessageContaining("Error reindexing");
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client)._transport();
+    inOrder.verify(client)._transportOptions();
+    inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteWhenMovingDocumentsById() throws IOException {
+    // given
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse("4", "5", "6")));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(b -> b.total(3L).created(3L).updated(0L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client)._transport();
+    inOrder.verify(client)._transportOptions();
+    inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteMultipleTimesWhenMovingDocumentsByIdIfManyDocsFound()
+      throws IOException {
+    // given
+
+    final var fullBatchSize = 2500;
+    final var fullBatchIds =
+        IntStream.rangeClosed(1, fullBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+    final var lastBatchSize = 1;
+    final var lastBatchIds =
+        IntStream.rangeClosed(1, lastBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(searchResponse(fullBatchIds)),
+            CompletableFuture.completedFuture(searchResponse(lastBatchIds)));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) fullBatchSize).created((long) fullBatchSize).updated(0L))))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) lastBatchSize).created((long) lastBatchSize).updated(0L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(fullBatchIds)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(lastBatchIds)));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client)._transport();
+    inOrder.verify(client)._transportOptions();
+    inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  void shouldDisallowPartialSearchResultsWhenGettingArchiveDocIdsBatch() throws IOException {
+    // given
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse()));
+
+    // when
+    ((OpenSearchArchiverRepository) repository)
+        .getArchiveDocIdsBatch(
+            "source-index", Map.of("key", List.of("1")), Map.of(), Map.of(), List.of(), 10)
+        .join();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(client).search(captor.capture(), eq(Object.class));
+    assertThat(captor.getValue().allowPartialSearchResults()).isFalse();
+  }
+
+  @Test
+  void shouldPropagateRoutingAndUseOptimisticConcurrencyForEachBulkDeleteOperation()
+      throws IOException {
+    // given
+    final var docs =
+        List.of(
+            new IdWithRouting("4", "routing-4", 40L, 44L),
+            new IdWithRouting("5", "routing-5", 50L, 55L),
+            new IdWithRouting("6", "routing-6", 60L, 66L));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
+
+    // when
+    final var deleted =
+        ((OpenSearchArchiverRepository) repository).deleteDocumentsById("from-index", docs).join();
+
+    // then
+    assertThat(deleted).isEqualTo(3L);
+
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(client).bulk(captor.capture());
+
+    final var operations = captor.getValue().operations();
+    assertThat(operations).hasSize(3);
+
+    final var deleteOperation0 = operations.get(0).delete();
+    assertThat(deleteOperation0.id()).isEqualTo("4");
+    assertThat(deleteOperation0.routing()).isEqualTo("routing-4");
+    assertThat(deleteOperation0.ifSeqNo()).isEqualTo(40L);
+    assertThat(deleteOperation0.ifPrimaryTerm()).isEqualTo(44L);
+
+    final var deleteOperation1 = operations.get(1).delete();
+    assertThat(deleteOperation1.id()).isEqualTo("5");
+    assertThat(deleteOperation1.routing()).isEqualTo("routing-5");
+    assertThat(deleteOperation1.ifSeqNo()).isEqualTo(50L);
+    assertThat(deleteOperation1.ifPrimaryTerm()).isEqualTo(55L);
+
+    final var deleteOperation2 = operations.get(2).delete();
+    assertThat(deleteOperation2.id()).isEqualTo("6");
+    assertThat(deleteOperation2.routing()).isEqualTo("routing-6");
+    assertThat(deleteOperation2.ifSeqNo()).isEqualTo(60L);
+    assertThat(deleteOperation2.ifPrimaryTerm()).isEqualTo(66L);
+  }
+
+  private SearchResponse<Object> searchResponse(final String... ids) {
+    final var hits =
+        Arrays.stream(ids).map(id -> Hit.<Object>of(h -> h.id(id).index("from-index"))).toList();
+    return SearchResponse.searchResponseOf(
+        r ->
+            r.took(123L)
+                .timedOut(false)
+                .shards(s -> s.total(1).successful(1).failed(0))
+                .hits(
+                    h ->
+                        h.total(t -> t.value(hits.size()).relation(TotalHitsRelation.Eq))
+                            .hits(hits)));
+  }
+
+  private BulkResponse bulkResponse(final String... ids) {
+    final var items =
+        Arrays.stream(ids)
+            .map(
+                id ->
+                    BulkResponseItem.of(
+                        h ->
+                            h.id(id)
+                                .operationType(OperationType.Delete)
+                                .index("from-index")
+                                .status(200)
+                                .result("deleted")))
+            .toList();
+    return BulkResponse.of(b -> b.took(123L).errors(false).items(items));
   }
 
   @Test

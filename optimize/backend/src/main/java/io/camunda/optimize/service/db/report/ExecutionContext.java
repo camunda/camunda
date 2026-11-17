@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ExecutionContext<D extends SingleReportDataDto, P extends ExecutionPlan> {
 
@@ -57,9 +58,18 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   // for these nodes are calculated up front and removed during result retrieval
   private Set<String> hiddenFlowNodeIds = new HashSet<>();
 
+  // Per-group-key baseline counts for grouped percentage reports; empty means use the global count
+  private Map<String, Long> unfilteredInstanceCountsByGroupKey = new HashMap<>();
+
   private FilterContext filterContext;
 
   private boolean multiIndexAlias = false;
+
+  // Per-request memoization cache for values that are derived from the (immutable) report data and
+  // are expensive to recompute, but may be needed by several phases of a single report evaluation
+  // (e.g. building the aggregation and mapping its result). Intentionally excluded from equals,
+  // hashCode and toString as it only caches values already derived from the fields above.
+  private final Map<String, Object> computedAttributes = new HashMap<>();
 
   public <R extends ReportDefinitionDto<D>> ExecutionContext(
       final ReportEvaluationContext<? extends R> reportEvaluationContext) {
@@ -90,6 +100,16 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   public void setAllDistributedByKeys(final Set<String> allDistributedByKeys) {
     allDistributedByKeysAndLabels =
         allDistributedByKeys.stream().collect(toMap(Function.identity(), Function.identity()));
+  }
+
+  /**
+   * Returns the value cached under {@code key}, computing and caching it with {@code supplier} on
+   * first access. Scoped to this (per-request) execution context, so it is safe for memoizing
+   * values derived from the report data across the phases of a single report evaluation.
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getOrComputeAttribute(final String key, final Supplier<T> supplier) {
+    return (T) computedAttributes.computeIfAbsent(key, ignored -> supplier.get());
   }
 
   private <R extends ReportDefinitionDto<D>> FilterContext createFilterContext(
@@ -145,6 +165,10 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     return this.hiddenFlowNodeIds;
   }
 
+  public Map<String, Long> getUnfilteredInstanceCountsByGroupKey() {
+    return this.unfilteredInstanceCountsByGroupKey;
+  }
+
   public FilterContext getFilterContext() {
     return this.filterContext;
   }
@@ -198,6 +222,11 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     this.hiddenFlowNodeIds = hiddenFlowNodeIds;
   }
 
+  public void setUnfilteredInstanceCountsByGroupKey(
+      final Map<String, Long> unfilteredInstanceCountsByGroupKey) {
+    this.unfilteredInstanceCountsByGroupKey = unfilteredInstanceCountsByGroupKey;
+  }
+
   public void setFilterContext(final FilterContext filterContext) {
     this.filterContext = filterContext;
   }
@@ -224,6 +253,8 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         && Objects.equals(allDistributedByKeysAndLabels, that.allDistributedByKeysAndLabels)
         && Objects.equals(allVariablesNames, that.allVariablesNames)
         && Objects.equals(hiddenFlowNodeIds, that.hiddenFlowNodeIds)
+        && Objects.equals(
+            unfilteredInstanceCountsByGroupKey, that.unfilteredInstanceCountsByGroupKey)
         && Objects.equals(filterContext, that.filterContext);
   }
 
@@ -241,6 +272,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         allDistributedByKeysAndLabels,
         allVariablesNames,
         hiddenFlowNodeIds,
+        unfilteredInstanceCountsByGroupKey,
         filterContext,
         multiIndexAlias);
   }
@@ -272,6 +304,8 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         + this.getAllVariablesNames()
         + ", hiddenFlowNodeIds="
         + this.getHiddenFlowNodeIds()
+        + ", unfilteredInstanceCountsByGroupKey="
+        + this.getUnfilteredInstanceCountsByGroupKey()
         + ", filterContext="
         + this.getFilterContext()
         + ", multiIndexAlias="

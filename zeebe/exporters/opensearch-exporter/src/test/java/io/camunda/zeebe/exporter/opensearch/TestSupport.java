@@ -45,6 +45,7 @@ final class TestSupport {
       case PROCESS_INSTANCE_CREATION -> config.processInstanceCreation = value;
       case PROCESS_INSTANCE_MIGRATION -> config.processInstanceMigration = value;
       case PROCESS_INSTANCE_MODIFICATION -> config.processInstanceModification = value;
+      case PROCESS_INSTANCE_BUSINESS_ID -> config.processInstanceBusinessId = value;
       case ERROR -> config.error = value;
       case PROCESS -> config.process = value;
       case DECISION -> config.decision = value;
@@ -53,6 +54,10 @@ final class TestSupport {
       case CHECKPOINT -> config.checkpoint = value;
       case TIMER -> config.timer = value;
       case MESSAGE_START_EVENT_SUBSCRIPTION -> config.messageStartEventSubscription = value;
+      case MESSAGE_START_PROCESS_INSTANCE_REQUEST ->
+          config.messageStartProcessInstanceRequest = value;
+      case MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE ->
+          config.messageStartCorrelationKeyLockRelease = value;
       case PROCESS_EVENT -> config.processEvent = value;
       case DEPLOYMENT_DISTRIBUTION -> config.deploymentDistribution = value;
       case ESCALATION -> config.escalation = value;
@@ -81,6 +86,9 @@ final class TestSupport {
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
       case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
       case GLOBAL_LISTENER -> config.globalListener = value;
+      case AGENT_INSTANCE -> config.agentInstance = value;
+      case AGENT_HISTORY -> config.agentHistory = value;
+      case AGENT_DEFINITION -> config.agentDefinition = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -140,7 +148,24 @@ final class TestSupport {
             ValueType.CONDITIONAL_SUBSCRIPTION,
             ValueType.CONDITIONAL_EVALUATION,
             ValueType.EXPRESSION,
-            ValueType.JOB_METRICS_BATCH);
+            ValueType.JOB_METRICS_BATCH,
+            ValueType.RESOURCE_REEXPORT,
+            ValueType.SECRET_REFERENCE,
+            ValueType.BUFFERED_COMMAND,
+            ValueType.ELEMENT_INSTANCE_WALK,
+            ValueType.PROCESS_DEFINITION_RESTORE,
+            ValueType.POLICY_UPDATE,
+            ValueType.PROCESS_DEFINITION_SUSPENSION,
+            ValueType.CASE,
+            // internal engine-to-engine record, never exported by design
+            ValueType.AGENT_HISTORY_BATCH,
+            // a read of the engine state that changes nothing, never exported by design
+            ValueType.USER_TASK_LOOKUP,
+            // no templates yet, they come with the probe export (#68870)
+            ValueType.PROBE,
+            ValueType.PROBE_BATCH,
+            // the behavior version commit, exporting it is not part of 8.11
+            ValueType.CLUSTER_BEHAVIOR);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

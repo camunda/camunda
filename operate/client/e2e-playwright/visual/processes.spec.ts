@@ -11,6 +11,7 @@ import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
   mockBatchOperationItemsWithError,
+  mockFinishedOrderProcessInstances,
   mockProcessDefinitions,
   mockProcessInstances,
   mockProcessInstancesWithOperationError,
@@ -223,6 +224,87 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('completed instance delete action', async ({page, processesPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockFinishedOrderProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        completed: 'true',
+      },
+    });
+
+    const deleteButton = processesPage.processInstancesTable
+      .getByRole('button', {name: 'Delete Instance'})
+      .first();
+    await expect(deleteButton).toBeVisible();
+    await deleteButton.hover();
+    await expect(
+      page.getByRole('tooltip').filter({hasText: 'Delete Instance'}).first(),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('operation confirmation modal', async ({page, processesPage}) => {
+    await page.setViewportSize({width: 1600, height: 1068});
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+      },
+    });
+
+    await page
+      .getByRole('button', {name: /Cancel Instance/})
+      .first()
+      .click();
+
+    await expect(
+      page.getByRole('dialog', {name: 'Apply Operation'}),
+    ).toBeVisible();
+    await expect(page).toHaveScreenshot();
+  });
+
   test('optional filters visible (part 1)', async ({
     page,
     processesPage,
@@ -264,13 +346,102 @@ test.describe('processes page', () => {
       },
     });
 
-    await filtersPanel.displayOptionalFilter('Variable');
+    await filtersPanel.displayOptionalFilter('Variables');
     await filtersPanel.displayOptionalFilter('Error Message');
-    await filtersPanel.displayOptionalFilter('Operation Id');
-    await filtersPanel.batchOperationIdFilter.type('aaa');
+    await filtersPanel.displayOptionalFilter('Batch Operation Key');
+    await filtersPanel.batchOperationKeyFilter.type('aaa');
     await expect(
-      page.getByText('Id has to be a 16 to 19 digit number or a UUID'),
+      page.getByText('Key has to be a 16 to 19 digit number or a UUID'),
     ).toBeVisible();
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('variable filter modal', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
+    });
+
+    await filtersPanel.displayOptionalFilter('Variables');
+    await filtersPanel.openVariableFilterModal.click();
+
+    await expect(
+      page.getByRole('dialog', {name: 'Filter by variable'}),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('variable filter modal with conditions', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
+    });
+
+    await filtersPanel.displayOptionalFilter('Variables');
+    await filtersPanel.openVariableFilterModal.click();
+
+    const dialog = page.getByRole('dialog', {name: 'Filter by variable'});
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByTestId('variable-filter-name-0').fill('status');
+    await dialog.getByTestId('variable-filter-value-0').fill('"active"');
+    await dialog.getByRole('button', {name: 'Add condition'}).click();
+    await dialog.getByTestId('variable-filter-name-1').fill('region');
+    await dialog.getByTestId('variable-filter-value-1').fill('"EU"');
+
     await expect(page).toHaveScreenshot();
   });
 
@@ -323,6 +494,58 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('optional filters visible (part 3)', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isOperationsCollapsed: false,
+        }),
+      );
+    });
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: {
+          page: mockProcessInstances.page,
+          items: mockProcessInstances.items.map((instance, i) => ({
+            ...instance,
+            businessId: `order-${i}`,
+          })),
+        },
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
+    });
+
+    await filtersPanel.displayOptionalFilter('Business ID');
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('data table toolbar visible', async ({page, processesPage}) => {
     await page.route(
       URL_API_PATTERN,
@@ -356,7 +579,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('filled with data and active batchOperationId filter', async ({
+  test('filled with data and active batchOperationKey filter', async ({
     page,
     processesPage,
   }) => {
@@ -376,7 +599,7 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+        batchOperationKey: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
       },
     });
 
@@ -385,7 +608,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('filled with data, active batchOperationId filter and error message expanded', async ({
+  test('filled with data, active batchOperationKey filter and error message expanded', async ({
     page,
     processesPage,
   }) => {
@@ -405,7 +628,7 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+        batchOperationKey: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
       },
     });
 

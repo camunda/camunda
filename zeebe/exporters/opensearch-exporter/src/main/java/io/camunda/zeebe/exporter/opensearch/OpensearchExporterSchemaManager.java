@@ -40,10 +40,12 @@ public class OpensearchExporterSchemaManager {
   }
 
   private void createIndexTemplates(final String version) {
-    if (configuration.retention.isEnabled()) {
-      createIndexStateManagementPolicy();
-    } else {
-      deleteIndexStateManagementPolicy();
+    if (configuration.retention.isManagePolicy()) {
+      if (configuration.retention.isEnabled()) {
+        createIndexStateManagementPolicy();
+      } else {
+        deleteIndexStateManagementPolicy();
+      }
     }
 
     final IndexConfiguration index = configuration.index;
@@ -96,6 +98,9 @@ public class OpensearchExporterSchemaManager {
       if (index.processInstanceModification) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION, version);
       }
+      if (index.processInstanceBusinessId) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BUSINESS_ID, version);
+      }
       if (index.processMessageSubscription) {
         createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, version);
       }
@@ -119,6 +124,12 @@ public class OpensearchExporterSchemaManager {
       }
       if (index.messageStartEventSubscription) {
         createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, version);
+      }
+      if (index.messageStartProcessInstanceRequest) {
+        createValueIndexTemplate(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST, version);
+      }
+      if (index.messageStartCorrelationKeyLockRelease) {
+        createValueIndexTemplate(ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE, version);
       }
       if (index.processEvent) {
         createValueIndexTemplate(ValueType.PROCESS_EVENT, version);
@@ -177,6 +188,15 @@ public class OpensearchExporterSchemaManager {
       if (index.globalListener) {
         createValueIndexTemplate(ValueType.GLOBAL_LISTENER, version);
       }
+      if (index.agentInstance) {
+        createValueIndexTemplate(ValueType.AGENT_INSTANCE, version);
+      }
+      if (index.agentHistory) {
+        createValueIndexTemplate(ValueType.AGENT_HISTORY, version);
+      }
+      if (index.agentDefinition) {
+        createValueIndexTemplate(ValueType.AGENT_DEFINITION, version);
+      }
     }
 
     indexTemplatesCreated.add(version);
@@ -231,8 +251,10 @@ public class OpensearchExporterSchemaManager {
     final boolean successful;
     if (configuration.retention.isEnabled()) {
       successful = client.bulkAddISMPolicyToAllZeebeIndices();
-    } else {
+    } else if (configuration.retention.isManagePolicy()) {
       successful = client.bulkRemoveISMPolicyFromAllZeebeIndices();
+    } else {
+      return;
     }
 
     if (!successful) {

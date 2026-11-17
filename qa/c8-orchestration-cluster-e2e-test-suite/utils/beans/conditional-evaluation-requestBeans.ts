@@ -6,16 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// Conditional evaluation response field definitions
-export const conditionalEvaluationResponseRequiredFields: string[] = [
-  'processInstances',
-];
-
-export const conditionalProcessInstanceItemRequiredFields: string[] = [
-  'processDefinitionKey',
-  'processInstanceKey',
-];
-
 // Conditional evaluation request builders
 export function EVALUATE_CONDITIONAL() {
   return {

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   private boolean cancelRemainingInstances;
   private ZeebeAdHocImplementationType implementationType;
   private JobWorkerProperties jobWorkerProperties;
+  private AgentDefinitionType agentDefinitionType;
 
   private Optional<DirectBuffer> outputCollection = Optional.empty();
   private Optional<Expression> outputElement = Optional.empty();
@@ -37,6 +39,7 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   public ExecutableAdHocSubProcess(final String id) {
     super(id);
     innerInstanceId = id + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+    agentDefinitionType = AgentDefinitionType.UNSPECIFIED;
   }
 
   public Expression getActiveElementsCollection() {
@@ -92,6 +95,16 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  @Override
+  public AgentDefinitionType getAgentDefinitionType() {
+    return agentDefinitionType;
+  }
+
+  @Override
+  public void setAgentDefinitionType(final AgentDefinitionType agentDefinitionType) {
+    this.agentDefinitionType = agentDefinitionType;
   }
 
   public DirectBuffer getAdHocActivitiesMetadata() {

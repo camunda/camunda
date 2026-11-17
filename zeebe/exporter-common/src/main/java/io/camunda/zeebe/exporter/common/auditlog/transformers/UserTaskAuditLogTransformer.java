@@ -21,6 +21,11 @@ public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTask
   }
 
   @Override
+  public Class<UserTaskRecordValue> getRecordValueType() {
+    return UserTaskRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<UserTaskRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setUserTaskKey(value.getUserTaskKey()).setEntityKey(String.valueOf(value.getUserTaskKey()));

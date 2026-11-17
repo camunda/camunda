@@ -1,0 +1,124 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.processdefinition;
+
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
+    implements ProcessDefinitionSuspensionRecordValue {
+
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1);
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final BooleanProperty includeProcessInstancesProp =
+      new BooleanProperty("includeProcessInstances", false);
+  private final ArrayProperty<ProcessDefinitionSuspensionResolvedVersion> resolvedVersionsProp =
+      new ArrayProperty<>("resolvedVersions", ProcessDefinitionSuspensionResolvedVersion::new);
+  private final LongProperty batchOperationKeyProp = new LongProperty("batchOperationKey", -1);
+
+  public ProcessDefinitionSuspensionRecord() {
+    super(7);
+    declareProperty(processDefinitionKeyProp)
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(versionProp)
+        .declareProperty(tenantIdProp)
+        .declareProperty(includeProcessInstancesProp)
+        .declareProperty(resolvedVersionsProp)
+        .declareProperty(batchOperationKeyProp);
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
+  }
+
+  public ProcessDefinitionSuspensionRecord setProcessDefinitionKey(final long key) {
+    processDefinitionKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public ProcessDefinitionSuspensionRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  @Override
+  public int getVersion() {
+    return versionProp.getValue();
+  }
+
+  public ProcessDefinitionSuspensionRecord setVersion(final int version) {
+    versionProp.setValue(version);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessDefinitionSuspensionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public boolean isIncludeProcessInstances() {
+    return includeProcessInstancesProp.getValue();
+  }
+
+  public ProcessDefinitionSuspensionRecord setIncludeProcessInstances(
+      final boolean includeProcessInstances) {
+    includeProcessInstancesProp.setValue(includeProcessInstances);
+    return this;
+  }
+
+  @Override
+  public List<ProcessDefinitionSuspensionResolvedVersionValue> getResolvedVersions() {
+    return resolvedVersionsProp.stream().collect(Collectors.toList());
+  }
+
+  public ProcessDefinitionSuspensionRecord addResolvedVersion(
+      final ProcessDefinitionSuspensionResolvedVersionValue resolvedVersion) {
+    resolvedVersionsProp
+        .add()
+        .setProcessDefinitionKey(resolvedVersion.getProcessDefinitionKey())
+        .setVersion(resolvedVersion.getVersion())
+        .setOutcome(resolvedVersion.getOutcome());
+    return this;
+  }
+
+  @Override
+  public long getBatchOperationKey() {
+    return batchOperationKeyProp.getValue();
+  }
+
+  public ProcessDefinitionSuspensionRecord setBatchOperationKey(final long batchOperationKey) {
+    batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
+  }
+}

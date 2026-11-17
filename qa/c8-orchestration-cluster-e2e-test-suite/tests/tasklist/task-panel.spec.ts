@@ -7,13 +7,16 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
+import {clearAllProcessInstances} from '@requestHelpers';
 
-test.beforeAll(async () => {
+test.beforeAll(async ({request}) => {
+  await clearAllProcessInstances(request);
+
   await deploy([
     './resources/usertask_to_be_assigned.bpmn',
     './resources/usertask_for_scrolling_1.bpmn',
@@ -47,17 +50,27 @@ test.describe('task panel page', () => {
 
   test('filter selection', async ({taskPanelPage}) => {
     test.slow();
+    // AvailableTasks.tsx now renders the list through @tanstack/react-virtual
+    // (useVirtualizer), which only mounts DOM nodes for the rows within the
+    // scroll container's viewport plus a small overscan -- unlike the
+    // pre-migration list, which rendered every fetched row. All 50 fetched
+    // tasks are still there (confirmed via the query's page size,
+    // DEFAULT_MAX_ITEM_PER_PAGE = 50), but only a window of them (observed:
+    // ~10 at the suite's default viewport) is ever actually in the DOM at
+    // once, so asserting an exact toHaveCount(50) is asserting an
+    // implementation detail of virtualization, not the filter behavior this
+    // test is about. Assert presence/absence instead.
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50);
+      taskPanelPage.availableTasks.getByText('Some user activity').first(),
+    ).toBeVisible();
 
     await taskPanelPage.filterBy('Assigned to me');
     await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
 
     await taskPanelPage.filterBy('All open tasks');
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50);
+      taskPanelPage.availableTasks.getByText('Some user activity').first(),
+    ).toBeVisible();
     await expect(
       taskPanelPage.availableTasks.getByText('No tasks found'),
     ).toHaveCount(0);
@@ -108,7 +121,7 @@ test.describe('task panel page', () => {
     }).toPass({timeout: 5000});
   });
 
-  // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
+  // Skipped due to bug #62704: https://github.com/camunda/camunda/issues/62704
   // V2 mode may have different scrolling/pagination behavior that affects task count expectations
   test.skip('scrolling', async ({page, taskPanelPage}) => {
     test.slow();

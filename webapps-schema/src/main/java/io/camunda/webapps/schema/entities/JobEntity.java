@@ -22,6 +22,9 @@ public class JobEntity
   @BeforeVersion880 private Long flowNodeInstanceId;
   @BeforeVersion880 private String flowNodeId;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String flowNodeType;
+
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
   @BeforeVersion880 private Long processDefinitionKey;
 
@@ -40,10 +43,20 @@ public class JobEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String businessId;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private Integer storageOrdinal;
+
   @BeforeVersion880 private String tenantId;
   @BeforeVersion880 private String type;
   @BeforeVersion880 private String worker;
   @BeforeVersion880 private Integer retries;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Integer priority;
+
   @BeforeVersion880 private String state;
   @BeforeVersion880 private String errorMessage;
   @BeforeVersion880 private String errorCode;
@@ -118,6 +131,15 @@ public class JobEntity
     return this;
   }
 
+  public String getFlowNodeType() {
+    return flowNodeType;
+  }
+
+  public JobEntity setFlowNodeType(final String flowNodeType) {
+    this.flowNodeType = flowNodeType;
+    return this;
+  }
+
   @Override
   public String getTenantId() {
     return tenantId;
@@ -161,6 +183,15 @@ public class JobEntity
 
   public JobEntity setRetries(final Integer retries) {
     this.retries = retries;
+    return this;
+  }
+
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public JobEntity setPriority(final Integer priority) {
+    this.priority = priority;
     return this;
   }
 
@@ -290,6 +321,24 @@ public class JobEntity
     return this;
   }
 
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public JobEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public JobEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   public Boolean isDenied() {
     return denied;
   }
@@ -323,6 +372,7 @@ public class JobEntity
         type,
         worker,
         retries,
+        priority,
         state,
         errorMessage,
         errorCode,
@@ -337,7 +387,9 @@ public class JobEntity
         deniedReason,
         creationTime,
         lastUpdateTime,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        businessId,
+        storageOrdinal);
   }
 
   @Override
@@ -362,6 +414,7 @@ public class JobEntity
         && Objects.equals(type, jobEntity.type)
         && Objects.equals(worker, jobEntity.worker)
         && Objects.equals(retries, jobEntity.retries)
+        && Objects.equals(priority, jobEntity.priority)
         && Objects.equals(state, jobEntity.state)
         && Objects.equals(errorMessage, jobEntity.errorMessage)
         && Objects.equals(errorCode, jobEntity.errorCode)
@@ -375,7 +428,9 @@ public class JobEntity
         && Objects.equals(deniedReason, jobEntity.deniedReason)
         && Objects.equals(creationTime, jobEntity.creationTime)
         && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime)
-        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey)
+        && Objects.equals(businessId, jobEntity.businessId)
+        && Objects.equals(storageOrdinal, jobEntity.storageOrdinal);
   }
 
   @Override
@@ -404,6 +459,8 @@ public class JobEntity
         + '\''
         + ", retries="
         + retries
+        + ", priority="
+        + priority
         + ", state='"
         + state
         + '\''
@@ -439,6 +496,11 @@ public class JobEntity
         + lastUpdateTime
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", businessId='"
+        + businessId
+        + '\''
+        + ", storageOrdinal="
+        + storageOrdinal
         + "} "
         + super.toString();
   }

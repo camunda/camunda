@@ -8,23 +8,39 @@
 package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.*;
+import static io.camunda.client.api.search.enums.ResourceType.BATCH;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.StreamSupport;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,7 +71,8 @@ class ProcessInstanceAuthorizationIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(BATCH, READ, List.of("*"))));
 
   @UserDefinition
   private static final TestUser USER1_USER =
@@ -283,6 +300,21 @@ class ProcessInstanceAuthorizationIT {
   }
 
   @Test
+  void searchVariableNamesShouldReturnEmptyForUnauthorizedProcessDefinition(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient)
+      throws Exception {
+    // given: USER1 is only authorized to read process instances of PROCESS_ID_1
+    final var processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID_2);
+
+    // when
+    final var names = searchVariableNames(camundaClient, USER1, processDefinitionKey);
+
+    // then: no names leaked for a process definition the caller is not authorized to read
+    assertThat(names).isEmpty();
+  }
+
+  @Test
   public void resolveIncidentsShouldReturnBatchOperation(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER3) final CamundaClient camundaClient) {
@@ -295,6 +327,16 @@ class ProcessInstanceAuthorizationIT {
     // then
     assertThat(result.getBatchOperationKey()).isNotEmpty();
     assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
+
+    // wait for the batch operation to finish, so it is not still initializing when the broker is
+    // shut down after all tests; this does not unblock an initialization that has stalled
+    waitForBatchOperationStatus(
+        adminClient,
+        result.getBatchOperationKey(),
+        Set.of(
+            BatchOperationState.COMPLETED,
+            BatchOperationState.PARTIALLY_COMPLETED,
+            BatchOperationState.FAILED));
   }
 
   @Test
@@ -374,6 +416,50 @@ class ProcessInstanceAuthorizationIT {
         .getProcessDefinitionKey();
   }
 
+  /**
+   * Issues a raw HTTP call to {@code POST
+   * /v2/process-definitions/{processDefinitionKey}/variable-names/search}, authenticated as the
+   * given user. The endpoint has no fluent Java client method yet.
+   */
+  private List<String> searchVariableNames(
+      final CamundaClient camundaClient, final String username, final long processDefinitionKey)
+      throws Exception {
+    final var body = "{\"page\": {\"limit\": 100}}";
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(
+                createUri(
+                    camundaClient,
+                    "v2/process-definitions/%d/variable-names/search"
+                        .formatted(processDefinitionKey)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", basicAuthentication(username))
+            .POST(BodyPublishers.ofString(body))
+            .build();
+    final var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    final var objectMapper =
+        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    final JsonNode root = objectMapper.readTree(response.body());
+    return StreamSupport.stream(root.get("items").spliterator(), false)
+        .map(item -> item.get("name").asText())
+        .toList();
+  }
+
+  private static String basicAuthentication(final String username) {
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((username + ":password").getBytes(StandardCharsets.UTF_8));
+  }
+
+  private static URI createUri(final CamundaClient client, final String path)
+      throws URISyntaxException {
+    final String base = client.getConfiguration().getRestAddress().toString();
+    final String separator = base.endsWith("/") ? "" : "/";
+    return new URI(base + separator + path);
+  }
+
   private static void deployResource(final CamundaClient camundaClient, final String resourceName) {
     camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
@@ -385,7 +471,7 @@ class ProcessInstanceAuthorizationIT {
 
   private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

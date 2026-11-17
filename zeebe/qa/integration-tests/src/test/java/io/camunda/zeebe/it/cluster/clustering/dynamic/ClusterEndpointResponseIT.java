@@ -41,7 +41,7 @@ final class ClusterEndpointResponseIT {
           // language=JSON
           """
           {
-            "version": 1,
+            "version": 2,
             "brokers": [
               {
                 "id": 0,
@@ -51,6 +51,7 @@ final class ClusterEndpointResponseIT {
                 "partitions": [
                   {
                     "id": 1,
+                    "physicalTenant": "default",
                     "state": "ACTIVE",
                     "priority": 1,
                     "config":{
@@ -58,6 +59,12 @@ final class ClusterEndpointResponseIT {
                           "exporters": []
                        }
                     }
+                  }
+                ],
+                "physicalTenants":[
+                  {
+                    "id":"default",
+                    "mode":"PROCESSING"
                   }
                 ]
               }
@@ -73,7 +80,8 @@ final class ClusterEndpointResponseIT {
                 "partitionCount": 1
               }
             },
-            "clusterId": "cluster-id"
+            "clusterId": "cluster-id",
+            "partitioning":{"scheme":"ROUND_ROBIN","zones":[]}
           }""");
     }
   }

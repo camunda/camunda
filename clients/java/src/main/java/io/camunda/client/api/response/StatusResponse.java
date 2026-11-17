@@ -16,13 +16,14 @@
 package io.camunda.client.api.response;
 
 /**
- * Response for cluster status request. The status endpoint returns 204 (No Content) when healthy
- * and 503 (Service Unavailable) when unhealthy. The response body is always empty.
+ * Response for cluster status request. The status endpoint returns 200 (OK) while the cluster can
+ * process work and 503 (Service Unavailable) when it cannot; both carry the aggregated cluster
+ * status in the response body.
  */
 public interface StatusResponse {
   /**
-   * @return {@link Status#UP} if the cluster is healthy (has at least one partition with a healthy
-   *     leader), {@link Status#DOWN} otherwise
+   * @return {@link Status#UP} if the cluster can process work (all or some physical tenants are
+   *     healthy), {@link Status#DOWN} otherwise
    */
   Status getStatus();
 

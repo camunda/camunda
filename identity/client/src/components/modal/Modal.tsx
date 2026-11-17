@@ -35,6 +35,20 @@ const ModalWrapper = styled.div<{ $overflowVisible: boolean }>`
     margin-bottom: 0;
     padding-bottom: 3rem;
   }
+  /*
+   * Carbon's cds--modal-scroll-content adds border-block-end and a
+   * last-child margin that change the content's height. With max-height
+   * removed above, that toggles isScrollable on every render and produces
+   * a flicker when the content sits near the scroll threshold (e.g. a
+   * single dropdown entry). Neutralize those height contributions so the
+   * measurement stays stable.
+   */
+  & .cds--modal-content.cds--modal-scroll-content {
+    border-block-end-width: 0;
+  }
+  & .cds--modal-content.cds--modal-scroll-content > *:last-child {
+    margin-block-end: 0;
+  }
   `
       : ""}
 `;

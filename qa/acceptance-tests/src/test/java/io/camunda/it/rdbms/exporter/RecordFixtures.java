@@ -11,6 +11,10 @@ import static java.util.Collections.emptyList;
 import static org.jeasy.random.FieldPredicates.inClass;
 import static org.jeasy.random.FieldPredicates.named;
 
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -29,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -37,14 +42,13 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -61,6 +65,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValu
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
@@ -70,7 +75,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -164,6 +169,26 @@ public class RecordFixtures {
                 .withParentProcessInstanceKey(parentProcessInstanceKey)
                 .withParentElementInstanceKey(parentProcessInstanceKey)
                 .withVersion(1)
+                .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getProcessInstanceBusinessIdAssignedRecord(
+      final long processInstanceKey, final String businessId) {
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE_BUSINESS_ID);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceBusinessIdIntent.ASSIGNED)
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(processInstanceKey)
+        .withValue(
+            ImmutableProcessInstanceBusinessIdRecordValue.builder()
+                .from((ProcessInstanceBusinessIdRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(processInstanceKey)
+                .withBusinessId(businessId)
                 .build())
         .build();
   }
@@ -391,7 +416,7 @@ public class RecordFixtures {
                 .from((TenantRecordValue) recordValueRecord.getValue())
                 .withTenantId(tenantId)
                 .withTenantKey(tenantKey)
-                .withEntityType(EntityType.USER)
+                .withEntityType(AuthzModelMapper.toProtocol(EntityType.USER))
                 .build())
         .build();
   }
@@ -441,6 +466,15 @@ public class RecordFixtures {
                 .withEncodedStrings(encodedStrings)
                 .withRecordSizeLimitExceeded(recordSizeLimitExceeded)
                 .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getVariableCreatedRecord() {
+    return ImmutableRecord.builder()
+        .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
+        .withIntent(VariableIntent.CREATED)
+        .withPosition(nextPosition())
+        .withTimestamp(System.currentTimeMillis())
         .build();
   }
 
@@ -516,7 +550,8 @@ public class RecordFixtures {
                 .withRoleKey(roleKey)
                 .withRoleId(roleId)
                 .withEntityId(entityId)
-                .withEntityType(entityId != null ? EntityType.USER : null)
+                .withEntityType(
+                    entityId != null ? AuthzModelMapper.toProtocol(EntityType.USER) : null)
                 .build())
         .build();
   }
@@ -543,7 +578,8 @@ public class RecordFixtures {
                 .withGroupKey(groupKey)
                 .withGroupId(groupId)
                 .withEntityId(entityId != null ? entityId : "0")
-                .withEntityType(entityId != null ? EntityType.USER : null)
+                .withEntityType(
+                    entityId != null ? AuthzModelMapper.toProtocol(EntityType.USER) : null)
                 .build())
         .build();
   }
@@ -616,10 +652,10 @@ public class RecordFixtures {
                 .from((AuthorizationRecordValue) recordValueRecord.getValue())
                 .withAuthorizationKey(authorizationKey)
                 .withOwnerId(ownerId)
-                .withOwnerType(ownerType)
-                .withResourceType(resourceType)
+                .withOwnerType(AuthzModelMapper.toProtocol(ownerType))
+                .withResourceType(AuthzModelMapper.toProtocol(resourceType))
                 .withResourceId(resourceId)
-                .withPermissionTypes(permissionTypes)
+                .withPermissionTypes(AuthzModelMapper.toProtocolPermissionTypes(permissionTypes))
                 .build())
         .build();
   }

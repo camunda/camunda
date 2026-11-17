@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Button, Form, TextInput} from '@carbon/react';
 
 import {Modal} from 'components';
+import {getEntityNameMaxLength} from 'config';
 import {t} from 'translation';
 
 interface CopyAlertModalProps {
@@ -24,6 +25,11 @@ export default function CopyAlertModal({
   onConfirm,
 }: CopyAlertModalProps) {
   const [name, setName] = useState(initialAlertName + ' (' + t('common.copyLabel') + ')');
+  const [nameMaxLength, setNameMaxLength] = useState<number>();
+
+  useEffect(() => {
+    getEntityNameMaxLength().then(setNameMaxLength);
+  }, []);
 
   return (
     <Modal open onClose={onClose}>
@@ -35,6 +41,7 @@ export default function CopyAlertModal({
             labelText={t('home.copy.inputLabel')}
             value={name}
             autoComplete="off"
+            maxLength={nameMaxLength}
             onChange={({target: {value}}) => setName(value)}
             data-modal-primary-focus
           />

@@ -7,11 +7,17 @@
  */
 package io.camunda.zeebe.scheduler.future;
 
+import static io.camunda.zeebe.util.Nulls.uncheckedCastToNonNull;
+import static io.camunda.zeebe.util.Unit.unit;
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Collection;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -25,13 +31,12 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.jspecify.annotations.Nullable;
 
 /** Completable future implementation that is garbage free and reusable */
-@SuppressWarnings("restriction")
-public final class CompletableActorFuture<V> implements ActorFuture<V> {
-  private static final long STATE_OFFSET;
+public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
+  private static final VarHandle STATE;
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -41,23 +46,23 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   static {
     try {
-      STATE_OFFSET =
-          UnsafeApi.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      STATE =
+          MethodHandles.lookup().findVarHandle(CompletableActorFuture.class, "state", int.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
     }
   }
 
   private long completedAt;
-  private V value;
-  private String failure;
-  private Throwable failureCause;
-  private final ManyToOneConcurrentLinkedQueue<BiConsumer<V, Throwable>> blockedCallbacks =
-      new ManyToOneConcurrentLinkedQueue<>();
+  private @Nullable V value;
+  private @Nullable String failure;
+  private @Nullable Throwable failureCause;
+  private final ManyToOneConcurrentLinkedQueue<BiConsumer<V, @Nullable Throwable>>
+      blockedCallbacks = new ManyToOneConcurrentLinkedQueue<>();
 
   private final ReentrantLock completionLock = new ReentrantLock();
   private volatile int state = CLOSED;
-  private Condition isDoneCondition;
+  private @Nullable Condition isDoneCondition;
 
   public CompletableActorFuture() {
     setAwaitingResult();
@@ -65,6 +70,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   private CompletableActorFuture(final V value) {
     this.value = value;
+    completedAt = System.nanoTime();
     state = COMPLETED;
   }
 
@@ -72,10 +78,11 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     ensureValidThrowable(throwable);
     failure = throwable.getMessage();
     failureCause = throwable;
+    completedAt = System.nanoTime();
     state = COMPLETED_EXCEPTIONALLY;
   }
 
-  private void ensureValidThrowable(final Throwable throwable) {
+  private void ensureValidThrowable(final @Nullable Throwable throwable) {
     if (throwable == null) {
       throw new NullPointerException("Throwable must not be null.");
     }
@@ -87,14 +94,15 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   public static CompletableActorFuture<Void> completed() {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(unit());
   }
 
-  public static <V> CompletableActorFuture<V> completed(final V result) {
+  public static <V extends @Nullable Object> CompletableActorFuture<V> completed(final V result) {
     return new CompletableActorFuture<>(result); // cast for null result
   }
 
-  public static <V> CompletableActorFuture<V> completedExceptionally(final Throwable throwable) {
+  public static <V extends @Nullable Object> CompletableActorFuture<V> completedExceptionally(
+      final Throwable throwable) {
     return new CompletableActorFuture<>(throwable);
   }
 
@@ -117,6 +125,23 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       future = future.andThen(unused -> function.apply(a), executor);
     }
     return future;
+  }
+
+  /**
+   * Executes a supplier that provides an {@code ActorFuture} and catches any synchronous
+   * exceptions, wrapping them in the returned future.
+   *
+   * @param <A> The type of the result provided by the {@code ActorFuture}.
+   * @param supplier A supplier that provides an {@code ActorFuture}.
+   * @return The {@code ActorFuture} provided by the supplier, or an exceptionally-completed {@code
+   *     ActorFuture} if an exception was thrown by the supplier.
+   */
+  public static <A> ActorFuture<A> catching(final Supplier<ActorFuture<A>> supplier) {
+    try {
+      return supplier.get();
+    } catch (final Throwable e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
   }
 
   @Override
@@ -163,7 +188,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
           if (remaining <= 0) {
             throw new TimeoutException("Timeout after: " + timeout + " " + unit);
           }
-          remaining = isDoneCondition.awaitNanos(unit.toNanos(timeout));
+          remaining = requireNonNull(isDoneCondition).awaitNanos(unit.toNanos(timeout));
         }
       } finally {
         completionLock.unlock();
@@ -173,7 +198,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     if (isCompletedExceptionally()) {
       throw new ExecutionException(failure, failureCause);
     } else {
-      return value;
+      // value is set by complete() before this state is reachable
+      return uncheckedCastToNonNull(value);
     }
   }
 
@@ -183,7 +209,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void complete(final V value) {
-    if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (STATE.compareAndSet(this, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
       state = COMPLETED;
       completedAt = System.nanoTime();
@@ -200,13 +226,14 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public void completeExceptionally(final String failure, final Throwable throwable) {
+  public void completeExceptionally(final @Nullable String failure, final Throwable throwable) {
     // important for other actors that consume this by #runOnCompletion
     ensureValidThrowable(throwable);
 
-    if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (STATE.compareAndSet(this, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
       failureCause = throwable;
+      completedAt = System.nanoTime();
       state = COMPLETED_EXCEPTIONALLY;
       notifyAllBlocked();
     } else {
@@ -241,7 +268,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public void onComplete(final BiConsumer<V, Throwable> consumer) {
+  public void onComplete(final BiConsumer<V, @Nullable Throwable> consumer) {
     if (ActorThread.isCalledFromActorThread()) {
       final ActorControl actorControl = ActorControl.current();
       actorControl.runOnCompletion(this, consumer);
@@ -259,7 +286,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public void onComplete(final BiConsumer<V, Throwable> consumer, final Executor executor) {
+  public void onComplete(
+      final BiConsumer<V, @Nullable Throwable> consumer, final Executor executor) {
     // There is a possible race condition that the future is completed before adding the consumer to
     // blockedCallBacks. Then the consumer will never get executed. To ensure that the
     // consumer is executed we check if the future is done, and trigger the consumer. However, if
@@ -269,7 +297,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     // this extra overhead would be acceptable.
 
     final AtomicBoolean executedOnce = new AtomicBoolean(false);
-    final BiConsumer<V, Throwable> checkedConsumer =
+    final BiConsumer<V, @Nullable Throwable> checkedConsumer =
         (res, error) ->
             executor.execute(
                 () -> {
@@ -306,11 +334,12 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
           "Cannot call getException(); future is not completed exceptionally.");
     }
 
-    return failureCause;
+    return uncheckedCastToNonNull(failureCause);
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
+      final Supplier<ActorFuture<U>> next, final Executor executor) {
     return andThen(
         ignored -> {
           try {
@@ -323,7 +352,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
       final Function<V, ActorFuture<U>> next, final Executor executor) {
     return andThen(
         (v, err) -> {
@@ -341,8 +370,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(
-      final BiFunction<V, Throwable, ActorFuture<U>> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
+      final BiFunction<V, @Nullable Throwable, ActorFuture<U>> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (thisResult, thisError) -> {
@@ -358,7 +387,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public <U> ActorFuture<U> thenApply(final Function<V, U> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> thenApply(
+      final Function<V, U> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (value, error) -> {
@@ -378,7 +408,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public <U> ActorFuture<U> thenApply(final Function<V, U> next) {
+  public <U extends @Nullable Object> ActorFuture<U> thenApply(final Function<V, U> next) {
     if (ActorThread.isCalledFromActorThread()) {
       final ActorControl actorControl = ActorControl.current();
       return thenApply(next, actorControl);
@@ -398,8 +428,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   private void notifyAllBlocked() {
     notifyBlockedCallBacks();
 
+    completionLock.lock();
     try {
-      completionLock.lock();
       if (isDoneCondition != null) {
         // condition is null if the future was created with `completed` or `completedExceptionally`,
         // i.e. the future was never waiting for a result.
@@ -421,7 +451,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   /** future is reusable after close */
   public boolean close() {
-    final int prevState = UnsafeApi.getAndSetInt(this, STATE_OFFSET, CLOSED);
+    final int prevState = (int) STATE.getAndSet(this, CLOSED);
 
     if (prevState != CLOSED) {
       value = null;
@@ -444,9 +474,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     }
 
     if (otherFuture.isCompletedExceptionally()) {
-      completeExceptionally(otherFuture.failureCause);
+      completeExceptionally(requireNonNull(otherFuture.failureCause));
     } else {
-      complete(otherFuture.value);
+      // value is set by complete() before this state is reachable
+      complete(uncheckedCastToNonNull(otherFuture.value));
     }
   }
 

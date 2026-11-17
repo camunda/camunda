@@ -9,14 +9,18 @@ package io.camunda.search.schema.utils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -33,6 +37,13 @@ public class SearchEngineClientUtils {
    * a lower value to be conservative
    */
   public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 3500;
+
+  /**
+   * Key under which an index template's {@code _meta} records the {@link
+   * SchemaSettingsAppender#settingsFingerprint fingerprint} of the settings it was last written
+   * with.
+   */
+  public static final String SETTINGS_FINGERPRINT_META_KEY = "camunda_settings_fingerprint";
 
   private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
   private final ObjectMapper objectMapper;
@@ -152,8 +163,30 @@ public class SearchEngineClientUtils {
       return new ByteArrayInputStream(objectMapper.writeValueAsBytes(map));
     }
 
-    public boolean equalsSettings(final Map<String, Object> otherSettings) {
-      return settingsBlock.equals(otherSettings);
+    /**
+     * Digests the settings block this appender builds, together with the template priority, so an
+     * index template can record what it was last written with in its {@code _meta} and a later run
+     * can tell whether a rewrite is needed by comparing digests alone.
+     *
+     * <p>This deliberately never compares against the search engine's rendering of the stored
+     * settings: the engine normalizes them (relocates keys, stringifies values, injects defaults),
+     * so such a diff can report a change forever. A digest mismatch at worst costs one rewrite,
+     * which stores the new digest.
+     */
+    public String settingsFingerprint(final Object templatePriority) {
+      final var fingerprinted = new HashMap<String, Object>();
+      fingerprinted.put("settings", settingsBlock);
+      fingerprinted.put("priority", String.valueOf(templatePriority));
+      try {
+        final var canonicalJson =
+            objectMapper
+                .writer()
+                .with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                .writeValueAsBytes(fingerprinted);
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canonicalJson));
+      } catch (final IOException | NoSuchAlgorithmException e) {
+        throw new IllegalStateException("Failed to fingerprint index template settings", e);
+      }
     }
   }
 }

@@ -17,17 +17,28 @@ import Authorizations from "src/pages/authorizations";
 import ClusterVariables from "src/pages/cluster-variables";
 import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
+import McpProcesses from "src/pages/mcp-processes";
 import {
+  isAdditionalIdpConfigured,
   isCamundaGroupsEnabled,
   isOIDC,
   isSaaS,
   isTenantsApiEnabled,
+  defaultRoleIds,
+  resourcePermissions,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
+
+  const mappingRulesRoute = {
+    path: `${Paths.mappingRules()}/*`,
+    key: Paths.mappingRules(),
+    label: t("mappingRules"),
+    element: <MappingRules />,
+  };
 
   const OIDCDependentRoutes = !isOIDC
     ? [
@@ -39,15 +50,13 @@ export const useGlobalRoutes = () => {
         },
       ]
     : !isSaaS
-      ? [
-          {
-            path: `${Paths.mappingRules()}/*`,
-            key: Paths.mappingRules(),
-            label: t("mappingRules"),
-            element: <MappingRules />,
-          },
-        ]
+      ? [mappingRulesRoute]
       : [];
+
+  // Kept out of OIDCDependentRoutes, whose first entry sets the index-route
+  // redirect (GlobalRoutes.tsx), so it doesn't change the SaaS landing page.
+  const saasMappingRulesRoutes =
+    isOIDC && isSaaS && isAdditionalIdpConfigured ? [mappingRulesRoute] : [];
 
   const camundaGroupsDependentRoutes = isCamundaGroupsEnabled
     ? [
@@ -55,7 +64,7 @@ export const useGlobalRoutes = () => {
           path: `${Paths.groups()}/*`,
           key: Paths.groups(),
           label: t("groups"),
-          element: <Groups />,
+          element: <Groups isOIDC={isOIDC} />,
         },
       ]
     : [];
@@ -66,7 +75,12 @@ export const useGlobalRoutes = () => {
           path: `${Paths.tenants()}/*`,
           key: Paths.tenants(),
           label: t("tenants"),
-          element: <Tenants />,
+          element: (
+            <Tenants
+              isOIDC={isOIDC}
+              isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+            />
+          ),
         },
       ]
     : [];
@@ -78,14 +92,28 @@ export const useGlobalRoutes = () => {
       path: `${Paths.roles()}/*`,
       key: Paths.roles(),
       label: t("roles"),
-      element: <Roles />,
+      element: (
+        <Roles
+          isOIDC={isOIDC}
+          isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+          defaultRoleIds={defaultRoleIds}
+        />
+      ),
     },
     ...tenantsDependentRoutes,
     {
       path: `${Paths.authorizations()}/*`,
       key: Paths.authorizations(),
       label: t("authorizations"),
-      element: <Authorizations />,
+      element: (
+        <Authorizations
+          isOIDC={isOIDC}
+          isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+          isTenantsApiEnabled={isTenantsApiEnabled}
+          resourcePermissions={resourcePermissions}
+          defaultRoleIds={defaultRoleIds}
+        />
+      ),
     },
     {
       path: `${Paths.globalTaskListeners()}/*`,
@@ -97,7 +125,13 @@ export const useGlobalRoutes = () => {
       path: `${Paths.clusterVariables()}/*`,
       key: Paths.clusterVariables(),
       label: t("clusterVariables"),
-      element: <ClusterVariables />,
+      element: <ClusterVariables isSaaS={isSaaS} />,
+    },
+    {
+      path: `${Paths.mcpProcesses()}/*`,
+      key: Paths.mcpProcesses(),
+      label: t("mcpProcesses"),
+      element: <McpProcesses isTenantsApiEnabled={isTenantsApiEnabled} />,
     },
     {
       path: `${Paths.operationsLog()}/*`,
@@ -105,6 +139,7 @@ export const useGlobalRoutes = () => {
       label: t("operationsLog"),
       element: <OperationsLog />,
     },
+    ...saasMappingRulesRoutes,
   ];
 
   return routes.map((route) => ({

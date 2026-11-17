@@ -15,6 +15,9 @@
  */
 package io.camunda.client;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -30,8 +33,20 @@ import org.junit.jupiter.api.Test;
 public final class StatusRequestRestTest extends ClientRestTest {
 
   @Test
+  void shouldRequestStatusFromClusterScopedEndpoint() {
+    // given
+    gatewayService.onStatusRequestHealthy();
+
+    // when
+    client.newStatusRequest().send().join();
+
+    // then — the cluster status is not physical-tenant scoped, so it is not served below /v2
+    verify(getRequestedFor(urlEqualTo("/cluster/v2/status")));
+  }
+
+  @Test
   void shouldRequestStatusWhenHealthy() throws ExecutionException, InterruptedException {
-    // given - cluster is healthy (returns 204 No Content)
+    // given - the whole cluster is healthy (200 with HEALTHY)
     gatewayService.onStatusRequestHealthy();
 
     // when
@@ -44,8 +59,22 @@ public final class StatusRequestRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldRequestStatusWhenDegraded() throws ExecutionException, InterruptedException {
+    // given - part of the cluster is degraded but it still processes work (200 with DEGRADED)
+    gatewayService.onStatusRequestDegraded();
+
+    // when
+    final Future<StatusResponse> response = client.newStatusRequest().send();
+
+    // then - a degraded cluster still serves traffic, so it must not be reported as down
+    assertThat(response).succeedsWithin(Duration.ofSeconds(5));
+    final StatusResponse status = response.get();
+    assertThat(status.getStatus()).isEqualTo(Status.UP);
+  }
+
+  @Test
   void shouldRequestStatusWhenUnhealthy() throws ExecutionException, InterruptedException {
-    // given - cluster is unhealthy (returns 503 Service Unavailable)
+    // given - no physical tenant can process work (503 with DOWN)
     gatewayService.onStatusRequestUnhealthy();
 
     // when

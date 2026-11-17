@@ -7,21 +7,28 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.application.commons.security.PhysicalTenantSecurityProperties;
+import io.camunda.authentication.service.PhysicalTenantResourceAccessProvider;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
-import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
-import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
-import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.security.reader.ResourceAccessController;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
+import io.camunda.search.clients.reader.PhysicalTenantSearchClientReaders;
+import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.authz.TenantAccessProvider;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.security.impl.SearchAuthorizationScopeRepository;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,23 +40,16 @@ public class ResourceAccessControllerConfiguration {
 
   @Bean
   public ResourceAccessProvider resourceAccessProvider(
-      final SecurityConfiguration securityConfiguration, final AuthorizationChecker checker) {
-    return securityConfiguration.getAuthorizations().isEnabled()
-        ? new DefaultResourceAccessProvider(checker)
-        : new DisabledResourceAccessProvider();
+      final CamundaSecurityLibraryProperties cslProperties,
+      final AuthorizationScopeRepositoryPort scopeRepository) {
+    return DefaultResourceAccessProvider.forScopeRepository(
+        scopeRepository, cslProperties.getAuthorizations().isEnabled());
   }
 
   @Bean
   public TenantAccessProvider tenantAccessProvider(
-      final SecurityConfiguration securityConfiguration) {
-    return securityConfiguration.getMultiTenancy().isChecksEnabled()
-        ? new DefaultTenantAccessProvider()
-        : new DisabledTenantAccessProvider();
-  }
-
-  @Bean
-  public ResourceAccessController anonymousResourceAccessController() {
-    return new AnonymousResourceAccessController();
+      final CamundaSecurityLibraryProperties cslProperties) {
+    return TenantAccessProvider.of(cslProperties.getMultiTenancy().isChecksEnabled());
   }
 
   @Bean
@@ -57,17 +57,90 @@ public class ResourceAccessControllerConfiguration {
     SecondaryStorageType.elasticsearch,
     SecondaryStorageType.opensearch
   })
-  public ResourceAccessController documentBasedResourceAccessController(
-      final ResourceAccessProvider resourceAccessProvider,
-      final TenantAccessProvider tenantAccessProvider) {
-    return new DocumentBasedResourceAccessController(resourceAccessProvider, tenantAccessProvider);
+  public PhysicalTenantResourceAccessControllers
+      documentBasedPhysicalTenantResourceAccessControllers(
+          final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+          final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
+          final TenantAccessProvider tenantAccessProvider) {
+    return buildPerTenantControllers(
+        physicalTenantSearchClientReaders,
+        physicalTenantSecurityProperties,
+        tenantAccessProvider,
+        DocumentBasedResourceAccessController::new);
   }
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
-  public ResourceAccessController rdbmsResourceAccessController(
-      final ResourceAccessProvider resourceAccessProvider,
+  public PhysicalTenantResourceAccessControllers rdbmsPhysicalTenantResourceAccessControllers(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
       final TenantAccessProvider tenantAccessProvider) {
-    return new RdbmsResourceAccessController(resourceAccessProvider, tenantAccessProvider);
+    return buildPerTenantControllers(
+        physicalTenantSearchClientReaders,
+        physicalTenantSecurityProperties,
+        tenantAccessProvider,
+        RdbmsResourceAccessController::new);
+  }
+
+  /**
+   * The {@link ResourceAccessProvider} scoped per physical tenant, consumed by the consolidated
+   * {@code /v2/authentication/me} handlers to resolve {@code COMPONENT ACCESS} against the tenant
+   * the request is scoped to (rather than the root-bound {@link #resourceAccessProvider} bean).
+   *
+   * <p>One entry per configured physical tenant (including the default one); there is deliberately
+   * no shared-default fallback, so an unknown tenant fails hard rather than silently resolving
+   * against the wrong tenant's storage.
+   *
+   * <p>Storage-agnostic: the per-tenant provider is built the same way for every secondary-storage
+   * type, so unlike {@link PhysicalTenantResourceAccessControllers} it needs no storage-type split.
+   */
+  @Bean
+  public PhysicalTenantResourceAccessProvider physicalTenantResourceAccessProvider(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties) {
+    final Map<String, ResourceAccessProvider> providers = new LinkedHashMap<>();
+    physicalTenantSearchClientReaders
+        .readersByPhysicalTenant()
+        .forEach(
+            (tenantId, searchClientReaders) -> {
+              final var cslProps =
+                  physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(tenantId);
+              providers.put(tenantId, resourceAccessProviderFor(searchClientReaders, cslProps));
+            });
+    return new PhysicalTenantResourceAccessProvider(Map.copyOf(providers));
+  }
+
+  private static ResourceAccessProvider resourceAccessProviderFor(
+      final SearchClientReaders searchClientReaders,
+      final CamundaSecurityLibraryProperties cslProps) {
+    final var scopeRepository =
+        new SearchAuthorizationScopeRepository(searchClientReaders.authorizationReader());
+    return DefaultResourceAccessProvider.forScopeRepository(
+        scopeRepository, cslProps.getAuthorizations().isEnabled());
+  }
+
+  private static PhysicalTenantResourceAccessControllers buildPerTenantControllers(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+      final PhysicalTenantSecurityProperties physicalTenantSecurityProperties,
+      final TenantAccessProvider tenantAccessProvider,
+      final BiFunction<ResourceAccessProvider, TenantAccessProvider, ResourceAccessController>
+          controllerFactory) {
+    final Map<String, ResourceAccessController> controllers = new LinkedHashMap<>();
+    physicalTenantSearchClientReaders
+        .readersByPhysicalTenant()
+        .forEach(
+            (tenantId, searchClientReaders) -> {
+              final var cslProps =
+                  physicalTenantSecurityProperties.propertiesByPhysicalTenant().get(tenantId);
+              final ResourceAccessProvider provider =
+                  resourceAccessProviderFor(searchClientReaders, cslProps);
+              final ResourceAccessController resourceAccessController =
+                  controllerFactory.apply(provider, tenantAccessProvider);
+              controllers.put(
+                  tenantId,
+                  new ResourceAccessDelegatingController(
+                      List.of(new AnonymousResourceAccessController(), resourceAccessController)));
+            });
+    return new PhysicalTenantResourceAccessControllers(Map.copyOf(controllers));
   }
 }

@@ -12,6 +12,9 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.IN
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -44,14 +47,18 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   }
 
   @Test
-  public void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<IncidentRecordValue> incidentRecord = factory.generateRecord(ValueType.INCIDENT);
-    // when
-    final var idList = underTest.generateIds(incidentRecord);
-    // then
-    assertThat(idList)
-        .containsExactly(String.valueOf(incidentRecord.getValue().getElementInstanceKey()));
+
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, incidentRecord))
+        .containsExactly(
+            new IdAndIndex(
+                String.valueOf(incidentRecord.getValue().getElementInstanceKey()), index));
   }
 
   @Test
@@ -75,17 +82,18 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
             .setPositionIncident(123L);
     inputEntity.getJoinRelation().setParent(66L);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(ERROR_MESSAGE, inputEntity.getErrorMessage());
     expectedUpdateFields.put(INCIDENT_POSITION, inputEntity.getPositionIncident());
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,
@@ -178,5 +186,41 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
 
   private Record<IncidentRecordValue> createIncidentRecordWithIntent(final IncidentIntent intent) {
     return factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withStorageOrdinal(42)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(incidentRecordValue.getStorageOrdinal());
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenDefault() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
+
+    // when
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(incidentRecord, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 }

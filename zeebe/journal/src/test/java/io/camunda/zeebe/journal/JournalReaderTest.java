@@ -16,7 +16,6 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.CloseHelper;
@@ -33,17 +32,15 @@ final class JournalReaderTest {
 
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
+  private final BufferWriter recordDataWriter = new DirectBufferWriter(data);
   private JournalReader reader;
   private SegmentedJournal journal;
 
   @BeforeEach
   public void setup(final @TempDir Path tempDir) {
-    final File directory = tempDir.resolve("data").toFile();
-
     journal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory)
+            .withDirectory(tempDir.resolve("data"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build();

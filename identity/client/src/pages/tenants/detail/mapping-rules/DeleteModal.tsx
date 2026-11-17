@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignTenantMappingRule } from "src/utility/api/tenants";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantMappingRuleModalProps = UseEntityModalCustomProps<
@@ -34,24 +34,25 @@ const DeleteModal: FC<RemoveTenantMappingRuleModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMappingRule, { loading }] = useApiCall(
-    unassignTenantMappingRule,
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.unassignMappingRule(qc),
   );
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (tenant && mappingRule) {
-      const { success } = await callUnassignMappingRule({
-        tenantId: tenant,
-        mappingRuleId: mappingRule.mappingRuleId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("tenantMappingRuleRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { tenantId: tenant, mappingRuleId: mappingRule.mappingRuleId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("tenantMappingRuleRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

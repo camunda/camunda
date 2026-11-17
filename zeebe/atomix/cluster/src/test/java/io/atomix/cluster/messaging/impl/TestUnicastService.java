@@ -32,8 +32,7 @@ import java.util.function.BiConsumer;
 public class TestUnicastService implements ManagedUnicastService {
   private final Address address;
   private final Map<Address, TestUnicastService> services;
-  private final Map<String, Map<BiConsumer<Address, byte[]>, Executor>> listeners =
-      Maps.newConcurrentMap();
+  private final Map<String, Listener> listeners = Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
   private final Set<Address> partitions = Sets.newConcurrentHashSet();
 
@@ -80,30 +79,23 @@ public class TestUnicastService implements ManagedUnicastService {
 
     final TestUnicastService service = services.get(address);
     if (service != null) {
-      final Map<BiConsumer<Address, byte[]>, Executor> listeners = service.listeners.get(subject);
-      if (listeners != null) {
-        listeners.forEach(
-            (listener, executor) -> executor.execute(() -> listener.accept(this.address, message)));
+      final Listener listener = service.listeners.get(subject);
+      if (listener != null) {
+        listener.executor().execute(() -> listener.consumer().accept(this.address, message));
       }
     }
   }
 
   @Override
-  public synchronized void addListener(
+  public void addListener(
       final String subject, final BiConsumer<Address, byte[]> listener, final Executor executor) {
-    listeners.computeIfAbsent(subject, s -> Maps.newConcurrentMap()).put(listener, executor);
+    listeners.put(subject, new Listener(listener, executor));
   }
 
   @Override
-  public synchronized void removeListener(
-      final String subject, final BiConsumer<Address, byte[]> listener) {
-    final Map<BiConsumer<Address, byte[]>, Executor> listeners = this.listeners.get(subject);
-    if (listeners != null) {
-      listeners.remove(listener);
-      if (listeners.isEmpty()) {
-        this.listeners.remove(subject);
-      }
-    }
+  public void removeListener(final String subject, final BiConsumer<Address, byte[]> listener) {
+    listeners.computeIfPresent(
+        subject, (ignored, current) -> current.consumer() == listener ? null : current);
   }
 
   @Override
@@ -124,4 +116,6 @@ public class TestUnicastService implements ManagedUnicastService {
     started.set(false);
     return CompletableFuture.completedFuture(null);
   }
+
+  private record Listener(BiConsumer<Address, byte[]> consumer, Executor executor) {}
 }

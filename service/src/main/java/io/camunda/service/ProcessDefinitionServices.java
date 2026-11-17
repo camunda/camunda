@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
@@ -19,14 +19,16 @@ import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -41,6 +43,7 @@ public class ProcessDefinitionServices
   private final FormServices formServices;
 
   public ProcessDefinitionServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
@@ -48,6 +51,7 @@ public class ProcessDefinitionServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -87,7 +91,7 @@ public class ProcessDefinitionServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             PROCESS_DEFINITION_READ_AUTHORIZATION,
                             ProcessDefinitionEntity::processDefinitionId)))
                 .getProcessDefinition(processDefinitionKey));
@@ -121,12 +125,23 @@ public class ProcessDefinitionServices
 
   public Optional<FormEntity> getProcessDefinitionStartForm(
       final long processDefinitionKey, final CamundaAuthentication authentication) {
-    return Optional.ofNullable(getByKey(processDefinitionKey, authentication))
-        .filter(p -> p.formId() != null && !p.formId().isEmpty())
-        .flatMap(
-            p ->
-                formServices.getLatestVersionByFormIdAndTenantId(
-                    p.formId(), p.tenantId(), CamundaAuthentication.anonymous()));
+    final var processDefinition = getByKey(processDefinitionKey, authentication);
+    final var formId = processDefinition.formId();
+    if (formId == null || formId.isBlank()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(
+        formServices
+            .getLatestVersionByFormIdAndTenantId(
+                formId, processDefinition.tenantId(), CamundaAuthentication.anonymous())
+            .orElseThrow(
+                () ->
+                    ErrorMapper.mapSearchError(
+                        new CamundaSearchException(
+                            "Start form '%s' not found for process definition key '%d'"
+                                .formatted(formId, processDefinitionKey),
+                            CamundaSearchException.Reason.NOT_FOUND))));
   }
 
   public Optional<String> getProcessDefinitionXml(

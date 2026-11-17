@@ -1,0 +1,74 @@
+# Display metadata for the metrics of load-tests/loadtestctl/src/loadtestctl/report/
+# report-queries-comparison.yaml, which holds their PromQL. Entries are matched to the report
+# metrics by name and rendered in this order.
+#
+# Fields per entry:
+#   name              the `key` of the metric in report-queries-comparison.yaml; also the
+#                     lookup key in the render step
+#   description       human label — used as the row label in the job summary
+#   higher_is_better  true when a larger value is better (throughput, instances);
+#                     false when a smaller value is better (backpressure)
+#   format            integer | float | percent  — controls summary cell format
+#   decimals          decimal places for float / percent (default 2)
+#   unit              optional display suffix appended to the formatted value
+
+queries:
+  - name: process-instances-started
+    description: Process instances submitted by the starter
+    higher_is_better: true
+    format: integer
+
+  - name: process-instances-completed
+    description: Root process instances completed by the engine
+    higher_is_better: true
+    format: integer
+
+  - name: throughput-per-second
+    description: Client Process Instance Started Rate (avg)
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: PI/s
+
+  - name: completed-pi-rate-per-second
+    description: Completion PI rate (avg)
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: PI/s
+
+  - name: completion-ratio
+    description: Completed process instances in %
+    higher_is_better: true
+    format: percent
+    decimals: 2
+    unit: '%'
+
+  - name: backpressure-percent
+    description: Backpressure (rejected / received)
+    higher_is_better: false
+    format: percent
+    decimals: 2
+    unit: '%'
+
+  - name: starter-rate-per-second
+    description: Gateway-accepted submission rate (avg)
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: PI/s
+
+  - name: data-availability
+    description: Data availability latency (P99)
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: request-response-latency
+    description: Request-response latency (P99)
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+

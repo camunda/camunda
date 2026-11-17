@@ -12,13 +12,15 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 
 public interface ExporterEntityCacheProvider {
 
   CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
       String batchOperationIndexName);
 
-  CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
+  CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
+      String processIndexName, ExtensionPropertyConfiguration extensionPropertiesConfiguration);
 
   CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
       String decisionIndexName);

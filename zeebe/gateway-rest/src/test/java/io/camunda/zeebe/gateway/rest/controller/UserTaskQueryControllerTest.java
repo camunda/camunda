@@ -28,9 +28,10 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -66,6 +67,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
                         "rootProcessInstanceKey": "37",
+                        "businessId": "biz-77",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -85,6 +87,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "processDefinitionVersion": 1,
                         "customHeaders": {},
                         "priority": 50,
+                        "isSuspended": false,
                         "tags": []
                     }
                 ],
@@ -209,7 +212,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "agentElementId": null,
             "batchOperationKey": null,
             "batchOperationType": null,
-            "category": null,
+            "category": "USER_TASKS",
             "decisionDefinitionId": null,
             "decisionDefinitionKey": null,
             "decisionEvaluationKey": null,
@@ -218,21 +221,23 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "deploymentKey": null,
             "elementInstanceKey": null,
             "entityDescription": null,
-            "entityKey": null,
-            "entityType": null,
+            "entityKey": "u1",
+            "entityType": "USER_TASK",
             "formKey": null,
             "jobKey": null,
-            "operationType": null,
+            "operationType": "CREATE",
             "processDefinitionId": null,
             "processDefinitionKey": null,
             "processInstanceKey": null,
+            "inboundChannelType": null,
+            "inboundChannelToolName": null,
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "result": null,
+            "result": "SUCCESS",
             "rootProcessInstanceKey": null,
             "tenantId": null,
-            "timestamp": null,
+            "timestamp": "2025-01-01T00:00:00.000Z",
             "userTaskKey": null
           },
           {
@@ -242,7 +247,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "agentElementId": null,
             "batchOperationKey": null,
             "batchOperationType": null,
-            "category": null,
+            "category": "USER_TASKS",
             "decisionDefinitionId": null,
             "decisionDefinitionKey": null,
             "decisionEvaluationKey": null,
@@ -251,21 +256,23 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "deploymentKey": null,
             "elementInstanceKey": null,
             "entityDescription": null,
-            "entityKey": null,
-            "entityType": null,
+            "entityKey": "u2",
+            "entityType": "USER_TASK",
             "formKey": null,
             "jobKey": null,
-            "operationType": null,
+            "operationType": "UPDATE",
             "processDefinitionId": null,
             "processDefinitionKey": null,
             "processInstanceKey": null,
+            "inboundChannelType": null,
+            "inboundChannelToolName": null,
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "result": null,
+            "result": "SUCCESS",
             "rootProcessInstanceKey": null,
             "tenantId": null,
-            "timestamp": null,
+            "timestamp": "2025-01-01T00:00:00.000Z",
             "userTaskKey": null
           }
         ],
@@ -285,6 +292,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
                         "rootProcessInstanceKey": "37",
+                        "businessId": "biz-77",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -304,6 +312,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "processDefinitionVersion": 1,
                         "customHeaders": {},
                         "priority": 50,
+                        "isSuspended": true,
                         "tags": []
             }
             """;
@@ -340,6 +349,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       2L, // processDefinitionId
                       1L, // processInstanceId
                       37L, // rootProcessInstanceId
+                      "biz-77", // businessId
                       3L, // elementInstanceId
                       "t", // tenantId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
@@ -350,7 +360,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       1, // processDefinitionVersion
                       Collections.emptyMap(), // customHeaders
                       50, // priority
-                      Set.of() // tags
+                      Set.of(), // tags
+                      false // suspended
                       )))
           .startCursor("f")
           .endCursor("v")
@@ -385,17 +396,37 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .total(2L)
           .items(
               List.of(
-                  new AuditLogEntity.Builder().auditLogKey("1").actorId("1").build(),
-                  new AuditLogEntity.Builder().auditLogKey("2").actorId("2").build()))
+                  new AuditLogEntity.Builder()
+                      .auditLogKey("1")
+                      .actorId("1")
+                      .entityKey("u1")
+                      .entityType(AuditLogEntity.AuditLogEntityType.USER_TASK)
+                      .operationType(AuditLogEntity.AuditLogOperationType.CREATE)
+                      .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+                      .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+                      .timestamp(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
+                      .build(),
+                  new AuditLogEntity.Builder()
+                      .auditLogKey("2")
+                      .actorId("2")
+                      .entityKey("u2")
+                      .entityType(AuditLogEntity.AuditLogEntityType.USER_TASK)
+                      .operationType(AuditLogEntity.AuditLogOperationType.UPDATE)
+                      .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+                      .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+                      .timestamp(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
+                      .build()))
           .startCursor("0")
           .endCursor("1")
           .build();
 
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() throws IOException {
+    when(serviceRegistry.userTaskServices(any())).thenReturn(userTaskServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
@@ -416,6 +447,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 2L,
                 1L,
                 37L,
+                "biz-77",
                 3L,
                 "t",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
@@ -426,7 +458,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 1,
                 Map.of(),
                 50,
-                Set.of()));
+                Set.of(),
+                true));
     // Mock the behavior for an invalid userTaskKey to throw NotFoundException
     when(userTaskServices.getByKey(eq(INVALID_USER_TASK_KEY), any()))
         .thenThrow(
@@ -479,6 +512,99 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchUserTasksWithOrFilter() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+              "filter":{
+                "assignee": "user1",
+                "$or": [
+                  { "candidateGroup": "groupA" },
+                  { "candidateUser": "user2" }
+                ]
+              }
+            }""";
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .search(
+            eq(
+                new UserTaskQuery.Builder()
+                    .filter(
+                        new UserTaskFilter.Builder()
+                            .assigneeOperations(Operation.eq("user1"))
+                            .addOrOperation(
+                                new UserTaskFilter.Builder()
+                                    .candidateGroupOperations(Operation.eq("groupA"))
+                                    .build())
+                            .addOrOperation(
+                                new UserTaskFilter.Builder()
+                                    .candidateUserOperations(Operation.eq("user2"))
+                                    .build())
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldReturnBadRequestForInvalidRootFilterWithValidOrClause() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "userTaskKey": "abc",
+                "$or": [
+                  { "candidateGroup": "groupA" }
+                ]
+              }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "The provided userTaskKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+  }
+
+  @Test
   void shouldSearchUserTasksWithSorting() {
     // given
     when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
@@ -522,6 +648,44 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                             .completionDate()
                             .asc()
                             .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldSearchUserTasksWithBusinessIdSorting() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+                {
+                    "sort": [
+                        {
+                            "field": "businessId",
+                            "order": "asc"
+                        }
+                    ]
+                }""";
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .search(
+            eq(
+                new UserTaskQuery.Builder()
+                    .sort(new UserTaskSort.Builder().businessId().asc().build())
                     .build()),
             any());
   }
@@ -762,7 +926,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "Bad Request",
                           "status": 400,
-                          "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name]",
+                          "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name, businessId]",
                           "instance": "%s"
                         }""",
             USER_TASKS_SEARCH_URL);
@@ -1137,6 +1301,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "assignee",
         ops -> new UserTaskFilter.Builder().assigneeOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "businessId",
+        ops -> new UserTaskFilter.Builder().businessIdOperations(ops).build());
     stringOperationTestCases(
         streamBuilder,
         "tenantId",

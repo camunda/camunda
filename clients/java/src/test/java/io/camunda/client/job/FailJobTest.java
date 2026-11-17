@@ -129,6 +129,64 @@ public final class FailJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldFailJobWithJobLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String jobLeaseToken = "lease-token";
+
+    // when
+    client.newFailCommand(jobKey).retries(1).withJobLeaseToken(jobLeaseToken).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldCarryJobLeaseTokenFromActivatedJob() {
+    // given
+    final String jobLeaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(jobLeaseToken);
+
+    // when
+    client.newFailCommand(job).retries(1).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryJobLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(null);
+
+    // when
+    client.newFailCommand(job).retries(1).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryJobLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newFailCommand(jobKey).retries(1).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEmpty();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

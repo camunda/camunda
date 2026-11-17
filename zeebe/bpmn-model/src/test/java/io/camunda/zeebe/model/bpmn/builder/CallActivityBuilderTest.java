@@ -73,6 +73,25 @@ public class CallActivityBuilderTest {
         .containsExactly("=processIdExpr");
   }
 
+  @Test
+  void shouldSetBusinessId() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity("callActivity", c -> c.zeebeBusinessId("=orderId"))
+            .done();
+
+    // then
+    final ModelElementInstance callActivity = instance.getModelElementById("callActivity");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) callActivity.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeCalledElement.class))
+        .hasSize(1)
+        .extracting(ZeebeCalledElement::getBusinessId)
+        .containsExactly("=orderId");
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void shouldSetPropagateAllChildVariables(final boolean propagateAllChildVariables) {

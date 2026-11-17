@@ -29,7 +29,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.FilterUtil;
 import java.util.List;
 import java.util.function.Function;

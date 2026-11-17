@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -61,6 +64,40 @@ public final class YieldJobTest {
   }
 
   @Test
+  public void shouldYieldLeasedJobWithoutLeaseAndBecomeActivatableAgain() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = job.getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> yieldRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withType(jobType)
+            .ofInstance(job.getProcessInstanceKey())
+            .yield();
+
+    // then
+    Assertions.assertThat(yieldRecord)
+        .describedAs("yield is engine-internal and must never be fenced by a lease token")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.YIELDED);
+
+    // and it stays leased, so only a leasing worker re-activates it
+    final Record<JobBatchRecordValue> reactivatedBatch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    assertThat(reactivatedBatch.getValue().getJobKeys())
+        .describedAs("the yielded job stays leased and is re-activated by a leasing worker")
+        .containsExactly(jobKey);
+  }
+
+  @Test
   public void shouldRejectYieldIfJobNotActivated() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
@@ -86,5 +123,29 @@ public final class YieldJobTest {
             String.format(
                 "Expected to yield job with key '%d', but it is in state '%s'",
                 jobKey, State.FAILED));
+  }
+
+  @Test
+  public void shouldRejectJobYieldForBannedProcessInstance() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.job().withKey(jobKey).ofInstance(processInstanceKey).expectRejection().yield();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
   }
 }

@@ -153,6 +153,23 @@ public class HistoryDeletionService {
       return List.of();
     }
 
+    final var limit = config.dependentRowLimit();
+    final int deletedSubscriptions =
+        rdbmsWriters
+            .getMessageSubscriptionWriter()
+            .deleteStartEventSubscriptionsByProcessDefinitionKeys(processDefinitionKeys, limit);
+    final int deletedAgentDefinitions =
+        rdbmsWriters
+            .getAgentDefinitionWriter()
+            .deleteByProcessDefinitionKeys(processDefinitionKeys, limit);
+    // remove process definition key variable name lookup rows
+    rdbmsWriters
+        .getVariableWriter()
+        .deleteLookupByProcessDefinitionKeys(processDefinitionKeys, limit);
+    if (deletedSubscriptions >= limit || deletedAgentDefinitions >= limit) {
+      return List.of();
+    }
+
     rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
     scheduleAuditLogDataForDeletion(
         processDefinitionKeys, HistoryDeletionTypeDbModel.PROCESS_DEFINITION);

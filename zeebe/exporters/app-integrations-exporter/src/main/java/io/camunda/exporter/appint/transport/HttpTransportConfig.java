@@ -12,4 +12,15 @@ public record HttpTransportConfig(
     Authentication authentication,
     int maxRetries,
     long retryDelayMs,
-    long requestTimeoutMs) {}
+    long requestTimeoutMs,
+    ContextHeaders contextHeaders) {
+
+  public HttpTransportConfig(
+      final String url,
+      final Authentication authentication,
+      final int maxRetries,
+      final long retryDelayMs,
+      final long requestTimeoutMs) {
+    this(url, authentication, maxRetries, retryDelayMs, requestTimeoutMs, ContextHeaders.EMPTY);
+  }
+}

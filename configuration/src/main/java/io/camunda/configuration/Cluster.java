@@ -12,7 +12,14 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.cluster.Membership;
+import io.camunda.configuration.cluster.Metadata;
+import io.camunda.configuration.cluster.Network;
+import io.camunda.configuration.cluster.NodeIdProvider;
+import io.camunda.configuration.cluster.Partitioning;
+import io.camunda.configuration.cluster.Raft;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import java.util.Collections;
@@ -28,7 +35,7 @@ public class Cluster implements Cloneable {
   // Property names for initial contact points configuration
   public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY;
   public static final String LEGACY_NODE_ID_PROPERTY;
-  static final String PREFIX = "camunda.cluster";
+  public static final String PREFIX = "camunda.cluster";
   public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
       PREFIX + ".initial-contact-points";
 
@@ -151,7 +158,16 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
 
-  private boolean sendOnLegacySubject = true;
+  /**
+   * The zone this broker belongs to. Used for zone-aware routing and replication. If not set, the
+   * broker is considered to be in a single-zone setup.
+   *
+   * <p>Zone must be at most 63 characters, starting with an * alphanumeric character, and
+   * containing only alphanumeric characters and hyphens {@code * [A-Za-z0-9-]}. It must start with
+   * an alphanumeric character (no hyphen)
+   */
+  private String zone;
+
   private boolean receiveOnLegacySubject = true;
 
   public NodeIdProvider getNodeIdProvider() {
@@ -179,7 +195,7 @@ public class Cluster implements Cloneable {
   }
 
   public List<String> getInitialContactPoints() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY,
         initialContactPoints,
         ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -200,7 +216,7 @@ public class Cluster implements Cloneable {
   }
 
   public int getPartitionCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".partition-count",
         partitionCount,
         Integer.class,
@@ -213,7 +229,7 @@ public class Cluster implements Cloneable {
   }
 
   public int getReplicationFactor() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".replication-factor",
         replicationFactor,
         Integer.class,
@@ -226,7 +242,7 @@ public class Cluster implements Cloneable {
   }
 
   public int getSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".size",
         size,
         Integer.class,
@@ -247,7 +263,7 @@ public class Cluster implements Cloneable {
   }
 
   public String getName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".name",
         name,
         String.class,
@@ -260,7 +276,7 @@ public class Cluster implements Cloneable {
   }
 
   public String getClusterId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".cluster-id",
         clusterId,
         String.class,
@@ -273,7 +289,7 @@ public class Cluster implements Cloneable {
   }
 
   public String getGatewayId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gateway-id",
         gatewayId,
         String.class,
@@ -294,7 +310,7 @@ public class Cluster implements Cloneable {
   }
 
   public CompressionAlgorithm getCompressionAlgorithm() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".compression-algorithm",
         compressionAlgorithm,
         CompressionAlgorithm.class,
@@ -330,12 +346,16 @@ public class Cluster implements Cloneable {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
   }
 
-  public boolean isSendOnLegacySubject() {
-    return sendOnLegacySubject;
+  public String getZone() {
+    return zone;
   }
 
-  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
-    this.sendOnLegacySubject = sendOnLegacySubject;
+  public void setZone(final String zone) {
+    try {
+      this.zone = MemberId.validateZone(zone);
+    } catch (final IllegalArgumentException e) {
+      throw new UnifiedConfigurationException(e);
+    }
   }
 
   @Override
@@ -377,10 +397,11 @@ public class Cluster implements Cloneable {
         + compressionAlgorithm
         + ", globalListeners="
         + globalListeners
-        + ", sendOnLegacySubject="
-        + sendOnLegacySubject
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
+        + ", zone='"
+        + zone
+        + '\''
         + '}';
   }
 

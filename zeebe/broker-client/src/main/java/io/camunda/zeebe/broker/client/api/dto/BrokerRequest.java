@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.broker.client.api.dto;
 
+import static java.util.Objects.requireNonNull;
+
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -21,6 +24,7 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +37,36 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   protected final int schemaId;
   protected final int templateId;
 
+  private @Nullable String partitionGroup;
+
   public BrokerRequest(final int schemaId, final int templateId) {
     this.schemaId = schemaId;
     this.templateId = templateId;
   }
 
-  public Optional<Integer> getBrokerId() {
+  @Override
+  public @Nullable String getPartitionGroup() {
+    return partitionGroup;
+  }
+
+  public boolean hasPartitionGroup() {
+    return partitionGroup != null;
+  }
+
+  /**
+   * Sets the partition group (physical tenant) this request is routed to. There is no implicit
+   * fallback: every request must have its partition group set before it is sent, even if it targets
+   * {@link io.camunda.cluster.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}.
+   */
+  public void setPartitionGroup(final String partitionGroup) {
+    requireNonNull(partitionGroup, "partitionGroup must not be null");
+    if (partitionGroup.isBlank()) {
+      throw new IllegalArgumentException("partitionGroup must not be blank");
+    }
+    this.partitionGroup = partitionGroup;
+  }
+
+  public Optional<BrokerMemberId> getBrokerId() {
     return Optional.empty();
   }
 
@@ -52,8 +80,16 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   public abstract boolean requiresPartitionId();
 
+  /**
+   * Whether this request may be routed to a partition that has no elected leader but has a node in
+   * recovery mode.
+   */
+  public boolean shouldRouteToRecovery() {
+    return false;
+  }
+
   // public so we can do assertions in tests
-  public abstract BufferWriter getRequestWriter();
+  public abstract @Nullable BufferWriter getRequestWriter();
 
   public void serializeValue() {
     final BufferWriter valueWriter = getRequestWriter();

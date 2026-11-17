@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import io.camunda.optimize.service.db.schema.BackupPriority;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 
 public abstract class PositionBasedImportIndex<TBuilder>
@@ -41,8 +42,8 @@ public abstract class PositionBasedImportIndex<TBuilder>
   }
 
   @Override
-  public boolean isImportIndex() {
-    return true;
+  public BackupPriority getBackupPriority() {
+    return BackupPriority.PRIORITY1;
   }
 
   @Override

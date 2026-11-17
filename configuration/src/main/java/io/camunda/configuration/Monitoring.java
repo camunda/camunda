@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.monitoring.Metrics;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -31,7 +32,7 @@ public class Monitoring {
   }
 
   public boolean isJfr() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".jfr",
         isJfr,
         Boolean.class,

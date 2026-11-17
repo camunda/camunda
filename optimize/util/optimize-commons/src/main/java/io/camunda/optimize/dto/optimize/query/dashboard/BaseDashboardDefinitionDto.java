@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.dashboard;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ public class BaseDashboardDefinitionDto {
   protected String collectionId;
   protected boolean managementDashboard = false;
   protected boolean instantPreviewDashboard = false;
+  protected boolean agenticControlDashboard = false;
+  protected boolean businessValueDashboard = false;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   protected Long refreshRateSeconds;
 
@@ -110,6 +113,30 @@ public class BaseDashboardDefinitionDto {
     this.instantPreviewDashboard = instantPreviewDashboard;
   }
 
+  public boolean isAgenticControlDashboard() {
+    return agenticControlDashboard;
+  }
+
+  public void setAgenticControlDashboard(final boolean agenticControlDashboard) {
+    this.agenticControlDashboard = agenticControlDashboard;
+  }
+
+  public boolean isBusinessValueDashboard() {
+    return businessValueDashboard;
+  }
+
+  public void setBusinessValueDashboard(final boolean businessValueDashboard) {
+    this.businessValueDashboard = businessValueDashboard;
+  }
+
+  @JsonIgnore
+  public boolean isSystemGeneratedDashboard() {
+    return managementDashboard
+        || instantPreviewDashboard
+        || agenticControlDashboard
+        || businessValueDashboard;
+  }
+
   public List<DashboardFilterDto<?>> getAvailableFilters() {
     return availableFilters;
   }
@@ -138,6 +165,8 @@ public class BaseDashboardDefinitionDto {
     final BaseDashboardDefinitionDto that = (BaseDashboardDefinitionDto) o;
     return managementDashboard == that.managementDashboard
         && instantPreviewDashboard == that.instantPreviewDashboard
+        && agenticControlDashboard == that.agenticControlDashboard
+        && businessValueDashboard == that.businessValueDashboard
         && Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(description, that.description)
@@ -163,6 +192,8 @@ public class BaseDashboardDefinitionDto {
         collectionId,
         managementDashboard,
         instantPreviewDashboard,
+        agenticControlDashboard,
+        businessValueDashboard,
         availableFilters,
         refreshRateSeconds);
   }
@@ -189,6 +220,10 @@ public class BaseDashboardDefinitionDto {
         + isManagementDashboard()
         + ", instantPreviewDashboard="
         + isInstantPreviewDashboard()
+        + ", agenticControlDashboard="
+        + isAgenticControlDashboard()
+        + ", businessValueDashboard="
+        + isBusinessValueDashboard()
         + ", availableFilters="
         + getAvailableFilters()
         + ", refreshRateSeconds="
@@ -209,6 +244,8 @@ public class BaseDashboardDefinitionDto {
     public static final String collectionId = "collectionId";
     public static final String managementDashboard = "managementDashboard";
     public static final String instantPreviewDashboard = "instantPreviewDashboard";
+    public static final String agenticControlDashboard = "agenticControlDashboard";
+    public static final String businessValueDashboard = "businessValueDashboard";
     public static final String availableFilters = "availableFilters";
     public static final String refreshRateSeconds = "refreshRateSeconds";
   }

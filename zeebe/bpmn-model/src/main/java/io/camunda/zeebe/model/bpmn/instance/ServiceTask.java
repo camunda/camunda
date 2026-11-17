@@ -35,4 +35,18 @@ public interface ServiceTask extends Task {
   Operation getOperation();
 
   void setOperation(Operation operation);
+
+  /**
+   * @return the zeebe:modelerTemplate attribute value, or {@code null} if this service task was not
+   *     built from a Camunda Modeler element template. This is a plain pass-through attribute;
+   *     bpmn-model does not interpret what any particular template id means.
+   */
+  String getModelerTemplate();
+
+  /**
+   * Sets the zeebe:modelerTemplate attribute.
+   *
+   * @param modelerTemplate the element template id to set
+   */
+  void setModelerTemplate(String modelerTemplate);
 }

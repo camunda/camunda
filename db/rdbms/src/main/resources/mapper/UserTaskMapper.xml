@@ -15,16 +15,18 @@
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY,
+                           BUSINESS_ID,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
-                                    PRIORITY, PARTITION_ID)
+                                    PRIORITY, IS_SUSPENDED, PARTITION_ID)
     VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate, jdbcType=TIMESTAMP},
             #{completionDate, jdbcType=TIMESTAMP},
             #{assignee}, #{state}, #{formKey},
-            #{processDefinitionKey}, #{processInstanceKey}, #{rootProcessInstanceKey}, #{elementInstanceKey}, #{tenantId},
+            #{processDefinitionKey}, #{processInstanceKey}, #{rootProcessInstanceKey},
+            #{businessId}, #{elementInstanceKey}, #{tenantId},
             #{dueDate, jdbcType=TIMESTAMP}, #{followUpDate, jdbcType=TIMESTAMP},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
-            #{priority}, #{partitionId})
+            #{priority}, #{isSuspended}, #{partitionId})
   </insert>
 
   <insert id="insertCandidateUsers" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
@@ -77,32 +79,29 @@
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     <constructor>
-      <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
+      <idArg column="USER_TASK_KEY" javaType="java.lang.Long" name="userTaskKey"/>
+      <arg column="ELEMENT_ID" javaType="java.lang.String" name="elementId"/>
+      <arg column="NAME" javaType="java.lang.String" name="name"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" name="creationDate"/>
+      <arg column="COMPLETION_DATE" javaType="java.time.OffsetDateTime" name="completionDate"/>
+      <arg column="ASSIGNEE" javaType="java.lang.String" name="assignee"/>
+      <arg column="STATE" javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState" name="state"/>
+      <arg column="FORM_KEY" javaType="java.lang.Long" name="formKey"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long" name="elementInstanceKey"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="DUE_DATE" javaType="java.time.OffsetDateTime" name="dueDate"/>
+      <arg column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime" name="followUpDate"/>
+      <arg column="EXTERNAL_FORM_REFERENCE" javaType="java.lang.String" name="externalFormReference"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer" name="processDefinitionVersion"/>
+      <arg column="CUSTOM_HEADERS" javaType="java.lang.String" name="serializedCustomHeaders"/>
+      <arg column="PRIORITY" javaType="java.lang.Integer" name="priority"/>
+      <arg column="IS_SUSPENDED" javaType="java.lang.Boolean" name="isSuspended"/>
     </constructor>
-    <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
-    <result property="name" column="NAME" javaType="java.lang.String"/>
-    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
-      javaType="java.lang.String"/>
-    <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="completionDate" column="COMPLETION_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="assignee" column="ASSIGNEE" javaType="java.lang.String"/>
-    <result property="state" column="STATE"
-      javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState"/>
-    <result property="formKey" column="FORM_KEY" javaType="java.lang.Long"/>
-    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY"
-      javaType="java.lang.Long"/>
-    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-    <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
-    <result property="dueDate" column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="followUpDate" column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime"/>
-    <result property="externalFormReference" column="EXTERNAL_FORM_REFERENCE"
-      javaType="java.lang.String"/>
-    <result property="processDefinitionVersion" column="PROCESS_DEFINITION_VERSION"
-      javaType="java.lang.Integer"/>
-    <result property="serializedCustomHeaders" column="CUSTOM_HEADERS" javaType="java.lang.String"/>
-    <result property="priority" column="PRIORITY" javaType="java.lang.Integer"/>
     <collection property="candidateGroups" ofType="java.lang.String" javaType="java.util.List">
       <id column="CANDIDATE_GROUP"/>
     </collection>
@@ -139,6 +138,7 @@
     ut.PROCESS_DEFINITION_KEY,
     ut.PROCESS_INSTANCE_KEY,
     ut.ROOT_PROCESS_INSTANCE_KEY,
+    ut.BUSINESS_ID,
     ut.ELEMENT_INSTANCE_KEY,
     ut.TENANT_ID,
     ut.DUE_DATE,
@@ -146,9 +146,10 @@
     ut.EXTERNAL_FORM_REFERENCE,
     ut.PROCESS_DEFINITION_VERSION,
     ut.CUSTOM_HEADERS,
-    ut.PRIORITY
+    ut.PRIORITY,
+    ut.IS_SUSPENDED
     FROM ${prefix}USER_TASK ut
-    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchAndAuthFilter"/>
     ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -165,12 +166,12 @@
     SELECT COUNT(*) FROM (
       SELECT 1 as col
       FROM ${prefix}USER_TASK ut
-      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchAndAuthFilter"/>
       ${count.limit}
     ) t
   </select>
 
-  <sql id="searchFilter">
+  <sql id="searchAndAuthFilter">
     <where>
       <!-- authorization filters -->
       <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty())
@@ -229,6 +230,22 @@
         </foreach>
       </if>
 
+      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        AND (
+        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <trim prefixOverrides="AND">
+              <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+            </trim>
+          </trim>
+        </foreach>
+        )
+      </if>
+    </where>
+  </sql>
+
+  <sql id="searchFilter">
       <!-- basic filters -->
       <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
         AND ut.USER_TASK_KEY IN
@@ -254,15 +271,22 @@
           separator=", ">#{value}
         </foreach>
       </if>
-      <if test="filter.bpmnProcessIds != null and !filter.bpmnProcessIds.isEmpty()">
-        AND ut.PROCESS_DEFINITION_ID IN
-        <foreach close=")" collection="filter.bpmnProcessIds" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND ut.PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
         <foreach collection="filter.assigneeOperations" item="operation">
           AND ut.ASSIGNEE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+        <foreach collection="filter.businessIdOperations" item="operation">
+          AND ut.BUSINESS_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
@@ -278,16 +302,24 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-        AND ut.PROCESS_INSTANCE_KEY IN
-        <foreach close=")" collection="filter.processInstanceKeys" item="value" open="("
-          separator=", ">#{value}
+      <if test="filter.isSuspended == true">
+        AND ut.IS_SUSPENDED = ${true}
+      </if>
+      <if test="filter.isSuspended == false">
+        AND (ut.IS_SUSPENDED = ${false} OR ut.IS_SUSPENDED IS NULL)
+      </if>
+      <if
+        test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.processInstanceKeyOperations" item="operation">
+          AND ut.PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-        AND ut.PROCESS_DEFINITION_KEY IN
-        <foreach close=")" collection="filter.processDefinitionKeys" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND ut.PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
@@ -399,7 +431,6 @@
             )))
         </foreach>
       </if>
-    </where>
   </sql>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
@@ -418,6 +449,12 @@
   <update id="updateState" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     UPDATE ${prefix}USER_TASK
     SET STATE = #{state}
+    WHERE USER_TASK_KEY = #{userTaskKey}
+  </update>
+
+  <update id="updateSuspended" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
+    UPDATE ${prefix}USER_TASK
+    SET IS_SUSPENDED = #{isSuspended}
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 

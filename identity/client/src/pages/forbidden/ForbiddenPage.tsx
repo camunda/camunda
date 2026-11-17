@@ -10,12 +10,13 @@ import { FC } from "react";
 import { Link, Stack } from "@carbon/react";
 import { Launch } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { Description, Title, Grid, Content } from "./components";
+import { Content, Description, Grid, Title } from "./components";
 import ForbiddenIcon from "src/assets/images/forbidden.svg";
-import { docsUrl } from "src/configuration";
+import { useDocsUrl } from "src/components/documentation/DocsUrlContext.tsx";
 
 const ForbiddenPage: FC = () => {
   const { t, Translate } = useTranslate();
+  const docsUrl = useDocsUrl();
 
   return (
     <Grid>

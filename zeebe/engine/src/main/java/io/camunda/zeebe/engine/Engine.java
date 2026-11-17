@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
@@ -31,19 +33,25 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public class Engine implements RecordProcessor {
 
+  public static final String ERROR_MESSAGE_BANNED_PI =
+      "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
@@ -51,15 +59,14 @@ public class Engine implements RecordProcessor {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String DEBUG_MESSAGE_PI_KEY_NOT_FOUND =
       "Expected to reject command for banned process instance, but could not extract process instance key from record '{}'. Skipping rejection response.";
-  private static final String ERROR_MESSAGE_BANNED_PI =
-      "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
-
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
       EnumSet.range(ValueType.JOB, ValueType.SCALE);
 
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
   private MutableProcessingState processingState;
+  private CommandBufferingBehavior bufferingBehavior;
+  private SuspensionBehavior suspensionBehavior;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -69,12 +76,12 @@ public class Engine implements RecordProcessor {
   private Writers writers;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final EngineConfiguration config;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
 
   public Engine(
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final EngineConfiguration config,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     this.config = config;
     this.securityConfig = securityConfig;
@@ -129,17 +136,34 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
+    suspensionBehavior = new SuspensionBehavior(processingState);
+    final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
+    bufferingBehavior =
+        new CommandBufferingBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            processingState.getElementInstanceState(),
+            suspensionMetrics);
 
+    // Replay only rebuilds the state, so the clock is set from the state once replay is done.
+    // This listener is added first, so the other listeners already see this clock when they
+    // schedule their first tasks.
+    final var clock = recordProcessorContext.getClock();
+    final var clockState = processingState.getClockState();
+    recordProcessorContext.addLifecycleListeners(
+        List.of(
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onRecovered(final ReadonlyStreamProcessorContext context) {
+                clock.applyModification(clockState.getModification());
+              }
+            }));
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-
-    recordProcessorContext
-        .getClock()
-        .applyModification(processingState.getClockState().getModification());
   }
 
   @Override
@@ -171,19 +195,35 @@ public class Engine implements RecordProcessor {
         LOG.error(ERROR_MESSAGE_PROCESSOR_NOT_FOUND, typedCommand, e);
       }
 
+      // special case handling
       if (currentProcessor == null) {
         return processingResultBuilder.build();
       }
-
-      if (shouldProcessCommand(typedCommand)) {
-        if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
-          processingResultBuilder.withProcessInASeparateBatch();
-        }
-
-        currentProcessor.processRecord(record, processingResultBuilder);
-      } else {
+      if (isBannedCommand(typedCommand)) {
         // Reject commands for banned process instances
         rejectBannedInstanceCommand(typedCommand);
+        return processingResultBuilder.build();
+      }
+
+      // regular case handling
+      if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
+        processingResultBuilder.withProcessInASeparateBatch();
+      }
+
+      final var suspension = suspensionBehavior.process(typedCommand, currentProcessor);
+      switch (suspension.outcome()) {
+        case REJECT -> {
+          rejectInstanceCommand(typedCommand, suspension.rejectionReason());
+        }
+        case BUFFER -> {
+          bufferingBehavior.bufferCommand(
+              typedCommand.getKey(),
+              typedCommand.getValueType(),
+              typedCommand.getIntent(),
+              typedCommand.getValue(),
+              suspension.processInstanceKey());
+        }
+        default -> currentProcessor.processRecord(record, processingResultBuilder);
       }
     }
     return processingResultBuilder.build();
@@ -221,7 +261,7 @@ public class Engine implements RecordProcessor {
     return processingResultBuilder.build();
   }
 
-  private boolean shouldProcessCommand(final TypedRecord<?> typedCommand) {
+  private boolean isBannedCommand(final TypedRecord<?> typedCommand) {
     // There is no ban check needed if the intent is not instance related
     // nor if the intent is to create new instances, which can't be banned yet
     final Intent intent = typedCommand.getIntent();
@@ -230,22 +270,23 @@ public class Engine implements RecordProcessor {
             || intent instanceof ProcessInstanceCreationIntent;
 
     if (noBanCheckNeeded) {
-      return true;
+      return false;
     }
 
     final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
 
     if (!banned) {
-      return true;
+      return false;
     }
 
     // Commands allowed to be processed on banned instances
     final boolean isAllowedOnBannedInstance =
         intent == ProcessInstanceIntent.CANCEL
             || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+            || intent == ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT
             || intent == ProcessInstanceBatchIntent.TERMINATE;
 
-    return isAllowedOnBannedInstance;
+    return !isAllowedOnBannedInstance;
   }
 
   private void rejectBannedInstanceCommand(final TypedRecord<?> typedCommand) {
@@ -258,11 +299,15 @@ public class Engine implements RecordProcessor {
       return;
     }
 
-    final String rejectionReason = String.format(ERROR_MESSAGE_BANNED_PI, processInstanceKey);
+    rejectInstanceCommand(typedCommand, String.format(ERROR_MESSAGE_BANNED_PI, processInstanceKey));
+  }
+
+  private void rejectInstanceCommand(
+      final TypedRecord<?> typedCommand, final String rejectionReason) {
     writers.rejection().appendRejection(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
     writers
         .response()
-        .writeRejectionOnCommand(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
+        .writeRejectedResponseOnCommand(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
   }
 
   private void handleUnexpectedError(
@@ -280,17 +325,18 @@ public class Engine implements RecordProcessor {
       writers.rejection().appendRejection(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
       writers
           .response()
-          .writeRejectionOnCommand(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
+          .writeRejectedResponseOnCommand(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
     } else {
       writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
       writers
           .response()
-          .writeRejectionOnCommand(
+          .writeRejectedResponseOnCommand(
               record,
               RejectionType.PROCESSING_ERROR,
               """
-                Expected to process command %d (%s.%s) without errors, but unexpected error occurred. \
-                Check your broker logs (partition %d), or ask your operator, for more details."""
+              Expected to process command %d (%s.%s) without errors, but unexpected error occurred. \
+              Check your broker logs (partition %d), or ask your operator, for more details.\
+              """
                   .formatted(
                       record.getKey(),
                       record.getValueType(),
@@ -300,14 +346,25 @@ public class Engine implements RecordProcessor {
     errorRecord.initErrorRecord(processingException, record.getPosition());
 
     if (DbBannedInstanceState.shouldBeBanned(record.getIntent())) {
-      if (record.getValue() instanceof ProcessInstanceRelated) {
-        final long processInstanceKey =
-            ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
+      if (record.getValue() instanceof final ProcessInstanceRelated piRelated) {
+        final long processInstanceKey = piRelated.getProcessInstanceKey();
         errorRecord.setProcessInstanceKey(processInstanceKey);
+        errorRecord.setStorageOrdinal(resolveStorageOrdinal(piRelated, processInstanceKey));
+      } else {
+        errorRecord.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
       }
 
       writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
     }
+  }
+
+  private int resolveStorageOrdinal(
+      final ProcessInstanceRelated piRelated, final long processInstanceKey) {
+    final var elementInstance =
+        processingState.getElementInstanceState().getInstance(processInstanceKey);
+    return elementInstance != null
+        ? elementInstance.getValue().getStorageOrdinal()
+        : piRelated.getStorageOrdinal();
   }
 
   /**

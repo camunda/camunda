@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -16,14 +17,17 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 public class PartitionStartupContext {
   private final ActorSchedulingService schedulingService;
@@ -40,13 +44,16 @@ public class PartitionStartupContext {
   private final boolean initializeFromSnapshot;
   private final MeterRegistry brokerMeterRegistry;
   private final BrokerClient brokerClient;
+  private final AtomixServerTransport gatewayBrokerTransport;
 
   private Path partitionDirectory;
+  private RaftMember.Type joinMemberType = RaftMember.Type.ACTIVE;
 
   private CompositeMeterRegistry partitionMeterRegistry;
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
+  private @Nullable CommandApiServiceImpl commandApiService;
   private SnapshotTransfer snapshotTransfer;
 
   public PartitionStartupContext(
@@ -63,7 +70,8 @@ public class PartitionStartupContext {
       final DynamicPartitionConfig initialPartitionConfig,
       final boolean initializeFromSnapshot,
       final MeterRegistry brokerMeterRegistry,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final AtomixServerTransport gatewayBrokerTransport) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -78,15 +86,16 @@ public class PartitionStartupContext {
     this.initializeFromSnapshot = initializeFromSnapshot;
     this.brokerMeterRegistry = brokerMeterRegistry;
     this.brokerClient = brokerClient;
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   @Override
   public String toString() {
-    return "PartitionStartupContext{" + "partition=" + partitionMetadata.id().id() + '}';
+    return "PartitionStartupContext{" + "partition=" + partitionMetadata.id().number() + '}';
   }
 
   public Integer partitionId() {
-    return partitionMetadata.id().id();
+    return partitionMetadata.id().number();
   }
 
   public ActorSchedulingService schedulingService() {
@@ -129,6 +138,16 @@ public class PartitionStartupContext {
     return partitionDirectory;
   }
 
+  /** The member type the local member joins the raft replication group as. Read by RaftJoinStep. */
+  public RaftMember.Type joinMemberType() {
+    return joinMemberType;
+  }
+
+  public PartitionStartupContext joinMemberType(final RaftMember.Type joinMemberType) {
+    this.joinMemberType = joinMemberType;
+    return this;
+  }
+
   public FileBasedSnapshotStore snapshotStore() {
     return snapshotStore;
   }
@@ -154,6 +173,16 @@ public class PartitionStartupContext {
 
   public ZeebePartition zeebePartition() {
     return zeebePartition;
+  }
+
+  public PartitionStartupContext commandApiService(
+      final @Nullable CommandApiServiceImpl commandApiService) {
+    this.commandApiService = commandApiService;
+    return this;
+  }
+
+  public @Nullable CommandApiServiceImpl commandApiService() {
+    return commandApiService;
   }
 
   public BrokerCfg brokerConfig() {
@@ -189,6 +218,10 @@ public class PartitionStartupContext {
 
   public BrokerClient brokerClient() {
     return brokerClient;
+  }
+
+  public AtomixServerTransport gatewayBrokerTransport() {
+    return gatewayBrokerTransport;
   }
 
   public void setSnapshotTransfer(final SnapshotTransfer snapshotTransfer) {

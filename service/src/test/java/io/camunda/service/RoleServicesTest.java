@@ -10,17 +10,23 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
@@ -34,14 +40,16 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class RoleServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private RoleServices services;
   private RoleSearchClient client;
   private CamundaAuthentication authentication;
@@ -60,6 +68,7 @@ public class RoleServicesTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new RoleServices(
+            PHYSICAL_TENANT_ID,
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -163,7 +172,8 @@ public class RoleServicesTest {
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
     assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
-    assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
+    assertThat(brokerRequestValue.getEntityType())
+        .isEqualTo(AuthzModelMapper.toProtocol(EntityType.USER));
   }
 
   @Test
@@ -182,7 +192,8 @@ public class RoleServicesTest {
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
     assertThat(brokerRequestValue.getEntityId()).isEqualTo(username);
-    assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
+    assertThat(brokerRequestValue.getEntityType())
+        .isEqualTo(AuthzModelMapper.toProtocol(EntityType.USER));
   }
 
   @Test
@@ -209,5 +220,47 @@ public class RoleServicesTest {
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));
+  }
+
+  @Test
+  public void shouldUseProvidedRoleIdAndEntityTypeAndReturnTrueWhenMembersExist() {
+    // given
+    final var roleId = "test-role";
+    final var entityType = EntityType.CLIENT;
+    final var roleServicesSpy = spy(services);
+    doReturn(new SearchQueryResult<RoleMemberEntity>(1, false, List.of(), null, null))
+        .when(roleServicesSpy)
+        .searchMembers(any(), eq(authentication));
+    final var queryCaptor = ArgumentCaptor.forClass(RoleMemberQuery.class);
+
+    // when
+    final var result = roleServicesSpy.hasMembersOfType(roleId, entityType, authentication);
+
+    // then
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication));
+    assertThat(queryCaptor.getValue().filter().roleId()).isEqualTo(roleId);
+    assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  public void shouldUseProvidedRoleIdAndEntityTypeAndReturnFalseWhenNoMembersExist() {
+    // given
+    final var roleId = "another-role";
+    final var entityType = EntityType.MAPPING_RULE;
+    final var roleServicesSpy = spy(services);
+    doReturn(new SearchQueryResult<RoleMemberEntity>(0, false, List.of(), null, null))
+        .when(roleServicesSpy)
+        .searchMembers(any(), eq(authentication));
+    final var queryCaptor = ArgumentCaptor.forClass(RoleMemberQuery.class);
+
+    // when
+    final var result = roleServicesSpy.hasMembersOfType(roleId, entityType, authentication);
+
+    // then
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication));
+    assertThat(queryCaptor.getValue().filter().roleId()).isEqualTo(roleId);
+    assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
+    assertThat(result).isFalse();
   }
 }

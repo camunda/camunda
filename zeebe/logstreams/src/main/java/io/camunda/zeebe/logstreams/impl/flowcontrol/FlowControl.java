@@ -26,7 +26,6 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -80,7 +79,6 @@ import org.jspecify.annotations.Nullable;
  * RateMeasurements to update the cluster load and the exporting rate metrics.
  */
 @SuppressWarnings("UnstableApiUsage")
-@NullMarked
 public final class FlowControl {
 
   private final LogStreamMetrics metrics;
@@ -95,10 +93,17 @@ public final class FlowControl {
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   @Nullable private RateLimitThrottle writeRateThrottle;
-  private volatile long lastWrittenPosition = -1;
-  private volatile long lastExportedPosition;
+  private volatile long lastWrittenPosition =
+      -1; // Initially a sentinel value to not throttle until the first write
+  private volatile long lastExportedPosition =
+      -1; // Initially a sentinel value to not throttle until the first export
 
   private final RingBuffer inFlight;
+
+  // When paused for a leadership transfer every write is rejected (even normally-exempt
+  // internal/inter-partition writes), so the last log index stays fixed while the desired leader
+  // catches up.
+  private volatile boolean paused;
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled(), 0);
@@ -143,6 +148,10 @@ public final class FlowControl {
 
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
       final WriteContext context, final List<LogAppendEntry> batchMetadata) {
+    if (paused) {
+      // Frozen for a leadership transfer: reject every write, even internal ones.
+      return Either.left(Rejection.PartitionPaused);
+    }
     Listener requestListener = null;
     var alwaysAllowed = false;
     switch (context) {
@@ -229,6 +238,13 @@ public final class FlowControl {
   }
 
   public void setRequestLimit(final @Nullable Limit requestLimit) {
+    if (requestLimit != null) {
+      metrics.registerRequestRateMetrics();
+      metrics.setRequestLimit(requestLimit.getLimit());
+    } else {
+      metrics.deregisterRequestRateMetrics();
+    }
+
     this.requestLimit = requestLimit;
     processingLimiter =
         requestLimit != null
@@ -241,19 +257,46 @@ public final class FlowControl {
   }
 
   public void setWriteRateLimit(final @Nullable RateLimit writeRateLimit) {
+    if (writeRateLimit != null && writeRateLimit.enabled()) {
+      metrics.registerWriteRateMetrics();
+      // Immediately publish the new max limit. This stays constant until a new write-rate config is
+      // set.
+      metrics.setWriteRateMaxLimit(writeRateLimit.limit());
+      // Set newly configured write-rate limits. The limit may be updated by the `RateLimitThrottle`
+      // if throttling is enabled.
+      metrics.setWriteRateLimit(writeRateLimit.limit());
+    } else {
+      // No write-rate limit configured, clear previous metrics.
+      metrics.deregisterWriteRateMetrics();
+    }
+
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
     writeRateThrottle =
         new RateLimitThrottle(metrics, writeRateLimit, writeRateLimiter, exportingRate);
-    if (writeRateLimit == null || !writeRateLimit.enabled()) {
-      // if the write rate limit is disabled, we need to clear the previous values.
-      metrics.setPartitionLoad(-1);
-    }
+  }
+
+  /**
+   * Pauses write admission for a leadership transfer: every subsequent {@link #tryAcquire} is
+   * rejected with {@link Rejection#PartitionPaused} until {@link #resume()}.
+   */
+  public void pause() {
+    paused = true;
+  }
+
+  /** Resumes write admission after a leadership transfer. */
+  public void resume() {
+    paused = false;
+  }
+
+  public boolean isPaused() {
+    return paused;
   }
 
   public enum Rejection {
     WriteRateLimitExhausted,
-    RequestLimitExhausted
+    RequestLimitExhausted,
+    PartitionPaused
   }
 
   /**

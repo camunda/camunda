@@ -25,6 +25,8 @@ public class LoadTesterProperties {
 
   @NestedConfigurationProperty private WorkerProperties worker = new WorkerProperties();
 
+  @NestedConfigurationProperty private OptimizeProperties optimize = new OptimizeProperties();
+
   public boolean isMonitorDataAvailability() {
     return monitorDataAvailability;
   }
@@ -81,5 +83,13 @@ public class LoadTesterProperties {
 
   public void setWorker(final WorkerProperties worker) {
     this.worker = worker;
+  }
+
+  public OptimizeProperties getOptimize() {
+    return optimize;
+  }
+
+  public void setOptimize(final OptimizeProperties optimize) {
+    this.optimize = optimize;
   }
 }

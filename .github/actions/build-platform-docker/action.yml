@@ -4,14 +4,14 @@
 ---
 name: Build Docker Image
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Builds the Docker image
 
 inputs:
   repository:
-    description: 'The image repository, e.g. camunda/zeebe'
-    default: 'camunda/zeebe'
+    description: 'The image repository, e.g. camunda/camunda'
+    default: 'camunda/camunda'
     required: true
   version:
     description: 'The image version, e.g. SNAPSHOT, 8.1.0. Can also accept a list of versions to create multiple tags for the same image.'
@@ -34,9 +34,9 @@ inputs:
     default: 'linux/amd64'
   dockerfile:
     # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
-    description: 'Path to the dockerfile, that should be used; defaults to Dockerfile'
+    description: 'Path to the dockerfile, that should be used; defaults to camunda.Dockerfile'
     required: false
-    default: 'Dockerfile'
+    default: 'camunda.Dockerfile'
   debug:
     description: 'Enable debug logging for BuildKit daemon'
     required: false
@@ -69,7 +69,7 @@ runs:
       id: is-fork
 
     - name: Set up multi-platform support
-      uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+      uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       with:
         # only cache on persistent branches where reuse is likely
         cache-image: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
@@ -83,7 +83,7 @@ runs:
         fi
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      uses: ./.github/actions/setup-buildx-with-retry
       with:
         # to be able to push to local registry, which we use in our tests, we need to use host network
         driver-opts: network=host
@@ -103,7 +103,7 @@ runs:
 
     - name: Build image names from params and/or project version
       id: get-image
-      uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+      uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
       with:
         images: ${{ inputs.repository }}
         tags: ${{ inputs.version || steps.get-version.outputs.result }}
@@ -114,6 +114,20 @@ runs:
       id: get-image-output
       shell: bash
       run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
+
+    # The `version` input accepts a list, and the snapshot deploy jobs in ci.yml pass two versions.
+    # The VERSION build arg takes a single one. Keeping the first matches both the image name output
+    # above and what build-push-action already resolved this to: it splits build args on newlines,
+    # so any further line was never a VERSION value to begin with.
+    - name: Reduce a multi-valued version to the first value
+      id: get-version-build-arg
+      shell: bash
+      env:
+        VERSION_INPUT: ${{ inputs.version }}
+        MAVEN_VERSION: ${{ steps.get-version.outputs.result }}
+      run: |
+        version="${VERSION_INPUT:-$MAVEN_VERSION}"
+        echo "version=$(echo "$version" | head -n 1)" >> "$GITHUB_OUTPUT"
 
     - name: Set DISTBALL path relative to the build context
       id: get-distball
@@ -137,22 +151,15 @@ runs:
         fi
 
     - name: Build Docker image
-      uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
-      env:
-        DOCKER_BUILD_SUMMARY: false
-        DOCKER_BUILD_RECORD_UPLOAD: false
+      uses: ./.github/actions/docker-build-with-retry
       with:
-        context: .
-        file: ${{ inputs.dockerfile }}
+        dockerfile: ${{ inputs.dockerfile }}
         tags: ${{ steps.get-image.outputs.tags }}
-        load: ${{ inputs.push != 'true' }}
-        push: ${{ inputs.push }}
         platforms: ${{ inputs.platforms }}
-        provenance: false
+        push: ${{ inputs.push }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
-          VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
+          VERSION=${{ steps.get-version-build-arg.outputs.version }}
           ${{ steps.get-additional-build-args.outputs.result }}
-        target: app

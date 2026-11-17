@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +37,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
   public static final String JOB_TYPE = "jobType";
   public static final String SERVICE_TASK_ID = "serviceTask";
   private static final String PROCESS_ID = "processId";
+  private static final String OTHER_PROCESS_ID = "otherProcessId";
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -49,13 +51,14 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
           .withResetRecordingExporterTestWatcherMode(
               ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST)
           .withIdentitySetup(ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP)
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Before
   public void before() {
@@ -64,6 +67,13 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withXmlResource(
             "process.bpmn",
             Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .withXmlResource(
+            "otherProcess.bpmn",
+            Bpmn.createExecutableProcess(OTHER_PROCESS_ID)
                 .startEvent()
                 .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
@@ -150,6 +160,66 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'MODIFY_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectTerminatingElementInstanceOfAnotherProcessInstance() {
+    // given two process instances
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    final var otherProcessInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(OTHER_PROCESS_ID)
+            .create(DEFAULT_USER.getUsername());
+    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
+    final var otherServiceTaskKey = getServiceTaskKey(otherProcessInstanceKey);
+
+    // when
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElement(otherServiceTaskKey)
+            .expectRejection()
+            .modify(DEFAULT_USER.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to modify instance of process '%s' but it contains one or more terminate instructions with an element instance that could not be found: '%d'"
+                .formatted(PROCESS_ID, otherServiceTaskKey));
+
+    // the element instance of the other process instance is left untouched, while a legitimate
+    // termination in the addressed process instance still works
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(serviceTaskKey)
+        .modify(DEFAULT_USER.getUsername());
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(SERVICE_TASK_ID)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .limit(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED
+                            && r.getKey() == serviceTaskKey)
+                .withProcessInstanceKey(otherProcessInstanceKey)
+                .withElementId(SERVICE_TASK_ID)
+                .filter(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+                            || r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .isEmpty();
   }
 
   private UserRecordValue createUser() {

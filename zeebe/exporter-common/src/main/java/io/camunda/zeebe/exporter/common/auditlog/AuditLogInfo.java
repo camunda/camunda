@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -89,6 +90,9 @@ public record AuditLogInfo(
           Map.entry(GroupIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
           Map.entry(GroupIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
 
+          // HistoryDeletion
+          Map.entry(HistoryDeletionIntent.DELETED, AuditLogOperationType.DELETE),
+
           // Incident
           Map.entry(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
           Map.entry(IncidentIntent.RESOLVE, AuditLogOperationType.RESOLVE),
@@ -103,7 +107,10 @@ public record AuditLogInfo(
 
           // Process
           Map.entry(ProcessIntent.CREATED, AuditLogOperationType.CREATE),
-          Map.entry(ProcessIntent.DELETED, AuditLogOperationType.DELETE),
+          // A deletion is audited on DRAINING, not DELETED. DRAINING is written synchronously under
+          // the deleter's command; DELETED is deferred until the definition finishes draining and
+          // would otherwise be attributed to whoever finished the last instance.
+          Map.entry(ProcessIntent.DRAINING, AuditLogOperationType.DELETE),
 
           // ProcessInstanceCreation
           Map.entry(ProcessInstanceCreationIntent.CREATED, AuditLogOperationType.CREATE),
@@ -111,6 +118,10 @@ public record AuditLogInfo(
           // ProcessInstance
           Map.entry(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
           Map.entry(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL),
+          Map.entry(ProcessInstanceIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
+          Map.entry(ProcessInstanceIntent.SUSPEND, AuditLogOperationType.SUSPEND),
+          Map.entry(ProcessInstanceIntent.RESUMED, AuditLogOperationType.RESUME),
+          Map.entry(ProcessInstanceIntent.RESUME, AuditLogOperationType.RESUME),
 
           // ProcessInstanceMigration
           Map.entry(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
@@ -165,6 +176,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.DECISION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.FORM, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.HISTORY_DELETION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.JOB, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(
@@ -207,21 +219,27 @@ public record AuditLogInfo(
           Map.entry(ValueType.ROLE, AuditLogEntityType.ROLE),
           Map.entry(ValueType.TENANT, AuditLogEntityType.TENANT),
           Map.entry(ValueType.FORM, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.HISTORY_DELETION, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.PROCESS, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.RESOURCE, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
 
   public static AuditLogInfo of(final Record<?> record) {
     return new AuditLogInfo(
-        getOperationCategory(record.getValueType()),
-        getEntityType(record.getValueType()),
+        getOperationCategory(record),
+        getEntityType(record),
         getOperationType(record),
         AuditLogActor.of(record),
         AuditLogTenant.of(record));
   }
 
-  private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
-    return OPERATION_CATEGORY_MAP.getOrDefault(valueType, AuditLogOperationCategory.UNKNOWN);
+  private static AuditLogOperationCategory getOperationCategory(final Record<?> record) {
+    return OPERATION_CATEGORY_MAP.getOrDefault(
+        record.getValueType(), AuditLogOperationCategory.UNKNOWN);
+  }
+
+  static AuditLogEntityType getEntityType(final Record<?> record) {
+    return getEntityType(record.getValueType());
   }
 
   private static AuditLogEntityType getEntityType(final ValueType valueType) {

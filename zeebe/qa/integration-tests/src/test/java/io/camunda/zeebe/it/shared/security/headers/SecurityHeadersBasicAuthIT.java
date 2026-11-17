@@ -23,10 +23,10 @@ import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
-import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.api.model.config.headers.PermissionsPolicyConfig;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -86,7 +86,7 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
             .uri(createUri(camundaClient, path))
             .header(HttpHeaders.AUTHORIZATION, basicAuthentication())
             .build();
-    return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   @Override

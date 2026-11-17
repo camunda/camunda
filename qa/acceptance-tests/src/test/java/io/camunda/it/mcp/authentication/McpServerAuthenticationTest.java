@@ -69,7 +69,7 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
   }
 
   @Test
-  void registersAllExpectedTools() {
+  void registersExpectedClusterTools() {
     try (final McpSyncClient mcpClient =
         createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
       final ListToolsResult listToolsResult = mcpClient.listTools();
@@ -80,11 +80,22 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
   }
 
   @Test
+  void registersExpectedProcessesTools() {
+    try (final McpSyncClient mcpClient =
+        createMcpClient("processes", testInstance(), createMcpClientRequestCustomizer())) {
+      final ListToolsResult listToolsResult = mcpClient.listTools();
+      assertThat(listToolsResult.tools())
+          .extracting(Tool::name)
+          .contains("getProcessInstance", "searchIncidents", "searchVariables");
+    }
+  }
+
+  @Test
   void fetchesClusterStatus() {
     try (final McpSyncClient mcpClient =
         createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+          mcpClient.callTool(CallToolRequest.builder("getClusterStatus").build());
 
       assertThat(result.isError()).isFalse();
       assertThat(result.content())
@@ -101,7 +112,7 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
     try (final McpSyncClient mcpClient =
         createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+          mcpClient.callTool(CallToolRequest.builder("getTopology").build());
 
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();

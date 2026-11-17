@@ -8,9 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -29,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 
 final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -89,8 +95,12 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
   }
 
   @Test
-  void shouldGenerateCompositeId() {
+  void shouldExtractIdAndIndexesWithCompositeId() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
@@ -104,10 +114,10 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
                             .build()));
 
     // when
-    final List<String> ids = underTest.generateIds(record);
+    final List<IdAndIndex> idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).hasSize(1).containsExactly("67890_12345");
+    assertThat(idAndIndexes).hasSize(1).containsExactly(new IdAndIndex("67890_12345", index));
   }
 
   @Test
@@ -137,6 +147,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = MessageStartEventSubscriptionIntent.CORRELATED;
     final var recordValue =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()
@@ -148,6 +159,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
             .withProcessInstanceKey(processInstanceKey)
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
             .build();
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -183,6 +195,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     assertThat(entity.getSubscriptionKey()).isEqualTo(recordKey);
     assertThat(entity.getSubscriptionType()).isEqualTo("START_EVENT");
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -212,6 +225,28 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
   }
 
   @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final var recordValue =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder().withBusinessId("").build();
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                    .withValue(recordValue));
+
+    final CorrelatedMessageSubscriptionEntity entity =
+        underTest.createNewEntity(underTest.generateIds(record).getFirst());
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
+  }
+
+  @Test
   void shouldAddEntityOnFlush() {
     // given
     final long recordKey = 789;
@@ -231,12 +266,13 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     final CorrelatedMessageSubscriptionEntity entity =
         underTest.createNewEntity(underTest.generateIds(record).getFirst());
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(expectedIndexName, entity);
+    verify(mockRequest, times(1)).add(index, entity);
   }
 }

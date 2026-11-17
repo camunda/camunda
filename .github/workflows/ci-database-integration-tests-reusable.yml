@@ -29,6 +29,47 @@ on:
         required: true
         type: string
         description: The display name of the database, used in test artifact names and notifications.
+      physical-tenant:
+        required: false
+        type: string
+        default: ""
+        description: When set, runs the acceptance suite under this physical tenant by passing -Dtest.integration.camunda.physical-tenant=<value>.
+      physical-tenant-elasticsearch-url:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          When set (together with physical-tenant), the PT's secondary storage is pointed at this
+          separate Elasticsearch instance instead of reusing the default tenant's connection, by
+          passing -Dtest.integration.camunda.physical-tenant.elasticsearch.url=<value>. Requires the
+          "elasticsearch-tenant" docker-compose service to be running.
+      physical-tenant-opensearch-url:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          When set (together with physical-tenant), the PT's secondary storage is pointed at this
+          separate OpenSearch instance instead of reusing the default tenant's connection, by
+          passing -Dtest.integration.camunda.physical-tenant.opensearch.url=<value>. Requires the
+          "opensearch-tenant" docker-compose service to be running.
+      test-suite-name:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          Short suite name appended to the job's display name (e.g. "identity" renders the job as
+          "elasticsearch - identity"). Leave empty to display the database type alone. Joined with
+          a non-slash separator because the GHA sidebar only displays the last " / "-separated
+          segment of the check name.
+      shard:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          Name of this job's shard when a caller splits one suite across parallel jobs (e.g.
+          "client"). Appended to the job's display name, test artifact name, flaky-test matrix key
+          and build-status job name so the shards don't overwrite each other's results. Leave
+          empty for an unsharded suite.
       maven-profiles:
         required: false
         type: string
@@ -53,6 +94,34 @@ on:
         required: false
         type: string
         default: "gcp-perf-core-16-default"
+      use-shared-distball:
+        required: false
+        type: boolean
+        default: false
+        description: >-
+          When true, restore the io.camunda SNAPSHOTs from the run-scoped GCS
+          artifact produced by a build-distball job (ci-build-distball-reusable.yml)
+          elsewhere in the same run, instead of running a local build-zeebe reactor.
+          Leave false if the calling run has no build-distball job, so the
+          build-zeebe fallback runs. See #52693 and #56931.
+      timeout-minutes:
+        required: false
+        type: number
+        default: 20
+        description: >-
+          Job timeout. A non-blocking, schedule/dispatch-only caller may raise it if its own
+          worst-case fork runtime needs more room than 20 minutes allows. Keep
+          failsafe-timeout-seconds in step with it so a stuck fork still fails inside the job budget.
+      failsafe-timeout-seconds:
+        required: false
+        type: number
+        default: 0
+        description: >-
+          Overrides the pom's default -D failsafe.timeout (max seconds a single Maven fork
+          may run before it's killed as hung), letting a wedged fork fail with a real report
+          instead of the job's timeout-minutes cancelling it. Leave 0 to use the pom's
+          default. Override only for callers whose worst-case fork runtime has been measured
+          against a different timeout-minutes.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -62,44 +131,84 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/data-layer'
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
 
 jobs:
   integration-tests:
-    name: "${{ inputs.database-type }}"
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    timeout-minutes: 20
+    # the GHA sidebar only shows the last " / "-separated segment of the composed check name, so
+    # append the suite with a non-slash separator to keep matrix entries distinguishable
+    # (e.g. "elasticsearch - identity")
+    name: "${{ inputs.database-type }}${{ inputs.test-suite-name != '' && format(' - {0}', inputs.test-suite-name) || '' }}${{ inputs.shard != '' && format(' - {0}', inputs.shard) || '' }}"
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
       IMAGE_VERSION: ${{inputs.database-image-version}}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - run: |
           if [ -z "${{ inputs.database-container }}" ]; then
             echo "DATABASE_CONTAINER=${{ inputs.database-type }}" >> "$GITHUB_ENV"
           else
             echo "DATABASE_CONTAINER=${{ inputs.database-container }}" >> "$GITHUB_ENV"
           fi
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          dockerhub-readonly: true
           maven-cache-key-modifier: "it-database-${{ inputs.database-type }}"
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Authenticate gcloud when consuming the shared distball (see restore step below).
+      # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
+      # of silently eating the whole job timeout-minutes budget -- see INC-6820.
+      - name: Authenticate to GCS build-cache
+        if: ${{ inputs.use-shared-distball }}
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Fail fast on ambiguous physical-tenant backend
+        if: ${{ inputs.physical-tenant-elasticsearch-url != '' && inputs.physical-tenant-opensearch-url != '' }}
+        run: |
+          echo "::error::Both physical-tenant-elasticsearch-url and physical-tenant-opensearch-url are set - the physical-tenant backend must be unambiguous, configure only one (both tenant services publish host port 9201)."
+          exit 1
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
-        run: |
-          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
-            docker compose -f db/docker-compose.yml logs
-            exit 1
-          }
-      # Build the platform before running the integration tests; skipping frontend
+        uses: ./.github/actions/compose
+        with:
+          compose_file: db/docker-compose.yml
+          project_name: "db"
+          services: "${{ env.DATABASE_CONTAINER }} ${{ inputs.physical-tenant-elasticsearch-url != '' && 'elasticsearch-tenant' || '' }} ${{ inputs.physical-tenant-opensearch-url != '' && 'opensearch-tenant' || '' }}"
+          startup_check: "wait"
+      # When use-shared-distball is true, restore the io.camunda SNAPSHOTs that a
+      # build-distball job elsewhere in the same run installed + archived to GCS,
+      # instead of re-running the ~2 min reactor in each matrix entry. gcp-perf runners
+      # pull from GCS (same-region, non-billable); the GHA artifact API is throughput-capped
+      # on self-hosted runners. github.run_id is stable across nested workflow_call, so it
+      # addresses the same run-scoped prefix build-distball wrote. See #52693 and #56931.
+      # (gcloud is authenticated by the GCS build-cache auth step above.)
+      - if: ${{ inputs.use-shared-distball }}
+        uses: ./.github/actions/restore-shared-m2
+      # Fallback for standalone callers (zeebe-rdbms / zeebe-search) whose run has no
+      # build-distball: build the platform locally, skipping frontend.
       - uses: ./.github/actions/build-zeebe
+        if: ${{ !inputs.use-shared-distball }}
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -118,13 +227,22 @@ jobs:
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D flaky.test.reportDir=failsafe-reports
           -D test.integration.camunda.database.type=${{inputs.it-database-type}}
+          -D test.integration.camunda.database.fast-init=true
+          ${{ inputs.physical-tenant != '' && format('-D test.integration.camunda.physical-tenant={0}', inputs.physical-tenant) || '' }}
+          ${{ inputs.physical-tenant-elasticsearch-url != '' && format('-D test.integration.camunda.physical-tenant.elasticsearch.url={0}', inputs.physical-tenant-elasticsearch-url) || '' }}
+          ${{ inputs.physical-tenant-opensearch-url != '' && format('-D test.integration.camunda.physical-tenant.opensearch.url={0}', inputs.physical-tenant-opensearch-url) || '' }}
+          ${{ inputs.failsafe-timeout-seconds != 0 && format('-D failsafe.timeout={0}', inputs.failsafe-timeout-seconds) || '' }}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      # manually bring down docker compose
+      # as the action currently has an issue with large amounts of logs
+      # from docker compose https://github.com/hoverkraft-tech/compose-action/issues/297
+      # consider removing this step once the issue is resolved
       - name: Stop Database service
         if: ${{ always() && inputs.database-type != 'h2' }}
-        run: docker-compose -f db/docker-compose.yml down
+        run: docker compose -f db/docker-compose.yml --project-name db down
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -135,14 +253,14 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-name}}"
+          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-name}}${{ inputs.shard != '' && format(' - {0}', inputs.shard) || '' }}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375 # 1.0.0
         continue-on-error: true
         id: matrix-write
         with:
           matrix-step-name: "${{ inputs.test-type }}"
-          matrix-key: "${{ inputs.test-type }} - ${{ inputs.database-type }}"
+          matrix-key: "${{ inputs.test-type }} - ${{ inputs.database-type }}${{ inputs.shard != '' && format(' - {0}', inputs.shard) || '' }}"
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -151,10 +269,9 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "${{ inputs.test-type }}/${{ inputs.database-type }}"
+          job_name: "${{ inputs.test-type }}/${{ inputs.database-type }}${{ inputs.shard != '' && format('/{0}', inputs.shard) || '' }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -164,15 +281,32 @@ jobs:
     name: "Send slack notification on fail"
     runs-on: ubuntu-latest
     needs: integration-tests
-    if: (failure() || cancelled()) && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && inputs.notify-slack-on-failure
+    if: always() && (needs.integration-tests.result == 'failure' || needs.integration-tests.result == 'cancelled') && inputs.notify-slack-on-failure && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: write
+      actions: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      # Stay quiet when the caller's rerun-failed-jobs is about to retry this run, otherwise a
+      # runner shutdown that the retry goes on to fix leaves a false alarm behind. A genuine
+      # failure, or one on the last permitted attempt, still alerts. The check is per run, so a
+      # shard that failed for real while another was killed waits for the retry too and alerts
+      # once, after it, instead of before and after.
+      - name: Decide whether this run will be retried
+        id: detect-if-retry
+        uses: ./.github/actions/detect-runner-shutdown
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # !cancelled() replaces the implicit success(), so a failing detector still lets the alert out.
       - name: Import secrets from Vault
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -181,18 +315,19 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
       - name: Send notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           # For posting a rich message using Block Kit
           payload: |
-            text: "Scheduled Database Integration Tests for ${{inputs.database-name}} failed or were cancelled"
+            text: "Scheduled Database Integration Tests for ${{inputs.database-name}} on ${{ github.ref_name }} failed or were cancelled"
             blocks:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "Scheduled Database Integration Tests for **${{inputs.database-name}}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  text: "Scheduled Database Integration Tests for **${{inputs.database-name}}** on **${{ github.ref_name }}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
       - name: Observe build status
         if: always()

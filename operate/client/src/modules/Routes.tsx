@@ -20,6 +20,9 @@ const Paths = {
   processes() {
     return '/processes';
   },
+  processesVariables() {
+    return '/processes/filters/variables';
+  },
   processInstance(
     processInstanceId: string | null = ':processInstanceId',
     isParent = false,
@@ -92,6 +95,7 @@ const Locations = {
       });
     } else {
       params.set('active', 'true');
+      params.set('suspended', 'true');
       params.set('incidents', 'true');
     }
 

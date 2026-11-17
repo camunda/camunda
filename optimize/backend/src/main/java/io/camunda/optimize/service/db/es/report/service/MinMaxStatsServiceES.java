@@ -29,6 +29,7 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -194,7 +195,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
             FILTER_AGGREGATION_FIRST_FIELD,
             STATS_AGGREGATION_FIRST_FIELD,
             response);
-    return new MinMaxStatDto(minMaxStats.min(), minMaxStats.max());
+    return new MinMaxStatDto(min(minMaxStats), max(minMaxStats));
   }
 
   public MinMaxStatDto getSingleFieldMinMaxStats(
@@ -344,12 +345,22 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
             response);
 
     final StatsAggregate minStats =
-        minMaxStats1.min() < minMaxStats2.min() ? minMaxStats1 : minMaxStats2;
+        min(minMaxStats1) < min(minMaxStats2) ? minMaxStats1 : minMaxStats2;
     final StatsAggregate maxStats =
-        minMaxStats1.max() > minMaxStats2.max() ? minMaxStats1 : minMaxStats2;
+        max(minMaxStats1) > max(minMaxStats2) ? minMaxStats1 : minMaxStats2;
 
     return new MinMaxStatDto(
-        minStats.min(), maxStats.max(), minStats.minAsString(), maxStats.maxAsString());
+        min(minStats), max(maxStats), minStats.minAsString(), maxStats.maxAsString());
+  }
+
+  // ES9 client returns null min/max for empty aggregations; ES8 client mapped them to +/-Infinity,
+  // which also keeps the min/max comparison against a non-empty aggregation correct
+  private static double min(final StatsAggregate stats) {
+    return Objects.requireNonNullElse(stats.min(), Double.POSITIVE_INFINITY);
+  }
+
+  private static double max(final StatsAggregate stats) {
+    return Objects.requireNonNullElse(stats.max(), Double.NEGATIVE_INFINITY);
   }
 
   private StatsAggregate retrieveNestedWrappedStatsAggregation(

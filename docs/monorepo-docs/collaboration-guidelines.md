@@ -4,9 +4,9 @@ Guidelines for collaborating on CI/CD, build automation, release processes, and 
 
 ## Core Principles
 
-* **You own your domain workflows** – Teams are encouraged to design their own CI/CD logic with support from the Monorepo DevOps team when needed.
+* **You own your domain workflows** – Teams are encouraged to design their own CI/CD logic with support from the Engineering Operations team when needed.
 * **Accountability follows ownership** – The requesting team owns results, failures, and communication.
-* **No surprises** – Reach out to the Monorepo DevOps team before promising timelines, blocking behavior, or release changes.
+* **No surprises** – Reach out to the Engineering Operations team before promising timelines, blocking behavior, or release changes.
 * **Release changes require alignment** – Any change to the monorepo release train must be explicitly discussed and written down.
 * **Clarity first** – Vague or underspecified requests will pause until scope, ownership, and impact are clear.
 
@@ -32,7 +32,7 @@ Guidelines for collaborating on CI/CD, build automation, release processes, and 
 * Performance-sensitive changes
 * Cross-team dependency workflows
 
-✋ **When in Doubt: Ask early in #ask-monorepo-devops. The Monorepo DevOps team is here to help! A 5-minute chat can save hours.**
+✋ **When in Doubt: Ask early in #ask-eng-ops. The Engineering Operations team is here to help! A 5-minute chat can save hours.**
 
 ## Heads-Up Pattern (Start Here) 📣
 
@@ -73,17 +73,17 @@ Use this to make requests scoping-friendly and reviewable.
 ### Timeline & Coordination
 
 * **Timeline:** Target v2.1 in ~3 weeks
-* **Questions for Monorepo DevOps team:** Best way to hook into the existing monorepo release process?
+* **Questions for Engineering Operations team:** Best way to hook into the existing monorepo release process?
 
 ## Code Review, Integration & Independence 💻
 
-### When the Monorepo DevOps Team Reviews
+### When the Engineering Operations Team Reviews
 
 * Shared CI infrastructure/templates changes
 * Release orchestration/train behavior changes
 * Integration points that affect cadence, artifacts, or shared patterns
 * Performance/reliability risks
-* Loop in the Monorepo DevOps team for scoping + review via [#epo-reviews](https://camunda.slack.com/archives/C090HGYE5T2) when it could affect release cadence or shared CI patterns.
+* Loop in the Engineering Operations team for scoping + review via [#epo-reviews](https://camunda.slack.com/archives/C090HGYE5T2) when it could affect release cadence or shared CI patterns.
 
 ### All Teams Are Encouraged To 🏅
 
@@ -95,19 +95,19 @@ Use this to make requests scoping-friendly and reviewable.
   * Change release train behavior
   * Impact other teams without coordination
 
-When any of those become true → reach out to the Monorepo DevOps team for collaboration.
+When any of those become true → reach out to the Engineering Operations team for collaboration.
 
 ## Quick Reference
 
 ### Support Contacts
 
-* Slack: [#ask-monorepo-devops](https://camunda.slack.com/archives/C08NZ7E9ZT2) (Monorepo DevOps team)
-* Escalation: Engineering manager – see [Monorepo DevOps Team page](https://confluence.camunda.com/spaces/HAN/pages/277021448/Monorepo+DevOps+Team) for current EM/DRI details.
+* Slack: [#ask-eng-ops](https://camunda.slack.com/archives/C08NZ7E9ZT2) (Engineering Operations team)
+* Escalation: Engineering manager – see [Engineering Operations Team page](https://confluence.camunda.com/spaces/HAN/pages/277021448/Monorepo+DevOps+Team) for current EM/DRI details.
 
 ### Key Documentation
 
 * **CI Pipeline Architecture:** [CI & Automation](ci.md) and [C8 Monorepo CI Processes](https://confluence.camunda.com/spaces/HAN/pages/245403757/C8+Monorepo+CI+Processes).
-* **Release Process Guide:** [Release Process](release.md).
+* **Release Process Guide:** [Release Process](release/index.md).
 * **Performance Guidelines:** [Monorepo CI Health KPIs & Impact](https://docs.google.com/document/d/1VDnNy4KOidxOev2_BNNA-BEJQKSTUhspiYqlEKRPaSM).
 
 ### Templates & Examples

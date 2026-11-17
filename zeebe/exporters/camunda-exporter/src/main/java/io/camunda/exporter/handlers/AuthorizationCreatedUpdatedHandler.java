@@ -8,19 +8,20 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class AuthorizationCreatedUpdatedHandler
-    implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+    implements MainIndexExporterHandler<AuthorizationEntity, AuthorizationRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(AuthorizationIntent.CREATED, AuthorizationIntent.UPDATED);
   private final String indexName;
@@ -67,13 +68,15 @@ public class AuthorizationCreatedUpdatedHandler
         .setResourceType(value.getResourceType().name())
         .setResourceId(value.getResourceId())
         .setResourcePropertyName(value.getResourcePropertyName())
-        .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
+        .setPermissionTypes(
+            AuthzModelMapper.fromProtocolPermissionTypes(value.getPermissionTypes()));
   }
 
   @Override
-  public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

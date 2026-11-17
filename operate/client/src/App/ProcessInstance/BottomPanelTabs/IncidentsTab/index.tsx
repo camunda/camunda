@@ -17,9 +17,9 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByProcessInstancePaginated';
 import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 import {getIncidentsSearchFilter} from 'modules/utils/incidents';
-import {isInstanceRunning} from 'modules/utils/instance';
+import {isInstanceRunning, isInstanceSuspended} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
@@ -47,7 +47,7 @@ const IncidentsTab: React.FC = observer(() => {
 
   const sort = useIncidentsSort();
   const filter = getIncidentsSearchFilter(
-    incidentsPanelStore.state.selectedErrorTypes,
+    incidentsPanelFiltersStore.state.selectedErrorTypes,
     selectedElementId ?? undefined,
   );
 
@@ -189,6 +189,9 @@ const IncidentsTab: React.FC = observer(() => {
         onVerticalScrollEndReach={handleScrollEndReach}
         processInstanceKey={processInstanceId}
         incidents={enhancedIncidents}
+        isProcessInstanceSuspended={
+          processInstance !== undefined && isInstanceSuspended(processInstance)
+        }
         decisionInstancesByElementKey={decisionInstancesByElementKey}
         childInstanceWithIncident={childInstanceWithIncident}
       />

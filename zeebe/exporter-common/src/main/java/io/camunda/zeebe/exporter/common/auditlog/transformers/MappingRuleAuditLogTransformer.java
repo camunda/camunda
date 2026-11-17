@@ -19,6 +19,11 @@ public class MappingRuleAuditLogTransformer implements AuditLogTransformer<Mappi
   }
 
   @Override
+  public Class<MappingRuleRecordValue> getRecordValueType() {
+    return MappingRuleRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<MappingRuleRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setEntityKey(value.getMappingRuleId()).setEntityDescription(value.getName());

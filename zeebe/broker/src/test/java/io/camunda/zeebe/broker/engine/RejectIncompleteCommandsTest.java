@@ -22,7 +22,8 @@ public final class RejectIncompleteCommandsTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
 
-  private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomixCluster);
+  private static final CommandApiRule API_RULE =
+      new CommandApiRule(1, BROKER_RULE::getAtomixCluster);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 

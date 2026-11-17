@@ -69,11 +69,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** Netty messaging service test. */
+// shouldNotLeakUdpSockets counts the UDP sockets of the whole process, so no other test class may
+// open sockets while it runs
+@Isolated
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;

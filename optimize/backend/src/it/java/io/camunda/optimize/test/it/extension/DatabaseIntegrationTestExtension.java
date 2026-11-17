@@ -114,8 +114,20 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
   }
 
+  public List<ProcessInstanceDto> getProcessInstancesById(final List<String> instanceIds) {
+    return databaseTestService.getProcessInstancesById(instanceIds);
+  }
+
+  public void deleteAllOptimizeData() {
+    databaseTestService.deleteAllOptimizeData();
+  }
+
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     databaseTestService.deleteAllZeebeRecordsForPrefix(zeebeRecordPrefix);
+  }
+
+  public void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix) {
+    databaseTestService.deleteAllZeebeIndicesForPrefix(zeebeRecordPrefix);
   }
 
   public void deleteAllOtherZeebeRecordsWithPrefix(
@@ -208,6 +220,14 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
       final int amount, final String indexName, final String documentContentAsJson)
       throws IOException {
     databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
+  }
+
+  /**
+   * Indexes an entry into the given raw index name (no Optimize prefix applied). Used to seed Zeebe
+   * export indices in tests.
+   */
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    databaseTestService.addEntryWithRawIndex(rawIndexName, id, entry);
   }
 
   public void initSchema(final DatabaseSchemaManager schemaManager) {

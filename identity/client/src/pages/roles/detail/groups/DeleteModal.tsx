@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignRoleGroup } from "src/utility/api/roles";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveRoleGroupModalProps = UseEntityModalCustomProps<
@@ -34,22 +34,25 @@ const DeleteModal: FC<RemoveRoleGroupModalProps> = ({
   const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignGroup, { loading }] = useApiCall(unassignRoleGroup);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    roleMutations.unassignGroup(qc),
+  );
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (role && group) {
-      const { success } = await callUnassignGroup({
-        roleId: role,
-        groupId: group.groupId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("roleGroupRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { roleId: role, groupId: group.groupId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("roleGroupRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

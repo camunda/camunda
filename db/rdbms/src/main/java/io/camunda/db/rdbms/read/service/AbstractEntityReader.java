@@ -7,20 +7,21 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.exception.DatabaseExceptionTranslator;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 abstract class AbstractEntityReader<T> {
 
@@ -40,7 +42,7 @@ abstract class AbstractEntityReader<T> {
   private final RdbmsReaderConfig readerConfig;
 
   public AbstractEntityReader(
-      final SearchColumn<T>[] searchableColumns, final RdbmsReaderConfig readerConfig) {
+      final SearchColumn<T> @Nullable [] searchableColumns, final RdbmsReaderConfig readerConfig) {
     final var searchColumns =
         Objects.requireNonNullElse(searchableColumns, (SearchColumn<T>[]) EMPTY_SEARCHABLE_COLUMNS);
 
@@ -88,14 +90,25 @@ abstract class AbstractEntityReader<T> {
     if (page.after() != null || page.before() != null) {
       keySetPagination = createKeySetPagination(sort, page);
     }
+    final var searchBefore = page.before() != null;
 
     if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
       // assuming Integer.MAX_VALUE is enough
-      return new DbQueryPage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination);
+      return new DbQueryPage(
+          Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination, searchBefore);
     }
 
     return new DbQueryPage(
-        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination);
+        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination, searchBefore);
+  }
+
+  /**
+   * Restores the display order of a page that seeks backwards from a {@code before} cursor. Such a
+   * page is queried against the display direction so that its LIMIT keeps the rows adjacent to the
+   * cursor (see {@code Commons.orderBy}), which leaves the returned rows in reverse order.
+   */
+  protected List<T> restoreDisplayOrder(final DbQueryPage page, final List<T> hits) {
+    return page.searchBefore() ? hits.reversed() : hits;
   }
 
   /**
@@ -122,7 +135,11 @@ abstract class AbstractEntityReader<T> {
       final DbQuerySorting<T> sort, final SearchQueryPage page) {
     final boolean isSearchAfter = page.after() != null;
     final var cursorValue = isSearchAfter ? page.after() : page.before();
-    final Object[] sortValues = Cursor.decode(cursorValue, sort.columns());
+    final var sortValues = Cursor.decode(cursorValue, sort.columns());
+    if (sortValues == null) {
+      throw new CamundaSearchException(
+          "Cannot paginate with an empty or malformed cursor", Reason.INVALID_ARGUMENT);
+    }
     final List<KeySetPagination> keySetPagination = new ArrayList<>();
 
     for (int i = 0; i < sort.orderings().size(); i++) {
@@ -135,11 +152,20 @@ abstract class AbstractEntityReader<T> {
 
       // add the comparator entry for the current sort column
       final var sorting = sort.orderings().get(i);
-      fieldEntries.add(
+      final var comparator =
           KeySetPaginationFieldEntry.of(sorting.column().name(), sortValues[i])
               .order(sorting.order())
               .isSearchAfter(isSearchAfter)
-              .build());
+              .build();
+
+      // a NO_MATCH comparator makes the whole OR-group unsatisfiable (e.g. nothing sorts after a
+      // trailing NULL in a DESC search-after). Dropping the group keeps the cursor advancing
+      // instead of re-matching every NULL row; the always-present unique key column guarantees at
+      // least one satisfiable group remains.
+      if (comparator.operator() == DbQueryPage.Operator.NO_MATCH) {
+        continue;
+      }
+      fieldEntries.add(comparator);
 
       keySetPagination.add(new KeySetPagination(fieldEntries));
     }
@@ -148,7 +174,7 @@ abstract class AbstractEntityReader<T> {
   }
 
   protected final SearchQueryResult<T> buildSearchQueryResult(
-      final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
+      final long totalHits, final List<T> hits, final @Nullable DbQuerySorting<T> dbSort) {
     final var maxTotalHits = readerConfig.maxTotalHits();
     final var returnedTotalHits = totalHits > maxTotalHits ? maxTotalHits : totalHits;
     final var hasMoreItems = totalHits > maxTotalHits;
@@ -211,30 +237,11 @@ abstract class AbstractEntityReader<T> {
       final Supplier<List<T>> resultsSupplier,
       final DbQueryPage page,
       final DbQuerySorting<T> dbSort) {
-    final long totalHits = executeQuery(countSupplier);
+    final long totalHits = countSupplier.get();
     if (shouldReturnEmptyPage(page, totalHits)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
-    final List<T> results = executeQuery(resultsSupplier);
-    return buildSearchQueryResult(totalHits, results, dbSort);
-  }
-
-  /**
-   * Executes an arbitrary database query, translating known vendor-specific exceptions into {@link
-   * io.camunda.search.exception.CamundaSearchException}.
-   *
-   * @param <R> the result type
-   * @param query supplier that performs the query
-   * @return the query result
-   * @throws io.camunda.search.exception.CamundaSearchException with {@link
-   *     io.camunda.search.exception.CamundaSearchException.Reason#INVALID_ARGUMENT} when a
-   *     database-specific constraint is violated (e.g. an IN-list size limit)
-   */
-  protected <R> R executeQuery(final Supplier<R> query) {
-    try {
-      return query.get();
-    } catch (final RuntimeException e) {
-      throw DatabaseExceptionTranslator.translateIfNeeded(e);
-    }
+    final List<T> results = resultsSupplier.get();
+    return buildSearchQueryResult(totalHits, restoreDisplayOrder(page, results), dbSort);
   }
 }

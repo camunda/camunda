@@ -8,10 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -68,8 +74,11 @@ public class MigratedVariableHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
@@ -80,12 +89,11 @@ public class MigratedVariableHandlerTest {
             ValueType.VARIABLE,
             r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
 
-    // when
-    final var idList = underTest.generateIds(variableRecord);
-
-    // then
-    assertThat(idList)
-        .containsExactly(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, variableRecord))
+        .containsExactly(
+            new IdAndIndex(
+                variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName(), index));
   }
 
   @Test
@@ -108,10 +116,11 @@ public class MigratedVariableHandlerTest {
             .setBpmnProcessId("procId")
             .setProcessDefinitionKey(123L)
             .setPosition(456L);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
     updateFields.put(
@@ -119,7 +128,7 @@ public class MigratedVariableHandlerTest {
     updateFields.put(VariableTemplate.POSITION, inputEntity.getPosition());
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, inputEntity.getId(), inputEntity, updateFields);
+    verify(mockRequest, times(1)).upsert(index, inputEntity.getId(), inputEntity, updateFields);
   }
 
   @Test
@@ -128,6 +137,8 @@ public class MigratedVariableHandlerTest {
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
+            .withProcessInstanceKey(1234L)
+            .withRootProcessInstanceKey(1233L)
             .withValue("doNotCareAboutThis")
             .withTenantId("tenantId")
             .build();
@@ -148,11 +159,14 @@ public class MigratedVariableHandlerTest {
     assertThat(variableEntity.getProcessDefinitionKey())
         .isEqualTo(variableRecordValue.getProcessDefinitionKey());
     assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
+    assertThat(variableEntity.getProcessInstanceKey())
+        .isEqualTo(variableRecordValue.getProcessInstanceKey());
+    assertThat(variableEntity.getRootProcessInstanceKey())
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
 
     assertThat(variableEntity.getKey()).isEqualTo(0);
     assertThat(variableEntity.getName()).isNull();
     assertThat(variableEntity.getScopeKey()).isNull();
-    assertThat(variableEntity.getProcessInstanceKey()).isNull();
     assertThat(variableEntity.getValue()).isNull();
     assertThat(variableEntity.getIsPreview()).isFalse();
     assertThat(variableEntity.getFullValue()).isNull();

@@ -14,7 +14,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
-import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
+import static io.camunda.zeebe.util.StringUtil.sanitizeList;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.atomix.utils.net.Address;
@@ -45,8 +45,6 @@ public final class ClusterCfg {
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
   private DataSize socketSendBuffer = null;
   private DataSize socketReceiveBuffer = null;
-  private boolean sendOnLegacySubject = true;
-  private String defaultEngineName = "default";
 
   public String getMemberId() {
     return memberId;
@@ -149,7 +147,7 @@ public final class ClusterCfg {
   }
 
   public ClusterCfg setInitialContactPoints(final List<String> initialContactPoints) {
-    this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
+    this.initialContactPoints = sanitizeList(initialContactPoints);
     return this;
   }
 
@@ -180,24 +178,6 @@ public final class ClusterCfg {
     return this;
   }
 
-  public boolean isSendOnLegacySubject() {
-    return sendOnLegacySubject;
-  }
-
-  public ClusterCfg setSendOnLegacySubject(final boolean sendOnLegacySubject) {
-    this.sendOnLegacySubject = sendOnLegacySubject;
-    return this;
-  }
-
-  public String getDefaultEngineName() {
-    return defaultEngineName;
-  }
-
-  public ClusterCfg setDefaultEngineName(final String defaultEngineName) {
-    this.defaultEngineName = defaultEngineName;
-    return this;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -212,9 +192,7 @@ public final class ClusterCfg {
         messageCompression,
         configManager,
         socketSendBuffer,
-        socketReceiveBuffer,
-        defaultEngineName,
-        sendOnLegacySubject);
+        socketReceiveBuffer);
   }
 
   @Override
@@ -237,9 +215,7 @@ public final class ClusterCfg {
         && Objects.equals(messageCompression, that.messageCompression)
         && Objects.equals(configManager, that.configManager)
         && Objects.equals(socketSendBuffer, that.socketSendBuffer)
-        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer)
-        && Objects.equals(defaultEngineName, that.defaultEngineName)
-        && Objects.equals(sendOnLegacySubject, that.sendOnLegacySubject);
+        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer);
   }
 
   @Override
@@ -272,10 +248,6 @@ public final class ClusterCfg {
         + socketSendBuffer
         + ", socketReceiveBuffer="
         + socketReceiveBuffer
-        + ", sendOnLegacySubject="
-        + sendOnLegacySubject
-        + ", engineName="
-        + defaultEngineName
         + '}';
   }
 }

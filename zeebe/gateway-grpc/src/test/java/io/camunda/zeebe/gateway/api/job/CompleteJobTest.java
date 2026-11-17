@@ -80,6 +80,46 @@ public final class CompleteJobTest extends GatewayTest {
   }
 
   @Test
+  public void shouldMapBusinessId() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setBusinessId("biz-1").build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getBusinessId()).isEqualTo("biz-1");
+  }
+
+  @Test
+  public void shouldNotSetBusinessIdWhenAbsent() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getBusinessId()).isEqualTo("");
+  }
+
+  @Test
   public void shouldMapRequestAndResponseWithResultSetDeniedTrue() {
     // given
     final CompleteJobStub stub = new CompleteJobStub();

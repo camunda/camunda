@@ -14,12 +14,15 @@
 
   <resultMap id="SequenceFlowResultMap"
     type="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
-    <result column="FLOW_NODE_ID" property="flowNodeId" />
-    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" />
-    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" />
-    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" />
-    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" />
-    <result column="TENANT_ID" property="tenantId" />
+    <constructor>
+      <arg name="flowNodeId" column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg name="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg name="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY"
+        javaType="java.lang.Long"/>
+      <arg name="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg name="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg name="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
   </resultMap>
 
   <select id="search"

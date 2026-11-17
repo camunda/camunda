@@ -10,6 +10,9 @@ on:
     # Run at 7:00 on every monday
     - cron: "0 7 * * 1"
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   # This job will figure out the last supported versions based on the latest tags.
   #
@@ -25,7 +28,7 @@ jobs:
       second-last-version: ${{ env.SECOND_LAST_VERSION }}
       third-last-version: ${{ env.THIRD_LAST_VERSION }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: git fetch --tags
       - run: |
           mapfile -t versions < <(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq)
@@ -43,6 +46,15 @@ jobs:
             echo "SECOND_LAST_VERSION=${second_last}"
             echo "THIRD_LAST_VERSION=${third_last}"
           } >> "$GITHUB_ENV"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   e2e:
     needs:
@@ -60,19 +72,29 @@ jobs:
           - branch: main
             generation_template: "Camunda SNAPSHOT"
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
-            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-version) }}
+            generation_template: ${{ format('Camunda {0}-SNAPSHOT', needs.get-versions.outputs.latest-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
-            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.second-last-version) }}
+            generation_template: ${{ format('Camunda {0}-SNAPSHOT', needs.get-versions.outputs.second-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
-            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.third-last-version) }}
+            generation_template: ${{ format('Camunda {0}-SNAPSHOT', needs.get-versions.outputs.third-last-version) }}
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Trigger Weekly E2E on ${{ matrix.branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run --ref ${{ matrix.branch }} zeebe-e2e-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }} -F maxTestDuration='P5D' -F maxInstanceDuration='40m' -F clusterPlan='Production - M'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "e2e/${{ matrix.branch }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   e2e-multiregion-failover:
     name: Multi-region failover with data loss

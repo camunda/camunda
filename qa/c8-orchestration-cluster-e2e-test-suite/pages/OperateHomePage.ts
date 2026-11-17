@@ -14,13 +14,16 @@ class OperateHomePage {
   readonly dashboardLink: Locator;
   readonly processesTab: Locator;
   readonly decisionsTab: Locator;
+  readonly operationsMenuButton: Locator;
+  readonly batchOperationsNavItem: Locator;
+  readonly operationsLogNavItem: Locator;
   readonly informationDialog: Locator;
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
   readonly variableValueEditor: Locator;
   readonly saveVariableButton: Locator;
   readonly editVariableSpinner: Locator;
-  readonly settingsButton: Locator;
+  readonly userMenuButton: Locator;
   readonly logoutButton: Locator;
   readonly openButton: Locator;
   readonly closeButton: Locator;
@@ -29,23 +32,41 @@ class OperateHomePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.operateBanner = page.getByRole('link', {name: 'Camunda logo Operate'});
+    this.operateBanner = page.getByRole('link', {
+      name: /^Camunda(?: logo)? Operate$/,
+    });
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
+    // Matches the toggle before and after @camunda/design-system 0.81, because
+    // this suite runs against the published SNAPSHOT image, not the PR build.
+    this.operationsMenuButton = page
+      .getByRole('button', {name: /^(Toggle )?Operations$/})
+      .or(page.getByRole('link', {name: /^Operations$/}));
+    this.batchOperationsNavItem = page.getByRole('link', {
+      name: 'Batch operations',
+    });
+    this.operationsLogNavItem = page.getByRole('link', {
+      name: 'Operations log',
+    });
     this.informationDialog = page.getByRole('button', {
       name: 'Close this dialog',
     });
     this.editVariableButton = page.getByTestId('edit-variable-button');
     this.variableValueInput = page.getByTestId('edit-variable-value');
-    this.variableValueEditor = page.getByRole('code');
+    // The inline variable-value editor migrated from Monaco (which exposed
+    // its container with `role="code"`) to CodeMirror as part of #62782.
+    // CodeMirror's content editable renders `role="textbox"`, not "code", so
+    // this has to target the editor by the explicit data-testid the
+    // InlineJsonEditor component sets on the CodeMirror instance instead.
+    this.variableValueEditor = page.getByTestId('code-mirror-editor');
     this.saveVariableButton = page.getByLabel('Save');
     this.editVariableSpinner = page
       .getByTestId('variable-operation-spinner')
       .locator('circle')
       .nth(1);
-    this.settingsButton = page.getByRole('button', {name: 'Open Settings'});
-    this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.userMenuButton = page.getByRole('button', {name: /^User menu/});
+    this.logoutButton = page.getByRole('menuitem', {name: /log out/i});
     this.openButton = page
       .getByTestId('variable-testVariable')
       .getByLabel('Open');
@@ -55,7 +76,11 @@ class OperateHomePage {
   }
 
   async clickProcessesTab(): Promise<void> {
-    await this.processesTab.click();
+    // The header nav re-renders during hydration, which can detach the link
+    // mid-click; retry until the click lands.
+    await expect(async () => {
+      await this.processesTab.click({timeout: 10_000});
+    }).toPass({timeout: 30_000});
   }
 
   async clickDashboardLink(): Promise<void> {
@@ -82,7 +107,7 @@ class OperateHomePage {
 
   async clearVariableValueInput(): Promise<void> {
     await expect(this.variableValueEditor).toBeVisible();
-    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
   }
 
@@ -96,7 +121,7 @@ class OperateHomePage {
   }
 
   async logout(): Promise<void> {
-    await this.settingsButton.click();
+    await this.userMenuButton.click();
     await this.logoutButton.click();
   }
 

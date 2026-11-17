@@ -16,8 +16,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * This class contains all project configuration parameters.
  *
  * <p>NOTE: Some of the fields of this object are overridden with values coming from the Unified
- * Configuration system, from the object
- * io.camunda.configuration.beanoverrides.OperatePropertiesOverride
+ * Configuration system, from the object io.camunda.operate.OperatePropertiesOverride
  */
 public class OperateProperties {
 
@@ -40,9 +39,11 @@ public class OperateProperties {
 
   private boolean enterprise = false;
 
+  private Boolean navV2Enabled;
+
   private String tasklistUrl = null;
 
-  @Value("${camunda.operate.internal.version.current}")
+  @Value("${camunda.operate.internal.version.current:unknown-version}")
   private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty
@@ -148,6 +149,18 @@ public class OperateProperties {
 
   public void setEnterprise(final boolean enterprise) {
     this.enterprise = enterprise;
+  }
+
+  public Boolean getNavV2Enabled() {
+    return navV2Enabled;
+  }
+
+  public void setNavV2Enabled(final Boolean navV2Enabled) {
+    this.navV2Enabled = navV2Enabled;
+  }
+
+  public boolean resolveNavV2Enabled() {
+    return navV2Enabled == null || navV2Enabled;
   }
 
   public IdentityProperties getIdentity() {

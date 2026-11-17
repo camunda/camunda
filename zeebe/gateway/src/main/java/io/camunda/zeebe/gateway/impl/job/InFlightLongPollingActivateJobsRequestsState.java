@@ -23,6 +23,7 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
   private int failedAttempts;
   private long lastUpdatedTime;
+  private final NotificationThrottle notificationThrottle = new NotificationThrottle();
 
   public InFlightLongPollingActivateJobsRequestsState(
       final String jobType, final LongPollingMetrics metrics) {
@@ -58,6 +59,10 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
     return lastUpdatedTime;
   }
 
+  NotificationThrottle notificationThrottle() {
+    return notificationThrottle;
+  }
+
   public void enqueueRequest(final InflightActivateJobsRequest<T> request) {
     pendingRequests.add(request);
     updatePendingMetrics();
@@ -91,6 +96,18 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   public boolean hasActiveRequests() {
     return !activeRequests.isEmpty();
+  }
+
+  public boolean hasPendingRequests() {
+    return !pendingRequests.isEmpty();
+  }
+
+  int activeRequestsCount() {
+    return activeRequests.size();
+  }
+
+  int pendingRequestsCount() {
+    return pendingRequests.size();
   }
 
   private void updatePendingMetrics() {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.scheduler.future;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ActorTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -17,12 +19,15 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /** interface for actor futures */
-public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
+public interface ActorFuture<V extends @Nullable Object>
+    extends Future<V>, BiConsumer<V, @Nullable Throwable> {
+
   void complete(V value);
 
-  void completeExceptionally(String failure, Throwable throwable);
+  void completeExceptionally(@Nullable String failure, Throwable throwable);
 
   void completeExceptionally(Throwable throwable);
 
@@ -57,7 +62,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *
    * @param consumer the consumer which should be called after the future was completed
    */
-  void onComplete(BiConsumer<V, Throwable> consumer);
+  void onComplete(BiConsumer<V, @Nullable Throwable> consumer);
 
   /**
    * Registers a consumer, which is executed after the future was completed. The consumer is
@@ -68,7 +73,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param consumer the callback which should be called after the future was completed
    * @param executor the executor on which the callback will be executed
    */
-  void onComplete(BiConsumer<V, Throwable> consumer, Executor executor);
+  void onComplete(BiConsumer<V, @Nullable Throwable> consumer, Executor executor);
 
   /**
    * Runs a callback when the future terminates successfully If the caller is not an actor, the
@@ -134,10 +139,14 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
 
   boolean isCompletedExceptionally();
 
+  /**
+   * @return the throwable if this future completed exceptionally
+   * @throws IllegalStateException if the future is not completed exceptionally
+   */
   Throwable getException();
 
   @Override
-  default void accept(final V value, final Throwable throwable) {
+  default void accept(final V value, final @Nullable Throwable throwable) {
     if (throwable != null) {
       completeExceptionally(throwable);
     } else {
@@ -172,7 +181,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * Convenience wrapper over {@link #andThen(Function, Executor)} for the case where the next step
    * does not require the result of this future.
    */
-  <U> ActorFuture<U> andThen(Supplier<ActorFuture<U>> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> andThen(
+      Supplier<ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenCompose(Function)} in that it applies a function to the
@@ -188,7 +198,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     used for further chaining.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> andThen(
+      Function<V, ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link ActorFuture#andThen(Function, Executor)}}, but it allows to return a future
@@ -202,7 +213,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     ActorFuture#onComplete(BiConsumer)} method.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> andThen(BiFunction<V, Throwable, ActorFuture<U>> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> andThen(
+      BiFunction<V, @Nullable Throwable, ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
@@ -220,7 +232,45 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     used for further chaining.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
+
+  /**
+   * Similar to {@link CompletableFuture#thenAccept(Consumer)} in that it consumes the result of
+   * this future without producing another value.
+   *
+   * <p>This is the preferred alternative to {@code thenApply(value -> { ...; return null; })} for
+   * side-effecting continuations.
+   *
+   * @param next consumer to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new void future that completes after consuming the result of this future or
+   *     exceptionally if this future completes exceptionally. This future can be used for further
+   *     chaining.
+   */
+  default ActorFuture<Void> thenAccept(final Consumer<V> next, final Executor executor) {
+    return thenApply(
+        value -> {
+          next.accept(value);
+          return unit();
+        },
+        executor);
+  }
+
+  /**
+   * Similar to {@link CompletableFuture#thenRun(Runnable)} in that it runs a callback when this
+   * future completes successfully without using its result.
+   *
+   * <p>This is the preferred alternative to {@code thenApply(value -> { ...; return null; })} when
+   * the continuation does not need this future's result.
+   *
+   * @param next runnable to run after this future completes successfully.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new void future that completes after running the callback or exceptionally if this
+   *     future completes exceptionally. This future can be used for further chaining.
+   */
+  default ActorFuture<Void> thenRun(final Runnable next, final Executor executor) {
+    return thenAccept(ignored -> next.run(), executor);
+  }
 
   /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
@@ -240,5 +290,52 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     used for further chaining.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> thenApply(final Function<V, U> next);
+  <U extends @Nullable Object> ActorFuture<U> thenApply(final Function<V, U> next);
+
+  /**
+   * Similar to {@link CompletableFuture#thenAccept(Consumer)} in that it consumes the result of
+   * this future without producing another value.
+   *
+   * <p>If the caller is not an actor, {@link ActorFuture#thenAccept(Consumer, Executor)} must be
+   * used to avoid blocking the actor execution context.
+   *
+   * @param next consumer to apply to the result of this future.
+   * @return a new void future that completes after consuming the result of this future or
+   *     exceptionally if this future completes exceptionally. This future can be used for further
+   *     chaining.
+   */
+  default ActorFuture<Void> thenAccept(final Consumer<V> next) {
+    return thenApply(
+        value -> {
+          next.accept(value);
+          return unit();
+        });
+  }
+
+  /**
+   * Similar to {@link CompletableFuture#thenRun(Runnable)} in that it runs a callback when this
+   * future completes successfully without using its result.
+   *
+   * <p>If the caller is not an actor, {@link ActorFuture#thenRun(Runnable, Executor)} must be used
+   * to avoid blocking the actor execution context.
+   *
+   * @param next runnable to run after this future completes successfully.
+   * @return a new void future that completes after running the callback or exceptionally if this
+   *     future completes exceptionally. This future can be used for further chaining.
+   */
+  default ActorFuture<Void> thenRun(final Runnable next) {
+    return thenAccept(ignored -> next.run());
+  }
+
+  /**
+   * Widens this future's value type to allow null values in contexts where {@code @Nullable V} is
+   * expected.
+   *
+   * <p><strong>Warning:</strong> this performs an unchecked covariant cast. The cast is sound only
+   * if the caller never calls {@link #complete(Object)} with a `null` value on the returned future.
+   */
+  @SuppressWarnings("unchecked")
+  default ActorFuture<@Nullable V> asNullable() {
+    return (ActorFuture<@Nullable V>) this;
+  }
 }

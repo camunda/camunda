@@ -45,7 +45,9 @@ export type UiConfig = {
   webappsLinks: WebappLinks;
   mixpanel: MixpanelConfig;
   logoutHidden: boolean;
+  cslEnabled: boolean;
   exportCsvLimit: number;
+  entityNameMaxLength: number;
   maxNumDataSourcesForReport: number;
   onboarding: Onboarding;
   notificationsUrl: string;
@@ -117,7 +119,9 @@ export const getMixpanelConfig = createAccessorFunction<MixpanelConfig>('mixpane
 export const getOptimizeProfile =
   createAccessorFunction<UiConfig['optimizeProfile']>('optimizeProfile');
 export const isLogoutHidden = createAccessorFunction<boolean>('logoutHidden');
+export const isCslEnabled = createAccessorFunction<boolean>('cslEnabled');
 export const getExportCsvLimit = createAccessorFunction<number>('exportCsvLimit');
+export const getEntityNameMaxLength = createAccessorFunction<number>('entityNameMaxLength');
 export const getMaxNumDataSourcesForReport = createAccessorFunction<number>(
   'maxNumDataSourcesForReport'
 );

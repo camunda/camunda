@@ -10,10 +10,14 @@ package io.camunda.search.aggregation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AggregationPaginated;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.sort.ProcessDefinitionSort;
 
 public record ProcessDefinitionLatestVersionAggregation(
-    ProcessDefinitionFilter filter, ProcessDefinitionSort sort, SearchQueryPage page)
+    ProcessDefinitionFilter filter,
+    ProcessDefinitionSort sort,
+    SearchQueryPage page,
+    ProcessDefinitionQueryResultConfig resultConfig)
     implements AggregationBase, AggregationPaginated {
   public static final int AGGREGATION_TERMS_SIZE = 10000;
 
@@ -26,4 +30,10 @@ public record ProcessDefinitionLatestVersionAggregation(
   // Aggregation fields
   public static final String AGGREGATION_GROUP_BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String AGGREGATION_GROUP_TENANT_ID = "tenantId";
+
+  // Total count aggregation
+  public static final String AGGREGATION_NAME_TOTAL_COUNT = "total-count";
+  public static final String PROCESS_DEFINITION_AND_TENANT_KEY =
+      "doc['bpmnProcessId'].value + '::' + doc['tenantId'].value";
+  public static final String SCRIPT_LANGUAGE = "painless";
 }

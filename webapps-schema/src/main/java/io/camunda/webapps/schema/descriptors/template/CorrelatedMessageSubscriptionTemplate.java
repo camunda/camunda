@@ -22,6 +22,7 @@ public class CorrelatedMessageSubscriptionTemplate extends AbstractTemplateDescr
   public static final String ID = "id";
 
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String BUSINESS_ID = "businessId";
   public static final String CORRELATION_KEY = "correlationKey";
   public static final String CORRELATION_TIME = "correlationTime";
   public static final String FLOW_NODE_ID = "flowNodeId";

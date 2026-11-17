@@ -21,32 +21,34 @@ import {
 } from '../common';
 import {
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	processDefinitionStatisticSchema,
 	processInstanceStateSchema,
 	type ProcessDefinition,
+	type ProcessDefinitionState,
 	type StatisticName,
 	type ProcessDefinitionStatistic,
 } from './processes';
 
-const getProcessDefinition: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
+const getProcessDefinition = {
 	method: 'GET',
-	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}`,
-};
+	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}` as const,
+} as const satisfies Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>>;
 
-const getProcessDefinitionXml: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
+const getProcessDefinitionXml = {
 	method: 'GET',
-	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/xml`,
-};
+	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/xml` as const,
+} as const satisfies Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>>;
 
-const getProcessStartForm: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
+const getProcessStartForm = {
 	method: 'GET',
-	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/form`,
-};
+	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/form` as const,
+} as const satisfies Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>>;
 
-const getProcessDefinitionInstanceStatistics: Endpoint = {
+const getProcessDefinitionInstanceStatistics = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances`,
-};
+	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances` as const,
+} as const satisfies Endpoint;
 
 const advancedProcessInstanceStateFilterSchema = z
 	.object({
@@ -73,6 +75,8 @@ const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	processInstanceKey: basicStringFilterSchema,
 	parentProcessInstanceKey: basicStringFilterSchema,
 	parentElementInstanceKey: basicStringFilterSchema,
+	batchOperationKey: advancedStringFilterSchema,
+	/** @deprecated Use batchOperationKey instead. */
 	batchOperationId: advancedStringFilterSchema,
 	errorMessage: advancedStringFilterSchema,
 	hasRetriesLeft: z.boolean(),
@@ -98,11 +102,11 @@ type GetProcessDefinitionStatisticsParams = Pick<ProcessDefinition, 'processDefi
 	statisticName: StatisticName;
 };
 
-const getProcessDefinitionStatistics: Endpoint<GetProcessDefinitionStatisticsParams> = {
+const getProcessDefinitionStatistics = {
 	method: 'POST',
 	getUrl: ({processDefinitionKey, statisticName = 'element-instances'}) =>
-		`/${API_VERSION}/process-definitions/${processDefinitionKey}/statistics/${statisticName}`,
-};
+		`/${API_VERSION}/process-definitions/${processDefinitionKey}/statistics/${statisticName}` as const,
+} as const satisfies Endpoint<GetProcessDefinitionStatisticsParams>;
 
 const queryProcessDefinitionsRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
@@ -131,10 +135,10 @@ type QueryProcessDefinitionsRequestBody = z.infer<typeof queryProcessDefinitions
 const queryProcessDefinitionsResponseBodySchema = getQueryResponseBodySchema(processDefinitionSchema);
 type QueryProcessDefinitionsResponseBody = z.infer<typeof queryProcessDefinitionsResponseBodySchema>;
 
-const queryProcessDefinitions: Endpoint = {
+const queryProcessDefinitions = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-definitions/search`,
-};
+	getUrl: () => `/${API_VERSION}/process-definitions/search` as const,
+} as const satisfies Endpoint;
 
 const processDefinitionInstanceStatisticsSchema = z.object({
 	processDefinitionId: z.string(),
@@ -204,10 +208,10 @@ type GetProcessDefinitionInstanceVersionStatisticsResponseBody = z.infer<
 	typeof getProcessDefinitionInstanceVersionStatisticsResponseBodySchema
 >;
 
-const getProcessDefinitionInstanceVersionStatistics: Endpoint = {
+const getProcessDefinitionInstanceVersionStatistics = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances-by-version`,
-};
+	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances-by-version` as const,
+} as const satisfies Endpoint;
 
 export {
 	getProcessDefinition,
@@ -216,6 +220,7 @@ export {
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	processDefinitionStatisticSchema,
 	getProcessDefinitionStatisticsRequestBodySchema,
 	getProcessDefinitionStatisticsResponseBodySchema,
@@ -232,6 +237,7 @@ export {
 };
 export type {
 	ProcessDefinition,
+	ProcessDefinitionState,
 	ProcessDefinitionStatistic,
 	GetProcessDefinitionStatisticsRequestBody,
 	GetProcessDefinitionStatisticsResponseBody,

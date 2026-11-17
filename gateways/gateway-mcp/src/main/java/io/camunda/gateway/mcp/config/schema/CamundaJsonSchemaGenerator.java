@@ -35,8 +35,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.ai.mcp.annotation.method.tool.utils.SpringAiSchemaModule;
-import org.springframework.lang.Nullable;
+import org.springframework.ai.mcp.annotation.method.tool.utils.McpSpringAiSchemaModule;
+import org.springframework.core.Nullness;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -92,9 +92,9 @@ public class CamundaJsonSchemaGenerator {
     final Module openApiModule = new Swagger2Module();
     final Module springAiSchemaModule =
         CamundaJsonSchemaGenerator.PROPERTY_REQUIRED_BY_DEFAULT
-            ? new SpringAiSchemaModule()
-            : new SpringAiSchemaModule(
-                SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
+            ? new McpSpringAiSchemaModule()
+            : new McpSpringAiSchemaModule(
+                McpSpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
     final var builder =
         new SchemaGeneratorConfigBuilder(objectMapper, SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
@@ -105,28 +105,7 @@ public class CamundaJsonSchemaGenerator {
             .with(Option.STANDARD_FORMATS)
             .with(Option.INLINE_ALL_SCHEMAS);
 
-    // The Swagger2Module reads @Schema.defaultValue() and emits it into the JSON Schema "default"
-    // field. When defaultValue is not explicitly set, the annotation returns the sentinel
-    // "##default" (Schema.DEFAULT_SENTINEL), which leaks into the generated schema. Strip it.
-    // Can be removed when upstream is fixed:
-    // https://github.com/victools/jsonschema-generator/issues/573
-    builder
-        .forFields()
-        .withInstanceAttributeOverride((node, field, context) -> removeDefaultSentinel(node));
-    builder
-        .forMethods()
-        .withInstanceAttributeOverride((node, method, context) -> removeDefaultSentinel(node));
-
     return builder;
-  }
-
-  private static void removeDefaultSentinel(final ObjectNode node) {
-    final var defaultNode = node.get("default");
-    if (defaultNode != null
-        && defaultNode.isTextual()
-        && Schema.DEFAULT_SENTINEL.equals(defaultNode.asText())) {
-      node.remove("default");
-    }
   }
 
   public String generateForMethodInput(final Method method) {
@@ -227,8 +206,7 @@ public class CamundaJsonSchemaGenerator {
           || schemaAnnotation.required();
     }
 
-    if (parameter.getAnnotation(Nullable.class) != null
-        || parameter.getAnnotation(org.jspecify.annotations.Nullable.class) != null) {
+    if (Nullness.forParameter(parameter) == Nullness.NULLABLE) {
       return false;
     }
 

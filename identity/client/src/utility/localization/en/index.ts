@@ -7,6 +7,7 @@
  */
 
 import components from "./components.json";
+import entitySelection from "./entitySelection.json";
 import permissions from "./permissions.json";
 import authorizations from "./authorizations.json";
 import tenants from "./tenants.json";
@@ -18,9 +19,12 @@ import clusterVariables from "./clusterVariables.json";
 import operationsLog from "./operationsLog.json";
 import authentication from "./authentication.json";
 import globalTaskListeners from "./globalTaskListeners.json";
+import mcpProcesses from "./mcpProcesses.json";
+import navigation from "./navigation.json";
 
 export default {
   components,
+  entitySelection,
   permissions,
   authorizations,
   tenants,
@@ -32,4 +36,6 @@ export default {
   operationsLog,
   authentication,
   globalTaskListeners,
+  mcpProcesses,
+  navigation,
 };

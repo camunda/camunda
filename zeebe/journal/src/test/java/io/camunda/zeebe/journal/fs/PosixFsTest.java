@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import jnr.constants.platform.Errno;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
@@ -33,7 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Windows does not provide any LibC")
 @Execution(ExecutionMode.CONCURRENT)
 final class PosixFsTest {
   private @TempDir Path tmpDir;
@@ -55,6 +54,9 @@ final class PosixFsTest {
   }
 
   @Test
+  @EnabledOnOs(
+      value = OS.LINUX,
+      disabledReason = "posix_fallocate isn't reliably available on non-Linux platforms")
   void shouldPreallocateFile() throws IOException {
     // given
     final var posixFs = new PosixFs();

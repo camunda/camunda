@@ -42,7 +42,8 @@ public final class ExporterManagerPartitionTest {
             brokerCfg.getExporters().put(TEST_EXPORTER_ID, exporterCfg);
           });
 
-  public final CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomixCluster);
+  public final CommandApiRule clientRule =
+      new CommandApiRule(PARTITIONS, brokerRule::getAtomixCluster);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test

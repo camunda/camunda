@@ -60,7 +60,10 @@
   },
   "serviceContext": {
     "service": "${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}",
-    "version": "${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}"
+    "version": {
+      "$resolver": "stackdriver",
+      "field": "serviceVersion"
+    }
   },
   "@type": {
     "$resolver": "stackdriver",

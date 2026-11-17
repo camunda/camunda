@@ -7,32 +7,36 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentInstanceBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumedWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public final class ProcessProcessor
-    implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
-
-  private static final Consumer<BpmnElementContext> NOOP = context -> {};
+public final class ProcessProcessor implements BpmnElementContainerProcessor<ExecutableProcess> {
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -42,12 +46,20 @@ public final class ProcessProcessor
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
+  private final AgentInstanceBehavior agentInstanceBehavior;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final AsyncRequestState asyncRequestState;
+  private final SuspensionState suspensionState;
+  private final SuspensionMetrics suspensionMetrics;
+  private final ProcessInstanceResumedWriter resumedWriter;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
-      final AsyncRequestState asyncRequestState) {
+      final AsyncRequestState asyncRequestState,
+      final SuspensionState suspensionState,
+      final SuspensionMetrics suspensionMetrics,
+      final StateWriter stateWriter) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
@@ -56,17 +68,22 @@ public final class ProcessProcessor
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    agentInstanceBehavior = bpmnBehaviors.agentInstanceBehavior();
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
     this.asyncRequestState = asyncRequestState;
+    this.suspensionState = suspensionState;
+    this.suspensionMetrics = suspensionMetrics;
+    resumedWriter = new ProcessInstanceResumedWriter(stateWriter, asyncRequestState);
   }
 
   @Override
-  public Class<ExecutableFlowElementContainer> getType() {
-    return ExecutableFlowElementContainer.class;
+  public Class<ExecutableProcess> getType() {
+    return ExecutableProcess.class;
   }
 
   @Override
   public Either<Failure, ?> finalizeActivation(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
     final var activatedContext =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     activateStartEvent(element, activatedContext);
@@ -75,30 +92,39 @@ public final class ProcessProcessor
 
   @Override
   public Either<Failure, ?> onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, context);
     return SUCCESS;
   }
 
   @Override
   public Either<Failure, ?> finalizeCompletion(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    return transitionTo(
-        element,
-        context,
-        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+    final var droppedCommands = writeResumedIfStillResuming(context);
+    final var result =
+        transitionTo(
+            element,
+            context,
+            completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+
+    droppedCommands.ifPresent(count -> recordResumed(context.getElementInstanceKey(), count));
+    // a SUSPENDING instance whose walk never reached SUSPENDED leaves a sample behind; discard it
+    // so it doesn't stay in the map forever
+    suspensionMetrics.discardDurations(context.getElementInstanceKey());
+    return result;
   }
 
   @Override
   public TransitionOutcome onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -108,17 +134,61 @@ public final class ProcessProcessor
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    return noActiveChildInstances ? TransitionOutcome.CONTINUE : TransitionOutcome.AWAIT;
+  }
 
-    if (noActiveChildInstances) {
-      transitionTo(
-          element,
-          context,
-          terminating ->
-              Either.right(
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType(), getAsyncRequest(context))));
+  @Override
+  public void finalizeTermination(
+      final ExecutableProcess element, final BpmnElementContext terminationContext) {
+    final long piKey = terminationContext.getElementInstanceKey();
+    final var resumeDroppedCommands = writeResumedIfStillResuming(terminationContext);
+
+    // capture suspension state before finalization — the applier clears it
+    final boolean wasSuspended = suspensionState.getSuspensionState(piKey) != null;
+    final int droppedCommands = wasSuspended ? suspensionState.countBufferedCommands(piKey) : 0;
+
+    agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
+    transitionTo(
+        element,
+        terminationContext,
+        context ->
+            Either.right(
+                stateTransitionBehavior.transitionToTerminated(
+                    context, element.getEventType(), getAsyncRequest(context))));
+
+    // metrics after all writes
+    resumeDroppedCommands.ifPresent(count -> recordResumed(piKey, count));
+    if (droppedCommands > 0) {
+      suspensionMetrics.commandsDropped(droppedCommands);
     }
-    return TransitionOutcome.CONTINUE;
+    suspensionMetrics.discardDurations(piKey);
+  }
+
+  /**
+   * Writes {@code RESUMED} if the instance ends while {@code RESUMING}. The rest of the resume
+   * chain is then rejected, so without this no record would mark the resume as finished (e.g. for
+   * batch resume items).
+   *
+   * @return the number of buffered commands dropped with the marker, or empty if not resuming
+   */
+  private OptionalInt writeResumedIfStillResuming(final BpmnElementContext context) {
+    final long piKey = context.getElementInstanceKey();
+    if (suspensionState.getSuspensionState(piKey) != SuspensionState.State.RESUMING) {
+      return OptionalInt.empty();
+    }
+
+    final int droppedCommands = suspensionState.countBufferedCommands(piKey);
+    resumedWriter.writeResumed(piKey, context.getRecordValue());
+    return OptionalInt.of(droppedCommands);
+  }
+
+  /** Called after all writes, so a failed batch does not leave the metrics updated. */
+  private void recordResumed(final long piKey, final int droppedCommands) {
+    if (droppedCommands > 0) {
+      suspensionMetrics.commandsDropped(droppedCommands);
+    }
+    suspensionMetrics.stopResumeDuration(piKey);
+    suspensionMetrics.instanceResumed();
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {
@@ -131,7 +201,7 @@ public final class ProcessProcessor
   }
 
   private void activateStartEvent(
-      final ExecutableFlowElementContainer element, final BpmnElementContext activated) {
+      final ExecutableProcess element, final BpmnElementContext activated) {
     if (element.hasMessageStartEvent()
         || element.hasTimerStartEvent()
         || element.hasSignalStartEvent()
@@ -149,7 +219,7 @@ public final class ProcessProcessor
   }
 
   private void activateNoneStartEvent(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableProcess element, final BpmnElementContext context) {
     final var noneStartEvent = element.getNoneStartEvent();
     if (noneStartEvent == null) {
       throw new BpmnProcessingException(
@@ -161,7 +231,7 @@ public final class ProcessProcessor
 
   @Override
   public void afterExecutionPathCompleted(
-      final ExecutableFlowElementContainer element,
+      final ExecutableProcess element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
@@ -173,7 +243,7 @@ public final class ProcessProcessor
 
   @Override
   public void onChildTerminated(
-      final ExecutableFlowElementContainer element,
+      final ExecutableProcess element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeContext);
@@ -197,31 +267,36 @@ public final class ProcessProcessor
                         eventTrigger,
                         flowScopeContext));
       }
-    } else if (stateBehavior.canBeTerminated(childContext)) {
-      if (flowScopeInstance.isTerminating()) {
-        // the process instance was canceled, or interrupted by a parent process instance
-        transitionTo(
-            element,
-            flowScopeContext,
-            context ->
-                Either.right(
-                    stateTransitionBehavior.transitionToTerminated(
-                        context, element.getEventType(), getAsyncRequest(context))));
+    } else if (stateBehavior.canBeTerminated(childContext) && flowScopeInstance.isTerminating()) {
+      // the process instance was canceled or interrupted by a parent process instance
+      if (!element.hasCancelExecutionListeners()) {
+        // Stay backwards compatible during a rolling upgrade: only emit the
+        // CONTINUE_TERMINATING_ELEMENT command when the process actually defines
+        // cancel listeners. Processes without cancel listeners must produce the
+        // same record stream as previous broker versions, so a leader change from
+        // a newer to an older broker mid-upgrade does terminate a process instance correctly.
+        finalizeTermination(element, flowScopeContext);
+      } else {
+        stateTransitionBehavior.continueTerminating(flowScopeContext);
       }
     }
   }
 
   private Either<Failure, ?> transitionTo(
-      final ExecutableFlowElementContainer element,
+      final ExecutableProcess element,
       final BpmnElementContext context,
       final Function<BpmnElementContext, Either<Failure, BpmnElementContext>> transitionOperation) {
 
     final var postTransitionAction = getPostTransitionAction(element, context);
-    return transitionOperation.apply(context).thenDo(postTransitionAction);
+    return transitionOperation
+        .apply(context)
+        .thenDo(postTransitionAction)
+        // once the instance is removed, finalize the definition's deletion if it was draining
+        .thenDo(processDeletionBehavior::finalizeDeletionIfDraining);
   }
 
   private Consumer<BpmnElementContext> getPostTransitionAction(
-      final ExecutableFlowElementContainer processElement, final BpmnElementContext context) {
+      final ExecutableProcess processElement, final BpmnElementContext context) {
 
     // fetch the data before the element instance is removed while performing the transition
     final var parentProcessInstanceKey = context.getParentProcessInstanceKey();
@@ -239,17 +314,40 @@ public final class ProcessProcessor
         }
       };
 
-    } else if (processElement.hasMessageStartEvent()) {
-      // the process might be created by a message (but not by a call activity)
-      final var correlationKey = bufferedMessageStartEventBehavior.findCorrelationKey(context);
+    } else if (processElement.hasMessageStartEvent()
+        || bufferedMessageStartEventBehavior.shouldRedriveBlockedBusinessIdOnCompletion(context)) {
+      // The process might be created by a message (but not by a call activity), or it may simply
+      // hold a Business ID that is blocking a buffered message-start of the same bpmnProcessId.
+      // Capture the holder's correlation key and businessId now, before the completion transition
+      // removes them; after the transition both are re-driven to pick up any message buffered
+      // behind the freed correlation-key lock and/or the freed Business ID (ADR 0002 D5).
+      //
+      // The Business ID arm fires even when this instance's own process has no message start event:
+      // a none-start instance (e.g. CreateProcessInstance) or an older version can hold the
+      // Business ID that blocks a message-start owned by the latest version. The re-drive resolves
+      // the latest version, so it correctly finds (or finds nothing) regardless of the holder's own
+      // version.
+      final var processInstanceKey = context.getProcessInstanceKey();
+      final var correlationKey =
+          bufferedMessageStartEventBehavior.findCorrelationKey(context).orElse(null);
+      final var businessId = context.getBusinessId();
 
-      return postTransitionContext ->
-          correlationKey.ifPresent(
-              key ->
-                  bufferedMessageStartEventBehavior.correlateMessage(postTransitionContext, key));
+      return postTransitionContext -> {
+        bufferedMessageStartEventBehavior.correlateNextBufferedMessagesOnCompletion(
+            postTransitionContext, correlationKey, businessId);
+        // If this instance is a cross-partition message-start holder, push its completion to P_K so
+        // the correlation-key lock there is freed without waiting for a poll (a no-op point read
+        // for every non-holder instance).
+        bufferedMessageStartEventBehavior.pushCrossPartitionHolderCompletion(processInstanceKey);
+      };
 
     } else {
-      return NOOP;
+      // A plain root instance still has to push its completion when it is a cross-partition
+      // message-start holder whose current version lost the message start event through migration:
+      // the release must key off the origin entry captured at creation, not this version's context.
+      final var processInstanceKey = context.getProcessInstanceKey();
+      return postTransitionContext ->
+          bufferedMessageStartEventBehavior.pushCrossPartitionHolderCompletion(processInstanceKey);
     }
   }
 }

@@ -17,10 +17,10 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.List;
 import java.util.UUID;
@@ -333,7 +333,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
   public void shouldIgnoreAuthorizationCheckEventWhenEnabled() {
     // given
     final var authorization =
-        Authorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());

@@ -9,6 +9,7 @@ package io.camunda.search.schema.metrics;
 
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
@@ -20,11 +21,18 @@ public class SchemaManagerMetrics {
   private final Timer schemaInitTimer;
 
   public SchemaManagerMetrics(final MeterRegistry meterRegistry) {
+    this(meterRegistry, null);
+  }
+
+  public SchemaManagerMetrics(final MeterRegistry meterRegistry, final String physicalTenantId) {
     this.meterRegistry = meterRegistry;
-    schemaInitTimer =
+    final var builder =
         Timer.builder(NAMESPACE + ".init.time")
-            .description("Duration of initializing the schema in the secondary storage")
-            .register(meterRegistry);
+            .description("Duration of initializing the schema in the secondary storage");
+    if (physicalTenantId != null) {
+      builder.tag(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId);
+    }
+    schemaInitTimer = builder.register(meterRegistry);
   }
 
   public CloseableSilently startSchemaInitTimer() {

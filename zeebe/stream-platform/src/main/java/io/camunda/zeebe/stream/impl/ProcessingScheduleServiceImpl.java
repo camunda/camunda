@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.stream.api.scheduling.RegeneratingTask;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -21,8 +25,10 @@ import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.PriorityQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -43,10 +49,10 @@ public class ProcessingScheduleServiceImpl
   private final long interval;
   private final ScheduledTaskMetrics metrics;
   private final PriorityQueue<ScheduledTaskImpl> scheduledTasks = new PriorityQueue<>();
-  private LogStreamWriter logStreamWriter;
-  private ActorControl actorControl;
-  private AbortableRetryStrategy writeRetryStrategy;
-  private CompletableActorFuture<Void> openFuture;
+  private @Nullable LogStreamWriter logStreamWriter;
+  private @Nullable ActorControl actorControl;
+  private @Nullable AbortableRetryStrategy writeRetryStrategy;
+  private @Nullable CompletableActorFuture<Void> openFuture;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
@@ -71,7 +77,7 @@ public class ProcessingScheduleServiceImpl
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    return schedule(clock.millis() + delay.toMillis(), task);
+    return schedule(actorControl, clock.millis() + delay.toMillis(), task);
   }
 
   @Override
@@ -90,7 +96,21 @@ public class ProcessingScheduleServiceImpl
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    return schedule(timestamp, task);
+    return schedule(actorControl, timestamp, task);
+  }
+
+  @Override
+  public void runAtFixedRate(final Duration delay, final Runnable task) {
+    runDelayed(
+        delay,
+        guardRunnable(
+            () -> {
+              try {
+                task.run();
+              } finally {
+                runAtFixedRate(delay, task);
+              }
+            }));
   }
 
   @Override
@@ -117,7 +137,7 @@ public class ProcessingScheduleServiceImpl
 
     logStreamWriter = writerSupplier.get();
     actorControl = control;
-    openFuture.complete(null);
+    openFuture.complete(unit());
     actorControl.runAtFixedRate(Duration.ofMillis(interval), this::processScheduledTasks);
     return openFuture;
   }
@@ -135,11 +155,13 @@ public class ProcessingScheduleServiceImpl
     while (scheduledTasks.peek() != null && scheduledTasks.peek().scheduledTime <= now) {
       metrics.decrementScheduledTasks();
       final var expiredTask = scheduledTasks.poll();
-      actorControl.submit(expiredTask);
+      requireNonNull(actorControl).submit(expiredTask);
     }
   }
 
-  private ScheduledTask schedule(final long timestamp, final Runnable task) {
+  // actorControl is the same as the field, but guaranteed to be non-null
+  private ScheduledTask schedule(
+      final ActorControl actorControl, final long timestamp, final Runnable task) {
     final var scheduledTask = new ScheduledTaskImpl(timestamp, task);
     actorControl.run(
         () -> {
@@ -147,10 +169,30 @@ public class ProcessingScheduleServiceImpl
           final var delay = timestamp - clock.millis();
           scheduledTasks.add(scheduledTask);
           if (delay < interval / 2) {
-            actorControl.schedule(Duration.ofMillis(delay), this::processScheduledTasks);
+            requireNonNull(actorControl)
+                .schedule(Duration.ofMillis(delay), this::processScheduledTasks);
           }
         });
     return scheduledTask;
+  }
+
+  Runnable guardRunnable(final Runnable task) {
+    return () -> {
+      if (abortCondition.getAsBoolean()) {
+        // it might be that we are closing, then we should just stop
+        return;
+      }
+
+      final var currentStreamProcessorPhase = streamProcessorPhaseSupplier.get();
+      if (currentStreamProcessorPhase != Phase.PROCESSING) {
+        LOG.trace(
+            "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
+            currentStreamProcessorPhase);
+        return;
+      }
+
+      task.run();
+    };
   }
 
   Runnable toRunnable(final Task task) {
@@ -174,13 +216,14 @@ public class ProcessingScheduleServiceImpl
         LOG.trace(
             "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
             currentStreamProcessorPhase);
-        actorControl.submit(toRunnable(task));
+        requireNonNull(actorControl).submit(toRunnable(task));
         return;
       }
 
       final var stagedCache = commandCache.stage();
       final var builder =
-          new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents, stagedCache);
+          new BufferedTaskResultBuilder(
+              requireNonNull(logStreamWriter)::canWriteEvents, stagedCache);
       final var result = task.execute(builder);
       final var recordBatch = result.getRecordBatch();
 
@@ -192,29 +235,58 @@ public class ProcessingScheduleServiceImpl
       // it was full during writing)
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
       // write later
+      final var resultAbandoned = new AtomicBoolean(false);
       final var writeFuture =
-          writeRetryStrategy.runWithRetry(
-              () -> {
-                LOG.trace("Write scheduled TaskResult to dispatcher!");
-                if (recordBatch.isEmpty()) {
-                  return true;
-                }
+          requireNonNull(writeRetryStrategy)
+              .runWithRetry(
+                  () -> {
+                    LOG.trace("Write scheduled TaskResult to dispatcher!");
+                    if (recordBatch.isEmpty()) {
+                      return true;
+                    }
 
-                return logStreamWriter
-                    .tryWrite(WriteContext.scheduled(), recordBatch.entries())
-                    .isRight();
-              },
-              abortCondition);
+                    final var writeResult =
+                        requireNonNull(logStreamWriter)
+                            .tryWrite(WriteContext.scheduled(), recordBatch.entries());
+                    if (writeResult.isRight()) {
+                      return true;
+                    }
+
+                    final boolean rateLimited =
+                        switch (writeResult.getLeft()) {
+                          case WRITE_LIMIT_EXHAUSTED, REQUEST_LIMIT_EXHAUSTED -> true;
+                          // TODO: these failures are still retried until the write is accepted.
+                          //  Handle them individually, like the rate limits, as a follow-up.
+                          case CLOSED, INVALID_ARGUMENT, PARTITION_PAUSED -> false;
+                          case null -> false;
+                        };
+                    if (rateLimited && task instanceof RegeneratingTask) {
+                      resultAbandoned.set(true);
+                      return true;
+                    }
+                    return false;
+                  },
+                  abortCondition);
 
       writeFuture.onComplete(
           (v, t) -> {
-            if (t != null) {
+            // a false result without an error means the write was aborted before it succeeded
+            if (t != null || !v) {
               stagedCache.rollback();
+            }
+            if (t != null) {
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors
               //   earlier
               LOG.warn("Writing of scheduled TaskResult failed!", t);
+              return;
+            }
+
+            if (resultAbandoned.get() && task instanceof final RegeneratingTask regeneratingTask) {
+              stagedCache.rollback();
+              LOG.debug("Write rate limited, abandoning result of scheduled task.");
+              regeneratingTask.onResultAbandoned();
             }
           });
     };
@@ -233,12 +305,13 @@ public class ProcessingScheduleServiceImpl
 
     @Override
     public void cancel() {
-      actorControl.run(
-          () -> {
-            if (scheduledTasks.remove(this)) {
-              metrics.decrementScheduledTasks();
-            }
-          });
+      requireNonNull(actorControl)
+          .run(
+              () -> {
+                if (scheduledTasks.remove(this)) {
+                  metrics.decrementScheduledTasks();
+                }
+              });
     }
 
     @Override

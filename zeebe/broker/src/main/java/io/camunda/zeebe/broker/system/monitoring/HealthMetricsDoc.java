@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter;
 
@@ -28,7 +28,8 @@ public enum HealthMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Shows current health of the partition (1 = healthy, 0 = unhealthy, -1 = dead)";
+      return "Shows current health of the partition (1 = healthy, 0 = unhealthy, -1 = dead,"
+          + " 2 = recovering)";
     }
 
     @Override

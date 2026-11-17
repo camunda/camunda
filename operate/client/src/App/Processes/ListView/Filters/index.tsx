@@ -29,6 +29,7 @@ import {
 import {FiltersPanel} from 'modules/components/FiltersPanel';
 import {
   CheckmarkOutline,
+  PauseOutlineFilled,
   RadioButtonChecked,
   WarningFilled,
 } from 'modules/components/StateIcon/styled';
@@ -49,8 +50,15 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const initialValues: ProcessInstancesFilter = {
   active: true,
+  suspended: true,
   incidents: true,
 };
+
+const omitVariableValues = ({
+  variableName,
+  variableValues,
+  ...rest
+}: ProcessInstancesFilter = {}) => rest;
 
 const Filters: React.FC = observer(() => {
   const clientConfig = getClientConfig();
@@ -59,11 +67,6 @@ const Filters: React.FC = observer(() => {
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
   const filterValues = parseProcessInstancesFilter(searchParams);
-  const variable = variableFilterStore.variable;
-  if (variable) {
-    filterValues.variableName = variable.name;
-    filterValues.variableValues = variable.values;
-  }
   if (filterValues.processDefinitionId && filterValues.tenantId !== 'all') {
     filterValues.processDefinitionId = getDefinitionIdentifier(
       filterValues.processDefinitionId,
@@ -74,22 +77,17 @@ const Filters: React.FC = observer(() => {
     delete filterValues.processDefinitionId;
     delete filterValues.processDefinitionVersion;
   }
+  const {inlineCondition} = variableFilterStore;
+  const inlineVariableValues = inlineCondition
+    ? {
+        variableName: inlineCondition.name,
+        variableValues: inlineCondition.value,
+      }
+    : {};
 
   return (
     <Form<ProcessInstancesFilter>
       onSubmit={(values) => {
-        if (
-          values.variableName !== undefined &&
-          values.variableValues !== undefined
-        ) {
-          variableFilterStore.setVariable({
-            name: values.variableName,
-            values: values.variableValues,
-          });
-        } else {
-          variableFilterStore.setVariable(undefined);
-        }
-
         navigate({
           search: updateProcessInstancesFilterSearchString(searchParams, {
             ...values,
@@ -99,18 +97,26 @@ const Filters: React.FC = observer(() => {
           }),
         });
       }}
-      initialValues={filterValues}
+      initialValues={{...filterValues, ...inlineVariableValues}}
+      // We explicitly ignore the variable fields when comparing initialValues,
+      // because typing a variable would otherwise erase the user's other inputs.
+      initialValuesEqual={(previous, next) =>
+        isEqual(omitVariableValues(previous), omitVariableValues(next))
+      }
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
           <FiltersPanel
             localStorageKey="isFiltersCollapsed"
             isResetButtonDisabled={
-              (isEqual(initialValues, values) && visibleFilters.length === 0) ||
+              (isEqual(initialValues, values) &&
+                visibleFilters.length === 0 &&
+                !variableFilterStore.hasActiveFilters) ||
               isBatchModificationEnabled
             }
             onResetClick={() => {
-              form.reset();
+              variableFilterStore.setConditions([]);
+              form.reset(initialValues);
               navigate({
                 search: updateProcessInstancesFilterSearchString(
                   searchParams,
@@ -118,7 +124,6 @@ const Filters: React.FC = observer(() => {
                 ),
               });
               setVisibleFilters([]);
-              variableFilterStore.setVariable(undefined);
             }}
           >
             <Container>
@@ -129,6 +134,7 @@ const Filters: React.FC = observer(() => {
                   'processDefinitionVersion',
                   'elementId',
                   'active',
+                  'suspended',
                   'incidents',
                   'completed',
                   'canceled',
@@ -166,6 +172,11 @@ const Filters: React.FC = observer(() => {
                           label: 'Active',
                           name: 'active',
                           Icon: RadioButtonChecked,
+                        },
+                        {
+                          label: 'Suspended',
+                          name: 'suspended',
+                          Icon: PauseOutlineFilled,
                         },
                         {
                           label: 'Incidents',

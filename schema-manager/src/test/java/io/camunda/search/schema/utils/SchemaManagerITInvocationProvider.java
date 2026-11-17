@@ -10,6 +10,7 @@ package io.camunda.search.schema.utils;
 import static java.util.Arrays.asList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -47,7 +48,7 @@ public class SchemaManagerITInvocationProvider
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withNetwork(Network.SHARED)
           .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS);
   private final OpenSearchContainer<?> osContainer =
@@ -78,7 +79,17 @@ public class SchemaManagerITInvocationProvider
   public void afterEach(final ExtensionContext context) throws IOException {
     if (context.getDisplayName().equals(DatabaseType.ELASTICSEARCH.toString())) {
       elsClient.indices().delete(req -> req.index("*"));
-      elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+      // Scoped to test-created templates only: a bare "*" also matches Elasticsearch's built-in
+      // reserved templates (e.g. .deprecation-indexing-template, logs, metrics), which ES9 refuses
+      // to delete via wildcard. ES9 also errors, rather than no-ops, when the pattern matches no
+      // templates at all, so that case is caught and ignored here.
+      try {
+        elsClient.indices().deleteIndexTemplate(req -> req.name(CONFIG_PREFIX + "*"));
+      } catch (final ElasticsearchException e) {
+        if (!e.getMessage().contains("index_template_missing_exception")) {
+          throw e;
+        }
+      }
     } else if (context.getDisplayName().equals(DatabaseType.OPENSEARCH.toString())) {
       osClient.indices().delete(req -> req.index("*"));
       osClient.indices().deleteIndexTemplate(req -> req.name("*"));
@@ -100,6 +111,8 @@ public class SchemaManagerITInvocationProvider
     elsClient = esConnector.createClient();
     elsClientAdapter = new SearchClientAdapter(elsClient, esConnector.objectMapper());
 
+    closeables.add(elsClient);
+    closeables.add(osClient._transport());
     closeables.add(elsContainer);
     closeables.add(osContainer);
   }

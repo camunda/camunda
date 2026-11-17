@@ -11,9 +11,13 @@ import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggreg
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_GROUP_TENANT_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_TOTAL_COUNT;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_SOURCE_NAME_BPMN_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_SOURCE_NAME_TENANT_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.SCRIPT_LANGUAGE;
+import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.composite;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topHits;
@@ -26,6 +30,7 @@ import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessDefinitionSort;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
@@ -41,15 +46,18 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
     final var transformers = value.getRight();
     final var page = aggregation.page();
     final var sort = aggregation.sort();
+    final var resultConfig = aggregation.resultConfig();
     final Builder<ProcessEntity> topHits = topHits();
 
     // get the MAX version
-    final SearchTopHitsAggregator<ProcessEntity> maxVersionsAgg =
-        topHits
-            .name(AGGREGATION_NAME_LATEST_DEFINITION)
-            .sortOption(new ProcessDefinitionSort.Builder().version().desc().build())
-            .documentClass(ProcessEntity.class)
-            .build();
+    topHits
+        .name(AGGREGATION_NAME_LATEST_DEFINITION)
+        .sortOption(new ProcessDefinitionSort.Builder().version().desc().build())
+        .documentClass(ProcessEntity.class);
+    if (resultConfig == null || !resultConfig.includeXml()) {
+      topHits.excludes(List.of(ProcessIndex.BPMN_XML));
+    }
+    final SearchTopHitsAggregator<ProcessEntity> maxVersionsAgg = topHits.build();
 
     // aggregate terms by process id
     final SearchTermsAggregator.Builder byProcessIdAggSourceBuilder =
@@ -78,6 +86,13 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
             .aggregations(maxVersionsAgg)
             .build();
 
-    return List.of(finalAggregation);
+    final var totalCountAgg =
+        cardinality()
+            .name(AGGREGATION_NAME_TOTAL_COUNT)
+            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
+            .lang(SCRIPT_LANGUAGE)
+            .build();
+
+    return List.of(finalAggregation, totalCountAgg);
   }
 }

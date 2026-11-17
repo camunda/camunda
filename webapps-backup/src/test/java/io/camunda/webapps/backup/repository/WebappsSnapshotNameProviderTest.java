@@ -8,6 +8,7 @@
 package io.camunda.webapps.backup.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.webapps.backup.Metadata;
 import org.junit.jupiter.api.Test;
@@ -22,5 +23,23 @@ public class WebappsSnapshotNameProviderTest {
     assertThat(snapshotNameProvider.extractMetadataFromSnapshotName(snapshotName))
         .isEqualTo(metadata);
     assertThat(snapshotNameProvider.extractBackupId(snapshotName)).isEqualTo(metadata.backupId());
+  }
+
+  @Test
+  void shouldNameSnapshotsWithoutAPhysicalTenantId() {
+    assertThat(snapshotNameProvider.getSnapshotName(metadata))
+        .isEqualTo("camunda_webapps_12312938123_8.7.3_part_11_of_13");
+    assertThat(snapshotNameProvider.snapshotNamePrefix()).isEqualTo("camunda_webapps_");
+  }
+
+  @Test
+  void shouldRejectAForeignSnapshotName() {
+    // a repository may legitimately hold snapshots of another backup system — Optimize writes its
+    // own into the same repository, and they carry no webapps metadata
+    assertThatThrownBy(
+            () ->
+                snapshotNameProvider.extractMetadataFromSnapshotName(
+                    "camunda_optimize_12312938123_8.7.3_part_1_of_2"))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }

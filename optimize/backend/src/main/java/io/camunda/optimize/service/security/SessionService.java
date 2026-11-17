@@ -19,6 +19,8 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -30,7 +32,10 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -46,14 +51,21 @@ public class SessionService implements ConfigurationReloadable {
 
   private final TerminatedSessionService terminatedSessionService;
   private final ConfigurationService configurationService;
+
+  // Present only under CSL; absent in the legacy setup, which resolves the user from the auth
+  // cookie or a bearer token's sub claim.
+  private final ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider;
+
   private Algorithm hashingAlgorithm;
   private JWTVerifier jwtVerifier;
 
   public SessionService(
       final TerminatedSessionService terminatedSessionService,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final ObjectProvider<CamundaAuthenticationProvider> camundaAuthenticationProviderProvider) {
     this.terminatedSessionService = terminatedSessionService;
     this.configurationService = configurationService;
+    this.camundaAuthenticationProviderProvider = camundaAuthenticationProviderProvider;
 
     initJwtVerifier();
   }
@@ -80,10 +92,101 @@ public class SessionService implements ConfigurationReloadable {
     return isValid;
   }
 
+  /**
+   * Resolves the authenticated user ID from the current request, regardless of whether the request
+   * was authenticated via an Identity session cookie or a bearer JWT token.
+   *
+   * <p>A CSL-authenticated request is resolved on its own: when CSL is active and the request
+   * carries one, the user is whatever CSL authenticated (see {@link #cslAuthenticatedPrincipalId(
+   * CamundaAuthenticationProvider)}) or nothing at all. It never falls back to the branches below,
+   * because the cookie branch reads its subject from an unverified token: under CSL no filter
+   * validates the Optimize auth cookie, so a stale or injected one could otherwise attribute the
+   * request to a different user.
+   *
+   * <p>Otherwise, in order:
+   *
+   * <ol>
+   *   <li>If the {@link SecurityContextHolder} already holds a {@link JwtAuthenticationToken} (set
+   *       by Spring Security's OAuth2 resource server bearer-token authentication when {@code
+   *       api.jwtAuthForApiEnabled=true}), the subject is taken directly from that token. This
+   *       avoids any cookie look-up for bearer-authenticated requests.
+   *   <li>Otherwise, the token is extracted from the Optimize auth cookie (or request attributes
+   *       set during cookie renewal) and the subject is decoded from it.
+   * </ol>
+   *
+   * @throws NotAuthorizedException if no authenticated identity can be resolved.
+   */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
-    return AuthCookieService.getAuthCookieToken(request)
-        .flatMap(AuthCookieService::getTokenSubject)
+    final CamundaAuthenticationProvider cslProvider = cslAuthenticationProvider();
+    if (cslProvider != null && CslAuthentication.isCslAuthenticatedRequest()) {
+      return cslAuthenticatedPrincipalId(cslProvider)
+          .orElseThrow(
+              () ->
+                  new NotAuthorizedException(
+                      "Could not extract request user from the CSL authentication!"));
+    }
+    return subjectFromSecurityContext()
+        .or(
+            () ->
+                AuthCookieService.getAuthCookieToken(request)
+                    .flatMap(AuthCookieService::getTokenSubject))
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
+  }
+
+  /** The CSL authentication provider, or {@code null} when CSL is not active. */
+  private CamundaAuthenticationProvider cslAuthenticationProvider() {
+    return camundaAuthenticationProviderProvider == null
+        ? null
+        : camundaAuthenticationProviderProvider.getIfAvailable();
+  }
+
+  /**
+   * Resolves the id CSL authenticated the request as, which is the id Optimize stores entity
+   * ownership under: {@code authenticatedUsername} (CSL's configured {@code username-claim}) for a
+   * user principal, or {@code authenticatedClientId} for a bearer request CSL classified as an M2M
+   * client — a client-credentials token never has a username claim to fall back to, and this must
+   * still resolve an id for it, the same as it always has for a user. Mirrors {@code
+   * CCSMTokenService#getCurrentUserIdFromAuthToken}, which reads the same source.
+   */
+  private static Optional<String> cslAuthenticatedPrincipalId(
+      final CamundaAuthenticationProvider provider) {
+    return Optional.ofNullable(provider.getCamundaAuthentication())
+        .flatMap(SessionService::authenticatedPrincipalId);
+  }
+
+  private static Optional<String> authenticatedPrincipalId(
+      final CamundaAuthentication authentication) {
+    return nonBlank(authentication.authenticatedUsername())
+        .or(() -> nonBlank(authentication.authenticatedClientId()));
+  }
+
+  private static Optional<String> nonBlank(final String value) {
+    return Optional.ofNullable(value).filter(v -> !v.isBlank());
+  }
+
+  /**
+   * Extracts the JWT subject from the {@link SecurityContextHolder} when the request was
+   * authenticated via a bearer token ({@code ApiBearerTokenAuthenticationFilter}).
+   *
+   * <p>Only consulted when {@code api.jwtAuthForApiEnabled=true}. When the flag is {@code false},
+   * this always returns {@link Optional#empty()} so that a stale or injected {@link
+   * JwtAuthenticationToken} in the context can never bypass cookie-based auth.
+   *
+   * <p><strong>Note:</strong> the filter chain is wired once at startup based on the flag value at
+   * that time, while this method re-reads the flag on every call via {@code configurationService}.
+   * A hot configuration reload that flips the flag while a request is in-flight can cause a
+   * mismatch: the bearer filter authenticates the request, but this method returns empty and the
+   * request falls through to cookie auth, resulting in a spurious 401. This is an inherent
+   * limitation of combining immutable filter chains with a reloadable configuration.
+   */
+  private Optional<String> subjectFromSecurityContext() {
+    if (!configurationService.getOptimizeApiConfiguration().isJwtAuthForApiEnabled()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+        .filter(JwtAuthenticationToken.class::isInstance)
+        .map(JwtAuthenticationToken.class::cast)
+        .map(jwtAuth -> jwtAuth.getToken().getSubject());
   }
 
   @Override

@@ -8,10 +8,21 @@
 package io.camunda.gateway.mapping.http.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
+import io.camunda.gateway.protocol.model.UserTaskLookupStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
+import io.camunda.service.ClusterTopologyServices.ClusterBroker;
+import io.camunda.service.ClusterTopologyServices.ClusterTopology;
+import io.camunda.service.ClusterTopologyServices.PhysicalTenantBroker;
+import io.camunda.service.ClusterTopologyServices.PhysicalTenantTopology;
+import io.camunda.service.SecretServices;
+import io.camunda.service.SecretServices.SecretResolution;
+import io.camunda.service.SecretServices.SecretResolutionError;
+import io.camunda.service.TopologyServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -21,11 +32,17 @@ import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRe
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
@@ -33,6 +50,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ResponseMapperTest {
@@ -65,7 +84,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecordWithRootProcessInstanceKey(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -105,7 +124,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -120,6 +139,311 @@ class ResponseMapperTest {
                 // rootProcessInstanceKey should be null when it's -1 (not set)
                 assertThat(job.getRootProcessInstanceKey()).isNull();
               });
+    }
+
+    @Test
+    void shouldMapActivatedJobWithBusinessId() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setBusinessId("business-1")
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .satisfies(job -> assertThat(job.getBusinessId()).isEqualTo("business-1"));
+    }
+
+    @Test
+    void shouldNotSetBusinessIdWhenEmptyForActivatedJob() {
+      // given - job whose owning instance has no business ID (empty string on the record)
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              // businessId defaults to an empty string when not set
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          // businessId should be null when the record carries an empty string
+          .satisfies(job -> assertThat(job.getBusinessId()).isNull());
+    }
+
+    @Test
+    void shouldMapActivatedJobWithJobLeaseToken() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setJobLeaseToken("lease-token-1")
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .satisfies(job -> assertThat(job.getJobLeaseToken()).isEqualTo("lease-token-1"));
+    }
+
+    @Test
+    void shouldNotSetJobLeaseTokenWhenNotLeasedForActivatedJob() {
+      // given - job activated without a lease (empty string on the record)
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              // jobLeaseToken defaults to an empty string when not set
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          // jobLeaseToken should be null when the record carries an empty string
+          .satisfies(job -> assertThat(job.getJobLeaseToken()).isNull());
+    }
+
+    @Test
+    void shouldCarryLeaseTokenOnActivatedJobs() {
+      // given
+      final var activationResponse =
+          new JobActivationResponse(
+              123L,
+              buildJobBatchRecord(jobWithLeaseToken("lease-token-1")),
+              1024 * 1024L,
+              "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isEqualTo("lease-token-1"));
+      assertThat(result.getJobsToDefer()).isEmpty();
+    }
+
+    @Test
+    void shouldCarryLeaseTokenOnJobsToDefer() {
+      // given - the max response size is too small for any job
+      final var activationResponse =
+          new JobActivationResponse(
+              123L, buildJobBatchRecord(jobWithLeaseToken("lease-token-1")), 0L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobs()).isEmpty();
+      assertThat(result.getJobsToDefer())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isEqualTo("lease-token-1"));
+    }
+
+    @Test
+    void shouldHaveNoLeaseTokenOnActivatedJobsWithoutLease() {
+      // given
+      final var activationResponse =
+          new JobActivationResponse(
+              123L, buildJobBatchRecord(jobWithLeaseToken("")), 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isNullOrEmpty());
+    }
+
+    @Test
+    void shouldHaveNoLeaseTokenOnJobsToDeferWithoutLease() {
+      // given
+      final var activationResponse =
+          new JobActivationResponse(
+              123L, buildJobBatchRecord(jobWithLeaseToken("")), 0L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobsToDefer())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isNullOrEmpty());
+    }
+
+    private static JobRecord jobWithLeaseToken(final String leaseToken) {
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setJobLeaseToken(leaseToken)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      jobRecord.setVariables(
+          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Collections.emptyMap())));
+      return jobRecord;
+    }
+
+    @Test
+    void shouldMapPriorityToActivatedJobResult() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setPriority(80)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getActivateJobsResponse().getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.getPriority()).isEqualTo(80));
+    }
+
+    @Test
+    void shouldMapPhysicalTenantIdToActivatedJobResult() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "riskproduction");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getActivateJobsResponse().getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.getPhysicalTenantId()).isEqualTo("riskproduction"));
     }
 
     static Stream<ActivatedJobWithUserTaskPropsCase> activatedJobWithUserTaskPropsCases() {
@@ -155,13 +479,16 @@ class ResponseMapperTest {
               "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
+                  Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
                   Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "132",
                   Protocol.USER_TASK_PRIORITY_HEADER_NAME, "<not_a_number>"),
               props -> {
                 // Verify invalid or empty headers result in empty or null properties
-                assertThat(props.getAction()).as("Action should be null").isNull();
+                assertThat(props.getAction())
+                    .as("Action should be populated")
+                    .isEqualTo("complete");
                 assertThat(props.getAssignee()).as("Assignee should be null").isNull();
                 assertThat(props.getCandidateGroups())
                     .as("Candidate groups should be empty for invalid input")
@@ -202,7 +529,12 @@ class ResponseMapperTest {
               props ->
                   assertThat(props)
                       .as("User task properties should be null for EXECUTION_LISTENER jobs")
-                      .isNull()));
+                      .isNull()),
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job without action header (pre-fix broker-internal path)",
+              JobKind.TASK_LISTENER,
+              Map.of(Protocol.USER_TASK_KEY_HEADER_NAME, "2251799813685268"),
+              props -> assertThat(props.getAction()).isEqualTo("")));
     }
 
     @ParameterizedTest
@@ -214,7 +546,7 @@ class ResponseMapperTest {
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
 
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -278,8 +610,11 @@ class ResponseMapperTest {
           .setElementInstanceKey(jobRecord.getElementInstanceKey())
           .setWorker(jobRecord.getWorker())
           .setRetries(jobRecord.getRetries())
+          .setPriority(jobRecord.getPriority())
           .setDeadline(jobRecord.getDeadline())
-          .setTenantId(jobRecord.getTenantId());
+          .setTenantId(jobRecord.getTenantId())
+          .setBusinessId(jobRecord.getBusinessId())
+          .setJobLeaseToken(jobRecord.getJobLeaseToken());
 
       // Set variables as empty MsgPack map
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
@@ -318,6 +653,7 @@ class ResponseMapperTest {
           .setElementInstanceKey(jobRecord.getElementInstanceKey())
           .setWorker(jobRecord.getWorker())
           .setRetries(jobRecord.getRetries())
+          .setPriority(jobRecord.getPriority())
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId())
           .setRootProcessInstanceKey(jobRecord.getRootProcessInstanceKey());
@@ -509,6 +845,265 @@ class ResponseMapperTest {
       assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
       assertThat(response.getBatchOperation().getBatchOperationType().name())
           .isEqualTo(batchOperationType.name());
+    }
+  }
+
+  @Nested
+  class SecretMappingTest {
+
+    /**
+     * The service and the generated REST model each declare their own {@code SecretErrorCode} enum,
+     * bridged by {@link ResponseMapper#toSecretResolveResult}. Keep them in sync: mapping drift is
+     * expected to be caught at build time (exhaustive switch / missing enum symbols), and this test
+     * additionally pins each service code to a REST code with the identical name.
+     */
+    @ParameterizedTest
+    @EnumSource(SecretServices.SecretErrorCode.class)
+    void shouldMapEverySecretErrorCodeToMatchingRestCode(
+        final SecretServices.SecretErrorCode code) {
+      // given a resolution carrying an error for the code
+      final var resolution =
+          new SecretResolution(
+              List.of(), List.of(new SecretResolutionError("camunda.secrets.x", code, "message")));
+
+      // when
+      final var result = ResponseMapper.toSecretResolveResult(resolution);
+
+      // then the mapped REST code exists and has the identical name
+      assertThat(result.getErrors()).hasSize(1);
+      assertThat(result.getErrors().get(0).getCode().name()).isEqualTo(code.name());
+    }
+  }
+
+  @Nested
+  class ClusterTopologyMappingTest {
+
+    @Test
+    void shouldMapClusterLevelFieldsOnce() {
+      // given
+      final var broker = new ClusterBroker(BrokerMemberId.from(0), "host-0", 26501, "8.10.0");
+      final var topology =
+          new ClusterTopology(List.of(broker), "cluster-1", 3, "8.10.0", List.of());
+
+      // when
+      final var result = ResponseMapper.toClusterTopologyResponse(topology);
+
+      // then
+      assertThat(result.getClusterId()).isEqualTo("cluster-1");
+      assertThat(result.getClusterSize()).isEqualTo(3);
+      assertThat(result.getGatewayVersion()).isEqualTo("8.10.0");
+      assertThat(result.getBrokers()).hasSize(1);
+      assertThat(result.getBrokers().get(0).getBrokerId()).isEqualTo("0");
+      assertThat(result.getBrokers().get(0).getHost()).isEqualTo("host-0");
+      assertThat(result.getBrokers().get(0).getPort()).isEqualTo(26501);
+      assertThat(result.getBrokers().get(0).getVersion()).isEqualTo("8.10.0");
+    }
+
+    /**
+     * The per-PT broker's partitions must be mapped by the same {@code buildPartitions} helper as
+     * {@link ResponseMapper#toTopologyResponse}, so a partition maps to an identical wire shape
+     * (role/health/state enum casing included) on both endpoints.
+     */
+    @Test
+    void shouldMapPerPhysicalTenantPartitionsIdenticallyToTopologyResponse() {
+      // given the same partition domain object fed into both mapping paths
+      final var partition =
+          new TopologyServices.Partition(
+              1,
+              TopologyServices.Role.LEADER,
+              TopologyServices.Health.HEALTHY,
+              TopologyServices.State.ACTIVE);
+      final var brokerId = BrokerMemberId.from(0);
+
+      final var topologyBroker =
+          new TopologyServices.Broker(null, 0, "host-0", 26501, List.of(partition), "8.10.0");
+      final var singleTenantTopology =
+          new TopologyServices.Topology(
+              List.of(topologyBroker), "cluster-1", 1, 1, 1, "8.10.0", 1L);
+
+      final var clusterTopology =
+          new ClusterTopology(
+              List.of(),
+              "cluster-1",
+              1,
+              "8.10.0",
+              List.of(
+                  new PhysicalTenantTopology(
+                      "default",
+                      1,
+                      1,
+                      1L,
+                      List.of(new PhysicalTenantBroker(brokerId, List.of(partition))))));
+
+      // when
+      final var topologyResponse = ResponseMapper.toTopologyResponse(singleTenantTopology);
+      final var clusterTopologyResponse = ResponseMapper.toClusterTopologyResponse(clusterTopology);
+
+      // then
+      final var expectedPartition = topologyResponse.getBrokers().get(0).getPartitions().get(0);
+      final var actualPartition =
+          clusterTopologyResponse
+              .getPhysicalTenants()
+              .get(0)
+              .getBrokers()
+              .get(0)
+              .getPartitions()
+              .get(0);
+      assertThat(actualPartition.getPartitionId()).isEqualTo(expectedPartition.getPartitionId());
+      assertThat(actualPartition.getRole()).isEqualTo(expectedPartition.getRole());
+      assertThat(actualPartition.getHealth()).isEqualTo(expectedPartition.getHealth());
+      assertThat(actualPartition.getState()).isEqualTo(expectedPartition.getState());
+    }
+  }
+
+  @Nested
+  class UserTaskLookupResponseMappingTest {
+
+    @Test
+    void shouldMapUserTaskAndVariables() {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(UserTaskLifecycleState.ASSIGNING)
+              .setUserTask(
+                  new UserTaskRecord()
+                      .setUserTaskKey(1L)
+                      .setElementId("underwriter-review")
+                      .setElementInstanceKey(2L)
+                      .setProcessInstanceKey(3L)
+                      .setRootProcessInstanceKey(4L)
+                      .setBpmnProcessId("loan")
+                      .setProcessDefinitionKey(5L)
+                      .setProcessDefinitionVersion(6)
+                      .setTenantId("tenant-a")
+                      .setAssignee("previous-assignee")
+                      .setCandidateGroupsList(List.of("underwriters"))
+                      .setCandidateUsersList(List.of("jane"))
+                      .setDueDate("2026-11-10T10:00:00Z")
+                      .setFollowUpDate("2026-11-05T10:00:00Z")
+                      .setFormKey(7L)
+                      .setExternalFormReference("external-form")
+                      .setCustomHeaders(
+                          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("k", "v"))))
+                      .setPriority(80)
+                      .setTags(Set.of("urgent"))
+                      .setBusinessId("loan-42")
+                      .setCreationTimestamp(Instant.parse("2026-11-02T10:00:00Z").toEpochMilli())
+                      .setVariables(
+                          new UnsafeBuffer(
+                              MsgPackConverter.convertToMsgPack(
+                                  Map.of("recommendation", "recommended")))));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getUserTaskKey()).isEqualTo("1");
+      assertThat(result.getState()).isEqualTo(UserTaskLookupStateEnum.ASSIGNING);
+      assertThat(result.getElementId()).isEqualTo("underwriter-review");
+      assertThat(result.getElementInstanceKey()).isEqualTo("2");
+      assertThat(result.getProcessInstanceKey()).isEqualTo("3");
+      assertThat(result.getRootProcessInstanceKey()).isEqualTo("4");
+      assertThat(result.getProcessDefinitionId()).isEqualTo("loan");
+      assertThat(result.getProcessDefinitionKey()).isEqualTo("5");
+      assertThat(result.getProcessDefinitionVersion()).isEqualTo(6);
+      assertThat(result.getTenantId()).isEqualTo("tenant-a");
+      assertThat(result.getAssignee()).isEqualTo("previous-assignee");
+      assertThat(result.getCandidateGroups()).containsExactly("underwriters");
+      assertThat(result.getCandidateUsers()).containsExactly("jane");
+      assertThat(result.getDueDate()).isEqualTo("2026-11-10T10:00:00.000Z");
+      assertThat(result.getFollowUpDate()).isEqualTo("2026-11-05T10:00:00.000Z");
+      assertThat(result.getFormKey()).isEqualTo("7");
+      assertThat(result.getExternalFormReference()).isEqualTo("external-form");
+      assertThat(result.getCustomHeaders()).containsExactly(Map.entry("k", "v"));
+      assertThat(result.getPriority()).isEqualTo(80);
+      assertThat(result.getTags()).containsExactly("urgent");
+      assertThat(result.getBusinessId()).isEqualTo("loan-42");
+      assertThat(result.getCreationDate()).isEqualTo("2026-11-02T10:00:00.000Z");
+      assertThat(result.getVariables()).containsExactly(Map.entry("recommendation", "recommended"));
+    }
+
+    @Test
+    void shouldMapUnsetOptionalFieldsToNull() {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(UserTaskLifecycleState.CREATING)
+              .setUserTask(new UserTaskRecord().setUserTaskKey(1L));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getAssignee()).isNull();
+      assertThat(result.getRootProcessInstanceKey()).isNull();
+      assertThat(result.getDueDate()).isNull();
+      assertThat(result.getFollowUpDate()).isNull();
+      assertThat(result.getFormKey()).isNull();
+      assertThat(result.getExternalFormReference()).isNull();
+      assertThat(result.getBusinessId()).isNull();
+      assertThat(result.getCandidateGroups()).isEmpty();
+      assertThat(result.getCandidateUsers()).isEmpty();
+      assertThat(result.getVariables()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      // as the engine stores them (ZonedDateTime::toString): seconds omitted, region appended
+      "2026-11-10T10:00Z, 2026-11-10T10:00:00.000Z",
+      "2026-11-10T10:00+01:00[Europe/Berlin], 2026-11-10T10:00:00.000+01:00",
+      "2026-11-10T10:00:30.5-03:00, 2026-11-10T10:00:30.500-03:00"
+    })
+    void shouldMapUserTaskDatesToRfc3339(final String engineDate, final String expected) {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(UserTaskLifecycleState.CREATED)
+              .setUserTask(
+                  new UserTaskRecord()
+                      .setUserTaskKey(1L)
+                      .setDueDate(engineDate)
+                      .setFollowUpDate(engineDate));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getDueDate()).isEqualTo(expected);
+      assertThat(result.getFollowUpDate()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = UserTaskLifecycleState.class,
+        mode = EnumSource.Mode.EXCLUDE,
+        names = "UNSPECIFIED")
+    void shouldMapLifecycleState(final UserTaskLifecycleState lifecycleState) {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord()
+              .setLifecycleState(lifecycleState)
+              .setUserTask(new UserTaskRecord().setUserTaskKey(1L));
+
+      // when
+      final var result = ResponseMapper.toUserTaskLookupResult(lookup);
+
+      // then
+      assertThat(result.getState().name()).isEqualTo(lifecycleState.name());
+    }
+
+    @Test
+    void shouldRejectUnspecifiedLifecycleState() {
+      // given
+      final var lookup =
+          new UserTaskLookupRecord().setUserTask(new UserTaskRecord().setUserTaskKey(1L));
+
+      // when/then
+      assertThatThrownBy(() -> ResponseMapper.toUserTaskLookupResult(lookup))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("user task '1'")
+          .hasMessageContaining("UNSPECIFIED")
+          .hasMessageContaining("This is a bug, please report it.");
     }
   }
 }

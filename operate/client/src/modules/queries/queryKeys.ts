@@ -14,20 +14,44 @@ import type {
   GetProcessDefinitionInstanceVersionStatisticsRequestBody,
   GetProcessDefinitionStatisticsRequestBody,
   ProcessInstance,
+  QueryAgentInstancesRequestBody,
   QueryAuditLogsRequestBody,
   QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
+  QueryElementInstanceInspectionRequestBody,
   QueryElementInstancesRequestBody,
   QueryJobsRequestBody,
+  QueryMessageSubscriptionsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   QueryUserTasksRequestBody,
+  QueryAgentInstanceHistoryRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 const queryKeys = {
+  agentInstance: {
+    get: (agentInstanceKey: string) => ['agentInstance', agentInstanceKey],
+  },
+  agentInstances: {
+    search: (
+      payload?: QueryAgentInstancesRequestBody,
+      options?: {loadAllItems?: boolean},
+    ) => ['agentInstancesSearch', payload, options],
+  },
+  agentInstanceHistory: {
+    search: (
+      agentInstanceKey: string,
+      payload?: QueryAgentInstanceHistoryRequestBody,
+    ) => ['agentInstanceHistorySearch', agentInstanceKey, payload],
+    latestAgentMessage: (agentInstanceKey: string) => [
+      'agentInstanceHistorySearch',
+      agentInstanceKey,
+      'latestAgentMessage',
+    ],
+  },
   variables: {
     search: () => ['searchVariables'],
     searchWithFilter: (params: {
@@ -66,6 +90,9 @@ const queryKeys = {
       'decisionDefinitionXml',
       decisionDefinitionKey,
     ],
+  },
+  documents: {
+    content: (link: string) => ['documentContent', link],
   },
   processDefinitionXml: {
     get: (processDefinitionKey?: string) => [
@@ -158,6 +185,10 @@ const queryKeys = {
     ) => {
       return ['elementInstancesSearchByScope', ...Object.values(payload)];
     },
+    searchPaginated: (payload?: QueryElementInstancesRequestBody) =>
+      payload
+        ? ['elementInstancesSearchPaginated', payload]
+        : ['elementInstancesSearchPaginated'],
   },
   processInstances: {
     base: () => ['processInstances'],
@@ -230,6 +261,12 @@ const queryKeys = {
       processInstanceKey,
     ],
   },
+  waitStateStatistics: {
+    get: (processInstanceKey: string) => [
+      'waitStateStatistics',
+      processInstanceKey,
+    ],
+  },
   callHierarchy: {
     get: (processInstanceKey: string) => ['callHierarchy', processInstanceKey],
   },
@@ -238,6 +275,19 @@ const queryKeys = {
   },
   jobs: {
     search: (payload: QueryJobsRequestBody) => ['jobsSearch', payload],
+  },
+  messageSubscriptions: {
+    search: (payload: QueryMessageSubscriptionsRequestBody) => [
+      'messageSubscriptionsSearch',
+      payload,
+    ],
+  },
+  elementInstanceInspection: {
+    base: () => ['elementInstanceInspectionSearch'],
+    search: (payload: QueryElementInstanceInspectionRequestBody) => [
+      'elementInstanceInspectionSearch',
+      payload,
+    ],
   },
   processInstance: {
     get: (processInstanceKey: string) => [

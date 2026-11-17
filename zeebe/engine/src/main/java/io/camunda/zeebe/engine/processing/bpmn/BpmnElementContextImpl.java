@@ -58,6 +58,11 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
+  public int getStorageOrdinal() {
+    return recordValue.getStorageOrdinal();
+  }
+
+  @Override
   public int getProcessVersion() {
     return recordValue.getVersion();
   }
@@ -146,6 +151,10 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
         + getParentProcessInstanceKey()
         + ", parentElementInstanceKey="
         + getParentElementInstanceKey()
+        + ", rootProcessInstanceKey="
+        + getRootProcessInstanceKey()
+        + ", storageOrdinal="
+        + getStorageOrdinal()
         + ", bpmnProcessId="
         + bufferAsString(getBpmnProcessId())
         + ", processVersion="

@@ -166,7 +166,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       }
       case Failed(final var message, final var errorType) -> {
         batchOperationInitializer.appendFailedCommand(
-            taskResultBuilder, batchOperation.getKey(), message, errorType);
+            taskResultBuilder,
+            batchOperation.getKey(),
+            batchOperation.getStorageOrdinal(),
+            message,
+            errorType);
         yield initialPollingInterval;
       }
       case ReducePageSize(final int newPageSize) -> {
@@ -194,7 +198,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     return switch (decision) {
       case Fail(final var message, final var errorType) -> {
         batchOperationInitializer.appendFailedCommand(
-            taskResultBuilder, batchOperation.getKey(), message, errorType);
+            taskResultBuilder,
+            batchOperation.getKey(),
+            batchOperation.getStorageOrdinal(),
+            message,
+            errorType);
         yield initialPollingInterval;
       }
       case Retry(final var delay, final int numAttempts, final String retryCursor) -> {

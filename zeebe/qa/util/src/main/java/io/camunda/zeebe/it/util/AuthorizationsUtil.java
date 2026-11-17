@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.util;
 
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
@@ -22,7 +22,7 @@ import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -155,7 +155,7 @@ public class AuthorizationsUtil implements CloseableSilently {
                           f.ownerIds(username)
                               .resourceType(resourceType.name())
                               .permissionTypes(
-                                  io.camunda.zeebe.protocol.record.value.PermissionType.valueOf(
+                                  io.camunda.security.api.model.authz.PermissionType.valueOf(
                                       permissionType.name()))
                               .resourceIds(resourceId)));
 

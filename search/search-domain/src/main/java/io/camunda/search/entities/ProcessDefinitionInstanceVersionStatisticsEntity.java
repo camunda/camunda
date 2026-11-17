@@ -9,26 +9,39 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionInstanceVersionStatisticsEntity(
     String processDefinitionId,
     Long processDefinitionKey,
-    Integer processDefinitionVersion,
-    String processDefinitionName,
+    // mirrors ProcessInstanceEntity.processDefinitionVersion; null for list-view rows lacking it.
+    @Nullable Integer processDefinitionVersion,
+    // cache-enriched; null on cache miss.
+    @Nullable String processDefinitionName,
     String tenantId,
     Long activeInstancesWithoutIncidentCount,
     Long activeInstancesWithIncidentCount) {
 
+  public ProcessDefinitionInstanceVersionStatisticsEntity {
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(
+        activeInstancesWithoutIncidentCount, "activeInstancesWithoutIncidentCount");
+    Objects.requireNonNull(activeInstancesWithIncidentCount, "activeInstancesWithIncidentCount");
+  }
+
   public static class Builder
       implements ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsEntity> {
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Integer processDefinitionVersion;
-    private String processDefinitionName;
-    private String tenantId;
-    private Long activeInstancesWithoutIncidentCount;
-    private Long activeInstancesWithIncidentCount;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Integer processDefinitionVersion;
+    private @Nullable String processDefinitionName;
+    private @Nullable String tenantId;
+    private @Nullable Long activeInstancesWithoutIncidentCount;
+    private @Nullable Long activeInstancesWithIncidentCount;
 
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
@@ -65,6 +78,7 @@ public record ProcessDefinitionInstanceVersionStatisticsEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public ProcessDefinitionInstanceVersionStatisticsEntity build() {
       return new ProcessDefinitionInstanceVersionStatisticsEntity(

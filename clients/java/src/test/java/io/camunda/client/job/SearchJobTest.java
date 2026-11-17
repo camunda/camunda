@@ -24,12 +24,14 @@ import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.impl.search.response.JobImpl;
 import io.camunda.client.protocol.rest.JobFilter;
 import io.camunda.client.protocol.rest.JobKindEnum;
 import io.camunda.client.protocol.rest.JobKindFilterProperty;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.client.protocol.rest.JobSearchQuery;
+import io.camunda.client.protocol.rest.JobSearchResult;
 import io.camunda.client.protocol.rest.JobStateEnum;
 import io.camunda.client.protocol.rest.JobStateFilterProperty;
 import io.camunda.client.protocol.rest.SortOrderEnum;
@@ -88,7 +90,8 @@ public class SearchJobTest extends ClientRestTest {
                     .errorMessage(f11 -> f11.eq("errorMessage"))
                     .hasFailedWithRetriesLeft(true)
                     .isDenied(false)
-                    .retries(f12 -> f12.eq(3)))
+                    .retries(f12 -> f12.eq(3))
+                    .priority(f13 -> f13.gte(5)))
         .send()
         .join();
 
@@ -139,6 +142,19 @@ public class SearchJobTest extends ClientRestTest {
     assertThat(request.getFilter().getIsDenied()).isEqualTo(false);
     assertThat(request.getFilter().getRetries()).isNotNull();
     assertThat(request.getFilter().getRetries().get$Eq()).isEqualTo(3);
+    assertThat(request.getFilter().getPriority()).isNotNull();
+    assertThat(request.getFilter().getPriority().get$Gte()).isEqualTo(5);
+  }
+
+  @Test
+  void shouldSearchJobWithPriorityEqualityFilter() {
+    // when
+    client.newJobSearchRequest().filter(f -> f.priority(50)).send().join();
+
+    // then
+    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
+    assertThat(request.getFilter().getPriority()).isNotNull();
+    assertThat(request.getFilter().getPriority().get$Eq()).isEqualTo(50);
   }
 
   @ParameterizedTest
@@ -263,7 +279,9 @@ public class SearchJobTest extends ClientRestTest {
                     .isDenied()
                     .asc()
                     .retries()
-                    .desc())
+                    .desc()
+                    .priority()
+                    .asc())
         .send()
         .join();
 
@@ -272,7 +290,7 @@ public class SearchJobTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromJobSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(20);
+    assertThat(sorts).hasSize(21);
     assertSort(sorts.get(0), "jobKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "type", SortOrderEnum.DESC);
     assertSort(sorts.get(2), "worker", SortOrderEnum.ASC);
@@ -293,5 +311,30 @@ public class SearchJobTest extends ClientRestTest {
     assertSort(sorts.get(17), "hasFailedWithRetriesLeft", SortOrderEnum.DESC);
     assertSort(sorts.get(18), "isDenied", SortOrderEnum.ASC);
     assertSort(sorts.get(19), "retries", SortOrderEnum.DESC);
+    assertSort(sorts.get(20), "priority", SortOrderEnum.ASC);
+  }
+
+  @Test
+  void shouldMapStorageOrdinal() {
+    // given
+    final JobSearchResult result = new JobSearchResult().storageOrdinal(3);
+
+    // when
+    final JobImpl job = new JobImpl(result);
+
+    // then
+    assertThat(job.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinal() {
+    // given
+    final JobSearchResult result = new JobSearchResult().storageOrdinal(null);
+
+    // when
+    final JobImpl job = new JobImpl(result);
+
+    // then
+    assertThat(job.getStorageOrdinal()).isNull();
   }
 }

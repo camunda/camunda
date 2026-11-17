@@ -22,6 +22,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -178,7 +179,7 @@ class ProcessAuthorizationIT {
   private static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy processes and make them searchable")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -191,7 +192,7 @@ class ProcessAuthorizationIT {
         getProcessDefinitionKey(camundaClient, PROCESS_DEFINITION_ID_WITH_START_FORM);
 
     Awaitility.await("should deploy start form and make it searchable")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

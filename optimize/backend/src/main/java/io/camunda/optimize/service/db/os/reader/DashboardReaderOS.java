@@ -48,7 +48,10 @@ public class DashboardReaderOS implements DashboardReader {
     final String errorMessage = "Was not able to retrieve dashboard count!";
     return osClient.count(
         new String[] {DASHBOARD_INDEX_NAME},
-        QueryDSL.term(DashboardIndex.MANAGEMENT_DASHBOARD, false),
+        QueryDSL.and(
+            QueryDSL.term(DashboardIndex.MANAGEMENT_DASHBOARD, false),
+            QueryDSL.not(QueryDSL.term(DashboardIndex.AGENTIC_CONTROL_DASHBOARD, true)),
+            QueryDSL.not(QueryDSL.term(DashboardIndex.BUSINESS_VALUE_DASHBOARD, true))),
         errorMessage);
   }
 

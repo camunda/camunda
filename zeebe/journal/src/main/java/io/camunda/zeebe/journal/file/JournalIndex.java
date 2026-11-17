@@ -16,6 +16,7 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalRecord;
+import org.jspecify.annotations.Nullable;
 
 /**
  * JournalIndex that indexes record's index, position and asqn. JournalReader may use this to
@@ -37,7 +38,7 @@ interface JournalIndex {
    * @param index the index to lookup
    * @return the position of the given index or a lesser index
    */
-  IndexInfo lookup(long index);
+  @Nullable IndexInfo lookup(long index);
 
   /**
    * Look up the index for the given application sequence number.
@@ -45,7 +46,7 @@ interface JournalIndex {
    * @param asqn asqn to lookup
    * @return the index of a record with asqn less than or equal to the given asqn.
    */
-  Long lookupAsqn(long asqn);
+  @Nullable Long lookupAsqn(long asqn);
 
   /**
    * Look up the index for the given application sequence number. Same as {code lookupAsqn(asqn)},
@@ -56,7 +57,7 @@ interface JournalIndex {
    * @return the index (<= indexUpperBound) of a record with asqn less than or equal to the given
    *     asqn.
    */
-  Long lookupAsqn(long asqn, long indexUpperBound);
+  @Nullable Long lookupAsqn(long asqn, long indexUpperBound);
 
   /**
    * Delete all entries after the given index.

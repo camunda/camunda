@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
@@ -17,10 +17,11 @@ import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.search.filter.Operation;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByRoleName() {
     // given
-    final var filter = FilterBuilders.role((f) -> f.name("roleName"));
+    final var filter = FilterBuilders.role((f) -> f.names("roleName"));
 
     // when
     final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
@@ -58,6 +59,23 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
     assertThat(query.must())
         .containsExactlyInAnyOrder(
             SearchQuery.of(q1 -> q1.term(t -> t.field("name").value("roleName"))),
+            SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
+  }
+
+  @Test
+  void shouldQueryByRoleNameLike() {
+    // given
+    final var filter = FilterBuilders.role((f) -> f.nameOperations(Operation.like("*roleName*")));
+
+    // when
+    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
+
+    // then
+    assertThat(query.filter()).isEmpty();
+    assertThat(query.should()).isEmpty();
+    assertThat(query.must())
+        .containsExactlyInAnyOrder(
+            SearchQuery.of(q1 -> q1.wildcard(w -> w.field("name").value("*roleName*"))),
             SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
   }
 
@@ -108,7 +126,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByMultipleRoleFields() {
     // given
-    final var filter = FilterBuilders.role((f) -> f.roleId("role1").name("TestRole"));
+    final var filter = FilterBuilders.role((f) -> f.roleId("role1").names("TestRole"));
 
     // when
     final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
@@ -126,7 +144,8 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldApplyAuthorizationCheck() {
     // given
-    final var authorization = Authorization.of(a -> a.role().read().resourceIds(List.of("1", "2")));
+    final var authorization =
+        RequiredAuthorization.of(a -> a.role().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -190,7 +209,8 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldApplyFilterAndChecks() {
     // given
-    final var authorization = Authorization.of(a -> a.role().read().resourceIds(List.of("1", "2")));
+    final var authorization =
+        RequiredAuthorization.of(a -> a.role().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
@@ -208,7 +228,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.role().read());
+    final var authorization = RequiredAuthorization.of(a -> a.role().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());

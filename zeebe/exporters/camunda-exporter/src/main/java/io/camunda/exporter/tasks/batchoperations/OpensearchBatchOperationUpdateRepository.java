@@ -8,10 +8,10 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
-import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_TOTAL_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -33,6 +33,7 @@ import org.opensearch.client.opensearch._types.BuiltinScriptLanguage;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ScriptLanguage;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -67,12 +68,31 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
-    final var request =
+  public CompletionStage<List<NotFinishedBatchOperation>> getNotFinishedBatchOperations(
+      final int batchSize, final String afterId) {
+    final var requestBuilder =
         new SearchRequest.Builder()
             .index(batchOperationIndex)
-            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(request, BatchOperationEntity.class, Hit::id);
+            .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))))
+            .sort(so -> so.field(f -> f.field(ID).order(SortOrder.Asc)))
+            .size(batchSize);
+    if (afterId != null) {
+      requestBuilder.searchAfter(List.of(FieldValue.of(afterId)));
+    }
+    final var request = requestBuilder.build();
+
+    try {
+      return client
+          .search(request, BatchOperationEntity.class)
+          .thenApplyAsync(
+              response ->
+                  response.hits().hits().stream()
+                      .map(OpensearchBatchOperationUpdateRepository::toNotFinishedBatchOperation)
+                      .toList(),
+              executor);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -151,8 +171,6 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
             update.failedOperationsCount(),
             OPERATIONS_COMPLETED_COUNT,
             update.completedOperationsCount(),
-            OPERATIONS_TOTAL_COUNT,
-            update.totalOperationsCount(),
             END_DATE,
             OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
@@ -172,16 +190,31 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         .inline(
             s ->
                 s.source(
-                        "if ((ctx._source.state == null || ctx._source.state == 'COMPLETED') "
-                            + " && params.operationsTotalCount <= params.operationsFinishedCount) { "
-                            + "   ctx._source.endDate = params.endDate; "
-                            + "} "
-                            + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
-                            + "ctx._source.operationsCompletedCount = params.operationsCompletedCount;"
-                            + "ctx._source.operationsFailedCount = params.operationsFailedCount;")
+                        """
+                    def storedTotal = ctx._source.operationsTotalCount;
+                    if (ctx._source.state == 'COMPLETED'
+                        && storedTotal != null
+                        && storedTotal <= params.operationsFinishedCount) {
+                      ctx._source.endDate = params.endDate;
+                    }
+                    ctx._source.operationsFinishedCount = params.operationsFinishedCount;
+                    ctx._source.operationsCompletedCount = params.operationsCompletedCount;
+                    ctx._source.operationsFailedCount = params.operationsFailedCount;
+                    """)
                     .lang(ScriptLanguage.builder().builtin(BuiltinScriptLanguage.Painless).build())
                     .params(parameters))
         .build();
+  }
+
+  private static NotFinishedBatchOperation toNotFinishedBatchOperation(
+      final Hit<BatchOperationEntity> hit) {
+    final var source = hit.source();
+    if (source == null) {
+      return new NotFinishedBatchOperation(hit.id(), null, 0);
+    }
+    final var totalCount = source.getOperationsTotalCount();
+    return new NotFinishedBatchOperation(
+        hit.id(), source.getState(), totalCount == null ? 0 : totalCount);
   }
 
   private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {

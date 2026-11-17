@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -18,6 +18,7 @@ import {
   createComponentAuthorization,
   cleanupAuthorizations,
   findUserTask,
+  expectUserTaskAssigned,
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 import {
@@ -27,6 +28,7 @@ import {
 
 const PROCESS_ID = 'user_task_api_test_process';
 const TASK_NAME = 'test user task api';
+let completePermissionTestId: string;
 
 let aliceUser: {
   username: string;
@@ -111,11 +113,7 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 
     await taskPanelPage.filterBy('Assigned to me');
 
-    await expect(async () => {
-      await expect(
-        taskPanelPage.availableTasks.getByText(TASK_NAME),
-      ).toBeVisible();
-    }).toPass({timeout: 30000});
+    await taskPanelPage.assertTaskCardVisible(TASK_NAME, {timeout: 30000});
 
     await taskPanelPage.openTask(TASK_NAME);
 
@@ -500,7 +498,13 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    // Gate on the read model actually reflecting Bob's assignment before the UI
+    // flow runs. The assignment command is accepted synchronously (204) but the
+    // task-details toggle reads the assignee from GET /user-tasks/{key}, which
+    // lags and briefly flips between null and Bob while the change propagates. A
+    // fixed sleep raced that window, so Alice opened the task while it still
+    // read as unassigned and the "Unassign" button never appeared.
+    await expectUserTaskAssigned(request, bobUserTaskKey, bobUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -523,10 +527,20 @@ test.describe
     await loginPage.login(aliceUser.username, aliceUser.password);
     await expect(page).toHaveURL('/tasklist');
 
-    await taskPanelPage.goToTaskDetails(bobUserTaskKey);
+    // Bob's assignment reaches the read model but the endpoint the details
+    // toggle reads oscillates between Bob and null for a while after the
+    // command, and the panel renders whichever it last saw. Re-open the task
+    // until it renders Bob's assignment (the "Unassign" button) rather than
+    // acting on a stale "Assign to me" state caught mid-oscillation.
+    await expect(async () => {
+      await taskPanelPage.goToTaskDetails(bobUserTaskKey);
+      await expect(taskDetailsPage.unassignButton).toBeVisible({
+        timeout: 15_000,
+      });
+    }).toPass({timeout: 90_000, intervals: [1_000, 2_000, 5_000]});
 
     await taskDetailsPage.clickUnassignButton();
-
+    await page.reload();
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.assignee).toContainText('Assigned to me');
   });
@@ -627,6 +641,12 @@ test.describe
 
     await taskPanelPage.goToTaskDetails(bobUserTaskKey);
 
+    // Alice is not the assignee, so the Complete Task button is rendered in a
+    // disabled state ("Task is not assigned"), which prevents her from
+    // completing Bob's task. Wait for the task details panel to finish loading
+    // before asserting — otherwise the button may not be rendered yet and the
+    // assertion times out with "element(s) not found".
+    await expect(taskDetailsPage.detailsInfo).toBeVisible({timeout: 30000});
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
   });
 });
@@ -640,7 +660,10 @@ test.describe
     await deploy(['./resources/user_task_api_test_process.bpmn']);
     await sleep(500);
 
-    const instance = await createSingleInstance(PROCESS_ID, 1);
+    completePermissionTestId = Date.now().toString();
+    const instance = await createSingleInstance(PROCESS_ID, 1, {
+      testId: completePermissionTestId,
+    });
     const processInstanceKey = instance.processInstanceKey;
 
     aliceUser = await createUser(request);
@@ -716,6 +739,7 @@ test.describe
 
     await taskPanelPage.goToTaskDetails(userTaskKey);
 
+    await expect(taskDetailsPage.detailsInfo).toBeVisible({timeout: 30000});
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
 
     await taskDetailsPage.clickCompleteTaskButton();

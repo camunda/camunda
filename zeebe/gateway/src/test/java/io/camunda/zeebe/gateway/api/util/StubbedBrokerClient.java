@@ -10,15 +10,11 @@ package io.camunda.zeebe.gateway.api.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -34,7 +30,7 @@ import java.util.function.Consumer;
 public final class StubbedBrokerClient implements BrokerClient {
 
   final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
-  private Consumer<String> jobsAvailableHandler;
+  private final Map<String, Consumer<String>> jobsAvailableHandlers = new HashMap<>();
 
   private final Map<Class<?>, RequestHandler<?, ?>> requestHandlers = new HashMap<>();
 
@@ -64,27 +60,27 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request) {
+    ensurePartitionGroupSet(request);
     final CompletableFuture<BrokerResponse<T>> future = new CompletableFuture<>();
-    sendRequestWithRetry(
-        request,
-        (key, response) ->
-            future.complete(new BrokerResponse<>(response, Protocol.decodePartitionId(key), key)),
-        future::completeExceptionally);
+    brokerRequests.add(request);
+
+    try {
+      final RequestHandler requestHandler = requestHandlers.get(request.getClass());
+      future.complete(requestHandler.handle(request));
+    } catch (final TimeoutException e) {
+      // Preserve timeout semantics so endpoint tests can assert gateway timeout mappings.
+      future.completeExceptionally(e);
+    } catch (final Exception e) {
+      future.completeExceptionally(new BrokerResponseException(e));
+    }
+
     return future;
   }
 
   @Override
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request, final Duration requestTimeout) {
-    final CompletableFuture<BrokerResponse<T>> result = new CompletableFuture<>();
-
-    sendRequestWithRetry(
-        request,
-        (key, response) ->
-            result.complete(new BrokerResponse<>(response, Protocol.decodePartitionId(key), key)),
-        result::completeExceptionally);
-
-    return result.orTimeout(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
+    return sendRequestWithRetry(request).orTimeout(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
   }
 
   @Override
@@ -92,6 +88,7 @@ public final class StubbedBrokerClient implements BrokerClient {
       final BrokerRequest<T> request,
       final BrokerResponseConsumer<T> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
+    ensurePartitionGroupSet(request);
     brokerRequests.add(request);
     try {
       final RequestHandler requestHandler = requestHandlers.get(request.getClass());
@@ -99,14 +96,8 @@ public final class StubbedBrokerClient implements BrokerClient {
       try {
         if (response.isResponse()) {
           responseConsumer.accept(response.getKey(), response.getResponse());
-        } else if (response.isRejection()) {
-          throwableConsumer.accept(new BrokerRejectionException(response.getRejection()));
-        } else if (response.isError()) {
-          throwableConsumer.accept(new BrokerErrorException(response.getError()));
         } else {
-          throwableConsumer.accept(
-              new IllegalBrokerResponseException(
-                  "Expected broker response to be either response, rejection, or error, but is neither of them []"));
+          throwableConsumer.accept(response.toException());
         }
       } catch (final RuntimeException e) {
         throwableConsumer.accept(new BrokerResponseException(e));
@@ -119,6 +110,18 @@ public final class StubbedBrokerClient implements BrokerClient {
     }
   }
 
+  /**
+   * Mirrors the guard in the production {@code BrokerRequestManager}, so tests using this stub
+   * catch senders that forget to set the physical tenant instead of silently passing.
+   */
+  private static void ensurePartitionGroupSet(final BrokerRequest<?> request) {
+    if (!request.hasPartitionGroup()) {
+      throw new IllegalStateException(
+          "Cannot send request '%s': no partition group (physical tenant) was set. Requests are not implicitly routed to the default tenant; call setPartitionGroup explicitly, even when targeting the default tenant."
+              .formatted(request.getType()));
+    }
+  }
+
   @Override
   public BrokerTopologyManager getTopologyManager() {
     return topologyManager;
@@ -126,8 +129,8 @@ public final class StubbedBrokerClient implements BrokerClient {
 
   @Override
   public void subscribeJobAvailableNotification(
-      final String topic, final Consumer<String> handler) {
-    jobsAvailableHandler = handler;
+      final String topic, final Object subscriber, final Consumer<String> handler) {
+    jobsAvailableHandlers.put(topic, handler);
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
@@ -136,8 +139,16 @@ public final class StubbedBrokerClient implements BrokerClient {
     requestHandlers.put(requestType, requestHandler);
   }
 
+  /** Notifies on the legacy, prefix-less topic, as if raised by the default physical tenant. */
   public void notifyJobsAvailable(final String type) {
-    jobsAvailableHandler.accept(type);
+    notifyJobsAvailable("jobsAvailable", type);
+  }
+
+  public void notifyJobsAvailable(final String topic, final String type) {
+    final var handler = jobsAvailableHandlers.get(topic);
+    if (handler != null) {
+      handler.accept(type);
+    }
   }
 
   public <T extends BrokerRequest<?>> T getSingleBrokerRequest() {

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
@@ -31,11 +34,14 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public final class ProcessMessageSubscriptionCorrelateProcessor
-    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
+    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord>,
+        SuspensionAware<ProcessMessageSubscriptionRecord> {
 
   private static final String NO_EVENT_OCCURRED_MESSAGE =
       "Expected to correlate a process message subscription with element key '%d' and message name '%s', "
@@ -46,6 +52,13 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private static final String ALREADY_CLOSING_MESSAGE =
       "Expected to correlate process message subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
+  private static final String SUSPENDED_PI_MESSAGE =
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
+          + "but the process instance is suspended";
+  private static final String STALE_KEY_MESSAGE =
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
+          + "but the command's subscription key '%d' does not match the current key '%d' — it "
+          + "belongs to a superseded subscription generation";
 
   private final ProcessMessageSubscriptionState subscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
@@ -55,6 +68,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final SuspensionState suspensionState;
+  private final InstantSource clock;
 
   private final EventHandle eventHandle;
 
@@ -64,12 +79,15 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
     this.subscriptionState = subscriptionState;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
+    this.clock = clock;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
+    suspensionState = processingState.getSuspensionState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
@@ -80,13 +98,15 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider());
   }
 
   @Override
   public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final var record = command.getValue();
+    final var marker = suspensionState.getSuspensionState(record.getProcessInstanceKey());
     final var elementInstanceKey = record.getElementInstanceKey();
     final String messageName = record.getMessageName();
     final String tenantId = record.getTenantId();
@@ -102,6 +122,21 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       rejectCommand(command, RejectionType.INVALID_STATE, ALREADY_CLOSING_MESSAGE);
       return;
 
+    } else if (isStaleGeneration(record, subscription)) {
+      // E.g. a K1 correlate delayed across a suspend/resume cycle that re-subscribed with a new
+      // key K2 — applying it would trigger the element against a subscription that no longer
+      // exists on the message side.
+      final var reason =
+          String.format(
+              STALE_KEY_MESSAGE,
+              elementInstanceKey,
+              messageName,
+              record.getSubscriptionKey(),
+              subscription.getRecord().getSubscriptionKey());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      sendRejectionCommand(command.getValue());
+      return;
+
     } else if (hasAlreadyBeenCorrelated(record, subscription)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_STATE, "Already correlated this message");
@@ -109,6 +144,14 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       // attempt recovering from a previous acknowledgment that didn't make it to the other
       // partition.
       sendAcknowledgeCommand(record);
+      return;
+
+    } else if (marker == State.SUSPENDING || marker == State.SUSPENDED) {
+      // Release stale correlation locks for suspending/suspended states
+      if (subscription.isOpening()) {
+        closeLateHandshake(subscription, record.getSubscriptionKey());
+      }
+      rejectCommand(command, RejectionType.INVALID_STATE, SUSPENDED_PI_MESSAGE);
       return;
     }
 
@@ -128,7 +171,14 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     record
         .setElementId(subscriptionRecord.getElementIdBuffer())
         .setInterrupting(subscriptionRecord.isInterrupting())
-        .setRootProcessInstanceKey(subscriptionRecord.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(subscriptionRecord.getRootProcessInstanceKey())
+        .setStorageOrdinal(subscriptionRecord.getStorageOrdinal())
+        // The correlate command sent from the message partition does not carry the businessId; it
+        // was captured from the subscribing process instance at subscription-open time and
+        // persisted on the subscription.
+        // Copy it onto the CORRELATED event so the correlated-message read path can expose the
+        // businessId for catch / boundary / intermediate correlations too.
+        .setBusinessId(subscriptionRecord.getBusinessIdBuffer());
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
@@ -140,7 +190,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         () -> {
           transientProcessMessageSubscriptionState.remove(
               new PendingSubscription(elementInstanceKey, messageName, tenantId));
-          return true;
         });
 
     final var catchEvent = getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
@@ -148,6 +197,60 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         catchEvent, elementInstanceKey, elementInstance.getValue(), record.getVariablesBuffer());
 
     sendAcknowledgeCommand(record);
+  }
+
+  /**
+   * A correlate is stale when it quotes a message-side subscription key that no longer matches the
+   * key stored on the PI side. Both keys must be set (non-default): unkeyed/legacy subscriptions
+   * default to -1 and are never treated as stale, preserving backwards compatibility.
+   */
+  private boolean isStaleGeneration(
+      final ProcessMessageSubscriptionRecord command,
+      final ProcessMessageSubscription subscription) {
+    final long commandKey = command.getSubscriptionKey();
+    final long storedKey = subscription.getRecord().getSubscriptionKey();
+    return commandKey != -1L && storedKey != -1L && commandKey != storedKey;
+  }
+
+  /**
+   * Mirrors {@link ProcessMessageSubscriptionCreateProcessor}'s own {@code closeLateHandshake} for
+   * the CREATE-ack path: puts the still-OPENING row into CLOSING with {@code closedForSuspend} set,
+   * enrolls it for retry, and sends the close to the message partition so its ack drains it to the
+   * OPENED resume manifest. Keep the two in sync if the closing mechanics change.
+   */
+  private void closeLateHandshake(
+      final ProcessMessageSubscription subscription, final long confirmedSubscriptionKey) {
+    final var storedRecord = subscription.getRecord();
+    final int partitionId = storedRecord.getSubscriptionPartitionId();
+    final long piKey = storedRecord.getProcessInstanceKey();
+    final long elementInstanceKey = storedRecord.getElementInstanceKey();
+    final long pdKey = storedRecord.getProcessDefinitionKey();
+    final String messageName = storedRecord.getMessageName();
+    final String tenantId = storedRecord.getTenantId();
+    final int ordinal = storedRecord.getStorageOrdinal();
+
+    final var eventRecord = new ProcessMessageSubscriptionRecord();
+    eventRecord.wrap(storedRecord);
+    eventRecord.setSubscriptionKey(confirmedSubscriptionKey);
+    stateWriter.appendFollowUpEvent(
+        subscription.getKey(),
+        ProcessMessageSubscriptionIntent.DELETING,
+        eventRecord.setClosedForSuspend(true));
+
+    final var pending = new PendingSubscription(elementInstanceKey, messageName, tenantId);
+    sideEffectWriter.appendSideEffect(
+        () -> transientProcessMessageSubscriptionState.update(pending, clock.millis()));
+    sideEffectWriter.appendSideEffect(
+        () ->
+            subscriptionCommandSender.sendDirectCloseMessageSubscription(
+                partitionId,
+                piKey,
+                elementInstanceKey,
+                pdKey,
+                BufferUtil.wrapString(messageName),
+                tenantId,
+                confirmedSubscriptionKey,
+                ordinal));
   }
 
   private boolean hasAlreadyBeenCorrelated(
@@ -199,7 +302,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getProcessDefinitionKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageNameBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getStorageOrdinal());
   }
 
   private void sendRejectionCommand(final ProcessMessageSubscriptionRecord subscription) {
@@ -212,6 +316,23 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getMessageKey(),
         subscription.getMessageNameBuffer(),
         subscription.getCorrelationKeyBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getSubscriptionKey(),
+        subscription.getStorageOrdinal());
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
+    // Process unconditionally — buffering would keep the message-partition lock held
+    // indefinitely while the instance is suspending, suspended, or resuming. The marker check
+    // inside processRecord rejects a CORRELATE that arrives during the narrow suspend/close
+    // race window. During RESUMING it must fall through instead: an early reopened subscription
+    // can correlate a still-buffered message while later REOPEN commands are still draining.
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

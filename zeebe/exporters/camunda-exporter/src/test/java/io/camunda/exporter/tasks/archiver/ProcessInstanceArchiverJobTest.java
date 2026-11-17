@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
       new DecisionInstanceTemplate("", true);
   private final SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate("", true);
   private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
+  private final WaitStateTemplate waitStateTemplate = new WaitStateTemplate("", true);
 
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
@@ -54,7 +56,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
           historyConfiguration,
           repository,
           processInstanceTemplate,
-          List.of(decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate),
+          List.of(
+              decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate, waitStateTemplate),
           metrics,
           LOGGER,
           executor);
@@ -116,6 +119,27 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
                 processInstanceTemplate.getFullQualifiedName(),
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "variable"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "activity"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of(),
+                Map.of("joinRelation", "processInstance"),
+                executor),
+            // then move process instances
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "processInstance"),
                 executor));
   }
 
@@ -138,6 +162,11 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
                 Map.of(auditLogTemplate.getProcessInstanceDependantField(), List.of("1", "2", "3")),
                 executor),
             new DocumentMove(
+                waitStateTemplate.getFullQualifiedName(),
+                waitStateTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(WaitStateTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                executor),
+            new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
                 decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(
@@ -151,10 +180,32 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
                     sequenceFlowTemplate.getProcessInstanceDependantField(),
                     List.of("1", "2", "3")),
                 executor),
+            // moving just variables, activity and anything else not processInstance
             new DocumentMove(
                 processInstanceTemplate.getFullQualifiedName(),
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "variable"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "activity"),
+                executor),
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of(),
+                Map.of("joinRelation", "processInstance"),
+                executor),
+            // then move process instances
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                Map.of("joinRelation", "processInstance"),
                 executor));
   }
 
@@ -173,8 +224,12 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .map(DocumentMove::sourceIndexName)
         .containsExactly(
             auditLogTemplate.getFullQualifiedName(),
+            waitStateTemplate.getFullQualifiedName(),
             decisionInstanceTemplate.getFullQualifiedName(),
             sequenceFlowTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName(),
             processInstanceTemplate.getFullQualifiedName());
   }
 
@@ -220,7 +275,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     assertThat(nextBatch)
         .isEqualTo(new ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
 
-    verify(repository).getProcessInstancesNextBatch(1_000);
+    verify(repository).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -229,7 +284,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     repository.batches =
         List.of(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 300L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 1500L).boxed().toList(), List.of()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -240,17 +295,17 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     assertThat(first)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).boxed().toList(), List.of()));
     assertThat(second)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(101L, 200L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(501L, 1000L).boxed().toList(), List.of()));
     assertThat(third)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(201L, 300L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1001L, 1500L).boxed().toList(), List.of()));
 
-    verify(repository).getProcessInstancesNextBatch(1_000);
+    verify(repository).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -259,7 +314,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     repository.batches =
         List.of(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 200L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 1000L).boxed().toList(), List.of()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -270,17 +325,17 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     assertThat(first)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).boxed().toList(), List.of()));
     assertThat(second)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(101L, 200L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(501L, 1000L).boxed().toList(), List.of()));
     assertThat(third)
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
-                "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+                "2024-01-01", LongStream.rangeClosed(1L, 500L).boxed().toList(), List.of()));
 
-    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+    verify(repository, times(2)).getProcessInstancesNextBatch(5_000);
   }
 
   @Test
@@ -308,7 +363,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .isEqualTo(3);
     assertArchiverTimer(2); // job executed twice
 
-    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+    verify(repository, times(2)).getProcessInstancesNextBatch(5_000);
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
@@ -326,6 +381,11 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     @Override
     public String getIndexName() {
       return "foo";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "bar";
     }
 
     @Override

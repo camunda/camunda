@@ -22,6 +22,11 @@ public class ProcessInstanceMigrationAuditLogTransformer
   }
 
   @Override
+  public Class<ProcessInstanceMigrationRecordValue> getRecordValueType() {
+    return ProcessInstanceMigrationRecordValue.class;
+  }
+
+  @Override
   public void transform(
       final Record<ProcessInstanceMigrationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();

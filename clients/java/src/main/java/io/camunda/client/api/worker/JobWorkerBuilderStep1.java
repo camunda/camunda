@@ -185,6 +185,24 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 fetchVariables(String... fetchVariables);
 
     /**
+     * Activate the jobs handled by this worker with a lease, whether it polls or streams. When
+     * enabled, each activated job is assigned a distinct lease token, fencing the complete, fail,
+     * and throw-error commands against a superseded activation of the same job: a command carrying
+     * a stale or missing token is rejected. An update-job command honors a supplied lease token the
+     * same way, but an update without one always applies, so operator and bulk updates of leased
+     * jobs remain possible.
+     *
+     * <p>Once a job has been activated with a lease, it is served only to leasing workers of that
+     * job type; a homogeneous fleet per job type is recommended.
+     *
+     * <p>If not set, jobs are activated without a lease.
+     *
+     * @param withLease whether to activate the jobs with a lease
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 withLease(boolean withLease);
+
+    /**
      * Sets the backoff supplier. The supplier is called to determine the retry delay after each
      * failed request; the worker then waits until the returned delay has elapsed before sending the
      * next request. Note that this is used <strong>only</strong> when activating jobs - failures in
@@ -244,6 +262,25 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 streamTimeout(final Duration timeout);
+
+    /**
+     * If streaming is enabled, sets the maximum duration the worker will wait without receiving any
+     * job on the open stream before cancelling and recreating it. The timer is reset every time a
+     * job is received.
+     *
+     * <p>This acts as an application-level liveness check on top of the transport-level HTTP/2
+     * keepalive: it detects silent stalls where the transport is healthy but the stream is no
+     * longer producing jobs (for example, because an intermediary proxy keeps the socket warm while
+     * the broker-side handler has stopped pushing).
+     *
+     * <p>Must be strictly less than {@link #streamTimeout(Duration)} when both are configured. Pass
+     * {@code null} to disable the inactivity watchdog.
+     *
+     * @param timeout duration of inactivity after which the stream is cancelled and recreated, or
+     *     {@code null} to disable
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 streamInactivityTimeout(final Duration timeout);
 
     /**
      * Sets the job worker metrics implementation to use. See {@link JobWorkerMetrics} for more.

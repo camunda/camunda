@@ -25,6 +25,14 @@
       "description": "Properties for automatic deployment at startup."
     },
     {
+      "name": "camunda.client.cluster-variables",
+      "description": "Properties for setting cluster variables at startup."
+    },
+    {
+      "name": "camunda.client.mtls",
+      "description": "Mutual TLS (mTLS) material for the cluster connection (gRPC and REST), independent of the OAuth token endpoint keystore."
+    },
+    {
       "name": "camunda.client.worker.defaults",
       "description": "Global default properties for job workers registered to the Camunda client."
     },
@@ -171,6 +179,10 @@
       "defaultValue": "PT8H"
     },
     {
+      "name": "camunda.client.worker.defaults.stream-inactivity-timeout",
+      "defaultValue": "PT10M"
+    },
+    {
       "name": "camunda.client.auth.connect-timeout",
       "defaultValue": "PT5S"
     },
@@ -179,8 +191,7 @@
       "defaultValue": "PT5S"
     },
     {
-      "name": "camunda.client.auth.credentials-cache-path",
-      "defaultValue": "$HOME/.camunda/credentials"
+      "name": "camunda.client.auth.credentials-cache-path"
     },
     {
       "name": "camunda.client.max-metadata-size",
@@ -211,6 +222,10 @@
       "defaultValue": true
     },
     {
+      "name": "camunda.client.prefix-physical-tenant-path",
+      "defaultValue": true
+    },
+    {
       "name": "camunda.client.max-http-connections",
       "defaultValue": 100
     },
@@ -229,6 +244,56 @@
     {
       "name": "camunda.client.use-client-side-load-balancing",
       "defaultValue": false
+    },
+    {
+      "name": "camunda.client.keep-alive",
+      "defaultValue": "PT45S"
+    },
+    {
+      "name": "camunda.client.worker.override",
+      "defaultValue": {}
+    },
+    {
+      "name": "camunda.client.auth.proactive-token-refresh-threshold",
+      "defaultValue": "PT30S"
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-max-retries",
+      "defaultValue": 5
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-initial-backoff",
+      "defaultValue": "PT1S"
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-backoff-multiplier",
+      "defaultValue": 2.0
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-retryable-status-codes",
+      "defaultValue": [404, 429, 500, 502, 503, 504]
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-non-retryable-cooldown",
+      "defaultValue": "PT30S"
+    },
+    {
+      "name": "camunda.client.cluster-variables.global",
+      "type": "java.util.Map<java.lang.String,java.lang.Object>",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-variables.variables",
+        "reason": "Cluster variables are now set in a single list instead of separate maps for global and tenant variables."
+      }
+    },
+    {
+      "name": "camunda.client.cluster-variables.tenant",
+      "type": "java.util.Map<java.lang.String,java.lang.Object>",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties",
+      "deprecation": {
+        "replacement": "camunda.client.cluster-variables.variables",
+        "reason": "Cluster variables are now set in a single list instead of separate maps for global and tenant variables."
+      }
     },
     {
       "name": "common.auth-url",

@@ -23,6 +23,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.LeadershipTransferCoordinatorCheck;
+import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -42,6 +44,7 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -125,12 +128,12 @@ public class RaftPartitionServer implements HealthMonitorable {
         .thenApply(v -> this);
   }
 
-  public CompletableFuture<RaftPartitionServer> join() {
+  public CompletableFuture<RaftPartitionServer> join(final Type type) {
     final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
-    LOGGER.info("Server joining partition {}", partition.id());
+    LOGGER.info("Server joining partition {} as {}", partition.id(), type);
     return server
-        .join(partitionMetadata.members())
+        .join(type, partitionMetadata.members())
         .whenComplete(
             (r, e) -> {
               if (e == null) {
@@ -151,6 +154,45 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.leave().thenApply(v -> this);
   }
 
+  /**
+   * Promotes the local member to {@link Type#ACTIVE} via a reconfiguration that is forwarded to the
+   * current leader, making it a full voting member. This is the second phase of the two-phase join
+   * flow for members that joined as {@link Type#PROMOTABLE} and have caught up to the leader's log.
+   *
+   * <p>{@code NO_LEADER}, {@code UNAVAILABLE} and {@code PROTOCOL_ERROR} responses are retried
+   * internally without a deadline. A {@code CONFIGURATION_ERROR} - the member is not caught up yet,
+   * another configuration change is in progress, or the request was built from a stale
+   * configuration view - fails the returned future and the caller is expected to retry. There is no
+   * production caller yet; this supports the dynamic-config orchestration of two-phase joins
+   * (#57392).
+   *
+   * @return a future to be completed once the local member is an ACTIVE part of the committed
+   *     configuration
+   */
+  public CompletableFuture<RaftPartitionServer> promoteMember() {
+    return server.cluster().getLocalMember().promote(Type.ACTIVE).thenApply(v -> this);
+  }
+
+  /**
+   * Demotes the local member to {@link Type#PASSIVE} via a reconfiguration that is forwarded to the
+   * current leader, removing it from all quorums. This is the first phase of a two-phase leave:
+   * demote, then {@link #leave()}, so that the removal can commit without the departing member's
+   * participation. The target is PASSIVE rather than PROMOTABLE because a departing member has no
+   * promotion intent and must not be shipped the leader's uncommitted tail.
+   *
+   * <p>{@code NO_LEADER}, {@code UNAVAILABLE} and {@code PROTOCOL_ERROR} responses are retried
+   * internally without a deadline. A {@code CONFIGURATION_ERROR} - e.g. another configuration
+   * change is in progress or the request was built from a stale configuration view - fails the
+   * returned future and the caller is expected to retry. There is no production caller yet; this
+   * supports the dynamic-config orchestration of two-phase leaves (#57392).
+   *
+   * @return a future to be completed once the local member is a PASSIVE part of the committed
+   *     configuration
+   */
+  public CompletableFuture<RaftPartitionServer> demoteMember() {
+    return server.cluster().getLocalMember().demote(Type.PASSIVE).thenApply(v -> this);
+  }
+
   public CompletableFuture<RaftPartitionServer> forceReconfigure(
       final Map<MemberId, Type> members) {
     return server.forceConfigure(members).thenApply(v -> this);
@@ -165,7 +207,6 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServer buildServer(final MeterRegistry meterRegistry) {
-    final var partitionId = partition.id().id();
     final var electionConfig =
         config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
@@ -174,7 +215,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())
-        .withPartitionId(partitionId)
+        .withPartitionId(partition.id())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
         .withPartitionConfig(config)
@@ -191,6 +232,10 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public RaftLogReader openReader() {
     return server.getContext().getLog().openCommittedReader();
+  }
+
+  public RaftLogReader openUncommittedReader() {
+    return server.getContext().getLog().openUncommittedReader();
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -291,6 +336,25 @@ public class RaftPartitionServer implements HealthMonitorable {
     return Optional.empty();
   }
 
+  /**
+   * Registers the broker-supplied barrier the leader uses to freeze/unfreeze the partition's writes
+   * during a coordinated leadership transfer. Safe to call from the broker's thread; the barrier
+   * takes effect once the Raft thread picks the registration up.
+   */
+  public void setLeadershipTransferWriteBarrier(final LeadershipTransferWriteBarrier barrier) {
+    server.getContext().setLeadershipTransferWriteBarrier(barrier);
+  }
+
+  /**
+   * Registers the broker-supplied check the leader uses to tell the cluster's rebalancing
+   * coordinator from any other node asking it to transfer leadership. The returned future completes
+   * once the check has taken effect on the Raft thread.
+   */
+  public CompletableFuture<Void> setLeadershipTransferCoordinatorCheck(
+      final LeadershipTransferCoordinatorCheck check) {
+    return server.getContext().setLeadershipTransferCoordinatorCheck(check);
+  }
+
   public Role getRole() {
     return server.getRole();
   }
@@ -307,7 +371,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     final RaftStorageConfig storageConfig = config.getStorageConfig();
     return RaftStorage.builder(meterRegistry)
         .withPrefix(partition.name())
-        .withPartitionId(partition.id().id())
+        .withPartitionId(partition.id().number())
         .withDirectory(partition.dataDirectory())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize())
         .withFlusherFactory(storageConfig.flusherFactory())
@@ -319,19 +383,24 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServerCommunicator createServerProtocol() {
-    final var legacySubjects = createLegacySubjects();
-    final var engineSubjects = createEngineSubjects();
+    final var partitionId = partition.id().number();
+    final var partitionGroup = partition.id().group();
 
-    final var sendingSubject = config.isSendOnLegacySubject() ? legacySubjects : engineSubjects;
+    final var sendingSubject = PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId);
+    final var sendingContext = new RaftMessageContext(sendingSubject);
 
     final var receivingSubjects =
-        config.isReceiveOnLegacySubject()
-            ? List.of(legacySubjects, engineSubjects)
-            : List.of(engineSubjects);
+        partitionGroup.equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                && config.isReceiveOnLegacySubject()
+            ? List.of(
+                PARTITION_NAME_FORMAT.formatted("raft-partition", partitionId),
+                PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId))
+            : List.of(PARTITION_NAME_FORMAT.formatted(partitionGroup, partitionId));
+    final var receivingContext = receivingSubjects.stream().map(RaftMessageContext::new).toList();
 
     return new RaftServerCommunicator(
-        sendingSubject,
-        receivingSubjects,
+        sendingContext,
+        receivingContext,
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,
@@ -340,21 +409,12 @@ public class RaftPartitionServer implements HealthMonitorable {
         new RaftRequestMetrics(partition.name(), meterRegistry));
   }
 
-  private RaftMessageContext createLegacySubjects() {
-    return new RaftMessageContext(partition.name());
-  }
-
-  private RaftMessageContext createEngineSubjects() {
-    final var enginePrefix = getPartitionNameWithEnginePrefix();
-    return new RaftMessageContext(enginePrefix);
-  }
-
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
   }
 
-  public CompletableFuture<RaftServer> promote() {
-    return server.promote();
+  public CompletableFuture<RaftServer> anoint() {
+    return server.anoint();
   }
 
   public Collection<RaftMember> getMembers() {
@@ -363,12 +423,6 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<SegmentInfo> getTailSegments(final long index) {
     return server.getContext().getTailSegments(index);
-  }
-
-  private String getPartitionNameWithEnginePrefix() {
-    final var engineName = config.getEngineName();
-    final var partitionId = partition.id().id();
-    return PARTITION_NAME_FORMAT.formatted(engineName, partitionId);
   }
 
   @VisibleForTesting

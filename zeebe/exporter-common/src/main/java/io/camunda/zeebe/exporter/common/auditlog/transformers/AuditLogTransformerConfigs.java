@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -102,6 +104,11 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(GROUP)
           .withIntents(GroupIntent.ENTITY_ADDED, GroupIntent.ENTITY_REMOVED);
 
+  public static final TransformerConfig HISTORY_DELETION_CONFIG =
+      TransformerConfig.with(HISTORY_DELETION)
+          .withIntents(HistoryDeletionIntent.DELETED)
+          .withDataCleanupIntents(HistoryDeletionIntent.DELETED);
+
   public static final TransformerConfig INCIDENT_RESOLUTION_CONFIG =
       TransformerConfig.with(ValueType.INCIDENT)
           .withIntents(IncidentIntent.RESOLVED)
@@ -116,13 +123,21 @@ public class AuditLogTransformerConfigs {
               MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED)
           .withDataCleanupIntents(MappingRuleIntent.DELETED);
 
+  // Unlike other resources, a process deletion is audited on DRAINING rather than DELETED: only
+  // processes drain, and DRAINING is the record written synchronously under the deleter's command.
   public static final TransformerConfig PROCESS_CONFIG =
-      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DELETED);
+      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DRAINING);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)
           .withIntents(ProcessInstanceIntent.CANCELING)
           .withRejections(ProcessInstanceIntent.CANCEL, RejectionType.INVALID_STATE);
+
+  public static final TransformerConfig PROCESS_INSTANCE_SUSPEND_RESUME_CONFIG =
+      TransformerConfig.with(ValueType.PROCESS_INSTANCE)
+          .withIntents(ProcessInstanceIntent.SUSPENDED, ProcessInstanceIntent.RESUMED)
+          .withRejections(ProcessInstanceIntent.SUSPEND, ProcessInstanceIntent.RESUME)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig PROCESS_INSTANCE_CREATION_CONFIG =
       TransformerConfig.with(PROCESS_INSTANCE_CREATION)

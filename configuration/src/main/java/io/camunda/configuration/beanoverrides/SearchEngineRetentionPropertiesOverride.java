@@ -7,14 +7,15 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.Retention;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.Retention;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -48,23 +49,27 @@ public class SearchEngineRetentionPropertiesOverride {
   public SearchEngineRetentionProperties searchEngineRetentionProperties() {
     final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
-
-    populateFromRetention(override);
-    populateFromSecondaryStorage(override);
-
+    applyTo(unifiedConfiguration.getCamunda(), override);
     return override;
   }
 
-  private void populateFromRetention(final SearchEngineRetentionProperties override) {
-    final Retention retention =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getRetention();
-    override.setEnabled(retention.isEnabled());
-    override.setMinimumAge(retention.getMinimumAge());
+  public static void applyTo(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    populateFromRetention(camunda, override);
+    populateFromSecondaryStorage(camunda, override);
   }
 
-  private void populateFromSecondaryStorage(final SearchEngineRetentionProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+  private static void populateFromRetention(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    final Retention retention = camunda.getData().getSecondaryStorage().getRetention();
+    override.setEnabled(retention.isEnabled());
+    override.setMinimumAge(retention.getMinimumAge());
+    override.setUsageMetricsMinimumAge(retention.getUsageMetricsMinimumAge());
+  }
+
+  private static void populateFromSecondaryStorage(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
         switch (secondaryStorage.getType()) {
@@ -78,5 +83,6 @@ public class SearchEngineRetentionPropertiesOverride {
     }
 
     override.setPolicyName(database.getHistory().getPolicyName());
+    override.setUsageMetricsPolicyName(database.getHistory().getUsageMetricsPolicyName());
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.clustering;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.DynamicDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
@@ -31,9 +32,7 @@ public final class ClusterConfigFactory {
     final var network = config.getNetwork();
 
     final var messaging = messagingConfig(cluster, network);
-    final var member =
-        memberConfig(
-            network.getInternalApi(), cluster.getNodeId(), config.getCluster().getNodeVersion());
+    final var member = memberConfig(network.getInternalApi(), cluster);
 
     return new ClusterConfig()
         .setClusterId(name)
@@ -43,15 +42,15 @@ public final class ClusterConfigFactory {
         .setProtocolConfig(membership);
   }
 
-  private MemberConfig memberConfig(
-      final SocketBindingCfg network, final int nodeId, final long nodeVersion) {
+  private MemberConfig memberConfig(final SocketBindingCfg network, final ClusterCfg cluster) {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
     return new MemberConfig()
         .setAddress(advertisedAddress)
-        .setId(String.valueOf(nodeId))
-        .setNodeVersion(nodeVersion);
+        .setId(MemberId.from(cluster.getZone(), cluster.getNodeId()))
+        .setZoneId(cluster.getZone())
+        .setNodeVersion(cluster.getNodeVersion());
   }
 
   private SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {

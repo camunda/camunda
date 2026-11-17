@@ -9,21 +9,13 @@ package io.camunda.it.rdbms.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.rdbms.RdbmsConfiguration;
-import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
-import org.junit.jupiter.api.Tag;
+import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@Tag("rdbms")
-@DataJdbcTest
-@ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
-@AutoConfigurationPackage
+@RdbmsDataJdbcTest
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",

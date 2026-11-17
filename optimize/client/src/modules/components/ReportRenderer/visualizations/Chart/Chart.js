@@ -11,6 +11,7 @@ import ChartRenderer from './ChartRenderer';
 import createDefaultChartConfig from './defaultChart';
 import createHyperChartConfig from './hyperChart';
 import createTargetLineConfig from './targetLineChart';
+import createOutlierBandConfig from './outlierBandChart';
 import {themed} from 'theme';
 
 export function Chart(props) {
@@ -30,7 +31,9 @@ export function Chart(props) {
     configuration.targetValue.active && configuration.targetValue[targetValueType];
 
   let createConfig;
-  if (targetValue && visualization === 'line') {
+  if (visualization === 'outlierBand') {
+    createConfig = createOutlierBandConfig;
+  } else if (targetValue && visualization === 'line') {
     createConfig = createTargetLineConfig;
   } else if (hyper) {
     createConfig = createHyperChartConfig;

@@ -216,6 +216,20 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter suspendedDate(final OffsetDateTime suspendedDate) {
+    suspendedDate(b -> b.eq(suspendedDate));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter suspendedDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setSuspendedDate(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessInstanceFilter tenantId(final String tenantId) {
     tenantId(b -> b.eq(tenantId));
     return this;

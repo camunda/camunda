@@ -44,7 +44,7 @@ final class TemplateReaderTest {
         .isNullOrEmpty();
     assertThat(template.template().settings())
         .containsEntry("number_of_shards", 1)
-        .containsEntry("number_of_replicas", 0)
+        .containsEntry("number_of_replicas", 1)
         .containsEntry("index.queries.cache.enabled", false);
   }
 
@@ -124,7 +124,7 @@ final class TemplateReaderTest {
     assertThat(template.priority()).isEqualTo(20);
     assertThat(template.template().settings())
         .containsEntry("number_of_shards", 1)
-        .containsEntry("number_of_replicas", 0)
+        .containsEntry("number_of_replicas", 1)
         .containsEntry("index.queries.cache.enabled", false);
   }
 
@@ -156,5 +156,37 @@ final class TemplateReaderTest {
 
     // then
     assertThat(template.template().settings()).containsEntry("index.lifecycle.name", "auto-trash");
+  }
+
+  @Test
+  void shouldKeepLifecyclePolicyInTemplateWhenManagePolicyIsDisabledAndRetentionDisabled() {
+    // given retention is disabled but managePolicy=false means hands-off; the template
+    // must retain the policy name so future rolled indices inherit it
+    config.retention.setEnabled(false);
+    config.retention.setManagePolicy(false);
+    config.retention.setPolicyName("auto-trash");
+    final var valueType = ValueType.VARIABLE;
+
+    // when
+    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+
+    // then
+    assertThat(template.template().settings()).containsEntry("index.lifecycle.name", "auto-trash");
+  }
+
+  @Test
+  void shouldOmitLifecyclePolicyFromTemplateWhenRetentionDisabledAndManagePolicyEnabled() {
+    // given the destructive default behavior: retention disabled with managePolicy=true
+    // should strip the policy from the template
+    config.retention.setEnabled(false);
+    config.retention.setManagePolicy(true);
+    config.retention.setPolicyName("auto-trash");
+    final var valueType = ValueType.VARIABLE;
+
+    // when
+    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+
+    // then
+    assertThat(template.template().settings()).doesNotContainKey("index.lifecycle.name");
   }
 }

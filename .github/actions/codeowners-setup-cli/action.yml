@@ -7,16 +7,16 @@ description: Downloads and caches the codeowners-plus CLI binary for use in work
 
 inputs:
   version:
-    description: 'Version of codeowners-cli to install (e.g. v1.9.0)'
+    description: 'Version of codeowners-cli to install (e.g. v1.12.0)'
     required: false
-    default: 'v1.9.0'
+    default: 'v1.12.0'
 
 runs:
   using: composite
   steps:
     - name: Restore cached codeowners-cli
       id: cache
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/codeowners-cli/${{ inputs.version }}
         key: codeowners-cli-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}
@@ -28,15 +28,44 @@ runs:
         set -euo pipefail
 
         version="${{ inputs.version }}"
-        target_dir="${RUNNER_TEMP}/codeowners-cli/${version}"
-        archive_path="${RUNNER_TEMP}/codeowners-cli_${version}.tar.gz"
-        download_url="https://github.com/multimediallc/codeowners-plus/releases/download/${version}/codeowners-cli_${version#v}_Linux_x86_64.tar.gz"
+        temp_dir="${RUNNER_TEMP}"
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          temp_dir="$(cygpath -u "${RUNNER_TEMP}")"
+        fi
+
+        case "${RUNNER_OS}" in
+          Linux|Windows) release_os="${RUNNER_OS}" ;;
+          macOS) release_os="Darwin" ;;
+          *) echo "::error::Unsupported runner OS: ${RUNNER_OS}" >&2; exit 1 ;;
+        esac
+
+        case "${RUNNER_ARCH}" in
+          X64) release_arch="x86_64" ;;
+          ARM64) release_arch="arm64" ;;
+          *) echo "::error::Unsupported runner architecture: ${RUNNER_ARCH}" >&2; exit 1 ;;
+        esac
+
+        target_dir="${temp_dir}/codeowners-cli/${version}"
+        archive_path="${temp_dir}/codeowners-cli_${version}.tar.gz"
+        download_url="https://github.com/multimediallc/codeowners-plus/releases/download/${version}/codeowners-cli_${version#v}_${release_os}_${release_arch}.tar.gz"
+        binary="codeowners-cli"
 
         mkdir -p "${target_dir}"
         echo "Downloading codeowners-cli ${version} from ${download_url}"
-        curl -fsSL "${download_url}" -o "${archive_path}"
+        # --retry-all-errors: retry on any failure, not just the curl-default subset (a
+        # mid-transfer "Recv failure: Connection reset by peer" isn't retried by default),
+        # see https://github.com/camunda/camunda/actions/runs/32242321929/job/96035501009
+        curl -fsSL --retry 5 --retry-delay 2 --retry-max-time 60 --retry-all-errors \
+          "${download_url}" -o "${archive_path}"
         tar -xzf "${archive_path}" -C "${target_dir}"
-        chmod +x "${target_dir}/codeowners-cli"
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          # Upstream's Windows archive ships codeowners-cli.exe.exe; skip the rename once fixed.
+          if [[ -f "${target_dir}/codeowners-cli.exe.exe" ]]; then
+            mv "${target_dir}/codeowners-cli.exe.exe" "${target_dir}/codeowners-cli.exe"
+          fi
+          binary="codeowners-cli.exe"
+        fi
+        chmod +x "${target_dir}/${binary}"
         rm -f "${archive_path}"
 
     - name: Add codeowners-cli to PATH
@@ -45,5 +74,9 @@ runs:
 
     - name: Verify installation
       shell: bash
-      run: codeowners-cli --version
-
+      run: |
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          codeowners-cli.exe --version
+        else
+          codeowners-cli --version
+        fi

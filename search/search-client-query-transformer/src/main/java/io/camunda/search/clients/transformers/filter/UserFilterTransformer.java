@@ -8,17 +8,16 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.EMAIL;
-import static io.camunda.webapps.schema.descriptors.index.UserIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 
@@ -30,18 +29,26 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final UserFilter filter) {
-    final var queries = new ArrayList<SearchQuery>();
-    if (filter.key() != null) {
-      queries.add(term(KEY, filter.key()));
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
     }
-    queries.addAll(stringOperations(USERNAME, filter.usernameOperations()));
-    queries.addAll(stringOperations(NAME, filter.nameOperations()));
-    queries.addAll(stringOperations(EMAIL, filter.emailOperations()));
+
     return and(queries);
   }
 
+  private ArrayList<SearchQuery> toSearchQueryFields(final UserFilter filter) {
+    final var queries = new ArrayList<SearchQuery>();
+    queries.addAll(stringOperations(USERNAME, filter.usernameOperations()));
+    queries.addAll(stringOperations(NAME, filter.nameOperations()));
+    queries.addAll(stringOperations(EMAIL, filter.emailOperations()));
+    return queries;
+  }
+
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(USERNAME, authorization.resourceIds());
   }
 }

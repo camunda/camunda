@@ -7,18 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.clock;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
@@ -32,7 +36,7 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
   private final KeyGenerator keyGenerator;
   private final ControllableStreamClock clock;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
 
@@ -41,7 +45,7 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
       final KeyGenerator keyGenerator,
       final ControllableStreamClock clock,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     sideEffectWriter = writers.sideEffect();
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
@@ -49,23 +53,27 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
     rejectionWriter = writers.rejection();
     this.clock = clock;
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<ClockRecord> command) {
     // Validate authorization
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.SYSTEM)
-            .permissionType(PermissionType.UPDATE)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    final var isAuthorized =
+        cslCheck.check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.SYSTEM))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.UPDATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE, AuthorizationResourceType.SYSTEM));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -74,11 +82,15 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
     final long eventKey = keyGenerator.nextKey();
     applyClockModification(eventKey, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, ClockIntent.RESETTED, clockRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(
+          eventKey, ClockIntent.RESETTED, clockRecord, command);
     }
 
     // Distribute to other partitions
-    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
+    commandDistributionBehavior
+        .withKey(eventKey)
+        .inQueue(DistributionQueue.CLOCK)
+        .distribute(command);
   }
 
   @Override
@@ -88,11 +100,7 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
   }
 
   private void applyClockModification(final long key, final ClockRecord clockRecord) {
-    final SideEffectProducer sideEffect =
-        () -> {
-          clock.reset();
-          return true;
-        };
+    final SideEffectProducer sideEffect = () -> clock.reset();
     sideEffectWriter.appendSideEffect(sideEffect);
     stateWriter.appendFollowUpEvent(key, ClockIntent.RESETTED, clockRecord);
   }

@@ -20,7 +20,7 @@ import {
   jsonHeaders,
 } from '../http';
 import {expect} from '@playwright/test';
-import {generateUniqueId} from '../constants';
+import {defaultAssertionOptions, generateUniqueId} from '../constants';
 import {
   CREATE_NEW_TENANT,
   roleRequiredFields,
@@ -43,14 +43,18 @@ export async function assignUsersToTenant(
   for (let i = 1; i <= numberOfUsers; i++) {
     const user = await createUser(request, {}, 'user' + generateUniqueId());
     const p = {
-      userId: user.username,
+      username: user.username,
       tenantId: tenantId,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/users/{userId}', p),
-      {headers: jsonHeaders()},
-    );
-    await assertStatusCode(res, 204);
+    // Retry to absorb read-after-write lag: the user created above may not
+    // yet be visible to the assign endpoint on a shared cluster (404 → 204).
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/users/{username}', p),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
     state[`username${tenantId}${i}`] = user.username;
   }
 }
@@ -156,13 +160,17 @@ export async function assignRolesToTenant(
       roleId: roleIdValueUsingKey(tenantIdKey, state, i) as string,
       tenantId: tenantId as string,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    await assertStatusCode(res, 204);
+    // Retry to absorb read-after-write lag: the role created above may not
+    // yet be visible to the assign endpoint on a shared cluster (404 → 204).
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
   }
 }
 
@@ -179,13 +187,15 @@ export async function assignMappingRulesToTenant(
       mappingRuleId: mappingRuleIdFromState(tenantIdKey, state, i) as string,
       tenantId: tenantId as string,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', p),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    await assertStatusCode(res, 204);
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', p),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
   }
 }
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk.ChunkItem;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,20 +40,19 @@ public interface BatchOperationState {
   Optional<PersistedBatchOperation> getNextPendingBatchOperation();
 
   /**
-   * Retrieves the next <code>batchSize</code> unprocessed itemKeys for a given batch operation.
-   * This method is usually called by the BatchOperationExecuteProcessor to execute the next X
-   * items.<br>
-   * <br>
-   * This method can return fewer than <code>batchSize</code> itemKeys. This does not mean that
-   * there are no more itemKeys but depends on the internal structure of the batch operation state.
+   * Retrieves the next <code>batchSize</code> unprocessed items for a given batch operation. This
+   * method is usually called by the BatchOperationExecuteProcessor to execute the next X items.
    * <br>
    * <br>
-   * If the returned list is empty, it means that there are no more itemKeys to process for the
-   * given batch operation.
+   * This method can return fewer than <code>batchSize</code> items. This does not mean that there
+   * are no more items but depends on the internal structure of the batch operation state.<br>
+   * <br>
+   * If the returned list is empty, it means that there are no more items to process for the given
+   * batch operation.
    *
    * @param batchOperationKey the key of the batch operation
-   * @param batchSize the maximum number of itemKeys to retrieve
-   * @return a list of itemKeys for the batch operations, up to the specified batch size
+   * @param batchSize the maximum number of items to retrieve
+   * @return the next items, each with its own storage ordinal, up to the specified batch size
    */
-  List<Long> getNextItemKeys(long batchOperationKey, int batchSize);
+  List<ChunkItem> getNextItems(long batchOperationKey, int batchSize);
 }

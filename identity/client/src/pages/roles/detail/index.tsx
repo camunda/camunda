@@ -9,16 +9,15 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing01, spacing02, spacing03 } from "@carbon/elements";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api";
+import { roleQueries } from "src/utility/api/roles/queries";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
-import { getRoleDetails } from "src/utility/api/roles";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import EditModal from "src/pages/roles/modals/EditModal";
@@ -27,9 +26,19 @@ import Members from "src/pages/roles/detail/members";
 import Groups from "src/pages/roles/detail/groups";
 import MappingRules from "src/pages/roles/detail/mapping-rules";
 import Clients from "src/pages/roles/detail/clients";
-import { isOIDC } from "src/configuration";
+import { canManageMappingRules } from "src/configuration";
 
-const Details: FC = () => {
+type DetailsProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  defaultRoleIds: string[];
+};
+
+const Details: FC<DetailsProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  defaultRoleIds,
+}) => {
   const navigate = useNavigate();
   const { t } = useTranslate("roles");
   const { id = "", tab = "details" } = useParams<{
@@ -37,15 +46,9 @@ const Details: FC = () => {
     tab: string;
   }>();
 
-  const {
-    data: role,
-    loading,
-    reload,
-  } = useApi(getRoleDetails, {
-    roleId: id,
-  });
+  const { data: role, isLoading: loading } = useQuery(roleQueries.detail(id));
 
-  const [editRole, editModal] = useEntityModal(EditModal, reload);
+  const [editRole, editModal] = useEntityModal(EditModal, () => {});
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
@@ -55,29 +58,31 @@ const Details: FC = () => {
   return (
     <StackPage>
       <>
-        <Stack gap={spacing02}>
+        <Stack gap="2">
           <Breadcrumbs items={[{ href: "/roles", title: t("roles") }]} />
           {loading && !role ? (
             <DetailPageHeaderFallback hasOverflowMenu={false} />
           ) : (
             <Flex>
               {role && (
-                <Stack gap={spacing03}>
-                  <Stack orientation="horizontal" gap={spacing01}>
+                <Stack gap="3">
+                  <Stack orientation="horizontal" gap="1">
                     <PageHeadline>{role.name}</PageHeadline>
-                    <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
-                      <OverflowMenuItem
-                        itemText={t("editRole")}
-                        onClick={() => editRole(role)}
-                      />
-                      <OverflowMenuItem
-                        itemText={t("delete")}
-                        isDelete
-                        onClick={() => {
-                          deleteRole(role);
-                        }}
-                      />
-                    </OverflowMenu>
+                    {!defaultRoleIds.includes(role.roleId) && (
+                      <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
+                        <OverflowMenuItem
+                          itemText={t("editRole")}
+                          onClick={() => editRole(role)}
+                        />
+                        <OverflowMenuItem
+                          itemText={t("delete")}
+                          isDelete
+                          onClick={() => {
+                            deleteRole(role);
+                          }}
+                        />
+                      </OverflowMenu>
+                    )}
                   </Stack>
                   <p>
                     {t("roleId")}: {role.roleId}
@@ -99,20 +104,29 @@ const Details: FC = () => {
                 {
                   key: "users",
                   label: t("users"),
-                  content: <Members roleId={role.roleId} />,
+                  content: <Members roleId={role.roleId} isOIDC={isOIDC} />,
                 },
                 {
                   key: "groups",
                   label: t("groups"),
-                  content: <Groups roleId={role.roleId} />,
+                  content: (
+                    <Groups
+                      roleId={role.roleId}
+                      isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+                    />
+                  ),
                 },
                 ...(isOIDC
                   ? [
-                      {
-                        key: "mapping-rules",
-                        label: t("mappingRules"),
-                        content: <MappingRules roleId={role.roleId} />,
-                      },
+                      ...(canManageMappingRules
+                        ? [
+                            {
+                              key: "mapping-rules",
+                              label: t("mappingRules"),
+                              content: <MappingRules roleId={role.roleId} />,
+                            },
+                          ]
+                        : []),
                       {
                         key: "clients",
                         label: t("clients"),

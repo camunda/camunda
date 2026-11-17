@@ -178,11 +178,23 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         target::setStreamEnabled,
         target.getStreamEnabled());
     copyProperty(
+        "withLease",
+        overrideSource,
+        source::getWithLease,
+        target::setWithLease,
+        target.getWithLease());
+    copyProperty(
         "streamTimeout",
         overrideSource,
         source::getStreamTimeout,
         target::setStreamTimeout,
         target.getStreamTimeout());
+    copyProperty(
+        "streamInactivityTimeout",
+        overrideSource,
+        source::getStreamInactivityTimeout,
+        target::setStreamInactivityTimeout,
+        target.getStreamInactivityTimeout());
     copyProperty(
         "forceFetchAllVariables",
         overrideSource,

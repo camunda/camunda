@@ -20,7 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.UserTaskFilterBase;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
+import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
@@ -30,10 +34,15 @@ import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.client.protocol.rest.UserTaskStateFilterProperty;
 import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
+import java.lang.reflect.Modifier;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.DisplayName;
@@ -76,6 +85,41 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchUserTaskByBusinessId() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.businessId("order-42")).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getBusinessId().get$Eq()).isEqualTo("order-42");
+  }
+
+  @Test
+  void shouldSearchUserTaskByBusinessIdStringFilter() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.businessId(b -> b.like("order-*")))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getBusinessId().get$Like()).isEqualTo("order-*");
+  }
+
+  @Test
+  void shouldSearchUserTaskSortByBusinessId() {
+    // when
+    client.newUserTaskSearchRequest().sort(s -> s.businessId().desc()).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getBodyAsString())
+        .contains("\"sort\":[{\"field\":\"businessId\",\"order\":\"DESC\"}]");
+  }
+
+  @Test
   void shouldSearchUserTaskByName() {
     // when
     client.newUserTaskSearchRequest().filter(f -> f.name("myTask")).send().join();
@@ -103,6 +147,16 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
     assertThat(request.getFilter().getState().get$Eq()).isEqualTo(UserTaskStateEnum.COMPLETED);
+  }
+
+  @Test
+  void shouldSearchUserTaskByIsSuspended() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.isSuspended(true)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getIsSuspended()).isTrue();
   }
 
   static Stream<Arguments> provideStateFilters() {
@@ -195,6 +249,60 @@ public final class SearchUserTaskTest extends ClientRestTest {
     assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
   }
 
+  static Stream<Arguments> provideBpmnProcessIdFilters() {
+    return Stream.of(
+        stringFilterCase(
+            "eq:my-process",
+            b -> b.eq("my-process"),
+            f -> assertThat(f.get$Eq()).isEqualTo("my-process")),
+        stringFilterCase(
+            "neq:my-process",
+            b -> b.neq("my-process"),
+            f -> assertThat(f.get$Neq()).isEqualTo("my-process")),
+        stringFilterCase(
+            "exists:true", b -> b.exists(true), f -> assertThat(f.get$Exists()).isTrue()),
+        stringFilterCase(
+            "exists:false", b -> b.exists(false), f -> assertThat(f.get$Exists()).isFalse()),
+        stringFilterCase(
+            "in:[proc-a,proc-b]",
+            b -> b.in("proc-a", "proc-b"),
+            f -> assertThat(f.get$In()).containsExactly("proc-a", "proc-b")),
+        stringFilterCase(
+            "like:my-proc*",
+            b -> b.like("my-proc*"),
+            f -> assertThat(f.get$Like()).isEqualTo("my-proc*")));
+  }
+
+  private static Arguments stringFilterCase(
+      final String label,
+      final Consumer<StringProperty> filter,
+      final Consumer<StringFilterProperty> assertion) {
+    return Arguments.of(Named.of(label, filter), Named.of("assert " + label, assertion));
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideBpmnProcessIdFilters")
+  @DisplayName("Should search user tasks by bpmnProcessId using advanced filters")
+  void shouldSearchUserTasksByBpmnProcessIdUsingAdvancedFilter(
+      final Consumer<StringProperty> filter, final Consumer<StringFilterProperty> assertion) {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.bpmnProcessId(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionId()).isNotNull().satisfies(assertion);
+  }
+
+  @Test
+  void shouldSearchUserTaskByBpmnProcessId() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.bpmnProcessId("my-process")).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("my-process");
+  }
+
   @Test
   void shouldSearchUserTaskByProcessDefinitionKey() {
     // when
@@ -202,7 +310,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo("123");
+    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo("123");
   }
 
   @Test
@@ -212,7 +320,61 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo("456");
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("456");
+  }
+
+  static Stream<Arguments> provideKeyFilters() {
+    return Stream.of(
+        longKeyFilterCase("eq:123", b -> b.eq(123L), f -> assertThat(f.get$Eq()).isEqualTo("123")),
+        longKeyFilterCase(
+            "neq:123", b -> b.neq(123L), f -> assertThat(f.get$Neq()).isEqualTo("123")),
+        longKeyFilterCase(
+            "exists:true", b -> b.exists(true), f -> assertThat(f.get$Exists()).isTrue()),
+        longKeyFilterCase(
+            "exists:false", b -> b.exists(false), f -> assertThat(f.get$Exists()).isFalse()),
+        longKeyFilterCase(
+            "in:[123,456]",
+            b -> b.in(123L, 456L),
+            f -> assertThat(f.get$In()).containsExactly("123", "456")),
+        longKeyFilterCase(
+            "notIn:[123,456]",
+            b -> b.notIn(123L, 456L),
+            f -> assertThat(f.get$NotIn()).containsExactly("123", "456")));
+  }
+
+  private static Arguments longKeyFilterCase(
+      final String label,
+      final Consumer<BasicLongProperty> filter,
+      final Consumer<BasicStringFilterProperty> assertion) {
+    return Arguments.of(Named.of(label, filter), Named.of("assert " + label, assertion));
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideKeyFilters")
+  @DisplayName("Should search user tasks by processDefinitionKey using advanced filters")
+  void shouldSearchUserTasksByProcessDefinitionKeyUsingAdvancedFilter(
+      final Consumer<BasicLongProperty> filter,
+      final Consumer<BasicStringFilterProperty> assertion) {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.processDefinitionKey(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionKey()).isNotNull().satisfies(assertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideKeyFilters")
+  @DisplayName("Should search user tasks by processInstanceKey using advanced filters")
+  void shouldSearchUserTasksByProcessInstanceKeyUsingAdvancedFilter(
+      final Consumer<BasicLongProperty> filter,
+      final Consumer<BasicStringFilterProperty> assertion) {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.processInstanceKey(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessInstanceKey()).isNotNull().satisfies(assertion);
   }
 
   @Test
@@ -594,5 +756,77 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
     assertThat(request.getFilter().getFollowUpDate().get$Gte()).isNotNull();
     assertThat(request.getFilter().getFollowUpDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldSearchUserTaskWithOrOperatorFilters() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(
+            f ->
+                f.assignee("user1")
+                    .orFilters(
+                        Arrays.asList(
+                            f1 -> f1.candidateGroup("groupA"), f2 -> f2.candidateUser("user2"))))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    final UserTaskFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getAssignee().get$Eq()).isEqualTo("user1");
+    assertThat(filter.get$Or()).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getCandidateGroup().get$Eq()).isEqualTo("groupA");
+    assertThat(filter.get$Or().get(1).getCandidateUser().get$Eq()).isEqualTo("user2");
+  }
+
+  @Test
+  void shouldSearchUserTaskByIsSuspendedInOrFilters() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(
+            f -> f.orFilters(Arrays.asList(f1 -> f1.isSuspended(true), f2 -> f2.assignee("user1"))))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    final UserTaskFilter filter = request.getFilter();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getIsSuspended()).isTrue();
+    assertThat(filter.get$Or().get(1).getIsSuspended()).isNull();
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(UserTaskFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.UserTaskFilter.class);
+
+    // Full interface must contain all base interface methods
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    // Full interface may only include orFilters in addition to base methods
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }

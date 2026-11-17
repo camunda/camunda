@@ -8,21 +8,65 @@
 package packages
 
 import (
+	"archive/zip"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/archive"
+	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/rs/zerolog/log"
 )
 
-func Clean(camundaVersion string) {
+const (
+	bundledJavaMajorVersion = 25
+	helperJavaRelease       = 21
+)
+
+var conservativeJREModules = []string{
+	// jdeps cannot see provider and locale modules loaded indirectly at runtime.
+	"jdk.charsets",
+	"jdk.crypto.ec",
+	"jdk.localedata",
+	"jdk.zipfs",
+}
+
+var runtimeProviderJREModules = []string{
+	// The connectors runtime is a Spring Boot fat JAR. Running jdeps directly against it only sees
+	// the loader classes, since everything else is nested under BOOT-INF, so its real module needs
+	// (verified by running jdeps against the exploded BOOT-INF/classes and BOOT-INF/lib) are kept
+	// explicit here instead. Without java.desktop in particular, the bundled runtime fails on any
+	// JDK version with NoClassDefFoundError: java/beans/PropertyEditorSupport while Spring Boot
+	// binds configuration properties.
+	"java.compiler",
+	"java.desktop",
+	"java.instrument",
+	"java.management",
+	"java.management.rmi",
+	"java.naming",
+	"java.net.http",
+	"java.prefs",
+	"java.scripting",
+	"java.security.jgss",
+	"java.sql",
+	"java.xml.crypto",
+	"jdk.jfr",
+	"jdk.management.agent",
+	"jdk.naming.dns",
+	"jdk.net",
+	"jdk.unsupported",
+}
+
+func Clean(camundaVersion, connectorJarToKeep string) {
 	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
 	// picked up by later packaging runs after Elasticsearch was removed from the distribution.
 	legacyElasticsearchArtifacts, err := filepath.Glob("elasticsearch-*")
@@ -59,6 +103,9 @@ func Clean(camundaVersion string) {
 	if err := os.RemoveAll("rdbms-schema"); err != nil {
 		log.Error().Err(err).Msg("failed to remove rdbms-schema")
 	}
+	if err := os.RemoveAll(jre.DirectoryName); err != nil {
+		log.Error().Err(err).Msg("failed to remove bundled JRE")
+	}
 
 	logFiles := []string{"camunda.log", "connectors.log", "elasticsearch.log"}
 	for _, logFile := range logFiles {
@@ -75,6 +122,9 @@ func Clean(camundaVersion string) {
 		log.Error().Err(err).Msg("failed to discover connector jars")
 	} else {
 		for _, jar := range connectorJars {
+			if jar == connectorJarToKeep {
+				continue
+			}
 			if err := os.Remove(jar); err != nil && !errors.Is(err, os.ErrNotExist) {
 				log.Error().Err(err).Str("file", jar).Msg("failed to remove connector jar")
 			}
@@ -134,6 +184,614 @@ func setOsSpecificValues() (string, string, string, string, func(string, string)
 	}
 }
 
+func rocksdbNativeLibName(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-linux64.so", nil
+		case "aarch64":
+			return "librocksdbjni-linux-aarch64.so", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-osx-x86_64.jnilib", nil
+		case "aarch64":
+			return "librocksdbjni-osx-arm64.jnilib", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-win64.dll", nil
+		}
+	}
+	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
+}
+
+// isRocksdbNativeLib reports whether name is a RocksDB JNI native library entry.
+// rocksdbjni JARs pack native libs at the JAR root (no directory prefix).
+// Only call this on rocksdbjni-*.jar entries — other JARs may contain unrelated root-level natives.
+func isRocksdbNativeLib(name string) bool {
+	if strings.ContainsRune(name, '/') {
+		return false
+	}
+	return strings.HasSuffix(name, ".so") || strings.HasSuffix(name, ".jnilib") || strings.HasSuffix(name, ".dll")
+}
+
+func copyZipEntry(w *zip.Writer, f *zip.File) error {
+	hdr := f.FileHeader
+	fw, err := w.CreateHeader(&hdr)
+	if err != nil {
+		return fmt.Errorf("failed to create entry %s in temp jar: %w", f.Name, err)
+	}
+	rc, err := f.Open()
+	if err != nil {
+		return fmt.Errorf("failed to read entry %s from jar: %w", f.Name, err)
+	}
+	defer func() {
+		if err := rc.Close(); err != nil {
+			log.Warn().Err(err).Str("entry", f.Name).Msg("failed to close zip entry reader")
+		}
+	}()
+	if _, err := io.Copy(fw, rc); err != nil {
+		return fmt.Errorf("failed to copy entry %s: %w", f.Name, err)
+	}
+	return nil
+}
+
+// rewriteJarDroppingEntries rewrites a JAR (ZIP) in-place, dropping any entry
+// for which shouldDrop returns true. It returns the number of entries that were
+// dropped so callers can validate expected outcomes.
+func rewriteJarDroppingEntries(jarPath string, shouldDrop func(name string) bool) (int, error) {
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open jar %s: %w", jarPath, err)
+	}
+	// r is closed explicitly before os.Rename — Windows cannot rename over an open file.
+
+	tmpPath := jarPath + ".tmp"
+	tmpFile, err := os.Create(tmpPath)
+	if err != nil {
+		_ = r.Close()
+		return 0, fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
+	}
+
+	removeTmp := func() {
+		if err := os.Remove(tmpPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Warn().Err(err).Str("path", tmpPath).Msg("failed to remove temp jar")
+		}
+	}
+
+	w := zip.NewWriter(tmpFile)
+	var dropped int
+	var copyErr error
+
+	for _, f := range r.File {
+		if shouldDrop(f.Name) {
+			dropped++
+			continue
+		}
+		if err := copyZipEntry(w, f); err != nil {
+			copyErr = err
+			break
+		}
+	}
+
+	if copyErr != nil {
+		_ = w.Close()
+		_ = tmpFile.Close()
+		_ = r.Close()
+		removeTmp()
+		return 0, copyErr
+	}
+	if err := w.Close(); err != nil {
+		_ = tmpFile.Close()
+		_ = r.Close()
+		removeTmp()
+		return 0, fmt.Errorf("failed to finalize temp jar: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		_ = r.Close()
+		removeTmp()
+		return 0, fmt.Errorf("failed to close temp file: %w", err)
+	}
+	if err := r.Close(); err != nil {
+		removeTmp()
+		return 0, fmt.Errorf("failed to close source jar before rename: %w", err)
+	}
+	if err := os.Rename(tmpPath, jarPath); err != nil {
+		removeTmp()
+		return 0, fmt.Errorf("failed to replace jar with slimmed version: %w", err)
+	}
+	return dropped, nil
+}
+
+// stripRocksDbNativeLibs must be called from the c8run working directory:
+// it globs camunda-zeebe-<version>/lib/rocksdbjni-*.jar relative to CWD.
+func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
+	libName, err := rocksdbNativeLibName(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "rocksdbjni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		return fmt.Errorf("stripRocksDbNativeLibs: no rocksdbjni jar found matching %s", pattern)
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple rocksdbjni jars found; stripping only the first")
+	}
+
+	// Pre-scan: verify libName exists and count entries to drop before rewriting.
+	// This makes stripping idempotent (already-stripped JARs return early) and
+	// catches wrong libName mappings before any data is modified.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: open %s: %w", jars[0], err)
+	}
+	var libFound bool
+	var toDrop int
+	for _, f := range r.File {
+		if f.Name == libName {
+			libFound = true
+		}
+		if isRocksdbNativeLib(f.Name) && f.Name != libName {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if !libFound {
+		return fmt.Errorf("stripRocksDbNativeLibs: expected lib %s not found in %s: verify rocksdbNativeLibName mapping", libName, jars[0])
+	}
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("no unused RocksDB native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", libName).Int("dropping", toDrop).Msg("stripping unused RocksDB native libs")
+
+	shouldDrop := func(name string) bool {
+		return isRocksdbNativeLib(name) && name != libName
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
+// zstdNativePrefix returns the directory prefix used by zstd-jni to store
+// native libs for the given platform. zstd-jni uses "<os>/<arch>/" paths where
+// os is "darwin", "linux", or "win" and arch may differ from c8run's convention
+// (e.g., "amd64" instead of "x86_64").
+func zstdNativePrefix(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "linux/amd64/", nil
+		case "aarch64":
+			return "linux/aarch64/", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "darwin/x86_64/", nil
+		case "aarch64":
+			return "darwin/aarch64/", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "win/amd64/", nil
+		}
+	}
+	return "", fmt.Errorf("no zstd-jni native prefix for os=%s arch=%s", osType, arch)
+}
+
+// zstdNativeOsPrefixes lists all top-level OS directory prefixes used by zstd-jni.
+// Entries starting with any of these (but not matching the target prefix) are foreign.
+var zstdNativeOsPrefixes = []string{
+	"linux/", "darwin/", "win/", "aix/", "freebsd/",
+}
+
+// isZstdNativeEntry reports whether a ZIP entry belongs to zstd-jni's
+// platform-specific native directory trees (e.g. linux/amd64/, darwin/x86_64/, win/amd64/).
+func isZstdNativeEntry(name string) bool {
+	for _, prefix := range zstdNativeOsPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// stripZstdJniNativeLibs strips unused platform native libs from zstd-jni JAR(s).
+func stripZstdJniNativeLibs(camundaVersion, osType, arch string) error {
+	keepPrefix, err := zstdNativePrefix(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "zstd-jni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no zstd-jni jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple zstd-jni jars found; stripping only the first")
+	}
+
+	// Pre-scan: count entries to drop, verify idempotency, and confirm the
+	// target platform's prefix is actually present — guards against a wrong
+	// mapping silently producing a JAR with no usable native lib.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var keepFound bool
+	for _, f := range r.File {
+		if strings.HasPrefix(f.Name, keepPrefix) {
+			keepFound = true
+		}
+		if isZstdNativeEntry(f.Name) && !strings.HasPrefix(f.Name, keepPrefix) {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripZstdJniNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if toDrop > 0 && !keepFound {
+		return fmt.Errorf("stripZstdJniNativeLibs: no entries matching prefix %q found in %s: verify zstdNativePrefix mapping", keepPrefix, jars[0])
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Msg("no unused zstd-jni native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Int("dropping", toDrop).Msg("stripping unused zstd-jni native libs")
+
+	shouldDrop := func(name string) bool {
+		return isZstdNativeEntry(name) && !strings.HasPrefix(name, keepPrefix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
+// conscryptNativeSuffix returns the platform suffix used by conscrypt-openjdk-uber
+// to identify native library entries under META-INF/native/. Returns empty string
+// when the JAR has no native lib for the target platform (e.g., aarch64 builds),
+// in which case all native entries should be dropped.
+func conscryptNativeSuffix(osType, arch string) string {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "-linux-x86_64."
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "-osx-x86_64."
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "-windows-x86_64."
+		}
+	}
+	// No native lib exists for this platform (e.g., aarch64).
+	return ""
+}
+
+// isConscryptNativeEntry reports whether a ZIP entry is a conscrypt native lib.
+// These live under META-INF/native/ and end with a native extension.
+func isConscryptNativeEntry(name string) bool {
+	if !strings.HasPrefix(name, "META-INF/native/") {
+		return false
+	}
+	return strings.HasSuffix(name, ".so") || strings.HasSuffix(name, ".dylib") || strings.HasSuffix(name, ".dll")
+}
+
+// stripConscryptNativeLibs strips unused platform native libs from conscrypt JARs.
+// When no native lib exists for the target platform (aarch64), all native entries
+// are dropped — conscrypt falls back to JCA providers at runtime.
+func stripConscryptNativeLibs(camundaVersion, osType, arch string) error {
+	suffix := conscryptNativeSuffix(osType, arch)
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "conscrypt-openjdk-uber-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripConscryptNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no conscrypt jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple conscrypt jars found; stripping only the first")
+	}
+
+	// Pre-scan: count entries to drop and verify idempotency.
+	// When suffix is non-empty, also verify at least one entry matches —
+	// prevents silently dropping all native libs if the suffix mapping is wrong.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripConscryptNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var kept int
+	for _, f := range r.File {
+		if isConscryptNativeEntry(f.Name) {
+			if suffix == "" || !strings.Contains(f.Name, suffix) {
+				toDrop++
+			} else {
+				kept++
+			}
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripConscryptNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if suffix != "" && toDrop > 0 && kept == 0 {
+		return fmt.Errorf("stripConscryptNativeLibs: native entries exist in %s but none match suffix %q: verify conscryptNativeSuffix mapping", jars[0], suffix)
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Msg("no unused conscrypt native libs to strip (already stripped?)")
+		return nil
+	}
+
+	keepDesc := suffix
+	if keepDesc == "" {
+		keepDesc = "(none — no native lib for this platform)"
+	}
+	log.Info().Str("jar", jars[0]).Str("keeping", keepDesc).Int("dropping", toDrop).Msg("stripping unused conscrypt native libs")
+
+	shouldDrop := func(name string) bool {
+		if !isConscryptNativeEntry(name) {
+			return false
+		}
+		// No native lib for this platform: drop all native entries.
+		if suffix == "" {
+			return true
+		}
+		// Keep only the entry matching our platform suffix.
+		return !strings.Contains(name, suffix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
+// grpcNettyShadedNativeTokens returns the filename tokens used by
+// grpc-netty-shaded to identify native libs for the given platform: the
+// tcnative token (always present) and the epoll token (Linux-only — the
+// epoll transport JAR has no counterpart on darwin/windows).
+func grpcNettyShadedNativeTokens(osType, arch string) (tcnative string, epoll string, err error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "_linux_x86_64.", "_epoll_x86_64.", nil
+		case "aarch64":
+			return "_linux_aarch_64.", "_epoll_aarch_64.", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "_osx_x86_64.", "", nil
+		case "aarch64":
+			return "_osx_aarch_64.", "", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "_windows_x86_64.", "", nil
+		}
+	}
+	return "", "", fmt.Errorf("no grpc-netty-shaded native tokens for os=%s arch=%s", osType, arch)
+}
+
+func isGrpcNettyShadedNativeEntry(name string) bool {
+	return strings.HasPrefix(name, "META-INF/native/")
+}
+
+// stripGrpcNettyShadedNativeLibs removes grpc-netty-shaded native libs for
+// all platforms except the target one. Matching is done on filename tokens
+// (not a fixed prefix) because the Windows entry has no "lib" prefix and
+// grpc uses "aarch_64" (underscore) rather than "aarch64".
+func stripGrpcNettyShadedNativeLibs(camundaVersion, osType, arch string) error {
+	tcnativeToken, epollToken, err := grpcNettyShadedNativeTokens(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "grpc-netty-shaded-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no grpc-netty-shaded jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple grpc-netty-shaded jars found; stripping only the first")
+	}
+
+	keep := func(name string) bool {
+		if strings.Contains(name, tcnativeToken) {
+			return true
+		}
+		return epollToken != "" && strings.Contains(name, epollToken)
+	}
+
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var hasNativeEntries bool
+	var tcnativeFound bool
+	for _, f := range r.File {
+		if !isGrpcNettyShadedNativeEntry(f.Name) {
+			continue
+		}
+		hasNativeEntries = true
+		if strings.Contains(f.Name, tcnativeToken) {
+			tcnativeFound = true
+		}
+		if keep(f.Name) {
+			continue
+		}
+		toDrop++
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if hasNativeEntries && !tcnativeFound {
+		return fmt.Errorf("stripGrpcNettyShadedNativeLibs: no entries matching tcnative token %q found in %s: verify grpcNettyShadedNativeTokens mapping", tcnativeToken, jars[0])
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", tcnativeToken).Msg("no unused grpc-netty-shaded native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", tcnativeToken).Int("dropping", toDrop).Msg("stripping unused grpc-netty-shaded native libs")
+
+	shouldDrop := func(name string) bool {
+		return isGrpcNettyShadedNativeEntry(name) && !keep(name)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
+// awsCrtNativePrefix returns the 3-level directory prefix used by aws-crt to
+// store native libs for the given platform: "<os>/<arch>/<libc>/". Linux
+// targets keep glibc only — c8run targets standard distros, not Alpine/musl.
+func awsCrtNativePrefix(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "linux/x86_64/glibc/", nil
+		case "aarch64":
+			return "linux/armv8/glibc/", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "osx/x86_64/cruntime/", nil
+		case "aarch64":
+			return "osx/armv8/cruntime/", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "windows/x86_64/cruntime/", nil
+		}
+	}
+	return "", fmt.Errorf("no aws-crt native prefix for os=%s arch=%s", osType, arch)
+}
+
+// awsCrtNativeOsPrefixes lists all top-level OS directory prefixes used by
+// aws-crt to store native libs, across all platforms it ships.
+var awsCrtNativeOsPrefixes = []string{
+	"linux/", "osx/", "windows/",
+}
+
+func isAwsCrtNativeEntry(name string) bool {
+	for _, prefix := range awsCrtNativeOsPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// stripAwsCrtNativeLibs removes aws-crt native libs for all platforms except
+// the target one. Like stripZstdJniNativeLibs, it globs
+// camunda-zeebe-<version>/lib/aws-crt-*.jar relative to CWD.
+func stripAwsCrtNativeLibs(camundaVersion, osType, arch string) error {
+	keepPrefix, err := awsCrtNativePrefix(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "aws-crt-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no aws-crt jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple aws-crt jars found; stripping only the first")
+	}
+
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var keepFound bool
+	for _, f := range r.File {
+		if strings.HasPrefix(f.Name, keepPrefix) {
+			keepFound = true
+		}
+		if isAwsCrtNativeEntry(f.Name) && !strings.HasPrefix(f.Name, keepPrefix) {
+			toDrop++
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripAwsCrtNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if toDrop > 0 && !keepFound {
+		return fmt.Errorf("stripAwsCrtNativeLibs: no entries matching prefix %q found in %s: verify awsCrtNativePrefix mapping", keepPrefix, jars[0])
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Msg("no unused aws-crt native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", keepPrefix).Int("dropping", toDrop).Msg("stripping unused aws-crt native libs")
+
+	shouldDrop := func(name string) bool {
+		return isAwsCrtNativeEntry(name) && !strings.HasPrefix(name, keepPrefix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
 func getJavaArtifactsToken() (string, error) {
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
@@ -156,6 +814,7 @@ func getFilesToArchive(osType, connectorsFilePath, camundaVersion string) []stri
 		filepath.Join("c8run", "JavaVersion.class"),
 		filepath.Join("c8run", "JavaHome.class"),
 		filepath.Join("c8run", "log"),
+		filepath.Join("c8run", jre.DirectoryName),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", ".env"),
 		filepath.Join("c8run", "configuration", "application.yaml"),
@@ -207,23 +866,427 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
-	javaVersionCmd := exec.Command("javac", "JavaVersion.java")
-	var out strings.Builder
-	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaVersion : %w", err)
-	}
-	javaHomeCmd := exec.Command("javac", "JavaHome.java")
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err = javaHomeCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaHome : %w", err)
+	for _, javaFile := range []string{"JavaVersion.java", "JavaHome.java"} {
+		if err := compileJavaHelper(javaFile); err != nil {
+			return err
+		}
+		classFile := strings.TrimSuffix(javaFile, ".java") + ".class"
+		if err := verifyClassFileVersion(classFile); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func compileJavaHelper(javaFile string) error {
+	javaCmd := exec.Command("javac", buildJavaHelperArgs(javaFile)...)
+	var out strings.Builder
+	var stderr strings.Builder
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
+	}
+	return nil
+}
+
+func buildJavaHelperArgs(sourceFile string) []string {
+	return []string{"--release", strconv.Itoa(helperJavaRelease), sourceFile}
+}
+
+func verifyClassFileVersion(classFile string) error {
+	data, err := os.ReadFile(classFile)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", classFile, err)
+	}
+	// Java class file layout: magic 0xCAFEBABE (4 bytes), minor version (2 bytes), major version (2 bytes, big-endian).
+	// Major version = 44 + Java version, e.g. Java 21 → 65.
+	if len(data) < 8 || data[0] != 0xCA || data[1] != 0xFE || data[2] != 0xBA || data[3] != 0xBE {
+		return fmt.Errorf("%s is not a valid Java class file", classFile)
+	}
+	major := int(data[6])<<8 | int(data[7])
+	expected := 44 + helperJavaRelease
+	if major != expected {
+		return fmt.Errorf(
+			"%s compiled for Java %d (class file version %d), expected Java %d (class file version %d); "+
+				"ensure javac is invoked with --release %d",
+			classFile, major-44, major, helperJavaRelease, expected, helperJavaRelease,
+		)
+	}
+	return nil
+}
+
+func BuildJRE(camundaVersion string) error {
+	if err := ensureJLinkVersion(); err != nil {
+		return err
+	}
+
+	modules, err := detectRequiredJREModules(camundaVersion)
+	if err != nil {
+		return err
+	}
+
+	if err := os.RemoveAll(jre.DirectoryName); err != nil {
+		return fmt.Errorf("failed to remove existing bundled JRE: %w", err)
+	}
+
+	args := buildJLinkArgs(modules, jre.DirectoryName)
+	jlinkCmd := exec.Command("jlink", args...)
+	var out strings.Builder
+	var stderr strings.Builder
+	jlinkCmd.Stdout = &out
+	jlinkCmd.Stderr = &stderr
+	if err := jlinkCmd.Run(); err != nil {
+		return fmt.Errorf("failed to build bundled JRE with jlink: %w\n%s", err, stderr.String())
+	}
+
+	if err := materializeSymlinks(jre.DirectoryName); err != nil {
+		return fmt.Errorf("failed to materialize bundled JRE symlinks: %w", err)
+	}
+
+	if err := removeDistrustedCACerts(filepath.Join(jre.DirectoryName, "lib", "security", "cacerts")); err != nil {
+		return fmt.Errorf("failed to remove distrusted CAs from bundled JRE: %w", err)
+	}
+
+	return nil
+}
+
+// distrustedCACommonNames lists the roots that CVE-2026-114820 removes from the JDK cacerts
+// (emSign G1, G2, ECC G3 and AAA Certificate Services), plus the other emSign G3 roots that
+// chain to the compromised eMudhra intermediates. The JDK alias differs between vendors, so
+// entries are matched by exact subject common name.
+var distrustedCACommonNames = []string{
+	"emSign Root CA - G1",
+	"emSign Root CA - G2",
+	"emSign ECC Root CA - G3",
+	"AAA Certificate Services",
+	"emSign Root TLS CA - G3",
+	"emSign Root CS CA - G3",
+}
+
+const cacertsStorePass = "changeit"
+
+// keytoolCommand is a variable so tests can substitute a fake keytool.
+var keytoolCommand = "keytool"
+
+func removeDistrustedCACerts(cacertsPath string) error {
+	listing, err := listKeystore(cacertsPath)
+	if err != nil {
+		return err
+	}
+
+	for _, alias := range findDistrustedAliases(listing) {
+		cmd := exec.Command(keytoolCommand, "-J-Duser.language=en", "-delete", "-noprompt",
+			"-keystore", cacertsPath, "-storepass", cacertsStorePass, "-alias", alias)
+		var stderr strings.Builder
+		cmd.Stdout = &stderr
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to delete alias %q: %w\n%s", alias, err, stderr.String())
+		}
+		log.Info().Str("alias", alias).Msg("Removed distrusted CA from bundled JRE")
+	}
+
+	listing, err = listKeystore(cacertsPath)
+	if err != nil {
+		return err
+	}
+	if remaining := findDistrustedAliases(listing); len(remaining) > 0 {
+		return fmt.Errorf("distrusted CAs still present after removal: %v", remaining)
+	}
+	return nil
+}
+
+func listKeystore(path string) (string, error) {
+	cmd := exec.Command(keytoolCommand, "-J-Duser.language=en", "-list", "-v",
+		"-keystore", path, "-storepass", cacertsStorePass)
+	var out strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to list keystore %s: %w\n%s", path, err, stderr.String())
+	}
+	return out.String(), nil
+}
+
+func findDistrustedAliases(keytoolListing string) []string {
+	var aliases []string
+	var currentAlias string
+	for _, line := range strings.Split(keytoolListing, "\n") {
+		line = strings.TrimSpace(line)
+		if alias, ok := strings.CutPrefix(line, "Alias name: "); ok {
+			currentAlias = alias
+			continue
+		}
+		owner, ok := strings.CutPrefix(line, "Owner: ")
+		if !ok || currentAlias == "" {
+			continue
+		}
+		if isDistrustedOwner(owner) {
+			aliases = append(aliases, currentAlias)
+		}
+		currentAlias = ""
+	}
+	return aliases
+}
+
+func isDistrustedOwner(owner string) bool {
+	for _, rdn := range strings.Split(owner, ", ") {
+		cn, ok := strings.CutPrefix(rdn, "CN=")
+		if !ok {
+			continue
+		}
+		for _, distrusted := range distrustedCACommonNames {
+			if cn == distrusted {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func ensureJLinkVersion() error {
+	cmd := exec.Command("jlink", "--version")
+	var out strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run jlink --version; install a JDK %d or newer to package C8Run: %w\n%s", bundledJavaMajorVersion, err, stderr.String())
+	}
+
+	majorVersion, err := parseJavaMajorVersion(out.String())
+	if err != nil {
+		return fmt.Errorf("failed to parse jlink version %q: %w", strings.TrimSpace(out.String()), err)
+	}
+	if majorVersion < bundledJavaMajorVersion {
+		return fmt.Errorf("jlink version %d is too old; install a JDK %d or newer to package C8Run", majorVersion, bundledJavaMajorVersion)
+	}
+	return nil
+}
+
+func detectRequiredJREModules(camundaVersion string) ([]string, error) {
+	camundaHome := "camunda-zeebe-" + camundaVersion
+	camundaLibDir := filepath.Join(camundaHome, "lib")
+	camundaJar := filepath.Join(camundaLibDir, "camunda-zeebe-"+camundaVersion+".jar")
+
+	if _, err := os.Stat(camundaJar); err != nil {
+		return nil, fmt.Errorf("failed to locate Camunda distribution JAR %s: %w", camundaJar, err)
+	}
+
+	args := []string{
+		"--ignore-missing-deps",
+		"--multi-release",
+		strconv.Itoa(bundledJavaMajorVersion),
+		"--print-module-deps",
+		"--class-path",
+		filepath.Join(camundaLibDir, "*"),
+		camundaJar,
+	}
+	jdepsCmd := exec.Command("jdeps", args...)
+	var out strings.Builder
+	var stderr strings.Builder
+	jdepsCmd.Stdout = &out
+	jdepsCmd.Stderr = &stderr
+	if err := jdepsCmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to determine JRE modules with jdeps: %w\n%s", err, stderr.String())
+	}
+
+	modules := mergeModules(parseJDepsModuleOutput(out.String()), conservativeJREModules, runtimeProviderJREModules)
+	if len(modules) == 0 {
+		return nil, fmt.Errorf("jdeps did not report any JRE modules")
+	}
+	return modules, nil
+}
+
+func parseJavaMajorVersion(version string) (int, error) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0, fmt.Errorf("empty version")
+	}
+
+	firstToken := strings.Fields(version)[0]
+	firstToken = strings.Trim(firstToken, `"`)
+	parts := strings.Split(firstToken, ".")
+	if len(parts) == 0 {
+		return 0, fmt.Errorf("invalid version")
+	}
+
+	majorVersion, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	if majorVersion == 1 && len(parts) > 1 {
+		return strconv.Atoi(parts[1])
+	}
+	return majorVersion, nil
+}
+
+func parseJDepsModuleOutput(output string) []string {
+	var modules []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		for _, module := range strings.Split(line, ",") {
+			module = strings.TrimSpace(module)
+			if module != "" {
+				modules = append(modules, module)
+			}
+		}
+	}
+	return mergeModules(modules, nil)
+}
+
+func mergeModules(moduleGroups ...[]string) []string {
+	moduleSet := make(map[string]struct{})
+	for _, modules := range moduleGroups {
+		for _, module := range modules {
+			module = strings.TrimSpace(module)
+			if module != "" {
+				moduleSet[module] = struct{}{}
+			}
+		}
+	}
+
+	mergedModules := make([]string, 0, len(moduleSet))
+	for module := range moduleSet {
+		mergedModules = append(mergedModules, module)
+	}
+	sort.Strings(mergedModules)
+	return mergedModules
+}
+
+func buildJLinkArgs(modules []string, outputDir string) []string {
+	return []string{
+		"--add-modules",
+		strings.Join(modules, ","),
+		"--strip-debug",
+		"--compress",
+		"zip-6",
+		"--no-header-files",
+		"--no-man-pages",
+		"--output",
+		outputDir,
+	}
+}
+
+func materializeSymlinks(root string) error {
+	return filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.Type()&os.ModeSymlink == 0 {
+			return nil
+		}
+
+		targetInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if targetInfo.IsDir() {
+			return materializeDirectorySymlink(path, targetInfo.Mode().Perm())
+		}
+
+		return materializeFileSymlink(path, targetInfo.Mode().Perm())
+	})
+}
+
+func materializeFileSymlink(path string, mode os.FileMode) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	return os.WriteFile(path, content, mode)
+}
+
+func materializeDirectorySymlink(path string, mode os.FileMode) error {
+	targetPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return err
+	}
+
+	tempPath, err := os.MkdirTemp(filepath.Dir(path), "."+filepath.Base(path)+".materialized-*")
+	if err != nil {
+		return err
+	}
+	cleanupTempPath := true
+	defer func() {
+		if cleanupTempPath {
+			_ = os.RemoveAll(tempPath)
+		}
+	}()
+
+	if err := copyDirectoryContents(targetPath, tempPath, make(map[string]struct{})); err != nil {
+		return err
+	}
+	if err := os.Chmod(tempPath, mode); err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return err
+	}
+	cleanupTempPath = false
+	return nil
+}
+
+func copyDirectoryContents(sourcePath, destinationPath string, visitedPaths map[string]struct{}) error {
+	sourcePath, err := filepath.EvalSymlinks(sourcePath)
+	if err != nil {
+		return err
+	}
+	if _, visited := visitedPaths[sourcePath]; visited {
+		return fmt.Errorf("detected symlink cycle while materializing directory: %s", sourcePath)
+	}
+	visitedPaths[sourcePath] = struct{}{}
+	defer delete(visitedPaths, sourcePath)
+
+	entries, err := os.ReadDir(sourcePath)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		sourceEntryPath := filepath.Join(sourcePath, entry.Name())
+		destinationEntryPath := filepath.Join(destinationPath, entry.Name())
+		info, err := os.Stat(sourceEntryPath)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			if err := os.Mkdir(destinationEntryPath, 0o755); err != nil {
+				return err
+			}
+			if err := copyDirectoryContents(sourceEntryPath, destinationEntryPath, visitedPaths); err != nil {
+				return err
+			}
+			if err := os.Chmod(destinationEntryPath, info.Mode().Perm()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := copyFile(sourceEntryPath, destinationEntryPath, info.Mode().Perm()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyFile(sourcePath, destinationPath string, mode os.FileMode) error {
+	content, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(destinationPath, content, mode)
 }
 
 func New(camundaVersion, connectorsVersion string) error {
@@ -252,11 +1315,31 @@ func New(camundaVersion, connectorsVersion string) error {
 		os.Exit(1)
 	}
 
-	Clean(camundaVersion)
+	Clean(camundaVersion, connectorsFilePath)
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
+	}
+
+	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip RocksDB native libs: %w", osType, err)
+	}
+
+	if err := stripZstdJniNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip zstd-jni native libs: %w", osType, err)
+	}
+
+	if err := stripConscryptNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip conscrypt native libs: %w", osType, err)
+	}
+
+	if err := stripGrpcNettyShadedNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip grpc-netty-shaded native libs: %w", osType, err)
+	}
+
+	if err := stripAwsCrtNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip aws-crt native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
@@ -268,6 +1351,10 @@ func New(camundaVersion, connectorsVersion string) error {
 	if err != nil {
 		log.Warn().Msg("Package " + osType + ": failed to download camunda-db-rdbms-schema, continuing without unpacking it")
 		// Continue without unpacking
+	}
+
+	if err := BuildJRE(camundaVersion); err != nil {
+		return fmt.Errorf("package %s: failed to build bundled JRE: %w", osType, err)
 	}
 
 	err = os.Chdir("..")

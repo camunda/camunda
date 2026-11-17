@@ -7,12 +7,14 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.util.ObjectBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
 
 public record RdbmsWriterConfig(
     int partitionId,
+    String physicalTenantId,
     int queueSize,
     /*
      * Maximum memory (in MB) that the execution queue can consume before flushing.
@@ -40,6 +42,13 @@ public record RdbmsWriterConfig(
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
   public static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 
+  public RdbmsWriterConfig {
+    if (physicalTenantId == null || physicalTenantId.isBlank()) {
+      throw new IllegalArgumentException(
+          "physicalTenantId must not be null or blank, got: '" + physicalTenantId + "'");
+    }
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -47,6 +56,7 @@ public record RdbmsWriterConfig(
   public static class Builder implements ObjectBuilder<RdbmsWriterConfig> {
 
     private int partitionId;
+    private String physicalTenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     private int queueSize = DEFAULT_QUEUE_SIZE;
     private int queueMemoryLimit = DEFAULT_QUEUE_MEMORY_LIMIT;
     private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
@@ -58,6 +68,11 @@ public record RdbmsWriterConfig(
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
+      return this;
+    }
+
+    public Builder physicalTenantId(final String physicalTenantId) {
+      this.physicalTenantId = physicalTenantId;
       return this;
     }
 
@@ -101,6 +116,7 @@ public record RdbmsWriterConfig(
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
           partitionId,
+          physicalTenantId,
           queueSize,
           queueMemoryLimit,
           batchOperationItemInsertBlockSize,

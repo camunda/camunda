@@ -8,44 +8,60 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UserTaskEntity(
     Long userTaskKey,
     String elementId,
-    String name,
+    @Nullable String name,
     String processDefinitionId,
-    String processName,
+    @Nullable String processName,
     OffsetDateTime creationDate,
-    OffsetDateTime completionDate,
-    String assignee,
+    @Nullable OffsetDateTime completionDate,
+    @Nullable String assignee,
     UserTaskState state,
-    Long formKey,
+    @Nullable Long formKey,
     Long processDefinitionKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable String businessId,
     Long elementInstanceKey,
     String tenantId,
-    OffsetDateTime dueDate,
-    OffsetDateTime followUpDate,
+    @Nullable OffsetDateTime dueDate,
+    @Nullable OffsetDateTime followUpDate,
     List<String> candidateGroups,
     List<String> candidateUsers,
-    String externalFormReference,
-    Integer processDefinitionVersion,
+    @Nullable String externalFormReference,
+    // absent on user tasks imported by the Tasklist 8.5/8.6 importer-850; UserTaskServices fills
+    // it from the process cache.
+    @Nullable Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Integer priority,
-    Set<String> tags)
+    @Nullable Integer priority,
+    Set<String> tags,
+    boolean isSuspended)
     implements TenantOwnedEntity {
 
   public UserTaskEntity {
+    Objects.requireNonNull(userTaskKey, "userTaskKey");
+    Objects.requireNonNull(elementId, "elementId");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(creationDate, "creationDate");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
+    Objects.requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
@@ -70,6 +86,7 @@ public record UserTaskEntity(
         processDefinitionKey,
         processInstanceKey,
         rootProcessInstanceKey,
+        businessId,
         elementInstanceKey,
         tenantId,
         dueDate,
@@ -80,7 +97,8 @@ public record UserTaskEntity(
         processDefinitionVersion,
         customHeaders,
         priority,
-        tags);
+        tags,
+        isSuspended);
   }
 
   public UserTaskEntity withProcessName(final String newProcessName) {
@@ -98,6 +116,7 @@ public record UserTaskEntity(
         processDefinitionKey,
         processInstanceKey,
         rootProcessInstanceKey,
+        businessId,
         elementInstanceKey,
         tenantId,
         dueDate,
@@ -108,7 +127,39 @@ public record UserTaskEntity(
         processDefinitionVersion,
         customHeaders,
         priority,
-        tags);
+        tags,
+        isSuspended);
+  }
+
+  public UserTaskEntity withProcessDefinitionVersion(
+      final @Nullable Integer newProcessDefinitionVersion) {
+    return new UserTaskEntity(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        processName,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        businessId,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        newProcessDefinitionVersion,
+        customHeaders,
+        priority,
+        tags,
+        isSuspended);
   }
 
   public boolean hasName() {

@@ -41,11 +41,12 @@ public final class AdminApiRequestHandlerStep implements PartitionTransitionStep
     final var transport = context.getGatewayBrokerTransport();
     final var handler =
         new AdminApiRequestHandler(
+            context.partitionId(),
             transport,
             context.getAdminAccess(),
             context.getRaftPartition(),
             context.getClusterConfigurationService(),
-            context.getNodeId());
+            context.getMemberId());
     final var submitFuture = schedulingService.submitActor(handler);
     concurrencyControl.runOnCompletion(
         submitFuture,

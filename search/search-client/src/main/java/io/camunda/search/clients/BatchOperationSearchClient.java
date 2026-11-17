@@ -12,7 +12,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface BatchOperationSearchClient {
 

@@ -8,20 +8,29 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class VariableDbReaderTest {
   private final VariableMapper variableMapper = mock(VariableMapper.class);
@@ -33,7 +42,8 @@ class VariableDbReaderTest {
     final VariableQuery query = VariableQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.readProcessInstance().read())),
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.readProcessInstance().read())),
             TenantCheck.disabled());
 
     final var items = variableDbReader.search(query, resourceAccessChecks).items();
@@ -63,5 +73,80 @@ class VariableDbReaderTest {
     assertThat(result.total()).isEqualTo(21L);
     assertThat(result.items()).isEmpty();
     verify(variableMapper, times(0)).search(any());
+  }
+
+  // ===== searchVariableNames =====
+
+  @Test
+  void shouldReturnEmptyListWhenNoProcessDefinitionKeyGiven() {
+    final VariableNameQuery query = VariableNameQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    final var names = variableDbReader.searchVariableNames(query, resourceAccessChecks);
+
+    assertThat(names).isEmpty();
+    verify(variableMapper, never()).findVariableNames(any());
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNullForNameSearch() {
+    final VariableNameQuery query =
+        VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(1L)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance())),
+            TenantCheck.disabled());
+
+    final var names = variableDbReader.searchVariableNames(query, resourceAccessChecks);
+
+    assertThat(names).isEmpty();
+    verify(variableMapper, never()).findVariableNames(any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"after", "before"})
+  void shouldRejectUndecodablePaginationCursorForNameSearch(final String direction) {
+    // given a cursor that is valid base64 but not a decodable pagination cursor
+    final var cursor = "bm90IGEgcmVhbCBjdXJzb3IgcGF5bG9hZA==";
+    final VariableNameQuery query =
+        VariableNameQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionKeys(1L))
+                    .page(p -> "after".equals(direction) ? p.after(cursor) : p.before(cursor)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when / then
+    assertThatThrownBy(() -> variableDbReader.searchVariableNames(query, resourceAccessChecks))
+        .isInstanceOfSatisfying(
+            CamundaSearchException.class,
+            e -> assertThat(e.getReason()).isEqualTo(Reason.INVALID_ARGUMENT));
+    verify(variableMapper, never()).findVariableNames(any());
+  }
+
+  @Test
+  void shouldInjectAuthorizedProcessDefinitionIdsIntoNameQuery() {
+    final var authorizedIds = List.of("process-a", "process-b");
+    when(variableMapper.findVariableNames(any())).thenReturn(List.of("amount", "total"));
+
+    final VariableNameQuery query =
+        VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(1L)).page(p -> p.size(5)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(
+                    a -> a.processDefinition().readProcessInstance().resourceIds(authorizedIds))),
+            TenantCheck.disabled());
+
+    final var names = variableDbReader.searchVariableNames(query, resourceAccessChecks);
+
+    assertThat(names).containsExactly("amount", "total");
+    verify(variableMapper)
+        .findVariableNames(
+            argThat(
+                (VariableNameDbQuery q) ->
+                    q.authorizedResourceIds().equals(authorizedIds) && q.limit() == 5));
   }
 }

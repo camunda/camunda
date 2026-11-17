@@ -7,15 +7,15 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.USER_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -34,6 +34,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   private final PasswordEncoder passwordEncoder;
 
   public UserServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
@@ -41,6 +42,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -91,7 +93,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             userSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, withAuthorization(USER_READ_AUTHORIZATION, username)))
+                        authentication,
+                        withRequiredAuthorization(USER_READ_AUTHORIZATION, username)))
                 .getUser(username));
   }
 

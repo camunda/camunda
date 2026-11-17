@@ -42,7 +42,7 @@ jobs:
 
         - name: Import Secrets
           id: secrets
-          uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+          uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
           with:
             url: ${{ secrets.VAULT_ADDR }}
             method: approle
@@ -63,7 +63,7 @@ jobs:
 
         - name: Update Closed At field
           if: ${{ steps.vars.outputs.match == 'true' }}
-          uses: github/update-project-action@af4f6083118f5080c89828b421ef598d1906fb60 # main
+          uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
           id: update-closed-at
           with:
             github_token: ${{ steps.generate-github-token.outputs.token }} }}

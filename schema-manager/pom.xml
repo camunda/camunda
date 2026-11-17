@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -20,11 +20,15 @@
   <name>Camunda Schema manager</name>
 
   <properties>
-    <skipITs>false</skipITs>
     <excludeITNames/>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
@@ -86,6 +90,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
     </dependency>
@@ -93,6 +102,7 @@
     <dependency>
       <groupId>io.github.resilience4j</groupId>
       <artifactId>resilience4j-core</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -167,6 +177,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
       <scope>test</scope>
@@ -221,7 +237,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar} ${jvm.test.extra.args}</argLine>
         </configuration>
       </plugin>
 
@@ -229,7 +245,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar} ${jvm.test.extra.args}</argLine>
         </configuration>
       </plugin>
 

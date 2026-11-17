@@ -14,7 +14,6 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
-import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
@@ -55,20 +54,11 @@ public class GcpDocumentStore implements DocumentStore {
   private final ExecutorService executor;
 
   public GcpDocumentStore(
-      final String bucketName, final String prefix, final ExecutorService executor) {
-    this(bucketName, prefix, new ObjectMapper(), executor);
-  }
-
-  public GcpDocumentStore(
       final String bucketName,
       final String prefix,
-      final ObjectMapper objectMapper,
+      final Storage storage,
       final ExecutorService executor) {
-    this.bucketName = bucketName;
-    this.prefix = prefix;
-    storage = StorageOptions.getDefaultInstance().getService();
-    this.objectMapper = objectMapper;
-    this.executor = executor;
+    this(bucketName, prefix, storage, new ObjectMapper(), executor);
   }
 
   public GcpDocumentStore(

@@ -84,6 +84,13 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<SearchRequestSort> fromElementInstanceWaitStateSearchQuerySortRequest(
+      final List<ElementInstanceWaitStateQuerySortRequest> requests) {
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
+  }
+
   public static List<SearchRequestSort> fromDecisionInstanceSearchQuerySortRequestt(
       final List<DecisionInstanceSearchQuerySortRequest> requests) {
     return requests.stream()
@@ -367,6 +374,21 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<ElementInstanceWaitStateQuerySortRequest>
+      toElementInstanceWaitStateSearchQuerySortRequest(final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final ElementInstanceWaitStateQuerySortRequest request =
+                  new ElementInstanceWaitStateQuerySortRequest();
+              request.setField(
+                  ElementInstanceWaitStateQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<DecisionInstanceSearchQuerySortRequest>
       toDecisionInstanceSearchQuerySortRequest(final List<SearchRequestSort> requests) {
     return requests.stream()
@@ -639,6 +661,64 @@ public class SearchRequestSortMapper {
                   new GlobalTaskListenerSearchQuerySortRequest();
               request.setField(
                   GlobalTaskListenerSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<AgentDefinitionSearchQuerySortRequest> toAgentDefinitionSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final AgentDefinitionSearchQuerySortRequest request =
+                  new AgentDefinitionSearchQuerySortRequest();
+              request.setField(
+                  AgentDefinitionSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<AgentInstanceSearchQuerySortRequest> toAgentInstanceSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final AgentInstanceSearchQuerySortRequest request =
+                  new AgentInstanceSearchQuerySortRequest();
+              request.setField(
+                  AgentInstanceSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<AgentInstanceHistorySearchQuerySortRequest>
+      toAgentInstanceHistorySearchQuerySortRequest(final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final AgentInstanceHistorySearchQuerySortRequest request =
+                  new AgentInstanceHistorySearchQuerySortRequest();
+              request.setField(
+                  AgentInstanceHistorySearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<ResourceSearchQuerySortRequest> toResourceSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final ResourceSearchQuerySortRequest request = new ResourceSearchQuerySortRequest();
+              request.setField(ResourceSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
               request.setOrder(r.getOrder());
               return request;
             })

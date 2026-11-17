@@ -14,6 +14,34 @@ public final class SearchQueryBuilders {
 
   private SearchQueryBuilders() {}
 
+  public static AgentDefinitionQuery.Builder agentDefinitionSearchQuery() {
+    return new AgentDefinitionQuery.Builder();
+  }
+
+  public static AgentDefinitionQuery agentDefinitionSearchQuery(
+      final Function<AgentDefinitionQuery.Builder, ObjectBuilder<AgentDefinitionQuery>> fn) {
+    return fn.apply(agentDefinitionSearchQuery()).build();
+  }
+
+  public static AgentInstanceQuery.Builder agentInstanceSearchQuery() {
+    return new AgentInstanceQuery.Builder();
+  }
+
+  public static AgentInstanceQuery agentInstanceSearchQuery(
+      final Function<AgentInstanceQuery.Builder, ObjectBuilder<AgentInstanceQuery>> fn) {
+    return fn.apply(agentInstanceSearchQuery()).build();
+  }
+
+  public static AgentInstanceHistoryQuery.Builder agentInstanceHistorySearchQuery() {
+    return new AgentInstanceHistoryQuery.Builder();
+  }
+
+  public static AgentInstanceHistoryQuery agentInstanceHistorySearchQuery(
+      final Function<AgentInstanceHistoryQuery.Builder, ObjectBuilder<AgentInstanceHistoryQuery>>
+          fn) {
+    return fn.apply(agentInstanceHistorySearchQuery()).build();
+  }
+
   public static UsageMetricsQuery.Builder usageMetricsSearchQuery() {
     return new UsageMetricsQuery.Builder();
   }
@@ -79,6 +107,16 @@ public final class SearchQueryBuilders {
     return fn.apply(formSearchQuery()).build();
   }
 
+  public static VariableHistoryItemQuery.Builder variableHistoryItemSearchQuery() {
+    return new VariableHistoryItemQuery.Builder();
+  }
+
+  public static VariableHistoryItemQuery variableHistoryItemSearchQuery(
+      final Function<VariableHistoryItemQuery.Builder, ObjectBuilder<VariableHistoryItemQuery>>
+          fn) {
+    return fn.apply(variableHistoryItemSearchQuery()).build();
+  }
+
   public static VariableQuery.Builder variableSearchQuery() {
     return new VariableQuery.Builder();
   }
@@ -86,6 +124,15 @@ public final class SearchQueryBuilders {
   public static VariableQuery variableSearchQuery(
       final Function<VariableQuery.Builder, ObjectBuilder<VariableQuery>> fn) {
     return fn.apply(variableSearchQuery()).build();
+  }
+
+  public static VariableNameQuery.Builder variableNameSearchQuery() {
+    return new VariableNameQuery.Builder();
+  }
+
+  public static VariableNameQuery variableNameSearchQuery(
+      final Function<VariableNameQuery.Builder, ObjectBuilder<VariableNameQuery>> fn) {
+    return fn.apply(variableNameSearchQuery()).build();
   }
 
   public static ClusterVariableQuery.Builder clusterVariableSearchQuery() {
@@ -318,5 +365,25 @@ public final class SearchQueryBuilders {
   public static GlobalListenerQuery globalListenerSearchQuery(
       final Function<GlobalListenerQuery.Builder, ObjectBuilder<GlobalListenerQuery>> fn) {
     return fn.apply(globalListenerSearchQuery()).build();
+  }
+
+  public static DeployedResourceQuery.Builder deployedResourceSearchQuery() {
+    return new DeployedResourceQuery.Builder();
+  }
+
+  public static DeployedResourceQuery deployedResourceSearchQuery(
+      final Function<DeployedResourceQuery.Builder, ObjectBuilder<DeployedResourceQuery>> fn) {
+    return fn.apply(deployedResourceSearchQuery()).build();
+  }
+
+  public static ElementInstanceWaitStateQuery.Builder elementInstanceWaitStateSearchQuery() {
+    return new ElementInstanceWaitStateQuery.Builder();
+  }
+
+  public static ElementInstanceWaitStateQuery elementInstanceWaitStateSearchQuery(
+      final Function<
+              ElementInstanceWaitStateQuery.Builder, ObjectBuilder<ElementInstanceWaitStateQuery>>
+          fn) {
+    return fn.apply(elementInstanceWaitStateSearchQuery()).build();
   }
 }

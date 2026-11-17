@@ -16,14 +16,16 @@ import {
   createWorker,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 const JSON_VARIABLE_NAME = 'jsonVar';
 const JSON_VARIABLE_VALUE = {name: 'Alice', age: 30};
 
 let completedInstanceKey: string;
+let addVariablesInstanceKey: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -33,7 +35,18 @@ test.beforeAll(async () => {
   ]);
   const manyVariables = generateManyVariables();
   await createInstances('variableScrollingProcess', 1, 1, manyVariables);
-  await createInstances('simpleServiceTaskProcess', 1, 1);
+  // simpleServiceTaskProcess is also deployed by processInstanceJobPriority.spec.ts, so more than
+  // one version can exist in the shared cluster. Capture this instance's key and open it directly
+  // instead of relying on the Processes name filter, which defaults to the latest version and would
+  // otherwise show "no Instances matching" for an instance created on an earlier version.
+  const [simpleServiceTaskInstance] = await createInstances(
+    'simpleServiceTaskProcess',
+    1,
+    1,
+  );
+  addVariablesInstanceKey = String(
+    simpleServiceTaskInstance.processInstanceKey,
+  );
 
   const worker = createWorker('jsonVarTask', false);
 
@@ -54,9 +67,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Variables', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 
@@ -85,7 +97,7 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Click edit variable button and verify Save Variable button is enabled', async () => {
       await operateProcessInstancePage.clickEditVariableButton('aa');
-      await operateProcessInstancePage.clickVariableValueInput();
+      await operateProcessInstancePage.clickVariableValueInput('aa');
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
         '"editedTestValue"',
@@ -111,7 +123,15 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Refresh the page and verify the variable is still there', async () => {
       await page.reload();
-      await expect(page.getByText('editedtestvalue')).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('editedtestvalue')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 
@@ -124,12 +144,10 @@ test.describe('Process Instance Variables', () => {
   }) => {
     test.slow();
 
-    await test.step('Navigate to Processes tab and open the process instance', async () => {
-      await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'simple service task process',
-      );
-      await operateProcessesPage.clickProcessInstanceLink();
+    await test.step('Open the process instance', async () => {
+      await operateProcessInstancePage.gotoProcessInstancePage({
+        id: addVariablesInstanceKey,
+      });
       await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
     });
 
@@ -172,11 +190,14 @@ test.describe('Process Instance Variables', () => {
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('secondTestKey');
-      await operateFiltersPanelPage.fillVariableValueFilter(
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(
+        0,
+        'secondTestKey',
         '"secondTestValue"',
       );
+      await operateFiltersPanelPage.applyVariableFilter();
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         processInstanceKey,
       );
@@ -345,11 +366,17 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Reload and verify the updated value is persisted', async () => {
       await page.reload();
-      await expect(
-        operateProcessInstancePage.variablesList.getByTestId(
-          `variable-${JSON_VARIABLE_NAME}`,
-        ),
-      ).toContainText('Bob');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.getVariableTestId(JSON_VARIABLE_NAME),
+          ).toContainText('Bob');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 
@@ -492,7 +519,7 @@ test.describe('Process Instance Variables', () => {
     });
   });
 
-  test('Inline JSON edit uses Monaco textarea', async ({
+  test('Inline JSON edit uses CodeMirror editor', async ({
     page,
     operateProcessInstancePage,
     operateHomePage,
@@ -516,11 +543,11 @@ test.describe('Process Instance Variables', () => {
       );
     });
 
-    await test.step('Verify the inline editor is a Monaco textarea, not a plain text input', async () => {
+    await test.step('Verify the inline editor is a CodeMirror editor, not a plain text input', async () => {
       await expect(variable.editor).toBeVisible({timeout: 10000});
     });
 
-    await test.step('Edit the inline value using Monaco and trigger save', async () => {
+    await test.step('Edit the inline value using CodeMirror and trigger save', async () => {
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
         '{"name":"Charlie","age":35}',
@@ -540,7 +567,15 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Reload and verify the updated value is visible', async () => {
       await page.reload();
-      await expect(variable.value).toContainText('Charlie');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(variable.value).toContainText('Charlie');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
     });
   });
 });

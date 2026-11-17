@@ -25,9 +25,9 @@ import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.User;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
-import io.camunda.security.configuration.ConfiguredAuthorization;
-import io.camunda.security.configuration.ConfiguredGroup;
-import io.camunda.security.configuration.ConfiguredRole;
+import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
+import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
+import io.camunda.security.api.model.config.initialization.ConfiguredRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashSet;
 import java.util.List;
@@ -220,6 +220,11 @@ public final class EntityManager {
     final var search = searchSupplier.get();
     Awaitility.await(alias)
         .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        // Retry on exceptions. Do not propagate them. A new index whose shards are not
+        // allocated yet answers with a 503, which the gateway reports as a 500. This wait
+        // exists for that state. A propagated exception ends the wait on the first poll and
+        // discards the remaining timeout.
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var results = search.search(expected.size() + 100);

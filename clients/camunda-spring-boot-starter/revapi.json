@@ -58,6 +58,18 @@
         {
           "ignore": true,
           "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.event.CamundaLifecycleEventProducer io.camunda.client.spring.configuration.CamundaAutoConfiguration::camundaLifecycleEventProducer(io.camunda.client.CamundaClient, org.springframework.context.ApplicationEventPublisher)",
+          "justification": "Unification onto the single multi-client config path (#57344): CamundaAutoConfiguration is now the unified auto-configuration; the single-client lifecycle producer bean is replaced by the multi-client MultiCamundaLifecycleEventProducer. Internal auto-configuration wiring; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration",
+          "justification": "Unification onto the single multi-client config path (#57344): the single-client auto-configuration is replaced by the unified CamundaAutoConfiguration. Internal auto-configuration wiring class; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
           "old": "method java.util.Optional<io.camunda.client.annotation.value.DeploymentValue> io.camunda.client.annotation.AnnotationUtil::getDeploymentValue(io.camunda.client.bean.BeanInfo)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
         },
@@ -736,6 +748,68 @@
           "code": "java.method.removed",
           "old": "method io.camunda.process.test.api.CamundaProcessTestExtension io.camunda.process.test.api.CamundaProcessTestExtension::withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)",
           "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy::<init>(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.api.worker.JobClient)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.parameter.ParameterResolverStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::parameterResolverStrategy(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.ZeebeClient)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::jobWorkerPostProcessor(io.camunda.client.jobhandling.JobWorkerManager, io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, io.camunda.client.jobhandling.parameter.ParameterResolverStrategy, io.camunda.client.jobhandling.result.ResultProcessorStrategy)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.CommandExceptionHandlingStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::commandExceptionHandlingStrategy(io.camunda.client.api.worker.BackoffSupplier, io.camunda.client.jobhandling.CamundaClientExecutorService)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.JobExceptionHandlerSupplier io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::jobExceptionHandlingSupplier(io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::deploymentPostProcessor(org.springframework.context.ApplicationEventPublisher, io.camunda.client.spring.properties.CamundaClientProperties)",
+          "justification": "Bean factory method replaced with a version that injects ResourcePatternResolver. Compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::clusterVariablesPostProcessor(io.camunda.client.api.JsonMapper, io.camunda.client.spring.properties.CamundaClientProperties)",
+          "justification": "Bean factory method replaced with a version that injects ResourcePatternResolver. Compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor",
+          "new": "class io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor",
+          "justification": "Spring Boot moved EnvironmentPostProcessor from org.springframework.boot.env to org.springframework.boot and deprecated the old location; this class now implements the new interface, which revapi sees as no longer implementing the old one. Same method contract, no behavior change."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.client.health.HealthCheck.CheckResult",
+          "justification": "Replaced by returning io.camunda.client.api.response.StatusResponse.Status directly from HealthCheck.health(), which already carries the same UP/DOWN information without introducing a redundant type. Compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.client.health.HealthCheck.CheckResult io.camunda.client.health.HealthCheck::health()",
+          "new": "method io.camunda.client.api.response.StatusResponse.Status io.camunda.client.health.HealthCheck::health()",
+          "justification": "health() now returns StatusResponse.Status directly instead of the removed CheckResult wrapper, and lets status-request failures propagate instead of catching them - the one caller, CamundaClientHealthIndicator (backed by Spring's AbstractHealthIndicator), already maps both the return value and any thrown exception to the correct health status. Compatibility impact accepted for this release."
         }
       ]
     }

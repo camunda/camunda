@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
@@ -73,7 +73,6 @@ final class BackupMetadataTrackingDisabledIT {
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withUnifiedConfig(
         cfg -> {
-          // Continuous backups are disabled by default; no need to set explicitly.
           cfg.getData()
               .getPrimaryStorage()
               .getBackup()

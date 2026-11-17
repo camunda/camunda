@@ -8,28 +8,36 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
-import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
-import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
-import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
-import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.authentication.config.BasicAuthBeansConfiguration;
+import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
+import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.service.PhysicalTenantResourceAccessProvider;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.Either;
+import io.camunda.security.api.model.authz.AuthorizationRejection;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.DisabledResourceAccessProvider;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.service.registry.ServiceRegistry;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -37,21 +45,26 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.context.annotation.RequestScope;
 
 /**
- * Provides beans that the WebSecurityConfig depends on. Implements the beans in a way that they do
- * not introduce dependencies to other modules, e.g. to the search layer.
+ * Slice-test bootstrap. Mirrors the previous {@code WebSecurityConfigTestContext} by importing the
+ * new host security configuration plus its OIDC/basic-auth bean providers, and supplying the
+ * supporting beans tests need (services, authentication providers, resource access provider, etc.)
+ * without dragging in the search layer.
  */
-@Configuration
+@SpringBootConfiguration
+@Import({
+  WebSecurityConfig.class,
+  OidcOverrideBeansConfiguration.class,
+  BasicAuthBeansConfiguration.class
+})
+@EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class WebSecurityConfigTestContext {
 
   @Bean
-  @RequestScope
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
-      final HttpServletRequest request, final SecurityConfiguration securityConfiguration) {
-    return new HttpSessionBasedAuthenticationHolder(
-        request, securityConfiguration.getAuthentication());
+      final HttpServletRequest request, final CamundaSecurityLibraryProperties properties) {
+    return new HttpSessionBasedAuthenticationHolder(request, properties.getAuthentication());
   }
 
   /**
@@ -75,17 +88,29 @@ public class WebSecurityConfigTestContext {
 
   @Bean
   public RoleServices createRoleServices(final ApiServicesExecutorProvider executorProvider) {
-    return new RoleServices(null, null, null, executorProvider, null);
+    return new RoleServices("default", null, null, null, executorProvider, null);
   }
 
   @Bean
   public GroupServices createGroupServices(final ApiServicesExecutorProvider executorProvider) {
-    return new GroupServices(null, null, null, executorProvider, null);
+    return new GroupServices("default", null, null, null, executorProvider, null);
   }
 
   @Bean
   public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
-    return new TenantServices(null, null, null, executorProvider, null);
+    return new TenantServices("default", null, null, null, executorProvider, null);
+  }
+
+  @Bean
+  public ServiceRegistry serviceRegistry(
+      final RoleServices roleServices,
+      final GroupServices groupServices,
+      final TenantServices tenantServices) {
+    return DefaultServiceRegistry.of(
+        b ->
+            b.roleServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, roleServices)
+                .groupServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, groupServices)
+                .tenantServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, tenantServices));
   }
 
   @Bean
@@ -104,17 +129,48 @@ public class WebSecurityConfigTestContext {
   }
 
   @Bean
-  public CamundaAuthenticationProvider createCamundaAuthenticationProvider(
-      final List<CamundaAuthenticationHolder> holders,
-      final List<CamundaAuthenticationConverter<Authentication>> converters) {
-    return new DefaultCamundaAuthenticationProvider(
-        new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
+  public ResourceAccessProvider createResourceAccessProvider() {
+    return new DisabledResourceAccessProvider();
   }
 
   @Bean
-  public ResourceAccessProvider createResourceAccessProvider() {
-    return new DisabledResourceAccessProvider();
+  public PhysicalTenantResourceAccessProvider physicalTenantResourceAccessProvider(
+      final ResourceAccessProvider resourceAccessProvider) {
+    return new PhysicalTenantResourceAccessProvider(
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, resourceAccessProvider));
+  }
+
+  /**
+   * Permissive {@link AuthorizationCheckPort} so the filter passes through after {@link
+   * CamundaAuthenticationProvider#getCamundaAuthentication()} has fired the {@code
+   * HttpSessionBasedAuthenticationHolder.set(...)} call that initialises the session-level refresh
+   * attribute the {@code SessionAuthenticationRefreshTest} suite asserts on. Tests that need a real
+   * authorization decision should override this bean.
+   */
+  @Bean
+  public AuthorizationCheckPort authorizationCheckPort() {
+    return new AuthorizationCheckPort() {
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final CamundaAuthentication authentication,
+          final RequiredAuthorization<T> authorization) {
+        return Either.right(null);
+      }
+
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final Map<String, Object> claims, final RequiredAuthorization<T> authorization) {
+        return Either.right(null);
+      }
+
+      @Override
+      public <T> Either<AuthorizationRejection, Void> check(
+          final CamundaAuthentication authentication,
+          final RequiredAuthorization<T> authorization,
+          final T resource) {
+        return Either.right(null);
+      }
+    };
   }
 
   /**
@@ -126,9 +182,11 @@ public class WebSecurityConfigTestContext {
     return NoOpPasswordEncoder.getInstance();
   }
 
+  // CSL's default JsonProblemDetailAuthFailureHandler requires an ObjectMapper; slice tests don't
+  // pull JacksonAutoConfiguration so we provide one explicitly.
   @Bean
-  public AuthFailureHandler createFailureHandler() {
-    return new AuthFailureHandler(new ObjectMapper());
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper();
   }
 
   /**
@@ -138,16 +196,5 @@ public class WebSecurityConfigTestContext {
   @Bean
   public MethodSecurityExpressionHandler createMethodSecurityExpressionHandler() {
     return new DefaultMethodSecurityExpressionHandler();
-  }
-
-  /**
-   * So that camunda.security properties can be used in tests; must be prefixed with
-   * 'camunda.security' because this prefix is hardcoded in AuthenticationProperties.
-   */
-  @SuppressWarnings("ConfigurationProperties")
-  @Bean
-  @ConfigurationProperties("camunda.security")
-  public SecurityConfiguration createSecurityConfiguration() {
-    return new SecurityConfiguration();
   }
 }

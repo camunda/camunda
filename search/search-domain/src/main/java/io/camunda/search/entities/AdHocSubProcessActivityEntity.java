@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AdHocSubProcessActivityEntity(
@@ -16,10 +18,19 @@ public record AdHocSubProcessActivityEntity(
     String processDefinitionId,
     String adHocSubProcessId,
     String elementId,
-    String elementName,
+    @Nullable String elementName,
     ActivityType type,
-    String documentation,
+    @Nullable String documentation,
     String tenantId) {
+
+  public AdHocSubProcessActivityEntity {
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(adHocSubProcessId, "adHocSubProcessId");
+    Objects.requireNonNull(elementId, "elementId");
+    Objects.requireNonNull(type, "type");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
 
   public enum ActivityType {
     UNSPECIFIED,

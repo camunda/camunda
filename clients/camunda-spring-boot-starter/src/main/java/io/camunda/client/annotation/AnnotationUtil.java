@@ -18,11 +18,14 @@ package io.camunda.client.annotation;
 import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.annotation.ClusterVariables.ClusterVariablesContainer;
 import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.MethodClusterVariablesValue;
+import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
 import io.camunda.client.annotation.value.SourceAware;
 import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.annotation.value.VariableValue;
@@ -109,15 +112,15 @@ public class AnnotationUtil {
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = new ArrayList<>();
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(Variable.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(Variable.class);
+  }
+
+  public static List<ParameterInfo> getDocumentParameters(final MethodInfo methodInfo) {
+    return methodInfo.getParametersFilteredByAnnotation(Document.class);
   }
 
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = new ArrayList<>();
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class);
   }
 
   public static boolean isVariablesAsType(final ParameterInfo parameterInfo) {
@@ -131,6 +134,72 @@ public class AnnotationUtil {
   public static boolean isDeployment(final BeanInfo beanInfo) {
     return beanInfo.hasClassAnnotation(Deployments.class)
         || beanInfo.hasClassAnnotation(Deployment.class);
+  }
+
+  public static boolean isClusterVariables(final BeanInfo beanInfo) {
+    return beanInfo.hasClassAnnotation(ClusterVariablesContainer.class)
+        || beanInfo.hasClassAnnotation(ClusterVariables.class)
+        || beanInfo.hasMethodAnnotation(ClusterVariables.class)
+        || beanInfo.hasMethodAnnotation(ClusterVariablesContainer.class);
+  }
+
+  public static List<ResourceClusterVariablesValue> getClusterVariablesValuesFromClass(
+      final BeanInfo beanInfo) {
+    if (!beanInfo.hasClassAnnotation(ClusterVariablesContainer.class)
+        && !beanInfo.hasClassAnnotation(ClusterVariables.class)) {
+      return Collections.emptyList();
+    }
+    final List<ResourceClusterVariablesValue> values = new ArrayList<>();
+    beanInfo
+        .getAnnotation(ClusterVariablesContainer.class)
+        .ifPresent(
+            container -> {
+              for (final ClusterVariables annotation : container.value()) {
+                values.add(resourceValueFromAnnotation(annotation));
+              }
+            });
+    beanInfo
+        .getAnnotation(ClusterVariables.class)
+        .ifPresent(annotation -> values.add(resourceValueFromAnnotation(annotation)));
+    return values;
+  }
+
+  public static List<MethodClusterVariablesValue> getClusterVariablesValuesFromMethods(
+      final MethodInfo methodInfo) {
+    final ClusterVariables[] annotations =
+        methodInfo.getMethod().getAnnotationsByType(ClusterVariables.class);
+    if (annotations.length == 0) {
+      return Collections.emptyList();
+    }
+    final List<MethodClusterVariablesValue> values = new ArrayList<>();
+    for (final ClusterVariables annotation : annotations) {
+      final String resolvedTenantId =
+          StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId();
+      if (annotation.resources().length > 0) {
+        LOG.warn(
+            "@ClusterVariables.resources() on {}.{} is ignored",
+            methodInfo.getMethod().getDeclaringClass().getName(),
+            methodInfo.getMethod().getName());
+      }
+      values.add(new MethodClusterVariablesValue(() -> invokeMethod(methodInfo), resolvedTenantId));
+    }
+    return values;
+  }
+
+  private static ResourceClusterVariablesValue resourceValueFromAnnotation(
+      final ClusterVariables annotation) {
+    return new ResourceClusterVariablesValue(
+        Arrays.asList(annotation.resources()),
+        StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId());
+  }
+
+  private static Object invokeMethod(final MethodInfo methodInfo) {
+    try {
+      return methodInfo.invoke();
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          "Error invoking @ClusterVariables method: " + methodInfo.getMethodName(), e);
+    }
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
@@ -199,6 +268,10 @@ public class AnnotationUtil {
                       ? new Empty<>()
                       : new FromAnnotation<>(
                           Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)),
+                  annotation.streamInactivityTimeout() == -1
+                      ? new Empty<>()
+                      : new FromAnnotation<>(
+                          Duration.of(annotation.streamInactivityTimeout(), ChronoUnit.MILLIS)),
                   annotation.maxRetries() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(annotation.maxRetries()),
@@ -206,7 +279,8 @@ public class AnnotationUtil {
                       ? new Empty<>()
                       : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff())),
                   fromSingletonArray(
-                      annotation.tenantFilter(), "tenantFilter", methodInfo.getMethodName())))
+                      annotation.tenantFilter(), "tenantFilter", methodInfo.getMethodName()),
+                  new Empty<>()))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
@@ -279,7 +353,14 @@ public class AnnotationUtil {
             .map(Optional::get)
             .map(VariableValue::getName)
             .toList());
-    return result;
+    result.addAll(
+        getDocumentParameters(methodInfo).stream()
+            .map(AnnotationUtil::getDocumentValue)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(DocumentValue::getName)
+            .toList());
+    return result.stream().distinct().toList();
   }
 
   private static String extractFieldName(final Field field) {

@@ -1,0 +1,10 @@
+{
+  "hello": "world",
+  "foo": "bar",
+  "ice_cream": ["vanilla", "chocolate", "strawberry"],
+  "user": {
+    "name": "John Doe",
+    "age": 30,
+    "email": "johndoe@example.com"
+  }
+}

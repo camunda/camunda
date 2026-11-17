@@ -1,5 +1,5 @@
 # type: Release
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Camunda Platform Release Dry Run from main
 
@@ -19,6 +19,9 @@ on:
     # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
     - cron: '0 1 * * 1-5'
 
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+
 jobs:
   setup:
     name: Resolve release branch
@@ -29,7 +32,9 @@ jobs:
     outputs:
       branch: ${{ steps.resolve-branch.outputs.branch }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the fake dry-run tags and branch.
+        # zizmor: ignore[artipacked]
         with:
           ref: ${{ inputs.branch || 'main' }}
       - name: Create fake dry-run tags
@@ -92,7 +97,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the branch and tag deletions.
+        # zizmor: ignore[artipacked]
       - name: Delete temporary release branch
         if: ${{ needs.dry-run-release.result == 'success' }}
         run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
@@ -122,7 +129,7 @@ jobs:
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -133,7 +140,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         if: ${{ always() && needs.dry-run-release.result != 'success' && github.event_name == 'schedule' }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -158,3 +165,17 @@ jobs:
                 }
               ]
             }
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

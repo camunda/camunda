@@ -17,6 +17,7 @@ import io.github.resilience4j.retry.RetryConfig;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,8 @@ public class RetryDecorator {
     Retry.decorateCheckedRunnable(retry, runnable).unchecked().run();
   }
 
-  private <T> Retry buildRetry(final String operationName, final Predicate<T> retryPredicate) {
+  private <T> Retry buildRetry(
+      final String operationName, final @Nullable Predicate<T> retryPredicate) {
     final var retryConfigBuilder =
         RetryConfig.<T>custom()
             .maxAttempts(retryConfiguration.getMaxRetries())

@@ -18,10 +18,10 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserFilter.Builder;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import java.util.List;
@@ -59,7 +59,6 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
 
   public static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
-        Arguments.of((Function<Builder, ObjectBuilder<UserFilter>>) f -> f.key(1L), "key", 1L),
         Arguments.of(
             (Function<Builder, ObjectBuilder<UserFilter>>)
                 f -> f.usernameOperations(List.of(Operation.eq("username1"))),
@@ -77,7 +76,7 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -101,7 +100,7 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.user().read());
+    final var authorization = RequiredAuthorization.of(a -> a.user().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -145,7 +144,8 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldApplyFilterAndChecks() {
     // given
-    final var authorization = Authorization.of(a -> a.user().read().resourceIds(List.of("1", "2")));
+    final var authorization =
+        RequiredAuthorization.of(a -> a.user().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);

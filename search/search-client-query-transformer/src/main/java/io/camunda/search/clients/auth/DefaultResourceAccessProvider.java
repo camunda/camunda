@@ -7,17 +7,19 @@
  */
 package io.camunda.search.clients.auth;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD;
 
 import io.camunda.search.clients.auth.matcher.ResourcePropertyMatcherRegistry;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.security.reader.ResourceAccess;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.core.authz.DisabledResourceAccessProvider;
+import io.camunda.security.core.authz.ResourceAccess;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,9 +38,25 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     this.propertyMatcherRegistry = new ResourcePropertyMatcherRegistry();
   }
 
+  /**
+   * Builds a {@link ResourceAccessProvider} for a single authorization scope (for example, one
+   * physical tenant) from its {@link AuthorizationScopeRepositoryPort}, or a {@link
+   * DisabledResourceAccessProvider} when {@code authorizationEnabled} is {@code false}.
+   *
+   * <p>Lets callers depend on the {@link AuthorizationScopeRepositoryPort} outbound port instead of
+   * naming {@link AuthorizationChecker} directly, and consolidates the enabled/disabled branch that
+   * would otherwise be duplicated at every call site building a per-scope provider.
+   */
+  public static ResourceAccessProvider forScopeRepository(
+      final AuthorizationScopeRepositoryPort scopeRepository, final boolean authorizationEnabled) {
+    return authorizationEnabled
+        ? new DefaultResourceAccessProvider(new AuthorizationChecker(scopeRepository))
+        : new DisabledResourceAccessProvider();
+  }
+
   @Override
   public <T> ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
     if (authorization.hasAnyResourcePropertyNames()) {
       return resolveResourceAccessByPropertyNames(authentication, authorization);
     }
@@ -47,7 +65,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   private <T> ResourceAccess resolveResourceAccessByResourceId(
-      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
 
     // fetch the authorization entities for the authenticated user
     final var authorizationScopes =
@@ -78,7 +96,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   private <T> ResourceAccess resolveResourceAccessByPropertyNames(
-      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
 
     final var authorizedResourcePropertyNames =
         authorizationChecker
@@ -105,7 +123,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess hasResourceAccess(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final T resource) {
     if (requiredAuthorization.hasAnyResourcePropertyNames()) {
       return hasResourceAccessByProperties(authentication, requiredAuthorization, resource);
@@ -117,7 +135,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
   private <T> ResourceAccess hasResourceAccessByProperties(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final T resource) {
     // resolve which properties the user is authorized for
     final var resolvedAccess =
@@ -146,7 +164,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   private <T> String resolveResourceId(
-      final Authorization<T> requiredAuthorization, final T resource) {
+      final RequiredAuthorization<T> requiredAuthorization, final T resource) {
     final var resourceIdSupplier = requiredAuthorization.resourceIdSupplier();
     final var resourceIds = requiredAuthorization.resourceIds();
     return Optional.ofNullable(resourceIdSupplier)
@@ -165,13 +183,13 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess hasResourceAccessByResourceId(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final String resourceId) {
     final var isAuthorized =
         authorizationChecker.isAuthorized(
             AuthorizationScope.of(resourceId), authentication, requiredAuthorization);
     final var checkedAuthorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.resourceType(requiredAuthorization.resourceType())
                     .permissionType(requiredAuthorization.permissionType())

@@ -12,11 +12,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -58,11 +59,13 @@ public class MessageControllerTest extends RestControllerTest {
   @MockitoBean MessageServices messageServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
   @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
   @BeforeEach
   void setup() {
+    Mockito.lenient().when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -87,7 +90,8 @@ public class MessageControllerTest extends RestControllerTest {
               "variables": {
                 "key": "value"
               },
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "businessId": "order-12345"
             }""";
 
     // when then
@@ -108,6 +112,7 @@ public class MessageControllerTest extends RestControllerTest {
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
     assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(capturedRequest.businessId()).isEqualTo("order-12345");
 
     response
         .expectBody()
@@ -414,7 +419,8 @@ public class MessageControllerTest extends RestControllerTest {
               "variables": {
                 "key": "value"
               },
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "businessId": "order-12345"
             }""";
 
     // when then
@@ -438,6 +444,7 @@ public class MessageControllerTest extends RestControllerTest {
     assertThat(capturedRequest.messageId()).isEqualTo("messageId");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
     assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(capturedRequest.businessId()).isEqualTo("order-12345");
   }
 
   @Test

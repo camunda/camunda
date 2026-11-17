@@ -18,7 +18,6 @@ package io.camunda.client.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
 import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.util.ClientRestTest;
@@ -88,6 +87,28 @@ final class CorrelateMessageTest extends ClientRestTest {
   }
 
   @Test
+  void shouldCorrelateMessageWithBusinessId() {
+    // given
+    final String messageName = "name";
+    final String correlationKey = "correlationKey";
+    gatewayService.onCorrelateMessageRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .businessId("order-12345")
+        .send()
+        .join();
+
+    // then
+    final MessageCorrelationRequest request =
+        gatewayService.getLastRequest(MessageCorrelationRequest.class);
+    assertThat(request.getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
   void shouldThrowExceptionWhenVariablesAreNotInMapStructure() {
     // given
     final String messageName = "name";
@@ -103,8 +124,7 @@ final class CorrelateMessageTest extends ClientRestTest {
                     .withoutCorrelationKey()
                     .tenantId(tenantId)
                     .variables(variables))
-        .isInstanceOf(InternalClientException.class)
-        .hasMessageContaining(
-            String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", variables));
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("variables must be a JSON object, but was: []");
   }
 }

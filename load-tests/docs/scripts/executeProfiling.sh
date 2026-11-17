@@ -1,24 +1,43 @@
 #!/bin/bash -xeu
 # Usage:
-#   ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+#  ./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
-#
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
+# -p, --prefix: Filename prefix for the generated report (default: flamegraph-)
+#
+# Environment variables:
+#   PROFILING_DURATION - profiling duration in seconds (default: 100)
 set -oxe pipefail
 
-if [ -z "$1" ]; then
+prefix="flamegraph-"
+if [ "${1:-}" = "-p" ] || [ "${1:-}" = "--prefix" ]; then
+  if [ -z "${2:-}" ]; then
+    echo "Error: ${1} requires a value."
+    echo "Usage: ./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
+    exit 1
+  fi
+  prefix="$2"
+  shift 2
+fi
+
+if [ -z "${1:-}" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
+  echo "Usage: ./executeProfiling.sh [-p|--prefix PREFIX] <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
   exit 1
 fi
-node=$1
-profiler_event=${2:-cpu}
-additional_options=${3:-}
+pod_name=$1
+
+profiler_event="${2:-cpu}"
+additional_options="${3:-}"
+
+OUTPUT_DIR="${OUTPUT_DIR:-"profiling"}"
+echo "Profiling reports will be saved to $OUTPUT_DIR"
 
 if [[ $profiler_event == "wall" ]]; then
   # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
@@ -27,7 +46,7 @@ fi
 
 # Determine right container path
 containerPath=/usr/local/camunda/data
-if ! kubectl exec "$node" -- ls -la "$containerPath";
+if ! kubectl exec "$pod_name" -- ls -la "$containerPath";
 then
   # Old container path
   containerPath=/usr/local/zeebe/data
@@ -41,16 +60,15 @@ then
   tar -xzvf profiler.tar.gz
 fi
 
-if ! kubectl exec "$node" -- test -f data/libasyncProfiler.so;
+if ! kubectl exec "$pod_name" -- test -f "$containerPath/libasyncProfiler.so";
 then
   # Copy async profiler to pod
-  kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":"$containerPath/asprof"
-  kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":"$containerPath/libasyncProfiler.so"
-  kubectl exec "$node" -- chmod +x "$containerPath/asprof"
+  kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$pod_name":"$containerPath/asprof"
+  kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$pod_name":"$containerPath/libasyncProfiler.so"
+  kubectl exec "$pod_name" -- chmod +x "$containerPath/asprof"
 fi
 
-# Run profiling
-filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+filename="${prefix}${profiler_event}.html"
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax
@@ -61,16 +79,20 @@ filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
 #   As we want to find the PID of the Java process we can use awk
 #   to check the fifth input whether it contains "/java/"
 #   If so we return the first input, which is the PID
-PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
+PID=$(kubectl exec "$pod_name" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 
 # Run profiling
-kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
+kubectl exec "$pod_name" -- "$containerPath/asprof" -e "$profiler_event" -d "${PROFILING_DURATION:-100}" -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
-# Copy result
-kubectl cp "$node:$containerPath/$filename" "$node-$filename"
+# Copy result into specified output directory.
+mkdir -p "$OUTPUT_DIR"
+kubectl cp "$pod_name:$containerPath/$filename" "$OUTPUT_DIR/$filename"
 
 # Clean up
 # Comment out the following lines to make exeuction faster next time
-kubectl exec "$node" -- rm "$containerPath/asprof" "$containerPath/libasyncProfiler.so" "$containerPath/$filename"
-rm profiler.tar.gz
-rm -r async-profiler-4.0-linux-x64/
+# These are best-effort: a cleanup failure (e.g. a file already removed,
+# a permission hiccup, or a transient exec error) must not fail the whole
+# profiling run, so failures here are swallowed rather than propagated.
+kubectl exec "$pod_name" -- rm -f "$containerPath/asprof" "$containerPath/libasyncProfiler.so" "$containerPath/$filename" || true
+rm -f profiler.tar.gz
+rm -rf async-profiler-4.0-linux-x64/

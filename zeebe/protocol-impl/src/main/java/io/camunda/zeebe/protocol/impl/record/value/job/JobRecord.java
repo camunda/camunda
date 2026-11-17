@@ -23,13 +23,17 @@ import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,9 +54,18 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public static final String IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX =
       "io.camunda.agenticai:aiagent";
 
+  /**
+   * Sentinel lease token that does not scope to a specific job activation, meaning "apply to every
+   * activation of this job". Used to signal "the whole job is gone" — e.g. when discarding agent
+   * history for a destroyed job, an empty lease discards all items for the job regardless of which
+   * activation produced them.
+   */
+  public static final String EMPTY_JOB_LEASE_TOKEN = "";
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   public static final String RETRIES = "retries";
   public static final String TIMEOUT = "timeout";
+  public static final String PRIORITY = "priority";
   private static final String EMPTY_STRING = "";
   private static final String TYPE = "type";
   private static final String CUSTOM_HEADERS = "customHeaders";
@@ -87,6 +100,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
+  private static final StringValue JOB_LEASE_TOKEN_KEY = new StringValue("jobLeaseToken");
+  private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -116,6 +134,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
           JobListenerEventType.class,
           JobListenerEventType.UNSPECIFIED);
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, EMPTY_STRING);
+  private final EnumProperty<BpmnElementType> elementTypeProp =
+      new EnumProperty<>(
+          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
   private final LongProperty elementInstanceKeyProp =
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
@@ -129,9 +150,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
+  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
+  private final StringProperty jobLeaseTokenProp =
+      new StringProperty(JOB_LEASE_TOKEN_KEY, EMPTY_STRING);
+  private final ArrayProperty<JobSecretReference> secretReferencesProp =
+      new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
   public JobRecord() {
-    super(24);
+    super(31);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -150,13 +178,19 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(jobKindProp)
         .declareProperty(jobListenerEventTypeProp)
         .declareProperty(elementIdProp)
+        .declareProperty(elementTypeProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(resultProp)
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalProp)
+        .declareProperty(priorityProp)
+        .declareProperty(businessIdProp)
+        .declareProperty(jobLeaseTokenProp)
+        .declareProperty(secretReferencesProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -178,6 +212,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     jobKindProp.setValue(record.getJobKind());
     jobListenerEventTypeProp.setValue(record.getJobListenerEventType());
     elementIdProp.setValue(record.getElementIdBuffer());
+    elementTypeProp.setValue(record.getElementType());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     setChangedAttributes(record.getChangedAttributes());
@@ -186,6 +221,19 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
     setTags(record.getTags());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
+    priorityProp.setValue(record.getPriority());
+    businessIdProp.setValue(record.getBusinessIdBuffer());
+    jobLeaseTokenProp.setValue(record.getJobLeaseTokenBuffer());
+    copySecretReferencesFrom(record);
+  }
+
+  private void copySecretReferencesFrom(final JobRecord record) {
+    // same-class buffer copy avoids the String round-trip of
+    // setSecretReferences(getSecretReferences())
+    secretReferencesProp.reset();
+    record.secretReferencesProp.forEach(
+        reference -> secretReferencesProp.add().copyFrom(reference));
   }
 
   public void wrap(final JobRecord record) {
@@ -234,6 +282,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public int getPriority() {
+    return priorityProp.getValue();
+  }
+
+  @Override
   public long getRetryBackoff() {
     return retryBackoffProp.getValue();
   }
@@ -269,8 +322,43 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public JobRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public JobRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getJobLeaseToken() {
+    return bufferAsString(jobLeaseTokenProp.getValue());
   }
 
   @Override
@@ -357,12 +445,27 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+  public List<JobSecretReferenceValue> getSecretReferences() {
+    // detach copies so the returned list stays valid if this record is reused or reset later
+    return secretReferencesProp.stream()
+        .map(
+            element -> {
+              final var copy = new JobSecretReference();
+              copy.copy(element);
+              return (JobSecretReferenceValue) copy;
+            })
+        .toList();
   }
 
-  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+  public JobRecord setSecretReferences(
+      final List<? extends JobSecretReferenceValue> secretReferences) {
+    secretReferencesProp.reset();
+    if (secretReferences != null) {
+      secretReferences.forEach(
+          reference ->
+              addSecretReference(
+                  reference.getStoreId(), reference.getSecretReference(), reference.getPath()));
+    }
     return this;
   }
 
@@ -381,8 +484,18 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord setJobLeaseToken(final String jobLeaseToken) {
+    jobLeaseTokenProp.setValue(jobLeaseToken);
+    return this;
+  }
+
   public JobRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  public JobRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
     return this;
   }
 
@@ -429,6 +542,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord setPriority(final int priority) {
+    priorityProp.setValue(priority);
+    return this;
+  }
+
   public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
     return this;
@@ -455,6 +573,60 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  /**
+   * Direct access to the secret reference elements, without the detached copies of {@link
+   * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
+   */
+  @JsonIgnore
+  public ValueArray<JobSecretReference> secretReferences() {
+    return secretReferencesProp;
+  }
+
+  @JsonIgnore
+  public boolean hasSecretReferences() {
+    return !secretReferencesProp.isEmpty();
+  }
+
+  public JobRecord addSecretReference(
+      final String storeId, final String secretReference, final String path) {
+    secretReferencesProp
+        .add()
+        .setStoreId(storeId)
+        .setSecretReference(secretReference)
+        .setPath(path);
+    return this;
+  }
+
+  public JobRecord resetSecretReferences() {
+    secretReferencesProp.reset();
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasJobLeaseToken() {
+    return !getJobLeaseToken().isEmpty();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getJobLeaseTokenBuffer() {
+    return jobLeaseTokenProp.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public JobRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
+    return this;
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
@@ -547,8 +719,17 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  /**
+   * @deprecated This job-type-prefix check now only backs the 8.9 compatibility half of audit
+   *     attribution (jobs deployed on 8.9 with this job type and no resolved agent definition still
+   *     need attribution). Every other agentic decision uses whether the job's element has a
+   *     resolved agent definition instead. Remove once no supported version relies on this prefix
+   *     rule anymore, and affected processes have been redeployed with changed content. Tracked in
+   *     https://github.com/camunda/camunda/issues/60860.
+   */
+  @Deprecated
   @JsonIgnore
-  public boolean isAgentic() {
+  public boolean hasAgenticPrefix() {
     return getType().startsWith(IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
   }
 }

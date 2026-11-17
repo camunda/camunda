@@ -75,9 +75,7 @@ describe('ProcessInstance - modification mode', () => {
     mockRequests();
 
     await user.click(screen.getByTestId('discard-all-button'));
-    await user.click(
-      await screen.findByRole('button', {name: /danger discard/i}),
-    );
+    await user.click(await screen.findByRole('button', {name: /^discard$/i}));
 
     await waitFor(() =>
       expect(

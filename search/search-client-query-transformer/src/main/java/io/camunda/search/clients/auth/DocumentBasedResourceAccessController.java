@@ -7,8 +7,8 @@
  */
 package io.camunda.search.clients.auth;
 
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.authz.TenantAccessProvider;
 
 public class DocumentBasedResourceAccessController extends AbstractResourceAccessController {
 

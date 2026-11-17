@@ -47,9 +47,12 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     for (const incidentKey of localState['incidentKeys'] as string[]) {
       await expect(async () => {
-        const res = await request.get(buildUrl(`/incidents/${incidentKey}`), {
-          headers: jsonHeaders(),
-        });
+        const res = await request.get(
+          buildUrl('/incidents/{incidentKey}', {incidentKey}),
+          {
+            headers: jsonHeaders(),
+          },
+        );
 
         await assertStatusCode(res, 200);
         await validateResponse(
@@ -81,7 +84,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
     await expect(async () => {
       const res = await request.get(
-        buildUrl(`/incidents/${firstIncidentKey}`),
+        buildUrl('/incidents/{incidentKey}', {incidentKey: firstIncidentKey}),
         {
           headers: {
             'Content-Type': 'application/json',
@@ -97,9 +100,12 @@ test.describe.parallel('Search Incidents API Tests', () => {
   test('Get Incidents Not Found', async ({request}) => {
     await expect(async () => {
       const someWrongValue = '9675540027';
-      const res = await request.get(buildUrl(`/incidents/${someWrongValue}`), {
-        headers: jsonHeaders(),
-      });
+      const res = await request.get(
+        buildUrl('/incidents/{incidentKey}', {incidentKey: someWrongValue}),
+        {
+          headers: jsonHeaders(),
+        },
+      );
 
       await assertNotFoundRequest(
         res,
@@ -112,7 +118,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
     await expect(async () => {
       const someInvalidValue = 'meow';
       const res = await request.get(
-        buildUrl(`/incidents/${someInvalidValue}`),
+        buildUrl('/incidents/{incidentKey}', {incidentKey: someInvalidValue}),
         {
           headers: jsonHeaders(),
         },

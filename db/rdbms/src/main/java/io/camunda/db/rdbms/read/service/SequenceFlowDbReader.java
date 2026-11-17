@@ -15,8 +15,8 @@ import io.camunda.search.clients.reader.SequenceFlowReader;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,11 +63,9 @@ public class SequenceFlowDbReader extends AbstractEntityReader<SequenceFlowEntit
                     .page(convertPaging(dbSort, query.page())));
 
     final var hits =
-        executeQuery(
-            () ->
-                sequenceFlowMapper.search(dbQuery).stream()
-                    .map(SequenceFlowEntityMapper::toEntity)
-                    .toList());
+        sequenceFlowMapper.search(dbQuery).stream()
+            .map(SequenceFlowEntityMapper::toEntity)
+            .toList();
     return buildSearchQueryResult(hits.size(), hits, null);
   }
 }

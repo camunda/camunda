@@ -112,7 +112,7 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -147,12 +147,12 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'error',
-        title: 'Operation could not be created',
+        title: "Couldn't create operation",
         isDismissable: true,
       });
     });
@@ -182,12 +182,12 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'warning',
       title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
+      subtitle: 'Contact the administrator if you need access.',
       isDismissable: true,
     });
   });
@@ -216,7 +216,7 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -268,7 +268,7 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -307,10 +307,10 @@ describe('<DecisionOperations />', () => {
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(
-      await screen.findByText('Please tick this box if you want to proceed.'),
+      await screen.findByText('Tick this box if you want to proceed.'),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -322,7 +322,7 @@ describe('<DecisionOperations />', () => {
     );
 
     expect(
-      screen.queryByText('Please tick this box if you want to proceed.'),
+      screen.queryByText('Tick this box if you want to proceed.'),
     ).not.toBeInTheDocument();
   });
 });

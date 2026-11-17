@@ -31,6 +31,7 @@ import {
 } from 'modules/mocks/mockDecisionInstance';
 import * as clientConfig from 'modules/utils/getClientConfig';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
+import {searchResult} from 'modules/testUtils';
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -206,6 +207,38 @@ describe('<InstancesTable />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should show a Business ID column when at least one instance has a businessId', async () => {
+    mockSearchDecisionInstances().withSuccess(
+      searchResult([
+        {...invoiceClassification, businessId: 'order-12345'},
+        assignApproverGroup,
+      ]),
+    );
+
+    render(<InstancesTable />, {wrapper: createWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /Business ID/}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('order-12345')).toBeInTheDocument();
+  });
+
+  it('should hide the Business ID column when no instance has a businessId', async () => {
+    render(<InstancesTable />, {wrapper: createWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('columnheader', {name: /Business ID/}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should navigate to decision instance page', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
@@ -374,10 +407,14 @@ describe('<InstancesTable />', () => {
     });
     await user.click(firstRowCheckbox!);
 
-    expect(screen.getByText('1 item selected')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
 
-    await user.click(screen.getByRole('button', {name: 'Discard'}));
+    expect(screen.getByText('1 item selected')).toBeInTheDocument();
+    expect(
+      within(toolbar).getByRole('button', {name: 'Delete'}),
+    ).toBeInTheDocument();
+
+    await user.click(within(toolbar).getByRole('button', {name: 'Discard'}));
 
     expect(
       screen.queryByRole('button', {name: /delete/i}),

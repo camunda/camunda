@@ -1,6 +1,6 @@
 component/c8-api:
   '(C8-API-)'
-component/C8Run:
+component/c8run:
   '(C8Run-)'
 component/camunda-process-test:
   '(Camunda Process Test-)'
@@ -14,6 +14,8 @@ component/feel-scala:
   '(Feel-)'
 component/identity:
   '(Identity-)'
+component/load-tests:
+  '(Load Tests-)'
 component/management-identity:
   '(Management Identity-)'
 component/operate:
@@ -26,6 +28,10 @@ component/tasklist:
   '(Tasklist-)'
 component/zeebe:
   '(Zeebe-)'
+component/zeebe-engine:
+  '(Zeebe-Engine-)'
+component/zeebe-platform:
+  '(Zeebe-Platform-)'
 needs component label:
   '(Not sure-)'
 severity/critical:
@@ -60,3 +66,15 @@ affects/8.8:
   '(-8.8)'
 affects/8.9:
   '(-8.9)'
+affects/8.10:
+  '(-8.10)'
+discovered-by/load-tests:
+  '(Load Tests\+)'
+discovered-by/chaos-day:
+  '(Chaos Days\+)'
+discovered-by/gameday:
+  '(Game Day\+)'
+qa/automation-found:
+  '(QA Automation Found\+)'
+discovered-by/manual-testing:
+  '(Manual Testing\+)'

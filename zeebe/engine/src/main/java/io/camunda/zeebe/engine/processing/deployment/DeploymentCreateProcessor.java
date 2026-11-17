@@ -11,8 +11,11 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -23,8 +26,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -51,14 +54,19 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -90,7 +98,8 @@ public final class DeploymentCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -101,8 +110,9 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final CslAuthorizationCheck cslCheck,
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
@@ -116,7 +126,8 @@ public final class DeploymentCreateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.distributionBehavior = distributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
+    this.processDefinitionMetrics = processDefinitionMetrics;
     deploymentTransformer =
         new DeploymentTransformer(
             stateWriter,
@@ -131,26 +142,37 @@ public final class DeploymentCreateProcessor
                 .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
                 .build(),
             clock,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            processDefinitionMetrics);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
+    final var tenantId = command.getValue().getTenantId();
+    final var tenantMessage =
+        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+            .formatted(PermissionType.CREATE, AuthorizationResourceType.RESOURCE, tenantId);
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(AuthorizationResourceType.RESOURCE))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE, AuthorizationResourceType.RESOURCE),
+            AuthorizationRejectionMapper::toBareRejection,
+            tenantId,
+            new Rejection(RejectionType.FORBIDDEN, tenantMessage));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -177,35 +199,40 @@ public final class DeploymentCreateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
-    // Make sure the cache does not contain any leftovers from this run (by hard resetting)
-    if (command.getValue().hasBpmnResources()) {
-      processState.clearCache();
-    }
-    if (command.getValue().hasDmnResources()) {
-      decisionState.clearCache();
-    }
-    if (command.getValue().hasForms()) {
-      formState.clearCache();
-    }
-    if (command.getValue().hasResources()) {
-      resourceState.clearCache();
-    }
-
+    // invalidate caches based on the existence of metadata in the deployment
+    // since metadata is generated first - caches only get updated
+    // when the created events have already been written
+    invalidateCache(command.getValue());
     if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final TimerCreationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
-
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void invalidateCache(final DeploymentRecord record) {
+    if (record.processesMetadata().stream().findAny().isPresent()) {
+      processState.clearCache();
+    }
+    if (record.decisionsMetadata().stream().findAny().isPresent()
+        || record.decisionRequirementsMetadata().stream().findAny().isPresent()) {
+      decisionState.clearCache();
+    }
+    if (record.formMetadata().stream().findAny().isPresent()) {
+      formState.clearCache();
+    }
+    if (record.resourceMetadata().stream().findAny().isPresent()) {
+      resourceState.clearCache();
+    }
   }
 
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
@@ -228,7 +255,7 @@ public final class DeploymentCreateProcessor
     }
 
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         key, DeploymentIntent.CREATED, recordWithoutResource, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, recordWithoutResource);
 
@@ -256,13 +283,33 @@ public final class DeploymentCreateProcessor
                 final var resourceChecksum =
                     deploymentTransformer.getChecksum(resource.getResource());
                 if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
+                  final var processRecord =
+                      new ProcessRecord()
+                          .wrap(metadata, resource.getResource())
+                          .setTransformerVersions(
+                              deploymentTransformer.getTransformerVersionsById());
                   stateWriter.appendFollowUpEvent(
+                      metadata.getKey(), ProcessIntent.CREATED, processRecord);
+                  createAgentDefinitions(deploymentEvent, metadata);
+                  processDefinitionMetrics.processDefinitionDeployed(
                       metadata.getKey(),
-                      ProcessIntent.CREATED,
-                      new ProcessRecord().wrap(metadata, resource.getResource()));
+                      processRecord.getBpmnProcessId(),
+                      resource.getResource().length);
                 }
               }
             });
+  }
+
+  private void createAgentDefinitions(
+      final DeploymentRecord deploymentEvent, final ProcessMetadata metadata) {
+    deploymentEvent.agentDefinitionsMetadata().stream()
+        .filter(agentDefinition -> agentDefinition.getProcessDefinitionKey() == metadata.getKey())
+        .forEach(
+            agentDefinition ->
+                stateWriter.appendFollowUpEvent(
+                    agentDefinition.getAgentDefinitionKey(),
+                    AgentDefinitionIntent.CREATED,
+                    agentDefinition));
   }
 
   private void createDmnResources(final DeploymentRecord deploymentEvent) {
@@ -278,7 +325,7 @@ public final class DeploymentCreateProcessor
     deploymentEvent.decisionsMetadata().stream()
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
-            (record) ->
+            record ->
                 stateWriter.appendFollowUpEvent(
                     record.getDecisionKey(), DecisionIntent.CREATED, record));
   }
@@ -370,6 +417,10 @@ public final class DeploymentCreateProcessor
             processMetadata.getKey(),
             startEvent.getId(),
             processMetadata.getTenantId(),
+            NO_ELEMENT_INSTANCE,
+            StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED,
+            processMetadata.getBpmnProcessId(),
+            BpmnElementType.START_EVENT,
             timerOrError.get());
       }
     }

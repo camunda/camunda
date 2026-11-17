@@ -24,6 +24,9 @@ import java.util.regex.Pattern;
  * DOCUMENT_STORE_GCP_CLASS=io.camunda.document.store.gcp.GcpDocumentStoreProvider
  * DOCUMENT_STORE_GCP_BUCKET=my-bucket
  * DOCUMENT_STORE_INMEMORY_CLASS=io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider
+ *
+ * <p>This loader exists for backward compatibility with legacy {@code DOCUMENT_*} properties.
+ * Prefer configuring document stores via unified configuration under {@code camunda.document.*}.
  */
 public class EnvironmentConfigurationLoader implements DocumentStoreConfigurationLoader {
 

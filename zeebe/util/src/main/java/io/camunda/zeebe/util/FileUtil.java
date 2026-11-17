@@ -22,9 +22,11 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.agrona.SystemUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class FileUtil {
@@ -54,10 +56,13 @@ public final class FileUtil {
    * durability to sync the parent directory after creating a new file or renaming it, this is safe
    * to do as Windows (or rather NTFS) does not need this.
    *
-   * @param path the path to synchronize
+   * @param path the path to synchronize; callers may forward {@code path.getParent()}, where the
+   *     parent may be absent, such as for root paths or relative paths without parent components.
+   *     On Windows, a {@code null} path remains a no-op. On non-Windows systems, a {@code null}
+   *     path still results in a {@link NullPointerException}, preserving the previous behavior.
    * @throws IOException can be thrown on opening and on flushing the file
    */
-  public static void flushDirectory(final Path path) throws IOException {
+  public static void flushDirectory(final @Nullable Path path) throws IOException {
     // Windows does not allow flushing a directory except under very specific conditions which are
     // not possible to produce with the standard JDK; it's also not necessary to flush a directory
     // in Windows
@@ -65,7 +70,7 @@ public final class FileUtil {
       return;
     }
 
-    flush(path);
+    flush(Objects.requireNonNull(path, "Path must not be null"));
   }
 
   /**
@@ -81,7 +86,22 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    flushDirectory(target.getParent());
+    flushDirectory(requireParent(target));
+  }
+
+  /**
+   * Returns the parent of the given path, throwing if it has none.
+   *
+   * @param path the path whose parent to return
+   * @return the non-null parent path
+   * @throws NullPointerException if the path has no parent
+   */
+  public static Path requireParent(final Path path) {
+    final var parent = path.getParent();
+    if (parent == null) {
+      throw new NullPointerException("Expected path " + path + " to have a non-null parent");
+    }
+    return parent;
   }
 
   public static void deleteFolder(final String path) throws IOException {

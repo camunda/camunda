@@ -13,16 +13,17 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.apache.http.HttpHost;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.BasicHttpContext;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
+import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
+import org.apache.hc.client5.http.async.methods.SimpleResponseConsumer;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -151,17 +152,23 @@ final class ElasticsearchClientFactoryProxyTest {
                     .withBody(CLUSTER_INFO_RESPONSE)));
   }
 
-  private static RestClient extractRestClient(
+  private static Rest5Client extractRestClient(
       final co.elastic.clients.elasticsearch.ElasticsearchClient client) {
-    return ((RestClientTransport) client._transport()).restClient();
+    return ((Rest5ClientTransport) client._transport()).restClient();
   }
 
   private void sendRequest() {
     try (final var restClient = extractRestClient(ElasticsearchClientFactory.of(config))) {
-      final var context = new BasicHttpContext();
+      final var context = HttpClientContext.create();
+      final var request = SimpleHttpRequest.create("GET", "http://192.0.2.1:9200/");
       restClient
           .getHttpClient()
-          .execute(HttpHost.create("http://192.0.2.1:9200"), new HttpGet("/"), context, null)
+          .execute(
+              SimpleRequestProducer.create(request),
+              SimpleResponseConsumer.create(),
+              null,
+              context,
+              null)
           .get();
     } catch (final Exception e) {
       // The request might fail with connection issues, but that's fine -

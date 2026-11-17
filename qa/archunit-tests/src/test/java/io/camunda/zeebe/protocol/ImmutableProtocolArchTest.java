@@ -24,7 +24,9 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.WaitStateRelated;
 import java.lang.reflect.Method;
 import org.immutables.value.Value;
 
@@ -50,6 +52,7 @@ final class ImmutableProtocolArchTest {
             .that()
             // lookup only interface types, ignore enums or concrete classes
             .areInterfaces()
+            .and(DescribedPredicate.not(Predicates.simpleName("package-info")))
             .and()
             // check only all the types under the record.value and subpackages
             .resideInAnyPackage("io.camunda.zeebe.protocol.record.value..")
@@ -84,8 +87,10 @@ final class ImmutableProtocolArchTest {
 
   private DescribedPredicate<JavaClass> getExcludedClasses() {
     return Predicates.equivalentTo(ProcessInstanceRelated.class)
+        .or(Predicates.equivalentTo(StorageOrdinalRelated.class))
         .or(Predicates.equivalentTo(BatchOperationRelated.class))
         .or(Predicates.equivalentTo(TenantOwned.class))
+        .or(Predicates.equivalentTo(WaitStateRelated.class))
         .or(Predicates.equivalentTo(AuditLogProcessInstanceRelated.class));
   }
 

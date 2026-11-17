@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,13 +42,14 @@ public class AuthorizationCreateAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
@@ -126,6 +128,47 @@ public class AuthorizationCreateAuthorizationTest {
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
+  }
+
+  @Test
+  public void shouldReflectNewlyGrantedAuthorizationImmediately() {
+    // given
+    final var user = createUser();
+    final var targetUser = createUser();
+
+    // prime the scope cache: user has no AUTHORIZATION:CREATE permission yet → rejected
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetUser.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
+        .withPermissions(PermissionType.CREATE)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // when — grant the user AUTHORIZATION:CREATE permission (invalidates scope cache)
+    addAuthorizationToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE);
+
+    // then — user can now create immediately (cache was invalidated, not serving stale empty set)
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetUser.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
+        .withPermissions(PermissionType.CREATE)
+        .create(user.getUsername());
+
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(targetUser.getUsername())
+                .exists())
+        .isTrue();
   }
 
   private UserRecordValue createUser() {

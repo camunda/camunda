@@ -18,8 +18,15 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -199,6 +206,41 @@ public class RequestMapperTest {
       assertThat(requestWriter.getTenantIds()).containsExactly("tenant-a", "tenant-b");
       assertThat(requestWriter.getTenantFilter())
           .isEqualTo(io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED);
+    }
+
+    @Test
+    public void shouldMapActivateJobsRequestWithLease() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .setWithLease(true)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().isWithLease()).isTrue();
+    }
+
+    @Test
+    public void shouldNotSetWithLeaseByDefault() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().isWithLease()).isFalse();
     }
 
     @Test
@@ -544,7 +586,29 @@ public class RequestMapperTest {
       // then
       assertThat(properties.fetchVariables())
           .extracting(BufferUtil::bufferAsString)
-          .containsExactly("var1", "var2");
+          .containsExactlyInAnyOrder("var1", "var2");
+    }
+
+    @Test
+    public void shouldDeduplicateFetchVariables() {
+      // given — the same variable name appears twice in the gRPC request
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .addFetchVariable("var1")
+              .addFetchVariable("var2")
+              .addFetchVariable("var1")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then — only two unique names, not three; prevents off-by-one in DbVariableState map header
+      assertThat(properties.fetchVariables())
+          .extracting(BufferUtil::bufferAsString)
+          .containsExactlyInAnyOrder("var1", "var2");
     }
 
     @Test
@@ -562,7 +626,7 @@ public class RequestMapperTest {
       final var properties = RequestMapper.toJobActivationProperties(request, claims);
 
       // then
-      assertThat(properties.claims()).containsEntry("authorized_username", "test-user");
+      assertThat(properties.authInfo().getUsername()).isEqualTo("test-user");
     }
 
     @Test
@@ -581,6 +645,41 @@ public class RequestMapperTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Unrecognized tenantFilter option")
           .hasMessageContaining("expected one of ASSIGNED or PROVIDED");
+    }
+
+    @Test
+    public void shouldMapStreamActivatedJobsRequestWithLease() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .setWithLease(true)
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(properties.withLease()).isTrue();
+    }
+
+    @Test
+    public void shouldNotSetWithLeaseByDefault() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(properties.withLease()).isFalse();
     }
   }
 
@@ -648,6 +747,60 @@ public class RequestMapperTest {
 
       // then
       assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+  }
+
+  @Nested
+  class CompleteJobRequestBusinessIdTest {
+
+    @Test
+    public void shouldMapValidBusinessId() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(1L).setBusinessId("order-12345").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldNotSetBusinessIdWhenAbsent() {
+      // given
+      final var grpcRequest = CompleteJobRequest.newBuilder().setJobKey(1L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+
+    @Test
+    public void shouldRejectEmptyBusinessId() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(1L).setBusinessId("").build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCompleteJobRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("no business id was provided");
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(1L).setBusinessId("a".repeat(257)).build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCompleteJobRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
     }
   }
 
@@ -787,6 +940,314 @@ public class RequestMapperTest {
           .isInstanceOf(InvalidVariableRequestException.class)
           .hasMessageContaining("Expected variable names to be no longer than 5 characters")
           .hasMessageContaining("length 6");
+    }
+  }
+
+  @Nested
+  class PublishMessageRequestNameValidationTest {
+
+    @Test
+    public void shouldAcceptNonBlankName() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("message").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getName()).isEqualTo("message");
+    }
+
+    @Test
+    public void shouldRejectMissingName() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("non-empty name");
+    }
+
+    @Test
+    public void shouldRejectBlankName() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("   ").build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("non-empty name");
+    }
+  }
+
+  @Nested
+  class PublishMessageRequestBusinessIdTest {
+
+    @Test
+    public void shouldAcceptValidBusinessId() {
+      // given
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId("order-12345")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldAcceptBusinessIdAtMaxLength() {
+      // given
+      final String maxLengthBusinessId = "a".repeat(256);
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId(maxLengthBusinessId)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo(maxLengthBusinessId);
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId("a".repeat(257))
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
+    }
+
+    @Test
+    public void shouldAcceptEmptyBusinessId() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("message").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+  }
+
+  @Nested
+  class CompleteJobRequestJobLeaseTokenTest {
+
+    @Test
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(123L).setJobLeaseToken("lease-token-1").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-1");
+    }
+
+    @Test
+    public void shouldNotSetJobLeaseTokenByDefault() {
+      // given
+      final var grpcRequest = CompleteJobRequest.newBuilder().setJobKey(123L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class FailJobRequestJobLeaseTokenTest {
+
+    @Test
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          FailJobRequest.newBuilder().setJobKey(123L).setJobLeaseToken("lease-token-2").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-2");
+    }
+
+    @Test
+    public void shouldNotSetJobLeaseTokenByDefault() {
+      // given
+      final var grpcRequest = FailJobRequest.newBuilder().setJobKey(123L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class ThrowErrorRequestJobLeaseTokenTest {
+
+    @Test
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          ThrowErrorRequest.newBuilder()
+              .setJobKey(123L)
+              .setErrorCode("error-code")
+              .setJobLeaseToken("lease-token-3")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toThrowErrorRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-3");
+    }
+
+    @Test
+    public void shouldNotSetJobLeaseTokenByDefault() {
+      // given
+      final var grpcRequest =
+          ThrowErrorRequest.newBuilder().setJobKey(123L).setErrorCode("error-code").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toThrowErrorRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class UpdateJobTimeoutRequestJobLeaseTokenTest {
+
+    @Test
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          UpdateJobTimeoutRequest.newBuilder()
+              .setJobKey(123L)
+              .setTimeout(5000L)
+              .setJobLeaseToken("lease-token-4")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobTimeoutRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-4");
+    }
+
+    @Test
+    public void shouldNotSetJobLeaseTokenByDefault() {
+      // given
+      final var grpcRequest =
+          UpdateJobTimeoutRequest.newBuilder().setJobKey(123L).setTimeout(5000L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobTimeoutRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class UpdateJobRetriesRequestJobLeaseTokenTest {
+
+    @Test
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          UpdateJobRetriesRequest.newBuilder()
+              .setJobKey(123L)
+              .setRetries(5)
+              .setJobLeaseToken("lease-token-4")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobRetriesRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken()).isEqualTo("lease-token-4");
+    }
+
+    @Test
+    public void shouldNotSetJobLeaseTokenByDefault() {
+      // given
+      final var grpcRequest =
+          UpdateJobRetriesRequest.newBuilder().setJobKey(123L).setRetries(5).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobRetriesRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getJobLeaseToken())
+          .describedAs(
+              "Expected no lease token on the broker request when the gRPC request omits it")
+          .isEmpty();
+    }
+  }
+
+  @Nested
+  class UpdateJobPriorityRequestJobLeaseTokenTest {
+
+    @Test
+    public void shouldMapJobLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          UpdateJobPriorityRequest.newBuilder()
+              .setJobKey(123L)
+              .setPriority(5)
+              .setJobLeaseToken("lease-token-4")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobPriorityRequest(grpcRequest);
+
+      // then
+      final var requestWriter = (JobRecord) brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getJobLeaseToken()).isEqualTo("lease-token-4");
+    }
+
+    @Test
+    public void shouldNotSetJobLeaseTokenByDefault() {
+      // given
+      // priority must still be set: toUpdateJobPriorityRequest requires it regardless of
+      // jobLeaseToken, so this proves absence of a jobLeaseToken specifically, not absence of
+      // priority
+      final var grpcRequest =
+          UpdateJobPriorityRequest.newBuilder().setJobKey(123L).setPriority(5).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobPriorityRequest(grpcRequest);
+
+      // then
+      final var requestWriter = (JobRecord) brokerRequest.getRequestWriter();
+      assertThat(requestWriter.getJobLeaseToken())
+          .describedAs(
+              "Expected no lease token on the broker request when the gRPC request omits it")
+          .isEmpty();
     }
   }
 }

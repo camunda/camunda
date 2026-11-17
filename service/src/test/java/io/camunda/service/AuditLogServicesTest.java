@@ -20,8 +20,8 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -37,6 +37,7 @@ import org.mockito.MockitoAnnotations;
 
 class AuditLogServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
       new AuditLogEntity.Builder()
           .auditLogKey("auditLogKey")
@@ -83,6 +84,7 @@ class AuditLogServicesTest {
 
     auditLogServices =
         new AuditLogServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             auditLogSearchClient,

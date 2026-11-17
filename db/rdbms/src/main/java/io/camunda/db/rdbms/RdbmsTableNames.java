@@ -15,6 +15,8 @@ import java.util.List;
  */
 public final class RdbmsTableNames {
 
+  public static final String SCHEMA_VERSION = "RDBMS_SCHEMA_VERSION";
+
   /**
    * List of all known RDBMS table names. The order of tables in this list will be used by the
    * RdbmsPurger to determine the order in which the tables are truncated. It is important to always
@@ -24,6 +26,10 @@ public final class RdbmsTableNames {
    */
   public static final List<String> TABLE_NAMES =
       List.of(
+          "AGENT_INSTANCE_ELEMENT_INSTANCE",
+          "AGENT_INSTANCE",
+          "AGENT_HISTORY",
+          "AGENT_DEFINITION",
           "AUDIT_LOG",
           "AUTHORIZATIONS",
           "BATCH_OPERATION_ITEM",
@@ -32,6 +38,7 @@ public final class RdbmsTableNames {
           "CANDIDATE_GROUP",
           "CANDIDATE_USER",
           "CLUSTER_VARIABLE",
+          "CLUSTER_VARIABLE_METADATA",
           "CORRELATED_MESSAGE_SUBSCRIPTION",
           "DECISION_DEFINITION",
           "DECISION_INSTANCE_INPUT",
@@ -65,8 +72,11 @@ public final class RdbmsTableNames {
           "USER_TASK_TAG",
           "USER_TASK",
           "USER_",
+          "PROCESS_DEF_VAR_NAME_LOOKUP",
           "VARIABLE",
-          "WEB_SESSION");
+          "WAIT_STATE",
+          "WEB_SESSION",
+          SCHEMA_VERSION);
 
   private RdbmsTableNames() {
     // Utility class - prevent instantiation

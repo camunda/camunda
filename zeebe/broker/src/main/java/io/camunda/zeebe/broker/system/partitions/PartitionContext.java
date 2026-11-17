@@ -9,12 +9,13 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
@@ -29,6 +30,9 @@ import java.util.List;
 public interface PartitionContext {
 
   int getPartitionId();
+
+  /** Returns the composite partition id, including the partition group it belongs to. */
+  PartitionId partitionId();
 
   RaftPartition getRaftPartition();
 
@@ -53,6 +57,8 @@ public interface PartitionContext {
 
   StreamProcessor getStreamProcessor();
 
+  LogStream getLogStream();
+
   ExporterDirector getExporterDirector();
 
   boolean shouldProcess();
@@ -60,6 +66,8 @@ public interface PartitionContext {
   @Deprecated // currently the implementation forwards this to other components inside the
   // partition; these components will be directly registered as listeners in the future
   void setDiskSpaceAvailable(boolean b);
+
+  void setPausedForTransfer(boolean pausedForTransfer);
 
   TopologyManager getTopologyManager();
 
@@ -74,8 +82,6 @@ public interface PartitionContext {
   DynamicPartitionConfig getDynamicPartitionConfig();
 
   void setDynamicPartitionConfig(DynamicPartitionConfig partitionConfig);
-
-  SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 
   ControllableStreamClock getStreamClock();
 

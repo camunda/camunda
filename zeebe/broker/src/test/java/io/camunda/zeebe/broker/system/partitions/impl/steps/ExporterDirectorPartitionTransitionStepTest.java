@@ -17,16 +17,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -68,6 +72,19 @@ class ExporterDirectorPartitionTransitionStepTest {
         .thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setActorSchedulingService(actorSchedulingService);
     transitionContext.setBrokerCfg(new BrokerCfg());
+
+    final var clusterConfigurationService = mock(ClusterConfigurationService.class);
+    when(clusterConfigurationService.getCurrentClusterConfiguration())
+        .thenReturn(
+            CurrentClusterConfiguration.init()
+                .updateGlobalConfiguration(
+                    global -> global.setClusterId("gossip-resolved-cluster-id")));
+    transitionContext.setClusterConfigurationService(clusterConfigurationService);
+
+    final var raftPartition = mock(RaftPartition.class);
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    when(raftPartition.getPartitionConfig()).thenReturn(raftPartitionConfig);
+    transitionContext.setRaftPartition(raftPartition);
 
     when(exporterDirectorFromPrevRole.closeAsync())
         .thenReturn(TestActorFuture.completedFuture(null));
@@ -250,6 +267,36 @@ class ExporterDirectorPartitionTransitionStepTest {
   }
 
   @Test
+  void shouldNotRemoveStateOfConfigNotFoundExporter() {
+    // given - expB's static config was removed; it is tracked with CONFIG_NOT_FOUND
+    final String configuredExporterId = "expA";
+    final String configNotFoundExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(
+            configuredExporterId, State.ENABLED, configNotFoundExporterId, State.CONFIG_NOT_FOUND);
+
+    // expB is absent from the repository because its static config was removed
+    final Map<String, ExporterDescriptor> exporters =
+        Map.of(configuredExporterId, new ExporterDescriptor(configuredExporterId));
+    when(exporterRepository.getExporters()).thenReturn(exporters);
+    transitionContext.setDynamicPartitionConfig(exporterConfig);
+
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    when(mockedExporterDirector.startAsync(any()))
+        .thenReturn(TestActorFuture.completedFuture(null));
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep((ctx, phase) -> mockedExporterDirector);
+
+    // when - director starts with no concurrent config change
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then - expB's persisted state (position, metadata) must not be deleted
+    verify(mockedExporterDirector, never()).removeExporter(configNotFoundExporterId);
+    verify(mockedExporterDirector, never()).removeExporter(configuredExporterId);
+  }
+
+  @Test
   void shouldEnableExporterIfConfigChangedConcurrently() {
     // given
     final String enabledExporterId = "expA";
@@ -277,6 +324,59 @@ class ExporterDirectorPartitionTransitionStepTest {
     // then
     verify(mockedExporterDirector, timeout(1000))
         .enableExporterWithRetry(eq(reEnabledExporterId), any(), any());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ExportingState.class)
+  void shouldSeedExporterPhaseFromDynamicConfigOnOpen(final ExportingState exportingState) {
+    // given - a partition (re)opening its exporter director, e.g. on broker restart or on a
+    // replica that joins after a pause was applied - sees the exporting state dynamic config
+    // already has, not some broker-local default
+    transitionContext.setDynamicPartitionConfig(
+        new DynamicPartitionConfig(new ExportingConfig(exportingState, Map.of())));
+
+    final AtomicReference<ExporterPhase> capturedPhase = new AtomicReference<>();
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    when(mockedExporterDirector.startAsync(any()))
+        .thenReturn(TestActorFuture.completedFuture(null));
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep(
+            (ctx, phase) -> {
+              capturedPhase.set(phase);
+              return mockedExporterDirector;
+            });
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    final var expectedPhase = ExporterPhase.from(exportingState);
+    assertThat(capturedPhase.get()).isEqualTo(expectedPhase);
+    switch (expectedPhase) {
+      case PAUSED -> verify(mockedExporterDirector).pauseExporting();
+      case SOFT_PAUSED -> verify(mockedExporterDirector).softPauseExporting();
+      default -> verify(mockedExporterDirector).resumeExporting();
+    }
+  }
+
+  @Test
+  void shouldUseGossipResolvedClusterIdEvenWhenStaticConfigDiffers() {
+    // given - the static broker config disagrees with the gossip-resolved cluster topology
+    // (e.g. this broker joined an existing cluster without an explicit clusterId configured)
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setClusterId("locally-configured-candidate-id");
+    transitionContext.setBrokerCfg(brokerCfg);
+
+    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
+    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then - the exporter observes the cluster-wide agreed id, not the diverged local candidate
+    assertThat(capturedContext.get().getClusterId()).isEqualTo("gossip-resolved-cluster-id");
   }
 
   private void setExportersInContext(

@@ -45,6 +45,7 @@ public class ZeebeCalledElementTest extends BpmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "processId", false, false),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "businessId", false, false),
         new AttributeAssumption(
             BpmnModelConstants.ZEEBE_NS, "propagateAllChildVariables", false, false, true),
         new AttributeAssumption(
@@ -99,5 +100,72 @@ public class ZeebeCalledElementTest extends BpmnModelElementInstanceTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "No enum constant io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType.foo");
+  }
+
+  @Test
+  public void shouldHaveBusinessIdWhenValueIsSet() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .callActivity(
+                "callActivity", c -> c.zeebeProcessId("child").zeebeBusinessId("=orderId"))
+            .done();
+    final String modelXml = Bpmn.convertToString(modelInstance);
+
+    // when
+    final CallActivity callActivity =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("callActivity");
+    final ZeebeCalledElement calledElement =
+        callActivity.getSingleExtensionElement(ZeebeCalledElement.class);
+
+    // then
+    assertThat(calledElement.hasBusinessId()).isTrue();
+    assertThat(calledElement.getBusinessId()).isEqualTo("=orderId");
+  }
+
+  @Test
+  public void shouldNotHaveBusinessIdWhenAbsent() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .callActivity("callActivity", c -> c.zeebeProcessId("child"))
+            .done();
+    final String modelXml = Bpmn.convertToString(modelInstance);
+
+    // when
+    final CallActivity callActivity =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("callActivity");
+    final ZeebeCalledElement calledElement =
+        callActivity.getSingleExtensionElement(ZeebeCalledElement.class);
+
+    // then
+    assertThat(calledElement.hasBusinessId()).isFalse();
+    assertThat(calledElement.getBusinessId()).isNull();
+  }
+
+  @Test
+  public void shouldDistinguishEmptyBusinessIdFromAbsentAfterRoundTrip() {
+    // given - an explicitly empty businessId attribute
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .callActivity("callActivity", c -> c.zeebeProcessId("child").zeebeBusinessId(""))
+            .done();
+    final String modelXml = Bpmn.convertToString(modelInstance);
+
+    // when - the model is serialized and parsed again
+    final CallActivity callActivity =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("callActivity");
+    final ZeebeCalledElement calledElement =
+        callActivity.getSingleExtensionElement(ZeebeCalledElement.class);
+
+    // then - presence survives serialization even though the value reads back as null
+    assertThat(calledElement.hasBusinessId()).isTrue();
+    assertThat(calledElement.getBusinessId()).isNull();
   }
 }

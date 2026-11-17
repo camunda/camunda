@@ -5,7 +5,7 @@
 # against a new camunda cluster with the specified version. This is started daily by the github
 # action zeebe-daily-qa.yml. Github workflows just start the process instance and do not monitor it.
 #  The results of these tests are posted to #zeebe-ci via Testbench workers once the test is completed.
-# called by: zeebe-e2e-testbench.yaml, zeebe-qa-testbench.yaml, zeebe-update-long-running-migrating-benchmark.yaml
+# called by: zeebe-e2e-testbench.yaml, zeebe-qa-testbench.yaml
 # type: CI
 # owner @camunda/core-features
 name: Start a Zeebe test in Testbench
@@ -35,7 +35,9 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+        continue-on-error: true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
@@ -54,15 +56,15 @@ jobs:
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
           service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Login to SaaS image registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: europe-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth-saas.outputs.access_token }}
       - name: Login to Zeebe image registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: gcr.io
           username: oauth2accesstoken
@@ -80,7 +82,7 @@ jobs:
         run: |
           # shellcheck disable=SC2153
           # Replace dots and slashes with dashes
-          branch=${BRANCH/[\/\.]/-}
+          branch=${BRANCH//[\/\.]/-}
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
           echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
         env:
@@ -94,10 +96,10 @@ jobs:
         with:
           directory: ./operate/client
           package-manager: npm
-      - name: Build tasklist frontend
+      - name: Build unified webapp frontend
         uses: ./.github/actions/build-frontend
         with:
-          directory: ./tasklist/client
+          directory: ./webapp/client
           package-manager: npm
       - name: Build identity frontend
         uses: ./.github/actions/build-frontend
@@ -122,7 +124,7 @@ jobs:
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -133,7 +135,7 @@ jobs:
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_REST_ADDRESS;
 
       - name: Get Auth Token
-        uses: fjogeleit/http-request-action@551353b829c3646756b2ec2b3694f819d7957495 # v2.0.0
+        uses: fjogeleit/http-request-action@f98bb26551cd1af7d3eb2674578a80754ece88db # v2.0.1
         id: authorization
         with:
           url: 'https://login.cloud.camunda.io/oauth/token'
@@ -156,7 +158,7 @@ jobs:
           variables=$(echo "$substituted_variables" | jq -c .)
 
           # Run the curl command with expanded variables
-          curl -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
+          curl --fail-with-body -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
             -H "Authorization: Bearer $access_token" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json" \
@@ -168,3 +170,12 @@ jobs:
           IMAGE: zeebe-io/camunda:${{ steps.image-tag.outputs.image-tag }}
           access_token: ${{ env.access_token }}
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

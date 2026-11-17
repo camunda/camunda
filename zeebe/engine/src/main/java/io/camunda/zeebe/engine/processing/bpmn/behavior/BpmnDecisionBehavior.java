@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
@@ -70,9 +72,8 @@ public final class BpmnDecisionBehavior {
   public Either<Failure, DecisionEvaluationResult> evaluateDecision(
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
-    final var tenantId = context.getTenantId();
 
-    final var decisionIdOrFailure = evalDecisionIdExpression(element, scopeKey, tenantId);
+    final var decisionIdOrFailure = evalDecisionIdExpression(element, context);
     if (decisionIdOrFailure.isLeft()) {
       return Either.left(decisionIdOrFailure.getLeft());
     }
@@ -130,13 +131,12 @@ public final class BpmnDecisionBehavior {
   private Either<Failure, PersistedDecision> findCalledDecision(
       final String decisionId,
       final ZeebeBindingType bindingType,
-      final String versionTag,
+      final Expression versionTag,
       final BpmnElementContext context) {
     return switch (bindingType) {
       case deployment -> getDecisionVersionInSameDeployment(decisionId, context);
       case latest -> getLatestDecisionVersion(decisionId, context.getTenantId());
-      case versionTag ->
-          getLatestDecisionVersionWithVersionTag(decisionId, versionTag, context.getTenantId());
+      case versionTag -> getLatestDecisionVersionWithVersionTag(decisionId, versionTag, context);
     };
   }
 
@@ -156,14 +156,27 @@ public final class BpmnDecisionBehavior {
   }
 
   private Either<Failure, PersistedDecision> getLatestDecisionVersionWithVersionTag(
-      final String decisionId, final String versionTag, final String tenantId) {
-    return decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
-        decisionId, versionTag, tenantId);
+      final String decisionId, final Expression versionTag, final BpmnElementContext context) {
+    final var tenantId = context.getTenantId();
+    return expressionBehavior
+        .evaluateStringExpression(
+            versionTag,
+            context.getElementInstanceKey(),
+            tenantId,
+            ExpressionLabel.versionTagExpression(context.getElementId()))
+        .flatMap(
+            evaluatedVersionTag ->
+                decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
+                    decisionId, evaluatedVersionTag, tenantId));
   }
 
   private Either<Failure, String> evalDecisionIdExpression(
-      final ExecutableCalledDecision element, final long scopeKey, final String tenantId) {
-    return expressionBehavior.evaluateStringExpression(element.getDecisionId(), scopeKey, tenantId);
+      final ExecutableCalledDecision element, final BpmnElementContext context) {
+    return expressionBehavior.evaluateStringExpression(
+        element.getDecisionId(),
+        context.getElementInstanceKey(),
+        context.getTenantId(),
+        ExpressionLabel.decisionIdExpression(context.getElementId()));
   }
 
   private void writeDecisionEvaluationEvent(
@@ -179,12 +192,22 @@ public final class BpmnDecisionBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setElementId(context.getElementId())
-        .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setStorageOrdinal(context.getStorageOrdinal())
+        .setBusinessId(getBusinessIdFromProcessInstance(context));
 
     stateWriter.appendFollowUpEvent(
         newDecisionEvaluationKey,
         decisionEvaluationEventTuple.getLeft(),
         decisionEvaluationEventTuple.getRight());
+  }
+
+  private String getBusinessIdFromProcessInstance(final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (elementInstance == null) {
+      return "";
+    }
+    return elementInstance.getValue().getBusinessId();
   }
 
   private void triggerProcessEventWithResultVariable(
@@ -196,6 +219,7 @@ public final class BpmnDecisionBehavior {
     eventTriggerBehavior.triggeringProcessEvent(
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getStorageOrdinal(),
         context.getTenantId(),
         context.getElementInstanceKey(),
         context.getElementId(),

@@ -13,9 +13,12 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 public class CodeQualityTest {
@@ -56,12 +59,20 @@ public class CodeQualityTest {
       final URL resource = resources.nextElement();
       final File directory = new File(resource.getFile());
       if (directory.exists()) {
-        for (final String fileName : directory.list()) {
-          if (fileName.endsWith(".class") && !fileName.contains("Test")) {
-            final String className =
-                packageName + '.' + fileName.substring(0, fileName.length() - 6);
-            final Class<?> clazz = Class.forName(className);
-            classes.add(clazz);
+        final Path root = directory.toPath();
+        try (final Stream<Path> files = Files.walk(root)) {
+          for (final Path file : files.toList()) {
+            final String fileName = file.getFileName().toString();
+            if (fileName.endsWith(".class") && !fileName.contains("Test")) {
+              final String relative = root.relativize(file).toString();
+              final String className =
+                  packageName
+                      + '.'
+                      + relative
+                          .substring(0, relative.length() - ".class".length())
+                          .replace(File.separatorChar, '.');
+              classes.add(Class.forName(className));
+            }
           }
         }
       }

@@ -37,6 +37,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -50,23 +51,29 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.api.mock.MockChildProcessBuilder;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
+import io.camunda.process.test.impl.mock.MockChildProcessBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -111,29 +118,33 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final URI connectorsRestApiAddress;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
   private final Consumer<AutoCloseable> clientCreationCallback;
-  private final CamundaManagementClient camundaManagementClient;
+  private final CamundaClockClient clockClient;
 
   private final JsonMapper jsonMapper;
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
+  private final Supplier<CamundaDataSource> dataSourceSupplier;
+
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
-      final CamundaManagementClient camundaManagementClient,
+      final CamundaClockClient clockClient,
       final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier,
       final JsonMapper jsonMapper,
-      final ConditionalBehaviorEngine conditionalBehaviorEngine) {
+      final ConditionalBehaviorEngine conditionalBehaviorEngine,
+      final Supplier<CamundaDataSource> dataSourceSupplier) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
     this.clientCreationCallback = clientCreationCallback;
-    this.camundaManagementClient = camundaManagementClient;
+    this.clockClient = clockClient;
     this.awaitBehaviorSupplier = awaitBehaviorSupplier;
     this.jsonMapper = jsonMapper;
     this.conditionalBehaviorEngine = conditionalBehaviorEngine;
+    this.dataSourceSupplier = dataSourceSupplier;
   }
 
   @Override
@@ -174,19 +185,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public Instant getCurrentTime() {
-    return camundaManagementClient.getCurrentTime();
+    return clockClient.getCurrentTime();
   }
 
   @Override
   public void increaseTime(final Duration timeToAdd) {
     LOGGER.debug("Increase the time by {}", timeToAdd);
-    camundaManagementClient.increaseTime(timeToAdd);
+    clockClient.increaseTime(timeToAdd);
   }
 
   @Override
   public void setTime(final Instant timeToSet) {
     LOGGER.debug("Setting the time to {}", timeToSet);
-    camundaManagementClient.setTime(timeToSet);
+    clockClient.setTime(timeToSet);
   }
 
   @Override
@@ -199,65 +210,26 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public MockChildProcessBuilder mockChildProcess() {
+    final CamundaClient client = createClient();
+    return new MockChildProcessBuilderImpl(client);
+  }
+
+  @Override
   public void mockChildProcess(final String childProcessId) {
-    mockChildProcess(childProcessId, Collections.emptyMap());
+    mockChildProcess().withProcessId(childProcessId).thenComplete();
   }
 
   @Override
   public void mockChildProcess(final String childProcessId, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final BpmnModelInstance processModel =
-        Bpmn.createExecutableProcess(childProcessId)
-            .startEvent()
-            .endEvent(
-                "child-end",
-                e ->
-                    variables.forEach(
-                        (k, v) ->
-                            e.zeebeOutput(
-                                "=" + client.getConfiguration().getJsonMapper().toJson(v), k)))
-            .done();
-
-    LOGGER.debug(
-        "Mock: Deploy a child process '{}' with result variables {}", childProcessId, variables);
-
-    final String resourceName = childProcessId + ".bpmn";
-    client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    mockChildProcess().withProcessId(childProcessId).thenComplete(variables);
   }
 
   @Override
   public void mockChildProcess(
       final String childProcessId,
       final Function<Map<String, Object>, Map<String, Object>> variablesSupplier) {
-
-    final String variableSupplierJobType = "variableSupplier_" + childProcessId;
-    final BpmnModelInstance processModel =
-        Bpmn.createExecutableProcess(childProcessId)
-            .startEvent()
-            .serviceTask("variableSupplier", t -> t.zeebeJobType(variableSupplierJobType))
-            .endEvent()
-            .done();
-
-    LOGGER.debug("Mock: Deploy a child process '{}' with variables supplier", childProcessId);
-
-    try (final CamundaClient client = createClient()) {
-      final String resourceName = childProcessId + ".bpmn";
-      client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
-    }
-
-    mockJobWorker(variableSupplierJobType)
-        .withHandler(
-            (jobClient, job) -> {
-              final Map<String, Object> inputVariables = job.getVariablesAsMap();
-              final Map<String, Object> outputVariables = variablesSupplier.apply(inputVariables);
-
-              LOGGER.debug(
-                  "Mock: Complete child process '{}' with variables {}",
-                  childProcessId,
-                  outputVariables);
-
-              jobClient.newCompleteCommand(job.getKey()).variables(outputVariables).send().join();
-            });
+    mockChildProcess().withProcessId(childProcessId).thenComplete(variablesSupplier);
   }
 
   @Override
@@ -283,20 +255,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void completeJob(final JobSelector jobSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-
-    // completing the job inside the await block to handle the eventual consistency of the API
-    awaitJob(
-        jobSelector,
-        client,
-        job -> {
-          LOGGER.debug(
-              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
-              jobSelector.describe(),
-              job.getJobKey(),
-              variables);
-
-          client.newCompleteCommand(job.getJobKey()).variables(variables).send().join();
-        });
+    doCompleteJob(client, jobSelector, job -> variables);
   }
 
   @Override
@@ -308,7 +267,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
         jobSelector,
-        client,
         job -> {
           final String logPrefix =
               String.format(
@@ -333,6 +291,30 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             client.newCompleteCommand(job.getJobKey()).send().join();
           }
         });
+  }
+
+  @Override
+  public void completeJob(
+      final String jobType, final UnaryOperator<Map<String, Object>> variableMapper) {
+    completeJob(JobSelectors.byJobType(jobType), variableMapper);
+  }
+
+  @Override
+  public void completeJob(
+      final JobSelector jobSelector, final UnaryOperator<Map<String, Object>> variableMapper) {
+    Objects.requireNonNull(variableMapper, "variableMapper must not be null");
+    final CamundaClient client = createClient();
+    doCompleteJob(
+        client,
+        jobSelector,
+        job ->
+            resolveOutputVariablesFromInputVariables(
+                client,
+                jobSelector.describe(),
+                "complete job",
+                job.getProcessInstanceKey(),
+                job.getElementInstanceKey(),
+                variableMapper));
   }
 
   @Override
@@ -376,7 +358,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitJob(
         jobSelector,
-        client,
         job -> {
           LOGGER.debug(
               "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
@@ -418,24 +399,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-
-    // completing the user task inside the await block to handle the eventual consistency of the API
-    awaitUserTask(
-        userTaskSelector,
-        client,
-        userTask -> {
-          LOGGER.debug(
-              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
-              userTaskSelector.describe(),
-              userTask.getUserTaskKey(),
-              variables);
-
-          client
-              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
-              .variables(variables)
-              .send()
-              .join();
-        });
+    doCompleteUserTask(client, userTaskSelector, userTask -> variables);
   }
 
   @Override
@@ -452,7 +416,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the user task inside the await block to handle the eventual consistency of the API
     awaitUserTask(
         userTaskSelector,
-        client,
         userTask -> {
           final String logPrefix =
               String.format(
@@ -478,6 +441,31 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
           }
         });
+  }
+
+  @Override
+  public void completeUserTask(
+      final String elementId, final UnaryOperator<Map<String, Object>> variableMapper) {
+    completeUserTask(UserTaskSelectors.byElementId(elementId), variableMapper);
+  }
+
+  @Override
+  public void completeUserTask(
+      final UserTaskSelector userTaskSelector,
+      final UnaryOperator<Map<String, Object>> variableMapper) {
+    Objects.requireNonNull(variableMapper, "variableMapper must not be null");
+    final CamundaClient client = createClient();
+    doCompleteUserTask(
+        client,
+        userTaskSelector,
+        userTask ->
+            resolveOutputVariablesFromInputVariables(
+                client,
+                userTaskSelector.describe(),
+                "complete user task",
+                userTask.getProcessInstanceKey(),
+                userTask.getElementInstanceKey(),
+                variableMapper));
   }
 
   @Override
@@ -526,7 +514,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitIncident(
         incidentSelector,
-        client,
         incident -> {
           final long incidentKey = incident.getIncidentKey();
 
@@ -559,7 +546,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
         JobSelectors.byJobKind(JobKind.AD_HOC_SUB_PROCESS).and(jobSelector),
-        client,
         job -> {
           LOGGER.debug(
               "Mock: Complete ad-hoc sub-process job [{}, jobKey: '{}'] with variables {}",
@@ -589,7 +575,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitProcessInstance(
         processInstanceSelector,
-        client,
         pi -> {
           LOGGER.debug(
               "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
@@ -610,19 +595,34 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final ProcessInstanceSelector processInstanceSelector,
       final ElementSelector elementSelector,
       final Map<String, Object> variables) {
+    setVariablesOnElementInstance(processInstanceSelector, elementSelector, variables, false);
+  }
+
+  @Override
+  public void createLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables) {
+    setVariablesOnElementInstance(processInstanceSelector, elementSelector, variables, true);
+  }
+
+  private void setVariablesOnElementInstance(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables,
+      final boolean local) {
     final CamundaClient client = createClient();
 
     awaitProcessInstance(
         processInstanceSelector,
-        client,
         pi ->
             awaitElementInstance(
                 pi.getProcessInstanceKey(),
                 elementSelector,
-                client,
                 ei -> {
                   LOGGER.debug(
-                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      "{} variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      local ? "Create local" : "Update local",
                       elementSelector.describe(),
                       ei.getElementInstanceKey(),
                       pi.getProcessInstanceKey(),
@@ -631,6 +631,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   client
                       .newSetVariablesCommand(ei.getElementInstanceKey())
                       .variables(variables)
+                      .local(local)
                       .send()
                       .join();
                 }));
@@ -644,7 +645,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
         JobSelectors.byJobKind(JobKind.TASK_LISTENER).and(jobSelector),
-        client,
         job -> {
           LOGGER.debug(
               "Mock: Complete user task listener job [{}, jobKey: '{}']",
@@ -669,15 +669,53 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return conditionalBehaviorEngine.when(condition);
   }
 
-  private void awaitUserTask(
-      final UserTaskSelector userTaskSelector,
+  // completing the job inside the await block to handle the eventual consistency of the API
+  private void doCompleteJob(
       final CamundaClient client,
-      final Consumer<UserTask> userTaskConsumer) {
+      final JobSelector jobSelector,
+      final Function<Job, Map<String, Object>> variableResolver) {
+    awaitJob(
+        jobSelector,
+        job -> {
+          final Map<String, Object> outputVariables = variableResolver.apply(job);
+          LOGGER.debug(
+              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              outputVariables);
+          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
+        });
+  }
+
+  // completing the user task inside the await block to handle the eventual consistency of the API
+  private void doCompleteUserTask(
+      final CamundaClient client,
+      final UserTaskSelector userTaskSelector,
+      final Function<UserTask, Map<String, Object>> variableResolver) {
+    awaitUserTask(
+        userTaskSelector,
+        userTask -> {
+          final Map<String, Object> outputVariables = variableResolver.apply(userTask);
+          LOGGER.debug(
+              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+              userTaskSelector.describe(),
+              userTask.getUserTaskKey(),
+              outputVariables);
+          client
+              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+              .variables(outputVariables)
+              .send()
+              .join();
+        });
+  }
+
+  private void awaitUserTask(
+      final UserTaskSelector userTaskSelector, final Consumer<UserTask> userTaskConsumer) {
 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findUserTask(userTaskSelector, client),
+            () -> findUserTask(userTaskSelector),
             userTask -> {
               assertThat(userTask)
                   .withFailMessage(
@@ -689,30 +727,20 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
   }
 
-  private Optional<UserTask> findUserTask(
-      final UserTaskSelector userTaskSelector, final CamundaClient client) {
-    return client
-        .newUserTaskSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_USER_TASK_COMPLETION_FILTER
-                    .andThen(userTaskSelector::applyFilter)
-                    .accept(filter))
-        .send()
-        .join()
-        .items()
-        .stream()
+  private Optional<UserTask> findUserTask(final UserTaskSelector userTaskSelector) {
+    final Consumer<UserTaskFilter> filter =
+        DEFAULT_USER_TASK_COMPLETION_FILTER.andThen(userTaskSelector::applyFilter);
+    return dataSourceSupplier.get().findUserTasks(filter).stream()
         .filter(userTaskSelector::test)
         .findFirst();
   }
 
-  private void awaitJob(
-      final JobSelector jobSelector, final CamundaClient client, final Consumer<Job> jobConsumer) {
+  private void awaitJob(final JobSelector jobSelector, final Consumer<Job> jobConsumer) {
 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findJob(jobSelector, client),
+            () -> findJob(jobSelector),
             job -> {
               assertThat(job)
                   .withFailMessage(
@@ -724,29 +752,96 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
   }
 
-  private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
+  /** Resolves the output variables for a variable-mapper-based completion */
+  private Map<String, Object> resolveOutputVariablesFromInputVariables(
+      final CamundaClient client,
+      final String selectorDescription,
+      final String operation,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final UnaryOperator<Map<String, Object>> variableMapper) {
+    final Map<String, Object> inputVariables =
+        readInputVariables(client, processInstanceKey, elementInstanceKey);
+    final Map<String, Object> outputVariables = variableMapper.apply(inputVariables);
+    if (outputVariables == null) {
+      throw new AssertionError(
+          String.format(
+              "Expected to %s [%s] but the variableMapper returned null.",
+              operation, selectorDescription));
+    }
+    return outputVariables;
+  }
+
+  /**
+   * Reads the variables visible to an element by querying the process-instance-global and
+   * element-local scopes via the Search API and merging them, with local values shadowing global
+   * ones. Variables are requested with full values so that they can always be deserialized.
+   */
+  private Map<String, Object> readInputVariables(
+      final CamundaClient client, final long processInstanceKey, final long elementInstanceKey) {
+
+    final List<Variable> globalVariables =
+        fetchVariables(client, processInstanceKey, processInstanceKey);
+    final List<Variable> localVariables =
+        fetchVariables(client, processInstanceKey, elementInstanceKey);
+
+    // Merge by name first so that only the winning variable per name is deserialized.
+    final Map<String, Variable> mergedVariables = new HashMap<>();
+    for (final Variable variable : globalVariables) {
+      mergedVariables.put(variable.getName(), variable);
+    }
+    for (final Variable variable : localVariables) {
+      mergedVariables.put(variable.getName(), variable);
+    }
+
+    return toVariableMap(client.getConfiguration().getJsonMapper(), mergedVariables.values());
+  }
+
+  private static List<Variable> fetchVariables(
+      final CamundaClient client, final long processInstanceKey, final long scopeKey) {
     return client
-        .newJobSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter).accept(filter))
+        .newVariableSearchRequest()
+        .filter(filter -> filter.processInstanceKey(processInstanceKey).scopeKey(scopeKey))
+        .withFullValues()
         .send()
         .join()
-        .items()
-        .stream()
-        .filter(jobSelector::test)
-        .findFirst();
+        .items();
+  }
+
+  private static Map<String, Object> toVariableMap(
+      final JsonMapper jsonMapper, final Collection<Variable> variables) {
+    final Map<String, Object> result = new HashMap<>();
+    for (final Variable variable : variables) {
+      if (variable.isTruncated()) {
+        throw new AssertionError(
+            "Expected variable '"
+                + variable.getName()
+                + "' to have a full value, but the Search API returned a truncated value.");
+      }
+
+      if (variable.getValue() == null) {
+        result.put(variable.getName(), null);
+        continue;
+      }
+
+      result.put(variable.getName(), jsonMapper.fromJson(variable.getValue(), Object.class));
+    }
+    return result;
+  }
+
+  private Optional<Job> findJob(final JobSelector jobSelector) {
+    final Consumer<JobFilter> filter =
+        DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter);
+    return dataSourceSupplier.get().findJobs(filter).stream().filter(jobSelector::test).findFirst();
   }
 
   private void awaitIncident(
-      final IncidentSelector incidentSelector,
-      final CamundaClient client,
-      final Consumer<Incident> incidentConsumer) {
+      final IncidentSelector incidentSelector, final Consumer<Incident> incidentConsumer) {
 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findIncident(incidentSelector, client),
+            () -> findIncident(incidentSelector),
             incident -> {
               assertThat(incident)
                   .withFailMessage(
@@ -758,65 +853,43 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
   }
 
-  private Optional<Incident> findIncident(
-      final IncidentSelector incidentSelector, final CamundaClient client) {
-    return client
-        .newIncidentSearchRequest()
-        .filter(
-            filter -> {
-              DEFAULT_INCIDENT_RESOLUTION_FILTER
-                  .andThen(incidentSelector::applyFilter)
-                  .accept(filter);
-            })
-        .send()
-        .join()
-        .items()
-        .stream()
+  private Optional<Incident> findIncident(final IncidentSelector incidentSelector) {
+    final Consumer<IncidentFilter> filter =
+        DEFAULT_INCIDENT_RESOLUTION_FILTER.andThen(incidentSelector::applyFilter);
+    return dataSourceSupplier.get().findIncidents(filter).stream()
         .filter(incidentSelector::test)
         .findFirst();
   }
 
   private Optional<ProcessInstance> findProcessInstance(
-      final ProcessInstanceSelector processInstanceSelector, final CamundaClient client) {
-    return client
-        .newProcessInstanceSearchRequest()
-        .filter(processInstanceSelector::applyFilter)
-        .send()
-        .join()
-        .items()
+      final ProcessInstanceSelector processInstanceSelector) {
+    return dataSourceSupplier
+        .get()
+        .findProcessInstances(processInstanceSelector::applyFilter)
         .stream()
         .filter(processInstanceSelector::test)
         .findFirst();
   }
 
   private Optional<ElementInstance> findElementInstance(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
-      final CamundaClient client) {
-    return client
-        .newElementInstanceSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_ELEMENT_INSTANCE_FILTER
-                    .andThen(elementSelector::applyFilter)
-                    .accept(filter.processInstanceKey(processInstanceKey)))
-        .send()
-        .join()
-        .items()
-        .stream()
+      final long processInstanceKey, final ElementSelector elementSelector) {
+    final Consumer<ElementInstanceFilter> filter =
+        DEFAULT_ELEMENT_INSTANCE_FILTER
+            .andThen(f -> f.processInstanceKey(processInstanceKey))
+            .andThen(elementSelector::applyFilter);
+    return dataSourceSupplier.get().findElementInstances(filter).stream()
         .filter(elementSelector::test)
         .findFirst();
   }
 
   private void awaitProcessInstance(
       final ProcessInstanceSelector processInstanceSelector,
-      final CamundaClient client,
       final Consumer<ProcessInstance> processInstanceConsumer) {
 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findProcessInstance(processInstanceSelector, client),
+            () -> findProcessInstance(processInstanceSelector),
             processInstance -> {
               assertThat(processInstance)
                   .withFailMessage(
@@ -831,13 +904,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private void awaitElementInstance(
       final long processInstanceKey,
       final ElementSelector elementSelector,
-      final CamundaClient client,
       final Consumer<ElementInstance> elementInstanceConsumer) {
 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findElementInstance(processInstanceKey, elementSelector, client),
+            () -> findElementInstance(processInstanceKey, elementSelector),
             elementInstance -> {
               assertThat(elementInstance)
                   .withFailMessage(

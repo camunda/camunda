@@ -16,10 +16,10 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.List;
 import java.util.function.Consumer;
 
-public interface GroupFilter extends SearchRequestFilter {
+public interface GroupFilter extends GroupFilterBase {
 
   /**
    * Filters groups by the specified groupId.
@@ -27,8 +27,10 @@ public interface GroupFilter extends SearchRequestFilter {
    * @param groupId the ID of the group
    * @return the updated filter
    */
+  @Override
   GroupFilter groupId(final String groupId);
 
+  @Override
   GroupFilter groupId(Consumer<StringProperty> fn);
 
   /**
@@ -37,5 +39,17 @@ public interface GroupFilter extends SearchRequestFilter {
    * @param name the name of the group
    * @return the updated filter
    */
+  @Override
   GroupFilter name(final String name);
+
+  @Override
+  GroupFilter name(Consumer<StringProperty> fn);
+
+  /**
+   * Combine this filter with a list of alternative filter groups using OR logic.
+   *
+   * @param filters the alternative filter groups
+   * @return the updated filter
+   */
+  GroupFilterBase orFilters(List<Consumer<GroupFilterBase>> filters);
 }

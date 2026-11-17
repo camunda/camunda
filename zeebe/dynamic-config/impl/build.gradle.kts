@@ -1,0 +1,49 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
+plugins {
+  id("buildlogic.protobuf-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
+
+// Point to the proto files in resources
+sourceSets { main { proto { srcDir("src/main/resources/proto") } } }
+
+dependencies {
+  api(project(":zeebe-cluster-config-api"))
+  implementation(project(":camunda-cluster"))
+  implementation(libs.org.jspecify.jspecify)
+  implementation(project(":zeebe-scheduler"))
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
+  implementation(libs.com.google.protobuf.protobuf.java)
+  implementation(libs.org.slf4j.slf4j.api)
+  implementation(libs.org.agrona.agrona)
+  implementation(project(":zeebe-atomix-utils"))
+  implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
+  implementation(project(":zeebe-protocol"))
+  implementation(libs.io.micrometer.micrometer.core)
+  implementation(libs.io.micrometer.micrometer.commons)
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
+  testImplementation(project(":zeebe-test-util"))
+  testImplementation(project(":zeebe-atomix-cluster"))
+  testImplementation(libs.org.awaitility.awaitility)
+  testImplementation(libs.org.mockito.mockito.core)
+  testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
+  testImplementation(libs.com.google.guava.guava)
+  testImplementation(projectArtifact(":zeebe-cluster-config-api", ArtifactKind.TESTS))
+}
+
+description = "Zeebe Dynamic Cluster Configuration"
+
+mutationTesting {
+  defaultTargetClasses.add("io.camunda.zeebe.dynamic.config.*")
+  excludedClasses.add("io.camunda.zeebe.dynamic.config.impl.protocol.*")
+  crossModuleSourceDirs.from(layout.projectDirectory.dir("../api/src/main/java"))
+}
+
+// The tests of this module cover the api classes better than the api tests do, so PIT mutates them
+// here too (-Ppit.crossModule=false turns this off).
+dependencies { pitMutableCode(project(":zeebe-cluster-config-api")) }

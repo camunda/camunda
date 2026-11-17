@@ -11,8 +11,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.VariableFilter;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -267,7 +267,7 @@ public class VariableIT {
       final CamundaClient client, final Consumer<VariableFilter> filterFn) {
     Awaitility.await()
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
+        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () ->
                 !client

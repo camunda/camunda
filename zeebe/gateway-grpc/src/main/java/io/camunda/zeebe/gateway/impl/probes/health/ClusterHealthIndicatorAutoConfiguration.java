@@ -26,6 +26,6 @@ public class ClusterHealthIndicatorAutoConfiguration {
   @ConditionalOnMissingBean(name = "gatewayClusterHealthIndicator")
   public ClusterHealthIndicator gatewayClusterHealthIndicator(
       final SpringGatewayBridge gatewayBridge) {
-    return new ClusterHealthIndicator(gatewayBridge::getClusterState);
+    return new ClusterHealthIndicator(gatewayBridge::getClusterStates);
   }
 }

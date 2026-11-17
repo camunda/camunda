@@ -24,7 +24,7 @@ import org.junit.rules.RuleChain;
 public final class UniqueKeyFormatTest {
 
   public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
-  public final CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomixCluster);
+  public final CommandApiRule apiRule = new CommandApiRule(3, brokerRule::getAtomixCluster);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

@@ -13,6 +13,7 @@ import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,27 +56,36 @@ public class IndexSchemaValidator {
   }
 
   /**
-   * Validates existing indices mappings against index/index template mappings defined.
+   * Validates existing indices mappings against index/index template mappings defined. For an
+   * {@link IndexTemplateDescriptor}, the template's own stored mapping is additionally validated
+   * against the descriptor, independently of whether a backing index currently exists.
    *
    * @param mappings is a map of all the mappings to compare.
    * @param indexDescriptors is the set of all index descriptors representing desired schema states.
+   * @param templateMappings existing index template mappings, keyed by template name
    * @return new mapping properties to add to schemas, so they align with the descriptors.
    * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
    *     mappings.
    */
   public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
-      final Map<String, IndexMapping> mappings, final Collection<IndexDescriptor> indexDescriptors)
+      final Map<String, IndexMapping> mappings,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Map<String, IndexMapping> templateMappings)
       throws IndexSchemaValidationException {
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(mappings, indexDescriptor);
-      // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
-        final IndexMappingDifference difference =
+        final DifferingIndices differingIndices =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
-        validateDifferenceAndCollectNewFields(
-            indexDescriptor, indexMappingsGroup.keySet(), difference, newFields);
+        validateDifferenceAndCollectNewFields(indexDescriptor, differingIndices, newFields);
+      }
+      // Validated independently of the backing-index comparison above because an up-to-date backing
+      // index does not imply an up-to-date template.
+      if (indexDescriptor instanceof final IndexTemplateDescriptor templateDescriptor) {
+        compareWithExistingTemplates(
+            templateDescriptor, templateMappings, !indexMappingsGroup.isEmpty(), newFields);
       }
     }
     return newFields;
@@ -83,20 +93,20 @@ public class IndexSchemaValidator {
 
   private void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
-      final Set<String> indexNames,
-      final IndexMappingDifference difference,
+      final DifferingIndices differingIndices,
       final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
-    if (difference != null && !difference.equal()) {
+    if (differingIndices != null) {
+      final IndexMappingDifference difference = differingIndices.difference();
       LOGGER.debug(
           "Index fields differ from expected. Index names: {}. Difference: {}.",
-          indexNames,
+          differingIndices.indexNames(),
           difference);
 
       if (!difference.entriesDiffering().isEmpty()) {
         final String errorMsg =
             String.format(
-                "Index name: %s. Unsupported index changes have been introduced. Data migration is required. Changes found: %s",
-                indexDescriptor.getFullQualifiedName(), difference.entriesDiffering());
+                "Index names: %s. Unsupported index changes have been introduced. Data migration is required. Changes found: %s",
+                differingIndices.indexNames(), difference.entriesDiffering());
         LOGGER.error(errorMsg);
         throw new IndexSchemaValidationException(errorMsg);
       }
@@ -104,7 +114,7 @@ public class IndexSchemaValidator {
       if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
             "Index names '{}': Field deletion is requested, will be ignored. Fields: {}",
-            indexNames,
+            differingIndices.indexNames(),
             difference.entriesOnlyOnRight());
 
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
@@ -118,34 +128,118 @@ public class IndexSchemaValidator {
     }
   }
 
-  private IndexMappingDifference getIndexMappingDifference(
+  private void compareWithExistingTemplates(
+      final IndexTemplateDescriptor templateDescriptor,
+      final Map<String, IndexMapping> templateMappings,
+      final boolean hasBackingIndex,
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
+    final IndexMapping existingTemplateMapping =
+        templateMappings.get(templateDescriptor.getTemplateName());
+    if (existingTemplateMapping == null) {
+      // template itself does not exist either - it will be created from scratch
+      return;
+    }
+
+    final IndexMappingDifference difference =
+        filterOutDynamicProperties(
+            IndexMappingDifference.of(
+                IndexMapping.from(templateDescriptor, objectMapper), existingTemplateMapping));
+    if (!hasRealDifference(difference)) {
+      LOGGER.debug(
+          "Template fields are up to date for template '{}'.",
+          templateDescriptor.getTemplateName());
+      return;
+    }
+
+    if (!difference.entriesOnlyOnRight().isEmpty()) {
+      if (hasBackingIndex) {
+        // A backing index exists and is the source of truth: a field only in the stored template
+        // may simply mean this node's descriptor is stale (e.g. an older node racing after a newer
+        // node already upgraded the schema). This comparison alone will not touch the template,
+        // but if the backing-index comparison already scheduled a template update, that update
+        // still fully overwrites the template from the descriptor and will drop this field.
+        if (newFields.containsKey(templateDescriptor)) {
+          LOGGER.info(
+              "Template '{}': Field(s) only present in the stored template will be dropped, as"
+                  + " the template is being updated for a different reason. Fields: {}",
+              templateDescriptor.getTemplateName(),
+              difference.entriesOnlyOnRight());
+        } else {
+          LOGGER.info(
+              "Template '{}': Field(s) only present in the stored template, will be left as is."
+                  + " Fields: {}",
+              templateDescriptor.getTemplateName(),
+              difference.entriesOnlyOnRight());
+        }
+        return;
+      }
+      // No backing index/data exists for this descriptor at all, so it is safe to fully overwrite
+      // the template, including dropping this field.
+      LOGGER.info(
+          "Template '{}': removing field(s) no longer present in the descriptor. Fields: {}",
+          templateDescriptor.getTemplateName(),
+          difference.entriesOnlyOnRight());
+    }
+    if (!difference.entriesDiffering().isEmpty()) {
+      LOGGER.info(
+          "Template '{}': Field types differ from expected. Changes found: {}",
+          templateDescriptor.getTemplateName(),
+          difference.entriesDiffering());
+    }
+
+    final var changedProperties = new HashSet<>(difference.entriesOnlyOnLeft());
+    difference.entriesDiffering().forEach(d -> changedProperties.add(d.leftValue()));
+    newFields.merge(
+        templateDescriptor,
+        changedProperties,
+        (existing, added) -> {
+          final var merged = new HashSet<>(existing);
+          merged.addAll(added);
+          return merged;
+        });
+  }
+
+  private DifferingIndices getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = IndexMapping.from(indexDescriptor, objectMapper);
 
-    final var differences =
-        indexMappingsGroup.values().stream()
-            .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
-            .filter(difference -> !difference.equal())
-            .map(this::filterOutDynamicProperties)
-            .distinct()
-            .toList();
+    // sorted by index name so grouping and the reported index names are stable regardless of
+    // the source map's (HashMap) iteration order
+    final Map<IndexMappingDifference, List<String>> differencesByIndexName =
+        indexMappingsGroup.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                entry ->
+                    Map.entry(
+                        entry.getKey(),
+                        filterOutDynamicProperties(
+                            IndexMappingDifference.of(indexMappingMustBe, entry.getValue()))))
+            // filtered after dynamic properties are stripped: `equal` is fixed at construction
+            // and won't reflect a diff that only turned out to be dynamic-property noise
+            .filter(entry -> hasRealDifference(entry.getValue()))
+            .collect(
+                Collectors.groupingBy(
+                    Map.Entry::getValue,
+                    LinkedHashMap::new,
+                    Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
 
-    if (differences.isEmpty()) {
+    if (differencesByIndexName.isEmpty()) {
       return null;
     }
 
-    if (differences.size() > 1) {
+    if (differencesByIndexName.size() > 1) {
       LOGGER.debug(
           "Ambiguous schema update. Index names: {}. Difference: {}.",
           indexMappingsGroup.keySet(),
-          differences);
+          differencesByIndexName);
       throw new IndexSchemaValidationException(
           String.format(
-              "Ambiguous schema update. Multiple indices for mapping '%s' has different fields. Differences: '%s'",
-              indexDescriptor.getIndexName(), differences));
+              "Ambiguous schema update. Multiple indices for mapping '%s' have different fields. Differences by index: %s",
+              indexDescriptor.getIndexName(), differencesByIndexName));
     }
 
-    return differences.getFirst();
+    final var onlyEntry = differencesByIndexName.entrySet().iterator().next();
+    return new DifferingIndices(onlyEntry.getKey(), onlyEntry.getValue());
   }
 
   /** Filters out differences that are only related to dynamic properties. */
@@ -155,6 +249,17 @@ public class IndexSchemaValidator {
         .filterEntriesInCommon(indexMappingProperty -> !isDynamicProperty(indexMappingProperty))
         .filterEntriesDiffering(
             propertyDifference -> !isDynamicProperty(propertyDifference.leftValue()));
+  }
+
+  /**
+   * {@link IndexMappingDifference#equal()} is fixed at construction time and isn't recomputed by
+   * {@link #filterOutDynamicProperties}, so it can no longer be trusted after filtering. Checks the
+   * actual remaining entries instead.
+   */
+  private boolean hasRealDifference(final IndexMappingDifference difference) {
+    return !difference.entriesDiffering().isEmpty()
+        || !difference.entriesOnlyOnLeft().isEmpty()
+        || !difference.entriesOnlyOnRight().isEmpty();
   }
 
   /**
@@ -177,4 +282,6 @@ public class IndexSchemaValidator {
     return indexMappingProperty.typeDefinition() instanceof final Map typeDefMap
         && Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
   }
+
+  private record DifferingIndices(IndexMappingDifference difference, List<String> indexNames) {}
 }

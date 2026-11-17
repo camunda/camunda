@@ -7,25 +7,42 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import static io.camunda.security.configuration.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
-import static io.camunda.security.configuration.OidcAuthenticationConfiguration.GROUPS_CLAIM_PROPERTY;
+import static io.camunda.security.api.model.config.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
+import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS_CLAIM_PROPERTY;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import java.util.Arrays;
+import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 @Configuration
 public class ApiFiltersConfiguration {
 
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
-      "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to manage group mode removing the '%s' property."
+      "Groups API is disabled because the application, or this physical tenant, is configured in group claim mode. To use the Groups API, reconfigure it to manage group mode by removing the '%s' property, or the physical tenant's override of it."
           .formatted(GROUPS_CLAIM_PROPERTY);
 
   @VisibleForTesting
@@ -37,15 +54,87 @@ public class ApiFiltersConfiguration {
       "Tenants API is disabled. Enable the API by setting '%s' to true."
           .formatted(API_ENABLED_PROPERTY);
 
-  @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")
+  private static final PathPatternParser PATTERN_PARSER = new PathPatternParser();
+
+  // Spring Security's FilterChainProxy registers at SecurityProperties.DEFAULT_FILTER_ORDER (-100);
+  // the physical-tenant filter must run just before it so components inside the security chain can
+  // read the tenant id. We inline the value rather than depend on spring-boot-security for one
+  // constant — and DEFAULT_FILTER_ORDER is a compile-time constant, so a reference would inline the
+  // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
+  private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
+
+  private static final int PHYSICAL_TENANT_SWAGGER_FILTER_ORDER = 1;
+
+  private static List<PathPattern> patterns(final String... patterns) {
+    return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
+  }
+
+  /**
+   * Stamps the physical tenant id from {@code /physical-tenants/{id}/...} paths onto the request
+   * before Spring Security runs, so the security chain and downstream handlers can read it.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantFilter> physicalTenantFilter() {
+    final FilterRegistrationBean<PhysicalTenantFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Scopes {@code /v2/status} to the default physical tenant (ADR 001 D3): rejects every {@code
+   * /physical-tenants/{id}/v2/status} request for a non-default id with a uniform 404, before
+   * Spring Security selects a per-tenant chain, so a configured non-default tenant and an unknown
+   * one are indistinguishable to unauthenticated callers.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantStatusScopeFilter> physicalTenantStatusScopeFilter() {
+    final FilterRegistrationBean<PhysicalTenantStatusScopeFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantStatusScopeFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Redirects/forwards Swagger UI requests reached via a tenant-prefixed path to their real,
+   * unprefixed handler. Unlike {@link #physicalTenantFilter()}, this must run after Spring
+   * Security, since the filter does not itself validate the tenant id — see {@link
+   * PhysicalTenantSwaggerFilter}.
+   */
+  @ConditionalOnRestGatewayEnabled
+  @ConditionalOnProperty(
+      name = "camunda.rest.swagger.enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantSwaggerFilter> physicalTenantSwaggerFilter() {
+    final FilterRegistrationBean<PhysicalTenantSwaggerFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantSwaggerFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_SWAGGER_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Blocks the Groups API for each physical tenant that takes its groups from a groups claim, and
+   * only for those: another tenant can still manage its groups in Camunda.
+   */
+  @Conditional(PhysicalTenantCamundaGroups.DisabledForAnyTenant.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper, final Environment environment) {
+    final var camundaGroups = new PhysicalTenantCamundaGroups(environment);
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
-        new EndpointAccessErrorFilter(objectMapper, GROUPS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/groups/*");
+        new EndpointAccessErrorFilter(
+            objectMapper,
+            GROUPS_API_DISABLED_ERROR_MESSAGE,
+            patterns("/v2/groups/**", PHYSICAL_TENANT_URI_PREFIX + "/v2/groups/**"),
+            physicalTenantId -> !camundaGroups.isCamundaGroupsEnabled(physicalTenantId)));
+    registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
   }
@@ -57,22 +146,49 @@ public class ApiFiltersConfiguration {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
-        new EndpointAccessErrorFilter(objectMapper, USERS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/users/*");
+        new EndpointAccessErrorFilter(
+            objectMapper,
+            USERS_API_DISABLED_ERROR_MESSAGE,
+            patterns("/v2/users/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/users/**")));
+    registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
   }
 
-  @ConditionalOnExpression("'${camunda.security.multiTenancy.apiEnabled:}' == 'false'")
+  @Conditional(TenantsApiDisabledCondition.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableMultiTenancyApiFilter(
       final ObjectMapper objectMapper) {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
-        new EndpointAccessErrorFilter(objectMapper, TENANTS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/tenants/*");
+        new EndpointAccessErrorFilter(
+            objectMapper,
+            TENANTS_API_DISABLED_ERROR_MESSAGE,
+            patterns("/v2/tenants/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/tenants/**")));
+    registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
+  }
+
+  /**
+   * Matches when the tenants API is explicitly disabled. {@code API_ENABLED_PROPERTY} is camelCase
+   * ({@code multiTenancy.apiEnabled}); querying the {@link ConditionContext#getEnvironment()} with
+   * that exact string only matches a camelCase-configured property, so a kebab-case ({@code
+   * multi-tenancy.api-enabled}) key would leave this filter unregistered and the tenants API
+   * reachable, while everything that reads the bound value treats the API as disabled.
+   * Canonicalizing it first makes the lookup match either spelling, relying on Spring Boot's
+   * relaxed property binding.
+   */
+  static final class TenantsApiDisabledCondition implements Condition {
+
+    private static final String CANONICAL_API_ENABLED_PROPERTY =
+        ConfigurationPropertyName.adapt(API_ENABLED_PROPERTY, '.').toString();
+
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      return "false"
+          .equalsIgnoreCase(context.getEnvironment().getProperty(CANONICAL_API_ENABLED_PROPERTY));
+    }
   }
 }

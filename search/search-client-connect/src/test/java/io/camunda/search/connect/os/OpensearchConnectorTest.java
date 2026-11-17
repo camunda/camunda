@@ -19,20 +19,28 @@ import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.util.Timeout;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
@@ -171,6 +179,115 @@ class OpensearchConnectorTest {
             credentialsProvider.getCredentials(
                 new AuthScope(new HttpHost("http", "opensearch-2", 9206)), context))
         .isNotNull();
+  }
+
+  @Test
+  void shouldConfigureConnectionPoolLimitsWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setMaxConnections(75);
+    configuration.setMaxConnectionsPerRoute(40);
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(AsyncClientConnectionManager.class);
+    Mockito.verify(builder).setConnectionManager(captor.capture());
+    final var connectionManager = (PoolingAsyncClientConnectionManager) captor.getValue();
+    Assertions.assertThat(connectionManager.getMaxTotal()).isEqualTo(75);
+    Assertions.assertThat(connectionManager.getDefaultMaxPerRoute()).isEqualTo(40);
+  }
+
+  @Test
+  void shouldNotConfigureConnectionManagerWhenNothingSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    Mockito.verify(builder, Mockito.never()).setConnectionManager(Mockito.any());
+  }
+
+  @Test
+  void shouldConfigureTimeoutsWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setSocketTimeout(125456);
+    configuration.setConnectTimeout(654321);
+
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(RequestConfig.Builder.class);
+
+    // when
+    connector.setTimeouts(builder, configuration);
+
+    // then
+    Mockito.verify(builder).setResponseTimeout(Timeout.of(125456L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder).setConnectTimeout(Timeout.of(654321L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder)
+        .setConnectionRequestTimeout(Timeout.of(180_000L, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  void shouldConfigureDefaultTimeouts() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(RequestConfig.Builder.class);
+
+    // when
+    connector.setTimeouts(builder, configuration);
+
+    // then
+    Mockito.verify(builder).setResponseTimeout(Timeout.of(30_000L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder).setConnectTimeout(Timeout.of(5_000L, TimeUnit.MILLISECONDS));
+    Mockito.verify(builder)
+        .setConnectionRequestTimeout(Timeout.of(180_000L, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  void shouldApplyTimeoutsWhenCreatingClientWithoutConfiguredTimeouts() throws Exception {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        Mockito.spy(
+            new OpensearchConnector(
+                configuration, new ObjectMapper(), null, new PluginRepository()));
+
+    // when
+    try (final var ignored = connector.createClient()._transport()) {
+      // then
+      Mockito.verify(connector)
+          .setTimeouts(Mockito.any(RequestConfig.Builder.class), Mockito.eq(configuration));
+    }
+  }
+
+  @Test
+  void shouldEnableTcpKeepAlive() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(IOReactorConfig.class);
+    Mockito.verify(builder).setIOReactorConfig(captor.capture());
+    Assertions.assertThat(captor.getValue().isSoKeepAlive()).isTrue();
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

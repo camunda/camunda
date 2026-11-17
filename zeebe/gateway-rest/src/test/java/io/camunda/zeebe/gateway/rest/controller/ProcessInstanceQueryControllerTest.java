@@ -33,11 +33,12 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -91,7 +92,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "tenant",
           "PI_123",
           Set.of("tag1", "tag2"),
-          "biz-id");
+          "biz-id",
+          null,
+          1001);
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -107,10 +110,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "startDate": "2024-01-01T00:00:00.000Z",
             "endDate": null,
             "state": "ACTIVE",
+            "suspendedDate": null,
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
-            "businessId": "biz-id"
+            "businessId": "biz-id",
+            "storageOrdinal": 1001
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -130,10 +135,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "endDate": null,
                   "state": "ACTIVE",
+                  "suspendedDate": null,
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
-                  "businessId": "biz-id"
+                  "businessId": "biz-id",
+                  "storageOrdinal": 1001
                 }
               ],
               "page": {
@@ -183,7 +190,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId"
+                  "tenantId": "tenantId",
+                  "storageOrdinal": 1001
                 }
               ],
               "page": {
@@ -220,11 +228,13 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-01-02T00:00:00Z"),
                       IncidentState.ACTIVE,
                       567L,
-                      "tenantId")))
+                      "tenantId",
+                      1001)))
           .startCursor("f")
           .endCursor("v")
           .build();
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
@@ -232,6 +242,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
+    org.mockito.Mockito.lenient()
+        .when(serviceRegistry.processInstanceServices(any()))
+        .thenReturn(processInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -571,7 +584,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, state, hasIncident, tenantId, businessId]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, suspendedDate, state, hasIncident, tenantId, businessId]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -763,6 +776,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "tenant",
             "PI_456",
             null,
+            null,
+            null,
             null);
     when(processInstanceServices.getByKey(eq(processInstanceKey), any(CamundaAuthentication.class)))
         .thenReturn(entityWithNullBusinessId);
@@ -782,10 +797,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "startDate": "2024-01-01T00:00:00.000Z",
               "endDate": null,
               "state": "ACTIVE",
+              "suspendedDate": null,
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
-              "businessId": null
+              "businessId": null,
+              "storageOrdinal": null
             }
             """;
 

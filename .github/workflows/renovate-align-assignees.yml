@@ -1,0 +1,95 @@
+# description: Collapses Renovate PRs that update the same dependency on different base branches onto a single assignee, so one engineer owns the whole bump instead of three reviewing a slice each.
+# test location: .github/scripts/align-renovate-assignees.test.mjs
+# type: CI Helper
+# owner: @camunda/engineering-operations
+
+---
+name: Renovate Align Assignees
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log the intended assignee changes without applying them'
+        type: boolean
+        default: false
+  # Self-test: a change to the reconciler runs it against live PRs in dry-run,
+  # with a read-only token (see the validate job), exercising the full workflow
+  # wiring on the PR branch — which schedule/workflow_dispatch cannot do before
+  # the workflow is on the default branch.
+  pull_request:
+    paths:
+      - '.github/workflows/renovate-align-assignees.yml'
+      - '.github/scripts/align-renovate-assignees.mjs'
+      - '.github/scripts/align-renovate-assignees.test.mjs'
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  # Real reconciliation — the only path with write access to PR assignees.
+  reconcile:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read # checkout
+      pull-requests: write # edit PR assignees
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Align assignees across sibling Renovate PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || 'false' }}
+        run: node .github/scripts/align-renovate-assignees.mjs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Self-test on PRs that change the reconciler. A read-only token means that
+  # even a regression bypassing the script's DRY_RUN guard cannot write to live
+  # PRs during validation — defense in depth, not relying on the flag alone.
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read # checkout
+      pull-requests: read # read-only: list PRs, never edit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dry-run the reconciler against live PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DRY_RUN: 'true'
+        run: node .github/scripts/align-renovate-assignees.mjs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

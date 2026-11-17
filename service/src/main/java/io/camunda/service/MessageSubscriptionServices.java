@@ -16,8 +16,9 @@ import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -29,12 +30,14 @@ public class MessageSubscriptionServices
   private final MessageSubscriptionSearchClient searchClient;
 
   public MessageSubscriptionServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MessageSubscriptionSearchClient searchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -52,6 +55,20 @@ public class MessageSubscriptionServices
                     securityContextProvider.provideSecurityContext(
                         authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
                 .searchMessageSubscriptions(query));
+  }
+
+  public MessageSubscriptionEntity getByKey(
+      final long key, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        RequiredAuthorization.withRequiredAuthorization(
+                            MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION,
+                            MessageSubscriptionEntity::processDefinitionId)))
+                .getMessageSubscription(key));
   }
 
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelated(

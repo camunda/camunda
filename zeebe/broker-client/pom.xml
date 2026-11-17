@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -14,6 +14,10 @@
   <packaging>jar</packaging>
 
   <name>Zeebe Broker Client</name>
+
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -27,8 +31,29 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-membership-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -38,7 +63,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
     </dependency>
 
     <dependency>
@@ -64,6 +89,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
     </dependency>
 
     <dependency>

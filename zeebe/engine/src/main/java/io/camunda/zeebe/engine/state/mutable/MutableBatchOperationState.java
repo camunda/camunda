@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk.ChunkItem;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
+import java.util.List;
 import java.util.Set;
 
 public interface MutableBatchOperationState extends BatchOperationState {
@@ -88,19 +90,28 @@ public interface MutableBatchOperationState extends BatchOperationState {
    *
    * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
    * @param itemKeys the set of itemKeys to add to the batch operation
-   * @deprecated Use {@link #addChunk(long, long, Set)}
+   * @deprecated Use {@link #addChunk(long, long, List)}
    */
   @Deprecated
   void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys);
 
   /**
-   * Adds a chunk of itemKeys to the given batch operation. The itemKeys are added to the end of the
-   * pending itemKeys.
+   * Adds a chunk of items to the given batch operation. The items are added to the end of the
+   * pending items, each with the storage ordinal its entity lives under.
    *
    * @param chunkKey the key of the chunk being added
-   * @param batchOperationKey the key of the batch operation to which the itemKeys should be added
-   * @param itemKeys the set of itemKeys to add to the batch operation
+   * @param batchOperationKey the key of the batch operation to which the items should be added
+   * @param items the items to add to the batch operation, in chunk order
    */
+  void addChunk(long chunkKey, long batchOperationKey, List<ChunkItem> items);
+
+  /**
+   * Adds a chunk of bare itemKeys, their storage ordinal is stored as 0.
+   *
+   * @deprecated since 8.11.0, kept for the chunk CREATED applier version 2, which must not change.
+   *     New code uses {@link #addChunk(long, long, List)}
+   */
+  @Deprecated(since = "8.11.0")
   void addChunk(long chunkKey, long batchOperationKey, Set<Long> itemKeys);
 
   /**

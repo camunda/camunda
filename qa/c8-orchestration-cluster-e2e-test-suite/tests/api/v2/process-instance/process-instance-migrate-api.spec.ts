@@ -68,9 +68,9 @@ test.describe.serial('Test process instance migrate API', () => {
 
     await test.step('Migrate process instance to version 2', async () => {
       const res = await request.post(
-        buildUrl(
-          `/process-instances/${localState.processInstanceKey}/migration`,
-        ),
+        buildUrl('/process-instances/{processInstanceKey}/migration', {
+          processInstanceKey: localState.processInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -139,9 +139,9 @@ test.describe.serial('Test process instance migrate API', () => {
 
     await test.step('Migrate process instance to version 2 to wrong task type', async () => {
       const res = await request.post(
-        buildUrl(
-          `/process-instances/${localState.processInstanceKey}/migration`,
-        ),
+        buildUrl('/process-instances/{processInstanceKey}/migration', {
+          processInstanceKey: localState.processInstanceKey,
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -164,7 +164,9 @@ test.describe.serial('Test process instance migrate API', () => {
   }) => {
     const invalidProcessInstanceKey = 'invalidKey';
     const res = await request.post(
-      buildUrl(`/process-instances/${invalidProcessInstanceKey}/migration`),
+      buildUrl('/process-instances/{processInstanceKey}/migration', {
+        processInstanceKey: invalidProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {},
@@ -181,7 +183,9 @@ test.describe.serial('Test process instance migrate API', () => {
   }) => {
     const processInstanceKey = 2251799813738499;
     const res = await request.post(
-      buildUrl(`/process-instances/${processInstanceKey}/migration`),
+      buildUrl('/process-instances/{processInstanceKey}/migration', {
+        processInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -207,7 +211,9 @@ test.describe.serial('Test process instance migrate API', () => {
   }) => {
     const processInstanceKey = 2251799813738499;
     const res = await request.post(
-      buildUrl(`/process-instances/${processInstanceKey}/migration`),
+      buildUrl('/process-instances/{processInstanceKey}/migration', {
+        processInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {
@@ -225,7 +231,9 @@ test.describe.serial('Test process instance migrate API', () => {
   test('Process instance migrate - Unauthorized', async ({request}) => {
     const processInstanceKey = 2251799813704885;
     const res = await request.post(
-      buildUrl(`/process-instances/${processInstanceKey}/migration`),
+      buildUrl('/process-instances/{processInstanceKey}/migration', {
+        processInstanceKey,
+      }),
       {
         // No auth headers
         headers: {
@@ -250,7 +258,9 @@ test.describe.serial('Test process instance migrate API', () => {
   }) => {
     const nonExistingProcessInstanceKey = 2251799813738499;
     const res = await request.post(
-      buildUrl(`/process-instances/${nonExistingProcessInstanceKey}/migration`),
+      buildUrl('/process-instances/{processInstanceKey}/migration', {
+        processInstanceKey: nonExistingProcessInstanceKey,
+      }),
       {
         headers: jsonHeaders(),
         data: {

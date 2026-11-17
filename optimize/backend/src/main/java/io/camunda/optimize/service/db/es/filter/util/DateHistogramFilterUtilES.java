@@ -188,19 +188,17 @@ public final class DateHistogramFilterUtilES {
                             FieldDateMath.of(
                                 f ->
                                     f.value(
-                                        (double)
-                                            start
-                                                .atZoneSameInstant(context.getTimezone())
-                                                .toInstant()
-                                                .toEpochMilli())))
+                                        start
+                                            .atZoneSameInstant(context.getTimezone())
+                                            .toInstant()
+                                            .toEpochMilli())))
                         .max(
                             FieldDateMath.of(
                                 f ->
                                     f.value(
-                                        (double)
-                                            filterEnd
-                                                .atZoneSameInstant(context.getTimezone())
-                                                .toInstant()
-                                                .toEpochMilli())))));
+                                        filterEnd
+                                            .atZoneSameInstant(context.getTimezone())
+                                            .toInstant()
+                                            .toEpochMilli())))));
   }
 }

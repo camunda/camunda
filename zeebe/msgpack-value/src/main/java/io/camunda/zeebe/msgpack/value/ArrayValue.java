@@ -89,7 +89,7 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   @Override
   public int hashCode() {
-    return Objects.hash(items);
+    return Objects.hashCode(items);
   }
 
   @Override

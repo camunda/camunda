@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing.state;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
@@ -136,7 +138,8 @@ public final class DbBackupRangeState {
    */
   public void updateRangeStart(final long oldStart, final long newStart) {
     rangeStartKey.wrapLong(oldStart);
-    final var endCheckpointId = rangesColumnFamily.get(rangeStartKey).getValue();
+    final var endCheckpointId =
+        requireNonNull(rangesColumnFamily.get(rangeStartKey), "range must exist").getValue();
     rangesColumnFamily.deleteExisting(rangeStartKey);
 
     rangeStartKey.wrapLong(newStart);

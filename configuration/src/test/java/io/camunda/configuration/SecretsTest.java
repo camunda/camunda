@@ -1,0 +1,1508 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Duration;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+
+@SpringJUnitConfig({UnifiedConfiguration.class, UnifiedConfigurationHelper.class})
+class SecretsTest {
+
+  /**
+   * The floor and the formula behind {@code camunda.secrets.max-concurrency}'s default, restated
+   * here rather than read from {@link Secrets}: the default is derived from the core count of
+   * whatever machine runs this, so a literal could only be pinned on one machine, and reading the
+   * production constant back would assert nothing. Restating it means a change to the formula has
+   * to be made here too, deliberately.
+   */
+  private static final int EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY = 8;
+
+  private static final int EXPECTED_DEFAULT_MAX_CONCURRENCY =
+      Math.max(
+          EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY, Runtime.getRuntime().availableProcessors() * 2);
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.stores.file.mystore.path=/etc/camunda/secrets.txt"})
+  class WithFileStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithFileStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindFileStorePath() {
+      // given the property camunda.secrets.stores.file.mystore.path is set (see
+      // @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named file store is present and its path is bound
+      assertThat(secrets.getStores().getFile()).containsKey("mystore");
+      assertThat(secrets.getStores().getFile().get("mystore").getPath())
+          .isEqualTo("/etc/camunda/secrets.txt");
+    }
+  }
+
+  @Nested
+  class WithoutFileStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutFileStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyFileMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then stores is non-null (field initializer) and the file map is empty
+      assertThat(secrets.getStores()).isNotNull();
+      assertThat(secrets.getStores().getFile()).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.aws-prod.region=eu-west-1",
+        "camunda.secrets.stores.aws.aws-prod.path-prefix=camunda/",
+        "camunda.secrets.stores.aws.aws-minimal.path-prefix=team/"
+      })
+  class WithAwsSecretsManagerStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithAwsSecretsManagerStoreConfigured(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindAwsSecretsManagerStoreProperties() {
+      // given the camunda.secrets.stores.aws.aws-prod.* properties are set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named store is present and its fields are bound
+      assertThat(secrets.getStores().getAws().get("aws-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.getRegion()).isEqualTo("eu-west-1");
+                assertThat(store.getPathPrefix()).isEqualTo("camunda/");
+              });
+    }
+
+    @Test
+    void shouldDefaultBatchingToDisabled() {
+      // given batch-enabled/batch-size are not set for aws-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then batching defaults to off, with the standard AWS batch size as an inert default
+      assertThat(secrets.getStores().getAws().get("aws-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.isBatchEnabled()).isFalse();
+                assertThat(store.getBatchSize()).isEqualTo(20);
+              });
+    }
+
+    @Test
+    void shouldDefaultContainerSecretIdToNull() {
+      // given container-secret-id is not set for aws-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it defaults to the flat one-secret-per-reference mode
+      assertThat(secrets.getStores().getAws().get("aws-prod").getContainerSecretId()).isNull();
+    }
+
+    @Test
+    void shouldBindMultipleStoresKeyedById() {
+      // given two aws stores are configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both store ids are present
+      assertThat(secrets.getStores().getAws()).containsKeys("aws-prod", "aws-minimal");
+    }
+
+    @Test
+    void shouldAllowOptionalRegion() {
+      // given aws-minimal has no region set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then region is null and path-prefix is still bound
+      assertThat(secrets.getStores().getAws().get("aws-minimal"))
+          .satisfies(
+              store -> {
+                assertThat(store.getRegion()).isNull();
+                assertThat(store.getPathPrefix()).isEqualTo("team/");
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.batched.batch-enabled=true",
+        "camunda.secrets.stores.aws.batched.batch-size=5"
+      })
+  class WithBatchingConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBatchingConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindBatchEnabledAndBatchSize() {
+      // given batch-enabled/batch-size are set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both are bound onto the named store
+      assertThat(secrets.getStores().getAws().get("batched"))
+          .satisfies(
+              store -> {
+                assertThat(store.isBatchEnabled()).isTrue();
+                assertThat(store.getBatchSize()).isEqualTo(5);
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.stores.aws.bundled.container-secret-id=app-config"})
+  class WithContainerSecretIdConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithContainerSecretIdConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindContainerSecretId() {
+      // given container-secret-id is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getAws().get("bundled").getContainerSecretId())
+          .isEqualTo("app-config");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.conflicted.batch-enabled=true",
+        "camunda.secrets.stores.aws.conflicted.container-secret-id=app-config"
+      })
+  class WithBatchingAndContainerSecretIdBothConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBatchingAndContainerSecretIdBothConfigured(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBatchEnabledWithContainerSecretId() {
+      // given batch-enabled and container-secret-id are both set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws, since the combination is contradictory
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.oversized.batch-size=50"})
+  class WithBatchSizeOutOfRange {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBatchSizeOutOfRange(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBatchSizeAboveAwsCap() {
+      // given batch-size is set above AWS's cap of 20 (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.blank.container-secret-id= "})
+  class WithBlankContainerSecretId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankContainerSecretId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankContainerSecretId() {
+      // given container-secret-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  class WithoutAwsSecretsManagerStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutAwsSecretsManagerStoreConfigured(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyAwsSecretsManagerMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the aws map is empty
+      assertThat(secrets.getStores().getAws()).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.gcp.gcp-prod.project-id=my-gcp-project",
+        "camunda.secrets.stores.gcp.gcp-prod.path-prefix=camunda-",
+        "camunda.secrets.stores.gcp.gcp-prod.endpoint=secretmanager.example.com:443",
+        "camunda.secrets.stores.gcp.gcp-minimal.project-id=minimal-project"
+      })
+  class WithGcpStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindGcpStoreProperties() {
+      // given the camunda.secrets.stores.gcp.gcp-prod.* properties are set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named store is present and its fields are bound
+      assertThat(secrets.getStores().getGcp().get("gcp-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.getProjectId()).isEqualTo("my-gcp-project");
+                assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+                assertThat(store.getEndpoint()).isEqualTo("secretmanager.example.com:443");
+              });
+    }
+
+    @Test
+    void shouldDefaultContainerSecretIdToNull() {
+      // given container-secret-id is not set for gcp-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it defaults to the flat one-secret-per-reference mode
+      assertThat(secrets.getStores().getGcp().get("gcp-prod").getContainerSecretId()).isNull();
+    }
+
+    @Test
+    void shouldBindMultipleStoresKeyedById() {
+      // given two gcp stores are configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both store ids are present
+      assertThat(secrets.getStores().getGcp()).containsKeys("gcp-prod", "gcp-minimal");
+    }
+
+    @Test
+    void shouldAllowOptionalPathPrefixAndEndpoint() {
+      // given gcp-minimal has only project-id set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then project-id is bound while the optional fields stay null
+      assertThat(secrets.getStores().getGcp().get("gcp-minimal"))
+          .satisfies(
+              store -> {
+                assertThat(store.getProjectId()).isEqualTo("minimal-project");
+                assertThat(store.getPathPrefix()).isNull();
+                assertThat(store.getEndpoint()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.gcp.bundled.project-id=my-gcp-project",
+        "camunda.secrets.stores.gcp.bundled.container-secret-id=app-config"
+      })
+  class WithGcpContainerSecretIdConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpContainerSecretIdConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindContainerSecretId() {
+      // given container-secret-id is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getGcp().get("bundled").getContainerSecretId())
+          .isEqualTo("app-config");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.project-id= "})
+  class WithBlankGcpProjectId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpProjectId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankProjectId() {
+      // given project-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("project-id must not be blank");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.endpoint= "})
+  class WithBlankGcpEndpoint {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpEndpoint(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankEndpoint() {
+      // given endpoint is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("endpoint must not be blank");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.blank.container-secret-id= "})
+  class WithBlankGcpContainerSecretId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankGcpContainerSecretId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankContainerSecretId() {
+      // given container-secret-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("container-secret-id must not be blank");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.no-project.path-prefix=camunda-"})
+  class WithGcpStoreWithoutProjectId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpStoreWithoutProjectId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldAllowOmittedProjectId() {
+      // given a gcp store with no project-id set (see @TestPropertySource): project-id is optional
+      // and resolved from the environment/metadata via Application Default Credentials
+      // when the unified configuration is bound and the validating getter is read
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the store binds without throwing and project-id stays null
+      assertThat(secrets.getStores().getGcp().get("no-project").getProjectId()).isNull();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.gcp.badprefix.path-prefix=camunda/"})
+  class WithGcpPathPrefixContainingInvalidChars {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpPathPrefixContainingInvalidChars(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectPathPrefixWithCharsOutsideSecretIdCharset() {
+      // given path-prefix contains a slash, invalid in a GCP secret id (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("path-prefix must contain only [a-zA-Z0-9_-]");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.stores.gcp.badcontainer.container-secret-id=app/config"})
+  class WithGcpContainerSecretIdContainingInvalidChars {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpContainerSecretIdContainingInvalidChars(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectContainerSecretIdWithCharsOutsideSecretIdCharset() {
+      // given container-secret-id contains a slash, invalid in a GCP secret id
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("container-secret-id must contain only [a-zA-Z0-9_-]");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // 256 'a's (4 x 64), one over the 255 GCP secret-id cap
+        "camunda.secrets.stores.gcp.toolong.container-secret-id="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      })
+  class WithGcpEffectiveContainerSecretIdTooLong {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpEffectiveContainerSecretIdTooLong(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectEffectiveContainerSecretIdOver255Chars() {
+      // given a 256-char container-secret-id, over the 255 GCP secret-id cap
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("must be at most 255 characters");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // path-prefix (64) + container-secret-id (192) = 256, one over the 255 cap, while each
+        // part alone is within it: exercises the combined "effective" length check
+        "camunda.secrets.stores.gcp.combined.path-prefix="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camunda.secrets.stores.gcp.combined.container-secret-id="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      })
+  class WithGcpEffectiveContainerSecretIdTooLongViaPrefix {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpEffectiveContainerSecretIdTooLongViaPrefix(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectWhenPathPrefixPlusContainerSecretIdExceeds255Chars() {
+      // given path-prefix + container-secret-id sum to 256, though neither alone exceeds 255
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws on the combined length
+      assertThatThrownBy(stores::getGcp)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("must be at most 255 characters");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // path-prefix (63) + container-secret-id (192) = 255, exactly at the cap: must bind cleanly
+        "camunda.secrets.stores.gcp.atlimit.path-prefix="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camunda.secrets.stores.gcp.atlimit.container-secret-id="
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      })
+  class WithGcpEffectiveContainerSecretIdAtLimit {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpEffectiveContainerSecretIdAtLimit(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldAllowEffectiveContainerSecretIdOfExactly255Chars() {
+      // given path-prefix + container-secret-id sum to exactly 255, the GCP secret-id cap
+      // when the unified configuration is bound and the validating getter is read
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the store binds without throwing
+      assertThat(secrets.getStores().getGcp().get("atlimit").getContainerSecretId()).hasSize(192);
+    }
+  }
+
+  @Nested
+  class WithoutGcpStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutGcpStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyGcpMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the gcp map is empty
+      assertThat(secrets.getStores().getGcp()).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.env.default.prefix=APP_SECRET_"})
+  class WithEnvStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEnvStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindEnvStorePrefix() {
+      // given the property camunda.secrets.stores.env.default.prefix is set (see
+      // @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named env store is present and its prefix is bound
+      assertThat(secrets.getStores().getEnv()).containsOnlyKeys("default");
+      assertThat(secrets.getStores().getEnv().get("default").getPrefix()).isEqualTo("APP_SECRET_");
+    }
+  }
+
+  @Nested
+  class WithoutEnvStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutEnvStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyEnvMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the env map is empty
+      assertThat(secrets.getStores().getEnv()).isEmpty();
+    }
+
+    @Test
+    void shouldTreatANullEnvStorePrefixAsEmpty() {
+      // given
+      final var store = new Secrets.EnvStore();
+
+      // when
+      store.setPrefix(null);
+
+      // then
+      assertThat(store.getPrefix()).isEmpty();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net",
+        "camunda.secrets.stores.azure.default.path-prefix=camunda-",
+        "camunda.secrets.stores.azure.default.container-secret-id=all-secrets",
+        "camunda.secrets.stores.azure.default.managed-identity-client-id=client-id",
+        "camunda.secrets.stores.azure.default.authority-host=https://login.microsoftonline.us",
+        "camunda.secrets.stores.azure.default.max-retries=5",
+        "camunda.secrets.stores.azure.default.call-timeout=10s",
+        "camunda.secrets.stores.azure.default.attempt-timeout=3s"
+      })
+  class WithAzureStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithAzureStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindEveryAzureStoreProperty() {
+      // given every camunda.secrets.stores.azure.default.* property is set (see
+      // @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named azure store is present with every property bound
+      assertThat(secrets.getStores().getAzure()).containsOnlyKeys("default");
+      final var store = secrets.getStores().getAzure().get("default");
+      assertThat(store.getVaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
+      assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+      assertThat(store.getContainerSecretId()).isEqualTo("all-secrets");
+      assertThat(store.getManagedIdentityClientId()).isEqualTo("client-id");
+      assertThat(store.getAuthorityHost()).isEqualTo("https://login.microsoftonline.us");
+      assertThat(store.getMaxRetries()).isEqualTo(5);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(3));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net"
+      })
+  class WithOnlyAzureVaultUrlConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithOnlyAzureVaultUrlConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultEveryAzureStorePropertyButTheVaultUrl() {
+      // given only the vault URL is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final var store =
+          unifiedConfiguration.getCamunda().getSecrets().getStores().getAzure().get("default");
+
+      // then every other property has its documented default
+      assertThat(store.getPathPrefix()).isNull();
+      assertThat(store.getContainerSecretId()).isNull();
+      assertThat(store.getManagedIdentityClientId()).isNull();
+      assertThat(store.getAuthorityHost()).isNull();
+      assertThat(store.getMaxRetries()).isEqualTo(3);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+
+    @Test
+    void shouldResetEveryDefaultedAzureStorePropertyToItsDefaultWhenSetToNull() {
+      // given a store with every defaulted property set away from its default
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setMaxRetries(7);
+      store.setCallTimeout(Duration.ofSeconds(30));
+      store.setAttemptTimeout(Duration.ofSeconds(9));
+
+      // when each is set to null, as an explicitly empty property binds
+      store.setMaxRetries(null);
+      store.setCallTimeout(null);
+      store.setAttemptTimeout(null);
+
+      // then each is back to its documented default rather than left unset
+      assertThat(store.getMaxRetries()).isEqualTo(3);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net",
+        "camunda.secrets.stores.azure.default.max-retries=",
+        "camunda.secrets.stores.azure.default.call-timeout=",
+        "camunda.secrets.stores.azure.default.attempt-timeout="
+      })
+  class WithEmptyAzureNumericProperties {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyAzureNumericProperties(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultsWhenTheValuesAreEmpty() {
+      // given explicitly empty retries and timeouts, which an env-var-driven deployment produces
+      // routinely (see @TestPropertySource)
+      // when the unified configuration is bound
+      final var store =
+          unifiedConfiguration.getCamunda().getSecrets().getStores().getAzure().get("default");
+
+      // then binding succeeds and keeps the defaults
+      assertThat(store.getMaxRetries()).isEqualTo(3);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
+  class AzureStoreValidation {
+
+    private static final String AZURE_STORE =
+        "camunda.physical-tenants.pt1.secrets.stores.azure.default";
+
+    static Stream<Arguments> invalidStores() {
+      return Stream.of(
+          invalid(
+              "blank container-secret-id",
+              s -> s.setContainerSecretId(" "),
+              "container-secret-id must not be blank"),
+          invalid(
+              "blank managed-identity-client-id",
+              s -> s.setManagedIdentityClientId(" "),
+              "managed-identity-client-id must not be blank"),
+          invalid(
+              "blank authority-host",
+              s -> s.setAuthorityHost(""),
+              "authority-host must not be blank"),
+          invalid(
+              "vault-url without a scheme",
+              s -> s.setVaultUrl("my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "plain-http vault-url",
+              s -> s.setVaultUrl("http://my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL with only a host and optional port, as"
+                  + " Azure Key Vault requires HTTPS"),
+          invalid(
+              "malformed vault-url",
+              s -> s.setVaultUrl("https://my vault"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "vault-url without a host",
+              s -> s.setVaultUrl("https:///"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "vault-url whose host has an underscore",
+              s -> s.setVaultUrl("https://my_vault.vault.azure.net"),
+              "vault-url must have a host name of only letters, digits, hyphens and dots"),
+          invalid(
+              "authority-host whose host has an underscore",
+              s -> s.setAuthorityHost("https://login_host.microsoftonline.us"),
+              "authority-host must have a host name of only letters, digits, hyphens and dots"),
+          invalid(
+              "vault-url with credentials",
+              s -> s.setVaultUrl("https://user:pass@my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL with only a host and optional port"),
+          invalid(
+              "vault-url with a path",
+              s -> s.setVaultUrl("https://my-vault.vault.azure.net/secrets"),
+              "vault-url must be an absolute https URL with only a host and optional port"),
+          invalid(
+              "vault-url with a query",
+              s -> s.setVaultUrl("https://my-vault.vault.azure.net?api-version=7.4"),
+              "vault-url must be an absolute https URL with only a host and optional port"),
+          invalid(
+              "authority-host without a scheme",
+              s -> s.setAuthorityHost("login.microsoftonline.us"),
+              "authority-host must be an absolute https URL"),
+          invalid(
+              "plain-http authority-host",
+              s -> s.setAuthorityHost("http://login.microsoftonline.us"),
+              "authority-host must be an absolute https URL"),
+          invalid(
+              "authority-host with credentials",
+              s -> s.setAuthorityHost("https://client:s3cr3t@login.microsoftonline.us"),
+              "authority-host must be an absolute https URL with only a host and optional port"),
+          invalid(
+              "authority-host with a fragment",
+              s -> s.setAuthorityHost("https://login.microsoftonline.us#s3cr3t"),
+              "authority-host must be an absolute https URL"),
+          invalid(
+              "path-prefix leaving no room for a secret name",
+              s -> s.setPathPrefix("p".repeat(127)),
+              "path-prefix must be at most 126 characters so a secret name fits after it, but was"
+                  + " 127"),
+          invalid(
+              "path-prefix outside the Key Vault charset",
+              s -> s.setPathPrefix("camunda/"),
+              "path-prefix must contain only [0-9A-Za-z-] to form valid Key Vault secret names,"
+                  + " but has an invalid character at index 7"),
+          invalid(
+              "container-secret-id outside the Key Vault charset",
+              s -> s.setContainerSecretId("all_secrets"),
+              "container-secret-id must contain only [0-9A-Za-z-] to form valid Key Vault secret"
+                  + " names, but has an invalid character at index 3"),
+          invalid(
+              "effective container secret name over 127 characters",
+              s -> {
+                s.setPathPrefix("p-");
+                s.setContainerSecretId("c".repeat(126));
+              },
+              "must be at most 127 characters, but was 128"),
+          invalid(
+              "negative max-retries", s -> s.setMaxRetries(-1), "max-retries must not be negative"),
+          invalid(
+              "zero call-timeout",
+              s -> s.setCallTimeout(Duration.ZERO),
+              "call-timeout must be positive"),
+          invalid(
+              "negative attempt-timeout",
+              s -> s.setAttemptTimeout(Duration.ofSeconds(-1)),
+              "attempt-timeout must be positive"),
+          invalid(
+              "attempt-timeout longer than call-timeout",
+              s -> {
+                s.setCallTimeout(Duration.ofSeconds(2));
+                s.setAttemptTimeout(Duration.ofSeconds(3));
+              },
+              "attempt-timeout must not be longer than .call-timeout"));
+    }
+
+    private static Arguments invalid(
+        final String description,
+        final Consumer<Secrets.AzureKeyVaultStore> misconfiguration,
+        final String expectedMessage) {
+      return Arguments.of(Named.of(description, misconfiguration), expectedMessage);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidStores")
+    void shouldRejectInvalidAzureStore(
+        final Consumer<Secrets.AzureKeyVaultStore> misconfiguration, final String expectedMessage) {
+      // given
+      final var store = new Secrets.AzureKeyVaultStore();
+      misconfiguration.accept(store);
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageStartingWith(AZURE_STORE)
+          .hasMessageContaining(expectedMessage)
+          .message()
+          .doesNotContain("s3cr3t");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"vault-url", "authority-host"})
+    void shouldNotExposeAMalformedUrlAnywhereInTheExceptionChain(final String setting) {
+      // given a malformed URL holding a pasted credential, which the URI parser rejects
+      final var pastedValue = "https://client:s3cr3t value";
+      final var store = new Secrets.AzureKeyVaultStore();
+      if ("vault-url".equals(setting)) {
+        store.setVaultUrl(pastedValue);
+      } else {
+        store.setAuthorityHost(pastedValue);
+      }
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage(
+              AZURE_STORE
+                  + "."
+                  + setting
+                  + " must be an absolute https URL with only a host and optional port, as Azure"
+                  + " Key Vault requires HTTPS")
+          .hasNoCause()
+          .satisfies(e -> assertThat(e.getSuppressed()).isEmpty());
+    }
+
+    @Test
+    void shouldCapTheDefaultAttemptTimeoutAtAShorterCallTimeout() {
+      // given only the call timeout, lowered below the 2s attempt-timeout default
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setCallTimeout(Duration.ofSeconds(1));
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(1));
+    }
+
+    @Test
+    void shouldStripWhitespaceAroundEveryStringSetting() {
+      // given values with surrounding whitespace, as quoting in YAML or an env var can leave
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl(" https://my-vault.vault.azure.net ");
+      store.setPathPrefix(" camunda- ");
+      store.setContainerSecretId(" bundle ");
+      store.setManagedIdentityClientId(" client-id ");
+      store.setAuthorityHost(" https://login.microsoftonline.us ");
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+      assertThat(store.getVaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
+      assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+      assertThat(store.getContainerSecretId()).isEqualTo("bundle");
+      assertThat(store.getManagedIdentityClientId()).isEqualTo("client-id");
+      assertThat(store.getAuthorityHost()).isEqualTo("https://login.microsoftonline.us");
+    }
+
+    @Test
+    void shouldNotEchoARejectedSecretNameSettingInTheMessage() {
+      // given a value pasted by mistake, e.g. a credential instead of an id
+      final var pastedValue = "client_secret=s3cr3t";
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setContainerSecretId(pastedValue);
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageEndingWith("invalid character at index 6")
+          .message()
+          .doesNotContain(pastedValue)
+          .doesNotContain("s3cr3t");
+    }
+
+    @Test
+    void shouldNotEchoAUrlWithCredentialsInTheMessage() {
+      // given a well-formed URL that carries credentials
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl("https://app:s3cr3t@my-vault.vault.azure.net");
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasNoCause()
+          .message()
+          .doesNotContain("s3cr3t");
+    }
+
+    @Test
+    void shouldAcceptSovereignCloudAndTrailingSlashUrls() {
+      // given a sovereign-cloud vault in the form the Azure portal shows, with a trailing slash
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl("https://my-vault.vault.usgovcloudapi.net/");
+      store.setAuthorityHost("https://login.microsoftonline.us:443/");
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptAzureStoreAtEveryBoundary() {
+      // given every validated value at the edge of what is allowed
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl(" https://my-vault.vault.azure.net/ ");
+      store.setAuthorityHost("HTTPS://login.microsoftonline.us");
+      store.setPathPrefix("");
+      store.setContainerSecretId("c".repeat(127));
+      store.setMaxRetries(0);
+      store.setCallTimeout(Duration.ofSeconds(2));
+      store.setAttemptTimeout(Duration.ofSeconds(2));
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptPathPrefixThatLeavesRoomForAOneCharacterSecretName() {
+      // given
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setPathPrefix("p".repeat(126));
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+    }
+  }
+
+  @Nested
+  class WithoutCacheConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutCacheConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultCacheTtlToTwentyMinutes() {
+      // given no camunda.secrets.cache.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the ttl is the documented default
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofMinutes(20));
+    }
+
+    @Test
+    void shouldDefaultCacheMaxSizeToOneThousand() {
+      // given no camunda.secrets.cache.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the max size is the documented default
+      assertThat(secrets.getCache().getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.cache.ttl=5m", "camunda.secrets.cache.max-size=50"})
+  class WithCacheConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithCacheConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindCacheTtlAndMaxSize() {
+      // given camunda.secrets.cache.ttl and .max-size are set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both values are bound
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofMinutes(5));
+      assertThat(secrets.getCache().getMaxSize()).isEqualTo(50);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl=2h"})
+  class WithCacheTtlCoarserThanMinutes {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithCacheTtlCoarserThanMinutes(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldAcceptCacheTtlCoarserThanMinutes() {
+      // given a ttl of two hours, which is a whole number of minutes
+      // when the unified configuration is bound and the validating getter is read
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it binds without throwing: minute granularity means a whole multiple of a minute, not
+      // a value that has to be expressed in minutes
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofHours(2));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl=30s"})
+  class WithSubMinuteCacheTtl {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithSubMinuteCacheTtl(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectCacheTtlBelowOneMinute() {
+      // given a ttl below the one-minute minimum
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then it is rejected with the property path
+      assertThatThrownBy(secrets::getCache)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.cache.ttl")
+          .hasMessageContaining("at least 1 minute");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl=90s"})
+  class WithNonMinuteGranularCacheTtl {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithNonMinuteGranularCacheTtl(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectCacheTtlThatIsNotAWholeNumberOfMinutes() {
+      // given a ttl above the minimum but not a whole number of minutes
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then the granularity rule rejects it, not the minimum
+      assertThatThrownBy(secrets::getCache)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.cache.ttl")
+          .hasMessageContaining("whole number of minutes");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.max-size=0"})
+  class WithZeroCacheMaxSize {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithZeroCacheMaxSize(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectCacheMaxSizeBelowOne() {
+      // given a max size below 1, which would cache nothing at all
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then it is rejected with the property path
+      assertThatThrownBy(secrets::getCache)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.cache.max-size")
+          .hasMessageContaining("at least 1");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.ttl="})
+  class WithEmptyCacheTtl {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyCacheTtl(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultTtlWhenTheValueIsEmpty() {
+      // given an explicitly empty ttl, which an env-var-driven deployment produces routinely
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the default is kept, so no null ever reaches the cache and the minimum is not tripped
+      assertThat(secrets.getCache().getTtl()).isEqualTo(Duration.ofMinutes(20));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.cache.max-size="})
+  class WithEmptyCacheMaxSize {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyCacheMaxSize(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultMaxSizeWhenTheValueIsEmpty() {
+      // given an explicitly empty max size, which an env-var-driven deployment produces routinely
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the default is kept rather than binding as 0, which the minimum would reject at
+      // startup
+      assertThat(secrets.getCache().getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Nested
+  class CacheDefaults {
+
+    @Test
+    void shouldKeepTheDefaultTtlWhenSetToNull() {
+      // given the default cache configuration
+      final Secrets.Cache cache = new Secrets.Cache();
+
+      // when a caller sets the ttl to null directly, which Spring's binder never does
+      cache.setTtl(null);
+
+      // then the default stands, so getTtl() keeps its NullMarked contract for the cache factory
+      assertThat(cache.getTtl()).isEqualTo(Duration.ofMinutes(20));
+    }
+
+    @Test
+    void shouldKeepTheDefaultMaxSizeWhenSetToNull() {
+      // given the default cache configuration
+      final Secrets.Cache cache = new Secrets.Cache();
+
+      // when a caller sets the max size to null directly
+      cache.setMaxSize(null);
+
+      // then the default stands, so getMaxSize() can keep handing an int to the cache factory
+      assertThat(cache.getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Nested
+  class WithoutMaxConcurrencyConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutMaxConcurrencyConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultMaxConcurrencyToTwicePerCoreAboveAFloor() {
+      // given no camunda.secrets.max-concurrency property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the max concurrency is the documented default, and never below the floor whatever
+      // core count the machine running this happens to report
+      assertThat(secrets.getMaxConcurrency())
+          .isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY)
+          .isGreaterThanOrEqualTo(EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.max-concurrency=3"})
+  class WithMaxConcurrencyConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithMaxConcurrencyConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindMaxConcurrency() {
+      // given camunda.secrets.max-concurrency is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound
+      assertThat(secrets.getMaxConcurrency()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.max-concurrency=0"})
+  class WithZeroMaxConcurrency {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithZeroMaxConcurrency(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectMaxConcurrencyBelowOne() {
+      // given a max concurrency below 1, which would resolve nothing at all
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // when the validating getter is read
+      // then it is rejected with the property path
+      assertThatThrownBy(secrets::getMaxConcurrency)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("camunda.secrets.max-concurrency")
+          .hasMessageContaining("at least 1");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.max-concurrency="})
+  class WithEmptyMaxConcurrency {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyMaxConcurrency(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultMaxConcurrencyWhenTheValueIsEmpty() {
+      // given an explicitly empty max concurrency, which an env-var-driven deployment produces
+      // routinely
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the default is kept rather than binding as 0, which the minimum would reject at
+      // startup
+      assertThat(secrets.getMaxConcurrency()).isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY);
+    }
+  }
+
+  @Nested
+  class MaxConcurrencyDefaults {
+
+    @Test
+    void shouldKeepTheDefaultMaxConcurrencyWhenSetToNull() {
+      // given the default secrets configuration
+      final Secrets secrets = new Secrets();
+
+      // when a caller sets max concurrency to null directly, which Spring's binder never does
+      secrets.setMaxConcurrency(null);
+
+      // then the default stands, so getMaxConcurrency() can keep handing an int to the pool
+      assertThat(secrets.getMaxConcurrency()).isEqualTo(EXPECTED_DEFAULT_MAX_CONCURRENCY);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.tuned.call-timeout=8s",
+        "camunda.secrets.stores.aws.tuned.attempt-timeout=3s",
+        "camunda.secrets.stores.gcp.tuned.project-id=my-project",
+        "camunda.secrets.stores.gcp.tuned.call-timeout=9s"
+      })
+  class WithStoreTimeoutsConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithStoreTimeoutsConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindAwsTimeouts() {
+      // given call-timeout/attempt-timeout are set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both are bound onto the named store
+      final var aws = secrets.getStores().getAws().get("tuned");
+      assertThat(aws.getCallTimeout()).isEqualTo(Duration.ofSeconds(8));
+      assertThat(aws.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(3));
+    }
+
+    @Test
+    void shouldBindGcpCallTimeout() {
+      // given call-timeout is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getGcp().get("tuned").getCallTimeout())
+          .isEqualTo(Duration.ofSeconds(9));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.untimed.region=eu-west-1"})
+  class WithoutStoreTimeoutsConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutStoreTimeoutsConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultAwsTimeouts() {
+      // given no timeout is configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the store is still bounded, so an unconfigured store cannot block indefinitely
+      final var aws = secrets.getStores().getAws().get("untimed");
+      assertThat(aws.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(aws.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.slow.call-timeout=0s"})
+  class WithNonPositiveCallTimeout {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithNonPositiveCallTimeout(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectNonPositiveCallTimeout() {
+      // given call-timeout is zero (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws.inverted.call-timeout=2s",
+        "camunda.secrets.stores.aws.inverted.attempt-timeout=5s"
+      })
+  class WithAttemptTimeoutWiderThanCallTimeout {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithAttemptTimeoutWiderThanCallTimeout(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectAttemptTimeoutWiderThanCallTimeout() {
+      // given an attempt bound wider than the total bound (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws, since the attempt bound could never take effect
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+}

@@ -15,7 +15,9 @@ import io.camunda.authentication.config.AbstractWebSecurityConfigTest;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -56,9 +58,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
       "camunda.security.authentication.oidc.prefer-id-token-claims=true",
     })
 public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebSecurityConfigTest {
@@ -71,7 +73,7 @@ public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebS
 
   @Autowired private OidcUserAuthenticationConverter converter;
 
-  @MockitoBean private TokenClaimsConverter tokenClaimsConverter;
+  @MockitoBean private LazyTokenClaimsConverter tokenClaimsConverter;
 
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
@@ -132,7 +134,7 @@ public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebS
       RequestContextHolder.resetRequestAttributes();
     }
 
-    // then — TokenClaimsConverter receives the userInfo-merged principal attributes,
+    // then — LazyTokenClaimsConverter receives the userInfo-merged principal attributes,
     // including the userInfo-only claim that mapping rules need to match against.
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);

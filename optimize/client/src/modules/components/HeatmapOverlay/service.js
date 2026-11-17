@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import HeatmapJS from 'heatmap.js';
+import * as HeatmapJS from 'heatmap.js';
 import {createRoot} from 'react-dom/client';
 
 const SEQUENCEFLOW_RADIUS = 30;

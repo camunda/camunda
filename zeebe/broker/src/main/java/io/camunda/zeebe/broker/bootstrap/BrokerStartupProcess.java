@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -34,7 +34,7 @@ public final class BrokerStartupProcess {
 
     final var brokerStepMetrics = new BrokerStepMetrics(context.getMeterRegistry());
 
-    final var undecoratedSteps = buildStartupSteps(brokerStartupContext.getBrokerConfiguration());
+    final var undecoratedSteps = buildStartupSteps(brokerStartupContext);
 
     final var decoratedSteps =
         undecoratedSteps.stream()
@@ -43,7 +43,9 @@ public final class BrokerStartupProcess {
     startupProcess = new StartupProcess<>(LOG, decoratedSteps);
   }
 
-  private List<StartupStep<BrokerStartupContext>> buildStartupSteps(final BrokerCfg config) {
+  private List<StartupStep<BrokerStartupContext>> buildStartupSteps(
+      final BrokerStartupContext startupContext) {
+    final var config = startupContext.getBrokerConfiguration();
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
     result.add(new ClusterServicesStep());
@@ -56,16 +58,19 @@ public final class BrokerStartupProcess {
 
     result.add(new ApiMessagingServiceStep());
     result.add(new RequestIdGeneratorStep());
+    result.add(new RebalanceCoordinatorStep());
     result.add(new GatewayBrokerTransportStep());
-    result.add(new CommandApiServiceStep());
 
     if (config.getGateway().isEnable()) {
       result.add(new EmbeddedGatewayServiceStep());
     }
 
     result.add(new JobStreamServiceStep());
-    result.add(new SnapshotApiServiceStep());
-    result.add(new PartitionManagerStep());
+    result.add(new PartitionGroupMigrationStep());
+    result.add(new RocksDbResourcesStep());
+    for (final String physicalTenantId : startupContext.getPhysicalTenantIds().known()) {
+      result.add(new PartitionManagerStep(physicalTenantId));
+    }
     result.add(new BrokerAdminServiceStep());
     result.add(new CheckpointSchedulerServiceStep());
 
@@ -112,8 +117,9 @@ public final class BrokerStartupProcess {
         bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
         bsc.getEmbeddedGatewayService(),
-        bsc.getPartitionManager(),
-        bsc.getBrokerAdminService(),
+        bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
+        bsc.getPartitionManagers(),
+        bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getApiMessagingService());
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.service;
 
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -18,8 +18,8 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,12 +39,18 @@ public final class DecisionInstanceServices
   private final DecisionInstanceSearchClient decisionInstanceSearchClient;
 
   public DecisionInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityHandler,
       final DecisionInstanceSearchClient decisionInstanceSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    super(brokerClient, securityHandler, executorProvider, brokerRequestAuthorizationConverter);
+    super(
+        physicalTenantId,
+        brokerClient,
+        securityHandler,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.decisionInstanceSearchClient = decisionInstanceSearchClient;
   }
 
@@ -84,7 +90,7 @@ public final class DecisionInstanceServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             DECISION_INSTANCE_READ_AUTHORIZATION,
                             DecisionInstanceEntity::decisionDefinitionId)))
                 .getDecisionInstance(decisionInstanceId));

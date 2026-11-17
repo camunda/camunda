@@ -195,12 +195,42 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
+  it('preserves element matching semantics for mixed process states', () => {
+    const body: Body = buildMutationRequestBody({
+      searchParams: createSearchParams({
+        elementId: 'taskA',
+        active: 'true',
+        completed: 'true',
+      }),
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        $or: [
+          {
+            elementId: {$eq: 'taskA'},
+            elementInstanceState: {$eq: 'ACTIVE'},
+            state: {$eq: 'ACTIVE'},
+            hasIncident: false,
+          },
+          {
+            elementId: {$eq: 'taskA'},
+            state: {$eq: 'COMPLETED'},
+            hasIncident: false,
+          },
+        ],
+      },
+    });
+  });
+
   it('maps additional filter fields to request body', () => {
     const searchParams = createSearchParams({
       elementId: 'taskA',
       errorMessage: 'some error',
       tenantId: 'tenant-xyz',
-      batchOperationId: 'batch-123',
+      batchOperationKey: 'batch-123',
       parentProcessInstanceKey: 'parent-456',
       hasRetriesLeft: 'true',
       incidentErrorHashCode: '37136123613781',
@@ -219,7 +249,7 @@ describe('buildMutationRequestBody', () => {
         elementInstanceState: {$eq: 'ACTIVE'},
         errorMessage: {$in: ['some error']},
         tenantId: {$eq: 'tenant-xyz'},
-        batchOperationId: {$eq: 'batch-123'},
+        batchOperationKey: {$eq: 'batch-123'},
         parentProcessInstanceKey: {$eq: 'parent-456'},
         hasRetriesLeft: true,
         incidentErrorHashCode: 37136123613781,
@@ -381,7 +411,7 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('maps variable name and values to variables array from context', () => {
+  it('maps conditions to variables array', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
@@ -390,15 +420,18 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'foo',
-        values: '"a","b"',
-      },
+      conditions: [
+        {name: 'foo', operator: 'equals', value: '"a"'},
+        {name: 'bar', operator: 'notEqual', value: '"b"'},
+      ],
     });
 
     expect(body).toEqual({
       filter: {
-        variables: [{name: 'foo', value: {$in: ['"a"', '"b"']}}],
+        variables: [
+          {name: 'foo', value: {$eq: '"a"'}},
+          {name: 'bar', value: {$neq: '"b"'}},
+        ],
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
       },
@@ -467,7 +500,7 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('adds single variable', () => {
+  it('adds single condition as equals', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
@@ -476,10 +509,7 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'status',
-        values: '"pending"',
-      },
+      conditions: [{name: 'status', operator: 'equals', value: '"pending"'}],
     });
 
     expect(body).toEqual({
@@ -489,14 +519,14 @@ describe('buildMutationRequestBody', () => {
         variables: [
           {
             name: 'status',
-            value: '"pending"',
+            value: {$eq: '"pending"'},
           },
         ],
       },
     });
   });
 
-  it('adds multiple variable values with $in operator', () => {
+  it('adds oneOf condition with $in operator', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
@@ -505,10 +535,13 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'status',
-        values: '"pending","active","completed"',
-      },
+      conditions: [
+        {
+          name: 'status',
+          operator: 'oneOf',
+          value: '["pending","active","completed"]',
+        },
+      ],
     });
 
     expect(body).toEqual({

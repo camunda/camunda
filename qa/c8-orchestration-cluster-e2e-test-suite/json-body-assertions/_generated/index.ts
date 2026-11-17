@@ -14,6 +14,39 @@ import {
 import type {PlaywrightAPIResponse} from 'assert-json-body';
 
 export const RESPONSE_INDEX = {
+  '/agent-definitions/{agentDefinitionKey}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/agent-definitions/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/agent-instances': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/agent-instances/{agentInstanceKey}': {
+    GET: {
+      '200': 1,
+    },
+    PATCH: {
+      '200': 1,
+    },
+  },
+  '/agent-instances/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/agent-instances/{agentInstanceKey}/history/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/audit-logs/search': {
     POST: {
       '200': 1,
@@ -26,6 +59,11 @@ export const RESPONSE_INDEX = {
   },
   '/authentication/me': {
     GET: {
+      '200': 1,
+    },
+  },
+  '/authentication/me/authorizations/search': {
+    POST: {
       '200': 1,
     },
   },
@@ -44,6 +82,42 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/backups/runtime': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/backups/runtime/state': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/backups/runtime/state/sync': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/backups/runtime/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/backups/history': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/backups/history/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
   '/batch-operation-items/search': {
     POST: {
       '200': 1,
@@ -56,6 +130,16 @@ export const RESPONSE_INDEX = {
   },
   '/batch-operations/{batchOperationKey}': {
     GET: {
+      '200': 1,
+    },
+  },
+  '/clock': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/clock/add': {
+    POST: {
       '200': 1,
     },
   },
@@ -161,6 +245,11 @@ export const RESPONSE_INDEX = {
       '201': 1,
     },
   },
+  '/element-instances/wait-states/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/element-instances/search': {
     POST: {
       '200': 1,
@@ -176,8 +265,18 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/exporting': {
+    GET: {
+      '200': 1,
+    },
+  },
   '/expression/evaluation': {
     POST: {
+      '200': 1,
+    },
+  },
+  '/forms/{formKey}': {
+    GET: {
       '200': 1,
     },
   },
@@ -263,6 +362,11 @@ export const RESPONSE_INDEX = {
     },
   },
   '/jobs/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/jobs/batch-update': {
     POST: {
       '200': 1,
     },
@@ -360,6 +464,11 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/process-definitions/{processDefinitionKey}/variable-names/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/process-definitions/statistics/process-instances-by-version': {
     POST: {
       '200': 1,
@@ -395,7 +504,17 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/process-instances/resumption': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/process-instances/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/process-instances/suspension': {
     POST: {
       '200': 1,
     },
@@ -430,7 +549,22 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/process-instances/{processInstanceKey}/statistics/wait-states': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/resources/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/resources/{resourceKey}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/resources/{resourceKey}/content': {
     GET: {
       '200': 1,
     },
@@ -474,6 +608,16 @@ export const RESPONSE_INDEX = {
     },
   },
   '/roles/{roleId}/users/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/secrets/resolve': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/secrets/list': {
     POST: {
       '200': 1,
     },
@@ -542,6 +686,103 @@ export const RESPONSE_INDEX = {
     },
   },
   '/topology': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/mode': {
+    PATCH: {
+      '200': 1,
+    },
+  },
+  '/restore': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/cluster/v2/exporting': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+      '400': 1,
+      '409': 1,
+      '500': 1,
+      '502': 1,
+      '503': 1,
+      '504': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime/state': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime/state/sync': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/runtime/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/backups/history': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+  },
+  '/cluster/v2/backups/history/{backupId}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/mode': {
+    PATCH: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/rebalance': {
+    GET: {
+      '200': 1,
+    },
+    POST: {
+      '202': 1,
+    },
+    DELETE: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/restore': {
+    POST: {
+      '202': 1,
+    },
+  },
+  '/cluster/v2/status': {
+    GET: {
+      '200': 1,
+      '503': 1,
+    },
+  },
+  '/cluster/v2/status/upgrade': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/cluster/v2/topology': {
     GET: {
       '200': 1,
     },
@@ -638,6 +879,7 @@ export function validateResponseShape<
     configPath?: string;
     throw?: boolean;
     record?: boolean | {label?: string};
+    truncateValidationErrors?: boolean;
   },
 ) {
   // Cast to base signature (method/status widened to string) for internal call.
@@ -665,6 +907,7 @@ export function validateResponse<
     configPath?: string;
     throw?: boolean;
     record?: boolean | {label?: string};
+    truncateValidationErrors?: boolean;
   },
 ) {
   return _baseValidateResponse(spec, response, options);

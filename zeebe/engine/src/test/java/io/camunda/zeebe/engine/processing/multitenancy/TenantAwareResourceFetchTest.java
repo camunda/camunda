@@ -13,7 +13,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -53,18 +54,19 @@ public class TenantAwareResourceFetchTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               config -> {
-                config.getMultiTenancy().setChecksEnabled(true);
                 config
                     .getInitialization()
                     .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email")));
               })
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(USERNAME))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(USERNAME)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private CommandResponseWriter mockCommandResponseWriter;
   private ResourceRecord resourceResponse;

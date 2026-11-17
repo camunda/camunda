@@ -55,7 +55,7 @@ test.describe('Search Message Subscription API Tests', () => {
   });
 
   test('Search Subscriptions Unauthorized', async ({request}) => {
-    const res = await request.post(buildUrl(`/message-subscriptions/search`), {
+    const res = await request.post(buildUrl('/message-subscriptions/search'), {
       headers: {},
       data: {filter: {name: state.name}},
     });

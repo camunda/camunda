@@ -40,19 +40,19 @@ const correlateMessageResponseBodySchema = z.object({
 });
 type CorrelateMessageResponseBody = z.infer<typeof correlateMessageResponseBodySchema>;
 
-const publishMessage: Endpoint = {
+const publishMessage = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/messages/publication`;
+		return `/${API_VERSION}/messages/publication` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const correlateMessage: Endpoint = {
+const correlateMessage = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/messages/correlation`;
+		return `/${API_VERSION}/messages/correlation` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 export {
 	publishMessage,

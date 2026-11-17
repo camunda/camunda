@@ -766,7 +766,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                         bucket.aggregations().get(AGG_STATS).extendedStats();
                     statsByFlowNodeId.put(flowNodeId, statsAgg);
 
-                    if (statsAgg.stdDeviation() != 0.0D) {
+                    if (statsAgg.stdDeviation() != null && statsAgg.stdDeviation() != 0.0D) {
                       double stdDeviationBoundLower = statsAgg.stdDeviationBounds().lower();
                       double stdDeviationBoundHigher = statsAgg.stdDeviationBounds().upper();
                       final double average = statsAgg.avg();
@@ -876,7 +876,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                   final FindingsDto finding = new FindingsDto();
                   finding.setTotalCount(stats.count());
 
-                  if (stats.stdDeviation() != 0.0D
+                  if (stats.stdDeviation() != null
+                      && stats.stdDeviation() != 0.0D
                       && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId))
                           != null) {
                     final Aggregate flowNodeFilterAgg =
@@ -986,10 +987,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
             .aggregations()
             .get(AGG_STATS)
             .stats();
+    if (stats.count() == 0 || stats.min() == null || stats.max() == null) {
+      return 1L;
+    }
     final double min = stats.min();
     final double max = stats.max();
 
-    if (max == min || stats.count() == 0) {
+    if (max == min) {
       // in case there is no distribution fallback to an interval of 1 as 0 is not a valid interval
       return 1L;
     } else {

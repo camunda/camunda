@@ -35,6 +35,8 @@ public interface JobSort extends SearchRequestSort<JobSort> {
 
   JobSort retries();
 
+  JobSort priority();
+
   JobSort jobKey();
 
   JobSort type();

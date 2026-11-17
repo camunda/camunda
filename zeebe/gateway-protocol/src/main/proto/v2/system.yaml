@@ -7,6 +7,12 @@ paths:
       tags:
         - System
       operationId: getUsageMetrics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: READ_USAGE_METRIC }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get usage metrics
       description: Retrieve the usage metrics based on given criteria.
       parameters:
@@ -78,11 +84,16 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
   /system/configuration:
     get:
       tags:
         - System
       operationId: getSystemConfiguration
+      x-required-permissions: []
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       summary: System configuration (alpha)
       description: |
@@ -108,11 +119,24 @@ paths:
                       maxJobTypeLength: 100
                       maxTenantIdLength: 30
                       maxUniqueKeys: 9500
+                    components:
+                      active: ["operate", "tasklist"]
+                    deployment:
+                      isMultiTenancyEnabled: false
+                      isTenantsApiEnabled: false
+                      maxRequestSize: 4194304
+                    authentication:
+                      canLogout: true
+                      isLoginDelegated: false
+                      isCamundaGroupsEnabled: true
+                    cloud:
+                      stage: "prod"
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 
 ## Schema definitions
@@ -168,9 +192,30 @@ components:
       type: object
       required:
         - jobMetrics
+        - components
+        - deployment
+        - authentication
+        - cloud
       properties:
         jobMetrics:
           $ref: '#/components/schemas/JobMetricsConfigurationResponse'
+        components:
+          $ref: '#/components/schemas/ComponentsConfigurationResponse'
+        deployment:
+          $ref: '#/components/schemas/DeploymentConfigurationResponse'
+        authentication:
+          $ref: '#/components/schemas/AuthenticationConfigurationResponse'
+        cloud:
+          $ref: '#/components/schemas/CloudConfigurationResponse'
+      x-properties-added-in-version:
+        - propertyName: components
+          addedInVersion: "8.10"
+        - propertyName: deployment
+          addedInVersion: "8.10"
+        - propertyName: authentication
+          addedInVersion: "8.10"
+        - propertyName: cloud
+          addedInVersion: "8.10"
 
     JobMetricsConfigurationResponse:
       description: Configuration for job metrics collection and export.
@@ -211,4 +256,96 @@ components:
           type: integer
           format: int32
           example: 9500
+
+    ComponentsConfigurationResponse:
+      description: Configuration for active Camunda components in the deployment.
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          description: List of webapp components whose UI is enabled in this deployment.
+          type: array
+          items:
+            $ref: '#/components/schemas/WebappComponent'
+          example: ["operate", "tasklist"]
+
+    DeploymentConfigurationResponse:
+      description: Configuration for deployment characteristics.
+      type: object
+      required:
+        - isMultiTenancyEnabled
+        - isTenantsApiEnabled
+        - maxRequestSize
+      properties:
+        isMultiTenancyEnabled:
+          description: Whether multi-tenancy is enabled.
+          type: boolean
+          example: false
+        isTenantsApiEnabled:
+          description: Whether the tenants management API and UI are enabled.
+          type: boolean
+          example: false
+        maxRequestSize:
+          description: The maximum HTTP request size in bytes.
+          type: integer
+          format: int64
+          example: 4194304
+      x-properties-added-in-version:
+        - propertyName: isTenantsApiEnabled
+          addedInVersion: "8.11"
+
+    AuthenticationConfigurationResponse:
+      description: Configuration for authentication and session management.
+      type: object
+      required:
+        - canLogout
+        - isLoginDelegated
+        - isCamundaGroupsEnabled
+      properties:
+        canLogout:
+          description: Whether users can log out (false for SaaS deployments).
+          type: boolean
+          example: true
+        isLoginDelegated:
+          description: Whether login is delegated to an external identity provider.
+          type: boolean
+          example: false
+        isCamundaGroupsEnabled:
+          description: Whether Camunda manages group membership locally, as opposed to delegating it to the identity provider via a groups claim.
+          type: boolean
+          example: true
+      x-properties-added-in-version:
+        - propertyName: isCamundaGroupsEnabled
+          addedInVersion: "8.11"
+
+    CloudConfigurationResponse:
+      description: Configuration for SaaS/cloud-specific settings.
+      type: object
+      required:
+        - stage
+      properties:
+        stage:
+          description: The cloud deployment stage.
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CloudStage'
+          example: "prod"
+
+    WebappComponent:
+      description: A Camunda webapp component name.
+      type: string
+      enum:
+        - operate
+        - tasklist
+        - admin
+
+    CloudStage:
+      description: The cloud deployment stage.
+      type: string
+      enum:
+        - dev
+        - int
+        - prod
 

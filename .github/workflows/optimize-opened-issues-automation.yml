@@ -19,7 +19,7 @@ jobs:
 
       - name: Generate a GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
           github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
@@ -48,7 +48,7 @@ jobs:
           gh issue edit ${{ github.event.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
 
       - name: Update Status field - On Hold
-        uses: github/update-project-action@af4f6083118f5080c89828b421ef598d1906fb60 # main
+        uses: github/update-project-action@d0031a4f8081c4bf4438d7ce2fa5cf1136610c7a # main
         if: contains(github.event.issue.labels.*.name, 'kind/bug')
         with:
           github_token: ${{ steps.github-token.outputs.token }}

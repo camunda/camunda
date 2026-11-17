@@ -14,31 +14,18 @@ import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPP
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
-import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.EngineJob;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.processing.engine.EngineJob;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.webapp.WebappModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -49,7 +36,6 @@ import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -71,46 +57,21 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         TestStandaloneApplication<TestCamundaApplication> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
-  private final Camunda unifiedConfig;
-  private final CamundaSecurityProperties securityConfig;
   private final boolean isGatewayEnabled = true;
 
   public TestCamundaApplication() {
     super(
-        // Unified Configuration classes
-        UnifiedConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        TasklistPropertiesOverride.class,
-        OperatePropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        BrokerBasedPropertiesOverride.class,
-        PrimaryStorageBackupPropertiesOverride.class,
-        // ---
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
-        TasklistModuleConfiguration.class,
+        WebappModuleConfiguration.class,
         IdentityModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
         IndexTemplateDescriptorsConfigurator.class);
 
-    unifiedConfig = new Camunda();
-
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
 
     // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
     // for local development; also lower the watermarks for local testing
@@ -134,47 +95,40 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
 
-    securityConfig = new CamundaSecurityProperties();
-    securityConfig.getAuthorizations().setEnabled(false);
-    securityConfig.getAuthentication().setUnprotectedApi(true);
-    securityConfig
+    unifiedConfig.getSecurity().getAuthorizations().setEnabled(false);
+    unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
-        .getUsers()
-        .add(
-            new ConfiguredUser(
-                InitializationConfiguration.DEFAULT_USER_USERNAME,
-                InitializationConfiguration.DEFAULT_USER_PASSWORD,
-                InitializationConfiguration.DEFAULT_USER_NAME,
-                InitializationConfiguration.DEFAULT_USER_EMAIL));
-    securityConfig
+        .setUsers(
+            List.of(
+                new ConfiguredUser(
+                    InitializationConfiguration.DEFAULT_USER_USERNAME,
+                    InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                    InitializationConfiguration.DEFAULT_USER_NAME,
+                    InitializationConfiguration.DEFAULT_USER_EMAIL)));
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
-        .getMappingRules()
-        .add(
-            new ConfiguredMappingRule(
-                DEFAULT_MAPPING_RULE_ID,
-                DEFAULT_MAPPING_RULE_CLAIM_NAME,
-                DEFAULT_MAPPING_RULE_CLAIM_VALUE));
-    securityConfig
+        .setMappingRules(
+            List.of(
+                new ConfiguredMappingRule(
+                    DEFAULT_MAPPING_RULE_ID,
+                    DEFAULT_MAPPING_RULE_CLAIM_NAME,
+                    DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
+    unifiedConfig
+        .getSecurity()
         .getInitialization()
-        .getDefaultRoles()
-        .put(
-            "admin",
+        .setDefaultRoles(
             Map.of(
-                "users",
-                List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
-                "mappingRules",
-                List.of(DEFAULT_MAPPING_RULE_ID)));
+                "admin",
+                Map.of(
+                    "users",
+                    List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
+                    "mappingRules",
+                    List.of(DEFAULT_MAPPING_RULE_ID))));
 
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class)
-        .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
-        .withProperty(
-            AuthenticationProperties.API_UNPROTECTED,
-            securityConfig.getAuthentication().getUnprotectedApi())
-        .withProperty(
-            "camunda.security.authorizations.enabled",
-            securityConfig.getAuthorizations().isEnabled())
-        .withAdditionalProfile(Profile.BROKER)
+    withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
         .withAdditionalProfile(Profile.ADMIN)
@@ -200,14 +154,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   }
 
   @Override
-  public TestCamundaApplication withProperty(final String key, final Object value) {
-    // Since the security config is not constructed from the properties, we need to manually update
-    // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
-    return super.withProperty(key, value);
-  }
-
-  @Override
   protected SpringApplicationBuilder createSpringBuilder() {
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the
@@ -222,7 +168,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   public TestCamundaApplication withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
-    withProperty("camunda.security.authorizations.enabled", true);
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
@@ -233,13 +178,11 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   public TestCamundaApplication withMultiTenancyEnabled() {
     withAuthenticatedAccess();
-    withProperty("camunda.security.multiTenancy.checksEnabled", true);
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
   }
 
   public TestCamundaApplication withMultiTenancyDisabled() {
     withAuthenticatedAccess();
-    withProperty("camunda.security.multiTenancy.checksEnabled", false);
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(false));
   }
 
@@ -250,7 +193,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
+    return MemberId.from(
+        unifiedConfig.getCluster().getZone(), unifiedConfig.getCluster().getNodeId());
   }
 
   @Override
@@ -271,12 +215,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   }
 
   @Override
-  public TestCamundaApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
-  @Override
   public URI grpcAddress() {
     if (!isGateway()) {
       throw new IllegalStateException(
@@ -289,17 +227,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public GatewayHealthActuator gatewayHealth() {
     throw new UnsupportedOperationException("Brokers do not support the gateway health indicators");
-  }
-
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure and is the primary way to read/configure the test broker.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  public Camunda unifiedConfig() {
-    return unifiedConfig;
   }
 
   /**
@@ -324,7 +251,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         data -> {
           final var unifiedExporter =
               data.getExporters()
-                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
+                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.data.Exporter());
           unifiedExporter.setClassName(tempExporterCfg.getClassName());
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
           unifiedExporter.setArgs(tempExporterCfg.getArgs());
@@ -334,7 +261,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public TestCamundaApplication withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 
@@ -344,8 +270,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
    */
   @Override
   public TestCamundaApplication withSecurityConfig(
-      final Consumer<CamundaSecurityProperties> modifier) {
-    modifier.accept(securityConfig);
+      final Consumer<CamundaSecurityLibraryProperties> modifier) {
+    modifier.accept(unifiedConfig.getSecurity());
     return this;
   }
 

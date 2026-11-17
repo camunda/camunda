@@ -9,11 +9,13 @@ package io.camunda.zeebe.util.health;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.collect.ImmutableMap;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A health report of a {@link #getComponentName() component}. If the status is not healthy, the
@@ -28,8 +30,8 @@ import java.util.Optional;
 public record HealthReport(
     String componentName,
     HealthStatus status,
-    HealthIssue issue,
-    ImmutableMap<String, HealthReport> children) {
+    @Nullable HealthIssue issue,
+    Map<String, HealthReport> children) {
   public static final Comparator<HealthReport> COMPARATOR =
       (a, b) -> HealthStatus.COMPARATOR.compare(a.status, b.status);
 
@@ -37,21 +39,22 @@ public record HealthReport(
     requireNonNull(componentName, "componentName cannot be null");
     requireNonNull(status, "status cannot be null");
     requireNonNull(children, "children cannot be null");
+    children = Collections.unmodifiableMap(new LinkedHashMap<>(children));
   }
 
   private HealthReport(
       final HealthMonitorable component,
       final HealthStatus status,
-      final HealthIssue issue,
+      final @Nullable HealthIssue issue,
       final Map<String, HealthReport> children) {
-    this(component.componentName(), status, issue, ImmutableMap.copyOf(children));
+    this(component.componentName(), status, issue, children);
   }
 
   public static Optional<HealthReport> fromChildrenStatus(
       final String componentName, final Map<String, HealthReport> children) {
     // Create a defensive copy to avoid ConcurrentModificationException when
     // the original map is modified while iterating over the HealthReport
-    final var childrenSnapshot = ImmutableMap.copyOf(children);
+    final var childrenSnapshot = Collections.unmodifiableMap(new LinkedHashMap<>(children));
     final var worstReport = childrenSnapshot.values().stream().max(COMPARATOR);
     return worstReport.map(
         report ->
@@ -59,23 +62,23 @@ public record HealthReport(
   }
 
   public static HealthReport unknown(final String componentName) {
-    return new HealthReport(componentName, HealthStatus.UNHEALTHY, null, ImmutableMap.of());
+    return new HealthReport(componentName, HealthStatus.UNHEALTHY, null, Map.of());
   }
 
   public static HealthReport healthy(final HealthMonitorable component) {
-    return new HealthReport(component, HealthStatus.HEALTHY, null, ImmutableMap.of());
+    return new HealthReport(component, HealthStatus.HEALTHY, null, Map.of());
   }
 
   public static HealthReport unhealthy(final HealthMonitorable component) {
-    return new HealthReport(component, HealthStatus.UNHEALTHY, null, ImmutableMap.of());
+    return new HealthReport(component, HealthStatus.UNHEALTHY, null, Map.of());
   }
 
   public static HealthReport dead(final HealthMonitorable component) {
-    return new HealthReport(component, HealthStatus.DEAD, null, ImmutableMap.of());
+    return new HealthReport(component, HealthStatus.DEAD, null, Map.of());
   }
 
   public static HealthReport fromStatus(
-      final HealthStatus status, final HealthMonitorable component) {
+      final @Nullable HealthStatus status, final HealthMonitorable component) {
     return switch (status) {
       case HEALTHY -> HealthReport.healthy(component);
       case UNHEALTHY -> HealthReport.unhealthy(component);
@@ -108,7 +111,7 @@ public record HealthReport(
     return status;
   }
 
-  public HealthIssue getIssue() {
+  public @Nullable HealthIssue getIssue() {
     return issue;
   }
 

@@ -46,15 +46,20 @@ public final class DatabaseConstants {
   public static final String METADATA_INDEX_NAME = "metadata";
   public static final String UPDATE_LOG_ENTRY_INDEX_NAME = "update-log";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
+  public static final String WEB_SESSION_INDEX_NAME = "web-session";
+  public static final String JOB_REGISTRY_INDEX_NAME = "job-registry";
   public static final String TENANT_INDEX_NAME = "tenant";
   public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
   public static final String PROCESS_OVERVIEW_INDEX_NAME = "process-overview";
+  public static final String BUSINESS_VALUE_TARGET_INDEX_NAME = "business-value-target";
+  public static final String BUSINESS_VALUE_OVERVIEW_INDEX_NAME = "business-value-overview";
   public static final String INSTANT_DASHBOARD_INDEX_NAME = "instant-dashboard";
   public static final String ZEEBE_PROCESS_DEFINITION_INDEX_NAME = "process";
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
   public static final String ZEEBE_USER_TASK_INDEX_NAME = "user-task";
+  public static final String ZEEBE_AGENT_INSTANCE_INDEX_NAME = "agent-instance";
   public static final String VARIABLE_UPDATE_INSTANCE_INDEX_NAME = "variable-update-instance";
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
   public static final String SETTINGS_INDEX_NAME = "settings";
@@ -65,6 +70,8 @@ public final class DatabaseConstants {
   public static final String INDEX_SUFFIX = "-000001";
   public static final String INDEX = "_index";
   public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
+  public static final String CONCURRENT_SNAPSHOT_EXECUTION_EXCEPTION_TYPE =
+      "concurrent_snapshot_execution_exception";
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE =
       "resource_already_exists_exception";
@@ -77,7 +84,19 @@ public final class DatabaseConstants {
   public static final String ZEEBE_DATA_SOURCE = "zeebe";
   public static final String INGESTED_DATA_SOURCE = "ingested";
   // Aggregation constants
+  public static final String AGGREGATION_FIELD_KEY = "_key";
+  public static final String DATE_AGGREGATION = "dateAggregation";
+  public static final String ELEMENT_AGGREGATION = "elementAggregation";
+  public static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
+  public static final String FILTERED_USER_TASKS_AGGREGATION = "userTasksFilterAggregation";
   public static final String FREQUENCY_AGGREGATION = "_frequency";
+  public static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION = "groupedByFlowNodeIdAggregation";
+  public static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
+  public static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
+  public static final String PROCESS_DEFINITION_KEY_AGGREGATION = "processDefinitionKeyAgg";
+  public static final String PROCESS_DEFINITION_VERSION_AGGREGATION = "processDefinitionVersionAgg";
+  public static final String VERSION_BASELINE_AGGREGATION = "versionBaselineAgg";
+  public static final String VERSION_FOR_SORTING_AGGREGATION = "versionForSorting";
   // Units
   public static final String GB_UNIT = "gb";
 

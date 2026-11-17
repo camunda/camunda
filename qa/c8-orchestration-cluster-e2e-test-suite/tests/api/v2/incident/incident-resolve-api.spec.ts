@@ -85,7 +85,9 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
 
     await test.step('Update element instance variables', async () => {
       const updateRes = await request.put(
-        buildUrl(`/element-instances/${elementInstanceKey['key']}/variables`),
+        buildUrl('/element-instances/{elementInstanceKey}/variables', {
+          elementInstanceKey: elementInstanceKey['key'],
+        }),
         {
           headers: jsonHeaders(),
           data: {
@@ -100,7 +102,7 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
 
     await test.step('Resolve Incident', async () => {
       const resolveRes = await request.post(
-        buildUrl(`/incidents/${incidentKey}/resolution`),
+        buildUrl('/incidents/{incidentKey}/resolution', {incidentKey}),
         {
           headers: jsonHeaders(),
         },
@@ -145,7 +147,9 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
     await expect(async () => {
       const someWrongValue = '9675540027';
       const res = await request.post(
-        buildUrl(`/incidents/${someWrongValue}/resolution`),
+        buildUrl('/incidents/{incidentKey}/resolution', {
+          incidentKey: someWrongValue,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -162,7 +166,9 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
     await expect(async () => {
       const someInvalidValue = 'meow';
       const res = await request.post(
-        buildUrl(`/incidents/${someInvalidValue}/resolution`),
+        buildUrl('/incidents/{incidentKey}/resolution', {
+          incidentKey: someInvalidValue,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -179,7 +185,9 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
     const someNotExistingValue = '9999999999999999';
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/incidents/${someNotExistingValue}/resolution`),
+        buildUrl('/incidents/{incidentKey}/resolution', {
+          incidentKey: someNotExistingValue,
+        }),
         {
           headers: {
             'Content-Type': 'application/json',
@@ -201,13 +209,16 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
     const jobKey = await activateJobToObtainAValidJobKey(request, 'test-fail');
 
     await test.step('Fail job to create incident', async () => {
-      const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-        headers: jsonHeaders(),
-        data: {
-          retries: 0,
-          errorMessage: 'Simulated failure',
+      const failRes = await request.post(
+        buildUrl('/jobs/{jobKey}/failure', {jobKey}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            retries: 0,
+            errorMessage: 'Simulated failure',
+          },
         },
-      });
+      );
       await assertStatusCode(failRes, 204);
     });
 
@@ -254,18 +265,23 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
     const incidentKeyValue = incidentKey['key'];
 
     await test.step('Update job to create additional retry', async () => {
-      const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-        headers: jsonHeaders(),
-        data: {
-          changeset: {retries: 1},
+      const updateRes = await request.patch(
+        buildUrl('/jobs/{jobKey}', {jobKey}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            changeset: {retries: 1},
+          },
         },
-      });
+      );
       await assertStatusCode(updateRes, 204);
     });
 
     await test.step('Resolve Incident', async () => {
       const resolveRes = await request.post(
-        buildUrl(`/incidents/${incidentKeyValue}/resolution`),
+        buildUrl('/incidents/{incidentKey}/resolution', {
+          incidentKey: incidentKeyValue,
+        }),
         {
           headers: jsonHeaders(),
         },

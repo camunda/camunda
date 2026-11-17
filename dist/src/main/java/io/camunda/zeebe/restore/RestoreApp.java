@@ -9,33 +9,43 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
+import io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
+import io.camunda.zeebe.restore.validation.RestoreValidator;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
-import java.time.Instant;
-import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.IntFunction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.WebApplicationType;
@@ -47,11 +57,7 @@ import org.springframework.context.annotation.Import;
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.restore"})
 @Import(
     value = {
-      // Unified Configuration classes
-      UnifiedConfigurationHelper.class,
-      UnifiedConfiguration.class,
-      BrokerBasedPropertiesOverride.class,
-      RestorePropertiesOverride.class,
+      UnifiedConfigurationModule.class,
       WorkingDirectoryConfiguration.class,
       // RDBMS Configuration - conditional on secondary storage type being RDBMS.
       // When active, provides ExporterPositionMapper for RDBMS-aware restore.
@@ -61,36 +67,31 @@ import org.springframework.context.annotation.Import;
 public class RestoreApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
+
   private final BrokerCfg configuration;
-  private final BackupStore backupStore;
+  private final PhysicalTenantBrokerConfigurations physicalTenantConfigurations;
+  private final PhysicalTenantRestoreEnvironments physicalTenantRestoreEnvironments;
+  private final PhysicalTenantBackupStores backupStores;
+  private final RestoreArguments arguments;
 
-  @Value("${backupId:#{null}}")
-  // Parsed from commandline Eg:-`--backupId=100` (optional, mutually exclusive with from/to)
-  private long @Nullable [] backupId;
+  private final Map<String, ExporterPositionMapper> exporterPositionMappers;
 
-  @Value("${from:#{null}}")
-  // Parsed from commandline Eg:-`--from=2024-01-01T10:00:00Z` (optional, requires --to)
-  @Nullable
-  private Instant from;
-
-  @Value("${to:#{null}}")
-  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, can be omitted when `--from`
-  // is specified)
-  @Nullable
-  private Instant to;
-
-  @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
   private final PostRestoreAction postRestoreAction;
   private final PreRestoreAction preRestoreAction;
+  private final Camunda camunda;
 
   @Autowired
   public RestoreApp(
       final Camunda camunda,
       final BrokerBasedProperties configuration,
-      final BackupStore backupStore,
-      @Nullable @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
+      final PhysicalTenantBrokerConfigurations physicalTenantConfigurations,
+      final PhysicalTenantRestoreEnvironments physicalTenantRestoreEnvironments,
+      final PhysicalTenantBackupStores backupStores,
+      final RestoreArguments arguments,
+      @Nullable @Autowired(required = false)
+          final Map<String, RdbmsMapperBundle> rdbmsMapperBundleMap,
       final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
@@ -99,13 +100,17 @@ public class RestoreApp implements ApplicationRunner {
       final DataDirectoryProvider dataDirectoryProvider,
       final PostRestoreAction postRestoreAction,
       final PreRestoreAction preRestoreAction) {
+    this.camunda = camunda;
     this.configuration = configuration;
-    this.backupStore = backupStore;
-    if (exporterPositionMapper == null
-        && camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
-      throw new IllegalStateException("RDBMS-aware restore requires ExporterPositionMapper");
-    }
-    this.exporterPositionMapper = exporterPositionMapper;
+    this.physicalTenantConfigurations = physicalTenantConfigurations;
+    this.physicalTenantRestoreEnvironments = physicalTenantRestoreEnvironments;
+    this.backupStores = backupStores;
+    this.arguments = arguments;
+    exporterPositionMappers =
+        usesRdbms()
+            ? exporterPositionMappers(
+                physicalTenantConfigurations.physicalTenantIds(), rdbmsMapperBundleMap)
+            : Map.of();
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
     this.postRestoreAction = postRestoreAction;
@@ -140,115 +145,215 @@ public class RestoreApp implements ApplicationRunner {
 
   @Override
   public void run(final ApplicationArguments args) throws Exception {
-    validateParameters();
+    final var selectionPerTenant =
+        arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
+    final var partitionRestoresPerTenant = validateParameters(selectionPerTenant);
+    final var restoredPartitionCounts = partitionCounts(partitionRestoresPerTenant);
+    final var targetDataPolicy =
+        arguments.targetDataPolicy(physicalTenantConfigurations.physicalTenantIds().size() > 1);
+    final var recreatesTopology =
+        ClusterRestore.shouldRewriteTopologyFile(
+            targetDataPolicy,
+            selectionPerTenant
+                .keySet()
+                .containsAll(physicalTenantConfigurations.physicalTenantIds()));
 
-    final var restoreId = getRestoreId();
+    final var restoreId = getRestoreId(selectionPerTenant);
     final var preRestoreActionResult =
         preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
 
-    try (final var restoreManager =
-        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
+    final var clusterRestore = new ClusterRestore(configuration, restoreTargets(), meterRegistry);
 
-      final PostRestoreActionContext postRestoreActionContext;
-      if (!preRestoreActionResult.skipRestore()) {
-        if (backupId != null) {
-          restoreFromBackupList(restoreManager, backupId);
-        } else if (hasTimeRange()) {
-          restoreFromTimeRange(restoreManager);
-        } else if (exporterPositionMapper != null) {
-          restoreRDBMSWithoutTimeRange(restoreManager);
-        }
-        postRestoreActionContext =
-            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
-      } else {
-        LOG.info("Skipping restore: {}", preRestoreActionResult.message());
-        postRestoreActionContext =
-            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
-      }
-      // We have to run post restore anyway even if post restore action decided to skip restore,
-      // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
-      // complete restore.
-      postRestoreAction.restored(postRestoreActionContext);
-    }
-  }
-
-  private void restoreFromTimeRange(final RestoreManager restoreManager)
-      throws IOException, ExecutionException, InterruptedException {
-    LOG.info(
-        "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-        from,
-        to,
-        restoreConfiguration);
-    restoreManager.restore(
-        from,
-        to,
-        restoreConfiguration.validateConfig(),
-        restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
-  }
-
-  private void restoreRDBMSWithoutTimeRange(final RestoreManager restoreManager)
-      throws IOException, ExecutionException, InterruptedException {
-    LOG.info(
-        "Starting to restore from backups without a time range with the following configuration: {}",
-        restoreConfiguration);
-    restoreManager.restore(
-        null,
-        null,
-        restoreConfiguration.validateConfig(),
-        restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backups in time range");
-  }
-
-  private void restoreFromBackupList(final RestoreManager restoreManager, final long[] backupIds)
-      throws Exception {
-    LOG.info(
-        "Starting to restore from backup {} with the following configuration: {}",
-        backupIds,
-        restoreConfiguration);
-    restoreManager.restore(
-        backupIds,
-        restoreConfiguration.validateConfig(),
-        restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backup {}", backupIds);
-  }
-
-  private void validateParameters() {
-    final boolean hasBackupId = hasBackupId();
-    final boolean hasTimeRange = hasTimeRange();
-
-    if (hasBackupId && hasTimeRange) {
-      throw new IllegalArgumentException(
-          "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
-    }
-
-    if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
-      throw new IllegalArgumentException(
-          "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
-    }
-  }
-
-  private boolean hasTimeRange() {
-    return from != null || to != null;
-  }
-
-  private boolean hasBackupId() {
-    return backupId != null && backupId.length > 0;
-  }
-
-  private String getRestoreId() {
-    if (hasBackupId()) {
-      return String.valueOf(Arrays.hashCode(backupId));
-    } else if (hasTimeRange()) {
-      return String.valueOf(Objects.hash(from, to));
+    final PostRestoreActionContext postRestoreActionContext;
+    if (!preRestoreActionResult.skipRestore()) {
+      restore(clusterRestore, partitionRestoresPerTenant, targetDataPolicy);
+      postRestoreActionContext =
+          new PostRestoreActionContext(
+              restoreId,
+              configuration.getCluster().getNodeId(),
+              false,
+              selectionPerTenant.keySet(),
+              restoredPartitionCounts,
+              recreatesTopology);
     } else {
-      return "latest";
+      LOG.info("Skipping restore: {}", preRestoreActionResult.message());
+      postRestoreActionContext =
+          new PostRestoreActionContext(
+              restoreId,
+              configuration.getCluster().getNodeId(),
+              true,
+              selectionPerTenant.keySet(),
+              restoredPartitionCounts,
+              recreatesTopology);
     }
+    // We have to run post restore anyway even if post restore action decided to skip restore,
+    // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
+    // complete restore.
+    postRestoreAction.restored(postRestoreActionContext);
+  }
+
+  private static Map<String, ExporterPositionMapper> exporterPositionMappers(
+      final Set<String> physicalTenantIds,
+      final @Nullable Map<String, RdbmsMapperBundle> rdbmsMapperBundleMap) {
+    final Map<String, ExporterPositionMapper> mappers = new LinkedHashMap<>();
+    for (final var physicalTenantId : physicalTenantIds) {
+      final var bundle =
+          rdbmsMapperBundleMap == null ? null : rdbmsMapperBundleMap.get(physicalTenantId);
+      if (bundle == null) {
+        throw new IllegalStateException(
+            "RDBMS-aware restore requires an ExporterPositionMapper for physical tenant '%s'"
+                .formatted(physicalTenantId));
+      }
+      mappers.put(physicalTenantId, bundle.exporterPositionMapper());
+    }
+    return Map.copyOf(mappers);
+  }
+
+  private boolean usesRdbms() {
+    return camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms;
+  }
+
+  /** What each physical tenant is restored from. */
+  private Map<String, PhysicalTenantRestoreTarget> restoreTargets() {
+    final Map<String, PhysicalTenantRestoreTarget> targets = new LinkedHashMap<>();
+    physicalTenantConfigurations
+        .configurations()
+        .forEach(
+            (physicalTenantId, tenantConfiguration) ->
+                targets.put(
+                    physicalTenantId,
+                    new PhysicalTenantRestoreTarget(
+                        tenantConfiguration,
+                        () -> backupStores.forPhysicalTenant(physicalTenantId))));
+    return targets;
+  }
+
+  private void restore(
+      final ClusterRestore clusterRestore,
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant,
+      final TargetDataPolicy targetDataPolicy)
+      throws IOException, ExecutionException, InterruptedException {
+    LOG.info(
+        "Starting to restore physical tenants {} with the following configuration: {}",
+        partitionRestoresPerTenant.keySet(),
+        restoreConfiguration);
+    clusterRestore.restore(
+        partitionRestoresPerTenant,
+        targetDataPolicy,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored physical tenants {}", partitionRestoresPerTenant.keySet());
+  }
+
+  /**
+   * Validates the restore against every targeted physical tenant, each with its own selection,
+   * database type, continuous-backup setting, partition count, backup store and exported positions.
+   * All of them are validated before any data is touched: a restore that cannot succeed for one
+   * tenant must not leave the others restored, since a run's data is deleted on failure and the
+   * cluster would otherwise come up with a partial set of tenants.
+   *
+   * @return what each partition of each tenant is restored from, as resolved by the validation.
+   *     Their partitions are the ones to restore, which can be fewer than are configured when the
+   *     cluster was scaled up since the backups were taken.
+   */
+  private Map<String, Map<Integer, PartitionRestore>> validateParameters(
+      final Map<String, RestoreSelection> selectionPerTenant) {
+    final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant =
+        new LinkedHashMap<>();
+    selectionPerTenant.forEach(
+        (physicalTenantId, selection) -> {
+          final var environment =
+              physicalTenantRestoreEnvironments.forPhysicalTenant(physicalTenantId);
+          final var restoreRequest =
+              new RestoreRequest(
+                  physicalTenantId,
+                  new TenantRestoreArguments(
+                      selection.toRestoreParameters(),
+                      environment.databaseType(),
+                      environment.continuousBackups()),
+                  false);
+          final var validator =
+              new RestoreValidator(
+                  physicalTenantConfigurations
+                      .forPhysicalTenant(physicalTenantId)
+                      .getCluster()
+                      .getPartitionsCount(),
+                  backupStores.forPhysicalTenant(physicalTenantId),
+                  exportedPositionSupplier(physicalTenantId));
+          final var result = validator.validate(restoreRequest);
+          if (result.isLeft()) {
+            throw (RuntimeException) result.getLeft();
+          }
+          partitionRestoresPerTenant.put(physicalTenantId, result.get().partitions());
+        });
+    return partitionRestoresPerTenant;
+  }
+
+  private static Map<String, Integer> partitionCounts(
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant) {
+    final Map<String, Integer> partitionCounts = new LinkedHashMap<>();
+    partitionRestoresPerTenant.forEach(
+        (physicalTenantId, partitions) -> partitionCounts.put(physicalTenantId, partitions.size()));
+    return partitionCounts;
+  }
+
+  private @Nullable IntFunction<@Nullable Long> exportedPositionSupplier(
+      final String physicalTenantId) {
+    final var mapper = exporterPositionMappers.get(physicalTenantId);
+    if (mapper == null) {
+      return null;
+    }
+    return partition ->
+        Optional.ofNullable(mapper.findOne(partition))
+            .map(ExporterPositionModel::lastExportedPosition)
+            .orElse(null);
+  }
+
+  /**
+   * Identifies this restore so the pre- and post-restore actions can recognize the same request
+   * across nodes — with dynamic node ids they wait for each other under this id.
+   *
+   * <p>Derived from the whole selection, ordered, so every node computes the same id from the same
+   * arguments, and two runs that restore different tenants or different backups do not share one.
+   * {@code RestoreSelection} is a record over a {@code List<Long>} and two {@code Instant}s, all of
+   * whose hash codes are specified, so the value is stable across JVMs.
+   */
+  @VisibleForTesting
+  static String getRestoreId(final Map<String, RestoreSelection> selectionPerTenant) {
+    final var ordered = new TreeMap<>(selectionPerTenant);
+    final var tenants = String.join("+", ordered.keySet());
+    final var namesNothing =
+        selectionPerTenant.values().stream()
+            .noneMatch(selection -> selection.hasBackupIds() || selection.hasTimeRange());
+    // The tenants are in the id even when no backup is named — an RDBMS restore, whose point comes
+    // from the exported positions. Without them every such run shares one id, and the S3
+    // coordination would see a completed restore of one tenant as covering a later run for a
+    // different one: that run is skipped, and the directories already on disk let the post-restore
+    // check pass while the requested restore never happened.
+    return namesNothing ? "latest-" + tenants : tenants + "-" + ordered.hashCode();
   }
 
   public record PreRestoreActionResult(boolean skipRestore, String message) {}
 
-  public record PostRestoreActionContext(String restoreId, int nodeId, boolean skippedRestore) {}
+  /**
+   * @param restoredPhysicalTenantIds the physical tenants this run restored. Post-restore
+   *     validation checks these and no others: a run restoring one tenant of a multi-tenant cluster
+   *     leaves the rest as they were, and demanding restored data for them would fail every partial
+   *     restore.
+   * @param restoredPartitionCounts the number of partitions restored for each of those tenants, the
+   *     partition count of their backups. Post-restore validation expects restored data for no more
+   *     partitions than that, even when the configuration holds more.
+   * @param recreatedTopology whether the restore recreated the topology for the restored partition
+   *     counts, which then also decide which partitions each broker holds, rather than the
+   *     configured ones
+   */
+  public record PostRestoreActionContext(
+      String restoreId,
+      int nodeId,
+      boolean skippedRestore,
+      Set<String> restoredPhysicalTenantIds,
+      Map<String, Integer> restoredPartitionCounts,
+      boolean recreatedTopology) {}
 
   public interface PreRestoreAction {
     PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)

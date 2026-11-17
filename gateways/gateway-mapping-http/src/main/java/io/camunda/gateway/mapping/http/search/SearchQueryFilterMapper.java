@@ -29,20 +29,34 @@ import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
+import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.GroupFilterFields;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
+import io.camunda.gateway.protocol.model.MappingRuleFilterFields;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.ResourceFilter;
+import io.camunda.gateway.protocol.model.RoleFilterFields;
+import io.camunda.gateway.protocol.model.RoleUserFilterRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserFilterFields;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
+import io.camunda.search.filter.AgentDefinitionFilter;
+import io.camunda.search.filter.AgentInstanceFilter;
+import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
@@ -51,6 +65,8 @@ import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.DeployedResourceFilter;
+import io.camunda.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
@@ -71,11 +87,13 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
@@ -84,6 +102,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 public class SearchQueryFilterMapper {
@@ -91,7 +110,8 @@ public class SearchQueryFilterMapper {
   public static Either<List<String>, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsFilter(
           final long processDefinitionKey,
-          final io.camunda.gateway.protocol.model.ProcessDefinitionStatisticsFilter filter) {
+          final io.camunda.gateway.protocol.model.@Nullable ProcessDefinitionStatisticsFilter
+              filter) {
     final List<String> validationErrors = new ArrayList<>();
 
     final Either<List<String>, ProcessDefinitionStatisticsFilter.Builder> builder =
@@ -120,7 +140,7 @@ public class SearchQueryFilterMapper {
 
   private static Either<List<String>, ProcessDefinitionStatisticsFilter.Builder>
       toBaseProcessInstanceFilterFields(
-          final long processDefinitionKey, final BaseProcessInstanceFilterFields filter) {
+          final long processDefinitionKey, final @Nullable BaseProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -175,6 +195,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getIncidentErrorHashCode())
           .map(mapToIntegerOperations("incidentErrorHashCode", validationErrors))
           .ifPresent(builder::incidentErrorHashCodeOperations);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFilters(filter.getVariables());
@@ -189,7 +212,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, JobFilter> toJobFilter(
-      final io.camunda.gateway.protocol.model.JobFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobFilter filter) {
     final var builder = FilterBuilders.job();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -245,6 +268,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getRetries())
           .map(mapToIntegerOperations("retries", validationErrors))
           .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getPriority())
+          .map(mapToIntegerOperations("priority", validationErrors))
+          .ifPresent(builder::priorityOperations);
       ofNullable(filter.getCreationTime())
           .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
           .ifPresent(builder::creationTimeOperations);
@@ -259,7 +285,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, DecisionInstanceFilter> toDecisionInstanceFilter(
-      final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionInstanceFilter filter) {
     final var builder = FilterBuilders.decisionInstance();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -285,6 +311,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       ofNullable(filter.getElementInstanceKey())
           .map(mapToKeyOperations("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
@@ -317,7 +346,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, VariableFilter> toVariableFilter(
-      final io.camunda.gateway.protocol.model.VariableFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable VariableFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.variable().build());
     }
@@ -344,14 +373,27 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static ClusterVariableFilter toClusterVariableFilter(
-      final ClusterVariableSearchQueryFilterRequest filter) {
+  static Either<List<String>, VariableFilter> toVariableNameFilter(
+      final long processDefinitionKey, final @Nullable ProcessDefinitionVariableNameFilter filter) {
+    final var builder = FilterBuilders.variable().processDefinitionKeys(processDefinitionKey);
 
-    if (filter == null) {
-      return FilterBuilders.clusterVariable().build();
+    if (filter != null) {
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     }
 
+    return Either.right(builder.build());
+  }
+
+  static Either<List<String>, ClusterVariableFilter> toClusterVariableFilter(
+      final @Nullable ClusterVariableSearchQueryFilterRequest filter) {
+
     final var builder = FilterBuilders.clusterVariable();
+
+    if (filter == null) {
+      return Either.right(builder.build());
+    }
+
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
@@ -360,12 +402,18 @@ public class SearchQueryFilterMapper {
         .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    ofNullable(filter.getMetadata())
+        .map(metadata -> ClusterVariableMapper.toMetadataValueFilters(metadata, validationErrors))
+        .ifPresent(builder::metadataOperations);
+    ofNullable(filter.getKind()).map(mapToStringOperations()).ifPresent(builder::kindOperations);
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static BatchOperationFilter toBatchOperationFilter(
-      final io.camunda.gateway.protocol.model.BatchOperationFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable BatchOperationFilter filter) {
     final var builder = FilterBuilders.batchOperation();
 
     if (filter != null) {
@@ -392,7 +440,7 @@ public class SearchQueryFilterMapper {
 
   static Either<List<String>, io.camunda.search.filter.BatchOperationItemFilter>
       toBatchOperationItemFilter(
-          final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
+          final io.camunda.gateway.protocol.model.@Nullable BatchOperationItemFilter filter) {
     final var builder = FilterBuilders.batchOperationItem();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -420,7 +468,9 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, GlobalJobStatisticsFilter> toGlobalJobStatisticsFilter(
-      final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+      final @Nullable OffsetDateTime from,
+      final @Nullable OffsetDateTime to,
+      final @Nullable String jobType) {
     final var builder = FilterBuilders.globalJobStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -444,7 +494,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobTypeStatisticsFilter> toJobTypeStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobTypeStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobTypeStatisticsFilter filter) {
     final var builder = FilterBuilders.jobTypeStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -469,7 +519,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobWorkerStatisticsFilter> toJobWorkerStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobWorkerStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobWorkerStatisticsFilter filter) {
     final var builder = FilterBuilders.jobWorkerStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -496,7 +546,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobTimeSeriesStatisticsFilter> toJobTimeSeriesStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobTimeSeriesStatisticsFilter filter) {
     final var builder = FilterBuilders.jobTimeSeriesStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -526,7 +576,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobErrorStatisticsFilter> toJobErrorStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobErrorStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobErrorStatisticsFilter filter) {
     final var builder = FilterBuilders.jobErrorStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -560,7 +610,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
-      final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -577,18 +627,21 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
       ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
+      ofNullable(filter.getState())
+          .map(state -> ProcessDefinitionState.valueOf(state.name()))
+          .ifPresent(builder::state);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);
   }
 
-  static OffsetDateTime toOffsetDateTime(final String text) {
+  static @Nullable OffsetDateTime toOffsetDateTime(final @Nullable String text) {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
-      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceFilter filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
@@ -599,7 +652,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
-      final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionInstanceFilter filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
@@ -609,8 +662,19 @@ public class SearchQueryFilterMapper {
     return toDecisionInstanceFilter(filter);
   }
 
+  public static Either<List<String>, JobFilter> toRequiredJobFilter(
+      final io.camunda.gateway.protocol.model.@Nullable JobFilter filter) {
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.equals(SearchQueryRequestMapper.EMPTY_JOB_FILTER)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+    return toJobFilter(filter);
+  }
+
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
-      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceFilter filter) {
     final List<String> validationErrors = new ArrayList<>();
 
     final Either<List<String>, Builder> builder = toProcessInstanceFilterFields(filter);
@@ -637,7 +701,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, Builder> toProcessInstanceFilterFields(
-      final ProcessInstanceFilterFields filter) {
+      final @Nullable ProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -676,6 +740,9 @@ public class SearchQueryFilterMapper {
               mapToStringOperations("state", validationErrors, new ProcessInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
+      ofNullable(filter.getSuspendedDate())
+          .map(mapToOffsetDateTimeOperations("suspendedDate", validationErrors))
+          .ifPresent(builder::suspendedDateOperations);
       ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
@@ -734,7 +801,8 @@ public class SearchQueryFilterMapper {
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  static TenantFilter toTenantFilter(final io.camunda.gateway.protocol.model.TenantFilter filter) {
+  static TenantFilter toTenantFilter(
+      final io.camunda.gateway.protocol.model.@Nullable TenantFilter filter) {
     final var builder = FilterBuilders.tenant();
     if (filter != null) {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
@@ -743,40 +811,89 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static GroupFilter toGroupFilter(final io.camunda.gateway.protocol.model.GroupFilter filter) {
+  static GroupFilter toGroupFilter(
+      final io.camunda.gateway.protocol.model.@Nullable GroupFilter filter) {
+    final var builder = toGroupFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final GroupFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toGroupFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
+
+  static GroupFilter.Builder toGroupFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable GroupFilterFields filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId())
           .map(mapToStringOperations())
           .ifPresent(builder::groupIdOperations);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    }
+    return builder;
+  }
+
+  static RoleFilter toRoleFilter(
+      final io.camunda.gateway.protocol.model.@Nullable RoleFilter filter) {
+    final var builder = toRoleFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final RoleFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toRoleFilterFields(or).build());
+      }
     }
     return builder.build();
   }
 
-  static RoleFilter toRoleFilter(final io.camunda.gateway.protocol.model.RoleFilter filter) {
+  static RoleFilter.Builder toRoleFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable RoleFilterFields filter) {
     final var builder = FilterBuilders.role();
     if (filter != null) {
-      ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getRoleId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::roleIdOperations);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    }
+    return builder;
+  }
+
+  static RoleMemberFilter toRoleUserFilter(final @Nullable RoleUserFilterRequest filter) {
+    final var builder = FilterBuilders.roleMember().memberType(EntityType.USER);
+    if (filter != null) {
+      ofNullable(filter.getUsername())
+          .map(mapToStringOperations())
+          .ifPresent(builder::memberIdOperations);
     }
     return builder.build();
   }
 
   static MappingRuleFilter toMappingRuleFilter(
-      final io.camunda.gateway.protocol.model.MappingRuleFilter filter) {
-    final var builder = FilterBuilders.mappingRule();
-    if (filter != null) {
-      ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
-      ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
-      ofNullable(filter.getName()).ifPresent(builder::name);
-      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
+      final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilter filter) {
+    final var builder = toMappingRuleFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final MappingRuleFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toMappingRuleFilterFields(or).build());
+      }
     }
     return builder.build();
   }
 
+  static MappingRuleFilter.Builder toMappingRuleFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilterFields filter) {
+    final var builder = FilterBuilders.mappingRule();
+    if (filter != null) {
+      ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
+      ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      ofNullable(filter.getMappingRuleId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::mappingRuleIdOperations);
+    }
+    return builder;
+  }
+
   static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
-      final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -805,7 +922,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, DecisionRequirementsFilter> toDecisionRequirementsFilter(
-      final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -826,7 +943,33 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, FlowNodeInstanceFilter> toElementInstanceFilter(
-      final io.camunda.gateway.protocol.model.ElementInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ElementInstanceFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, FlowNodeInstanceFilter.Builder> builder =
+        toElementInstanceFilterFields(filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final ElementInstanceFilterFields or : filter.get$Or()) {
+        final var orBuilder = toElementInstanceFilterFields(or);
+        if (orBuilder.isLeft()) {
+          validationErrors.addAll(orBuilder.getLeft());
+        } else if (builder.isRight()) {
+          builder.get().addOrOperation(orBuilder.get().build());
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, FlowNodeInstanceFilter.Builder> toElementInstanceFilterFields(
+      final @Nullable ElementInstanceFilterFields filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -866,13 +1009,65 @@ public class SearchQueryFilterMapper {
           .map(mapKeyToLong("elementInstanceScopeKey", validationErrors))
           .ifPresent(builder::elementInstanceScopeKeys);
     }
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, ElementInstanceWaitStateFilter> toElementInstanceWaitStateFilter(
+      final io.camunda.gateway.protocol.model.@Nullable ElementInstanceWaitStateFilter filter) {
+    final var builder = new ElementInstanceWaitStateFilter.Builder();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      Optional.ofNullable(filter.getElementInstanceKey())
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+          .ifPresent(builder::elementInstanceKeyOperations);
+      Optional.ofNullable(filter.getProcessInstanceKey())
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeyOperations);
+      Optional.ofNullable(filter.getRootProcessInstanceKey())
+          .map(mapToKeyOperations("rootProcessInstanceKey", validationErrors))
+          .ifPresent(builder::rootProcessInstanceKeyOperations);
+      Optional.ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementIdOperations);
+      Optional.ofNullable(filter.getElementType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementTypeOperations);
+      Optional.ofNullable(filter.getWaitStateType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::waitStateTypeOperations);
+    }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);
   }
 
   static Either<List<String>, UserTaskFilter> toUserTaskFilter(
-      final io.camunda.gateway.protocol.model.UserTaskFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable UserTaskFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, UserTaskFilter.Builder> builder = toUserTaskFilterFields(filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final io.camunda.gateway.protocol.model.UserTaskFilterFields or : filter.get$Or()) {
+        final var orBuilder = toUserTaskFilterFields(or);
+        if (orBuilder.isLeft()) {
+          validationErrors.addAll(orBuilder.getLeft());
+        } else if (builder.isRight()) {
+          builder.get().addOrOperation(orBuilder.get().build());
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, UserTaskFilter.Builder> toUserTaskFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable UserTaskFilterFields filter) {
     final var builder = FilterBuilders.userTask();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -882,7 +1077,10 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getState())
           .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
-      Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+      Optional.ofNullable(filter.getIsSuspended()).ifPresent(builder::isSuspended);
+      Optional.ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
       Optional.ofNullable(filter.getName())
           .map(mapToStringOperations())
@@ -890,6 +1088,9 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getAssignee())
           .map(mapToStringOperations())
           .ifPresent(builder::assigneeOperations);
+      Optional.ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       Optional.ofNullable(filter.getPriority())
           .map(mapToIntegerOperations("priority", validationErrors))
           .ifPresent(builder::priorityOperations);
@@ -900,11 +1101,11 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::candidateUserOperations);
       Optional.ofNullable(filter.getProcessDefinitionKey())
-          .map(mapKeyToLong("processDefinitionKey", validationErrors))
-          .ifPresent(builder::processDefinitionKeys);
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeyOperations);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(mapKeyToLong("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeys);
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeyOperations);
       Optional.ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
@@ -952,13 +1153,22 @@ public class SearchQueryFilterMapper {
       }
     }
 
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  static UserFilter toUserFilter(final io.camunda.gateway.protocol.model.UserFilter filter) {
+  static UserFilter toUserFilter(
+      final io.camunda.gateway.protocol.model.@Nullable UserFilter filter) {
+    final var builder = toUserFilterFields(filter);
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final UserFilterFields or : filter.get$Or()) {
+        builder.addOrOperation(toUserFilterFields(or).build());
+      }
+    }
+    return builder.build();
+  }
 
+  static UserFilter.Builder toUserFilterFields(
+      final io.camunda.gateway.protocol.model.@Nullable UserFilterFields filter) {
     final var builder = FilterBuilders.user();
     if (filter != null) {
       Optional.ofNullable(filter.getUsername())
@@ -971,11 +1181,11 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::emailOperations);
     }
-    return builder.build();
+    return builder;
   }
 
   static Either<List<String>, IncidentFilter> toIncidentFilter(
-      final io.camunda.gateway.protocol.model.IncidentFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -1023,7 +1233,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, MessageSubscriptionFilter> toMessageSubscriptionFilter(
-      final io.camunda.gateway.protocol.model.MessageSubscriptionFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable MessageSubscriptionFilter filter) {
     final var builder = FilterBuilders.messageSubscription();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -1070,6 +1280,15 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessDefinitionVersion())
           .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
           .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getToolName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::toolNameOperations);
+      ofNullable(filter.getInboundConnectorType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::inboundConnectorTypeOperations);
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
@@ -1078,11 +1297,15 @@ public class SearchQueryFilterMapper {
 
   static Either<List<String>, CorrelatedMessageSubscriptionFilter>
       toCorrelatedMessageSubscriptionFilter(
-          final io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionFilter filter) {
+          final io.camunda.gateway.protocol.model.@Nullable CorrelatedMessageSubscriptionFilter
+              filter) {
     final var builder = FilterBuilders.correlatedMessageSubscription();
     final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       ofNullable(filter.getCorrelationKey())
           .map(mapToStringOperations())
           .ifPresent(builder::correlationKeyOperations);
@@ -1126,7 +1349,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, io.camunda.search.filter.AuditLogFilter> toAuditLogFilter(
-      final io.camunda.gateway.protocol.model.AuditLogFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable AuditLogFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.auditLog().build());
     }
@@ -1228,6 +1451,12 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getEntityDescription())
         .map(mapToStringOperations())
         .ifPresent(builder::entityDescriptionOperations);
+    ofNullable(filter.getInboundChannelType())
+        .map(mapToStringOperations())
+        .ifPresent(builder::inboundChannelTypeOperations);
+    ofNullable(filter.getInboundChannelToolName())
+        .map(mapToStringOperations())
+        .ifPresent(builder::inboundChannelToolNameOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);
@@ -1296,23 +1525,21 @@ public class SearchQueryFilterMapper {
   }
 
   static AuthorizationFilter toAuthorizationFilter(
-      final io.camunda.gateway.protocol.model.AuthorizationFilter filter) {
-    return Optional.ofNullable(filter)
-        .map(
-            f ->
-                FilterBuilders.authorization()
-                    .ownerIds(f.getOwnerId())
-                    .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .resourceIds(f.getResourceIds())
-                    .resourcePropertyNames(f.getResourcePropertyNames())
-                    .resourceType(
-                        f.getResourceType() == null ? null : f.getResourceType().getValue())
-                    .build())
-        .orElse(null);
+      final io.camunda.gateway.protocol.model.@Nullable AuthorizationFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.authorization().build();
+    }
+    return FilterBuilders.authorization()
+        .ownerIds(filter.getOwnerId())
+        .ownerType(filter.getOwnerType() == null ? null : filter.getOwnerType().getValue())
+        .resourceIds(filter.getResourceIds())
+        .resourcePropertyNames(filter.getResourcePropertyNames())
+        .resourceType(filter.getResourceType() == null ? null : filter.getResourceType().getValue())
+        .build();
   }
 
   static Either<List<String>, AuditLogFilter> toUserTaskAuditLogFilter(
-      final UserTaskAuditLogFilter filter) {
+      final @Nullable UserTaskAuditLogFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.auditLog().build());
     }
@@ -1341,7 +1568,7 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {
+  static VariableFilter toUserTaskVariableFilter(final @Nullable UserTaskVariableFilter filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -1356,12 +1583,11 @@ public class SearchQueryFilterMapper {
           List<String>,
           io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter>
       toIncidentProcessInstanceStatisticsByDefinitionFilter(
-          final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
+          final @Nullable IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
-    if (filter.equals(
-        SearchQueryRequestMapper.EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER)) {
+    if (filter.getErrorHashCode() == null) {
       return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
     }
 
@@ -1371,7 +1597,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, GlobalListenerFilter> toGlobalTaskListenerFilter(
-      final GlobalTaskListenerSearchQueryFilterRequest filter) {
+      final @Nullable GlobalTaskListenerSearchQueryFilterRequest filter) {
 
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
@@ -1397,6 +1623,176 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::sourceOperations);
     }
 
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, DeployedResourceFilter> toDeployedResourceFilter(
+      final @Nullable ResourceFilter filter) {
+    final var builder = FilterBuilders.deployedResource();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter != null) {
+      ofNullable(filter.getResourceKey())
+          .map(mapToKeyOperations("resourceKey", validationErrors))
+          .ifPresent(builder::resourceKeyOperations);
+      ofNullable(filter.getResourceName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::resourceNameOperations);
+      ofNullable(filter.getResourceId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::resourceIdOperations);
+      ofNullable(filter.getVersion())
+          .map(mapToIntegerOperations("version", validationErrors))
+          .ifPresent(builder::versionOperations);
+      ofNullable(filter.getVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::versionTagOperations);
+      ofNullable(filter.getDeploymentKey())
+          .map(mapToKeyOperations("deploymentKey", validationErrors))
+          .ifPresent(builder::deploymentKeyOperations);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, AgentDefinitionFilter> toAgentDefinitionFilter(
+      final io.camunda.gateway.protocol.model.@Nullable AgentDefinitionFilter filter) {
+    final var builder = FilterBuilders.agentDefinition();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      ofNullable(filter.getAgentDefinitionKey())
+          .map(mapToKeyOperations("agentDefinitionKey", validationErrors))
+          .ifPresent(builder::agentDefinitionKeyOperations);
+      ofNullable(filter.getAgentType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::agentTypeOperations);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementIdOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
+          .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getProcessDefinitionVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionVersionTagOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::tenantIdOperations);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, AgentInstanceFilter> toAgentInstanceFilter(
+      final io.camunda.gateway.protocol.model.@Nullable AgentInstanceFilter filter) {
+    final var builder = FilterBuilders.agentInstance();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      ofNullable(filter.getAgentInstanceKey())
+          .map(mapToKeyOperations("agentInstanceKey", validationErrors))
+          .ifPresent(builder::agentInstanceKeyOperations);
+      ofNullable(filter.getAgentDefinitionKey())
+          .map(mapToKeyOperations("agentDefinitionKey", validationErrors))
+          .ifPresent(builder::agentDefinitionKeyOperations);
+      ofNullable(filter.getStatus())
+          .map(mapToStringOperations())
+          .ifPresent(builder::statusOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementIdOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getRootProcessInstanceKey())
+          .map(mapToKeyOperations("rootProcessInstanceKey", validationErrors))
+          .ifPresent(builder::rootProcessInstanceKeyOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getCreationDate())
+          .map(mapToOffsetDateTimeOperations("creationDate", validationErrors))
+          .ifPresent(builder::creationDateOperations);
+      ofNullable(filter.getLastUpdatedDate())
+          .map(mapToOffsetDateTimeOperations("lastUpdatedDate", validationErrors))
+          .ifPresent(builder::lastUpdatedDateOperations);
+      ofNullable(filter.getCompletionDate())
+          .map(mapToOffsetDateTimeOperations("completionDate", validationErrors))
+          .ifPresent(builder::completionDateOperations);
+      if (!CollectionUtils.isEmpty(filter.getElementInstanceKeys())) {
+        final var elementInstanceKeyMapper =
+            mapToKeyOperations("elementInstanceKeys", validationErrors);
+        filter.getElementInstanceKeys().stream()
+            .map(elementInstanceKeyMapper)
+            .forEach(builder::elementInstanceKeyOperations);
+      }
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
+          .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getProcessDefinitionVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionVersionTagOperations);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, AgentInstanceHistoryFilter> toAgentInstanceHistoryFilter(
+      final io.camunda.gateway.protocol.model.@Nullable AgentInstanceHistoryFilter filter,
+      final long agentInstanceKey) {
+    final var builder = FilterBuilders.agentInstanceHistory();
+    final List<String> validationErrors = new ArrayList<>();
+    // Inject agentInstanceKey from path variable — not present in the REST filter model
+    builder.agentInstanceKeyOperations(List.of(Operation.eq(agentInstanceKey)));
+    if (filter == null || filter.getCommitStatus() == null) {
+      // Default to COMMITTED when the caller omits commitStatus
+      builder.commitStatusOperations(
+          List.of(
+              Operation.eq(
+                  AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus.COMMITTED.name())));
+    }
+    if (filter != null) {
+      ofNullable(filter.getHistoryItemKey())
+          .map(mapToKeyOperations("historyItemKey", validationErrors))
+          .ifPresent(builder::historyItemKeyOperations);
+      ofNullable(filter.getRole()).map(mapToStringOperations()).ifPresent(builder::roleOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+          .ifPresent(builder::elementInstanceKeyOperations);
+      ofNullable(filter.getJobKey())
+          .map(mapToKeyOperations("jobKey", validationErrors))
+          .ifPresent(builder::jobKeyOperations);
+      ofNullable(filter.getLoopIteration())
+          .map(mapToIntegerOperations("loopIteration", validationErrors))
+          .ifPresent(builder::loopIterationOperations);
+      ofNullable(filter.getCommitStatus())
+          .map(mapToStringOperations())
+          .ifPresent(builder::commitStatusOperations);
+      ofNullable(filter.getProducedAt())
+          .map(mapToOffsetDateTimeOperations("producedAt", validationErrors))
+          .ifPresent(builder::producedAtOperations);
+    }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

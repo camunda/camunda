@@ -7,37 +7,44 @@
  */
 package io.camunda.authentication.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.TenantEntity;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.reader.ResourceAccess;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.TenantServices;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.authz.ResourceAccess;
+import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class BasicCamundaUserServiceTest {
 
+  private static final String TENANT_A = "tenanta";
+
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
-  @Mock private TenantServices tenantServices;
+  @Mock private ResourceAccessProvider tenantAResourceAccessProvider;
   @Mock private UserServices userServices;
+  @Mock private UserServices tenantAUserServices;
   @Mock private CamundaAuthentication authentication;
   private BasicCamundaUserService basicCamundaUserService;
 
@@ -46,6 +53,9 @@ public class BasicCamundaUserServiceTest {
     MockitoAnnotations.openMocks(this).close();
 
     when(resourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.allowed(COMPONENT_ACCESS_AUTHORIZATION));
+    when(tenantAResourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(COMPONENT_ACCESS_AUTHORIZATION));
 
@@ -58,9 +68,31 @@ public class BasicCamundaUserServiceTest {
     when(user.email()).thenReturn("foo@bar.com");
     when(userServices.getUser(eq("foo@bar.com"), any())).thenReturn(user);
 
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, userServices)
+                    .userServices(TENANT_A, tenantAUserServices));
+
+    final var scopedResourceAccessProvider =
+        new PhysicalTenantResourceAccessProvider(
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                resourceAccessProvider,
+                TENANT_A,
+                tenantAResourceAccessProvider));
+
     basicCamundaUserService =
         new BasicCamundaUserService(
-            authenticationProvider, resourceAccessProvider, userServices, tenantServices);
+            authenticationProvider, scopedResourceAccessProvider, serviceRegistry);
+
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+  }
+
+  @AfterEach
+  void clearRequestScope() {
+    RequestContextHolder.resetRequestAttributes();
   }
 
   @Test
@@ -98,27 +130,22 @@ public class BasicCamundaUserServiceTest {
   }
 
   @Test
-  void shouldIncludeTenants() {
+  void shouldIncludeTenantIds() {
     // given
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class), any()))
-        .thenReturn(
-            SearchQueryResult.of(
-                new TenantEntity(1L, "tenant1", "name", "desc"),
-                new TenantEntity(2L, "tenant2", "name", "desc")));
 
     // when
     final var currentUser = basicCamundaUserService.getCurrentUser();
 
     // then
-    assertThat(currentUser.tenants().stream().map(TenantEntity::tenantId).toList())
-        .containsExactlyInAnyOrder("tenant1", "tenant2");
+    assertThat(currentUser.tenants()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
   void shouldIncludeAuthorizedComponents() {
     // given
-    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate");
+    final var allowedAuthorization =
+        withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate");
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(allowedAuthorization));
@@ -133,7 +160,8 @@ public class BasicCamundaUserServiceTest {
   @Test
   void shouldNormalizeIdentityComponentToAdmin() {
     // given
-    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "identity");
+    final var allowedAuthorization =
+        withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "identity");
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(allowedAuthorization));
@@ -148,7 +176,7 @@ public class BasicCamundaUserServiceTest {
   @Test
   void shouldContainWildcardInAuthorizedComponents() {
     // given
-    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");
+    final var allowedAuthorization = withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.wildcard(allowedAuthorization));
@@ -198,5 +226,53 @@ public class BasicCamundaUserServiceTest {
 
     // then
     assertThat(currentUser).isNull();
+  }
+
+  @Test
+  void shouldRouteUserLookupToRequestPhysicalTenant() {
+    // given a request scoped to a non-default physical tenant
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    final var tenantAUser = mock(UserEntity.class);
+    when(tenantAUser.userKey()).thenReturn(200L);
+    when(tenantAUser.name()).thenReturn("Tenant A User");
+    when(tenantAUser.email()).thenReturn("foo@bar.com");
+    when(tenantAUserServices.getUser(eq("foo@bar.com"), any())).thenReturn(tenantAUser);
+
+    // when
+    final var currentUser = basicCamundaUserService.getCurrentUser();
+
+    // then — resolved via the tenant-A user services, not the default
+    assertThat(currentUser.displayName()).isEqualTo("Tenant A User");
+  }
+
+  @Test
+  void shouldRouteAuthorizedComponentsToRequestPhysicalTenant() {
+    // given a request scoped to a non-default physical tenant, whose authorization storage grants
+    // a different component than the default (root) storage
+    final var request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, TENANT_A);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    final var tenantAUser = mock(UserEntity.class);
+    when(tenantAUser.name()).thenReturn("Tenant A User");
+    when(tenantAUser.email()).thenReturn("foo@bar.com");
+    when(tenantAUserServices.getUser(eq("foo@bar.com"), any())).thenReturn(tenantAUser);
+    when(resourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(
+            ResourceAccess.allowed(
+                withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate")));
+    when(tenantAResourceAccessProvider.resolveResourceAccess(
+            eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(
+            ResourceAccess.allowed(
+                withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "tasklist")));
+
+    // when
+    final var currentUser = basicCamundaUserService.getCurrentUser();
+
+    // then — resolved against tenant-A authorization storage, not the default
+    assertThat(currentUser.authorizedComponents()).containsExactly("tasklist");
   }
 }

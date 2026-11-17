@@ -7,11 +7,23 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import io.camunda.search.sort.SortOptionsBuilders;
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * @param searchBefore whether the page seeks backwards from a {@code before} cursor. The seek has
+ *     to walk away from the cursor, so the mapper renders its ORDER BY reversed (see {@code
+ *     Commons.orderBy}) — otherwise LIMIT would cut the first rows of the whole filtered range
+ *     instead of the rows adjacent to the cursor. The reader restores the display order afterwards.
+ */
 public record DbQueryPage(
-    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination) {
+    Integer size,
+    @Nullable Integer from,
+    @Nullable Integer maxTotalHits,
+    @Nullable List<KeySetPagination> keySetPagination,
+    boolean searchBefore) {
 
   public record KeySetPagination(List<KeySetPaginationFieldEntry> entries) {}
 
@@ -30,7 +42,7 @@ public record DbQueryPage(
     public static final class Builder {
       private final String fieldName;
       private final Object fieldValue;
-      private SortOrder order;
+      private @Nullable SortOrder order;
       private boolean isSearchAfter;
 
       private Builder(final String fieldName, final Object fieldValue) {
@@ -49,19 +61,23 @@ public record DbQueryPage(
       }
 
       public KeySetPaginationFieldEntry build() {
-        final Operator operator;
-        if (isSearchAfter) {
-          operator =
-              order == SortOrder.ASC
-                  ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER
-                  : fieldValue == null ? Operator.IS_NULL : Operator.LOWER;
-        } else {
-          // searchBefore: mirror of searchAfter with directions reversed
-          operator =
-              order == SortOrder.ASC
-                  ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.LOWER
-                  : fieldValue == null ? Operator.IS_NULL : Operator.GREATER;
-        }
+        // Paging backwards over a sort is paging forwards over the reversed sort — the same
+        // equivalence the mapper's ORDER BY relies on (see Commons.orderBy). Flipping the order up
+        // front leaves a single set of comparators to reason about, for both directions.
+        final var seekOrder = isSearchAfter ? order : SortOptionsBuilders.reverseOrder(order);
+
+        // NULL ordering is standardized across all supported databases (see Commons.xml orderBy):
+        // ASC sorts NULLs FIRST, DESC sorts NULLs LAST, and reversing the order swaps both halves
+        // of that pairing together. The strict comparator for a NULL cursor value therefore depends
+        // only on the seek order: where the NULLs sit at the far end of the traversal there is no
+        // row beyond them, which must yield NO_MATCH rather than IS_NULL (which would match every
+        // NULL row and stall the cursor).
+        final Operator operator =
+            seekOrder == SortOrder.ASC
+                // ASC NULLs FIRST: the rows beyond a NULL cursor are the non-NULL rows
+                ? fieldValue == null ? Operator.IS_NOT_NULL : Operator.GREATER
+                // DESC NULLs LAST: nothing sorts beyond a NULL cursor
+                : fieldValue == null ? Operator.NO_MATCH : Operator.LOWER;
         return new KeySetPaginationFieldEntry(fieldName, operator, fieldValue);
       }
     }
@@ -72,7 +88,10 @@ public record DbQueryPage(
     IS_NOT_NULL("IS NOT NULL"),
     GREATER(">"),
     LOWER("<"),
-    EQUALS("=");
+    EQUALS("="),
+    // marks an OR-group that can never match (e.g. nothing sorts beyond a boundary NULL); such
+    // groups are dropped before rendering SQL and never reach the mapper
+    NO_MATCH("");
 
     private final String symbol;
 

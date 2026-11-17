@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,10 +21,20 @@ import org.agrona.DirectBuffer;
 public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
+  private Expression defaultJobPriority;
+  private boolean agentic;
 
   public ExecutableProcess(final String id) {
     super(id);
     addFlowElement(this);
+  }
+
+  public Expression getDefaultJobPriority() {
+    return defaultJobPriority;
+  }
+
+  public void setDefaultJobPriority(final Expression defaultJobPriority) {
+    this.defaultJobPriority = defaultJobPriority;
   }
 
   public void addFlowElement(final AbstractFlowElement element) {
@@ -102,5 +113,21 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   public Collection<AbstractFlowElement> getFlowElements() {
     return flowElements.values();
+  }
+
+  /**
+   * A process is agentic when it contains at least one agent-marked element: a {@code serviceTask}
+   * or {@code adHocSubProcess} carrying an explicit {@code zeebe:agentDefinition} marker, anywhere
+   * in its element tree.
+   *
+   * @return {@code true} if this process was detected at deploy time to be agentic.
+   */
+  public boolean isAgentic() {
+    return agentic;
+  }
+
+  /** Marks this process as agentic, detected at deploy time from an agent-marked element. */
+  public void markAgentic() {
+    agentic = true;
   }
 }

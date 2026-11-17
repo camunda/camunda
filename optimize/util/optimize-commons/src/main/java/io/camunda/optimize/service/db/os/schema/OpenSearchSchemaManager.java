@@ -22,12 +22,15 @@ import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.BusinessValueTargetIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.CollectionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardShareIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.InstantPreviewDashboardMetadataIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.JobRegistryIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
@@ -36,6 +39,7 @@ import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableLabelIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.WebSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.PositionBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.TimestampBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.CombinedReportIndexOS;
@@ -549,15 +553,19 @@ public class OpenSearchSchemaManager
     return Arrays.asList(
         new AlertIndexOS(),
         new BusinessKeyIndexOS(),
+        new BusinessValueOverviewIndexOS(),
+        new BusinessValueTargetIndexOS(),
         new CollectionIndexOS(),
         new DashboardIndexOS(),
         new DashboardShareIndexOS(),
         new DecisionDefinitionIndexOS(),
+        new JobRegistryIndexOS(),
         new MetadataIndexOS(),
         new ProcessDefinitionIndexOS(),
         new ReportShareIndexOS(),
         new SettingsIndexOS(),
         new TerminatedUserSessionIndexOS(),
+        new WebSessionIndexOS(),
         new TenantIndexOS(),
         new TimestampBasedImportIndexOS(),
         new PositionBasedImportIndexOS(),

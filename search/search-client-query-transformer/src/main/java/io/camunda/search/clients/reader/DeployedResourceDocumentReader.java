@@ -9,8 +9,10 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DeployedResourceQueryResultConfig;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class DeployedResourceDocumentReader extends DocumentBasedReader
@@ -41,5 +43,15 @@ public class DeployedResourceDocumentReader extends DocumentBasedReader
             io.camunda.webapps.schema.entities.resource.DeployedResourceEntity.class,
             indexDescriptor.getFullQualifiedName(),
             DeployedResourceQueryResultConfig.of(b -> b.includeContent(false)));
+  }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> search(
+      final DeployedResourceQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .search(
+            query,
+            io.camunda.webapps.schema.entities.resource.DeployedResourceEntity.class,
+            resourceAccessChecks);
   }
 }

@@ -17,33 +17,25 @@ package io.camunda.process.test.impl.client;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
-import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
+import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
+import io.camunda.process.test.impl.client.purge.ManagementConfigurationChangeDto;
 import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
-import io.camunda.process.test.impl.client.purge.MinimalTopologyResponseDto;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
-import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpStatus;
-import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
 public final class CamundaManagementClient {
 
-  private static final String CLOCK_ENDPOINT = "/actuator/clock";
-  private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
-
-  private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
+  private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
+  private static final String CLUSTER_CHANGES_ENDPOINT = "/actuator/cluster/changes/";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -51,81 +43,13 @@ public final class CamundaManagementClient {
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaManagementApi;
-  private final URI camundaRestApi;
-  private final String basicAuthCredentials;
 
-  private CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
-    this(camundaManagementApi, camundaRestApi, null);
-  }
-
-  private CamundaManagementClient(
-      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
-
+  private CamundaManagementClient(final URI camundaManagementApi) {
     this.camundaManagementApi = camundaManagementApi;
-    this.camundaRestApi = camundaRestApi;
-    this.basicAuthCredentials = basicAuthCredentials;
   }
 
-  public static CamundaManagementClient createAuthenticatedClient(
-      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
-    return new CamundaManagementClient(camundaManagementApi, camundaRestApi, basicAuthCredentials);
-  }
-
-  public static CamundaManagementClient createClient(
-      final URI camundaManagementApi, final URI camundaRestApi) {
-    return new CamundaManagementClient(camundaManagementApi, camundaRestApi);
-  }
-
-  public Instant getCurrentTime() {
-    try {
-      final HttpGet request = new HttpGet(camundaManagementApi + CLOCK_ENDPOINT);
-      final CamundaClockResponseDto clockResponseDto =
-          sendRequest(request, CamundaClockResponseDto.class);
-
-      return Instant.parse(clockResponseDto.getInstant());
-    } catch (final Exception e) {
-      throw new RuntimeException(timerBasedErrorMessage(e), e);
-    }
-  }
-
-  public void increaseTime(final Duration timeToAdd) {
-    final HttpPost request = new HttpPost(camundaManagementApi + CLOCK_ADD_ENDPOINT);
-
-    final CamundaAddClockRequestDto requestDto = new CamundaAddClockRequestDto();
-    requestDto.setOffsetMilli(timeToAdd.toMillis());
-
-    try {
-      final String requestBody = objectMapper.writeValueAsString(requestDto);
-      request.setEntity(HttpEntities.create(requestBody, ContentType.APPLICATION_JSON));
-
-      sendRequest(request);
-    } catch (final Exception e) {
-      throw new RuntimeException(timerBasedErrorMessage(e), e);
-    }
-  }
-
-  public void setTime(final Instant timeToSet) {
-    final Instant now = getCurrentTime();
-    final Duration timeOffset = Duration.between(now, timeToSet);
-
-    increaseTime(timeOffset);
-  }
-
-  public void resetTime() {
-    final HttpDelete request = new HttpDelete(camundaManagementApi + CLOCK_ENDPOINT);
-
-    try {
-      sendRequest(request);
-    } catch (final Exception e) {
-      throw new RuntimeException(timerBasedErrorMessage(e), e);
-    }
-  }
-
-  private String timerBasedErrorMessage(final Exception e) {
-    return e.getMessage().contains("code: " + HttpStatus.SC_FORBIDDEN)
-        ? "Failed to increase the time. Please double-check that the Clock endpoint is enabled by "
-            + "setting 'zeebe-clock-controlled' to true."
-        : "Failed to increase the time.";
+  public static CamundaManagementClient createClient(final URI camundaManagementApi) {
+    return new CamundaManagementClient(camundaManagementApi);
   }
 
   /**
@@ -151,13 +75,13 @@ public final class CamundaManagementClient {
    *     code
    */
   public void purgeCluster(final Duration timeout) {
-    final MinimalPlannedOperationsResponseDto startPurgeResponse = startPurge();
+    final long changeId = startPurge();
 
     try {
       Awaitility.await()
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
-          .until(() -> isPurgeComplete(startPurgeResponse.getChangeId()));
+          .until(() -> isPurgeComplete(changeId));
 
     } catch (final ConditionTimeoutException e) {
       throw new RuntimeException("Failed to purge the cluster, timeout expired.", e);
@@ -167,27 +91,61 @@ public final class CamundaManagementClient {
     }
   }
 
-  private MinimalPlannedOperationsResponseDto startPurge() {
+  private long startPurge() {
     final HttpPost purgeRequest = new HttpPost(camundaManagementApi + CLUSTER_PURGE_ENDPOINT);
 
     try {
-      return sendRequest(purgeRequest, MinimalPlannedOperationsResponseDto.class);
+      return sendRequest(purgeRequest, MinimalPlannedOperationsResponseDto.class).getChangeId();
     } catch (final IOException e) {
       throw new RuntimeException("Failed to initiate cluster purge", e);
     }
   }
 
   private boolean isPurgeComplete(final long changeId) {
-    final HttpGet clusterStatusRequest = new HttpGet(camundaRestApi + TOPOLOGY_ENDPOINT);
+    // Track the purge through the status of the change it planned. The cluster topology reports the
+    // cluster-wide change state only for a response covering a single physical tenant, whereas the
+    // change endpoint reports one change regardless of how many physical tenants the cluster has.
+    final ManagementConfigurationChangeDto change = getConfigurationChange(changeId);
+    if (change == null) {
+      // Either the request failed, or the polled broker has not learned about the change yet.
+      return false;
+    }
 
+    if (change.isTerminallyFailed()) {
+      throw new IllegalStateException(
+          String.format(
+              "The cluster reported the purge as %s. [changeId: %d]",
+              change.getStatus(), changeId));
+    }
+
+    return change.isCompleted() && isClusterHealthy();
+  }
+
+  /**
+   * Reads the status of one configuration change. Returns {@code null} if the request failed -
+   * which includes the change not being known to the polled broker yet - leaving it to the caller
+   * to poll again; awaitility will abort after the timeout expires.
+   */
+  private ManagementConfigurationChangeDto getConfigurationChange(final long changeId) {
     try {
-      final MinimalTopologyResponseDto minimalTopologyResponse =
-          sendRequest(clusterStatusRequest, MinimalTopologyResponseDto.class);
+      final HttpGet changeRequest =
+          new HttpGet(camundaManagementApi + CLUSTER_CHANGES_ENDPOINT + changeId);
 
-      return minimalTopologyResponse.isTopologyChangeCompleted(changeId);
-    } catch (final IOException e) {
-      // Ignore silently and wait for next status request; awaitility will abort after timeout
-      // expires
+      return sendRequest(changeRequest, ManagementConfigurationChangeDto.class);
+    } catch (final Exception e) {
+      return null;
+    }
+  }
+
+  /** Reads the cluster topology (no auth required) to check that the cluster is usable again. */
+  private boolean isClusterHealthy() {
+    try {
+      final HttpGet clusterStatusRequest =
+          new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
+
+      return sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class)
+          .isClusterHealthy();
+    } catch (final Exception e) {
       return false;
     }
   }
@@ -198,10 +156,6 @@ public final class CamundaManagementClient {
   }
 
   private String sendRequest(final ClassicHttpRequest request) throws IOException {
-    if (basicAuthCredentials != null) {
-      request.setHeader("Authorization", "Basic " + basicAuthCredentials);
-    }
-
     return httpClient.execute(
         request,
         response -> {
@@ -216,11 +170,6 @@ public final class CamundaManagementClient {
   }
 
   private boolean isNotSuccessfulStatusCode(final int statusCode) {
-    /*
-     * Multi-tenancy uses basic auth to secure the camunda gateway. During the purge, the default
-     * user is briefly deleted and previously authenticated requests will fail until the user's
-     * been recreated. Therefore, we choose to silently ignore 401 errors.
-     */
-    return statusCode < 200 || (statusCode >= 300 && statusCode != 401);
+    return statusCode < 200 || statusCode >= 300;
   }
 }

@@ -24,6 +24,7 @@ public class CoverageReportConfiguration {
   private String reportDirectory =
       CamundaProcessTestRuntimeDefaults.DEFAULT_COVERAGE_REPORT_DIRECTORY;
   private List<String> excludedProcesses = Collections.emptyList();
+  private List<String> excludedDecisions = Collections.emptyList();
 
   public String getReportDirectory() {
     return reportDirectory;
@@ -39,5 +40,13 @@ public class CoverageReportConfiguration {
 
   public void setExcludedProcesses(final List<String> excludedProcesses) {
     this.excludedProcesses = excludedProcesses;
+  }
+
+  public List<String> getExcludedDecisions() {
+    return excludedDecisions;
+  }
+
+  public void setExcludedDecisions(final List<String> excludedDecisions) {
+    this.excludedDecisions = excludedDecisions;
   }
 }

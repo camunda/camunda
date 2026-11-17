@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react-lite';
-import {JSONEditor} from 'modules/components/JSONEditor';
+import {RichTextEditor} from 'modules/components/RichTextEditor';
 import {Container} from './styled';
 
 type Props = {
@@ -18,7 +18,7 @@ type Props = {
 const JSONViewer: React.FC<Props> = observer(({value, ...props}) => {
   return (
     <Container data-testid={props['data-testid']}>
-      <JSONEditor value={value} readOnly height="100%" />
+      <RichTextEditor value={value} readOnly height="100%" />
     </Container>
   );
 });

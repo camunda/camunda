@@ -9,6 +9,7 @@ connectors.process
 
 /c8run
 /c8run.exe
+/jre
 /main
 /main.exe
 /packager
@@ -16,3 +17,6 @@ connectors.process
 /e2e_tests/node_modules
 /e2e_tests/playwright-report
 /e2e_tests/test-results
+/secrets
+configuration/physical-tenants.generated.yaml
+connectors-*.process

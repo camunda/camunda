@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,7 @@ class ResourceExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ResourceIntent.class,
-      names = {"CREATED", "DELETED"},
+      names = {"CREATED", "DELETED", "REEXPORTED"},
       mode = Mode.INCLUDE)
   void shouldExportSupportedIntents(final ResourceIntent intent) {
     // given
@@ -68,7 +69,7 @@ class ResourceExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ResourceIntent.class,
-      names = {"CREATED", "DELETED"},
+      names = {"CREATED", "DELETED", "REEXPORTED"},
       mode = Mode.EXCLUDE)
   void shouldNotExportUnsupportedIntents(final ResourceIntent intent) {
     // given
@@ -112,11 +113,50 @@ class ResourceExportHandlerTest {
     assertThat(model.resourceKey()).isEqualTo(42L);
     assertThat(model.resourceId()).isEqualTo("res-id");
     assertThat(model.resourceName()).isEqualTo("my-script.rpa");
+    assertThat(model.resourceType()).isEqualTo("rpa");
     assertThat(model.version()).isEqualTo(3);
     assertThat(model.versionTag()).isEqualTo("v3");
     assertThat(model.deploymentKey()).isEqualTo(100L);
     assertThat(model.tenantId()).isEqualTo("tenant-1");
-    assertThat(model.resourceContent()).isEqualTo("rpa-content");
+    assertThat(model.resourceContent()).isEqualTo("rpa-content".getBytes(StandardCharsets.UTF_8));
+
+    verifyNoMoreInteractions(writer);
+  }
+
+  @Test
+  void shouldHandleReexportedRecord() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceKey(42L)
+            .withResourceId("res-id")
+            .withResourceName("my-script.rpa")
+            .withVersion(3)
+            .withVersionTag("v3")
+            .withDeploymentKey(100L)
+            .withTenantId("tenant-1")
+            .withResourceProp("rpa-content")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.REEXPORTED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(dbModelCaptor.capture());
+    final DeployedResourceDbModel model = dbModelCaptor.getValue();
+    assertThat(model.resourceKey()).isEqualTo(42L);
+    assertThat(model.resourceId()).isEqualTo("res-id");
+    assertThat(model.resourceName()).isEqualTo("my-script.rpa");
+    assertThat(model.resourceType()).isEqualTo("rpa");
+    assertThat(model.version()).isEqualTo(3);
+    assertThat(model.versionTag()).isEqualTo("v3");
+    assertThat(model.deploymentKey()).isEqualTo(100L);
+    assertThat(model.tenantId()).isEqualTo("tenant-1");
+    assertThat(model.resourceContent()).isEqualTo("rpa-content".getBytes(StandardCharsets.UTF_8));
 
     verifyNoMoreInteractions(writer);
   }
@@ -139,6 +179,37 @@ class ResourceExportHandlerTest {
 
     // then
     verify(writer).delete(99L);
+    verifyNoMoreInteractions(writer);
+  }
+
+  @Test
+  void shouldExtractFileTypeFromFilenameWithMultipleDots() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceKey(43L)
+            .withResourceId("res-id")
+            .withResourceName("user.1/my.script.rpa")
+            .withVersion(1)
+            .withVersionTag("v1")
+            .withDeploymentKey(100L)
+            .withTenantId("tenant-1")
+            .withResourceProp("rpa-content")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(dbModelCaptor.capture());
+    final DeployedResourceDbModel model = dbModelCaptor.getValue();
+    assertThat(model.resourceName()).isEqualTo("user.1/my.script.rpa");
+    assertThat(model.resourceType()).isEqualTo("rpa");
+
     verifyNoMoreInteractions(writer);
   }
 }

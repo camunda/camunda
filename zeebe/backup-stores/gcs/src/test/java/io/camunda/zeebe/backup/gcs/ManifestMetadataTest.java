@@ -28,9 +28,6 @@ import org.mockito.Mockito;
 
 final class ManifestMetadataTest {
 
-  private static final String BASE_PATH = "my-prefix/";
-  private static final String MANIFEST_BLOB_NAME = "manifest.json";
-
   private static BackupImpl createBackup(
       final int nodeId, final int partitionId, final long checkpointId) {
     return new BackupImpl(
@@ -57,21 +54,8 @@ final class ManifestMetadataTest {
         new NamedFileSetImpl(Map.of()));
   }
 
-  private static String blobPath(final int partitionId, final long checkpointId, final int nodeId) {
-    return BASE_PATH
-        + "manifests/"
-        + partitionId
-        + "/"
-        + checkpointId
-        + "/"
-        + nodeId
-        + "/"
-        + MANIFEST_BLOB_NAME;
-  }
-
-  private static Blob mockBlob(final String name, final Map<String, String> metadata) {
+  private static Blob mockBlob(final Map<String, String> metadata) {
     final var blob = Mockito.mock(Blob.class);
-    Mockito.when(blob.getName()).thenReturn(name);
     Mockito.when(blob.getMetadata()).thenReturn(metadata);
     return blob;
   }
@@ -197,7 +181,7 @@ final class ManifestMetadataTest {
     @Test
     void shouldOmitDescriptorFieldsWhenDescriptorIsNull() {
       // given
-      final var manifest = Manifest.createFailed(new BackupIdentifierImpl(1, 2, 3));
+      final var manifest = Manifest.createFailed(new BackupIdentifierImpl(1, 2, 3), "error");
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);
@@ -208,6 +192,31 @@ final class ManifestMetadataTest {
           .doesNotContainKey(ManifestMetadata.CHECKPOINT_POSITION)
           .doesNotContainKey(ManifestMetadata.BROKER_VERSION);
     }
+
+    @Test
+    void shouldIncludeZoneWhenPresent() {
+      // given
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, "zone-a", 2, 3),
+              new BackupDescriptorImpl(
+                  Optional.of("snap-1"),
+                  OptionalLong.of(100L),
+                  500L,
+                  3,
+                  "8.5.0",
+                  Instant.parse("2025-01-15T10:30:00Z"),
+                  CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of("file1", Path.of("f1"))),
+              new NamedFileSetImpl(Map.of("seg1", Path.of("s1"))));
+      final var manifest = Manifest.createInProgress(backup);
+
+      // when
+      final var metadata = ManifestMetadata.fromManifest(manifest);
+
+      // then
+      assertThat(metadata).containsEntry(ManifestMetadata.ZONE, "zone-a");
+    }
   }
 
   @Nested
@@ -216,10 +225,10 @@ final class ManifestMetadataTest {
     @Test
     void shouldReturnEmptyWhenMetadataIsNull() {
       // given
-      final var blob = mockBlob(blobPath(2, 3, 1), null);
+      final var blob = mockBlob(null);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isEmpty();
@@ -228,10 +237,10 @@ final class ManifestMetadataTest {
     @Test
     void shouldReturnEmptyWhenStatusCodeIsMissing() {
       // given
-      final var blob = mockBlob(blobPath(2, 3, 1), Map.of("some-key", "some-value"));
+      final var blob = mockBlob(Map.of("some-key", "some-value"));
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isEmpty();
@@ -246,10 +255,10 @@ final class ManifestMetadataTest {
               ManifestMetadata.CHECKPOINT_POSITION, "500",
               ManifestMetadata.NUMBER_OF_PARTITIONS, "3",
               ManifestMetadata.BROKER_VERSION, "8.5.0");
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+      final var blob = mockBlob(metadata);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
@@ -267,10 +276,10 @@ final class ManifestMetadataTest {
           Map.of(
               ManifestMetadata.STATUS_CODE, "FAILED",
               ManifestMetadata.FAILURE_REASON, "disk full");
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+      final var blob = mockBlob(metadata);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
@@ -289,10 +298,10 @@ final class ManifestMetadataTest {
               ManifestMetadata.STATUS_CODE, "COMPLETED",
               ManifestMetadata.CREATED_AT, createdAt.toString(),
               ManifestMetadata.MODIFIED_AT, modifiedAt.toString());
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+      final var blob = mockBlob(metadata);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
@@ -304,10 +313,10 @@ final class ManifestMetadataTest {
     void shouldReturnEmptyDescriptorWhenCheckpointPositionIsMissing() {
       // given
       final var metadata = Map.of(ManifestMetadata.STATUS_CODE, "IN_PROGRESS");
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+      final var blob = mockBlob(metadata);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
@@ -327,10 +336,10 @@ final class ManifestMetadataTest {
               ManifestMetadata.BROKER_VERSION, "8.5.0",
               ManifestMetadata.CHECKPOINT_TIMESTAMP, "2025-01-15T10:30:00Z",
               ManifestMetadata.CHECKPOINT_TYPE, "MANUAL_BACKUP");
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+      final var blob = mockBlob(metadata);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
@@ -355,68 +364,16 @@ final class ManifestMetadataTest {
               ManifestMetadata.CHECKPOINT_POSITION, "500",
               ManifestMetadata.NUMBER_OF_PARTITIONS, "3",
               ManifestMetadata.BROKER_VERSION, "8.5.0");
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+      final var blob = mockBlob(metadata);
 
       // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
       assertThat(result.get().descriptor()).isPresent();
       assertThat(result.get().descriptor().get().checkpointType())
           .isEqualTo(CheckpointType.MANUAL_BACKUP);
-    }
-  }
-
-  @Nested
-  class PathParsing {
-
-    @Test
-    void shouldParseIdentifierFromPathWithBasePath() {
-      // given
-      final var metadata = Map.of(ManifestMetadata.STATUS_CODE, "COMPLETED");
-      final var blob = mockBlob("my-prefix/manifests/4/1000/2/manifest.json", metadata);
-
-      // when
-      final var result = ManifestMetadata.toBackupStatus(blob, "my-prefix/", MANIFEST_BLOB_NAME);
-
-      // then
-      assertThat(result).isPresent();
-      assertThat(result.get().id().partitionId()).isEqualTo(4);
-      assertThat(result.get().id().checkpointId()).isEqualTo(1000L);
-      assertThat(result.get().id().nodeId()).isEqualTo(2);
-    }
-
-    @Test
-    void shouldParseIdentifierFromPathWithoutBasePath() {
-      // given
-      final var metadata = Map.of(ManifestMetadata.STATUS_CODE, "COMPLETED");
-      final var blob = mockBlob("manifests/1/99/0/manifest.json", metadata);
-
-      // when
-      final var result = ManifestMetadata.toBackupStatus(blob, "", MANIFEST_BLOB_NAME);
-
-      // then
-      assertThat(result).isPresent();
-      assertThat(result.get().id().partitionId()).isEqualTo(1);
-      assertThat(result.get().id().checkpointId()).isEqualTo(99L);
-      assertThat(result.get().id().nodeId()).isEqualTo(0);
-    }
-
-    @Test
-    void shouldParseIdentifierWithLargeValues() {
-      // given
-      final var metadata = Map.of(ManifestMetadata.STATUS_CODE, "IN_PROGRESS");
-      final var blob = mockBlob(BASE_PATH + "manifests/100/9999999999/50/manifest.json", metadata);
-
-      // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
-
-      // then
-      assertThat(result).isPresent();
-      assertThat(result.get().id().partitionId()).isEqualTo(100);
-      assertThat(result.get().id().checkpointId()).isEqualTo(9999999999L);
-      assertThat(result.get().id().nodeId()).isEqualTo(50);
     }
   }
 
@@ -431,8 +388,8 @@ final class ManifestMetadataTest {
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var blob = mockBlob(metadata);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();
@@ -464,8 +421,9 @@ final class ManifestMetadataTest {
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);
-      final var blob = mockBlob(blobPath(10, 42, 5), metadata);
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var blob = mockBlob(metadata);
+      final var result =
+          ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(5, 10, 42L));
 
       // then
       assertThat(result).isPresent();
@@ -485,8 +443,8 @@ final class ManifestMetadataTest {
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);
-      final var blob = mockBlob(blobPath(1, 7, 0), metadata);
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var blob = mockBlob(metadata);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(0, 1, 7L));
 
       // then
       assertThat(result).isPresent();
@@ -504,8 +462,8 @@ final class ManifestMetadataTest {
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);
-      final var blob = mockBlob(blobPath(3, 99, 2), metadata);
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var blob = mockBlob(metadata);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(2, 3, 99L));
 
       // then
       assertThat(result).isPresent();
@@ -520,8 +478,8 @@ final class ManifestMetadataTest {
 
       // when
       final var metadata = ManifestMetadata.fromManifest(manifest);
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+      final var blob = mockBlob(metadata);
+      final var result = ManifestMetadata.toBackupStatus(blob, new BackupIdentifierImpl(1, 2, 3L));
 
       // then
       assertThat(result).isPresent();

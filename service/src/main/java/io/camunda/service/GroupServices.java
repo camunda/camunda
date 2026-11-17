@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.GROUP_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.GroupSearchClient;
@@ -16,8 +16,9 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,7 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteReque
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,12 +38,14 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   private final GroupSearchClient groupSearchClient;
 
   public GroupServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -91,7 +94,8 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, withAuthorization(GROUP_READ_AUTHORIZATION, groupId)))
+                        authentication,
+                        withRequiredAuthorization(GROUP_READ_AUTHORIZATION, groupId)))
                 .getGroup(groupId));
   }
 
@@ -115,7 +119,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
-            .setMemberType(groupMemberDTO.memberType),
+            .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType)),
         authentication);
   }
 
@@ -124,7 +128,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
-            .setMemberType(groupMemberDTO.memberType),
+            .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType)),
         authentication);
   }
 

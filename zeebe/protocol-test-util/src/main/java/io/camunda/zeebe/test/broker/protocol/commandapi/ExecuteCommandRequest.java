@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol.commandapi;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
@@ -41,7 +42,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private byte[] encodedCmd;
   private ActorFuture<DirectBuffer> responseFuture;
   private Intent intent = null;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = AuthInfo.EMPTY;
 
   public ExecuteCommandRequest(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
@@ -75,7 +76,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   }
 
   public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = authorization;
     return this;
   }
 
@@ -119,6 +120,11 @@ public final class ExecuteCommandRequest implements ClientRequest {
   @Override
   public RequestType getRequestType() {
     return RequestType.COMMAND;
+  }
+
+  @Override
+  public String getPartitionGroup() {
+    return DEFAULT_PHYSICAL_TENANT_ID;
   }
 
   @Override

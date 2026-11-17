@@ -7,20 +7,21 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -68,7 +69,7 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -88,14 +89,21 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
                       query ->
                           assertThat(query.queryOption())
                               .isInstanceOfSatisfying(
-                                  SearchTermsQuery.class,
-                                  (termsQuery) -> {
-                                    assertThat(termsQuery.field()).isEqualTo(GroupIndex.GROUP_ID);
-                                    assertThat(
-                                            termsQuery.values().stream()
-                                                .map(TypedValue::stringValue)
-                                                .toList())
-                                        .containsExactlyInAnyOrder("1", "2");
+                                  SearchHasParentQuery.class,
+                                  (hasParentQuery) -> {
+                                    assertThat(hasParentQuery.parentType()).isEqualTo("group");
+                                    assertThat(hasParentQuery.query().queryOption())
+                                        .isInstanceOfSatisfying(
+                                            SearchTermsQuery.class,
+                                            (termsQuery) -> {
+                                              assertThat(termsQuery.field())
+                                                  .isEqualTo(GroupIndex.GROUP_ID);
+                                              assertThat(
+                                                      termsQuery.values().stream()
+                                                          .map(TypedValue::stringValue)
+                                                          .toList())
+                                                  .containsExactlyInAnyOrder("1", "2");
+                                            });
                                   }));
             });
   }
@@ -136,7 +144,7 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
@@ -154,7 +162,7 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.group().read());
+    final var authorization = RequiredAuthorization.of(a -> a.group().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());

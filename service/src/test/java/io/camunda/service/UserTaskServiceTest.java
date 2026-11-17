@@ -33,7 +33,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOptionBuilders;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -42,9 +43,16 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskLookupRequest;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +61,7 @@ import org.junit.jupiter.api.Test;
 
 public class UserTaskServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private UserTaskServices services;
   private UserTaskSearchClient client;
   private FormServices formServices;
@@ -73,6 +82,7 @@ public class UserTaskServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new UserTaskServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
@@ -548,7 +558,7 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(
-              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
+              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name"), null));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
@@ -563,7 +573,7 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(
-              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
+              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name"), null));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
@@ -577,12 +587,32 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
+          .thenReturn(
+              new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name"), null));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
       assertThat(foundEntity.name()).isEqualTo(entity.elementId());
       assertThat(foundEntity.processName()).isEqualTo(entity.processName());
+    }
+
+    @Test
+    void shouldReturnUserTaskWithCachedProcessDefinitionVersion() {
+      // given - user tasks imported by the Tasklist 8.5/8.6 importer-850 have no version
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::processDefinitionVersion), null)
+              .create();
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(new ProcessCacheItem("ProcessName", Map.of(), 3));
+
+      // when
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
+
+      // then
+      assertThat(foundEntity.processDefinitionVersion()).isEqualTo(3);
     }
 
     @Test
@@ -626,7 +656,11 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
-                  entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
+                  entity.processDefinitionKey(),
+                  "ProcessName",
+                  entity.elementId(),
+                  "cached name",
+                  entity.processDefinitionVersion()));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
@@ -641,7 +675,11 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
-                  entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
+                  entity.processDefinitionKey(),
+                  "ProcessName",
+                  entity.elementId(),
+                  "cached name",
+                  entity.processDefinitionVersion()));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
@@ -657,6 +695,92 @@ public class UserTaskServiceTest {
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withName(entity.elementId()));
+    }
+
+    @Test
+    void shouldReturnUserTaskWithCachedProcessDefinitionVersion() {
+      // given - user tasks imported by the Tasklist 8.5/8.6 importer-850 have no version
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::processDefinitionVersion), null)
+              .create();
+      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+          .thenReturn(
+              new ProcessCacheResult(
+                  Map.of(
+                      entity.processDefinitionKey(),
+                      new ProcessCacheItem("ProcessName", Map.of(), 3))));
+
+      // when
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
+
+      // then
+      assertThat(searchQueryResult.items())
+          .singleElement()
+          .extracting(UserTaskEntity::processDefinitionVersion)
+          .isEqualTo(3);
+    }
+  }
+
+  @Nested
+  class LookupUserTask {
+
+    private StubbedBrokerClient brokerClient;
+    private UserTaskServices lookupServices;
+
+    @BeforeEach
+    void setUp() {
+      brokerClient = new StubbedBrokerClient();
+      final var executorProvider = mock(ApiServicesExecutorProvider.class);
+      when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+      lookupServices =
+          new UserTaskServices(
+              PHYSICAL_TENANT_ID,
+              brokerClient,
+              mock(SecurityContextProvider.class),
+              client,
+              formServices,
+              elementInstanceServices,
+              variableServices,
+              auditLogServices,
+              processCache,
+              executorProvider,
+              mock(BrokerRequestAuthorizationConverter.class));
+    }
+
+    @Test
+    void shouldSendLookupRequestForTheUserTask() {
+      // given
+      brokerClient.registerHandler(
+          BrokerUserTaskLookupRequest.class,
+          request -> new BrokerResponse<>(new UserTaskLookupRecord()));
+
+      // when
+      lookupServices.lookupUserTask(123L, List.of("recommendation"), authentication).join();
+
+      // then
+      final BrokerUserTaskLookupRequest request = brokerClient.getSingleBrokerRequest();
+      assertThat(request.getKey()).isEqualTo(123L);
+      assertThat(request.getRequestWriter().getFetchVariables()).containsExactly("recommendation");
+    }
+
+    @Test
+    void shouldReturnTheLookupResponseOfTheEngine() {
+      // given
+      final var response =
+          new UserTaskLookupRecord()
+              .setUserTask(new UserTaskRecord().setUserTaskKey(123L))
+              .setLifecycleState(UserTaskLifecycleState.CREATED);
+      brokerClient.registerHandler(
+          BrokerUserTaskLookupRequest.class, request -> new BrokerResponse<>(response));
+
+      // when
+      final var result = lookupServices.lookupUserTask(123L, List.of(), authentication).join();
+
+      // then
+      assertThat(result.getUserTask().getUserTaskKey()).isEqualTo(123L);
+      assertThat(result.getLifecycleState()).isEqualTo(UserTaskLifecycleState.CREATED);
     }
   }
 }

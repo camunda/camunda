@@ -17,10 +17,12 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class PersistedDecisionRequirements extends UnpackedObject implements DbValue {
+public final class PersistedDecisionRequirements extends UnpackedObject
+    implements DbValue, ProjectionOf<DecisionRequirementsRecord, PersistedDecisionRequirements> {
 
   private final StringProperty decisionRequirementsIdProp =
       new StringProperty("decisionRequirementsId");
@@ -51,7 +53,8 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
         .declareProperty(deploymentKeyProp);
   }
 
-  public void wrap(final DecisionRequirementsRecord record) {
+  @Override
+  public PersistedDecisionRequirements wrap(final DecisionRequirementsRecord record) {
     decisionRequirementsIdProp.setValue(record.getDecisionRequirementsIdBuffer());
     decisionRequirementsNameProp.setValue(record.getDecisionRequirementsNameBuffer());
     decisionRequirementsVersionProp.setValue(record.getDecisionRequirementsVersion());
@@ -61,6 +64,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
     resourceProp.setValue(record.getResourceBuffer());
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
+    return this;
   }
 
   public PersistedDecisionRequirements copy() {

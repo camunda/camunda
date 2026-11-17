@@ -14,14 +14,17 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
-public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
+public class PersistedCommandDistribution extends UnpackedObject
+    implements DbValue, ProjectionOf<CommandDistributionRecord, PersistedCommandDistribution> {
 
   private final StringProperty queueIdProperty = new StringProperty("queueId", "");
   private final EnumProperty<ValueType> valueTypeProperty =
@@ -29,8 +32,7 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
-  private final ObjectProperty<AuthInfo> authInfoProperty =
-      new ObjectProperty<>("authInfo", new AuthInfo());
+  private final AuthInfoProperty authInfoProperty = new AuthInfoProperty("authInfo");
 
   public PersistedCommandDistribution() {
     super(5);
@@ -41,6 +43,7 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
         .declareProperty(authInfoProperty);
   }
 
+  @Override
   public PersistedCommandDistribution wrap(
       final CommandDistributionRecord commandDistributionRecord) {
     if (commandDistributionRecord.getQueueId() != null) {
@@ -52,7 +55,7 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     intentProperty.setValue(commandDistributionRecord.getIntent().value());
 
     commandValueProperty.getValue().copyFrom(commandDistributionRecord.getCommandValue());
-    authInfoProperty.getValue().copyFrom(commandDistributionRecord.getAuthInfo());
+    authInfoProperty.setValue(commandDistributionRecord.getAuthInfo());
 
     return this;
   }

@@ -15,19 +15,20 @@ import io.camunda.zeebe.scheduler.ActorThreadGroup;
 import io.camunda.zeebe.scheduler.CpuThreadGroup;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public final class IoBoundActorsIntegrationTest {
-  @Rule public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
+  @RegisterExtension
+  public final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
 
   @Test
   public void shouldRunIoBoundActor() {
     final ActorThreadGroup ioBoundActorThreads =
-        schedulerRule.getBuilder().getIoBoundActorThreads();
+        actorScheduler.getBuilder().getIoBoundActorThreads();
 
     // given
     final AtomicReference<ActorThreadGroup> threadGroupRef =
@@ -41,7 +42,7 @@ public final class IoBoundActorsIntegrationTest {
         };
 
     // when
-    schedulerRule.get().submitActor(actor, SchedulingHints.ioBound()).join();
+    actorScheduler.get().submitActor(actor, SchedulingHints.ioBound()).join();
 
     // then
     assertThat(threadGroupRef.get()).isEqualTo(ioBoundActorThreads);
@@ -50,7 +51,7 @@ public final class IoBoundActorsIntegrationTest {
   @Test
   public void shouldStayOnIoBoundThreadGroupWhenInteractingWithCpuBound() {
     final ActorThreadGroup ioBoundActorThreads =
-        schedulerRule.getBuilder().getIoBoundActorThreads();
+        actorScheduler.getBuilder().getIoBoundActorThreads();
 
     // given
     final AtomicBoolean isOnWrongThreadGroup = new AtomicBoolean();
@@ -72,8 +73,8 @@ public final class IoBoundActorsIntegrationTest {
         };
 
     // when
-    schedulerRule.submitActor(callableActor).join();
-    schedulerRule.get().submitActor(ioBoundActor, SchedulingHints.ioBound()).join();
+    actorScheduler.submitActor(callableActor).join();
+    actorScheduler.get().submitActor(ioBoundActor, SchedulingHints.ioBound()).join();
 
     // then
     assertThat(isOnWrongThreadGroup).isFalse();
@@ -82,7 +83,7 @@ public final class IoBoundActorsIntegrationTest {
   @Test
   public void shouldStayOnIoBoundThreadGroupWhenInteractingWithCpuBoundOnBlockingPhase() {
     final ActorThreadGroup ioBoundActorThreads =
-        schedulerRule.getBuilder().getIoBoundActorThreads();
+        actorScheduler.getBuilder().getIoBoundActorThreads();
 
     // given
     final AtomicBoolean isOnWrongThreadGroup = new AtomicBoolean();
@@ -104,8 +105,8 @@ public final class IoBoundActorsIntegrationTest {
         };
 
     // when
-    schedulerRule.submitActor(callableActor).join();
-    schedulerRule.get().submitActor(ioBoundActor, SchedulingHints.ioBound()).join();
+    actorScheduler.submitActor(callableActor).join();
+    actorScheduler.get().submitActor(ioBoundActor, SchedulingHints.ioBound()).join();
 
     // then
     assertThat(isOnWrongThreadGroup).isFalse();

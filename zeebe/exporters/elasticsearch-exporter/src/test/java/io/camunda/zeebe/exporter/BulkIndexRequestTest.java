@@ -14,19 +14,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.BulkIndexRequest.IndexOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -83,7 +91,21 @@ final class BulkIndexRequestTest {
     recordAsMap.put("sequence", recordSequence.sequence());
     recordAsMap.remove("authorizations");
     recordAsMap.remove("agent");
+    recordAsMap.remove("requestChannelType");
+    recordAsMap.remove("requestToolName");
+    // storageOrdinal is stripped from record values during serialization;
+    // it can appear at any nesting level (e.g. embedded job records), so remove it recursively
+    removeStrippedKeys(recordAsMap);
     return MAPPER.writeValueAsBytes(recordAsMap).length;
+  }
+
+  private static void removeStrippedKeys(final Object node) {
+    if (node instanceof final Map<?, ?> map) {
+      map.remove("storageOrdinal");
+      map.values().forEach(BulkIndexRequestTest::removeStrippedKeys);
+    } else if (node instanceof final Collection<?> collection) {
+      collection.forEach(BulkIndexRequestTest::removeStrippedKeys);
+    }
   }
 
   @Test
@@ -246,6 +268,18 @@ final class BulkIndexRequestTest {
           .extracting(source -> source.get("agent"))
           .describedAs("Expect that the records are NOT serialized with agent")
           .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("requestChannelType"))
+          .describedAs("Expect that the records are NOT serialized with requestChannelType")
+          .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("requestToolName"))
+          .describedAs("Expect that the records are NOT serialized with requestToolName")
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -258,7 +292,8 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CommandDistributionRecord()
                               .setPartitionId(1)
-                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+                              .setAuthInfo(
+                                  AuthInfo.ofClaims(Map.of("authorized_username", "test-data")))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -285,7 +320,8 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CommandDistributionRecord()
                               .setPartitionId(1)
-                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+                              .setAuthInfo(
+                                  AuthInfo.ofClaims(Map.of("authorized_username", "test-data")))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -382,6 +418,456 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that decisionEvaluationInstanceKey is suppressed via @JsonIgnore on the impl class")
           .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutPriorityOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobRecord().setPriority(50)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("priority"))
+          .describedAs(
+              "Expect that job records are NOT serialized with priority on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithPriorityOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobRecord().setPriority(50)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("priority"))
+          .describedAs("Expect that job records are serialized with priority on current version")
+          .containsExactly(50);
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutBusinessIdOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that job records are NOT serialized with businessId on previous version")
+          .allSatisfy(
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("businessId"));
+    }
+
+    @Test
+    void shouldIndexJobRecordWithBusinessIdOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs("Expect that job records are serialized with businessId on current version")
+          .containsExactly("order-123");
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutJobLeaseTokenOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobRecord().setJobLeaseToken("lease-abc-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that job records are NOT serialized with jobLeaseToken on previous version")
+          .allSatisfy(
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("jobLeaseToken"));
+    }
+
+    @Test
+    void shouldIndexJobRecordWithJobLeaseTokenOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobRecord().setJobLeaseToken("lease-abc-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobLeaseToken"))
+          .describedAs(
+              "Expect that job records are serialized with jobLeaseToken on current version")
+          .containsExactly("lease-abc-123");
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutSecretReferencesOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobRecord().addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that job records are NOT serialized with secretReferences on previous version")
+          .allSatisfy(
+              value ->
+                  assertThat((Map<String, Object>) value).doesNotContainKey("secretReferences"));
+    }
+
+    @Test
+    void shouldIndexJobRecordWithSecretReferencesOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobRecord().addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("secretReferences"))
+          .describedAs(
+              "Expect that job records are serialized with secretReferences on current version")
+          .containsExactly(
+              List.of(
+                  Map.of(
+                      "storeId", "store", "secretReference", "secret", "path", "/customHeaders")));
+    }
+
+    @Test
+    void shouldIndexJobBatchRecordWithoutWithLeaseOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB_BATCH,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobBatchRecord().setType("test-type").setWithLease(true)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that job batch records are NOT serialized with withLease on previous version")
+          .allSatisfy(
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("withLease"));
+    }
+
+    @Test
+    void shouldIndexJobBatchRecordWithWithLeaseOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB_BATCH,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobBatchRecord().setType("test-type").setWithLease(true)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("withLease"))
+          .describedAs(
+              "Expect that job batch records are serialized with withLease on current version")
+          .containsExactly(true);
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithoutBusinessIdOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.USER_TASK,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new UserTaskRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that user task records are NOT serialized with businessId on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexUserTaskRecordWithBusinessIdOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.USER_TASK,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new UserTaskRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that user task records are serialized with businessId on current version")
+          .containsExactly("order-123");
+    }
+
+    @Test
+    void shouldIndexDecisionEvaluationRecordWithoutBusinessIdOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.DECISION_EVALUATION,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new DecisionEvaluationRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that decision evaluation records are NOT serialized with businessId on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexDecisionEvaluationRecordWithBusinessIdOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.DECISION_EVALUATION,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new DecisionEvaluationRecord().setBusinessId("order-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
+          .describedAs(
+              "Expect that decision evaluation records are serialized with businessId on current version")
+          .containsExactly("order-123");
+    }
+
+    @Test
+    void shouldIndexClusterVariableRecordWithoutMetadataKindAndSecretReferencesOnPreviousVersion() {
+      // given
+      final var metadata = Map.of("credentialType", "OAUTH2");
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.CLUSTER_VARIABLE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new ClusterVariableRecord()
+                              .setName("cluster-variable")
+                              .setMetadata(
+                                  new UnsafeBuffer(MsgPackConverter.convertToMsgPack(metadata)))
+                              .setKind(ClusterVariableKind.SECRET_REFERENCE)
+                              .addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that cluster variable records are NOT serialized with metadata, kind, or"
+                  + " secretReferences on previous version")
+          .allSatisfy(
+              value ->
+                  assertThat((Map<String, Object>) value)
+                      .doesNotContainKeys("metadata", "kind", "secretReferences"));
+    }
+
+    @Test
+    void shouldIndexClusterVariableRecordWithMetadataKindAndSecretReferencesOnCurrentVersion() {
+      // given
+      final var metadata = Map.of("credentialType", "OAUTH2");
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.CLUSTER_VARIABLE,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new ClusterVariableRecord()
+                              .setName("cluster-variable")
+                              .setMetadata(
+                                  new UnsafeBuffer(MsgPackConverter.convertToMsgPack(metadata)))
+                              .setKind(ClusterVariableKind.SECRET_REFERENCE)
+                              .addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that cluster variable records are serialized with metadata, kind, and"
+                  + " secretReferences on current version")
+          .allSatisfy(
+              value -> {
+                final var valueMap = (Map<String, Object>) value;
+                assertThat(valueMap).containsKey("metadata");
+                assertThat((Map<String, Object>) valueMap.get("metadata"))
+                    .containsExactlyInAnyOrderEntriesOf(metadata);
+                assertThat(valueMap.get("kind")).isEqualTo("SECRET_REFERENCE");
+                assertThat((List<Map<String, Object>>) valueMap.get("secretReferences"))
+                    .containsExactly(
+                        Map.of(
+                            "storeId", "store",
+                            "secretReference", "secret",
+                            "path", "/customHeaders"));
+              });
     }
 
     private Record<?> deserializeSource(final IndexOperation operation) {

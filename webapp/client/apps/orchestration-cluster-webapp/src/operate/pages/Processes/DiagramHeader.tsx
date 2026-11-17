@@ -1,0 +1,69 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useTranslation} from 'react-i18next';
+import {CopyButton} from '#/operate/shared/CopyButton/CopyButton';
+import {PanelHeader, Description, DescriptionTitle, DescriptionData, HeaderActions} from './styled';
+import type {ProcessDefinitionSelection} from './DiagramPanel';
+import {getProcessDefinitionName} from './getProcessDefinitionName';
+import {ProcessOperations} from './ProcessOperations/ProcessOperations';
+
+type Props = {
+	processDefinitionSelection: ProcessDefinitionSelection;
+	panelHeaderRef?: React.RefObject<HTMLDivElement | null>;
+};
+
+const DiagramHeader: React.FC<Props> = ({processDefinitionSelection, panelHeaderRef}) => {
+	const {t} = useTranslation();
+	const title = processDefinitionSelection.kind === 'no-match' ? t('operate.processes.diagramHeader.title') : undefined;
+
+	if (processDefinitionSelection.kind === 'no-match') {
+		return <PanelHeader title={title} ref={panelHeaderRef} />;
+	}
+
+	const {definition} = processDefinitionSelection;
+	const name = getProcessDefinitionName(definition);
+	const versionTag =
+		processDefinitionSelection.kind === 'single-version' ? processDefinitionSelection.definition.versionTag : undefined;
+
+	return (
+		<PanelHeader ref={panelHeaderRef}>
+			<Description>
+				<DescriptionTitle>{t('operate.processes.diagramHeader.processName')}</DescriptionTitle>
+				<DescriptionData title={name}>
+					<span role="heading" aria-level={2}>
+						{name}
+					</span>
+				</DescriptionData>
+			</Description>
+			<Description>
+				<DescriptionTitle>{t('operate.processes.diagramHeader.processId')}</DescriptionTitle>
+				<DescriptionData title={definition.processDefinitionId}>
+					{definition.processDefinitionId}
+					<CopyButton value={definition.processDefinitionId} hasIconOnly />
+				</DescriptionData>
+			</Description>
+			{versionTag && (
+				<Description>
+					<DescriptionTitle>{t('operate.processes.diagramHeader.versionTag')}</DescriptionTitle>
+					<DescriptionData title={versionTag}>{versionTag}</DescriptionData>
+				</Description>
+			)}
+			<HeaderActions>
+				{processDefinitionSelection.kind === 'single-version' && (
+					<ProcessOperations
+						key={processDefinitionSelection.definition.processDefinitionKey}
+						definition={processDefinitionSelection.definition}
+					/>
+				)}
+			</HeaderActions>
+		</PanelHeader>
+	);
+};
+
+export {DiagramHeader};

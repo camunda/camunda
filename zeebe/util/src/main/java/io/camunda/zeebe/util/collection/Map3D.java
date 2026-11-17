@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A cuboid is a 3D matrix, also sometimes known as a prism, or 3D tensor. It maps 3 different keys
@@ -44,7 +45,7 @@ public interface Map3D<RowT, ColT, FaceT, T> {
    * @param faceKey which face of the cube to pick the row/column pair from
    * @return the value indexed at the row/column, or null if none
    */
-  T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey);
+  @Nullable T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey);
 
   /**
    * Sets the given value at the column {@code columnKey} in row {@code rowKey}.
@@ -132,7 +133,7 @@ public interface Map3D<RowT, ColT, FaceT, T> {
     }
 
     @Override
-    public T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey) {
+    public @Nullable T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey) {
       return marray.get(rowKey.ordinal(), columnKey.ordinal(), faceKey.ordinal());
     }
 
@@ -179,7 +180,7 @@ public interface Map3D<RowT, ColT, FaceT, T> {
     }
 
     @Override
-    public T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey) {
+    public @Nullable T get(final RowT rowKey, final ColT columnKey, final FaceT faceKey) {
       final var row = cube.get(rowKey);
       if (row == null) {
         return null;

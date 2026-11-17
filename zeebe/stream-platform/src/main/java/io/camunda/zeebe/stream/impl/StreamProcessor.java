@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -32,14 +35,16 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.agrona.CloseHelper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /*
@@ -82,6 +87,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
 
+  /**
+   * How long processing may sit at the pending-side-effects limit before it counts as a stall
+   * rather than a normal, brief wait for the next commit. Well above a commit round trip under
+   * healthy operation (milliseconds), so ordinary operation never crosses it.
+   */
+  public static final Duration PENDING_SIDE_EFFECTS_STALL_THRESHOLD = Duration.ofSeconds(30);
+
+  public static final Duration SLOW_ON_RECOVERED_LISTENER_THRESHOLD = Duration.ofSeconds(1);
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -91,6 +105,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
   private final StageableScheduledCommandCache scheduledCommandCache;
+  // Reused across ticks so the warning repeats at most once per
+  // PENDING_SIDE_EFFECTS_STALL_THRESHOLD
+  // for as long as the stall lasts, instead of once per health-check tick.
+  private final Logger pendingSideEffectsStallLogger =
+      new ThrottledLogger(LOG, PENDING_SIDE_EFFECTS_STALL_THRESHOLD);
 
   // log stream
   private final LogStream logStream;
@@ -99,22 +118,22 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ZeebeDb zeebeDb;
   // processing
   private final StreamProcessorContext streamProcessorContext;
-  private final String actorName;
-  private LogStreamReader logStreamReader;
-  private ProcessingStateMachine processingStateMachine;
-  private ReplayStateMachine replayStateMachine;
+  private @Nullable LogStreamReader logStreamReader;
+  private @Nullable LogStreamReader processingLogStreamReader;
+  private @Nullable ProcessingStateMachine processingStateMachine;
+  private @Nullable ReplayStateMachine replayStateMachine;
 
-  private CompletableActorFuture<Void> openFuture;
+  private @Nullable CompletableActorFuture<Void> openFuture;
   private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   private volatile long lastTickTime;
   private volatile boolean shouldProcess = true;
-  private ActorFuture<LastProcessingPositions> replayCompletedFuture;
+  private @Nullable ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
-  private AsyncScheduleServiceContext asyncScheduleServiceContext;
-  private ProcessingScheduleServiceImpl processorActorService;
+  private @Nullable AsyncScheduleServiceContext asyncScheduleServiceContext;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
+    super("StreamProcessor", processorBuilder.getProcessingContext().partitionId());
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = new ArrayList<>(processorBuilder.getLifecycleListeners());
     zeebeDb = processorBuilder.getZeebeDb();
@@ -128,7 +147,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             .abortCondition(this::isClosed);
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
-    actorName = buildActorName("StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(streamProcessorContext.getMeterRegistry());
     metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
@@ -139,22 +157,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
-  }
-
-  @Override
   protected void onActorStarting() {
     final var reader = logStream.newLogStreamReader();
     logStreamReader = reader;
     streamProcessorContext.logStreamReader(reader);
+    if (!isInReplayOnlyMode()) {
+      // Only the processing state machine reads uncommitted records, and it is never created in
+      // replay-only mode. Since an open reader defers deletion of the segment it sits on, opening
+      // one here would hold on to a segment that nothing ever reads.
+      final var processingReader = logStream.newUncommittedLogStreamReader();
+      processingLogStreamReader = processingReader;
+      streamProcessorContext.processingLogStreamReader(processingReader);
+    }
   }
 
   @Override
@@ -177,16 +191,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getScheduledTaskCheckInterval(),
               scheduledTaskMetrics);
 
-      asyncScheduleServiceContext =
-          new AsyncScheduleServiceContext(actorSchedulingService, actorServiceFactory, partitionId);
-
-      processorActorService = actorServiceFactory.create();
+      final var asyncScheduleServiceContext =
+          new AsyncScheduleServiceContext(
+              actorSchedulingService, actorServiceFactory, streamProcessorContext.partitionId());
+      this.asyncScheduleServiceContext = asyncScheduleServiceContext;
 
       final var processingScheduleService =
-          new ExtendedProcessingScheduleServiceImpl(
-              asyncScheduleServiceContext,
-              processorActorService,
-              streamProcessorContext.enableAsyncScheduledTasks());
+          new ExtendedProcessingScheduleServiceImpl(asyncScheduleServiceContext);
       streamProcessorContext.scheduleService(processingScheduleService);
 
       initRecordProcessors();
@@ -196,7 +207,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       replayStateMachine =
           new ReplayStateMachine(recordProcessors, streamProcessorContext, this::shouldProcessNext);
 
-      openFuture.complete(null);
+      requireNonNull(openFuture).complete(unit());
+
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
 
       if (!shouldProcess) {
@@ -240,7 +252,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   protected void onActorClosed() {
-    closeFuture.complete(null);
+    closeFuture.complete(unit());
     LOG.debug("Closed stream processor controller {}.", getName());
   }
 
@@ -254,7 +266,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
-      actor.run(() -> asyncScheduleServiceContext.closeActors(actor).andThen(actor::close, actor));
+      actor.run(
+          () ->
+              requireNonNull(asyncScheduleServiceContext)
+                  .closeActors(actor)
+                  .andThen(actor::close, actor));
     }
 
     return closeFuture;
@@ -272,24 +288,55 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
-    closeFuture.complete(null);
+    closeFuture.complete(unit());
   }
 
   private boolean shouldProcessNext() {
     return isOpened() && shouldProcess;
   }
 
+  /**
+   * Closes the reader that replay reads committed records from, at most once. In REPLAY mode replay
+   * never finishes, so this only runs on shutdown; in PROCESSING mode it runs as soon as replay is
+   * done.
+   */
+  private void closeReplayReader() {
+    final var reader = logStreamReader;
+    if (reader != null) {
+      logStreamReader = null;
+      reader.close();
+    }
+  }
+
   private void tearDown() {
-    processorActorService.close();
-    streamProcessorContext.getLogStreamReader().close();
-    logStream.removeRecordAvailableListener(this);
-    replayStateMachine.close();
+    closeReplayReader();
+    CloseHelper.close(processingLogStreamReader);
+    logStream.removeAppendedRecordAvailableListener(this);
+    CloseHelper.close(processingStateMachine);
+    CloseHelper.close(replayStateMachine);
     scheduledCommandCache.clear();
   }
 
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
     actor.schedule(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+    warnIfStalledOnPendingSideEffects();
+  }
+
+  private void warnIfStalledOnPendingSideEffects() {
+    if (processingStateMachine == null) {
+      return;
+    }
+
+    final var stalledFor = processingStateMachine.getPendingSideEffectsBlockedDuration();
+    if (stalledFor.compareTo(PENDING_SIDE_EFFECTS_STALL_THRESHOLD) >= 0) {
+      pendingSideEffectsStallLogger.warn(
+          "Processing on partition {} has been stalled for {} waiting for pending side effects to "
+              + "commit. This can mean replication is lagging, or that maxPendingSideEffects is too "
+              + "low for this partition's commit latency.",
+          partitionId,
+          stalledFor);
+    }
   }
 
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
@@ -300,13 +347,38 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             recordProcessors,
             scheduledCommandCache);
 
-    logStream.registerRecordAvailableListener(this);
+    // Processing reads uncommitted records, so it must be woken as soon as records are appended;
+    // the later commit of those same records would tell it nothing new.
+    logStream.registerAppendedRecordAvailableListener(this);
 
     // start reading
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
+    lifecycleAwareListeners.forEach(this::notifyRecovered);
     processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
+    }
+  }
+
+  // Listeners run synchronously on the actor before the first command is read, so a slow one
+  // delays processing without any other trace. Log the ones that exceed the threshold.
+  private void notifyRecovered(final StreamProcessorLifecycleAware listener) {
+    final var clock = streamProcessorContext.getMeterRegistry().config().clock();
+    final long startNanos = clock.monotonicTime();
+    try {
+      listener.onRecovered(streamProcessorContext);
+    } finally {
+      // Recorded in finally so a listener that throws still shows up as slow, if it was.
+      final var duration = Duration.ofNanos(clock.monotonicTime() - startNanos);
+      metrics.observeOnRecoveredListenerDuration(listener.getClass().getName(), duration);
+      if (duration.compareTo(SLOW_ON_RECOVERED_LISTENER_THRESHOLD) > 0) {
+        LOG.warn(
+            "onRecovered listener {} on partition {} took {}, longer than {}; processing is delayed"
+                + " until all listeners return",
+            listener.getClass().getName(),
+            partitionId,
+            duration,
+            SLOW_ON_RECOVERED_LISTENER_THRESHOLD);
+      }
     }
   }
 
@@ -316,7 +388,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       openFuture = new CompletableActorFuture<>();
       actorSchedulingService.submitActor(this);
     }
-    return openFuture;
+    return requireNonNull(openFuture);
   }
 
   private void initRecordProcessors() {
@@ -352,6 +424,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             .getLastProcessedPositionState()
             .getLastSuccessfulProcessedRecordPosition();
 
+    final var logStreamReader = requireNonNull(this.logStreamReader);
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader
         && streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
@@ -367,14 +440,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
+    // Replay is the only consumer of the committed reader, and it is done: it is reached only in
+    // PROCESSING mode, where the replay state machine never registers as a record-available
+    // listener and so is never woken again. Leaving the reader open would pin the oldest log
+    // position that any reader still needs, keeping segments (and, in the test log storage, every
+    // appended entry) alive for the lifetime of the partition.
+    closeReplayReader();
+
     final var writer = logStream.newLogStreamWriter();
     streamProcessorContext.logStreamWriter(writer);
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
     metrics.setStreamProcessorProcessing();
 
-    processorActorService
-        .open(actor)
-        .andThen(() -> asyncScheduleServiceContext.submitActors(actor), actor)
+    requireNonNull(asyncScheduleServiceContext)
+        .submitActors(actor)
         .onComplete(
             (ignored, error) -> {
               if (error != null) {
@@ -387,36 +466,41 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onFailure(final Throwable throwable) {
-    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
+    LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
 
-    asyncScheduleServiceContext
-        .closeActors(actor)
-        .onComplete(
-            (v, t) -> {
-              actor.fail(throwable);
-              if (!openFuture.isDone()) {
-                openFuture.completeExceptionally(throwable);
-              }
+    // The context does not exist yet if we fail while recovering from the snapshot; there are no
+    // async actors to close then, but we must still fail the actor and notify everyone waiting.
+    final ActorFuture<Void> actorsClosed =
+        asyncScheduleServiceContext != null
+            ? asyncScheduleServiceContext.closeActors(actor)
+            : CompletableActorFuture.completed();
 
-              if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
-                  && !(throwable instanceof UnrecoverableException)) {
-                // If the stream processor is in replay mode, we do not want to report it as dead
-                // because it is not critical. The leaders are still active and able to process
-                // requests.
-                final var report =
-                    HealthReport.unhealthy(this)
-                        .withIssue(throwable, ActorClock.current().instant());
-                failureListeners.forEach(l -> l.onFailure(report));
-              } else {
+    actorsClosed.onComplete(
+        (v, t) -> {
+          actor.fail(throwable);
+          final var actorClock = ActorClock.current();
+          final var instant = actorClock != null ? actorClock.instant() : Instant.now();
+          final var future = requireNonNull(openFuture);
+          if (!future.isDone()) {
+            future.completeExceptionally(throwable);
+          }
 
-                // If it is a leader, we always want to report it as dead so that all related
-                // services
-                // are shutdown. (https://github.com/camunda/camunda/issues/16180)
-                final var report =
-                    HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
-                failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-              }
-            });
+          if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
+              && !(throwable instanceof UnrecoverableException)) {
+            // If the stream processor is in replay mode, we do not want to report it as dead
+            // because it is not critical. The leaders are still active and able to process
+            // requests.
+            final var report = HealthReport.unhealthy(this).withIssue(throwable, instant);
+            failureListeners.forEach(l -> l.onFailure(report));
+          } else {
+
+            // If it is a leader, we always want to report it as dead so that all related
+            // services
+            // are shutdown. (https://github.com/camunda/camunda/issues/16180)
+            final var report = HealthReport.dead(this).withIssue(throwable, instant);
+            failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+          }
+        });
   }
 
   public boolean isOpened() {
@@ -435,6 +519,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return actor.call(
         () -> {
           if (isInReplayOnlyMode() || processingStateMachine == null) {
+            final var replayStateMachine = requireNonNull(this.replayStateMachine);
             return replayStateMachine.getLastSourceEventPosition();
           } else {
             return processingStateMachine.getLastSuccessfulProcessedRecordPosition();
@@ -450,6 +535,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return actor.call(
         () -> {
           if (isInReplayOnlyMode()) {
+            final var replayStateMachine = requireNonNull(this.replayStateMachine);
             return replayStateMachine.getLastReplayedEventPosition();
           } else if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
@@ -462,13 +548,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public String componentName() {
-    return actorName;
+    return getName();
   }
 
   @Override
   public HealthReport getHealthReport() {
-    final var instant =
-        ActorClock.current() != null ? ActorClock.current().instant() : Instant.now();
+    final var actorClock = ActorClock.current();
+    final var instant = actorClock != null ? actorClock.instant() : Instant.now();
     if (actor.isClosed()) {
       return HealthReport.unhealthy(this).withMessage("actor is closed", instant);
     }
@@ -476,6 +562,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this)
           .withMessage("Processing not making progress. It is in an error handling loop.", instant);
+    }
+
+    // A processor stalled here keeps ticking normally: it is not blocked in a runUntilDone loop,
+    // it is simply choosing not to read further records, so the check below would not catch it.
+    if (processingStateMachine != null) {
+      final var stalledFor = processingStateMachine.getPendingSideEffectsBlockedDuration();
+      if (stalledFor.compareTo(PENDING_SIDE_EFFECTS_STALL_THRESHOLD) >= 0) {
+        return HealthReport.unhealthy(this)
+            .withMessage(
+                "Processing has been stalled for "
+                    + stalledFor
+                    + " waiting for pending side effects to commit",
+                instant);
+      }
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
@@ -528,7 +628,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void setStateToPausedAndNotifyListeners() {
-    if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
+    if (isInReplayOnlyMode() || !requireNonNull(replayCompletedFuture).isDone()) {
       LOG.debug("Paused replay for partition {}", partitionId);
     } else {
       lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
@@ -540,14 +640,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     metrics.setStreamProcessorPaused();
   }
 
-  public void resumeProcessing() {
-    actor.call(
+  public ActorFuture<Void> resumeProcessing() {
+    return actor.call(
         () -> {
           if (!shouldProcess) {
             shouldProcess = true;
-            if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
+            if (isInReplayOnlyMode() || !requireNonNull(replayCompletedFuture).isDone()) {
               streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
               metrics.setStreamProcessorReplay();
+              final var replayStateMachine = requireNonNull(this.replayStateMachine);
               actor.submit(replayStateMachine::replayNextEvent);
               LOG.debug("Resumed replay for partition {}", partitionId);
             } else {
@@ -557,7 +658,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
               metrics.setStreamProcessorProcessing();
               if (processingStateMachine != null) {
-                actor.submit(processingStateMachine::tryToReadNextRecord);
+                actor.submit(processingStateMachine.getReadNextRecordTask());
               }
               LOG.debug("Resumed processing for partition {}", partitionId);
             }
@@ -567,7 +668,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public void onRecordAvailable() {
-    actor.run(processingStateMachine::tryToReadNextRecord);
+    final var processingStateMachine = requireNonNull(this.processingStateMachine);
+    actor.run(processingStateMachine.getReadNextRecordTask());
   }
 
   /**

@@ -11,14 +11,18 @@ import {styles} from '@carbon/elements';
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 
-const Grid = styled.div`
+const Grid = styled.main`
   display: grid;
   align-content: center;
   padding: var(--cds-spacing-11);
-  margin-block: var(--cds-spacing-07) var(--cds-spacing-09);
+  margin-block: calc(var(--c3-header-height, 0px) + var(--cds-spacing-07))
+    var(--cds-spacing-09);
   margin-inline: var(--cds-spacing-08);
   background-color: var(--cds-layer);
-  height: calc(100vh - var(--cds-spacing-07) - 2 * var(--cds-spacing-09));
+  height: calc(
+    100vh - var(--c3-header-height, 0px) - var(--cds-spacing-07) - 2 *
+      var(--cds-spacing-09)
+  );
 `;
 
 const Content = styled(Stack)`

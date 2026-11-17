@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -18,10 +18,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 
 public class TestWebappClient {
+
+  // Generous upper bound, not the expected wait. On ES/OS the default user only becomes
+  // searchable once it is exported and the index refreshes (gated behind schema init and the
+  // exporter's backoff), which can lag startup by several seconds under CI load. The retry is
+  // condition-based and returns as soon as login is accepted, so this only bites when something
+  // is genuinely wrong.
+  private static final Duration LOGIN_TIMEOUT = Duration.ofSeconds(60);
 
   private final URI endpoint;
 
@@ -29,27 +40,96 @@ public class TestWebappClient {
     this.endpoint = endpoint;
   }
 
-  public TestLoggedInWebappClient logIn(String username, String password) {
+  public TestLoggedInWebappClient logIn(final String username, final String password) {
 
     final var cookieManager = new CookieManager();
     final var httpClient = HttpClient.newBuilder().cookieHandler(cookieManager).build();
-    final var loginUri = endpoint.resolve("login");
+    // Fetched once for the whole retry loop below: the server only rotates the token when a login
+    // succeeds, never on the rejections this loop retries through.
+    final var loginCsrfToken = requestLoginCsrfToken(httpClient);
+    final var loginRequest = buildLoginRequest(username, password, loginCsrfToken);
+    final var lastResponse = new AtomicReference<HttpResponse<String>>();
 
-    final var loginRequest =
+    // Retry until the login is accepted (see LOGIN_TIMEOUT): until the user is searchable the
+    // username lookup misses and login is rejected, and handing back an unauthenticated client here
+    // would only surface later as a confusing 401 on the first authenticated request.
+    try {
+      Awaitility.await("login of user '%s'".formatted(username))
+          .atMost(LOGIN_TIMEOUT)
+          .pollDelay(Duration.ZERO)
+          .pollInterval(Duration.ofMillis(100))
+          .until(
+              () -> {
+                lastResponse.set(sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest));
+                return isSuccessful(lastResponse.get());
+              });
+    } catch (final ConditionTimeoutException e) {
+      final var response = lastResponse.get();
+      throw new IllegalStateException(
+          "Login of user '%s' did not succeed within %s; last response status was %s, CSRF token sent: %s"
+              .formatted(
+                  username,
+                  LOGIN_TIMEOUT,
+                  response == null ? "n/a" : response.statusCode(),
+                  loginCsrfToken != null),
+          e);
+    }
+
+    // The login response sends a token only if the server rotated it. If it did not, the token from
+    // the GET is still valid for this session.
+    final var csrfToken =
+        lastResponse
+            .get()
+            .headers()
+            .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
+            .orElse(loginCsrfToken);
+
+    return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
+  }
+
+  /**
+   * Gets the CSRF token that the login endpoint sends in a GET response. The login POST must send
+   * this token back, because the login path always enforces CSRF. The server rejects a POST without
+   * a token, even before a session exists.
+   *
+   * <p>A transport failure of this request is thrown rather than swallowed. Logging in without a
+   * token fails for the rest of the timeout below and reports the rejected login, which hides that
+   * the token request was the part that broke; the failure of that wait names whether a token was
+   * sent.
+   *
+   * <p>The status of the response is deliberately not checked: the server writes the token header
+   * before it handles the request, so an error response carries a usable token just as a successful
+   * one does, and rejecting it here would break every deployment that answers this endpoint with
+   * anything other than a success.
+   *
+   * @return the token, or {@code null} if the response carries none
+   */
+  private String requestLoginCsrfToken(final HttpClient httpClient) {
+    final var tokenRequest = HttpRequest.newBuilder().uri(endpoint.resolve("login")).GET().build();
+    return sendRequestAndThrowExceptionOnFailure(httpClient, tokenRequest)
+        .headers()
+        .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
+        .orElse(null);
+  }
+
+  private HttpRequest buildLoginRequest(
+      final String username, final String password, final String csrfToken) {
+    final var request =
         HttpRequest.newBuilder()
-            .uri(loginUri)
+            .uri(endpoint.resolve("login"))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    "username=" + username + "&password=" + password))
-            .build();
+                    "username=" + username + "&password=" + password));
+    if (csrfToken != null) {
+      request.header(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN, csrfToken);
+    }
+    return request.build();
+  }
 
-    final var loginResponse = sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest);
-
-    final var csrfToken =
-        loginResponse.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null);
-
-    return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
+  private static boolean isSuccessful(final HttpResponse<?> response) {
+    final int status = response.statusCode();
+    return status >= 200 && status < 300;
   }
 
   private static Either<Exception, HttpResponse<String>> sendRequest(
@@ -90,11 +170,11 @@ public class TestWebappClient {
     }
 
     public HttpCookie getSessionCookie() {
-      return findCookie(WebSecurityConfig.SESSION_COOKIE);
+      return findCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
     }
 
     public HttpCookie getCsrfCookie() {
-      return findCookie(WebSecurityConfig.X_CSRF_TOKEN);
+      return findCookie(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN);
     }
 
     public URI getRootEndpoint() {

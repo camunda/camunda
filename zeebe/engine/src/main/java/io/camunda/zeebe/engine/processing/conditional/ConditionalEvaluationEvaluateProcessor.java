@@ -7,14 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.conditional;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -27,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvalua
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -56,8 +61,10 @@ public class ConditionalEvaluationEvaluateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ProcessState processState;
   private final ConditionalSubscriptionState conditionalSubscriptionState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final ExpressionProcessor expressionProcessor;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public ConditionalEvaluationEvaluateProcessor(
       final Writers writers,
@@ -65,16 +72,20 @@ public class ConditionalEvaluationEvaluateProcessor
       final ProcessingState processingState,
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionProcessor expressionProcessor) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
+      final ExpressionProcessor expressionProcessor,
+      final StorageOrdinalProvider storageOrdinalProvider) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
     this.keyGenerator = keyGenerator;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.expressionProcessor = expressionProcessor;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -82,18 +93,28 @@ public class ConditionalEvaluationEvaluateProcessor
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            storageOrdinalProvider);
   }
 
   @Override
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
-    if (!authCheckBehavior.isAssignedToTenant(command, record.getTenantId())) {
-      final var failureMessage =
-          USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId());
-      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, failureMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, failureMessage);
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
+    final var tenantCheckResult =
+        tenantCheck.checkTenantsRequiringPrincipal(
+            List.of(record.getTenantId()),
+            authorizedTenants,
+            record,
+            () ->
+                new Rejection(
+                    RejectionType.FORBIDDEN,
+                    USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId())));
+    if (tenantCheckResult.isLeft()) {
+      final var rejection = tenantCheckResult.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -104,7 +125,8 @@ public class ConditionalEvaluationEvaluateProcessor
       final var failureMessage =
           NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, failureMessage);
       return;
     }
 
@@ -115,21 +137,30 @@ public class ConditionalEvaluationEvaluateProcessor
 
     for (final var match : matchedStartEvents) {
       final long processInstanceKey = keyGenerator.nextKey();
+      final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
 
-      eventHandle.activateProcessInstanceForStartEvent(
-          match.processDefinitionKey(),
-          processInstanceKey,
-          match.startEventId(),
-          record.getVariablesBuffer(),
-          record.getTenantId());
+      final var activated =
+          eventHandle.activateProcessInstanceForStartEvent(
+              match.processDefinitionKey(),
+              processInstanceKey,
+              match.startEventId(),
+              record.getVariablesBuffer(),
+              record.getTenantId(),
+              null,
+              storageOrdinal);
 
-      record.addStartedProcessInstance(match.processDefinitionKey(), processInstanceKey);
+      if (activated) {
+        // Only report instances that were actually started; a draining definition is skipped and
+        // must not appear in the EVALUATED event or the response.
+        record.addStartedProcessInstance(
+            match.processDefinitionKey(), processInstanceKey, storageOrdinal);
+      }
     }
 
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ConditionalEvaluationIntent.EVALUATED, record);
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ConditionalEvaluationIntent.EVALUATED, record, command);
   }
 
@@ -139,7 +170,7 @@ public class ConditionalEvaluationEvaluateProcessor
     if (error instanceof final ForbiddenException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
@@ -205,18 +236,23 @@ public class ConditionalEvaluationEvaluateProcessor
 
   private void checkAuthorizationToStartProcessInstance(
       final TypedRecord<ConditionalEvaluationRecord> command, final String bpmnProcessId) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(bpmnProcessId)
-            .build();
-
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
-    if (isAuthorized.isLeft()) {
-      throw new ForbiddenException(authRequest);
+    final var authResult =
+        cslCheck.check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.CREATE_PROCESS_INSTANCE))
+                        .resourceId(bpmnProcessId)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION));
+    if (authResult.isLeft()) {
+      throw new ForbiddenException(authResult.getLeft());
     }
   }
 

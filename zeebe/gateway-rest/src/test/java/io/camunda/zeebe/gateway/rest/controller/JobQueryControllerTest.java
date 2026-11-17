@@ -20,16 +20,19 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -52,6 +55,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                     "kind": "TASK_LISTENER",
                     "listenerEventType": "COMPLETING",
                     "retries": 3,
+                    "priority": 50,
                     "isDenied": true,
                     "deniedReason": "test denied reason",
                     "hasFailedWithRetriesLeft": false,
@@ -66,6 +70,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                     "processDefinitionKey": "2",
                     "processInstanceKey": "3",
                     "rootProcessInstanceKey": "37",
+                    "businessId": "business-1",
+                    "storageOrdinal": 1001,
                     "elementId": "elementId",
                     "elementInstanceKey": "4",
                     "tenantId": "<default>",
@@ -94,6 +100,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                       .kind(JobKind.TASK_LISTENER)
                       .listenerEventType(ListenerEventType.COMPLETING)
                       .retries(3)
+                      .priority(50)
                       .isDenied(true)
                       .deniedReason("test denied reason")
                       .hasFailedWithRetriesLeft(false)
@@ -106,6 +113,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                       .processDefinitionKey(2L)
                       .processInstanceKey(3L)
                       .rootProcessInstanceKey(37L)
+                      .businessId("business-1")
+                      .storageOrdinal(1001)
                       .elementId("elementId")
                       .elementInstanceKey(4L)
                       .tenantId("<default>")
@@ -119,12 +128,16 @@ public class JobQueryControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
+  @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   @BeforeEach
   void setupJobServices() {
+    Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
   }
 
   @Test
@@ -172,6 +185,7 @@ public class JobQueryControllerTest extends RestControllerTest {
         "processDefinitionKey": "2",
         "processInstanceKey": "3",
         "retries": 3,
+        "priority": -80,
         "state": "COMPLETED",
         "tenantId": "<default>",
         "type": "testJob",
@@ -219,12 +233,120 @@ public class JobQueryControllerTest extends RestControllerTest {
                             .processDefinitionKeys(2L)
                             .processInstanceKeys(3L)
                             .retries(3)
+                            .priority(-80)
                             .states(JobEntity.JobState.COMPLETED.name())
                             .tenantIds("<default>")
                             .types("testJob")
                             .workers("testWorker")
                             .creationTimes(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
                             .lastUpdateTimes(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
+  void shouldSearchExecutionListenerJobWithCancelEventType() {
+    // given
+    final var cancelElResult =
+        new SearchQueryResult.Builder<JobEntity>()
+            .total(1L)
+            .items(
+                List.of(
+                    new JobEntity.Builder()
+                        .jobKey(10L)
+                        .type("cancelCleanup")
+                        .worker("elWorker")
+                        .state(JobState.CREATED)
+                        .kind(JobKind.EXECUTION_LISTENER)
+                        .listenerEventType(ListenerEventType.CANCEL)
+                        .retries(3)
+                        .isDenied(false)
+                        .hasFailedWithRetriesLeft(false)
+                        .customHeaders(Map.of())
+                        .processDefinitionId("myProcess")
+                        .processDefinitionKey(5L)
+                        .processInstanceKey(6L)
+                        .rootProcessInstanceKey(6L)
+                        .elementId("myProcess")
+                        .elementInstanceKey(7L)
+                        .tenantId("<default>")
+                        .creationTime(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
+                        .lastUpdateTime(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
+                        .build()))
+            .startCursor("abc")
+            .endCursor("def")
+            .build();
+    when(jobServices.search(any(JobQuery.class), any())).thenReturn(cancelElResult);
+
+    final var request =
+        """
+      {
+        "filter": {
+          "kind": "EXECUTION_LISTENER",
+          "listenerEventType": "CANCEL"
+        }
+      }
+      """;
+
+    final var expectedResponse =
+        """
+      {
+        "items": [
+          {
+            "jobKey": "10",
+            "type": "cancelCleanup",
+            "worker": "elWorker",
+            "state": "CREATED",
+            "kind": "EXECUTION_LISTENER",
+            "listenerEventType": "CANCEL",
+            "retries": 3,
+            "isDenied": false,
+            "hasFailedWithRetriesLeft": false,
+            "customHeaders": {},
+            "processDefinitionId": "myProcess",
+            "processDefinitionKey": "5",
+            "processInstanceKey": "6",
+            "rootProcessInstanceKey": "6",
+            "elementId": "myProcess",
+            "elementInstanceKey": "7",
+            "tenantId": "<default>",
+            "creationTime": "2025-06-05T09:00:00.000Z",
+            "lastUpdateTime": "2025-06-05T10:04:00.000Z"
+          }
+        ],
+        "page": {
+          "totalItems": 1,
+          "startCursor": "abc",
+          "endCursor": "def",
+          "hasMoreTotalItems": false
+        }
+      }
+      """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(JOB_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+
+    verify(jobServices)
+        .search(
+            eq(
+                new JobQuery.Builder()
+                    .filter(
+                        new JobFilter.Builder()
+                            .kinds(JobKind.EXECUTION_LISTENER.name())
+                            .listenerEventTypes(ListenerEventType.CANCEL.name())
                             .build())
                     .build()),
             any());
@@ -245,6 +367,7 @@ public class JobQueryControllerTest extends RestControllerTest {
       { "field": "state", "order": "desc" },
       { "field": "kind", "order": "asc" },
       { "field": "listenerEventType", "order": "desc" },
+      { "field": "priority", "order": "desc" },
       { "field": "retries", "order": "asc" },
       { "field": "isDenied", "order": "desc" },
       { "field": "deniedReason", "order": "asc" },
@@ -253,6 +376,7 @@ public class JobQueryControllerTest extends RestControllerTest {
       { "field": "errorMessage", "order": "desc" },
       { "field": "deadline", "order": "asc" },
       { "field": "endTime", "order": "desc" },
+      { "field": "creationTime", "order": "asc" },
       { "field": "processDefinitionId", "order": "asc" },
       { "field": "processDefinitionKey", "order": "desc" },
       { "field": "processInstanceKey", "order": "asc" },
@@ -296,6 +420,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .asc()
                                 .listenerEventType()
                                 .desc()
+                                .priority()
+                                .desc()
                                 .retries()
                                 .asc()
                                 .isDenied()
@@ -312,6 +438,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .asc()
                                 .endTime()
                                 .desc()
+                                .creationTime()
+                                .asc()
                                 .processDefinitionId()
                                 .asc()
                                 .processDefinitionKey()
@@ -326,5 +454,48 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .desc())
                     .build()),
             any());
+  }
+
+  @Test
+  void shouldReturnPriorityAsZeroWhenJobHasNoPriorityField() {
+    // given
+    final var jobWithNullPriority =
+        new JobEntity.Builder()
+            .jobKey(1L)
+            .type("testJob")
+            .worker("testWorker")
+            .state(JobState.COMPLETED)
+            .kind(JobKind.TASK_LISTENER)
+            .listenerEventType(ListenerEventType.COMPLETING)
+            .retries(3)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("pd")
+            .processDefinitionKey(2L)
+            .processInstanceKey(3L)
+            .elementId("e")
+            .elementInstanceKey(4L)
+            .tenantId("<default>")
+            .creationTime(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
+            .lastUpdateTime(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
+            .build();
+    when(jobServices.search(any(JobQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<JobEntity>()
+                .total(1L)
+                .items(List.of(jobWithNullPriority))
+                .startCursor("123base64")
+                .endCursor("456base64")
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(JOB_SEARCH_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.items[0].priority")
+        .isEqualTo(0);
   }
 }

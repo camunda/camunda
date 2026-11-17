@@ -19,6 +19,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
@@ -68,6 +69,10 @@ public class CamundaProcessTestDefaultConfiguration {
    * camunda.process-test.remote.client.grpcAddress} and {@code
    * camunda.process-test.remote.client.restAddress} are applied as overrides.
    *
+   * <p>Environment variable overrides are disabled in the default factory to ensure the client
+   * connects to the process test runtime. To opt in to environment-variable-based overrides,
+   * provide a custom {@link CamundaClientBuilderFactory} bean.
+   *
    * <p>To use a completely custom configuration, provide your own {@link
    * CamundaClientBuilderFactory} bean.
    */
@@ -112,7 +117,8 @@ public class CamundaProcessTestDefaultConfiguration {
 
     return new DefaultCamundaClientBuilderFactory(
         () -> {
-          final CamundaClientBuilder builder = configuration.toBuilder();
+          final CamundaClientBuilder builder = CamundaClient.newClientBuilder(configuration);
+          builder.applyEnvironmentVariableOverrides(false);
           // Backwards compatibility: apply remote client addresses only when explicitly configured
           // (i.e. different from the default addresses of CamundaClientProperties).
           // This matches the previously supported camunda.process-test.remote.client.* properties.

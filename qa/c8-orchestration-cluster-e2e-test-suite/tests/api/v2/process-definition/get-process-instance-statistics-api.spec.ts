@@ -1,0 +1,363 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {expect, test} from '@playwright/test';
+import {
+  cancelProcessInstance,
+  createSingleInstance,
+  deploy,
+} from '../../../../utils/zeebeClient';
+import {
+  assertBadRequest,
+  assertInvalidArgument,
+  assertStatusCode,
+  assertUnauthorizedRequest,
+  buildUrl,
+  jsonHeaders,
+  encode,
+} from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {cleanupUsers} from 'utils/usersCleanup';
+import {grantUserResourceAuthorization} from 'utils/requestHelpers/authorization-requestHelpers';
+import {createUser} from 'utils/requestHelpers/user-requestHelpers';
+
+test.describe.parallel('Get process instance statistics API Tests', () => {
+  let userWithResourcesAuthorizationToSendRequest: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  } = {} as {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
+  let processInstanceKeys: string[] = [];
+
+  test.beforeAll(async ({request}) => {
+    await test.step('Setup - Deploy process and create instances', async () => {
+      await deploy([
+        './resources/calledProcess.bpmn',
+        './resources/IncidentProcess.bpmn',
+      ]);
+
+      const incidentInstance = await createSingleInstance('IncidentProcess', 1);
+      const calledInstance = await createSingleInstance('CalledProcess', 1);
+
+      processInstanceKeys.push(incidentInstance.processInstanceKey);
+      processInstanceKeys.push(calledInstance.processInstanceKey);
+    });
+
+    await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
+      userWithResourcesAuthorizationToSendRequest = await createUser(request);
+      await grantUserResourceAuthorization(
+        request,
+        userWithResourcesAuthorizationToSendRequest,
+      );
+    });
+  });
+
+  test.afterAll(async ({request}) => {
+    await test.step('Cleanup - Delete test users', async () => {
+      await cleanupUsers(request, [
+        userWithResourcesAuthorizationToSendRequest.username,
+      ]);
+    });
+
+    await test.step('Cleanup - Cancel process instances', async () => {
+      for (const processInstanceKey of processInstanceKeys) {
+        await cancelProcessInstance(processInstanceKey);
+      }
+    });
+
+    await test.step('Cleanup - Clean array', async () => {
+      processInstanceKeys = [];
+    });
+  });
+
+  test('Get process instance statistics - Success', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    await validateResponse(
+      {
+        path: '/process-definitions/statistics/process-instances',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+  });
+
+  test('Get process instance statistics sort by activeInstancesWithIncidentCount - Success', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          sort: [
+            {
+              field: 'activeInstancesWithIncidentCount',
+              order: 'DESC',
+            },
+          ],
+        },
+      },
+    );
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    await validateResponse(
+      {
+        path: '/process-definitions/statistics/process-instances',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+    const actualActiveInstancesWithIncidentCountList = body.items.map(
+      (item: {activeInstancesWithIncidentCount: string}) =>
+        item.activeInstancesWithIncidentCount,
+    );
+    const expectedActiveInstancesWithIncidentCountList = [
+      ...actualActiveInstancesWithIncidentCountList,
+    ]
+      .sort()
+      .reverse();
+    expect(actualActiveInstancesWithIncidentCountList).toEqual(
+      expectedActiveInstancesWithIncidentCountList,
+    );
+  });
+
+  test('Get process instance statistics sort by activeInstancesWithoutIncidentCount - Success', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          sort: [
+            {
+              field: 'activeInstancesWithoutIncidentCount',
+              order: 'ASC',
+            },
+          ],
+        },
+      },
+    );
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    await validateResponse(
+      {
+        path: '/process-definitions/statistics/process-instances',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+    const actualActiveInstancesWithoutIncidentCountList = body.items.map(
+      (item: {activeInstancesWithoutIncidentCount: number}) =>
+        item.activeInstancesWithoutIncidentCount,
+    );
+    const expectedActiveInstancesWithoutIncidentCountList = [
+      ...actualActiveInstancesWithoutIncidentCountList,
+    ].sort((a, b) => a - b);
+    expect(actualActiveInstancesWithoutIncidentCountList).toEqual(
+      expectedActiveInstancesWithoutIncidentCountList,
+    );
+  });
+
+  test('Get process instance statistics sort by processDefinitionId - Success', async ({
+    request,
+  }) => {
+    // processDefinitionId is a string, so its ordering is decided by the backing
+    // database's collation: Oracle/Postgres sort case-sensitively (code point order)
+    // while MySQL/MSSQL/MariaDB default to case-insensitive collations. Reproducing
+    // that order with a JS `.sort()` is therefore unreliable across databases.
+    // Instead, verify the sort is applied consistently: the ASC result must be the
+    // exact reverse of the DESC result. Results are aggregated per definition, so
+    // processDefinitionId is unique per item and the ordering is total, making the
+    // reverse relationship exact regardless of collation.
+    const fetchProcessDefinitionIds = async (order: 'ASC' | 'DESC') => {
+      const res = await request.post(
+        buildUrl('/process-definitions/statistics/process-instances'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            sort: [
+              {
+                field: 'processDefinitionId',
+                order,
+              },
+            ],
+            page: {
+              from: 0,
+              limit: 1000,
+            },
+          },
+        },
+      );
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      await validateResponse(
+        {
+          path: '/process-definitions/statistics/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+      // The ASC==reverse(DESC) invariant only holds when both responses carry
+      // the full result set, so fail loudly if the page ever truncates instead
+      // of silently comparing two partial windows.
+      expect(body.items).toHaveLength(body.page.totalItems);
+      return body.items.map(
+        (item: {processDefinitionId: string}) => item.processDefinitionId,
+      );
+    };
+
+    // Wrap in toPass so a concurrent deployment landing between the two requests
+    // (which would momentarily desynchronize the ASC/DESC result sets) is retried
+    // rather than reported as a spurious failure.
+    await expect(async () => {
+      const ascProcessDefinitionIdList = await fetchProcessDefinitionIds('ASC');
+      const descProcessDefinitionIdList =
+        await fetchProcessDefinitionIds('DESC');
+      expect(ascProcessDefinitionIdList).toEqual(
+        [...descProcessDefinitionIdList].reverse(),
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get process instance statistics sort by not existing field - Bad Request', async ({
+    request,
+  }) => {
+    const notExistingField = 'meow';
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          sort: [
+            {
+              field: notExistingField,
+              order: 'DESC',
+            },
+          ],
+        },
+      },
+    );
+    await assertBadRequest(
+      res,
+      `Unexpected value '${notExistingField}' for enum field 'field'.`,
+    );
+  });
+
+  test('Get process instance statistics with page limit 1 - Success', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/process-definitions/statistics/process-instances'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            page: {
+              from: 0,
+              limit: 1,
+            },
+          },
+        },
+      );
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      await validateResponse(
+        {
+          path: '/process-definitions/statistics/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+      expect(body.items).toHaveLength(1);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get process instance statistics with page limit -1 - Bad Request', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          page: {
+            from: 0,
+            limit: -1,
+          },
+        },
+      },
+    );
+    await assertInvalidArgument(
+      res,
+      400,
+      "The value for page.limit is '-1' but must be a non-negative number.",
+    );
+  });
+
+  test('Get process instance statistics - Unauthorized', async ({request}) => {
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
+
+  test('Get process instance statistics with user without proper authorization - Forbidden, 200, empty result', async ({
+    request,
+  }) => {
+    const token = encode(
+      `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
+    );
+    const res = await request.post(
+      buildUrl('/process-definitions/statistics/process-instances'),
+      {
+        headers: jsonHeaders(token), // overrides default demo:demo
+      },
+    );
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    await validateResponse(
+      {
+        path: '/process-definitions/statistics/process-instances',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    expect(body.page.totalItems).toEqual(0);
+    expect(body.items).toHaveLength(0);
+    expect(body.page.hasMoreTotalItems).toBe(false);
+  });
+});

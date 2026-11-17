@@ -10,13 +10,12 @@ import {shallow} from 'enzyme';
 
 import Analysis from './Analysis';
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useLocation: jest.fn().mockReturnValue({pathname: '/analysis/branchAnalysis'}),
-}));
-
-it('should select the correct table', () => {
+it('should render the analysis routes without in-page tabs', () => {
   const node = shallow(<Analysis />);
 
-  expect(node.find('Tabs').prop('value')).toBe(1);
+  expect(node.find('Tabs')).toHaveLength(0);
+  const routePaths = node.find('Route').map((route) => route.prop('path'));
+  expect(routePaths).toEqual(
+    expect.arrayContaining(['/analysis/taskAnalysis', '/analysis/branchAnalysis'])
+  );
 });

@@ -21,11 +21,14 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class SnapshotReplicationListenerTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

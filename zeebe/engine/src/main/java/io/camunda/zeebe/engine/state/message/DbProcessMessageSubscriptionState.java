@@ -21,8 +21,6 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.function.Consumer;
@@ -30,9 +28,7 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public final class DbProcessMessageSubscriptionState
-    implements MutableProcessMessageSubscriptionState,
-        PendingProcessMessageSubscriptionState,
-        StreamProcessorLifecycleAware {
+    implements MutableProcessMessageSubscriptionState, PendingProcessMessageSubscriptionState {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   // (elementInstanceKey, tenant aware messageName) => ProcessMessageSubscription
@@ -49,6 +45,12 @@ public final class DbProcessMessageSubscriptionState
 
   private final TransientPendingSubscriptionState transientState;
   private final InstantSource clock;
+
+  // (elementInstanceKey, "", "") sorts before every subscription of that element instance
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>> recoveryStartKey =
+      new DbCompositeKey<>(
+          new DbLong(),
+          new DbTenantAwareKey<>(new DbString(), new DbString(), PlacementType.PREFIX));
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -73,14 +75,17 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    subscriptionColumnFamily.forEach(
-        subscription -> {
+  public long recoverPending(final long fromElementInstanceKey, final int batchLimit) {
+    return PendingSubscriptionScan.scanChunk(
+        subscriptionColumnFamily,
+        recoveryStartKey,
+        fromElementInstanceKey,
+        batchLimit,
+        (subscription, instanceKey) -> {
           if (subscription.isOpening() || subscription.isClosing()) {
             final var record = subscription.getRecord();
             transientState.add(
-                new PendingSubscription(
-                    record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+                new PendingSubscription(instanceKey, record.getMessageName(), record.getTenantId()),
                 clock.millis());
           }
         });
@@ -99,7 +104,17 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void updateToOpeningState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setOpening());
+    // Capture subscriptionKey before the update call: the shared processMessageSubscription object
+    // returned by getSubscription() is the same instance as record.getRecord() when the caller
+    // passes the shared visitor object. getSubscription() re-reads from DB and resets all fields
+    // (including subscriptionKey to -1), so we capture it here to survive the reset.
+    final long subscriptionKey = record.getSubscriptionKey();
+    update(
+        record,
+        s -> {
+          s.setRecord(record).setOpening();
+          s.getRecord().setSubscriptionKey(subscriptionKey);
+        });
     transientState.update(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
@@ -108,12 +123,33 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setOpened());
+    // This method is transitively part of the released v1 CREATED and CORRELATED appliers. The
+    // subscriptionKey preservation added here is replay-safe: records written before the field
+    // existed deserialize it to its default (-1), so both old and new code produce identical state
+    // for pre-feature events. Only events that actually carry a real subscriptionKey (written by
+    // this version onward) observe the corrected value, so no applier version bump is required.
+    final long subscriptionKey = record.getSubscriptionKey();
+    update(
+        record,
+        s -> {
+          s.setRecord(record).setOpened();
+          // Reset, not preserved: a future close site that forgets to set this explicitly then
+          // inherits false (delete) instead of a stale true from an earlier suspend cycle, which
+          // would wrongly restore the row instead of deleting it.
+          s.getRecord().setSubscriptionKey(subscriptionKey).setClosedForSuspend(false);
+        });
   }
 
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setClosing());
+    final long subscriptionKey = record.getSubscriptionKey();
+    final boolean closedForSuspend = record.isClosedForSuspend();
+    update(
+        record,
+        s -> {
+          s.setRecord(record).setClosing();
+          s.getRecord().setSubscriptionKey(subscriptionKey).setClosedForSuspend(closedForSuspend);
+        });
   }
 
   @Override
@@ -184,7 +220,7 @@ public final class DbProcessMessageSubscriptionState
 
   @Override
   public void onSent(final ProcessMessageSubscriptionRecord record, final long timestampMs) {
-    transientState.update(
+    transientState.refresh(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
         timestampMs);

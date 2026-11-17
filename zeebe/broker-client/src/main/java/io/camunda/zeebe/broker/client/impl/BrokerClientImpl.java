@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
@@ -19,11 +21,12 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +38,10 @@ public final class BrokerClientImpl implements BrokerClient {
   private final BrokerRequestManager requestManager;
 
   private boolean isClosed;
-  private Subscription jobAvailableSubscription;
+  // Keyed by (topic, subscriber), not topic alone: topic-only would collapse distinct callers
+  // (e.g. gRPC and REST gateways) onto one subscription, dropping every subscriber but the first.
+  private final Map<TopicSubscriber, Subscription> jobAvailableSubscriptions =
+      new ConcurrentHashMap<>();
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
   private final AtomixClientTransportAdapter atomixTransportAdapter;
@@ -46,14 +52,12 @@ public final class BrokerClientImpl implements BrokerClient {
       final ClusterEventService eventService,
       final ActorSchedulingService schedulingService,
       final BrokerTopologyManager topologyManager,
-      final BrokerClientRequestMetrics metrics,
-      final TopicSupplier sendingTopicSupplier) {
+      final BrokerClientRequestMetrics metrics) {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
     this.topologyManager = topologyManager;
-    atomixTransportAdapter =
-        new AtomixClientTransportAdapter(messagingService, sendingTopicSupplier);
+    atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     requestManager =
         new BrokerRequestManager(
             atomixTransportAdapter,
@@ -85,9 +89,7 @@ public final class BrokerClientImpl implements BrokerClient {
     doAndLogException(atomixTransportAdapter::close);
     LOG.debug("transport client closed");
 
-    if (jobAvailableSubscription != null) {
-      jobAvailableSubscription.close();
-    }
+    jobAvailableSubscriptions.values().forEach(Subscription::close);
 
     LOG.debug("Gateway broker client closed.");
   }
@@ -124,10 +126,12 @@ public final class BrokerClientImpl implements BrokerClient {
         .sendRequestWithRetry(request)
         .whenComplete(
             (response, error) -> {
-              if (error == null) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
-              } else {
+              if (error != null) {
                 throwableConsumer.accept(error);
+              } else if (response.isResponse()) {
+                responseConsumer.accept(response.getKey(), response.getResponseOrThrow());
+              } else {
+                throwableConsumer.accept(response.toException());
               }
             });
   }
@@ -139,16 +143,18 @@ public final class BrokerClientImpl implements BrokerClient {
 
   @Override
   public void subscribeJobAvailableNotification(
-      final String topic, final Consumer<String> handler) {
-    jobAvailableSubscription =
-        eventService
-            .subscribe(
-                topic,
-                msg -> {
-                  handler.accept((String) msg);
-                  return CompletableFuture.completedFuture(null);
-                })
-            .join();
+      final String topic, final Object subscriber, final Consumer<String> handler) {
+    jobAvailableSubscriptions.computeIfAbsent(
+        new TopicSubscriber(topic, subscriber),
+        k ->
+            eventService
+                .subscribe(
+                    topic,
+                    msg -> {
+                      handler.accept((String) msg);
+                      return CompletableFuture.completedFuture(unit());
+                    })
+                .join());
   }
 
   private void doAndLogException(final Runnable r) {
@@ -158,4 +164,8 @@ public final class BrokerClientImpl implements BrokerClient {
       LOG.error("Exception when closing client. Ignoring", e);
     }
   }
+
+  // Relies on subscriber's default (identity-based) equals/hashCode; a caller-side override to
+  // content-based equality would silently collapse distinct subscribers again.
+  private record TopicSubscriber(String topic, Object subscriber) {}
 }

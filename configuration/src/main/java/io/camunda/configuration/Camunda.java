@@ -27,7 +27,10 @@ public class Camunda {
   @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
+  @NestedConfigurationProperty private License license = new License();
+  @NestedConfigurationProperty private Document document = new Document();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
+  @NestedConfigurationProperty private Secrets secrets = new Secrets();
 
   @NestedConfigurationProperty
   private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
@@ -127,5 +130,29 @@ public class Camunda {
 
   public void setWebapps(final Webapps webapps) {
     this.webapps = webapps;
+  }
+
+  public License getLicense() {
+    return license;
+  }
+
+  public void setLicense(final License license) {
+    this.license = license;
+  }
+
+  public Document getDocument() {
+    return document;
+  }
+
+  public void setDocument(final Document document) {
+    this.document = document;
+  }
+
+  public Secrets getSecrets() {
+    return secrets;
+  }
+
+  public void setSecrets(final Secrets secrets) {
+    this.secrets = secrets;
   }
 }

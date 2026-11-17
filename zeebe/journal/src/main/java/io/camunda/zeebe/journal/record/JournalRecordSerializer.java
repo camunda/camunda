@@ -28,11 +28,7 @@ public interface JournalRecordSerializer {
   default Either<BufferOverflowException, Integer> writeData(
       final RecordData record, final MutableDirectBuffer buffer, final int offset) {
     return writeData(
-        record.index(),
-        record.asqn(),
-        new DirectBufferWriter().wrap(record.data()),
-        buffer,
-        offset);
+        record.index(), record.asqn(), new DirectBufferWriter(record.data()), buffer, offset);
   }
 
   Either<BufferOverflowException, Integer> writeData(

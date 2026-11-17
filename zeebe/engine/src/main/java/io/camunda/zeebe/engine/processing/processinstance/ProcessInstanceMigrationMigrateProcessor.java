@@ -12,17 +12,19 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -32,11 +34,9 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -45,12 +45,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -60,18 +58,16 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationMigrateProcessor
-    implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
+    implements TypedRecordProcessor<ProcessInstanceMigrationRecord>,
+        SuspensionAware<ProcessInstanceMigrationRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
@@ -82,16 +78,17 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final JobState jobState;
-  private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
-  private final BpmnBehaviors bpmnBehaviors;
-  private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
-  private final KeyGenerator keyGenerator;
+  private final CslAuthorizationCheck cslCheck;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
+  private final ProcessInstanceMigrationCatchEventBehavior migrationCatchEventBehaviour;
+  private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
+  private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
+  private final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehaviour;
+  private final ProcessInstanceMigrationAgentInstanceBehavior migrationAgentInstanceBehaviour;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -100,25 +97,23 @@ public class ProcessInstanceMigrationMigrateProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
-    jobState = processingState.getJobState();
-    userTaskState = processingState.getUserTaskState();
+    final var jobState = processingState.getJobState();
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
-    this.authCheckBehavior = authCheckBehavior;
-    this.bpmnBehaviors = bpmnBehaviors;
-    this.keyGenerator = keyGenerator;
+    this.cslCheck = cslCheck;
+    processDeletionBehavior = bpmnBehaviors.processDeletionBehavior();
 
     migrationCatchEventBehaviour =
-        new ProcessInstanceMigrationCatchEventBehaviour(
+        new ProcessInstanceMigrationCatchEventBehavior(
             processingState.getProcessMessageSubscriptionState(),
             bpmnBehaviors.catchEventBehavior(),
             bpmnBehaviors.compensationSubscriptionBehaviour(),
@@ -128,6 +123,24 @@ public class ProcessInstanceMigrationMigrateProcessor
             stateWriter,
             partitionId,
             routingInfo);
+
+    migrationJobBehaviour =
+        new ProcessInstanceMigrationJobBehavior(stateWriter, jobState, incidentState);
+    migrationUserTaskBehaviour =
+        new ProcessInstanceMigrationUserTaskBehavior(
+            stateWriter,
+            writers.command(),
+            jobState,
+            processingState.getUserTaskState(),
+            bpmnBehaviors);
+    migrationSequenceFlowBehaviour =
+        new ProcessInstanceMigrationSequenceFlowBehavior(
+            keyGenerator, stateWriter, elementInstanceState);
+    migrationAgentInstanceBehaviour =
+        new ProcessInstanceMigrationAgentInstanceBehavior(
+            stateWriter,
+            processingState.getAgentInstanceState(),
+            processingState.getAgentDefinitionState());
   }
 
   @Override
@@ -141,27 +154,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstanceRecord.getTenantId())
-            .addResourceId(processInstanceRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "migrate a process instance",
-                  processInstanceRecord.getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
-      enrichRejectionCommand(command, processInstanceRecord);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstanceRecord,
+        processInstanceRecord.getBpmnProcessId(),
+        processInstanceRecord.getTenantId())) {
       return;
     }
 
@@ -175,6 +172,16 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+
+    if (!isAuthorizedToUpdate(
+        command,
+        processInstanceRecord,
+        BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
+        targetProcessDefinition.getTenantId())) {
+      return;
+    }
+
+    requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
     requireReferredElementsExist(
@@ -183,6 +190,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     final Map<String, String> mappedElementIds =
         mapElementIds(
             mappingInstructions, processInstance, sourceProcessDefinition, targetProcessDefinition);
+
+    migrationAgentInstanceBehaviour.validateAgentInstanceMigrations(
+        processInstanceKey, sourceProcessDefinition, targetProcessDefinition, mappedElementIds);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
@@ -197,12 +207,18 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     value.setTenantId(processInstanceRecord.getTenantId());
     value.setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    value.setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
     value.setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey());
     value.setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
+
+    // migration can empty a draining source definition without ever emitting a completion event
+    // against it, so re-check its drain here (no-op unless the source is now fully drained).
+    processDeletionBehavior.finalizeDeletionIfDraining(
+        sourceProcessDefinition.getKey(), processInstanceRecord.getTenantId());
   }
 
   @Override
@@ -212,19 +228,58 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (error instanceof final ProcessInstanceMigrationPreconditionFailedException e) {
       enrichRejectionCommand(command);
       rejectionWriter.appendRejection(command, e.getRejectionType(), e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, e.getRejectionType(), e.getMessage());
+      responseWriter.writeRejectedResponseOnCommand(command, e.getRejectionType(), e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final SafetyCheckFailedException e) {
       LOG.error(e.getMessage(), e);
       enrichRejectionCommand(command);
       rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, e.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.PROCESSING_ERROR, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  /**
+   * Checks the UPDATE_PROCESS_INSTANCE permission on the given process definition and the tenant
+   * assignment. Writes the rejection and returns false if either check fails.
+   */
+  private boolean isAuthorizedToUpdate(
+      final TypedRecord<ProcessInstanceMigrationRecord> command,
+      final ProcessInstanceRecord processInstanceRecord,
+      final String bpmnProcessId,
+      final String tenantId) {
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(bpmnProcessId)),
+            processInstanceRecord,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            tenantId,
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(
+                    command.getValue().getProcessInstanceKey())));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
+      enrichRejectionCommand(command, processInstanceRecord);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -236,6 +291,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private void enrichRejectionCommand(final TypedRecord<ProcessInstanceMigrationRecord> command) {
@@ -289,24 +345,178 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstanceRecord = elementInstance.getValue();
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
     final var elementId = elementInstanceRecord.getElementId();
-
-    requireSupportedElementType(elementInstanceRecord, processInstanceKey, sourceProcessDefinition);
-
     final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
+
+    performValidation(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        elementInstanceRecord,
+        processInstanceKey,
+        targetElementId,
+        elementId);
+
+    final var updatedElementInstanceRecord =
+        getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+
+    stateWriter.appendFollowUpEvent(
+        elementInstance.getKey(),
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        updatedElementInstanceRecord);
+
+    migrationSequenceFlowBehaviour.migrateSequenceFlows(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        processInstanceKey,
+        elementInstanceRecord,
+        updatedElementInstanceRecord);
+
+    final boolean isUserTaskConversion =
+        ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
+            sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance);
+    if (isUserTaskConversion) {
+      migrationUserTaskBehaviour.tryMigrateJobWorkerToCamundaUserTask(
+          processInstanceKey,
+          elementInstance,
+          sourceProcessDefinition,
+          targetProcessDefinition,
+          targetElementId,
+          updatedElementInstanceRecord);
+    } else {
+      migrationJobBehaviour.migrateJob(
+          elementInstance,
+          targetProcessDefinition,
+          processInstanceKey,
+          targetElementId,
+          updatedElementInstanceRecord);
+    }
+
+    migrateElementInstanceIncident(
+        elementInstance, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
+
+    migrationUserTaskBehaviour.migrateUserTask(
+        elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
+
+    migrateVariables(elementInstance, targetProcessDefinition);
+
+    handleAdHocSubProcess(
+        elementInstance, elementInstanceRecord, targetProcessDefinition, targetElementId);
+
+    migrateCatchEvents(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        updatedElementInstanceRecord,
+        targetElementId,
+        processInstanceKey,
+        elementId);
+
+    migrateCalledSubProcessElements(
+        elementInstance.getCalledChildInstanceKey(), updatedElementInstanceRecord);
+
+    migrateAgentInstances(
+        elementInstanceRecord, targetProcessDefinition, sourceElementIdToTargetElementId);
+  }
+
+  private void migrateAgentInstances(
+      final ProcessInstanceRecord elementInstanceRecord,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId) {
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS) {
+      migrationAgentInstanceBehaviour.migrateAgentInstances(
+          elementInstanceRecord.getProcessInstanceKey(),
+          targetProcessDefinition,
+          sourceElementIdToTargetElementId);
+    }
+  }
+
+  private void migrateCatchEvents(
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ProcessInstanceRecord updatedElementInstanceRecord,
+      final String targetElementId,
+      final long processInstanceKey,
+      final String elementId) {
+    if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
+      // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
+      // elements to events during migration either. For elements that have been ACTIVATED, a
+      // subscription would already exist if needed. So, we want to deal with the expected event
+      // subscriptions. See: https://github.com/camunda/camunda/issues/19212
+      migrationCatchEventBehaviour.handleCatchEvents(
+          elementInstance,
+          targetProcessDefinition,
+          sourceProcessDefinition,
+          sourceElementIdToTargetElementId,
+          updatedElementInstanceRecord,
+          targetElementId,
+          processInstanceKey,
+          elementId);
+    }
+  }
+
+  private void migrateVariables(
+      final ElementInstance elementInstance, final DeployedProcess targetProcessDefinition) {
+    variableState
+        .getVariablesLocal(elementInstance.getKey())
+        .forEach(
+            variable ->
+                stateWriter.appendFollowUpEvent(
+                    variable.key(),
+                    VariableIntent.MIGRATED,
+                    variableRecord
+                        .setScopeKey(elementInstance.getKey())
+                        .setName(variable.name())
+                        .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                        .setRootProcessInstanceKey(
+                            elementInstance.getValue().getRootProcessInstanceKey())
+                        .setStorageOrdinal(elementInstance.getValue().getStorageOrdinal())
+                        .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                        .setTenantId(elementInstance.getValue().getTenantId())));
+  }
+
+  private void migrateElementInstanceIncident(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ProcessInstanceRecord updatedElementInstanceRecord) {
+    final long processIncidentKey =
+        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
+    if (processIncidentKey != MISSING_INCIDENT) {
+      migrationJobBehaviour.appendIncidentMigratedEvent(
+          processIncidentKey,
+          targetProcessDefinition,
+          targetElementId,
+          updatedElementInstanceRecord);
+    }
+  }
+
+  private void performValidation(
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final long processInstanceKey,
+      final String targetElementId,
+      final String elementId) {
+    requireSupportedElementType(elementInstanceRecord, processInstanceKey, sourceProcessDefinition);
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    final boolean isUserTaskConversion =
-        requireSupportedUserTaskImplementation(
-            sourceProcessDefinition,
-            targetProcessDefinition,
-            targetElementId,
-            elementInstance,
-            processInstanceKey);
-    if (isUserTaskConversion) {
-      requireNoIncidentForJobWorkerUserTaskConversion(
-          incidentState, elementInstance, processInstanceKey);
-    }
+    requireSupportedUserTaskMigration(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey,
+        incidentState);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -376,161 +586,6 @@ public class ProcessInstanceMigrationMigrateProcessor
         processInstanceKey);
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
-
-    final var updatedElementInstanceRecord =
-        getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
-
-    stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(),
-        ProcessInstanceIntent.ELEMENT_MIGRATED,
-        updatedElementInstanceRecord);
-
-    final Set<ExecutableSequenceFlow> sequenceFlows =
-        getSequenceFlowsToMigrate(
-            sourceProcessDefinition,
-            targetProcessDefinition,
-            sourceElementIdToTargetElementId,
-            elementInstance);
-
-    // we chose to loop through the sequence flows again despite its redundancy to keep preventive
-    // validation structure and write events after all validations passed
-    requireNoMultipleActiveSequenceFlowsMappedToSameTarget(
-        sequenceFlows, sourceElementIdToTargetElementId, processInstanceKey);
-
-    sequenceFlows.forEach(
-        sequenceFlow -> {
-          // use the original element instance record to fill existing sequence flow data
-          deleteTakenSequenceFlow(elementInstanceRecord, sequenceFlow, elementInstance.getKey());
-
-          final var targetSequenceFlowId =
-              getTargetSequenceFlowId(sourceElementIdToTargetElementId, sequenceFlow);
-          // use updated element instance record to fill new sequence flow data
-          takeNewSequenceFlow(
-              updatedElementInstanceRecord,
-              sequenceFlow,
-              elementInstance.getKey(),
-              targetSequenceFlowId);
-        });
-
-    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
-      final var job = jobState.getJob(elementInstance.getJobKey());
-      if (job == null) {
-        throw new SafetyCheckFailedException(
-            String.format(
-                """
-                Expected to migrate a job for process instance with key '%d', \
-                but could not find job with key '%d'. \
-                Please report this as a bug""",
-                processInstanceKey, elementInstance.getJobKey()));
-      }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getJobKey(),
-          JobIntent.MIGRATED,
-          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
-              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId));
-    }
-
-    final long processIncidentKey =
-        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
-    if (processIncidentKey != MISSING_INCIDENT) {
-      appendIncidentMigratedEvent(
-          processIncidentKey,
-          targetProcessDefinition,
-          targetElementId,
-          updatedElementInstanceRecord);
-    }
-
-    final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
-    if (jobIncidentKey != MISSING_INCIDENT) {
-      appendIncidentMigratedEvent(
-          jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
-    }
-
-    if (isUserTaskConversion) {
-      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
-          new ProcessInstanceMigrationUserTaskBehavior(
-              processInstanceKey,
-              elementInstance,
-              sourceProcessDefinition,
-              targetProcessDefinition,
-              bpmnBehaviors,
-              targetElementId,
-              updatedElementInstanceRecord,
-              stateWriter,
-              jobState);
-      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
-    }
-
-    if (elementInstance.getUserTaskKey() > 0) {
-      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
-      if (userTask == null) {
-        throw new SafetyCheckFailedException(
-            String.format(
-                """
-                Expected to migrate a user task for process instance with key '%d', \
-                but could not find user task with key '%d'. \
-                Please report this as a bug""",
-                processInstanceKey, elementInstance.getUserTaskKey()));
-      }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getUserTaskKey(),
-          UserTaskIntent.MIGRATED,
-          userTask
-              .setProcessDefinitionKey(targetProcessDefinition.getKey())
-              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId)
-              .setVariables(NIL_VALUE));
-    }
-
-    variableState
-        .getVariablesLocal(elementInstance.getKey())
-        .forEach(
-            variable ->
-                stateWriter.appendFollowUpEvent(
-                    variable.key(),
-                    VariableIntent.MIGRATED,
-                    variableRecord
-                        .setScopeKey(elementInstance.getKey())
-                        .setName(variable.name())
-                        .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
-                        .setProcessDefinitionKey(targetProcessDefinition.getKey())
-                        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                        .setTenantId(elementInstance.getValue().getTenantId())));
-
-    handleAdHocSubProcess(
-        elementInstance, elementInstanceRecord, targetProcessDefinition, targetElementId);
-
-    if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
-      // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
-      // elements to events during migration either. For elements that have been ACTIVATED, a
-      // subscription would already exist if needed. So, we want to deal with the expected event
-      // subscriptions. See: https://github.com/camunda/camunda/issues/19212
-      migrationCatchEventBehaviour.handleCatchEvents(
-          elementInstance,
-          targetProcessDefinition,
-          sourceProcessDefinition,
-          sourceElementIdToTargetElementId,
-          updatedElementInstanceRecord,
-          targetElementId,
-          processInstanceKey,
-          elementId);
-    }
-
-    if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
-      migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
-    }
-  }
-
-  private static DirectBuffer getTargetSequenceFlowId(
-      final Map<String, String> sourceElementIdToTargetElementId,
-      final ExecutableSequenceFlow sequenceFlow) {
-    final String sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
-    final String targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
-
-    return BufferUtil.wrapString(targetSequenceFlowId);
   }
 
   /**
@@ -582,17 +637,20 @@ public class ProcessInstanceMigrationMigrateProcessor
    *
    * @param calledChildInstanceKey the key of the called subprocess instance
    */
-  private void migrateCalledSubProcessElements(final long calledChildInstanceKey) {
-    final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
-    if (calledInstance == null) {
-      return;
-    }
-    final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
-    while (!elementInstances.isEmpty()) {
-      final var instance = elementInstances.poll();
-      adjustCalledInstancesTreePath(elementInstances, instance);
-      final List<ElementInstance> children = elementInstanceState.getChildren(instance.getKey());
-      elementInstances.addAll(children);
+  private void migrateCalledSubProcessElements(
+      final long calledChildInstanceKey, final ProcessInstanceRecord updatedElementInstanceRecord) {
+    if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+      final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
+      if (calledInstance == null) {
+        return;
+      }
+      final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
+      while (!elementInstances.isEmpty()) {
+        final var instance = elementInstances.poll();
+        adjustCalledInstancesTreePath(elementInstances, instance);
+        final List<ElementInstance> children = elementInstanceState.getChildren(instance.getKey());
+        elementInstances.addAll(children);
+      }
     }
   }
 
@@ -634,130 +692,6 @@ public class ProcessInstanceMigrationMigrateProcessor
         elementInstances.add(calledInstance);
       }
     }
-  }
-
-  private void appendIncidentMigratedEvent(
-      final long incidentKey,
-      final DeployedProcess targetProcessDefinition,
-      final String targetElementId,
-      final ProcessInstanceRecord elementInstanceRecord) {
-    final var incidentRecord = incidentState.getIncidentRecord(incidentKey);
-    if (incidentRecord == null) {
-      throw new SafetyCheckFailedException(
-          String.format(
-              """
-              Expected to migrate a user task for process instance with key '%d', \
-              but could not find incident with key '%d'. \
-              Please report this as a bug""",
-              elementInstanceRecord.getProcessInstanceKey(), incidentKey));
-    }
-    stateWriter.appendFollowUpEvent(
-        incidentKey,
-        IncidentIntent.MIGRATED,
-        incidentRecord
-            .setProcessDefinitionKey(targetProcessDefinition.getKey())
-            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-            .setElementId(BufferUtil.wrapString(targetElementId))
-            .setElementInstancePath(elementInstanceRecord.getElementInstancePath())
-            .setProcessDefinitionPath(elementInstanceRecord.getProcessDefinitionPath())
-            .setCallingElementPath(elementInstanceRecord.getCallingElementPath()));
-  }
-
-  private Set<ExecutableSequenceFlow> getSequenceFlowsToMigrate(
-      final DeployedProcess sourceProcessDefinition,
-      final DeployedProcess targetProcessDefinition,
-      final Map<String, String> sourceElementIdToTargetElementId,
-      final ElementInstance elementInstance) {
-    final long elementInstanceKey = elementInstance.getKey();
-    final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
-
-    final List<ActiveSequenceFlow> activeSequenceFlows = new ArrayList<>();
-    elementInstanceState.visitTakenSequenceFlows(
-        elementInstanceKey,
-        (scopeKey, gatewayElementId, sequenceFlowId, number) -> {
-          final var sequenceFlow =
-              sourceProcessDefinition
-                  .getProcess()
-                  .getElementById(sequenceFlowId, ExecutableSequenceFlow.class);
-          activeSequenceFlows.add(new ActiveSequenceFlow(sequenceFlow, sequenceFlow.getTarget()));
-        });
-
-    return activeSequenceFlows.stream()
-        .filter(
-            sequenceFlow -> {
-              final BpmnElementType elementType = sequenceFlow.target().getElementType();
-              return elementType == BpmnElementType.PARALLEL_GATEWAY
-                  || elementType == BpmnElementType.INCLUSIVE_GATEWAY;
-            })
-        .map(
-            activeSequenceFlow -> {
-              final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
-              final ExecutableFlowNode sourceGateway = activeSequenceFlow.target;
-              requireNoConcurrentCommandForGateway(
-                  elementInstanceState, sourceGateway, elementInstanceKey, processInstanceKey);
-
-              final String targetGatewayId =
-                  sourceElementIdToTargetElementId.get(
-                      BufferUtil.bufferAsString(sourceGateway.getId()));
-              requireValidGatewayMapping(
-                  sourceGateway, targetGatewayId, targetProcessDefinition, processInstanceKey);
-
-              final ExecutableFlowNode targetGateway =
-                  targetProcessDefinition
-                      .getProcess()
-                      .getElementById(targetGatewayId, ExecutableFlowNode.class);
-              requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
-              requireNonNullTargetSequenceFlowId(
-                  activeFlow, sourceElementIdToTargetElementId, processInstanceKey);
-
-              return activeFlow;
-            })
-        .collect(Collectors.toSet());
-  }
-
-  private void deleteTakenSequenceFlow(
-      final ProcessInstanceRecord elementInstanceRecord,
-      final ExecutableSequenceFlow sequenceFlow,
-      final long elementInstanceKey) {
-    handleSequenceFlow(
-        elementInstanceRecord,
-        sequenceFlow,
-        elementInstanceKey,
-        sequenceFlow.getId(),
-        ProcessInstanceIntent.SEQUENCE_FLOW_DELETED);
-  }
-
-  private void takeNewSequenceFlow(
-      final ProcessInstanceRecord elementInstanceRecord,
-      final ExecutableSequenceFlow sequenceFlow,
-      final long elementInstanceKey,
-      final DirectBuffer sequenceFlowId) {
-    handleSequenceFlow(
-        elementInstanceRecord,
-        sequenceFlow,
-        elementInstanceKey,
-        sequenceFlowId,
-        ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
-  }
-
-  private void handleSequenceFlow(
-      final ProcessInstanceRecord elementInstanceRecord,
-      final ExecutableSequenceFlow sequenceFlow,
-      final long elementInstanceKey,
-      final DirectBuffer sequenceFlowId,
-      final ProcessInstanceIntent intent) {
-    final var sequenceFlowRecord = new ProcessInstanceRecord();
-    sequenceFlowRecord.copyFrom(elementInstanceRecord);
-    sequenceFlowRecord
-        .setElementId(sequenceFlowId)
-        .setBpmnElementType(sequenceFlow.getElementType())
-        .setBpmnEventType(sequenceFlow.getEventType())
-        .setFlowScopeKey(elementInstanceKey)
-        .resetElementInstancePath()
-        .resetCallingElementPath()
-        .resetProcessDefinitionPath();
-
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
   }
 
   /**
@@ -811,10 +745,22 @@ public class ProcessInstanceMigrationMigrateProcessor
                           .setName(variable.name())
                           .setValue(targetAhsp.getAdHocActivitiesMetadata())
                           .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setStorageOrdinal(elementInstance.getValue().getStorageOrdinal())
                           .setProcessDefinitionKey(targetProcessDefinition.getKey())
                           .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                           .setTenantId(elementInstance.getValue().getTenantId())));
     }
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceMigrationRecord> record) {
+    // migration restructures a running instance, which is unsafe while suspended; reject.
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceMigrationRecord> record) {
+    return SuspensionAction.REJECT;
   }
 
   /**
@@ -827,6 +773,4 @@ public class ProcessInstanceMigrationMigrateProcessor
       super(message);
     }
   }
-
-  record ActiveSequenceFlow(ExecutableSequenceFlow sequenceFlow, ExecutableFlowNode target) {}
 }

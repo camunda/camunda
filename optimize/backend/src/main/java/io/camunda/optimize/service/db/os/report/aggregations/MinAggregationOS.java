@@ -27,7 +27,7 @@ public class MinAggregationOS extends AggregationStrategyOS {
   }
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final MinAggregate aggregate =
         aggs.get(createAggregationName(customIdentifier, MIN_AGGREGATION)).min();

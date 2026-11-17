@@ -34,6 +34,7 @@ public interface JobRecordValue
     extends RecordValueWithVariables,
         ProcessInstanceRelated,
         AuditLogProcessInstanceRelated,
+        WaitStateRelated,
         TenantOwned {
 
   /**
@@ -55,6 +56,12 @@ public interface JobRecordValue
    * @return remaining retries
    */
   int getRetries();
+
+  /**
+   * @return the priority of this job; higher values activate first. Jobs with equal priority are
+   *     ordered by key ascending (creation order). Returns 0 if no priority is set (default).
+   */
+  int getPriority();
 
   /**
    * @return the time of backoff in milliseconds. If backoff is disabled this method returns 0
@@ -97,13 +104,55 @@ public interface JobRecordValue
   /**
    * @return the element id of the corresponding service task
    */
+  @Override
   String getElementId();
+
+  /**
+   * @return the BPMN element type that created the job
+   */
+  BpmnElementType getElementType();
 
   /**
    * @return the element instance key of the corresponding service task
    */
   @Override
   long getElementInstanceKey();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For jobs in top-level process
+   * instances, this is equal to {@link #getProcessInstanceKey()}. For jobs in child process
+   * instances (created via call activities), this is the key of the topmost parent process
+   * instance.
+   *
+   * @return the key of the root process instance, or {@code -1L} if not set for versions prior to
+   *     8.9
+   */
+  @Override
+  long getRootProcessInstanceKey();
+
+  /**
+   * Returns the business ID inherited from the owning process instance, captured when the job is
+   * created within a process. Every job is created inside a process element, so the value is
+   * present whenever the owning instance carries a business ID.
+   *
+   * @return the business ID of the owning process instance, or an empty string when the owning
+   *     instance has no business ID (and for jobs created before 8.10)
+   */
+  String getBusinessId();
+
+  /**
+   * Returns the current lease token of this job. The token is an opaque, engine-generated value
+   * handed to a worker when the job is activated with a lease; it lets the engine distinguish items
+   * produced by a particular activation from those of superseded activations.
+   *
+   * <p>The lease token persists on the job across timeouts and retries and is only advanced by a
+   * subsequent leased activation. Mutating a leased job (complete, fail, throw an error, or update
+   * the timeout) requires providing the matching lease token, except when the timeout is updated
+   * through a batch operation.
+   *
+   * @return the current lease token, or an empty string when the job has no active lease
+   */
+  String getJobLeaseToken();
 
   /**
    * @return the bpmn process id of the corresponding process definition
@@ -148,15 +197,13 @@ public interface JobRecordValue
   boolean isJobToUserTaskMigration();
 
   /**
-   * Returns the key of the root process instance in the hierarchy. For jobs in top-level process
-   * instances, this is equal to {@link #getProcessInstanceKey()}. For jobs in child process
-   * instances (created via call activities), this is the key of the topmost parent process
-   * instance.
+   * Returns the secret references declared in this job's input mappings, each paired with the JSON
+   * path where the resolved secret value is injected when the job is activated. Empty when the job
+   * references no secrets. The resolved secret values are never part of this record.
    *
-   * @return the key of the root process instance, or {@code -1L} if not set for versions prior to
-   *     8.9
+   * @return the secret references of this job
    */
-  long getRootProcessInstanceKey();
+  List<JobSecretReferenceValue> getSecretReferences();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
@@ -269,5 +316,31 @@ public interface JobRecordValue
      * @return the variables that need to be set on the element when it is activated
      */
     Map<String, Object> getVariables();
+  }
+
+  /**
+   * A secret reference declared in a job's input mapping. Carries the reference identifier and the
+   * JSON path where the resolved value is injected, never the resolved secret value itself.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobSecretReferenceValue.Builder.class)
+  interface JobSecretReferenceValue {
+
+    /**
+     * @return the identifier of the secret store that holds the referenced secret
+     */
+    String getStoreId();
+
+    /**
+     * @return the name that identifies the secret within the store (e.g. {@code token} for {@code
+     *     camunda.secrets.token}); not the resolved secret value
+     */
+    String getSecretReference();
+
+    /**
+     * @return the RFC 6901 JSON pointer at which the resolved secret is injected into the job
+     *     variables on activation
+     */
+    String getPath();
   }
 }

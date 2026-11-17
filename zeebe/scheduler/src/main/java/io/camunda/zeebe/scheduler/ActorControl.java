@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public class ActorControl implements ConcurrencyControl {
   final ActorTask task;
@@ -89,6 +90,7 @@ public class ActorControl implements ConcurrencyControl {
    * @param runnable
    * @return
    */
+  @Override
   public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runAtFixedRate(...)");
     return scheduleTimerSubscription(
@@ -143,7 +145,7 @@ public class ActorControl implements ConcurrencyControl {
    */
   @Override
   public <T> void runOnCompletion(
-      final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
+      final ActorFuture<T> future, final BiConsumer<T, @Nullable Throwable> callback) {
     ensureCalledFromWithinActor("runOnCompletion(...)");
 
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
@@ -169,10 +171,9 @@ public class ActorControl implements ConcurrencyControl {
    */
   @Override
   public <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
+      final Collection<ActorFuture<T>> futures, final Consumer<@Nullable Throwable> callback) {
     if (!futures.isEmpty()) {
-      final BiConsumer<T, Throwable> futureConsumer =
-          new AllCompletedFutureConsumer<>(futures.size(), callback);
+      final var futureConsumer = new AllCompletedFutureConsumer<T>(futures.size(), callback);
 
       for (final ActorFuture<T> future : futures) {
         runOnCompletion(future, futureConsumer);
@@ -223,17 +224,12 @@ public class ActorControl implements ConcurrencyControl {
   /**
    * The runnable is executed while the actor is in the following actor lifecycle phases: {@link
    * ActorLifecyclePhase#STARTED}
-   *
-   * @param delay
-   * @param runnable
-   * @return
    */
   @Override
-  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+  public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
     return scheduleTimerSubscription(
-        runnable,
-        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, false));
+        runnable, job -> new DelayedTimerSubscription(job, delayMs, TimeUnit.MILLISECONDS, false));
   }
 
   /**
@@ -298,7 +294,7 @@ public class ActorControl implements ConcurrencyControl {
 
   private <T> void submitContinuationJob(
       final ActorFuture<T> future,
-      final BiConsumer<T, Throwable> callback,
+      final BiConsumer<T, @Nullable Throwable> callback,
       final Function<ActorJob, ActorFutureSubscription> futureSubscriptionSupplier) {
     final ActorJob continuationJob = new ActorJob();
     continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
@@ -360,12 +356,12 @@ public class ActorControl implements ConcurrencyControl {
     return task.getLifecyclePhase();
   }
 
-  public boolean isCalledFromWithinActor(final ActorJob job) {
+  public boolean isCalledFromWithinActor(final @Nullable ActorJob job) {
     return job != null && job.getActor() == actor;
   }
 
   private ActorJob ensureCalledFromWithinActor(final String methodName) {
-    final ActorJob currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
+    final var currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
     if (!isCalledFromWithinActor(currentJob)) {
       throw new UnsupportedOperationException(
           "Incorrect usage of actor."

@@ -16,10 +16,40 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
+  type ElementInstance,
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+
+const MOCK_PROCESS_INSTANCE_KEY = '2251799813685625';
+
+/**
+ * Builds an ElementInstance with sensible defaults so the store tests only have
+ * to spell out the fields they actually assert on. Keeps the generated
+ * ElementInstance shape in one place per directory.
+ */
+const createMockElementInstance = (
+  overrides: Partial<ElementInstance> = {},
+): ElementInstance => ({
+  elementInstanceKey: '2251799813685630',
+  elementId: 'task_1',
+  elementName: 'Task 1',
+  type: 'SERVICE_TASK',
+  state: 'ACTIVE',
+  startDate: '2023-01-01T10:00:00.000Z',
+  processDefinitionKey: '2251799813685623',
+  processDefinitionId: 'test-process',
+  processInstanceKey: MOCK_PROCESS_INSTANCE_KEY,
+  hasIncident: false,
+  tenantId: '<default>',
+  endDate: null,
+  rootProcessInstanceKey: null,
+  incidentKey: null,
+  ...overrides,
+});
 
 const mockMultiInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
@@ -37,6 +67,8 @@ const mockMultiInstanceProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const mockEventSubprocessInstance: ProcessInstance = {
@@ -55,6 +87,8 @@ const mockEventSubprocessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const mockNestedSubProcessesInstance: ProcessInstance = {
@@ -73,6 +107,8 @@ const mockNestedSubProcessesInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const mockAdHocSubProcessesInstance: ProcessInstance = {
@@ -91,6 +127,8 @@ const mockAdHocSubProcessesInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const mockNestedSubProcessInstance: ProcessInstance = {
@@ -109,6 +147,8 @@ const mockNestedSubProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const multipleSubprocessesWithOneRunningScopeMock = {
@@ -1116,6 +1156,8 @@ const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const adHocSubProcessInnerInstanceElementInstances = {
@@ -1198,38 +1240,54 @@ const adHocSubProcessInnerInstanceElementInstances = {
   },
 } satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  useEffect(() => {
-    return () => {
-      modificationsStore.reset();
-      instanceHistoryModificationStore.reset();
-    };
-  });
+const getWrapper = () => {
+  const queryClient = getMockQueryClient();
 
-  return (
-    <ProcessDefinitionKeyContext.Provider value="123">
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-          <Routes>
-            <Route
-              path={Paths.processInstance()}
-              element={
-                <>
-                  <TreeView label={'instance history'} hideLabel>
-                    {children}
-                  </TreeView>
-                  <LocationLog />
-                </>
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
-    </ProcessDefinitionKeyContext.Provider>
-  );
+  const Wrapper = ({children}: {children?: React.ReactNode}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+        instanceHistoryModificationStore.reset();
+      };
+    }, []);
+
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TreeView label={'instance history'} hideLabel>
+                      {children}
+                    </TreeView>
+                    <LocationLog />
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
+  };
+
+  return Wrapper;
 };
 
+async function parseBusinessObjects(xml: string) {
+  const diagramModel = await parseDiagramXML(xml);
+  return {
+    businessObjects: businessObjectsParser({diagramModel}),
+    diagramModel,
+  };
+}
+
 export {
+  createMockElementInstance,
+  MOCK_PROCESS_INSTANCE_KEY,
   mockEventSubprocessInstance,
   mockMultiInstanceProcessInstance,
   mockNestedSubProcessesInstance,
@@ -1242,5 +1300,6 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
-  Wrapper,
+  parseBusinessObjects,
+  getWrapper,
 };

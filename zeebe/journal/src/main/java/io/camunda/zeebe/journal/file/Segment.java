@@ -153,6 +153,18 @@ final class Segment implements AutoCloseable, FlushableSegment {
   }
 
   /**
+   * Returns the total bytes of records appended to this segment, excluding the descriptor.
+   *
+   * <p>For closed segments this value is stable after recovery; for the currently-active segment it
+   * advances as new entries are appended.
+   *
+   * @return the appended bytes in this segment
+   */
+  int appendedBytes() {
+    return writer.getAppendedBytes();
+  }
+
+  /**
    * Returns the segment file.
    *
    * @return The segment file.
@@ -274,7 +286,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
     final var target = file.getFileMarkedForDeletion();
     try {
-      FileUtil.moveDurably(file.file().toPath(), target);
+      FileUtil.moveDurably(file.file(), target);
     } catch (final IOException e) {
       throw new JournalException(e);
     }

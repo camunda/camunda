@@ -74,18 +74,18 @@ type ActivateActivityWithinAdHocSubProcessResponseBody = z.infer<
 	typeof activateActivityWithinAdHocSubProcessResponseBodySchema
 >;
 
-const queryActivatableActivities: Endpoint = {
+const queryActivatableActivities = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/element-instances/ad-hoc-activities/search`,
-};
+	getUrl: () => `/${API_VERSION}/element-instances/ad-hoc-activities/search` as const,
+} as const satisfies Endpoint;
 
-const activateAdHocSubProcessActivities: Endpoint<{
-	adHocSubProcessInstanceKey: string;
-}> = {
+const activateAdHocSubProcessActivities = {
 	method: 'POST',
 	getUrl: ({adHocSubProcessInstanceKey}) =>
-		`/${API_VERSION}/element-instances/ad-hoc-activities/${adHocSubProcessInstanceKey}/activation`,
-};
+		`/${API_VERSION}/element-instances/ad-hoc-activities/${adHocSubProcessInstanceKey}/activation` as const,
+} as const satisfies Endpoint<{
+	adHocSubProcessInstanceKey: string;
+}>;
 
 export {
 	activityTypeSchema,

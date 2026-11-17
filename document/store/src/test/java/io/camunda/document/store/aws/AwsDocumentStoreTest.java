@@ -9,6 +9,7 @@ package io.camunda.document.store.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.*;
 
 import io.camunda.document.api.*;
@@ -25,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -146,12 +148,13 @@ class AwsDocumentStoreTest {
   }
 
   @Test
-  void createDocumentShouldApplyTagIfDocumentExpiryGreaterThanTTL() {
+  void createDocumentShouldCapExpiryIfDocumentExpiryGreaterThanTTL() {
     // given
     final var documentId = "existing-document-id";
     final var inputStream = new ByteArrayInputStream(new byte[0]);
     final ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor.captor();
-    final var expiryTime = OffsetDateTime.now().plus(Duration.ofDays(60));
+    final var now = OffsetDateTime.now();
+    final var expiryTime = now.plus(Duration.ofDays(60));
     final var metadata =
         new DocumentMetadataModel(
             "application/text",
@@ -172,7 +175,43 @@ class AwsDocumentStoreTest {
 
     // then
     verify(s3Client).putObject(putObjectRequestCaptor.capture(), any(RequestBody.class));
-    assertThat(putObjectRequestCaptor.getValue().tagging()).isEqualTo("NoAutoDelete=true");
+    // OffsetDateTime.now() in production and in the test are captured at different instants;
+    // string equality would fail on sub-millisecond differences, so we compare with tolerance.
+    final var storedExpiry =
+        OffsetDateTime.parse(putObjectRequestCaptor.getValue().metadata().get("expires-at"));
+    assertThat(storedExpiry)
+        .isCloseTo(now.plus(Duration.ofDays(BUCKET_TTL)), within(1, ChronoUnit.SECONDS));
+  }
+
+  @Test
+  void createDocumentShouldSetExpiryIfDocumentExpirySmallerThanTTL() {
+    // given
+    final var documentId = "existing-document-id";
+    final var inputStream = new ByteArrayInputStream(new byte[0]);
+    final ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor.captor();
+    final var expiryTime = OffsetDateTime.now().plus(Duration.ofDays(10));
+    final var metadata =
+        new DocumentMetadataModel(
+            "application/text",
+            "given-test-document.jpeg",
+            expiryTime,
+            10000L,
+            null,
+            null,
+            Collections.emptyMap());
+
+    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+
+    // when
+    documentStore.createDocument(request).join();
+
+    // then
+    verify(s3Client).putObject(putObjectRequestCaptor.capture(), any(RequestBody.class));
+    assertThat(putObjectRequestCaptor.getValue().metadata().get("expires-at"))
+        .isEqualTo(expiryTime.toString());
   }
 
   @Test
@@ -469,5 +508,58 @@ class AwsDocumentStoreTest {
     verifyNoMoreInteractions(s3Client);
     final var request = requestCaptor.getValue();
     assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
+  }
+
+  @Test
+  void createDocumentInBufferedModeShouldPutHashInMetadataAndSkipCopy() {
+    // given
+    final var bufferedStore =
+        new AwsDocumentStore(
+            BUCKET_NAME,
+            BUCKET_TTL,
+            BUCKET_PATH,
+            s3Client,
+            Executors.newSingleThreadExecutor(),
+            preSigner,
+            true);
+
+    final var documentId = "buffered-document-id";
+    final var content = "buffered-content".getBytes();
+    final var inputStream = new ByteArrayInputStream(content);
+
+    final var metadata =
+        new DocumentMetadataModel(
+            "text/plain",
+            "buffered.txt",
+            null,
+            (long) content.length,
+            null,
+            null,
+            Collections.emptyMap());
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+    when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+        .thenReturn(mock(PutObjectResponse.class));
+
+    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
+
+    // when
+    final var result = bufferedStore.createDocument(request).join();
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().documentId()).isEqualTo(documentId);
+
+    // and — the buffered path embeds the hash directly in the put's metadata, so the
+    // metadata-replacing copy that the streaming path performs is unnecessary.
+    final var putRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+    verify(s3Client).putObject(putRequestCaptor.capture(), any(RequestBody.class));
+    final var putRequest = putRequestCaptor.getValue();
+    assertThat(putRequest.key()).isEqualTo(BUCKET_PATH + documentId);
+    assertThat(putRequest.bucket()).isEqualTo(BUCKET_NAME);
+    assertThat(putRequest.metadata().get("content-hash"))
+        .isEqualTo("78636f5cf96b5a61fc7147b4ee4c2e503ee1a3463128978fb02f6d33bcfcea59");
+    verify(s3Client, never()).copyObject(any(CopyObjectRequest.class));
   }
 }

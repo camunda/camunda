@@ -7,19 +7,20 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.form.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.form.FormEntity;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader.EmbeddedForm;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader.EmbeddedForm;
 import java.util.List;
 import java.util.Optional;
 
-public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Process> {
+public class EmbeddedFormHandler implements MainIndexExporterHandler<EmbeddedFormBatch, Process> {
 
   private static final String FORM_ID_PATTERN = "%s_%s";
   private final String indexName;
@@ -65,9 +66,10 @@ public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Pro
   }
 
   @Override
-  public void flush(final EmbeddedFormBatch entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final EmbeddedFormBatch entity, final BatchRequest batchRequest) {
     final var forms = entity.getForms();
-    Optional.ofNullable(forms).ifPresent(l -> l.forEach(f -> batchRequest.add(indexName, f)));
+    Optional.ofNullable(forms).ifPresent(l -> l.forEach(f -> batchRequest.add(index, f)));
   }
 
   @Override

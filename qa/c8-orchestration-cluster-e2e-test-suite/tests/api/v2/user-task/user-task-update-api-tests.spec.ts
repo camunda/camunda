@@ -21,7 +21,10 @@ import {
   jsonHeaders,
   assertInvalidArgument,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 
 const generateFutureDates = () => {
   const now = new Date();
@@ -64,19 +67,22 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          dueDate: generateFutureDates().dueDate,
-          followUpDate: generateFutureDates().followUpDate,
-          candidateUsers: ['user1', 'user2'],
-          candidateGroups: ['group1', 'group2'],
-          priority: 80,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            dueDate: generateFutureDates().dueDate,
+            followUpDate: generateFutureDates().followUpDate,
+            candidateUsers: ['user1', 'user2'],
+            candidateGroups: ['group1', 'group2'],
+            priority: 80,
+          },
+          action: 'customUpdate',
         },
-        action: 'customUpdate',
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -88,14 +94,17 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          dueDate: generateFutureDates().dueDate,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            dueDate: generateFutureDates().dueDate,
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -107,14 +116,17 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          followUpDate: generateFutureDates().followUpDate,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            followUpDate: generateFutureDates().followUpDate,
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -126,14 +138,17 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          candidateUsers: ['user1', 'user2'],
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            candidateUsers: ['user1', 'user2'],
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -145,14 +160,17 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          candidateGroups: ['group1'],
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            candidateGroups: ['group1'],
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -164,14 +182,17 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          priority: 10,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            priority: 10,
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -183,15 +204,18 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          dueDate: '',
-          followUpDate: '',
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            dueDate: '',
+            followUpDate: '',
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -203,15 +227,18 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          candidateUsers: [],
-          candidateGroups: [],
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            candidateUsers: [],
+            candidateGroups: [],
+          },
         },
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -223,12 +250,15 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {},
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {},
+        },
       },
-    });
+    );
     await assertInvalidArgument(res, 400, 'changeset');
   });
 
@@ -238,15 +268,18 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          priority: 75,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            priority: 75,
+          },
+          action: 'myCustomAction',
         },
-        action: 'myCustomAction',
       },
-    });
+    );
     await assertStatusCode(res, 204);
   });
 
@@ -263,7 +296,7 @@ test.describe.parallel('Update User Task Tests', () => {
 
     await test.step('Update the user task', async () => {
       const updateRes = await request.patch(
-        buildUrl(`/user-tasks/${userTaskKey}`),
+        buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
         {
           headers: jsonHeaders(),
           data: {
@@ -281,7 +314,7 @@ test.describe.parallel('Update User Task Tests', () => {
     await test.step('Verify the updated fields via GET', async () => {
       await expect(async () => {
         const getRes = await request.get(
-          buildUrl(`/user-tasks/${userTaskKey}`),
+          buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
           {
             headers: jsonHeaders(),
           },
@@ -303,14 +336,17 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          priority: 101,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            priority: 101,
+          },
         },
       },
-    });
+    );
     await assertInvalidArgument(res, 400, 'priority');
   });
 
@@ -321,15 +357,20 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          priority: -1,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            priority: -1,
+          },
         },
       },
-    });
+    );
     await assertInvalidArgument(res, 400, 'priority');
   });
 
@@ -339,24 +380,29 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      // No auth headers
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        changeset: {
-          priority: 50,
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
+      {
+        // No auth headers
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          changeset: {
+            priority: 50,
+          },
         },
       },
-    });
+    );
     await assertUnauthorizedRequest(res);
   });
 
   test('Update user task - not found', async ({request}) => {
-    const unknownUserTaskKey = '2251799813694876';
+    // Valid partition-1 key (routable) with a counter no real task will reach,
+    // so the command reaches the engine and is rejected with NOT_FOUND (404).
+    const unknownUserTaskKey = '4503599627370495';
     const res = await request.patch(
-      buildUrl(`/user-tasks/${unknownUserTaskKey}`),
+      buildUrl('/user-tasks/{userTaskKey}', {userTaskKey: unknownUserTaskKey}),
       {
         headers: jsonHeaders(),
         data: {
@@ -370,6 +416,32 @@ test.describe.parallel('Update User Task Tests', () => {
       res,
       `Command 'UPDATE' rejected with code 'NOT_FOUND': Expected to update user task with key '${unknownUserTaskKey}', but no such user task was found`,
     );
+  });
+
+  // Skipped due to bug #56635: https://github.com/camunda/camunda/issues/56635
+  test.skip('Update user task - out-of-range partition key', async ({
+    request,
+  }) => {
+    // Key decodes to a partition that does not exist in the cluster, so the
+    // command cannot be routed and currently returns a retryable 503 instead
+    // of a permanent 404.
+    const outOfRangeUserTaskKey = '9999999999999999';
+    const res = await request.patch(
+      buildUrl('/user-tasks/{userTaskKey}', {
+        userTaskKey: outOfRangeUserTaskKey,
+      }),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            priority: 50,
+          },
+        },
+      },
+    );
+    // Once #56635 is fixed this should assert a permanent status — 404 (no such
+    // entity) or 400 (malformed key) — not the current retryable 503.
+    await assertStatusCode(res, 404);
   });
 
   test('Update user task - conflict - task already completed', async ({
@@ -388,7 +460,7 @@ test.describe.parallel('Update User Task Tests', () => {
     await test.step('Attempt to update the completed user task', async () => {
       await expect(async () => {
         const updateRes = await request.patch(
-          buildUrl(`/user-tasks/${userTaskKey}`),
+          buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
           {
             headers: jsonHeaders(),
             data: {

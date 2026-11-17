@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
@@ -16,6 +17,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EXECUTION_INDEX;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
@@ -23,6 +25,8 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.TENANT_ID;
+
+import java.util.List;
 
 public class DecisionInstanceFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -37,6 +41,7 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "evaluationFailureMessage" -> EVALUATION_FAILURE_MESSAGE;
       case "processDefinitionKey" -> PROCESS_DEFINITION_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
+      case "businessId" -> BUSINESS_ID;
       case "flowNodeInstanceKey" -> ELEMENT_INSTANCE_KEY;
       case "decisionDefinitionKey" -> DECISION_DEFINITION_ID; // yes, this is correct
       case "decisionDefinitionId" -> DECISION_ID;
@@ -46,6 +51,14 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "rootDecisionDefinitionKey" -> ROOT_DECISION_DEFINITION_ID;
       case "tenantId" -> TENANT_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
+    };
+  }
+
+  @Override
+  public List<String> applyAll(final String domainField) {
+    return switch (domainField) {
+      case "decisionInstanceId" -> List.of(KEY, EXECUTION_INDEX);
+      default -> FieldSortingTransformer.super.applyAll(domainField);
     };
   }
 

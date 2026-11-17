@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseWithHasChildOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChildOrSelf;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -23,6 +23,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
@@ -44,7 +45,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.VariableValueFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,20 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
     this.transformers = transformers;
+  }
+
+  @Override
+  protected boolean matchesOnlyRuntimeData(final ProcessDefinitionStatisticsFilter filter) {
+    return matchesOnlyRunningProcessInstances(filter)
+        || allMatch(
+            filter.orFilters(),
+            ProcessDefinitionStatisticsFilterTransformer::matchesOnlyRunningProcessInstances);
+  }
+
+  private static boolean matchesOnlyRunningProcessInstances(
+      final ProcessDefinitionStatisticsFilter filter) {
+    return ProcessInstanceFilterTransformer.matchesOnlyRunningProcessInstances(
+        filter.stateOperations(), filter.hasIncident());
   }
 
   @Override
@@ -95,10 +110,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    Optional.of(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()));
+    queries.addAll(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(value -> queries.add(term(INCIDENT, value)));
 
@@ -109,28 +122,22 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    Optional.of(longOperations(KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(
-            longOperations(
-                PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(
-            longOperations(
-                PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(dateTimeOperations(START_DATE, filter.startDateOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(dateTimeOperations(END_DATE, filter.endDateOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    queries.addAll(longOperations(KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(
+            PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()));
+    queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
+    queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
+    queries.addAll(stringOperations(STATE, filter.stateOperations()));
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
-    Optional.of(stringOperations(TENANT_ID, filter.tenantIdOperations()))
-        .ifPresent(queries::addAll);
-    Optional.of(
-            stringMatchPhraseWithHasChildOperations(
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    queries.addAll(stringOperations(BUSINESS_ID, filter.businessIdOperations()));
+    Optional.ofNullable(
+            stringMatchPhraseInSingleHasChildOrSelf(
                 ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION))
-        .ifPresent(queries::addAll);
+        .ifPresent(queries::add);
     ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);
     queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
     ofNullable(filter.hasRetriesLeft()).ifPresent(value -> queries.add(hasRetriesLeftQuery(value)));
@@ -139,7 +146,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return hasParentQuery(
         PROCESS_INSTANCE_JOIN_RELATION, stringTerms(BPMN_PROCESS_ID, authorization.resourceIds()));
   }

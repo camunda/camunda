@@ -17,14 +17,16 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.security.configuration.SecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -37,7 +39,6 @@ import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -154,13 +155,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       startTime = System.currentTimeMillis();
       stopBroker();
       LOG.info("Broker closing time: " + (System.currentTimeMillis() - startTime));
-
-      final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
-      if (allocatedMemoryInKb > 0) {
-        LOG.warn(
-            "There are still allocated direct buffers of a total size of {}kB.",
-            allocatedMemoryInKb);
-      }
     } finally {
       try {
         FileUtil.deleteFolder(brokerBase.getAbsolutePath());
@@ -247,19 +241,23 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
     atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             scheduler,
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            new SimpleMeterRegistry(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
             null,
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            PhysicalTenantIds.DEFAULT);
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());

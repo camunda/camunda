@@ -27,7 +27,15 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
   DELETE((short) 6),
   DELETED((short) 7),
 
-  MIGRATED((short) 8);
+  MIGRATED((short) 8),
+
+  /**
+   * Command to re-open a message subscription from its durable resume manifest, buffered per
+   * process instance on suspend-close ack and drained one-per-batch on resume. Distinct from {@link
+   * #CREATE} (the create acknowledgement, which expects an {@code OPENING} row); {@code REOPEN}
+   * starts from the {@code OPENED} manifest row.
+   */
+  REOPEN((short) 9);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -81,6 +89,8 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
         return DELETED;
       case 8:
         return MIGRATED;
+      case 9:
+        return REOPEN;
       default:
         return Intent.UNKNOWN;
     }

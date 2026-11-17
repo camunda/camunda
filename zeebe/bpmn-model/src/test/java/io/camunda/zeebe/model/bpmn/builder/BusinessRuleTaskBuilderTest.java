@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -130,6 +131,47 @@ public class BusinessRuleTaskBuilderTest {
   }
 
   @Test
+  void shouldSetJobPriorityAsLiteralOnBusinessRuleTask() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance businessRuleTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) businessRuleTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("42");
+  }
+
+  @Test
+  void shouldSetJobPriorityAsExpressionOnBusinessRuleTask() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask(
+                "task", t -> t.zeebeJobType("type").zeebeJobPriorityExpression("priority"))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance businessRuleTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) businessRuleTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("=priority");
+  }
+
+  @Test
   void shouldSetVersionTag() {
     // when
     final BpmnModelInstance instance =
@@ -146,5 +188,24 @@ public class BusinessRuleTaskBuilderTest {
         .hasSize(1)
         .extracting(ZeebeCalledDecision::getVersionTag)
         .containsExactly("v1");
+  }
+
+  @Test
+  void shouldSetVersionTagExpression() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", task -> task.zeebeVersionTagExpression("myversion"))
+            .done();
+
+    // then
+    final ModelElementInstance businessRuleTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) businessRuleTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeCalledDecision.class))
+        .hasSize(1)
+        .extracting(ZeebeCalledDecision::getVersionTag)
+        .containsExactly("=myversion");
   }
 }

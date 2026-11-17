@@ -18,6 +18,7 @@ import io.atomix.cluster.protocol.GroupMembershipEventListener;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.GroupMembershipProtocolConfig;
 import io.atomix.utils.event.AbstractListenerManager;
+import io.atomix.utils.net.Address;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,6 +65,16 @@ public final class DiscoveryMembershipProtocol
   @Override
   public Member getMember(final MemberId memberId) {
     return members.get(memberId);
+  }
+
+  @Override
+  public Member getMember(final Address address) {
+    for (final Member member : members.values()) {
+      if (member.address().equals(address)) {
+        return member;
+      }
+    }
+    return null;
   }
 
   @Override

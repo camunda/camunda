@@ -14,6 +14,34 @@ public final class FilterBuilders {
 
   private FilterBuilders() {}
 
+  public static AgentDefinitionFilter.Builder agentDefinition() {
+    return new AgentDefinitionFilter.Builder();
+  }
+
+  public static AgentDefinitionFilter agentDefinition(
+      final Function<AgentDefinitionFilter.Builder, ObjectBuilder<AgentDefinitionFilter>> fn) {
+    return fn.apply(agentDefinition()).build();
+  }
+
+  public static AgentInstanceFilter.Builder agentInstance() {
+    return new AgentInstanceFilter.Builder();
+  }
+
+  public static AgentInstanceFilter agentInstance(
+      final Function<AgentInstanceFilter.Builder, ObjectBuilder<AgentInstanceFilter>> fn) {
+    return fn.apply(agentInstance()).build();
+  }
+
+  public static AgentInstanceHistoryFilter.Builder agentInstanceHistory() {
+    return new AgentInstanceHistoryFilter.Builder();
+  }
+
+  public static AgentInstanceHistoryFilter agentInstanceHistory(
+      final Function<AgentInstanceHistoryFilter.Builder, ObjectBuilder<AgentInstanceHistoryFilter>>
+          fn) {
+    return fn.apply(agentInstanceHistory()).build();
+  }
+
   public static UsageMetricsFilter.Builder usageMetrics() {
     return new UsageMetricsFilter.Builder();
   }
@@ -208,6 +236,16 @@ public final class FilterBuilders {
     return fn.apply(new AuditLogFilter.Builder()).build();
   }
 
+  public static VariableHistoryItemFilter.Builder variableHistoryItem() {
+    return new VariableHistoryItemFilter.Builder();
+  }
+
+  public static VariableHistoryItemFilter variableHistoryItem(
+      final Function<VariableHistoryItemFilter.Builder, ObjectBuilder<VariableHistoryItemFilter>>
+          fn) {
+    return fn.apply(variableHistoryItem()).build();
+  }
+
   public static VariableFilter.Builder variable() {
     return new VariableFilter.Builder();
   }
@@ -395,5 +433,25 @@ public final class FilterBuilders {
   public static GlobalListenerFilter globalListener(
       final Function<GlobalListenerFilter.Builder, ObjectBuilder<GlobalListenerFilter>> fn) {
     return fn.apply(globalListener()).build();
+  }
+
+  public static DeployedResourceFilter.Builder deployedResource() {
+    return new DeployedResourceFilter.Builder();
+  }
+
+  public static DeployedResourceFilter deployedResource(
+      final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
+    return fn.apply(deployedResource()).build();
+  }
+
+  public static ElementInstanceWaitStateFilter.Builder elementInstanceWaitState() {
+    return new ElementInstanceWaitStateFilter.Builder();
+  }
+
+  public static ElementInstanceWaitStateFilter elementInstanceWaitState(
+      final Function<
+              ElementInstanceWaitStateFilter.Builder, ObjectBuilder<ElementInstanceWaitStateFilter>>
+          fn) {
+    return fn.apply(elementInstanceWaitState()).build();
   }
 }

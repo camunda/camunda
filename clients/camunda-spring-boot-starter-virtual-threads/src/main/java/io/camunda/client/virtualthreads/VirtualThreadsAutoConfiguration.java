@@ -25,8 +25,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -46,12 +47,14 @@ import org.springframework.context.annotation.Lazy;
 public class VirtualThreadsAutoConfiguration {
 
   /**
-   * Fallback bean when Micrometer is not on the classpath.
+   * Fallback bean used when no {@link io.micrometer.core.instrument.MeterRegistry} bean is
+   * available — either because Micrometer is absent from the classpath, or because it is present
+   * but no registry bean has been configured.
    *
    * @return the configured executor service without metrics
    */
   @Bean
-  @ConditionalOnMissingClass("io.micrometer.core.instrument.MeterRegistry")
+  @ConditionalOnMissingBean(type = "io.micrometer.core.instrument.MeterRegistry")
   public CamundaClientExecutorService camundaClientExecutorServiceWithoutMetrics() {
     final ThreadFactory virtualThreadFactory = createVirtualThreadFactory();
     final ExecutorService jobHandlingExecutor =
@@ -79,6 +82,7 @@ public class VirtualThreadsAutoConfiguration {
         "io.micrometer.core.instrument.MeterRegistry",
         "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration"
       })
+  @ConditionalOnBean(type = "io.micrometer.core.instrument.MeterRegistry")
   static class MeteredConfiguration {
 
     /**

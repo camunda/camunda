@@ -11,6 +11,7 @@ import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 
 public enum CorrelatedMessageSubscriptionSearchColumn
     implements SearchColumn<CorrelatedMessageSubscriptionEntity> {
+  BUSINESS_ID("businessId"),
   CORRELATION_KEY("correlationKey"),
   CORRELATION_TIME("correlationTime"),
   FLOW_NODE_ID("flowNodeId"),

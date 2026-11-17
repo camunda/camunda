@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {
 	API_VERSION,
+	advancedIntegerFilterSchema,
 	advancedStringFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
@@ -34,8 +35,10 @@ type JobKind = z.infer<typeof jobKindSchema>;
 
 const listenerEventTypeSchema = z.enum([
 	'UNSPECIFIED',
+	'BEFORE_ALL',
 	'START',
 	'END',
+	'CANCEL',
 	'CREATING',
 	'ASSIGNING',
 	'UPDATING',
@@ -56,6 +59,7 @@ const jobSchema = z.object({
 	kind: jobKindSchema,
 	listenerEventType: listenerEventTypeSchema,
 	retries: z.number(),
+	priority: z.number().int(),
 	isDenied: z.boolean().nullable(),
 	deniedReason: z.string().nullable(),
 	hasFailedWithRetriesLeft: z.boolean(),
@@ -64,11 +68,11 @@ const jobSchema = z.object({
 	customHeaders: z.record(z.string(), z.unknown()).nullable(),
 	deadline: z.string().nullable(),
 	endTime: z.string().nullable(),
-	processDefinitionId: z.string(),
-	processDefinitionKey: z.string(),
+	processDefinitionId: z.string().nullable(),
+	processDefinitionKey: z.string().nullable(),
 	processInstanceKey: z.string(),
 	rootProcessInstanceKey: z.string().nullable(),
-	elementId: z.string(),
+	elementId: z.string().nullable(),
 	elementInstanceKey: z.string(),
 	creationTime: z.string().nullable(),
 	lastUpdateTime: z.string().nullable(),
@@ -86,6 +90,7 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 		'kind',
 		'listenerEventType',
 		'retries',
+		'priority',
 		'isDenied',
 		'deniedReason',
 		'hasFailedWithRetriesLeft',
@@ -94,6 +99,7 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 		'customHeaders',
 		'deadline',
 		'endTime',
+		'creationTime',
 		'processDefinitionId',
 		'processDefinitionKey',
 		'processInstanceKey',
@@ -113,18 +119,19 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 		processInstanceKey: basicStringFilterSchema.optional(),
 		elementId: advancedStringFilterSchema.optional(),
 		elementInstanceKey: basicStringFilterSchema.optional(),
+		priority: advancedIntegerFilterSchema.optional(),
 		tenantId: advancedStringFilterSchema.optional(),
 	}),
 });
 
 type QueryJobsRequestBody = z.infer<typeof queryJobsRequestBodySchema>;
 
-const queryJobs: Endpoint = {
+const queryJobs = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/jobs/search`;
+		return `/${API_VERSION}/jobs/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 const queryJobsResponseBodySchema = getQueryResponseBodySchema(jobSchema);
 type QueryJobsResponseBody = z.infer<typeof queryJobsResponseBodySchema>;
@@ -168,12 +175,12 @@ const activateJobsResponseBodySchema = z.object({
 });
 type ActivateJobsResponseBody = z.infer<typeof activateJobsResponseBodySchema>;
 
-const activateJobs: Endpoint = {
+const activateJobs = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/jobs/activation`;
+		return `/${API_VERSION}/jobs/activation` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 const failJobRequestBodySchema = z.object({
 	retries: z.number().optional(),
@@ -183,14 +190,14 @@ const failJobRequestBodySchema = z.object({
 });
 type FailJobRequestBody = z.infer<typeof failJobRequestBodySchema>;
 
-const failJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const failJob = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}/failure`;
+		return `/${API_VERSION}/jobs/${jobKey}/failure` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 const throwJobErrorRequestBodySchema = z.object({
 	errorCode: z.string(),
@@ -199,14 +206,14 @@ const throwJobErrorRequestBodySchema = z.object({
 });
 type ThrowJobErrorRequestBody = z.infer<typeof throwJobErrorRequestBodySchema>;
 
-const throwJobError: Endpoint<Pick<Job, 'jobKey'>> = {
+const throwJobError = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}/error`;
+		return `/${API_VERSION}/jobs/${jobKey}/error` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 const jobResultCorrectionsSchema = z.object({}).passthrough();
 type JobResultCorrections = z.infer<typeof jobResultCorrectionsSchema>;
@@ -224,18 +231,19 @@ const completeJobRequestBodySchema = z.object({
 });
 type CompleteJobRequestBody = z.infer<typeof completeJobRequestBodySchema>;
 
-const completeJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const completeJob = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}/completion`;
+		return `/${API_VERSION}/jobs/${jobKey}/completion` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 const jobChangesetSchema = z.object({
-	retries: z.number().optional(),
-	timeout: z.number().optional(),
+	retries: z.number().int().optional(),
+	timeout: z.number().int().optional(),
+	priority: z.number().int().optional(),
 });
 type JobChangeset = z.infer<typeof jobChangesetSchema>;
 
@@ -244,14 +252,14 @@ const updateJobRequestBodySchema = z.object({
 });
 type UpdateJobRequestBody = z.infer<typeof updateJobRequestBodySchema>;
 
-const updateJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const updateJob = {
 	method: 'PATCH',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}`;
+		return `/${API_VERSION}/jobs/${jobKey}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 export {
 	queryJobs,

@@ -8,43 +8,52 @@
   <resultMap id="BatchOperationResultMap"
     type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
-      <arg column="STATE"
+      <idArg name="batchOperationKey" column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
+      <arg name="state" column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
-      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="ACTOR_TYPE"
+      <arg name="operationType" column="OPERATION_TYPE"
+        javaType="io.camunda.search.entities.BatchOperationType"/>
+      <arg name="startDate" column="START_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg name="endDate" column="END_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg name="actorType" column="ACTOR_TYPE"
         javaType="io.camunda.search.entities.AuditLogEntity$AuditLogActorType"/>
-      <arg column="ACTOR_ID" javaType="java.lang.String"/>
-      <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
-      <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
-      <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
+      <arg name="actorId" column="ACTOR_ID" javaType="java.lang.String"/>
+      <arg name="operationsTotalCount" column="OPERATIONS_TOTAL_COUNT" javaType="java.lang.Integer"/>
+      <arg name="operationsFailedCount" column="OPERATIONS_FAILED_COUNT" javaType="java.lang.Integer"/>
+      <arg name="operationsCompletedCount" column="OPERATIONS_COMPLETED_COUNT" javaType="java.lang.Integer"/>
     </constructor>
     <collection property="errors"
-      ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel">
-      <result property="partitionId" column="PARTITION_ID"/>
-      <result property="type" column="TYPE"/>
-      <result property="message" column="MESSAGE"/>
+      ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel"
+      javaType="java.util.List">
+      <constructor>
+        <arg name="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
+        <arg name="type" column="TYPE" javaType="java.lang.String"/>
+        <arg name="message" column="MESSAGE" javaType="java.lang.String"/>
+      </constructor>
     </collection>
   </resultMap>
 
   <resultMap id="BatchOperationItemResultMap"
     type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
-      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
-      <arg column="ITEM_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String" name="batchOperationKey"/>
+      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"
+        name="operationType"/>
+      <arg column="ITEM_KEY" javaType="java.lang.Long" name="itemKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
       <arg column="STATE"
-        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
-      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"
+        name="state"/>
+      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime" name="processedDate"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String" name="errorMessage"/>
     </constructor>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="postgresql">
     INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
     STATE,
     OPERATION_TYPE,
@@ -65,6 +74,138 @@
     #{operationsTotalCount},
     #{operationsFailedCount},
     #{operationsCompletedCount})
+    ON CONFLICT (BATCH_OPERATION_KEY) DO NOTHING
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="mariadb">
+    INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+    STATE,
+    OPERATION_TYPE,
+    START_DATE,
+    END_DATE,
+    ACTOR_TYPE,
+    ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT,
+    OPERATIONS_FAILED_COUNT,
+    OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate, jdbcType=TIMESTAMP},
+    #{endDate, jdbcType=TIMESTAMP},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+    ON DUPLICATE KEY UPDATE BATCH_OPERATION_KEY = BATCH_OPERATION_KEY
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="mysql">
+    INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+    STATE,
+    OPERATION_TYPE,
+    START_DATE,
+    END_DATE,
+    ACTOR_TYPE,
+    ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT,
+    OPERATIONS_FAILED_COUNT,
+    OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate, jdbcType=TIMESTAMP},
+    #{endDate, jdbcType=TIMESTAMP},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+    ON DUPLICATE KEY UPDATE BATCH_OPERATION_KEY = BATCH_OPERATION_KEY
+  </insert>
+
+  <!-- The batch operation insert can happen concurrently on multiple partitions.
+  The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
+  This is what we want to avoid. This try-catch will explicitly ignore the PK violation. -->
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="mssql">
+    BEGIN TRY
+      INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+      STATE,
+      OPERATION_TYPE,
+      START_DATE,
+      END_DATE,
+      ACTOR_TYPE,
+      ACTOR_ID,
+      OPERATIONS_TOTAL_COUNT,
+      OPERATIONS_FAILED_COUNT,
+      OPERATIONS_COMPLETED_COUNT)
+      VALUES (#{batchOperationKey},
+      #{state},
+      #{operationType},
+      #{startDate, jdbcType=TIMESTAMP},
+      #{endDate, jdbcType=TIMESTAMP},
+      #{actorType},
+      #{actorId},
+      #{operationsTotalCount},
+      #{operationsFailedCount},
+      #{operationsCompletedCount});
+    END TRY
+    BEGIN CATCH
+      IF ERROR_NUMBER() != 2627 -- Violation of primary key (duplicate key)
+        THROW;
+    END CATCH
+  </insert>
+
+  <!-- The batch operation insert can happen concurrently on multiple partitions.
+  The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
+  This is what we want to avoid. This IGNORE_ROW_ON_DUPKEY_INDEX hint will explicitly ignore the PK violation. -->
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="oracle">
+    INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY)) */
+    INTO ${prefix}BATCH_OPERATION
+    (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate},
+    #{endDate},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
+  </insert>
+
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
+    databaseId="h2">
+    MERGE INTO ${prefix}BATCH_OPERATION target
+    USING (SELECT CAST(#{batchOperationKey} AS VARCHAR) AS BATCH_OPERATION_KEY,
+    CAST(#{state} AS VARCHAR) AS STATE,
+    CAST(#{operationType} AS VARCHAR) AS OPERATION_TYPE,
+    CAST(#{startDate} AS TIMESTAMP) AS START_DATE,
+    CAST(#{endDate} AS TIMESTAMP) AS END_DATE,
+    CAST(#{actorType} AS VARCHAR) AS ACTOR_TYPE,
+    CAST(#{actorId} AS VARCHAR) AS ACTOR_ID,
+    CAST(#{operationsTotalCount} AS INTEGER) AS OPERATIONS_TOTAL_COUNT,
+    CAST(#{operationsFailedCount} AS INTEGER) AS OPERATIONS_FAILED_COUNT,
+    CAST(#{operationsCompletedCount} AS INTEGER) AS OPERATIONS_COMPLETED_COUNT) source
+    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY)
+    WHEN NOT MATCHED THEN
+    INSERT (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
+    OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
+    VALUES (source.BATCH_OPERATION_KEY, source.STATE, source.OPERATION_TYPE, source.START_DATE,
+    source.END_DATE, source.ACTOR_TYPE, source.ACTOR_ID, source.OPERATIONS_TOTAL_COUNT,
+    source.OPERATIONS_FAILED_COUNT, source.OPERATIONS_COMPLETED_COUNT)
   </insert>
 
   <insert id="insertItems"

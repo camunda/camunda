@@ -15,16 +15,17 @@ import static io.camunda.zeebe.backup.common.Manifest.StatusCode.IN_PROGRESS;
 import io.camunda.zeebe.backup.common.BackupStoreException.InvalidPersistedManifestState;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
 public record ManifestImpl(
     BackupIdentifierImpl id,
-    BackupDescriptorImpl descriptor,
+    @Nullable BackupDescriptorImpl descriptor,
     StatusCode statusCode,
-    FileSet snapshot,
-    FileSet segments,
+    @Nullable FileSet snapshot,
+    @Nullable FileSet segments,
     Instant createdAt,
     Instant modifiedAt,
-    String failureReason)
+    @Nullable String failureReason)
     implements Manifest.InProgressManifest,
         Manifest.CompletedManifest,
         Manifest.FailedManifest,
@@ -42,10 +43,10 @@ public record ManifestImpl(
 
   public ManifestImpl(
       final BackupIdentifierImpl id,
-      final BackupDescriptorImpl descriptor,
+      final @Nullable BackupDescriptorImpl descriptor,
       final StatusCode statusCode,
-      final FileSet snapshot,
-      final FileSet segments,
+      final @Nullable FileSet snapshot,
+      final @Nullable FileSet segments,
       final Instant createdAt,
       final Instant modifiedAt) {
     this(id, descriptor, statusCode, snapshot, segments, createdAt, modifiedAt, null);

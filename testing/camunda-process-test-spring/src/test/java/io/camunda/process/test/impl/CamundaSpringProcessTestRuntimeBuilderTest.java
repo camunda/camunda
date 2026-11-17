@@ -151,6 +151,27 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getConnectorsExposedPorts()).isEqualTo(List.of(9090));
   }
 
+  @ParameterizedTest
+  @EnumSource(CamundaProcessTestRuntimeMode.class)
+  void shouldConfigureClusterSecrets(final CamundaProcessTestRuntimeMode runtimeMode) {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    final Map<String, String> clusterSecrets =
+        Map.ofEntries(entry("secret-1", "1"), entry("secret-2", "2"));
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
+    runtimeConfiguration.setClusterSecrets(clusterSecrets);
+
+    // when
+    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+
+    // then
+    assertThat(runtimeBuilder.getClusterSecrets()).isEqualTo(clusterSecrets);
+  }
+
   @Test
   void shouldBuildDefaultRemoteRuntime() {
     // given

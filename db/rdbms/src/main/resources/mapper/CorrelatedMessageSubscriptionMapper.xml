@@ -14,20 +14,21 @@
 
   <resultMap id="correlatedMessageSubscriptionResultMap" type="io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel">
     <constructor>
-      <arg column="CORRELATION_KEY" javaType="java.lang.String"/>
-      <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime"/>
-      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
-      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <idArg column="MESSAGE_KEY" javaType="java.lang.Long"/>
-      <arg column="MESSAGE_NAME" javaType="java.lang.String"/>
-      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long"/>
-      <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" />
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="CORRELATION_KEY" javaType="java.lang.String" name="correlationKey"/>
+      <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime" name="correlationTime"/>
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String" name="flowNodeId"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long" name="flowNodeInstanceKey"/>
+      <idArg column="MESSAGE_KEY" javaType="java.lang.Long" name="messageKey"/>
+      <arg column="MESSAGE_NAME" javaType="java.lang.String" name="messageName"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer" name="partitionId"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" name="processDefinitionKey"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="rootProcessInstanceKey"/>
+      <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long" name="subscriptionKey"/>
+      <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" name="subscriptionType"/>
+      <arg column="TENANT_ID" javaType="java.lang.String" name="tenantId"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
     </constructor>
   </resultMap>
 
@@ -46,7 +47,8 @@
       ROOT_PROCESS_INSTANCE_KEY,
       SUBSCRIPTION_KEY,
       SUBSCRIPTION_TYPE,
-      TENANT_ID
+      TENANT_ID,
+      BUSINESS_ID
     )
     VALUES (
       #{correlationKey},
@@ -62,7 +64,8 @@
       #{rootProcessInstanceKey},
       #{subscriptionKey},
       #{subscriptionType},
-      #{tenantId}
+      #{tenantId},
+      #{businessId}
     )
   </insert>
 
@@ -92,7 +95,8 @@
         ROOT_PROCESS_INSTANCE_KEY,
         SUBSCRIPTION_KEY,
         SUBSCRIPTION_TYPE,
-        TENANT_ID
+        TENANT_ID,
+        BUSINESS_ID
       FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
     <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>
     ) t
@@ -122,6 +126,12 @@
 
   <sql id="searchFilter">
     <!-- basic filter -->
+    <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+      <foreach collection="filter.businessIdOperations" item="operation">
+        AND BUSINESS_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
       <foreach collection="filter.correlationKeyOperations" item="operation">
         AND CORRELATION_KEY

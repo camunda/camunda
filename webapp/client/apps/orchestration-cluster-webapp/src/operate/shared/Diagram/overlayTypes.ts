@@ -1,0 +1,26 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+
+type OverlayData = {
+	payload?: unknown;
+	type: string;
+	elementId: string;
+	position: OverlayPosition;
+	isZoomFixed?: boolean;
+};
+
+type OverlayEntry = {
+	container: HTMLElement;
+	payload: unknown;
+	elementId: string;
+	type: string;
+};
+
+export type {OverlayData, OverlayEntry};

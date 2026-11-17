@@ -105,6 +105,7 @@ public final class ModelElementFilterQueryUtilES {
 
   private ModelElementFilterQueryUtilES() {}
 
+  @SuppressWarnings("ReturnValueIgnored")
   public static Optional<NestedQuery.Builder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
@@ -20,11 +21,11 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Request handler for ExecuteQueryRequest SBE messages. When successful, it looks up the
@@ -33,37 +34,31 @@ import org.agrona.collections.Int2ObjectHashMap;
  */
 @SuppressWarnings("removal")
 @Deprecated(forRemoval = true, since = "1.2.0")
+@NullMarked
 public final class QueryApiRequestHandler
     extends AsyncApiRequestHandler<QueryRequestReader, QueryResponseWriter> {
   private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
       EnumSet.of(ValueType.PROCESS, ValueType.PROCESS_INSTANCE, ValueType.JOB);
 
-  private final Map<Integer, QueryService> queryServicePerPartition = new Int2ObjectHashMap<>();
+  private @Nullable QueryService queryService;
   private final QueryApiCfg config;
-  private final String actorName;
 
-  public QueryApiRequestHandler(final QueryApiCfg config) {
-    super(QueryRequestReader::new, QueryResponseWriter::new);
+  public QueryApiRequestHandler(final PartitionId partitionId, final QueryApiCfg config) {
+    super("QueryApi", partitionId, QueryRequestReader::new, QueryResponseWriter::new);
     this.config = config;
-    actorName = "QueryApi";
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
   protected void onActorClosing() {
-    queryServicePerPartition.clear();
+    queryService = null;
   }
 
   public void addPartition(final int partitionId, final QueryService queryService) {
-    actor.run(() -> queryServicePerPartition.put(partitionId, queryService));
+    actor.run(() -> this.queryService = queryService);
   }
 
   public void removePartition(final int partitionId) {
-    actor.run(() -> queryServicePerPartition.remove(partitionId));
+    actor.run(() -> queryService = null);
   }
 
   @Override
@@ -91,18 +86,14 @@ public final class QueryApiRequestHandler
       return Either.left(errorWriter);
     }
 
-    final var queryService = queryServicePerPartition.get(partitionId);
-    if (queryService == null) {
+    final var service = queryService;
+    if (service == null) {
       errorWriter.partitionLeaderMismatch(partitionId);
       return Either.left(errorWriter);
     }
 
     try {
-      return handleQuery(
-          queryServicePerPartition.get(partitionId),
-          requestReader.getMessageDecoder(),
-          responseWriter,
-          errorWriter);
+      return handleQuery(service, requestReader.getMessageDecoder(), responseWriter, errorWriter);
     } catch (final ClosedServiceException e) {
       Loggers.TRANSPORT_LOGGER.debug(
           "Failed to handle query on partition {} as the query service was closed concurrently",

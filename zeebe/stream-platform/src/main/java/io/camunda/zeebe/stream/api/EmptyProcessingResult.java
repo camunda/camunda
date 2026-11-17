@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
+import java.util.List;
 import java.util.Optional;
 
 public final class EmptyProcessingResult implements ProcessingResult {
@@ -31,8 +32,8 @@ public final class EmptyProcessingResult implements ProcessingResult {
   }
 
   @Override
-  public boolean executePostCommitTasks() {
-    return true;
+  public List<PostCommitTask> getPostCommitTasks() {
+    return List.of();
   }
 
   @Override

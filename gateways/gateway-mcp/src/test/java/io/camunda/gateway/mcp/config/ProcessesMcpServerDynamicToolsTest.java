@@ -23,7 +23,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse.JSONRPCError;
-import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -65,11 +64,11 @@ class ProcessesMcpServerDynamicToolsTest extends ProcessesToolsTest {
 
     // when
     final CallToolResult firstCallResult =
-        mcpClient.callTool(CallToolRequest.builder().name("alphaProcess").build());
+        mcpClient.callTool(CallToolRequest.builder("alphaProcess").build());
 
     toolRepository.setTools(List.of(toolSpecification("betaProcess", "started beta process")));
     final CallToolResult secondCallResult =
-        mcpClient.callTool(CallToolRequest.builder().name("betaProcess").build());
+        mcpClient.callTool(CallToolRequest.builder("betaProcess").build());
 
     // then
     assertThat(firstCallResult.isError()).isFalse();
@@ -98,7 +97,7 @@ class ProcessesMcpServerDynamicToolsTest extends ProcessesToolsTest {
     assertThatThrownBy(
             () ->
                 mcpClient.callTool(
-                    CallToolRequest.builder().name(oldTools.tools().getFirst().name()).build()))
+                    CallToolRequest.builder(oldTools.tools().getFirst().name()).build()))
         .isInstanceOfSatisfying(
             McpError.class,
             exception ->
@@ -121,8 +120,7 @@ class ProcessesMcpServerDynamicToolsTest extends ProcessesToolsTest {
                 new ServiceException("Just a test", Status.INVALID_ARGUMENT))));
 
     // when/then
-    assertThatThrownBy(
-            () -> mcpClient.callTool(CallToolRequest.builder().name("alphaProcess").build()))
+    assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder("alphaProcess").build()))
         .isInstanceOfSatisfying(
             McpError.class,
             exception ->
@@ -145,8 +143,7 @@ class ProcessesMcpServerDynamicToolsTest extends ProcessesToolsTest {
                     .build())));
 
     // when/then
-    assertThatThrownBy(
-            () -> mcpClient.callTool(CallToolRequest.builder().name("alphaProcess").build()))
+    assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder("alphaProcess").build()))
         .isInstanceOfSatisfying(
             McpError.class,
             exception ->
@@ -164,11 +161,9 @@ class ProcessesMcpServerDynamicToolsTest extends ProcessesToolsTest {
       final String toolName, final String responseText, final RuntimeException failure) {
     return SyncToolSpecification.builder()
         .tool(
-            Tool.builder()
-                .name(toolName)
+            Tool.builder(toolName, Map.of("type", "object"))
                 .title(toolName)
                 .description("Test process tool " + toolName)
-                .inputSchema(new JsonSchema("object", null, null, false, null, null))
                 .build())
         .callHandler(
             (transportContext, callToolRequest) -> {

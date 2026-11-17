@@ -1,6 +1,6 @@
 # description: Daily compatibility tests for Camunda Spring Boot Starter across server versions
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/core-features
 name: Camunda Spring Boot Starter Compatibility Tests
 
 on:
@@ -31,6 +31,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   FLAKY_TEST_RERUN_COUNT: '3'
 
 jobs:
@@ -40,12 +41,13 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: read
+      actions: read
     outputs:
       matrix: ${{ steps.create-matrix.outputs.matrix }}
       is-main: ${{ steps.branch-info.outputs.is-main }}
       branch-name: ${{ steps.branch-info.outputs.branch-name }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Fetch all history for git tags
 
@@ -148,9 +150,12 @@ jobs:
 
           echo "next-snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
 
-          # Create CLIENT_LIST: on stable branches, only same major.minor versions (no snapshot)
+          # Create CLIENT_LIST: on stable branches, only the latest patch for the stable minor
+          # Patch versions don't change the client API, so only the latest patch matters
+          # for forward compatibility testing (keeps the matrix small and bounded)
           CLIENT_LIST=""
           CLIENT_COUNT=0
+          LATEST_CLIENT_TAG=""
           if [[ -n "$FILTERED_TAGS" ]]; then
             for tag in $FILTERED_TAGS; do
               if [[ -n "$STABLE_VERSION" ]]; then
@@ -158,10 +163,20 @@ jobs:
                 if [[ ! "$tag" =~ ^${STABLE_MAJOR}\.${STABLE_MINOR}\. ]]; then
                   continue
                 fi
+                # Tags are sorted by version (sort -V), so the last match is the latest
+                LATEST_CLIENT_TAG="$tag"
+              else
+                CLIENT_LIST+="$tag"$'\n'
+                CLIENT_COUNT=$((CLIENT_COUNT + 1))
               fi
-              CLIENT_LIST+="$tag"$'\n'
-              CLIENT_COUNT=$((CLIENT_COUNT + 1))
             done
+          fi
+
+          # On stable branches, use only the latest patch version
+          if [[ -n "$STABLE_VERSION" ]] && [[ -n "$LATEST_CLIENT_TAG" ]]; then
+            CLIENT_LIST="$LATEST_CLIENT_TAG"$'\n'
+            CLIENT_COUNT=1
+            echo "Using latest client patch: $LATEST_CLIENT_TAG (skipped older patches)"
           fi
 
           if [[ "$IS_MAIN" == "true" ]]; then
@@ -214,29 +229,48 @@ jobs:
           echo "SERVER_LIST:"
           cat /tmp/server_list.txt
 
-      - name: Download tested combinations artifact
-        id: download-tested
-        continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: spring-compatibility-tested-combinations
-          path: /tmp/compatibility-state-download
-
-      - name: Load tested combinations
-        id: load-tested
+      - name: Restore tested combinations from previous run
+        id: restore-tested
+        if: inputs.skip_cache != true
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p /tmp/compatibility-state
 
-          if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
-            touch /tmp/compatibility-state/tested-combinations.txt
-            echo "Skipping cache - will test all combinations"
-          elif [[ -f /tmp/compatibility-state-download/tested-combinations.txt ]]; then
-            cp /tmp/compatibility-state-download/tested-combinations.txt /tmp/compatibility-state/tested-combinations.txt
-            echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
-          else
-            touch /tmp/compatibility-state/tested-combinations.txt
-            echo "No previous test history found - starting fresh"
+          # Find the most recent tested-combinations artifact for this branch
+          ARTIFACT_NAME="spring-tested-combinations-${{ github.ref_name }}"
+          ARTIFACT_NAME="${ARTIFACT_NAME//\//-}"  # Replace / with - for artifact naming
+
+          # Query for the artifact directly by name across recent runs
+          if ! ARTIFACT_URL=$(gh api "repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+            --jq '.artifacts[0].archive_download_url // empty' 2>&1); then
+            echo "::warning::Failed to query artifacts API: $ARTIFACT_URL"
+            ARTIFACT_URL=""
           fi
+
+          if [[ -n "$ARTIFACT_URL" ]]; then
+            echo "Found previous tested-combinations artifact, downloading..."
+            if ! gh api "$ARTIFACT_URL" > /tmp/artifact.zip 2>&1; then
+              echo "::warning::Failed to download artifact from $ARTIFACT_URL"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            elif ! unzip -q /tmp/artifact.zip -d /tmp/compatibility-state; then
+              echo "::warning::Downloaded file is not a valid zip archive - starting fresh"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            else
+              echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
+            fi
+          else
+            echo "No previous test history found - starting fresh"
+            touch /tmp/compatibility-state/tested-combinations.txt
+          fi
+
+      - name: Load tested combinations
+        id: load-tested
+        if: inputs.skip_cache == true
+        run: |
+          mkdir -p /tmp/compatibility-state
+          touch /tmp/compatibility-state/tested-combinations.txt
+          echo "Skipping cache - will test all combinations"
 
       - name: Create version matrix
         id: create-matrix
@@ -312,6 +346,15 @@ jobs:
             echo "Generated matrix:"
             echo "$MATRIX_JSON" | jq '.'
           fi
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   run-compatibility-tests:
     name: Test ${{ matrix.client }} -> ${{ matrix.server }}
@@ -326,7 +369,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare-versions.outputs.branch-name }}
           fetch-depth: 0
@@ -369,14 +412,14 @@ jobs:
             -DfailIfNoTests=false
 
       - name: Record tested combination
-        if: success()
+        if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
         run: |
           mkdir -p compatibility-test-results
           echo "${{ matrix.client }}-${{ matrix.server }}" >> compatibility-test-results/tested.txt
 
       - name: Upload tested combinations
-        if: success()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: spring-tested-combo-${{ matrix.client }}-${{ matrix.server }}
           path: compatibility-test-results/tested.txt
@@ -401,11 +444,40 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Download all tested combinations
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Restore previous tested combinations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/compatibility-state
+
+          ARTIFACT_NAME="spring-tested-combinations-${GITHUB_REF_NAME//\//-}"
+
+          if ! ARTIFACT_URL=$(gh api "repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+            --jq '.artifacts[0].archive_download_url // empty' 2>&1); then
+            echo "::warning::Failed to query artifacts API: $ARTIFACT_URL"
+            ARTIFACT_URL=""
+          fi
+
+          if [[ -n "$ARTIFACT_URL" ]]; then
+            if ! gh api "$ARTIFACT_URL" > /tmp/artifact.zip 2>&1; then
+              echo "::warning::Failed to download artifact from $ARTIFACT_URL"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            elif ! unzip -q /tmp/artifact.zip -d /tmp/compatibility-state; then
+              echo "::warning::Downloaded file is not a valid zip archive"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            else
+              echo "Restored $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
+            fi
+          else
+            touch /tmp/compatibility-state/tested-combinations.txt
+          fi
+
+      - name: Download all tested combinations from this run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: spring-tested-combo-*
           path: compatibility-test-results
@@ -413,26 +485,30 @@ jobs:
 
       - name: Merge tested combinations
         run: |
-          mkdir -p compatibility-state
-          touch compatibility-state/tested-combinations.txt
-
-          # Merge new results with existing (if any)
+          # Merge new results with existing
           if [[ -d compatibility-test-results ]]; then
-            cat compatibility-test-results/*.txt >> compatibility-state/tested-combinations.txt 2>/dev/null || true
+            cat compatibility-test-results/*.txt >> /tmp/compatibility-state/tested-combinations.txt 2>/dev/null || true
           fi
 
           # Remove duplicates and sort
-          sort -u compatibility-state/tested-combinations.txt -o compatibility-state/tested-combinations.txt
+          sort -u /tmp/compatibility-state/tested-combinations.txt -o /tmp/compatibility-state/tested-combinations.txt
 
-          echo "All tested combinations:"
-          cat compatibility-state/tested-combinations.txt
+          echo "Total tested combinations: $(wc -l < /tmp/compatibility-state/tested-combinations.txt)"
+          cat /tmp/compatibility-state/tested-combinations.txt
 
-      - name: Upload combined results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - name: Determine artifact name
+        id: artifact-name
+        run: |
+          NAME="spring-tested-combinations-${GITHUB_REF_NAME//\//-}"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Save tested combinations artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: spring-compatibility-tested-combinations
-          path: compatibility-state/tested-combinations.txt
+          name: ${{ steps.artifact-name.outputs.name }}
+          path: /tmp/compatibility-state/tested-combinations.txt
           retention-days: 90
+          overwrite: true
 
       - name: Observe build status
         if: always()
@@ -452,7 +528,7 @@ jobs:
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions: {}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
@@ -465,7 +541,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Notify failure
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}

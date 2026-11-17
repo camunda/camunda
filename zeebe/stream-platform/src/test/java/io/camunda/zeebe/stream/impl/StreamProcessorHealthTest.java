@@ -14,8 +14,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
+import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -257,6 +259,77 @@ public class StreamProcessorHealthTest {
 
       // then - should recover and become healthy again
       Awaitility.await("wait for recovery after blocking operation completes")
+          .atMost(Duration.ofSeconds(15))
+          .untilAsserted(() -> assertThat(streamProcessor.getHealthReport().isHealthy()).isTrue());
+    }
+  }
+
+  @Nested
+  final class PendingSideEffectsStallDetectionTest {
+
+    @BeforeEach
+    void setup() {
+      // Ensure the clock is behind real time, so that once the queue fills, the stall immediately
+      // looks older than PENDING_SIDE_EFFECTS_STALL_THRESHOLD without waiting the real threshold
+      // out.
+      actorClock.setCurrentTime(Instant.ofEpochMilli(1765200166956L));
+    }
+
+    private StreamProcessor startProcessorBlockedOnPendingSideEffects(
+        final ListLogStorage logStorage) {
+      streamPlatform.setLogContext(streamPlatform.createLogContext(logStorage, 1));
+      final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+      resultBuilder.appendPostCommitTask(Mockito.mock(PostCommitTask.class));
+      final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+      when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+      logStorage.deferCommits();
+
+      final var processor =
+          streamPlatform.buildStreamProcessor(
+              streamPlatform.getLogStream(), true, cfg -> cfg.maxPendingSideEffects(1));
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+      return processor;
+    }
+
+    @Test
+    void shouldMarkUnhealthyWhenProcessingStallsOnPendingSideEffects() {
+      // given - the single allowed side effect fills the queue and is never committed
+      streamProcessor = startProcessorBlockedOnPendingSideEffects(new ListLogStorage());
+
+      // then - the stall is reported as unhealthy
+      Awaitility.await("wait for the pending side effects stall to be detected")
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () -> {
+                final var healthReport = streamProcessor.getHealthReport();
+                assertThat(healthReport.isUnhealthy()).isTrue();
+                assertThat(healthReport.getIssue().message())
+                    .contains("stalled")
+                    .contains("pending side effects");
+              });
+    }
+
+    @Test
+    void shouldRecoverAfterPendingSideEffectsDrain() {
+      // given
+      final var logStorage = new ListLogStorage();
+      streamProcessor = startProcessorBlockedOnPendingSideEffects(logStorage);
+
+      Awaitility.await("wait for the pending side effects stall to be detected")
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () -> assertThat(streamProcessor.getHealthReport().isUnhealthy()).isTrue());
+
+      // when - the results are committed, which drains the queue. The clock is reset first so that
+      // the next health-check tick recomputes lastTickTime from real time; otherwise the unrelated
+      // blocked-actor check below would keep reporting unhealthy against the still-pinned past
+      // value.
+      actorClock.reset();
+      logStorage.commitPendingEntries();
+
+      // then - processing resumes and the processor recovers
+      Awaitility.await("wait for recovery after the pending side effects drain")
           .atMost(Duration.ofSeconds(15))
           .untilAsserted(() -> assertThat(streamProcessor.getHealthReport().isHealthy()).isTrue());
     }

@@ -17,21 +17,24 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -45,20 +48,24 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(value = RoleController.class)
 public class RoleQueryControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private SecurityConfiguration securityConfiguration;
+  @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+    when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -184,6 +191,135 @@ public class RoleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(roleServices).search(eq(new RoleQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchRolesWithOrOperator() {
+    // given
+    when(roleServices.search(any(RoleQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new RoleEntity(100L, "role-top", "Role Top", "description 1")))
+                .build());
+
+    final var orFilters =
+        List.of(
+            new RoleFilter.Builder().nameOperations(Operation.eq("Role A")).build(),
+            new RoleFilter.Builder()
+                .nameOperations(Operation.eq("Role B"))
+                .roleId("role-b")
+                .build());
+
+    final var expectedFilter = new RoleFilter.Builder().roleId("role-top");
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "roleId": "role-top",
+                "$or": [
+                  { "name": "Role A" },
+                  { "name": "Role B", "roleId": "role-b" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "name": "Role Top",
+                 "roleId": "role-top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(roleServices)
+        .search(eq(new RoleQuery.Builder().filter(expectedFilter.build()).build()), any());
+  }
+
+  @Test
+  void shouldSearchRolesWithRoleIdLikeFilter() {
+    // given
+    when(roleServices.search(any(RoleQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new RoleEntity(100L, "role-top", "Role Top", "description 1")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "roleId": { "$like": "role-*" }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "name": "Role Top",
+                 "roleId": "role-top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(roleServices)
+        .search(
+            eq(
+                new RoleQuery.Builder()
+                    .filter(
+                        new RoleFilter.Builder().roleIdOperations(Operation.like("role-*")).build())
+                    .build()),
+            any());
   }
 
   @Test

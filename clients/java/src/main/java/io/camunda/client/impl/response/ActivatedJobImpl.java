@@ -49,8 +49,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final String elementId;
   private final long elementInstanceKey;
   private final String tenantId;
+  private final String physicalTenantId;
   private final String worker;
   private final int retries;
+  private final int priority;
   private final long deadline;
   private final String variables;
   private final UserTaskProperties userTask;
@@ -58,6 +60,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final ListenerEventType listenerEventType;
   private final Set<String> tags;
   private final Long rootProcessInstanceKey;
+  private final String businessId;
+  private final String jobLeaseToken;
 
   private Map<String, Object> variablesAsMap;
 
@@ -74,6 +78,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
         customHeaders.isEmpty() ? new HashMap<>() : jsonMapper.fromJsonAsStringMap(customHeaders);
     worker = job.getWorker();
     retries = job.getRetries();
+    priority = job.getPriority();
     deadline = job.getDeadline();
     variables = job.getVariables();
     processInstanceKey = job.getProcessInstanceKey();
@@ -83,12 +88,18 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
+    physicalTenantId = job.getPhysicalTenantId();
     userTask = job.hasUserTask() ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
     tags = Collections.unmodifiableSet(new HashSet<>(job.getTagsList()));
     // gRPC doesn't have rootProcessInstanceKey - return null
     rootProcessInstanceKey = null;
+    // proto strings default to "" when unset; expose as null like the REST response
+    businessId = job.getBusinessId().isEmpty() ? null : job.getBusinessId();
+    // jobLeaseToken is a proto3 optional field: absence (no lease) is represented by
+    // hasJobLeaseToken()
+    jobLeaseToken = job.hasJobLeaseToken() ? job.getJobLeaseToken() : null;
   }
 
   public ActivatedJobImpl(
@@ -110,6 +121,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
                                 : jsonMapper.toJson(e.getValue())));
     worker = getOrEmpty(job.getWorker());
     retries = getOrEmpty(job.getRetries());
+    priority = getOrZero(job.getPriority());
     deadline = getOrEmpty(job.getDeadline());
     variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
     variables = jsonMapper.toJson(variablesAsMap);
@@ -120,6 +132,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = getOrEmpty(job.getElementId());
     elementInstanceKey = parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
+    physicalTenantId = getOrEmpty(job.getPhysicalTenantId());
     userTask = job.getUserTask() != null ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
@@ -129,6 +142,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
         job.getRootProcessInstanceKey() != null
             ? Long.parseLong(job.getRootProcessInstanceKey())
             : null;
+    businessId = job.getBusinessId();
+    jobLeaseToken = job.getJobLeaseToken();
   }
 
   @Override
@@ -184,6 +199,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public int getRetries() {
     return retries;
+  }
+
+  @Override
+  public int getPriority() {
+    return priority;
   }
 
   @Override
@@ -244,6 +264,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  @Override
   public List<DocumentReferenceResponse> getDocumentReferences(final String name) {
     final Object documentReference = getVariable(name);
     return jsonMapper.transform(documentReference, DocumentReferenceResponseList.class).stream()
@@ -262,6 +287,16 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
+  public String getJobLeaseToken() {
+    return jobLeaseToken;
+  }
+
+  @Override
   public String toString() {
     return toJson();
   }
@@ -276,6 +311,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   private static Integer getOrEmpty(final Integer value) {
     return value == null ? -1 : value;
+  }
+
+  private static int getOrZero(final Integer value) {
+    return value == null ? 0 : value;
   }
 
   private static Long parseLongOrEmpty(final String value) {

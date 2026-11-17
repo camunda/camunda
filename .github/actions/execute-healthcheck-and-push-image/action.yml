@@ -41,6 +41,6 @@ runs:
           --platform linux/amd64,linux/arm64 \
           --file optimize.Dockerfile \
           --provenance false \
-          --push \
+          --output type=image,oci-mediatypes=false,push=true \
           .
       shell: bash

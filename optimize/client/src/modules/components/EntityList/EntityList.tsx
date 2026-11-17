@@ -6,36 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {
-  ChangeEvent,
-  ReactNode,
-  isValidElement,
-  Children,
-  cloneElement,
-  useState,
-} from 'react';
+import React, {ReactNode, isValidElement, Children, cloneElement, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
+import {Loading} from '@carbon/react';
 import {
   DataTable,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableToolbar,
-  TableToolbarContent,
-  TableToolbarSearch,
-  TableBatchActions,
-  TableSelectAll,
-  TableSelectRow,
-  DataTableSkeleton,
-  Stack,
-  Loading,
-} from '@carbon/react';
+  Input,
+  type DataTableColumn,
+  type DataTableRowAction,
+} from '@camunda/design-system';
 
-import ListItemAction from './ListItemAction';
+import {t} from 'translation';
 
 import './EntityList.scss';
 
@@ -98,6 +79,21 @@ export default function EntityList({
   emptyStateComponent,
 }: EntityListProps) {
   const [query, setQuery] = useState<string | undefined>();
+  const [selection, setSelection] = useState<Record<string, boolean>>({});
+
+  const filteredRows = useMemo(() => {
+    const searchWord = query?.trim().toLowerCase();
+    if (!searchWord) {
+      return rows;
+    }
+
+    return rows.filter(
+      (row) =>
+        containsSearchWord(row.name, searchWord) ||
+        containsSearchWord(row.type, searchWord) ||
+        row.meta?.some((cell) => typeof cell === 'string' && containsSearchWord(cell, searchWord))
+    );
+  }, [rows, query]);
 
   if ((!Array.isArray(rows) || rows?.length === 0) && emptyStateComponent) {
     if (isLoading) {
@@ -115,225 +111,136 @@ export default function EntityList({
     return null;
   }
 
-  const mapHeaderToDataTableHeader = (header: Column, idx: number) =>
-    isObjectHeader(header) ? {key: header.key, header: header.name} : {key: idx.toString(), header};
-
-  const mapRowToDataTableRow = (row: Row) => ({
-    id: row.id,
-    ...(dataTableHeaders[0] && {
-      [dataTableHeaders[0]?.key]: (
-        <Stack gap={4} orientation="horizontal">
-          <div className="entityIcon">{row.icon}</div>
-          <Stack gap={2} orientation="vertical">
-            {row.link ? (
-              <Link title={row.name} className="cds--link entityName" to={row.link}>
-                {row.name}
-              </Link>
-            ) : (
-              <span className="rowName" title={row.name}>
-                {row.name}
-              </span>
-            )}
-            <span>{row.type}</span>
-          </Stack>
-        </Stack>
-      ),
-    }),
-    ...row.meta?.reduce((acc, curr, idx) => {
-      const header = dataTableHeaders[idx + 1];
-      if (header) {
-        return {...acc, [header.key]: curr};
+  const columns: DataTableColumn<Row>[] = headers.map((header, idx) => ({
+    id: isObjectHeader(header) ? header.key : idx.toString(),
+    header: () => (isObjectHeader(header) ? header.name : header),
+    // Sorting is server-side, but TanStack only offers the control on a column with an accessor.
+    accessorFn: (row: Row) => (idx === 0 ? row.name : row.meta?.[idx - 1]),
+    enableSorting: isObjectHeader(header) && !!header.key && !!sorting,
+    // Honour the caller's first-click direction (e.g. `defaultOrder: 'desc'` on modified columns).
+    ...(isObjectHeader(header) && header.defaultOrder
+      ? {sortDescFirst: header.defaultOrder === 'desc'}
+      : {}),
+    cell: ({row}) => {
+      if (idx === 0) {
+        return (
+          <div className="entityCell">
+            <div className="entityIcon">{row.original.icon}</div>
+            <div className="entityText">
+              {row.original.link ? (
+                <Link title={row.original.name} className="entityName" to={row.original.link}>
+                  {row.original.name}
+                </Link>
+              ) : (
+                <span className="rowName" title={row.original.name}>
+                  {row.original.name}
+                </span>
+              )}
+              <span className="entityType">{row.original.type}</span>
+            </div>
+          </div>
+        );
       }
 
-      return acc;
-    }, {}),
-    // Prevent selecting rows without actions
-    disabled: !row.actions?.length,
-  });
+      const value = row.original.meta?.[idx - 1];
+      // Anything else is already a rendered node, and cannot carry a `title` tooltip.
+      return typeof value === 'string' ? (
+        <span className="entityMeta" title={value}>
+          {value}
+        </span>
+      ) : (
+        value
+      );
+    },
+  }));
 
-  const dataTableHeaders = headers.map(mapHeaderToDataTableHeader);
-  const dataTableRows = rows.map(mapRowToDataTableRow);
+  // The table declares its actions once, so a row with fewer hides the trailing slots.
+  const actionSlots = Math.max(0, ...rows.map((row) => row.actions?.length ?? 0));
+  const rowActions: DataTableRowAction<Row>[] = Array.from({length: actionSlots}, (_, slot) => ({
+    id: `action-${slot}`,
+    label: (row) => String(row.actions?.[slot]?.text ?? ''),
+    icon: (row) => row.actions?.[slot]?.icon,
+    visible: (row) => Boolean(row.actions?.[slot]),
+    onClick: (row) => row.actions?.[slot]?.action(),
+  }));
+
   const hasLessThanThreeActions = rows.every(({actions}) => !actions || actions.length <= 2);
-  const objectHeaders = headers.filter(isObjectHeader);
-  const isSortable = !!sorting && objectHeaders.filter((header) => header.key).length > 0;
+  // A row without actions is protected (e.g. the last manager) and must stay non-selectable.
+  const selectableRowIds = new Set(rows.filter((row) => row.actions?.length).map((row) => row.id));
+  const allSelectableSelected =
+    selectableRowIds.size > 0 && [...selectableRowIds].every((id) => selection[id]);
+  const selectedRows = rows.filter((row) => selection[row.id]);
 
-  if (isLoading) {
-    return (
-      <div className="EntityList">
-        <DataTableSkeleton rowCount={dataTableRows.length} headers={dataTableHeaders} />
-      </div>
+  // The DS table exposes no per-row selection predicate, so protected rows are dropped here rather
+  // than at the table. Its header "select all" therefore never reaches an all-selected state and can
+  // only ever add rows (never emit the empty set that clears them). Read a select-all that re-adds a
+  // protected row while every selectable row is already selected as the toggle-off it can't express.
+  const changeSelection = (next: Record<string, boolean>) => {
+    const readdsProtectedRow = Object.keys(next).some(
+      (id) => next[id] && !selectableRowIds.has(id)
     );
-  }
+    if (readdsProtectedRow && allSelectableSelected) {
+      setSelection({});
+      return;
+    }
+    setSelection(
+      Object.fromEntries(
+        Object.entries(next).filter(([id, selected]) => selected && selectableRowIds.has(id))
+      )
+    );
+  };
 
   return (
-    <div className="EntityList">
+    <div className="EntityList c4-ui">
+      {title && <div className="entityTitle">{title}</div>}
+      <div className="entityToolbar">
+        <Input
+          className="entitySearch"
+          type="search"
+          value={query ?? ''}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t('home.search.name').toString()}
+        />
+        <div className="entityToolbarAction">
+          {bulkActions && selectedRows.length > 0
+            ? Children.map(bulkActions, (child, idx) =>
+                cloneElement(child, {
+                  key: idx,
+                  onDelete: onChange,
+                  selectedEntries: selectedRows,
+                })
+              )
+            : action}
+        </div>
+      </div>
       <DataTable
-        rows={dataTableRows}
-        headers={dataTableHeaders}
-        isSortable={isSortable}
-        filterRows={({cellsById, getCellId, headers, inputValue, rowIds}) => {
-          const searchWord = inputValue.trim().toLowerCase();
-          return rowIds.filter((rowId, idx) =>
-            headers.some((header) => {
-              const cell = cellsById[getCellId(rowId, header.key)];
-              // We allow passing a header without a key
-              // so we should also check the index (0 is the first header)
-              if (cell?.info?.header === 'name' || cell?.info?.header === '0') {
-                const row = rows[idx];
-                return (
-                  containsSearchWord(row?.name, searchWord) ||
-                  containsSearchWord(row?.type, searchWord)
-                );
-              }
-              return containsSearchWord(cell?.value?.toString(), searchWord);
-            })
-          );
+        columns={columns}
+        data={filteredRows}
+        description={
+          description instanceof Function ? description(query, filteredRows.length) : description
+        }
+        getRowId={(row) => row.id}
+        rowActions={rowActions}
+        inlineActionsThreshold={hasLessThanThreeActions ? 2 : 0}
+        // Owned here rather than by `batchActions`, so callers' bulk action elements keep working.
+        rowSelection={
+          bulkActions ? {selectedRowIds: selection, onSelectedRowsChange: changeSelection} : false
+        }
+        sorting={{
+          manual: true,
+          sortState: sorting?.key ? [{id: sorting.key, desc: sorting.order === 'desc'}] : [],
+          onSortingChange: (state) => {
+            const [next] = state;
+            onChange?.(next?.id, next && (next.desc ? 'desc' : 'asc'));
+          },
         }}
+        loading={isLoading}
+        loadingRowCount={rows.length}
+        // Not `emptyState`: the early return above covers an empty list, and the table would show
+        // that onboarding copy for an empty search too.
+        pagination
         size="md"
-      >
-        {({
-          rows: formattedRows,
-          headers: formattedHeaders,
-          getTableProps,
-          getHeaderProps,
-          getRowProps,
-          getTableContainerProps,
-          getToolbarProps,
-          getBatchActionProps,
-          selectRow,
-          getSelectionProps,
-          onInputChange,
-          selectedRows,
-        }) => {
-          const batchActionProps = {
-            ...getBatchActionProps({
-              onSelectAll: () => {
-                formattedRows.forEach((row) => {
-                  if (!row.isSelected) {
-                    selectRow(row.id);
-                  }
-                });
-              },
-            }),
-          };
-
-          const batchVisible = batchActionProps.shouldShowBatchActions;
-          const batchTabIndex = batchVisible ? 0 : -1;
-          const tabIndex = batchVisible ? -1 : 0;
-
-          return (
-            <TableContainer
-              title={title}
-              description={
-                description instanceof Function
-                  ? description(query, formattedRows.length)
-                  : description
-              }
-              {...getTableContainerProps()}
-            >
-              <TableToolbar {...getToolbarProps()}>
-                {bulkActions && (
-                  <TableBatchActions {...batchActionProps}>
-                    {Children.map(bulkActions, (child, idx) =>
-                      cloneElement(child, {
-                        key: idx,
-                        tabIndex: batchTabIndex,
-                        disabled: !batchVisible,
-                        onDelete: onChange,
-                        selectedEntries: rows.filter((row) =>
-                          selectedRows.some((selectedRow) => selectedRow.id === row.id)
-                        ),
-                      })
-                    )}
-                  </TableBatchActions>
-                )}
-                <TableToolbarContent aria-hidden={batchVisible} tabIndex={tabIndex}>
-                  <TableToolbarSearch
-                    tabIndex={tabIndex}
-                    disabled={batchVisible}
-                    onChange={(e) => {
-                      if (e) {
-                        setQuery(e.target.value);
-                      }
-                      onInputChange(e as ChangeEvent<HTMLInputElement>);
-                    }}
-                    persistent
-                  />
-                  {isValidElement<{tabIndex?: number; disabled?: boolean}>(action)
-                    ? cloneElement(action, {
-                        tabIndex,
-                        disabled: batchVisible,
-                      })
-                    : action}
-                </TableToolbarContent>
-              </TableToolbar>
-              <Table {...getTableProps()}>
-                <TableHead>
-                  <TableRow>
-                    {bulkActions && <TableSelectAll {...getSelectionProps()} />}
-                    {formattedHeaders.map((formattedHeader, idx) => {
-                      const header = headers[idx];
-                      const isHeaderSortable =
-                        !!header && typeof header === 'object' && 'key' in header && !!header.key;
-
-                      const {key, ...headerProps} = getHeaderProps({
-                        header: formattedHeader,
-                        isSortable: isHeaderSortable,
-                        onClick: () => {
-                          if (isObjectHeader(header)) {
-                            if (header.key === sorting?.key) {
-                              const {key, order} =
-                                getNextSorting(sorting, header.defaultOrder) || {};
-                              onChange?.(key, order);
-                            } else {
-                              onChange?.(header.key, header.defaultOrder);
-                            }
-                          }
-                        },
-                      });
-
-                      return (
-                        <TableHeader
-                          key={key}
-                          {...headerProps}
-                          isSortHeader={formattedHeader.key === sorting?.key}
-                          sortDirection={sorting?.order?.toUpperCase()}
-                          className="tableHeader"
-                        >
-                          {formattedHeader.header}
-                        </TableHeader>
-                      );
-                    })}
-                    <TableHeader />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {formattedRows.map((row, idx) => {
-                    const {key, ...rowProps} = getRowProps({row});
-
-                    return (
-                      <TableRow key={key} {...rowProps}>
-                        {bulkActions && <TableSelectRow {...getSelectionProps({row})} />}
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                        <TableCell className="cds--table-column-menu">
-                          <ListItemAction
-                            actions={rows[idx]?.actions}
-                            // carbon recommend using inline buttons if actions are less than three
-                            // see https://carbondesignsystem.com/components/data-table/usage/#inline-actions
-                            showInlineIconButtons={hasLessThanThreeActions}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          );
-        }}
-      </DataTable>
+      />
     </div>
   );
 }
@@ -344,25 +251,4 @@ function isObjectHeader(header: Column): header is ObjectColumn {
 
 function containsSearchWord(value = '', searchWord: string) {
   return (typeof value !== 'string' ? '' : value).trim().toLowerCase().includes(searchWord);
-}
-
-function getNextSorting({key, order}: Sorting, defaultOrder?: SortingOrder): Sorting | undefined {
-  // In case of default order being desc, we need to invert the order
-  if (defaultOrder === 'desc') {
-    if (order === 'desc') {
-      return {key, order: 'asc'};
-    } else if (order === 'asc') {
-      return;
-    } else {
-      return {key, order: 'desc'};
-    }
-  }
-
-  if (order === 'asc') {
-    return {key, order: 'desc'};
-  } else if (order === 'desc') {
-    return;
-  } else {
-    return {key, order: 'asc'};
-  }
 }

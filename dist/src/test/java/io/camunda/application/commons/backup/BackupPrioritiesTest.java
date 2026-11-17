@@ -9,20 +9,21 @@ package io.camunda.application.commons.backup;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
+import org.springframework.mock.env.MockEnvironment;
 
 class BackupPrioritiesTest {
 
@@ -40,7 +41,12 @@ class BackupPrioritiesTest {
 
   @BeforeAll
   public static void setUp() {
-    new UnifiedConfigurationHelper(mock(Environment.class));
+    new UnifiedConfigurationHelper(new MockEnvironment());
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
   }
 
   @Test
@@ -71,8 +77,11 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPriorities() {
-    final var configuration = new BackupPriorityConfiguration(new Camunda());
-    final var priorities = configuration.backupPriorities();
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    final var priorities =
+        BackupServiceRegistryConfiguration.backupPriorities(
+            camunda.getData().getSecondaryStorage());
 
     final Set<String> allPriorities =
         priorities.allPriorities().map(obj -> obj.getClass().getName()).collect(Collectors.toSet());
@@ -91,8 +100,11 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPrioritiesIndicesSplitBySnapshot() {
-    final var configuration = new BackupPriorityConfiguration(new Camunda());
-    final var priorities = configuration.backupPriorities();
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    final var priorities =
+        BackupServiceRegistryConfiguration.backupPriorities(
+            camunda.getData().getSecondaryStorage());
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
 
@@ -114,6 +126,8 @@ class BackupPrioritiesTest {
     // PRIO 3 main indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
+            "camunda-agent-instance-8.10.0_",
+            "camunda-correlated-message-subscription-8.8.0_",
             "operate-batch-operation-1.0.0_",
             "operate-operation-8.4.1_",
             "operate-decision-instance-8.3.0_",
@@ -126,11 +140,14 @@ class BackupPrioritiesTest {
             "operate-sequence-flow-8.3.0_",
             "operate-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_",
-            "tasklist-task-variable-8.3.0_",
-            "camunda-correlated-message-subscription-8.8.0_");
+            "tasklist-task-variable-8.3.0_");
     // PRIO 3 dated indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
+            "camunda-agent-instance-8.10.0_*",
+            "-camunda-agent-instance-8.10.0_",
+            "camunda-correlated-message-subscription-8.8.0_*",
+            "-camunda-correlated-message-subscription-8.8.0_",
             "operate-batch-operation-1.0.0_*",
             "-operate-batch-operation-1.0.0_",
             "operate-operation-8.4.1_*",
@@ -156,9 +173,7 @@ class BackupPrioritiesTest {
             "tasklist-draft-task-variable-8.3.0_*",
             "-tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_*",
-            "-tasklist-task-variable-8.3.0_",
-            "camunda-correlated-message-subscription-8.8.0_*",
-            "-camunda-correlated-message-subscription-8.8.0_");
+            "-tasklist-task-variable-8.3.0_");
 
     // PRIO 4 main indices
     assertThat(iterator.next().allIndices())
@@ -170,18 +185,20 @@ class BackupPrioritiesTest {
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-rule-8.8.0_",
-            "camunda-web-session-8.8.0_",
             "camunda-role-8.8.0_",
             "camunda-tenant-8.8.0_",
             "camunda-user-8.8.0_",
             "camunda-usage-metric-8.8.0_",
             "camunda-usage-metric-tu-8.8.0_",
+            "camunda-agent-definition-8.10.0_",
+            "camunda-agent-history-8.10.0_",
             "camunda-audit-log-8.9.0_",
             "camunda-audit-log-cleanup-8.9.0_",
             "camunda-cluster-variable-8.9.0_",
             "camunda-job-metrics-batch-8.9.0_",
             "camunda-global-listener-8.9.0_",
-            "camunda-deployed-resource-8.10.0_");
+            "camunda-deployed-resource-8.10.0_",
+            "camunda-wait-state-8.10.0_");
 
     // PRIO 4 dated indices
     assertThat(iterator.next().allIndices())
@@ -190,10 +207,14 @@ class BackupPrioritiesTest {
             "-camunda-usage-metric-8.8.0_",
             "camunda-usage-metric-tu-8.8.0_*",
             "-camunda-usage-metric-tu-8.8.0_",
+            "camunda-agent-history-8.10.0_*",
+            "-camunda-agent-history-8.10.0_",
             "camunda-audit-log-8.9.0_*",
             "-camunda-audit-log-8.9.0_",
             "camunda-job-metrics-batch-8.9.0_*",
-            "-camunda-job-metrics-batch-8.9.0_");
+            "-camunda-job-metrics-batch-8.9.0_",
+            "camunda-wait-state-8.10.0_*",
+            "-camunda-wait-state-8.10.0_");
 
     for (final var indexList : indices) {
       assertThat(indexList.allIndices())

@@ -30,10 +30,12 @@ import org.immutables.value.Value;
  * intermediate operations like user task listener execution.
  *
  * <p>See {@link AsyncRequestIntent} for intents.
+ *
+ * @see StorageOrdinalRelated
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAsyncRequestRecordValue.Builder.class)
-public interface AsyncRequestRecordValue extends RecordValue {
+public interface AsyncRequestRecordValue extends RecordValue, StorageOrdinalRelated {
 
   /**
    * Returns the key of the element instance the request was made against.
@@ -56,4 +58,13 @@ public interface AsyncRequestRecordValue extends RecordValue {
 
   /** The operation reference associated with the original command, for traceability. */
   long getOperationReference();
+
+  /**
+   * The batch operation reference associated with the original command, for traceability.
+   *
+   * <p>This is needed so that follow-up events written after the request finishes (e.g. the
+   * terminal {@code ProcessInstance:ELEMENT_TERMINATED} of an asynchronously terminated process
+   * instance) can be correlated back to the batch operation that triggered them.
+   */
+  long getBatchOperationReference();
 }

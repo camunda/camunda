@@ -11,11 +11,13 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.JobPriorityDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.LinkedResourcesTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -27,6 +29,8 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final JobPriorityDefinitionTransformer jobPriorityDefinitionTransformer =
+      new JobPriorityDefinitionTransformer();
   private final LinkedResourcesTransformer linkedResourcesTransformer =
       new LinkedResourcesTransformer();
 
@@ -51,6 +55,11 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(jobWorkerElement, taskHeaders, element);
+
+    final var jobPriorityDefinition =
+        element.getSingleExtensionElement(ZeebeJobPriorityDefinition.class);
+    jobPriorityDefinitionTransformer.transform(jobWorkerElement, context, jobPriorityDefinition);
+
     if (type.equals(ServiceTask.class)) {
       final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
       linkedResourcesTransformer.transform(jobWorkerElement, linkedResources);

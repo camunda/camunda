@@ -29,6 +29,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   @NotNull private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
   private boolean isInstantPreviewDashboard = false;
+  private boolean isAgenticControlDashboard = false;
+  private boolean isBusinessValueDashboard = false;
 
   public DashboardDefinitionExportDto(final DashboardDefinitionRestDto dashboardDefinition) {
     super(
@@ -92,6 +94,22 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     this.isInstantPreviewDashboard = isInstantPreviewDashboard;
   }
 
+  public boolean isAgenticControlDashboard() {
+    return isAgenticControlDashboard;
+  }
+
+  public void setAgenticControlDashboard(final boolean isAgenticControlDashboard) {
+    this.isAgenticControlDashboard = isAgenticControlDashboard;
+  }
+
+  public boolean isBusinessValueDashboard() {
+    return isBusinessValueDashboard;
+  }
+
+  public void setBusinessValueDashboard(final boolean isBusinessValueDashboard) {
+    this.isBusinessValueDashboard = isBusinessValueDashboard;
+  }
+
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DashboardDefinitionExportDto;
@@ -100,7 +118,13 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(), tiles, availableFilters, collectionId, isInstantPreviewDashboard);
+        super.hashCode(),
+        tiles,
+        availableFilters,
+        collectionId,
+        isInstantPreviewDashboard,
+        isAgenticControlDashboard,
+        isBusinessValueDashboard);
   }
 
   @Override
@@ -116,6 +140,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     }
     final DashboardDefinitionExportDto that = (DashboardDefinitionExportDto) o;
     return isInstantPreviewDashboard == that.isInstantPreviewDashboard
+        && isAgenticControlDashboard == that.isAgenticControlDashboard
+        && isBusinessValueDashboard == that.isBusinessValueDashboard
         && Objects.equals(tiles, that.tiles)
         && Objects.equals(availableFilters, that.availableFilters)
         && Objects.equals(collectionId, that.collectionId);
@@ -131,6 +157,10 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         + getCollectionId()
         + ", isInstantPreviewDashboard="
         + isInstantPreviewDashboard()
+        + ", isAgenticControlDashboard="
+        + isAgenticControlDashboard()
+        + ", isBusinessValueDashboard="
+        + isBusinessValueDashboard()
         + ")";
   }
 
@@ -141,5 +171,6 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     public static final String availableFilters = "availableFilters";
     public static final String collectionId = "collectionId";
     public static final String isInstantPreviewDashboard = "isInstantPreviewDashboard";
+    public static final String isAgenticControlDashboard = "isAgenticControlDashboard";
   }
 }

@@ -25,9 +25,10 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.IncidentSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -68,7 +69,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": "101",
-                      "tenantId": "tenantId"
+                      "tenantId": "tenantId",
+                      "storageOrdinal": 1001
                   }
               ],
               "page": {
@@ -97,7 +99,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
                       IncidentState.ACTIVE,
                       101L,
-                      "tenantId")))
+                      "tenantId",
+                      1001)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -117,7 +120,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
                           "jobKey": "101",
-                          "tenantId": "tenantId"
+                          "tenantId": "tenantId",
+                          "storageOrdinal": 1001
                       }
           """;
 
@@ -135,7 +139,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
-          "tenantId");
+          "tenantId",
+          1001);
   static final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
       INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT =
           new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsByDefinitionEntity>()
@@ -207,9 +212,11 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
   @MockitoBean IncidentServices incidentServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupIncidentServices() {
+    when(serviceRegistry.incidentServices(any())).thenReturn(incidentServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

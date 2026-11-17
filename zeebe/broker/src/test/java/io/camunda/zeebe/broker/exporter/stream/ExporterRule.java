@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.mockito.Mockito.spy;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -137,8 +140,9 @@ public final class ExporterRule implements TestRule {
 
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
+            .partitionId(
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID))
             .id(EXPORTER_PROCESSOR_ID)
-            .name(PROCESSOR_NAME)
             .logStream(stream)
             .clock(StreamClock.system())
             .zeebeDb(capturedZeebeDb)
@@ -148,7 +152,7 @@ public final class ExporterRule implements TestRule {
             .descriptors(descriptorsWithInitializationInfo)
             .meterRegistry(new SimpleMeterRegistry())
             .positionsToSkipFilter(positionsToSkipFilter)
-            .engineName("default");
+            .tenantName(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     contextApplier.accept(context);
     director = new ExporterDirector(context, phase, recordExporter);
@@ -186,6 +190,18 @@ public final class ExporterRule implements TestRule {
         .recordType(recordType)
         .intent(intent)
         .event(value)
+        .write();
+  }
+
+  /** Writes an event as though it had been written by a broker running {@code brokerVersion}. */
+  public long writeEventWithBrokerVersion(
+      final Intent intent, final UnifiedRecordValue value, final VersionInfo brokerVersion) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .recordType(RecordType.EVENT)
+        .intent(intent)
+        .event(value)
+        .brokerVersion(brokerVersion)
         .write();
   }
 

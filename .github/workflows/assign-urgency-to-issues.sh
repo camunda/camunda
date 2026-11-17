@@ -17,8 +17,10 @@ DELAY=0
 DIRECT=false
 UPDATED_SINCE=""
 
+# Org-level Urgency issue field (camunda org, single-select)
+# Query: gh api graphql -f query='{organization(login:"camunda"){issueFields(first:30){nodes{...on IssueFieldSingleSelect{id name}}}}}'
 URGENCY_FIELD_ID="IFSS_kgDNKAw"
-# Org-level urgency field option IDs (populated as simple vars to avoid set -u issues with associative arrays)
+# Option IDs (simple vars to avoid set -u issues with associative arrays)
 URGENCY_OPT_immediate="IFSSO_kgDNOUI"
 URGENCY_OPT_next="IFSSO_kgDNOUM"
 URGENCY_OPT_planned="IFSSO_kgDNOUQ"
@@ -364,13 +366,12 @@ if [[ "$DIRECT" == "true" ]]; then
       '.issueFieldValues.nodes[] | select(.field.id==$fid) | .name // empty')
 
     if [[ "$HAS_LOCKED" == "true" ]]; then
-      # urgency-locked: skip org-level update but still sync existing value to project
-      SYNC_URGENCY="${CURRENT:-$NEW_URGENCY}"
-      if [[ -n "$SYNC_URGENCY" ]]; then
-        echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked (syncing '$SYNC_URGENCY' to project)"
-        NEW_URGENCY="$SYNC_URGENCY"
+      # urgency-locked: skip org-level update but still sync existing org value to project
+      if [[ -n "$CURRENT" ]]; then
+        echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked (syncing org value '$CURRENT' to project)"
+        NEW_URGENCY="$CURRENT"
       else
-        echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked, no value to sync"
+        echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked, no org-level value to sync"
         read P U S < "$COUNTER_FILE"; echo "$P $U $((S+1))" > "$COUNTER_FILE"
         continue
       fi

@@ -14,7 +14,25 @@ public record QueueItem(
     WriteStatementType statementType,
     Object id,
     String statementId,
-    Object parameter) {
+    Object parameter,
+    int order) {
+
+  private static final int DEFAULT_ORDER = 0;
+
+  /**
+   * Default-order convenience constructor, used by the vast majority of call sites that don't need
+   * a specific position among same-{@link WriteStatementType} items for the same {@link
+   * ContextType} - those keep sorting by {@code statementId} as before, see {@link
+   * DefaultExecutionQueue#optimizeQueueOrder}.
+   */
+  public QueueItem(
+      final ContextType contextType,
+      final WriteStatementType statementType,
+      final Object id,
+      final String statementId,
+      final Object parameter) {
+    this(contextType, statementType, id, statementId, parameter, DEFAULT_ORDER);
+  }
 
   public QueueItem copy(final Function<QueueItemBuilder, QueueItemBuilder> builderFunction) {
     return builderFunction
@@ -25,7 +43,8 @@ public record QueueItem(
                 .statementType(statementType)
                 .id(id)
                 .statementId(statementId)
-                .parameter(parameter))
+                .parameter(parameter)
+                .order(order))
         .build();
   }
 
@@ -37,6 +56,7 @@ public record QueueItem(
     private Object id;
     private String statementId;
     private Object parameter;
+    private int order = DEFAULT_ORDER;
 
     public QueueItemBuilder contextType(final ContextType contextType) {
       this.contextType = contextType;
@@ -63,8 +83,13 @@ public record QueueItem(
       return this;
     }
 
+    public QueueItemBuilder order(final int order) {
+      this.order = order;
+      return this;
+    }
+
     public QueueItem build() {
-      return new QueueItem(contextType, statementType, id, statementId, parameter);
+      return new QueueItem(contextType, statementType, id, statementId, parameter, order);
     }
   }
 }

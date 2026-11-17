@@ -7,8 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.USER_TASK;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
@@ -20,13 +20,14 @@ import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.NumberParsingUtil;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,8 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
   }
 
   @Override
-  public UserTaskEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable UserTaskEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
 
@@ -132,17 +134,17 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
 
     for (final var propertyName : propertyNames) {
       switch (propertyName) {
-        case Authorization.PROP_ASSIGNEE -> {
+        case RequiredAuthorization.PROP_ASSIGNEE -> {
           if (username != null && !username.isEmpty()) {
             builder.assignee(username);
           }
         }
-        case Authorization.PROP_CANDIDATE_USERS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_USERS -> {
           if (username != null && !username.isEmpty()) {
             builder.candidateUsers(List.of(username));
           }
         }
-        case Authorization.PROP_CANDIDATE_GROUPS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_GROUPS -> {
           if (groups != null && !groups.isEmpty()) {
             builder.candidateGroups(groups);
           }

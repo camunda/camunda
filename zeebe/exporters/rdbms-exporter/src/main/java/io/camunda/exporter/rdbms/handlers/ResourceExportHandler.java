@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.DeployedResourceDbModel;
 import io.camunda.db.rdbms.write.domain.DeployedResourceDbModel.DeployedResourceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.DeployedResourceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.util.ResourceUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -24,7 +25,7 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   private static final Logger LOG = LoggerFactory.getLogger(ResourceExportHandler.class);
 
   private static final Set<ResourceIntent> EXPORTABLE_INTENTS =
-      Set.of(ResourceIntent.CREATED, ResourceIntent.DELETED);
+      Set.of(ResourceIntent.CREATED, ResourceIntent.DELETED, ResourceIntent.REEXPORTED);
 
   private final DeployedResourceWriter deployedResourceWriter;
 
@@ -42,7 +43,8 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   @Override
   public void export(final Record<Resource> record) {
     switch (record.getIntent()) {
-      case ResourceIntent.CREATED -> deployedResourceWriter.create(map(record));
+      case ResourceIntent.CREATED, ResourceIntent.REEXPORTED ->
+          deployedResourceWriter.create(map(record));
       case ResourceIntent.DELETED ->
           deployedResourceWriter.delete(record.getValue().getResourceKey());
       default -> LOG.warn("Unexpected intent {} for resource record", record.getIntent());
@@ -55,11 +57,12 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
         .resourceKey(value.getResourceKey())
         .resourceId(value.getResourceId())
         .resourceName(value.getResourceName())
+        .resourceType(ResourceUtils.deriveResourceType(value.getResourceName()))
         .version(value.getVersion())
         .versionTag(value.getVersionTag())
         .deploymentKey(value.getDeploymentKey())
         .tenantId(value.getTenantId())
-        .resourceContent(value.getResourceProp())
+        .resourceContent(value.getResourceBytes())
         .build();
   }
 }

@@ -16,10 +16,11 @@ import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
   }
 
   @Override
-  public FlowNodeInstanceEntity getByKey(
+  public @Nullable FlowNodeInstanceEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }

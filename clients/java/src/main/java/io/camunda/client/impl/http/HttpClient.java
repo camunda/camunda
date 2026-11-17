@@ -33,6 +33,7 @@ import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
@@ -58,6 +59,7 @@ public final class HttpClient implements AutoCloseable {
   private final ModalCloseable connectionManager;
   private final ObjectMapper jsonMapper;
   private final URI address;
+  private final URI clusterApiAddress;
   private final RequestConfig defaultRequestConfig;
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
@@ -68,6 +70,7 @@ public final class HttpClient implements AutoCloseable {
       final ModalCloseable connectionManager,
       final ObjectMapper jsonMapper,
       final URI address,
+      final URI clusterApiAddress,
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
       final TimeValue shutdownTimeout,
@@ -76,6 +79,7 @@ public final class HttpClient implements AutoCloseable {
     this.connectionManager = connectionManager;
     this.jsonMapper = jsonMapper;
     this.address = address;
+    this.clusterApiAddress = clusterApiAddress;
     this.defaultRequestConfig = defaultRequestConfig;
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
@@ -164,6 +168,33 @@ public final class HttpClient implements AutoCloseable {
         null);
   }
 
+  /**
+   * Sends a GET to the cluster-scoped API ({@code /cluster/v2}), which reports on the cluster as a
+   * whole and is therefore not resolved against the physical-tenant-scoped base path.
+   */
+  public <HttpT, RespT> void getClusterApi(
+      final String path,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final Predicate<Integer> successPredicate,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.GET,
+        clusterApiAddress,
+        path,
+        Collections.emptyMap(),
+        null,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        responseType,
+        successPredicate,
+        transformer,
+        result,
+        null,
+        false);
+  }
+
   public <RespT> void post(
       final String path,
       final String body,
@@ -194,6 +225,34 @@ public final class HttpClient implements AutoCloseable {
 
     sendRequest(
         Method.POST, path, queryParams, body, requestConfig, responseType, transformer, result);
+  }
+
+  /**
+   * Same as {@link #post(String, String, RequestConfig, Class, JsonResponseTransformer,
+   * HttpCamundaFuture)}, except that the response body is never echoed into an error message. Use
+   * it for endpoints that answer with secret material: a response the client cannot make sense of —
+   * an unexpected content type, or a response body under an error status — is otherwise reported by
+   * dumping the body, which would leak the secrets it carries into the caller's logs.
+   */
+  public <HttpT, RespT> void postWithSensitiveResponse(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.POST,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        responseType,
+        transformer,
+        result,
+        null,
+        true);
   }
 
   public <HttpT, RespT> void postMultipart(
@@ -326,7 +385,8 @@ public final class HttpClient implements AutoCloseable {
         responseType,
         transformer,
         result,
-        null);
+        null,
+        false);
   }
 
   private <HttpT, RespT> void sendRequest(
@@ -339,7 +399,8 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
-      final ApiCallback<HttpT, RespT> callback) {
+      final ApiCallback<HttpT, RespT> callback,
+      final boolean sensitiveResponseBody) {
     sendRequest(
         httpMethod,
         path,
@@ -351,7 +412,8 @@ public final class HttpClient implements AutoCloseable {
         null,
         (response, statusCode) -> transformer.transform(response),
         result,
-        callback);
+        callback,
+        sensitiveResponseBody);
   }
 
   private <RespT> void sendRequest(
@@ -376,7 +438,8 @@ public final class HttpClient implements AutoCloseable {
         successPredicate,
         transformer,
         result,
-        callback);
+        callback,
+        false);
   }
 
   private <HttpT, RespT> void sendRequest(
@@ -390,7 +453,38 @@ public final class HttpClient implements AutoCloseable {
       final Predicate<Integer> successPredicate,
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
-      final ApiCallback<HttpT, RespT> callback) {
+      final ApiCallback<HttpT, RespT> callback,
+      final boolean sensitiveResponseBody) {
+    sendRequest(
+        httpMethod,
+        address,
+        path,
+        queryParams,
+        body,
+        requestConfig,
+        maxRetries,
+        responseType,
+        successPredicate,
+        transformer,
+        result,
+        callback,
+        sensitiveResponseBody);
+  }
+
+  private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
+      final URI baseAddress,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final int maxRetries,
+      final Class<HttpT> responseType,
+      final Predicate<Integer> successPredicate,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result,
+      final ApiCallback<HttpT, RespT> callback,
+      final boolean sensitiveResponseBody) {
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -400,6 +494,7 @@ public final class HttpClient implements AutoCloseable {
           }
           sendRequest(
               httpMethod,
+              baseAddress,
               path,
               queryParams,
               body,
@@ -409,17 +504,20 @@ public final class HttpClient implements AutoCloseable {
               successPredicate,
               transformer,
               result,
-              apiCallback.get());
+              apiCallback.get(),
+              sensitiveResponseBody);
         };
 
     final SimpleHttpRequest request =
-        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path));
+        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(baseAddress, path));
     if (request == null) {
       return;
     }
     request.setConfig(requestConfig);
 
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer = createEntityConsumer(responseType);
+    final HttpClientContext context = HttpClientContext.create();
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
+        createEntityConsumer(responseType, context);
 
     if (apiCallback.get() == null) {
       apiCallback.set(
@@ -429,20 +527,23 @@ public final class HttpClient implements AutoCloseable {
               successPredicate,
               credentialsProvider::shouldRetryRequest,
               retryAction,
-              maxRetries));
+              maxRetries,
+              sensitiveResponseBody));
     }
 
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
+            context,
             apiCallback.get()));
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
-      final Class<HttpT> responseType) {
+      final Class<HttpT> responseType, final HttpClientContext context) {
     if (responseType == InputStream.class) {
-      return new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
+      return new DocumentDataConsumer<>(
+          maxMessageSize, jsonMapper, () -> ExchangeAbortChainHandler.abort(context));
     } else {
       return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
@@ -518,10 +619,10 @@ public final class HttpClient implements AutoCloseable {
     return true;
   }
 
-  private URI buildRequestURI(final String path) {
+  private URI buildRequestURI(final URI baseAddress, final String path) {
     final URI target;
     try {
-      target = new URIBuilder(address).appendPath(path).build();
+      target = new URIBuilder(baseAddress).appendPath(path).build();
     } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }

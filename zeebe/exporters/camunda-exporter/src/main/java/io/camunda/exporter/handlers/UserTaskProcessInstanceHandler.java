@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -20,7 +21,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 
 public class UserTaskProcessInstanceHandler
-    implements ExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
 
   private final String indexName;
 
@@ -71,8 +72,11 @@ public class UserTaskProcessInstanceHandler
   }
 
   @Override
-  public void flush(final TaskProcessInstanceEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final TargetIndex index,
+      final TaskProcessInstanceEntity entity,
+      final BatchRequest batchRequest) {
+    batchRequest.add(index, entity);
   }
 
   @Override

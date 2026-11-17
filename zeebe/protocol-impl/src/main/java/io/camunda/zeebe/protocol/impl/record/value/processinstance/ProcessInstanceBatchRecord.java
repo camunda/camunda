@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
@@ -36,12 +37,15 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
    */
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
+
   public ProcessInstanceBatchRecord() {
-    super(4);
+    super(5);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(batchElementInstanceKeyProperty)
-        .declareProperty(indexProperty);
+        .declareProperty(indexProperty)
+        .declareProperty(storageOrdinalProperty);
   }
 
   @Override
@@ -88,5 +92,15 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   public String getTenantId() {
     // todo(#13774): replace dummy implementation
     return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
+  }
+
+  public ProcessInstanceBatchRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
+    return this;
   }
 }

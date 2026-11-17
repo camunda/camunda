@@ -1,0 +1,191 @@
+# description: Runs a weekly max-load stress test against every supported stable branch (8.8, 8.9,
+#              8.10), each as gRPC with Elasticsearch and gRPC without secondary storage. Uses the
+#              same lifecycle as the daily main stress test (45-minute soak of 15-minute warmup
+#              plus a 30-minute metrics window, metrics snapshot, async-profiler, cleanup),
+#              delegated to the reusable
+#              stress-load-test.yml. Only the setup differs: each stable branch is built and
+#              deployed with its own camunda-load-test.yml, everything else runs from main.
+#              Persists metrics and flamegraphs to the camunda-benchmark-load-test-results-prod GCS
+#              bucket and posts a separate side-by-side summary to Slack (the scheduled run always
+#              posts; a manual run only when opted in via post-to-slack).
+#              Runs on Mondays only, since stable branches see few changes between runs.
+#              Naming pattern: medic-stable-YYYY-MM-DD-<sha>-<key>
+# calls: stress-load-test.yml (per leg), load-test-publish-results.yml
+# type: CI
+# owner: @camunda/reliability-testing
+name: Stable Branches Stress Tests
+on:
+  workflow_dispatch:
+    inputs:
+      post-to-slack:
+        description: 'Post the results to the reliability-testing Slack channel. Always posts on the scheduled run regardless of this input.'
+        type: boolean
+        default: false
+        required: false
+  schedule:
+    # Runs at 7 am on Mondays, after the daily soak (2 am start, about 3.5 h) has released its
+    # cluster capacity https://crontab.guru/#0_7_*_*_1
+    - cron: 0 7 * * 1
+
+# Namespace names derive from the date and commit, so a second run on the same day would collide
+# with the first. Queue it instead of letting its cleanup delete the namespaces of the running one.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
+jobs:
+  benchmark-data:
+    name: Collect benchmark data
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      benchmark: ${{ steps.data.outputs.benchmark }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Collect benchmark data
+        id: data
+        run: echo "benchmark=medic-stable-$(date --utc "+%Y-%m-%d")-$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  run-variant:
+    name: ${{ matrix.leg.label }}
+    needs: benchmark-data
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each entry is one leg. The key becomes the namespace suffix and must stay short: the
+        # namespace is the Helm release name, which Helm caps at 53 characters. The label names the
+        # job in the Actions UI ("<label> / Soak"). Adding a leg also needs its "key:label" pair in
+        # variant-order of the publish-results job below. When a new minor becomes stable, add
+        # its legs here and a setup job in stress-load-test.yml.
+        # load-test-setup-helm-values only reaches 8.10, the older stable workflows lack that input.
+        leg:
+          - key: 88-grpc
+            label: 8.8-gRPC
+            branch: '8.8'
+            storage: elasticsearch
+            setup-values: ''
+          - key: 88-none
+            label: 8.8-None-gRPC
+            branch: '8.8'
+            storage: none
+            setup-values: ''
+          - key: 89-grpc
+            label: 8.9-gRPC
+            branch: '8.9'
+            storage: elasticsearch
+            setup-values: ''
+          - key: 89-none
+            label: 8.9-None-gRPC
+            branch: '8.9'
+            storage: none
+            setup-values: ''
+          - key: 810-grpc
+            label: 8.10-gRPC
+            branch: '8.10'
+            storage: elasticsearch
+            setup-values: '--set elasticsearch.storage.requests=64Gi'
+          - key: 810-none
+            label: 8.10-None-gRPC
+            branch: '8.10'
+            storage: none
+            setup-values: ''
+    uses: ./.github/workflows/stress-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-${{ matrix.leg.key }}
+      stable-branch: ${{ matrix.leg.branch }}
+      secondary-storage-type: ${{ matrix.leg.storage }}
+      load-test-load: '--set global.preferRest.enabled=false'
+      load-test-setup-helm-values: ${{ matrix.leg.setup-values }}
+
+  publish-results:
+    name: Publish results
+    needs: [ benchmark-data, run-variant ]
+    # Leg failures still publish what exists, but not without a benchmark name.
+    if: always() && needs.benchmark-data.result == 'success'
+    permissions:
+      actions: read # list run artifacts via API
+      contents: read
+      id-token: write # GCP WIF auth
+    uses: ./.github/workflows/load-test-publish-results.yml
+    secrets: inherit
+    with:
+      benchmark: ${{ needs.benchmark-data.outputs.benchmark }}
+      # Column order of the Slack table, one "key:label" pair per run-variant matrix entry (a leg
+      # missing here is dropped from the results). The key is the -<key> suffix of the leg's name.
+      variant-order: '88-grpc:8.8-gRPC 88-none:8.8-None-gRPC 89-grpc:8.9-gRPC 89-none:8.9-None-gRPC 810-grpc:8.10-gRPC 810-none:8.10-None-gRPC'
+      metrics-artifact-name: stable-stress-metrics-${{ needs.benchmark-data.outputs.benchmark }}
+      gcs-path: automated/weekly/stress-stable
+      slack-title: Stable Branch Stress Test Results
+      post-to-slack: ${{ github.event_name != 'workflow_dispatch' || inputs.post-to-slack }}
+
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [ run-variant, publish-results ]
+    if: failure()
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":warning: *Stable stress test creation failed:*"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

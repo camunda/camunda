@@ -15,81 +15,144 @@
 const sidebars = {
   tutorialSidebar: [
     'index',
-    'monorepo-devops-team-processes',
+    'eng-ops-processes',
     'collaboration-guidelines',
-    'ci',
-    'ci-runbooks',
+    {
+      type: 'category',
+      label: 'CI',
+      link: { type: 'doc', id: 'ci' },
+      items: ['ci-runbooks', 'flaky-test-gate', 'dependency-vulnerability-gate'],
+    },
     'infrastructure-services',
-    'renovate-pr-handling',
-    'release',
+    'processes',
+    'physical-tenant-isolation-tests',
+    {
+      type: 'category',
+      label: 'Release Process',
+      link: { type: 'doc', id: 'release/index' },
+      items: ['release/release-monorepo', 'release/release-train'],
+    },
     {
       type: 'category',
       label: 'Architecture',
       items: [
         {
           type: 'category',
+          label: 'Cross-cutting Architecture',
+          items: [
+            {
+              type: 'link',
+              label: 'Overview',
+              href: '/architecture/overview',
+            },
+            {
+              type: 'link',
+              label: 'Orchestration Cluster',
+              href: '/adr/orchestration-cluster/jvm-options-argfile-for-runtime-specific-flags',
+            },
+            {
+              type: 'link',
+              label: 'Management',
+              href: '/adr/management/physical-tenant-health-status-topology',
+            },
+            {
+              type: 'link',
+              label: 'Security',
+              href: '/adr/security/endpoint-required-permission-mapping',
+            },
+            {
+              type: 'link',
+              label: 'Clients',
+              href: '/adr/clients/unify-spring-starter-on-multi-client-config-path',
+            },
+          ],
+        },
+        {
+          type: 'category',
           label: 'Components',
           items: [
             {
               type: 'category',
-              label: 'RDBMS',
-              items: [
-                'architecture/components/rdbms/rdbms_architecture_docs',
-                'architecture/components/rdbms/developer-guide',
-                'architecture/components/rdbms/benchmarking',
-                {
-                  type: 'category',
-                  label: 'ADRs',
-                  items: [
-                    'architecture/components/rdbms/adr/use-mybatis-as-orm-framework',
-                    'architecture/components/rdbms/adr/use-liquibase-for-schema-management',
-                  ],
-                },
-              ],
-            },
-            {
-              type: 'category',
               label: 'Orchestration Cluster Identity',
               items: [
-                'architecture/components/identity/identity_architecture_docs',
                 {
-                  type: 'category',
-                  label: 'ADRs',
-                  items: [
-                    'architecture/components/identity/adr/cluster-embedded-identity',
-                    'architecture/components/identity/adr/oidc-default-production-authentication',
-                    'architecture/components/identity/adr/resource-based-authorization-model',
-                    'architecture/components/identity/adr/multi-jwks-endpoints-per-issuer',
-                    'architecture/components/identity/adr/support-forward-slashes-in-entity-ids',
-                  ],
+                  type: 'link',
+                  label: 'Architecture',
+                  href: '/identity/architecture',
                 },
                 {
                   type: 'category',
                   label: 'Authorizations',
                   items: [
-                    'architecture/components/identity/authorizations/authorization-concept',
-                    'architecture/components/identity/authorizations/engine-authorization',
-                    'architecture/components/identity/authorizations/rest-authorization',
+                    { type: 'link', label: 'Authorization Concept', href: '/identity/authorizations/authorization-concept' },
+                    { type: 'link', label: 'Engine Authorization', href: '/identity/authorizations/engine-authorization' },
+                    { type: 'link', label: 'REST Authorization', href: '/identity/authorizations/rest-authorization' },
                   ],
                 },
                 {
                   type: 'category',
                   label: 'References',
                   items: [
-                    'architecture/components/identity/references/data-model',
-                    'architecture/components/identity/references/default-roles',
-                    'architecture/components/identity/references/rp-initiated-logout',
+                    { type: 'link', label: 'Data Model', href: '/identity/references/data-model' },
+                    { type: 'link', label: 'Default Roles', href: '/identity/references/default-roles' },
+                    { type: 'link', label: 'RP-Initiated Logout', href: '/identity/references/rp-initiated-logout' },
+                  ],
+                },
+                {
+                  type: 'category',
+                  label: 'ADRs',
+                  items: [
+                    { type: 'link', label: 'ADR Index', href: '/identity/adr/README' },
                   ],
                 },
               ],
             },
             {
-              type: 'doc',
-              id: 'architecture/components/identity/management_identity_architecture_docs',
+              type: 'link',
               label: 'Management Identity',
+              href: '/identity/management-identity',
             },
           ],
         },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Frontend',
+      link: { type: 'doc', id: 'frontend/frontend' },
+      items: [
+        'frontend/getting-started',
+        'frontend/project-outline',
+        'frontend/orchestration-cluster-webapp',
+        'frontend/camunda-api-zod-schemas',
+        'frontend/data-loading',
+        'frontend/forms',
+        {
+          type: 'category',
+          label: 'Development process',
+          link: {
+            type: 'doc',
+            id: 'frontend/development-process/development-process',
+          },
+          items: [
+            'frontend/development-process/before-starting',
+            'frontend/development-process/creating-a-new-page',
+            'frontend/development-process/extending-an-existing-page',
+            'frontend/development-process/working-on-large-feature',
+            'frontend/development-process/generating-svg-components',
+          ],
+        },
+        'frontend/testing',
+        'frontend/using-ai',
+        'frontend/code-reviews',
+        {
+          type: 'category',
+          label: 'ADRs',
+          link: { type: 'doc', id: 'frontend/adr/adr' },
+          items: [],
+        },
+        'frontend/code-style',
+        'frontend/legacy-components',
       ],
     },
   ],

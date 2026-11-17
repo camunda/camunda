@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public interface ClientTransport extends AutoCloseable {
   /**
@@ -39,7 +40,7 @@ public interface ClientTransport extends AutoCloseable {
    *     timeout.
    */
   default ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final ClientRequest clientRequest,
       final Duration timeout) {
     return sendRequestWithRetry(nodeAddressSupplier, response -> true, clientRequest, timeout);
@@ -72,7 +73,7 @@ public interface ClientTransport extends AutoCloseable {
    *     timeout.
    */
   ActorFuture<DirectBuffer> sendRequestWithRetry(
-      Supplier<String> nodeAddressSupplier,
+      Supplier<@Nullable String> nodeAddressSupplier,
       Predicate<DirectBuffer> responseValidator,
       ClientRequest clientRequest,
       Duration timeout);
@@ -97,5 +98,7 @@ public interface ClientTransport extends AutoCloseable {
    *     timeout.
    */
   ActorFuture<DirectBuffer> sendRequest(
-      Supplier<String> nodeAddressSupplier, ClientRequest clientRequest, Duration timeout);
+      Supplier<@Nullable String> nodeAddressSupplier,
+      ClientRequest clientRequest,
+      Duration timeout);
 }

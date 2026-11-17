@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -17,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import java.util.List;
 
 public class HistoryDeletionDeletedHandler
-    implements ExportHandler<HistoryDeletionEntity, HistoryDeletionRecordValue> {
+    implements MainIndexExporterHandler<HistoryDeletionEntity, HistoryDeletionRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
 
@@ -64,9 +65,10 @@ public class HistoryDeletionDeletedHandler
   }
 
   @Override
-  public void flush(final HistoryDeletionEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final HistoryDeletionEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

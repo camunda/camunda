@@ -34,6 +34,12 @@ export const Paths = {
   operationsLog() {
     return '/admin/operations-log';
   },
+  globalTaskListeners() {
+    return '/admin/global-task-listeners';
+  },
+  mcpProcesses() {
+    return '/admin/mcp-processes';
+  },
   operateDashboard() {
     return '/operate';
   },

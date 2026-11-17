@@ -11,8 +11,10 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT_POSITION;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -26,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewFlowNodeFromIncidentHandler
-    implements ExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
+    implements OrdinalIndexExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromIncidentHandler.class);
@@ -84,7 +86,8 @@ public class ListViewFlowNodeFromIncidentHandler
         .setPositionIncident(record.getPosition())
         .setActivityId(recordValue.getElementId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(trimWhitespace(recordValue.getErrorMessage()));
@@ -99,7 +102,9 @@ public class ListViewFlowNodeFromIncidentHandler
 
   @Override
   public void flush(
-      final FlowNodeInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final TargetIndex index,
+      final FlowNodeInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug("Flow node instance for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new LinkedHashMap<>();
@@ -109,7 +114,7 @@ public class ListViewFlowNodeFromIncidentHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override

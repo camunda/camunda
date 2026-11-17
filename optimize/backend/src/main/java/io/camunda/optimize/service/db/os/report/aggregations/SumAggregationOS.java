@@ -27,7 +27,7 @@ public class SumAggregationOS extends AggregationStrategyOS {
   }
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final SumAggregate aggregate =
         aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION)).sum();

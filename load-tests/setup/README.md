@@ -5,7 +5,7 @@ Welcome to the manual setup of a load test. :wave:
 There are two targets to run a load test against:
 
 * [Self-Managed Zeebe Cluster](#load-testing-self-managed-zeebe-cluster)
-* [Camunda Cloud Cluster](#load-testing-camunda-cloud-saas)
+* [Camunda SaaS Cluster](#load-testing-camunda-cloud-saas)
 
 All guides are targeted at a Linux system.
 
@@ -28,7 +28,7 @@ Some of the necessary steps you need to take are:
 
 ```sh
 ## Authenticate to the benchmark cluster via Teleport
-tsh login --proxy=camunda.teleport.sh:443
+tsh login --proxy=camunda.teleport.sh:443 --auth=okta
 tsh kube login camunda-benchmark-prod
 
 ## Log in to the Harbor container registry
@@ -75,16 +75,29 @@ When following the instructions above, execute all commands that deal with Docke
 By default, a load test deploys the full Camunda Platform, including:
 
 * **Orchestration cluster** (Gateway, Webapps incl. Identity, Operate, Tasklist and Zeebe brokers as Camunda application)
-* **Elasticsearch** as secondary storage
+* **Elasticsearch** as secondary storage, deployed as an [ECK](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s)-managed cluster via the `load-test-setup` chart
 * **Optimize** with history cleanup (1-day TTL)
 * **Connectors** with OIDC authentication
 * **Identity + Keycloak** for OIDC-based authentication
 
-All components are configured in `camunda-platform-values.yaml`.
+Shared baseline platform config lives in `camunda-platform-values-defaults.yaml`; storage-specific overrides live in `camunda-platform-values-${secondaryStorage}.yaml`.
 
 ### How to set up a load test namespace
 
-If you run `newLoadTest.sh` without arguments, it will display the following help message.
+The root `newLoadTest.sh` is a **version dispatcher** — it forwards to a version-specific script
+under `setup/<version>/newLoadTest.sh`, defaulting to `main`. Each stable version has its own
+subfolder (`stable-87`, `stable-88`, …) so all version setups live on `main` without backports.
+
+Run `./newLoadTest.sh --help` to see currently available versions. To target a specific version:
+
+```sh
+./newLoadTest.sh --target-version stable-89 my-test   # stable/8.9 setup
+./newLoadTest.sh --target-version stable-89 -h        # version-specific help
+```
+
+The rest of this section documents the `main` setup.
+
+Running `newLoadTest.sh` without arguments shows the `main` help:
 
 ```sh
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
@@ -93,7 +106,7 @@ Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
 
 Options:
   -h, --help         Show this help message.
@@ -111,7 +124,43 @@ Example:
 . ./newLoadTest.sh my-load-test-name
 ```
 
-This will source and run the `newLoadTest.sh` script, which means it will create a new Kubernetes namespace. Furthermore, a new folder will be created with the given name.
+This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and a local "load-test-setup" Helm chart under `charts/load-test-setup/`.
+
+The template files live under `setup/main/`:
+
+- `Makefile` — rendered into the namespace folder with placeholders substituted.
+- `values/` — Helm values files. All installs start from
+  `camunda-platform-values-defaults.yaml` (shared baseline platform config)
+  and layer `camunda-platform-values-${secondaryStorage}.yaml` on top. RDBMS
+  storages additionally apply `camunda-platform-values-rdbms.yaml` between
+  them. For example, `elasticsearch` copies
+  `camunda-platform-values-defaults.yaml`,
+  `camunda-platform-values-elasticsearch.yaml`,
+  `camunda-platform-override-values.yaml`, `load-test-values.yaml` and
+  `values-stable.yaml`
+- `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
+  Helm chart). Copied into the namespace folder only when the matching
+  storage is chosen.
+- `charts/load-test-setup/` — The "load-test-setup" Helm Chart. Always copied and rendered
+  with random secrets.
+
+**A namespace is bound to its storage choice at bootstrap.** To try a different
+storage, create a new namespace via `./newLoadTest.sh <new-name> <newStorage>`.
+
+The load-test-setup chart owns all the resources deployed for a single load tests:
+* the namespace (labels, AZ pinning, TTL annotation)
+* the `camunda-credentials` secret
+* the leader-balancer cronjob
+* the chaos-killer cronjob (optional, disabled by default)
+* the Elasticsearch ECK custom resource (optional, disabled by default but auto-enabled when using the `elasticsearch` secondary storage, or by Optimize, when the secondary storage is not directly usable by Optimize)
+* the Prometheus exporter for Elasticsearch (optional, disabled by default but auto-enabled whenever the ECK Elasticsearch resource above or OpenSearch is enabled — see [the chart's README](charts/load-test-setup/README.md#dependencies))
+
+It is parameterized by a values file baked at scaffold time:
+
+* `load-test-setup-values.yaml`: namespace name, author label, `deadlineDate`, topology zone.
+
+Reruns `make install-load-test-setup` after a TTL deletion reinstall the same chart, so the orchestration OIDC secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
+
 If you used `.` before `./newLoadTest.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
 #### Secondary storage options
@@ -130,6 +179,62 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+The Makefile also disables the data availability monitoring and the k6 `data-read` test, because they read from secondary storage.
+
+#### ECK Elasticsearch
+
+Elasticsearch is deployed via the [Elastic Cloud on Kubernetes (ECK) operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s). ECK manages the full lifecycle of the Elasticsearch cluster — node creation, configuration, scaling, and rolling upgrades — through a dedicated `Elasticsearch` [custom resource (CRD)](https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-api-reference.html). When configured with `elasticsearch.enabled=true`, the `load-test-setup` chart will deploy this custom resource.
+
+> [!TIP]
+> Reference:
+> * [Deploy an Elasticsearch cluster](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/elasticsearch-deployment-quickstart)
+> * [Elasticsearch configuration](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/elasticsearch-configuration)
+> * [`Elasticsearch` custom resource](https://doc.crds.dev/github.com/elastic/cloud-on-k8s/elasticsearch.k8s.elastic.co/Elasticsearch/v1) ([official doc](https://www.elastic.co/docs/reference/cloud-on-k8s/api-reference/3_4_1#elasticsearchk8selasticcov1))
+
+The ECK operator creates a Kubernetes service named `elasticsearch-es-http` for HTTP access to the cluster. All components that connect to Elasticsearch (Camunda, Optimize, the metrics exporter) must use this service name.
+
+The default ECK Elasticsearch configuration (defined in `charts/load-test-setup/values.yaml`) is:
+
+|     Setting      |               Default                |
+|------------------|--------------------------------------|
+| Version          | 9.5.6                                |
+| Node count       | 3                                    |
+| CPU per node     | 7 cores                              |
+| Memory per node  | 8 Gi                                 |
+| JVM heap         | 3 Gi                                 |
+| Storage per node | 512 Gi (`benchmark-ssd-zonal-v1`)    |
+| TLS              | Disabled (HTTP API)                  |
+| Authentication   | Anonymous superuser (load-test only) |
+
+##### Local modifications
+
+All Elasticsearch configuration options (version, node count, resources, storage, …) are exposed as values of the `load-test-setup` Helm chart — see `charts/load-test-setup/values.yaml` for the full list. The values file for your specific load test (`load-test-setup-values.yaml`) is generated by `./newLoadTest.sh` and lives at the root of your namespace folder. **This is the preferred place for local modifications** — edit `load-test-setup-values.yaml` and run `make install-load-test-setup` to apply.
+
+To override defaults at install time without editing the file (e.g. during a one-off test), pass them via `additional_load_test_setup_configuration`:
+
+```sh
+make install additional_load_test_setup_configuration="--set elasticsearch.version=8.17.0 --set elasticsearch.count=1"
+```
+
+##### Live modifications inside Kubernetes
+
+> [!Important]
+>
+> Because the Elasticsearch cluster is managed by the ECK operator, **live modifications must be made through the `Elasticsearch` custom resource**, not through the underlying StatefulSet. Changes applied directly to the StatefulSet will be overwritten by the operator on its next reconciliation loop.
+>
+> To inspect the current custom resource:
+>
+> ```sh
+> kubectl -n <namespace> get elasticsearch elasticsearch -o yaml
+> ```
+>
+> To edit the Elasticsearch cluster, edit the custom resource instead:
+>
+> ```sh
+> kubectl -n <namespace> edit elasticsearch elasticsearch
+> ```
+>
+> See the [reference links](#eck-elasticsearch) for more details about the available options.
 
 #### Disabling Optimize
 
@@ -143,7 +248,7 @@ In the GitHub workflow, set the `enable-optimize` input to `false`.
 
 ### How to configure a load test
 
-The load test configuration is done via the `camunda-platform-values.yaml` file (copied to your namespace folder).
+Shared baseline configuration is in `camunda-platform-values-defaults.yaml`; storage-specific overrides are in `camunda-platform-values-${secondaryStorage}.yaml` (both copied to your namespace folder).
 You can also modify the Makefile to pass additional Helm arguments if needed.
 
 #### Use different Camunda Snapshot
@@ -162,16 +267,15 @@ docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry
 docker push registry.camunda.cloud/team-zeebe/camunda:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
-Update the `camunda-platform-values.yaml` file in your namespace folder and set the newly created image tag.
+Update the `camunda-platform-values-defaults.yaml` file in your namespace folder and point `orchestration.image` at the newly pushed image. `global.image` only supplies a fallback `registry`/`pullPolicy`/`pullSecrets` for components that don't set their own image — `orchestration.image` already pins its own `registry`/`repository`/`tag` (to `docker.io`/`camunda/camunda` by default), so `global.image.tag` alone has no effect here and must not be relied on.
 
 The changes should look similar to this:
 
 ```yaml
-global:
-  image:
-    tag: SNAPSHOT-2024-01-15-abcd1234
 orchestration:
   image:
+    registry: registry.camunda.cloud
+    repository: team-zeebe/camunda
     tag: SNAPSHOT-2024-01-15-abcd1234
 ```
 
@@ -185,19 +289,151 @@ To install/upgrade both the [Camunda Platform Helm](https://github.com/camunda/c
 make install
 ```
 
+`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadlineDate` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `install-load-test-setup` which `helm upgrade --install`s the local load-test-setup chart. The load-test-setup release creates the namespace, the `camunda-credentials` secret, the leader-balancer cronjob, and the Optimize indices cleanup job in a single, idempotent Helm release — so reruns after a TTL deletion reapply the same credentials and the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
+
 Or install/upgrade them separately:
 
 ```shell
-# Install/upgrade the Camunda Platform (includes leader balancer cronjob)
+# Install/upgrade the load-test-setup chart (namespace, credentials secret, leader balancer cronjob, cleanup job)
+make install-load-test-setup
+
+# Install/upgrade the Camunda Platform
 make install-platform
 
 # Install/upgrade the load test (starter, worker, etc.)
 make install-load-test
 ```
 
-The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
+To bump the deadline of an existing namespace without re-scaffolding, edit `deadlineDate` in `load-test-setup-values.yaml` (single source of truth — `check-deadline` reads it directly) and reinstall the load-test-setup chart:
+
+```sh
+make install-load-test-setup
+```
+
+The load-test-setup chart deploys a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
+
+#### Optional chaos-killer
+
+The load-test-setup chart can optionally deploy a chaos-killer CronJob. When enabled, it lists all
+pods in the namespace, expands a space-separated list of shell glob patterns, and deletes **one
+random matching pod per run**.
+
+- Default schedule: hourly (`0 * * * *`)
+- Default target patterns: `camunda-* elastic-* postgresql-*`
+- Default state: disabled
+
+Enable via the `chaos` variable or the convenience shortcuts:
+
+```sh
+make install chaos=true     # enable chaos with any install target
+make install-chaos          # shorthand for the above
+make install-stable-chaos   # stable VMs + chaos
+```
+
+To override the default schedule or target patterns, pass them via `additional_load_test_setup_configuration`:
+
+```sh
+make install chaos=true \
+  additional_load_test_setup_configuration="--set chaosKiller.schedule='*/15 * * * *' \
+  --set chaosKiller.targetPatterns='camunda-* elastic-* postgresql-*'"
+```
+
+To preview the rendered manifests before installing:
+
+```sh
+make template-load-test-setup-chaos
+```
+
+In the GitHub workflow, set the `enable-chaos` input to `true`.
+
+#### Optional PostgreSQL connection pooling (PgBouncer)
+
+For `secondary_storage=postgresql`, each broker pod opens one connection pool per physical
+tenant, so client connections to Postgres scale as (broker pods x physical tenants) and can
+exceed Postgres's default `max_connections` under a large fleet (e.g. 10 brokers x 10
+tenants). Enabling this option deploys a CNPG `Pooler` (PgBouncer, transaction-pooling mode)
+in front of the PostgreSQL cluster and points Camunda's JDBC URL at it instead of the
+cluster's `-rw` Service — see [Connection pooling
+(PgBouncer)](charts/load-test-setup/README.md#connection-pooling-pgbouncer) for the full
+rationale.
+
+This is opt-in and off by default; only supported with `secondary_storage=postgresql`.
+Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
+
+```sh
+./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
+```
+
+#### Optional physical tenants (pt1..ptN)
+
+A load test can exercise **N extra physical tenants** (`pt1`, `pt2`, ..., `ptN`) alongside the
+default tenant, all sharing the namespace's `secondary_storage` and isolated from it and from each
+other:
+
+- **rdbms** (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`): shared database, isolated by table
+  prefix (`DEFAULT_`, `PT1_`, `PT2_`, ...).
+- **elasticsearch** / **opensearch**: shared cluster, isolated by index prefix (`default-`, `pt1-`,
+  `pt2-`, ...).
+- **none**: no storage layer to isolate — this still exercises broker/engine/REST-routing-level
+  physical-tenant isolation without a storage layer to configure.
+
+This is supported starting from `stable-810` only.
+
+```sh
+make install physical_tenant_count=3 secondary_storage=postgresql scenario=typical
+```
+
+When `physical_tenant_count > 0`, the Makefile:
+
+- Generates `camunda-platform-physical-tenants.yaml` (see `generate-physical-tenant-values.sh`) —
+  the storage prefixes above, plus per-tenant orchestration-client authorizations (the same grants
+  the default tenant has: `CREATE` on `RESOURCE`, `CREATE_PROCESS_INSTANCE`/`UPDATE_PROCESS_INSTANCE`/
+  `READ_PROCESS_INSTANCE`/`READ_PROCESS_DEFINITION` on `PROCESS_DEFINITION`, `CREATE` on `MESSAGE`) and
+  OIDC provider assignment — and layers it on top of the plain storage values.
+- Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
+  tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
+  Each tester gets a `CAMUNDA_CLIENT_PHYSICAL_TENANT_ID=pt<i>` env var, which routes both gRPC and
+  REST traffic to that tenant, so no per-tenant secret or address override is needed.
+
+A second Helm release per tenant is not used because the `camunda-load-tests` subchart hardcodes the
+`starter`/`worker` resource names, which would collide in the same namespace. This also means each
+extra tenant gets its own starter/worker deployment set, not a shared pool that scales work across
+tenants.
+
+In the GitHub workflow, set the `physical-tenant-count` input (with `secondary-storage-type` set to
+the storage you want all tenants to share).
+
+Verify the tenants receive writes — for rdbms, table names fold to the RDBMS's default identifier
+case (e.g. Postgres lowercases unquoted identifiers):
+
+```sh
+kubectl exec -n <namespace> postgresql-0 -- env PGPASSWORD=camunda \
+  psql -U camunda -d camunda -c "
+SELECT 'default' AS tenant, COUNT(*) FROM default_process_instance
+UNION ALL SELECT 'pt1', COUNT(*) FROM pt1_process_instance;"
+```
+
+For elasticsearch/opensearch, check indices named `default-*`/`pt1-*` etc. instead.
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
+
+##### Sizing for extra tenants (elasticsearch/opensearch)
+
+Each extra tenant with its own index prefix adds a full set of Camunda's indices to the cluster.
+`physical_tenant_count` does not auto-scale the ES/OS node count — if you're pushing past a couple of
+tenants, watch the per-node shard limit and bump the cluster size yourself via the existing
+`load-test-setup-helm-values` workflow input (or directly on `make install`):
+
+```sh
+make install physical_tenant_count=3 secondary_storage=elasticsearch \
+  additional_load_test_setup_configuration="--set elasticsearch.count=5"
+```
+
+`elasticsearch.count` (ECK custom resource, default 3) is defined in
+`charts/load-test-setup/values.yaml`; the `opensearch` subchart has its own replica value under the
+same file. As a rough starting point, plan for one additional node per 2-3 extra tenants at the
+default shard settings — reduce further if you also raise the shard/replica counts in the platform
+values.
 
 ### Running specific scenarios
 
@@ -208,7 +444,7 @@ To run a specific workload profile, use one of the named targets:
 make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
 make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
-make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make max       # 300 instances/s (650 with secondary_storage=none), stress regression test at the SLO load, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
 ```
 
@@ -237,40 +473,156 @@ make template scenario=max          # renders platform manifests
 make template-load-test scenario=max  # renders load test manifests
 ```
 
-### How to clean up a load test
+### Accessing Services
 
-After you're done with your load test, you should remove the remaining namespace.
-In order to do this easily, just run:
+Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works.
+
+1. Port-forward both Camunda and Keycloak:
 
 ```sh
-./deleteLoadTest.sh my-load-test-name
+kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
+kubectl -n <namespace> port-forward svc/keycloak 18080:18080 &
+wait
 ```
 
-This will switch to the default namespace, delete the given namespace, and delete the corresponding folder.
+2. Get the `demo` user password:
 
-## Running on stable/non-spot VMs
+```sh
+kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-firstuser-password}" | base64 --decode
+```
 
-You may sometimes want to run load tests on non-spot (or non-preemptible) VMs, for example, if you
-want to test for slow memory leaks.
+3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
 
-To do this, use the `install-platform-stable` Makefile target:
+#### Browser login on physical-tenant runs
 
-```shell
+When `physical_tenant_count > 0`, Keycloak uses the hostname `keycloak` and not `localhost`. The
+brokers must reach the token issuer from inside the cluster, and `localhost` in a broker pod is the
+pod itself. The SSO redirect therefore sends your browser to `http://keycloak:18080`, and your
+browser must resolve `keycloak` to `127.0.0.1` (the port-forward).
+
+Start Chrome or Chromium with a host-resolver rule. This needs no root access and affects only this
+browser instance:
+
+```sh
+google-chrome --user-data-dir=/tmp/pt-sso --host-resolver-rules="MAP keycloak 127.0.0.1"
+```
+
+For other browsers, add this line to `/etc/hosts`:
+
+```text
+127.0.0.1 keycloak
+```
+
+#### Keycloak admin credentials
+
+The Keycloak admin console user is `admin` (or whatever `keycloak.adminUser.username` is set to). Its password is generated the same way as every other credential in this chart (see [Where credentials come from](#where-credentials-come-from)) and stored under the `identity-keycloak-admin-password` key:
+
+```sh
+kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-keycloak-admin-password}" | base64 --decode
+```
+
+#### Using c8ctl (CLI access)
+
+To use [c8ctl](https://github.com/camunda/c8ctl) against the cluster, port-forward the REST gateway and Keycloak, then export the credentials from the namespace secrets:
+
+```sh
+export NAMESPACE="..."
+kubectl -n $NAMESPACE port-forward svc/camunda-gateway 8080:8080 &
+kubectl -n $NAMESPACE port-forward svc/keycloak 18080:18080 &
+
+export CAMUNDA_BASE_URL=http://localhost:8080
+export CAMUNDA_OAUTH_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+export CAMUNDA_CLIENT_ID=orchestration
+export CAMUNDA_CLIENT_SECRET=$(kubectl -n $NAMESPACE get secret camunda-credentials \
+  -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 --decode)
+export CAMUNDA_TOKEN_AUDIENCE=orchestration-api
+```
+
+Verify the connection:
+
+```sh
+c8 list pd
+```
+
+### How to clean up a load test
+
+When you're done, run `make clean` from inside the namespace folder:
+
+```sh
+cd c8-my-load-test-name
+make clean
+```
+
+This uninstalls the Helm releases (Camunda Platform + load test + load-test-setup, the latter including the Prometheus Elasticsearch exporter subchart when enabled), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
+
+The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
+
+To remove all local folders whose namespace no longer exists, run `./cleanupStaleFolders.sh` from `load-tests/setup/` (dry run) and add `--delete` to remove them.
+
+## Running on stable VMs
+
+By default, load tests deploy onto preemptible (spot) GKE nodes — defined inline
+in `camunda-platform-values-defaults.yaml`. To deploy onto the stable (non-spot) nodepool
+instead, use `make install-stable`. This applies `values-stable.yaml` on top of
+the platform values, swapping the orchestration `nodeSelector` and tolerations
+to target the `benchmark-n2-standard-8-stable` nodepool.
+
+```sh
 # Deploy the Camunda Platform on stable nodes
-make install-platform-stable
+make install-stable
 
-# Then deploy the load test normally
-make install-load-test
-```
-
-You can also use the `template-stable` job to generate templates:
-
-```shell
 # Spits out the rendered templates targeting stable nodes
 make template-stable
 ```
 
+Stable VMs are useful for observing long-term behaviour (memory leaks, drift
+under steady load) that preemptible VMs don't expose because they're cycled
+out by GCP every ~24h.
+
 The `clean` job works regardless and cleans up both the platform and load-test deployments.
+
+## Helm Chart Version Management
+
+The Camunda Platform Helm Chart version pinned in each versioned setup folder is tracked and
+automatically updated by [Renovate](https://docs.renovatebot.com/). A custom regex manager in
+`.github/renovate.json5` reads a structured annotation comment immediately before the
+`camunda_platform_helm_chart_version` assignment in each `newLoadTest.sh`.
+
+### Annotation format
+
+```sh
+# renovate: version=<tag-prefix>
+camunda_platform_helm_chart_version="<chart-version>"
+```
+
+The `version=` value must match the GitHub tag prefix used in the
+[`camunda/camunda-platform-helm`](https://github.com/camunda/camunda-platform-helm) repository.
+Tags follow the pattern `<tag-prefix>-<chart-version>`, for example
+`camunda-platform-8.9-14.4.1`.
+
+### Update rules
+
+- **`main`**: Renovate opens PRs for all version types (including pre-releases such as `-alpha`).
+- **`stable/*` branches**: Renovate opens PRs for patch updates only.
+
+In any case, Renovate will try to keep the Camunda Platform Helm Chart to the
+latest available version for the related Camunda version.
+
+### Adding a new versioned folder
+
+When adding a versioned setup folder for a new stable branch (e.g. `stable-8X/`):
+
+1. Add the annotation comment immediately above the `camunda_platform_helm_chart_version`
+   assignment in the new `newLoadTest.sh`:
+
+   ```sh
+   # renovate: version=camunda-platform-8.X
+   camunda_platform_helm_chart_version="a.b.c"
+   ```
+2. The `camunda_platform_helm_chart_version` value should match the actual Helm
+   Chart version for that specific Camunda version.
+
+There should not be any need to update `.github/renovate.json5` when a new version is added.
 
 ## Load testing Camunda SaaS
 

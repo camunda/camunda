@@ -7,7 +7,14 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {
+	API_VERSION,
+	advancedStringFilterSchema,
+	getOrFilterSchema,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	type Endpoint,
+} from './common';
 
 const mappingRuleSchema = z.object({
 	mappingRuleId: z.string(),
@@ -35,14 +42,14 @@ type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBod
 
 const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
-	filter: mappingRuleSchema
-		.pick({
-			mappingRuleId: true,
-			claimName: true,
-			claimValue: true,
-			name: true,
-		})
-		.partial(),
+	filter: getOrFilterSchema(
+		z.object({
+			mappingRuleId: advancedStringFilterSchema.optional(),
+			claimName: z.string().optional(),
+			claimValue: z.string().optional(),
+			name: advancedStringFilterSchema.optional(),
+		}),
+	),
 });
 type QueryMappingRulesRequestBody = z.infer<typeof queryMappingRulesRequestBodySchema>;
 
@@ -52,46 +59,46 @@ type QueryMappingRulesResponseBody = z.infer<typeof queryMappingRulesResponseBod
 const getMappingRuleResponseBodySchema = mappingRuleSchema;
 type GetMappingRuleResponseBody = z.infer<typeof getMappingRuleResponseBodySchema>;
 
-const createMappingRule: Endpoint = {
+const createMappingRule = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/mapping-rules`;
+		return `/${API_VERSION}/mapping-rules` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const updateMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
+const updateMappingRule = {
 	method: 'PUT',
 	getUrl(params) {
 		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<MappingRule, 'mappingRuleId'>>;
 
-const deleteMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
+const deleteMappingRule = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<MappingRule, 'mappingRuleId'>>;
 
-const getMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
+const getMappingRule = {
 	method: 'GET',
 	getUrl(params) {
 		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<MappingRule, 'mappingRuleId'>>;
 
-const queryMappingRules: Endpoint = {
+const queryMappingRules = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/mapping-rules/search`;
+		return `/${API_VERSION}/mapping-rules/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 export {
 	createMappingRule,

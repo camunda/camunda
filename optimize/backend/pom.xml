@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -18,7 +18,7 @@
     <dependency>
       <groupId>io.github.netmikey.logunit</groupId>
       <artifactId>logunit-log4j2</artifactId>
-      <version>2.0.0</version>
+      <version>${logunit.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -45,6 +45,20 @@
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- Not used by any Java code: this module has no formal dependency on optimize-client's
+         jar, only a raw filesystem reference to its ../client/dist build output (see the
+         resources section below). Under a parallel (-T1C) reactor build, that leaves no
+         guarantee optimize-client's frontend build finishes before this module reads that
+         directory, so an unlucky race can package a jar with no index.html. Declaring this
+         dependency (provided, so it never reaches the runtime classpath/fat jar) gives Maven a
+         real reactor edge forcing optimize-client to build first. -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-client</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Camunda dependencies -->
@@ -114,6 +128,20 @@
           <artifactId>tomcat-annotations-api</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- Camunda Security Library -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
     </dependency>
 
     <!-- Spring -->
@@ -230,14 +258,14 @@
     <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
-      <version>2.3.34</version>
+      <version>2.3.35</version>
     </dependency>
 
     <!-- CSV -->
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.12.0</version>
+      <version>${version.opencsv}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -260,7 +288,7 @@
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
-      <version>1.0.11</version>
+      <version>${version.dateparser}</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -280,7 +308,7 @@
     <dependency>
       <groupId>com.tdunning</groupId>
       <artifactId>t-digest</artifactId>
-      <version>3.3</version>
+      <version>${version.t-digest}</version>
       <scope>test</scope>
     </dependency>
 
@@ -294,7 +322,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>2.1.8</version>
+      <version>${greenmail.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -368,7 +396,7 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <version>2.0.2</version>
+      <version>${version.jakarta-mail}</version>
       <scope>test</scope>
     </dependency>
 
@@ -423,6 +451,15 @@
       <version>${version.identity}</version>
     </dependency>
 
+    <!-- Pulled in by the starter, declared because CcsmIdentityComponentIdTest binds the
+         IdentityProperties it carries. Has to stay compile scope: test scope would win over the
+         starter's transitive scope and drop it from the runtime classpath. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-autoconfigure</artifactId>
+      <version>${version.identity}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
@@ -460,6 +497,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-freemarker</artifactId>
+      <exclusions>
+        <!-- override transitive freemarker version with the one pinned above -->
+        <exclusion>
+          <groupId>org.freemarker</groupId>
+          <artifactId>freemarker</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -469,6 +513,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- Runtime requirement of CSL's WebSessionConfiguration, which OptimizeCamundaSecurityConfig
+           imports whenever optimize.security.csl.enabled is set; chain integration tests also mint
+           sessions through the Spring Session-backed filter instead of a raw servlet HttpSession -->
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
     </dependency>
     <dependency>
       <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -508,6 +559,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-web-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-webmvc</artifactId>
     </dependency>
 
     <dependency>
@@ -556,9 +611,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-      <version>${version.elasticsearch}</version>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-rest5-client</artifactId>
+      <version>${version.elasticsearch.client}</version>
     </dependency>
 
     <dependency>
@@ -659,7 +714,7 @@
     <dependency>
       <groupId>org.eclipse.angus</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <version>2.0.5</version>
+      <version>${version.jakarta-mail-angus}</version>
     </dependency>
 
     <dependency>
@@ -678,7 +733,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>${version.servlet-api-optimize}</version>
     </dependency>
 
     <dependency>
@@ -763,10 +818,29 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${plugin.version.compiler}</version>
         <configuration>
-          <fork>false</fork>
           <meminitial>128m</meminitial>
           <maxmem>256m</maxmem>
         </configuration>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <!-- See https://logging.apache.org/log4j/2.x/manual/plugins.html#plugin-registry -->
+              <annotationProcessorPaths>
+                <!-- Include `log4j-core` providing `org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor` that generates `Log4j2Plugins.dat`-->
+                <path>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-core</artifactId>
+                  <version>${version.log4j}</version>
+                </path>
+              </annotationProcessorPaths>
+              <annotationProcessors>
+                <!-- Process sources using `PluginProcessor` to generate `Log4j2Plugins.dat` -->
+                <processor>org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor</processor>
+              </annotationProcessors>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -798,6 +872,33 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-test-scoped-spring-session</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>false</searchTransitive>
+                  <excludes>
+                    <exclude>org.springframework.session:spring-session-core:*:*:test</exclude>
+                  </excludes>
+                  <message>spring-session-core must stay non-test scoped: CSL's WebSessionConfiguration
+                    needs it at runtime, and no test can catch its absence because the test classpath
+                    always has it. Test scope silently packages it out of the distribution, which then
+                    fails to start with optimize.security.csl.enabled=true (see #60518).</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
@@ -805,7 +906,17 @@
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
+            <!-- Never referenced by Java code on purpose: exists only to give the reactor a real
+                 build-order edge, see the dependency's own comment above. -->
+            <ignoredUnusedDeclaredDependency>io.camunda.optimize:optimize-client:jar</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <!-- No production class references it: CSL's WebSessionConfiguration is what needs it
+                 at runtime, and only the chain integration tests reference it from Optimize's own
+                 sources. It must stay non-test scoped so the distribution can start with
+                 optimize.security.csl.enabled=true. -->
+            <ignoredNonTestScopedDependency>org.springframework.session:spring-session-core</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
         <executions>
           <execution>
@@ -906,10 +1017,6 @@
               <reportsDirectory>target/failsafe-reports/${surefire.forkNumber}</reportsDirectory>
               <systemPropertyVariables>
                 <indexPrefix>${surefire.forkNumber}-</indexPrefix>
-                <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-                the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-                and won't set the system property -->
-                <testForkNumber>$${surefire.forkNumber}</testForkNumber>
                 <!-- the 400/401 prefix allows up to 99 forks till we exceed the valid port range of 65535 -->
                 <!-- and we stay in the user port range of 1024-49151 -->
                 <optimizeHttpPort>400${surefire.forkNumber}</optimizeHttpPort>

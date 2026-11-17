@@ -7,8 +7,17 @@ paths:
       tags:
         - Role
       operationId: createRole
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: CREATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create role
       description: Create a new role.
+      x-semantic-establishes:
+        kind: Role
+        identifiedBy:
+          - { in: body, name: roleId, semanticType: RoleId }
       requestBody:
         content:
           application/json:
@@ -27,11 +36,18 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: Role with this id already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/search:
     post:
@@ -39,6 +55,12 @@ paths:
       tags:
         - Role
       operationId: searchRoles
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search roles
       description: Search for roles based on given criteria.
       requestBody:
@@ -63,6 +85,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}:
     get:
@@ -70,15 +93,24 @@ paths:
       tags:
         - Role
       operationId: getRole
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get role
       description: Get a role by its ID.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "200":
           description: The role is successfully returned.
@@ -99,21 +131,31 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     put:
       x-eventually-consistent: false
       tags:
         - Role
       operationId: updateRole
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update role
       description: Update a role with the given ID.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: true
         content:
@@ -142,21 +184,31 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Role
       operationId: deleteRole
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: DELETE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete role
       description: Deletes the role with the given ID.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "204":
           description: The role was deleted successfully.
@@ -173,6 +225,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/users/{username}:
     put:
@@ -180,15 +233,26 @@ paths:
       tags:
         - Role
       operationId: assignRoleToUser
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a user
       description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
+      x-semantic-establishes:
+        kind: RoleUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,   semanticType: RoleId }
+          - { in: path, name: username, semanticType: Username }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: username
           in: path
           required: true
@@ -219,21 +283,32 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromUser
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a user
       description: Unassigns a role from a user. The user will no longer inherit the authorizations associated with this role.
+      x-semantic-requires:
+        kind: RoleUserMembership
+        bind:
+          roleId:   { from: path, name: roleId }
+          username: { from: path, name: username }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: username
           in: path
           required: true
@@ -258,6 +333,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/users/search:
     post:
@@ -265,15 +341,25 @@ paths:
       tags:
         - Role
       operationId: searchUsersForRole
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search role users
       description: Search users with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -302,6 +388,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/clients/{clientId}:
     put:
@@ -309,21 +396,32 @@ paths:
       tags:
         - Role
       operationId: assignRoleToClient
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a client
       description: Assigns the specified role to the client. The client will inherit the authorizations associated with this role.
+      x-semantic-establishes:
+        kind: RoleClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,   semanticType: RoleId }
+          - { in: path, name: clientId, semanticType: ClientId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: clientId
           in: path
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The role was assigned successfully to the client.
@@ -348,27 +446,38 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromClient
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a client
       description: Unassigns the specified role from the client. The client will no longer inherit the authorizations associated with this role.
+      x-semantic-requires:
+        kind: RoleClientMembership
+        bind:
+          roleId:   { from: path, name: roleId }
+          clientId: { from: path, name: clientId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: clientId
           in: path
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The role was unassigned successfully from the client.
@@ -387,6 +496,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/clients/search:
     post:
@@ -394,15 +504,25 @@ paths:
       tags:
         - Role
       operationId: searchClientsForRole
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search role clients
       description: Search clients with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -431,6 +551,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/groups/{groupId}:
     put:
@@ -438,21 +559,38 @@ paths:
       tags:
         - Role
       operationId: assignRoleToGroup
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a group
       description: Assigns the specified role to the group. Every member of the group (user or client) will inherit the authorizations associated with this role.
+      x-semantic-establishes:
+        kind: RoleGroupMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,  semanticType: RoleId }
+          # acceptsExternal: true — under BYOG/OIDC (`groupsClaim` set), the
+          # runtime accepts externally-minted IdP group IDs here even though
+          # group CRUD itself is always local. Skips the producer-existence
+          # cross-reference for this tuple; the planner is free to chain a
+          # local createGroup producer when one is reachable. See
+          # camunda/api-test-generator#134.
+          - { in: path, name: groupId, semanticType: GroupId, acceptsExternal: true }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The role was assigned successfully to the group.
@@ -477,27 +615,38 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromGroup
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a group
       description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
+      x-semantic-requires:
+        kind: RoleGroupMembership
+        bind:
+          roleId:  { from: path, name: roleId }
+          groupId: { from: path, name: groupId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The role was unassigned successfully from the group.
@@ -516,6 +665,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/groups/search:
     post:
@@ -523,15 +673,25 @@ paths:
       tags:
         - Role
       operationId: searchGroupsForRole
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search role groups
       description: Search groups with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -560,6 +720,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/mapping-rules/{mappingRuleId}:
     put:
@@ -567,21 +728,32 @@ paths:
       tags:
         - Role
       operationId: assignRoleToMappingRule
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a mapping rule
       description: Assigns a role to a mapping rule.
+      x-semantic-establishes:
+        kind: RoleMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,        semanticType: RoleId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The role was assigned successfully to the mapping rule.
@@ -606,27 +778,38 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
     delete:
       x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromMappingRule
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a mapping rule
       description: Unassigns a role from a mapping rule.
+      x-semantic-requires:
+        kind: RoleMappingRuleMembership
+        bind:
+          roleId:        { from: path, name: roleId }
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The role was unassigned successfully from the mapping rule.
@@ -645,6 +828,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /roles/{roleId}/mapping-rules/search:
     post:
@@ -652,15 +836,25 @@ paths:
       tags:
         - Role
       operationId: searchMappingRulesForRole
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search role mapping rules
       description: Search mapping rules with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -689,6 +883,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -699,8 +894,9 @@ components:
       type: object
       properties:
         roleId:
-          type: string
           description: The ID of the new role.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         name:
           type: string
           description: The display name of the new role.
@@ -716,7 +912,8 @@ components:
       properties:
         roleId:
           description: The ID of the created role.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         name:
           description: The display name of the created role.
           type: string
@@ -752,8 +949,9 @@ components:
           nullable: true
           description: The description of the updated role.
         roleId:
-          type: string
           description: The ID of the updated role.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
       required:
         - roleId
         - name
@@ -767,8 +965,9 @@ components:
           type: string
           description: The role name.
         roleId:
-          type: string
           description: The role id.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         description:
           type: string
           nullable: true
@@ -809,16 +1008,62 @@ components:
             - $ref: '#/components/schemas/RoleFilter'
           description: The role search filters.
 
-    RoleFilter:
+    RoleFilterFields:
       description: Role filter request
       type: object
       properties:
         roleId:
           description: The role ID search filters.
-          type: string
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         name:
           description: The role name search filters.
-          type: string
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    RoleFilter:
+      description: Role filter request
+      allOf:
+        - $ref: '#/components/schemas/RoleFilterFields'
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "name": "Admin",
+                  "$or": [
+                    { "roleId": "role-1" },
+                    { "roleId": "role-2" }
+                  ]
+                }
+                ```
+                This matches roles that:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;">have name equal to <em>Admin</em></li>
+                  <li style="list-style-type: disc;">and match either:
+                    <ul style="padding-left: 20px; margin-left: 20px;">
+                      <li style="list-style-type: circle;"><code>roleId</code> is <em>role-1</em>, or</li>
+                      <li style="list-style-type: circle;"><code>roleId</code> is <em>role-2</em></li>
+                    </ul>
+                  </li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/RoleFilterFields'
+          x-properties-added-in-version:
+            - propertyName: "$or"
+              addedInVersion: "8.10"
 
     RoleSearchQueryResult:
       description: Role search response.
@@ -860,11 +1105,27 @@ components:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       type: object
       properties:
+        filter:
+          description: The user filter criteria.
+          allOf:
+            - $ref: '#/components/schemas/RoleUserFilterRequest'
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: '#/components/schemas/RoleUserSearchQuerySortRequest'
+      x-properties-added-in-version:
+        - propertyName: "filter"
+          addedInVersion: "8.11"
+
+    RoleUserFilterRequest:
+      description: Role user filter request
+      type: object
+      properties:
+        username:
+          description: The username search filters.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     RoleUserSearchQuerySortRequest:
       type: object
@@ -884,7 +1145,8 @@ components:
       properties:
         clientId:
           description: The ID of the client.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClientId'
       required:
         - clientId
 
@@ -930,7 +1192,8 @@ components:
       properties:
         groupId:
           description: The id of the group.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
       required:
         - groupId
 

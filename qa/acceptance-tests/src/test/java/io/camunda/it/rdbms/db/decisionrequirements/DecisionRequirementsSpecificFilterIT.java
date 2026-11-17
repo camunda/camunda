@@ -7,48 +7,48 @@
  */
 package io.camunda.it.rdbms.db.decisionrequirements;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveDecisionRequirement;
 import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveRandomDecisionRequirements;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures;
-import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.sort.DecisionRequirementsSort;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@Tag("rdbms")
-@DataJdbcTest
-@ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
-@AutoConfigurationPackage
+@RdbmsDataJdbcTest
 @TestPropertySource(
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class DecisionRequirementsSpecificFilterIT {
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
-  @Autowired private DecisionRequirementsDbReader decisionRequirementsReader;
+  private DecisionRequirementsDbReader decisionRequirementsReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
+    decisionRequirementsReader = rdbmsService.getDecisionRequirementsReader();
   }
 
   @ParameterizedTest

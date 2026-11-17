@@ -16,8 +16,9 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {notificationsStore} from 'modules/stores/notifications';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
-import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+import {ModificationBadgeOverlay} from 'modules/components/ModificationBadgeOverlay';
 import {BatchModificationNotification} from './BatchModificationNotification';
 import {DiagramHeader} from './DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
@@ -33,8 +34,8 @@ import {
   getProcessDefinitionName,
   useProcessDefinitionSelection,
 } from 'modules/hooks/processDefinitions';
-import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 import {useProcessInstanceStatisticsFilters} from 'modules/hooks/useProcessInstanceStatisticsFilters';
+import {useBatchModificationStatisticsFilter} from 'modules/hooks/useBatchModificationStatisticsFilter';
 import {
   isStatisticsPayload,
   isModificationBadgePayload,
@@ -100,8 +101,11 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {data: businessObjects} = useBusinessObjects();
 
-  const baseFilters = useProcessInstanceStatisticsFilters();
-  const processInstanceKeyFilter = getSelectedProcessInstancesFilter();
+  const baseFilters = useProcessInstanceStatisticsFilters(
+    variableFilterStore.conditions,
+  );
+  const batchModificationStatisticsFilter =
+    useBatchModificationStatisticsFilter();
 
   const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
     baseFilters,
@@ -110,13 +114,7 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {selectedTargetElementId} = batchModificationStore.state;
   const {data: batchOverlayData} = useBatchModificationOverlayData(
-    {
-      ...baseFilters,
-      filter: {
-        ...baseFilters.filter,
-        processInstanceKey: processInstanceKeyFilter,
-      },
-    },
+    batchModificationStatisticsFilter,
     {
       sourceElementId: elementId,
       targetElementId: selectedTargetElementId ?? undefined,

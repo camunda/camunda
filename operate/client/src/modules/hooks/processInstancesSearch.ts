@@ -12,31 +12,73 @@ import {
 } from 'modules/utils/filter/processInstancesSearch';
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
+import type {VariableCondition} from 'modules/stores/variableFilter';
+import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {logger} from 'modules/logger';
+import {
+  smartTransformValue,
+  toStringFilterProperty,
+} from 'modules/utils/smartTransform';
 
-function useProcessInstancesSearchFilter(variable?: Variable) {
+type VariableEntry = NonNullable<
+  NonNullable<QueryProcessInstancesRequestBody['filter']>['variables']
+>[number];
+
+function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
-    const filter = parseProcessInstancesSearchFilter(searchParams);
+    const filter = parseProcessInstancesSearchFilter({
+      searchParams,
+      includeSuspended: true,
+    });
 
-    if (filter && variable?.name && variable?.values) {
-      const parsed = (getValidVariableValues(variable.values) ?? []).map((v) =>
-        JSON.stringify(v),
-      );
-      if (parsed.length > 0) {
-        filter.variables = [
-          {
-            name: variable?.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ];
+    if (filter && conditions && conditions.length > 0) {
+      const entries = conditions
+        .map(buildVariableEntry)
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+      if (entries.length > 0) {
+        filter.variables = entries;
       }
     }
 
     return filter;
-  }, [searchParams, variable]);
+  }, [searchParams, conditions]);
+}
+
+function buildVariableEntry(
+  condition: VariableCondition,
+): VariableEntry | null {
+  if (
+    condition.operator === 'exists' ||
+    condition.operator === 'doesNotExist'
+  ) {
+    return {
+      name: condition.name,
+      value: toStringFilterProperty(condition.operator, undefined),
+    };
+  }
+  if (condition.operator === 'contains') {
+    return {
+      name: condition.name,
+      value: toStringFilterProperty('contains', condition.value),
+    };
+  }
+  let transformed: unknown;
+  try {
+    transformed = smartTransformValue(condition.value);
+  } catch (e) {
+    logger.error(
+      '[buildVariableEntry] dropping unparseable variable filter condition:',
+      condition,
+      e,
+    );
+    return null;
+  }
+  return {
+    name: condition.name,
+    value: toStringFilterProperty(condition.operator, transformed),
+  };
 }
 
 function useProcessInstancesSearchSort() {
@@ -48,4 +90,8 @@ function useProcessInstancesSearchSort() {
   );
 }
 
-export {useProcessInstancesSearchFilter, useProcessInstancesSearchSort};
+export {
+  useProcessInstancesSearchFilter,
+  useProcessInstancesSearchSort,
+  buildVariableEntry,
+};

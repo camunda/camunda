@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,13 +43,14 @@ public class AuthorizationDeleteAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
@@ -113,6 +115,48 @@ public class AuthorizationDeleteAuthorizationTest {
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'DELETE' on resource 'AUTHORIZATION'");
+  }
+
+  @Test
+  public void shouldReflectRevokedAuthorizationImmediately() {
+    // given — user has AUTHORIZATION:CREATE; prime the scope cache with an ALLOW
+    final var user = createUser();
+    final var targetUser = createUser();
+    final var grantKey =
+        addAuthorizationToUser(
+            user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE, "*");
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetUser.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+        .withResourceId("*")
+        .withPermissions(PermissionType.CREATE)
+        .create(user.getUsername());
+
+    // when — revoke the CREATE grant; scope cache must be invalidated immediately
+    engine.authorization().deleteAuthorization(grantKey).delete(DEFAULT_USER.getUsername());
+
+    // then — user can no longer create an authorization; revocation is not deferred to TTL expiry
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(targetUser.getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourceId("*")
+            .withPermissions(PermissionType.DELETE)
+            .expectRejection()
+            .create(user.getUsername());
+
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
   }
 
   private UserRecordValue createUser() {

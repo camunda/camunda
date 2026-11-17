@@ -108,6 +108,7 @@ public class MigrateVariablesTest {
         .describedAs("Expect that the other variable data did not change")
         .hasName(variable.getName())
         .hasProcessInstanceKey(variable.getProcessInstanceKey())
+        .hasRootProcessInstanceKey(variable.getRootProcessInstanceKey())
         .hasScopeKey(variable.getScopeKey())
         .hasTenantId(variable.getTenantId());
     assertThat(
@@ -124,6 +125,7 @@ public class MigrateVariablesTest {
         .describedAs("Expect that the other variable data did not change")
         .hasName(variable2.getName())
         .hasProcessInstanceKey(variable2.getProcessInstanceKey())
+        .hasRootProcessInstanceKey(variable2.getRootProcessInstanceKey())
         .hasScopeKey(variable2.getScopeKey())
         .hasTenantId(variable2.getTenantId());
   }
@@ -204,6 +206,7 @@ public class MigrateVariablesTest {
         .describedAs("Expect that the other variable data did not change")
         .hasName(variable.getName())
         .hasProcessInstanceKey(variable.getProcessInstanceKey())
+        .hasRootProcessInstanceKey(variable.getRootProcessInstanceKey())
         .hasScopeKey(variable.getScopeKey())
         .hasTenantId(variable.getTenantId());
     assertThat(
@@ -220,6 +223,7 @@ public class MigrateVariablesTest {
         .describedAs("Expect that the other variable data did not change")
         .hasName(variable2.getName())
         .hasProcessInstanceKey(variable2.getProcessInstanceKey())
+        .hasRootProcessInstanceKey(variable2.getRootProcessInstanceKey())
         .hasScopeKey(variable2.getScopeKey())
         .hasTenantId(variable2.getTenantId());
   }

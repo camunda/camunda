@@ -11,6 +11,9 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.icu.text.Collator;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
@@ -23,10 +26,13 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.AgentDefinitionFilter;
+import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
@@ -39,6 +45,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -58,6 +65,13 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -109,6 +123,47 @@ public final class TestHelper {
   public static final String VAR_TEST_SCOPE_ID = "testScopeId";
   public static final String DEFAULT_TENANT_ID = "<default>";
 
+  private static final ObjectMapper RAW_REQUEST_OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  private static final HttpClient RAW_REQUEST_HTTP_CLIENT = HttpClient.newHttpClient();
+
+  /**
+   * Sends a raw JSON POST request to a search endpoint, bypassing the fluent {@link CamundaClient}
+   * filter builders. Useful for exercising request shapes the fluent client doesn't support yet
+   * (e.g. an operator missing from a specific filter property), while still going through the real
+   * REST API and backend rather than mocking anything out.
+   *
+   * @param camundaClient used only to resolve the REST server address
+   * @param path the endpoint path relative to the REST address, e.g. {@code "v2/variables/search"}
+   * @param requestBody the request body, serialized to JSON (e.g. a {@link Map})
+   * @return the parsed JSON response body
+   */
+  public static JsonNode sendRawSearchRequest(
+      final CamundaClient camundaClient, final String path, final Object requestBody) {
+    try {
+      final var body = RAW_REQUEST_OBJECT_MAPPER.writeValueAsString(requestBody);
+      final var base = camundaClient.getConfiguration().getRestAddress().toString();
+      final var separator = base.endsWith("/") ? "" : "/";
+      final var request =
+          HttpRequest.newBuilder()
+              .uri(new URI(base + separator + path))
+              .header("Content-Type", "application/json")
+              .POST(BodyPublishers.ofString(body))
+              .build();
+      final var response = RAW_REQUEST_HTTP_CLIENT.send(request, BodyHandlers.ofString());
+      assertThat(response.statusCode())
+          .describedAs(
+              "Expected raw request to %s to succeed, but got body: %s", path, response.body())
+          .isEqualTo(200);
+      return RAW_REQUEST_OBJECT_MAPPER.readTree(response.body());
+    } catch (final URISyntaxException | IOException e) {
+      throw new RuntimeException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+
   public static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
@@ -129,10 +184,30 @@ public final class TestHelper {
       final BpmnModelInstance processDefinition,
       final String resourceName) {
     final var event =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(processDefinition, resourceName)
-            .execute()
+        deployResource(client, processDefinition, resourceName).getProcesses().getFirst();
+
+    // sync with secondary database
+    waitForProcessesToBeDeployed(
+        client, f -> f.processDefinitionKey(event.getProcessDefinitionKey()), 1);
+
+    return event;
+  }
+
+  /**
+   * Deploys a process for a tenant and waits for it to be available in the secondary database.
+   *
+   * @param client ... CamundaClient
+   * @param processDefinition ... BpmnModelInstance of the process definition
+   * @param tenantId the tenant to deploy the process for
+   * @return the deployed process
+   */
+  public static Process deployProcessForTenantAndWaitForIt(
+      final CamundaClient client,
+      final BpmnModelInstance processDefinition,
+      final String resourceName,
+      final String tenantId) {
+    final var event =
+        deployResourceForTenant(client, processDefinition, resourceName, tenantId)
             .getProcesses()
             .getFirst();
 
@@ -190,17 +265,6 @@ public final class TestHelper {
         .addResourceFromClasspath(resourceName)
         .tenantId(tenantId)
         .execute();
-  }
-
-  public static void createTenant(
-      final CamundaClient client,
-      final String tenantId,
-      final String tenantName,
-      final String... usernames) {
-    client.newCreateTenantCommand().tenantId(tenantId).name(tenantName).execute();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).execute();
-    }
   }
 
   public static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
@@ -271,6 +335,16 @@ public final class TestHelper {
         .newCorrelateMessageCommand()
         .messageName(messageName)
         .withoutCorrelationKey()
+        .execute();
+  }
+
+  public static CorrelateMessageResponse startProcessInstanceWithMessageForTenant(
+      final CamundaClient camundaClient, final String messageName, final String tenantId) {
+    return camundaClient
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .withoutCorrelationKey()
+        .tenantId(tenantId)
         .execute();
   }
 
@@ -396,6 +470,18 @@ public final class TestHelper {
         expectedProcessInstances,
         page ->
             camundaClient.newProcessInstanceSearchRequest().filter(filter).page(page).execute());
+  }
+
+  public static void waitForVariablesBeingExported(
+      final CamundaClient camundaClient, final int expectedSize) {
+    Awaitility.await("should receive variables from secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(camundaClient.newVariableSearchRequest().send().join().items())
+                  .hasSize(expectedSize);
+            });
   }
 
   /**
@@ -584,6 +670,7 @@ public final class TestHelper {
             () -> {
               migratedTask[0] =
                   client.newUserTaskSearchRequest().filter(filter).send().join().singleItem();
+              assertThat(migratedTask[0]).isNotNull();
             });
     return migratedTask[0];
   }
@@ -610,8 +697,22 @@ public final class TestHelper {
       final String batchOperationKey,
       final int expectedCompletedItems,
       final int expectedFailedItems) {
+    waitForBatchOperationCompleted(
+        camundaClient,
+        batchOperationKey,
+        expectedCompletedItems,
+        expectedFailedItems,
+        TIMEOUT_DATA_AVAILABILITY);
+  }
+
+  public static void waitForBatchOperationCompleted(
+      final CamundaClient camundaClient,
+      final String batchOperationKey,
+      final int expectedCompletedItems,
+      final int expectedFailedItems,
+      final Duration timeout) {
     Awaitility.await("should complete batch operation with correct completed/failed count")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .atMost(timeout)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -666,7 +767,7 @@ public final class TestHelper {
   public static void waitForProcessInstanceToBeTerminated(
       final CamundaClient camundaClient, final Long processInstanceKey) {
     Awaitility.await("should wait until process is terminated")
-        .atMost(Duration.ofSeconds(60))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -688,6 +789,21 @@ public final class TestHelper {
                 .newProcessInstanceSearchRequest()
                 .page(page)
                 .filter(fn.andThen(f -> f.state(ProcessInstanceState.COMPLETED)))
+                .execute());
+  }
+
+  public static void waitForProcessInstancesToBeSuspended(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessInstanceFilter> fn,
+      final int expectedCount) {
+    waitForItemsPaginated(
+        "should wait for process instances to be suspended",
+        expectedCount,
+        page ->
+            camundaClient
+                .newProcessInstanceSearchRequest()
+                .page(page)
+                .filter(fn.andThen(f -> f.state(ProcessInstanceState.SUSPENDED)))
                 .execute());
   }
 
@@ -1186,11 +1302,11 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForProcessInstances(
+  public static List<ProcessInstance> waitForProcessInstances(
       final CamundaClient camundaClient,
       final Consumer<ProcessInstanceFilter> fn,
       final int expectedProcessInstances) {
-    waitForItemsPaginated(
+    return waitForItemsPaginated(
         "should wait until process instances are available",
         expectedProcessInstances,
         page -> camundaClient.newProcessInstanceSearchRequest().filter(fn).page(page).execute());
@@ -1424,7 +1540,7 @@ public final class TestHelper {
       final long processInstanceKey,
       final int expectedDecisionInstances) {
     Awaitility.await("should deploy decision definitions and wait for import")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -1632,6 +1748,41 @@ public final class TestHelper {
         "should wait until correlated message subscriptions are available",
         expectedCorrelatedMessageSubscriptions,
         page -> camundaClient.newCorrelatedMessageSubscriptionSearchRequest().page(page).execute());
+  }
+
+  /**
+   * Publishes a message with a correlation key so that a running process instance waiting on a
+   * matching intermediate catch event will be unblocked.
+   *
+   * @param camundaClient the Camunda client
+   * @param messageName the name of the message to publish
+   * @param correlationKey the correlation key used to match the waiting process instance
+   */
+  public static void publishMessage(
+      final CamundaClient camundaClient, final String messageName, final String correlationKey) {
+    camundaClient
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .timeToLive(Duration.ofMinutes(5))
+        .send()
+        .join();
+  }
+
+  /**
+   * Waits for the first active user task on the given process instance (state {@code CREATED}) and
+   * completes it.
+   *
+   * @param camundaClient the Camunda client
+   * @param processInstanceKey the key of the process instance whose user task to complete
+   */
+  public static void completeUserTask(
+      final CamundaClient camundaClient, final long processInstanceKey) {
+    final var userTask =
+        waitForUserTask(
+            camundaClient,
+            f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED));
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
   }
 
   public static void waitUntilAuthorizationVisible(
@@ -1849,6 +2000,24 @@ public final class TestHelper {
   }
 
   /**
+   * Waits for a form to be indexed in Elasticsearch/OpenSearch after deployment.
+   *
+   * @param camundaClient CamundaClient
+   * @param formKey the key of the form to retrieve
+   */
+  public static void waitForFormToBeIndexed(final CamundaClient camundaClient, final long formKey) {
+    Awaitility.await("should index form")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var form = camundaClient.newFormGetRequest(formKey).execute();
+              assertThat(form).isNotNull();
+              assertThat(form.getFormKey()).isEqualTo(formKey);
+            });
+  }
+
+  /**
    * Waits for all provided CamundaFutures to complete. This method executes all futures in parallel
    * and blocks until all have completed.
    *
@@ -2012,6 +2181,146 @@ public final class TestHelper {
                       .page(p -> p.limit(listenerIds.size()))
                       .execute();
               assertThat(result.items()).hasSize(listenerIds.size());
+            });
+  }
+
+  /**
+   * Waits for agent definitions matching the given filter to be indexed in secondary storage after
+   * deployment.
+   *
+   * @param camundaClient CamundaClient
+   * @param filter the agent definition filter to match
+   * @param expectedAgentDefinitions the expected number of matching agent definitions
+   */
+  public static void waitForAgentDefinitionsToBeIndexed(
+      final CamundaClient camundaClient,
+      final Consumer<AgentDefinitionFilter> filter,
+      final int expectedAgentDefinitions) {
+    waitForItemsPaginated(
+        "should index agent definitions after deployment",
+        expectedAgentDefinitions,
+        page ->
+            camundaClient.newAgentDefinitionSearchRequest().filter(filter).page(page).execute());
+  }
+
+  /**
+   * Waits for an agent instance to be indexed in secondary storage after creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param agentInstanceKey the key of the agent instance to wait for
+   */
+  public static void waitForAgentInstanceToBeIndexed(
+      final CamundaClient camundaClient, final long agentInstanceKey) {
+    Awaitility.await("should index agent instance")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newAgentInstanceGetRequest(agentInstanceKey).execute();
+              assertThat(result).isNotNull();
+            });
+  }
+
+  /**
+   * Waits for an agent instance with a provided {@code status} to be indexed in secondary storage
+   * after creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param agentInstanceKey the key of the agent instance to wait for
+   * @param status expected AgentInstanceStatus
+   */
+  public static void waitForAgentInstanceWithStatusToBeIndexed(
+      final CamundaClient camundaClient,
+      final long agentInstanceKey,
+      final AgentInstanceStatus status) {
+    Awaitility.await("should index agent instance with '%s' status".formatted(status))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newAgentInstanceGetRequest(agentInstanceKey).execute();
+              assertThat(result).isNotNull();
+              assertThat(result.getStatus()).isEqualTo(status);
+            });
+  }
+
+  /**
+   * Waits for audit log entries to be indexed in Elasticsearch/OpenSearch after creation with the
+   * provided filter.
+   */
+  public static void waitForAuditLogEntries(
+      final CamundaClient camundaClient,
+      final Consumer<AuditLogFilter> filter,
+      final int expectedEntries) {
+    waitForItemsPaginated(
+        "should wait until audit log entries are available",
+        expectedEntries,
+        page -> camundaClient.newAuditLogSearchRequest().filter(filter).page(page).execute());
+  }
+
+  public static void waitForWaitStates(final CamundaClient camundaClient, final int expectedCount) {
+    Awaitility.await("should export %d wait states".formatted(expectedCount))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final List<ElementInstanceWaitStateResult> items =
+                  camundaClient.newElementInstanceWaitStateSearchRequest().send().join().items();
+              assertThat(items).hasSize(expectedCount);
+            });
+  }
+
+  public static void waitForUser(final CamundaClient client, final String username) {
+    Awaitility.await("user '%s' visible in secondary storage".formatted(username))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newUsersSearchRequest().filter(f -> f.username(username)).send().join();
+              assertThat(result.items())
+                  .as("user '%s' should be present in secondary storage", username)
+                  .hasSize(1);
+            });
+  }
+
+  public static void waitForRole(final CamundaClient client, final String roleId) {
+    Awaitility.await("role '%s' visible in secondary storage".formatted(roleId))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newRolesSearchRequest().filter(f -> f.roleId(roleId)).send().join();
+              assertThat(result.items())
+                  .as("role '%s' should be present in secondary storage", roleId)
+                  .hasSize(1);
+            });
+  }
+
+  public static void waitForGroup(final CamundaClient client, final String groupId) {
+    Awaitility.await("group '%s' visible in secondary storage".formatted(groupId))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newGroupsSearchRequest().filter(f -> f.groupId(groupId)).send().join();
+              assertThat(result.items())
+                  .as("group '%s' should be present in secondary storage", groupId)
+                  .hasSize(1);
+            });
+  }
+
+  public static void waitForTenant(final CamundaClient client, final String tenantId) {
+    Awaitility.await("tenant '%s' visible in secondary storage".formatted(tenantId))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newTenantsSearchRequest().filter(f -> f.tenantId(tenantId)).send().join();
+              assertThat(result.items())
+                  .as("tenant '%s' should be present in secondary storage", tenantId)
+                  .hasSize(1);
             });
   }
 }

@@ -19,19 +19,28 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAI
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobResultValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -48,7 +57,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 
 final class JobHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -75,6 +83,7 @@ final class JobHandlerTest {
         "TIMED_OUT",
         "FAILED",
         "RETRIES_UPDATED",
+        "PRIORITY_UPDATED",
         "CANCELED",
         "ERROR_THROWN",
         "MIGRATED"
@@ -97,6 +106,8 @@ final class JobHandlerTest {
         "TIMED_OUT",
         "FAILED",
         "RETRIES_UPDATED",
+        "PRIORITY_UPDATED",
+        "TIMEOUT_UPDATED",
         "CANCELED",
         "ERROR_THROWN",
         "MIGRATED"
@@ -111,15 +122,16 @@ final class JobHandlerTest {
   }
 
   @Test
-  void testGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final Record<JobRecordValue> record = factory.generateRecord(ValueType.JOB);
 
-    // when
-    final var ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids).containsExactly(String.valueOf(record.getKey()));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(new IdAndIndex(String.valueOf(record.getKey()), index));
   }
 
   @Test
@@ -147,8 +159,10 @@ final class JobHandlerTest {
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
     final String tenantId = "tenantId";
+    final String businessId = "businessId";
     final String jobType = "jobType";
     final int retries = 3;
+    final int priority = 77;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -161,13 +175,17 @@ final class JobHandlerTest {
             .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withElementId(elementId)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .withBpmnProcessId(bpmnProcessId)
             .withProcessDefinitionKey(processDefinitionKey)
             .withType(jobType)
             .withRetries(retries)
+            .withPriority(priority)
             .withWorker(jobWorker)
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
+            .withStorageOrdinal(1001)
             .withErrorMessage(errorMessage)
             .withJobKind(jobKind)
             .withJobListenerEventType(jobListenerEventType)
@@ -202,6 +220,7 @@ final class JobHandlerTest {
     assertThat(entity.getJobKind()).isEqualTo(jobKind.name());
     assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType.name());
     assertThat(entity.getRetries()).isEqualTo(retries);
+    assertThat(entity.getPriority()).isEqualTo(priority);
     assertThat(entity.getWorker()).isEqualTo(jobWorker);
     assertThat(entity.getCustomHeaders()).isEqualTo(Map.of("key", "val"));
     assertThat(entity.getState()).isEqualTo("CREATED");
@@ -219,6 +238,34 @@ final class JobHandlerTest {
     assertThat(entity.isDenied()).isEqualTo(null);
     assertThat(entity.getDeniedReason()).isEqualTo(null);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
+    assertThat(entity.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalWhenDefault() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -229,6 +276,7 @@ final class JobHandlerTest {
         ImmutableJobRecordValue.builder()
             .withRootProcessInstanceKey(-1L)
             .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .build();
     final Record<JobRecordValue> record =
         factory.generateRecord(
@@ -248,6 +296,60 @@ final class JobHandlerTest {
   }
 
   @Test
+  void shouldNotSetBusinessIdWhenEmpty() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withBusinessId("")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
+  }
+
+  @Test
+  void shouldNotSetBusinessIdForNonCreatedIntent() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withBusinessId("order-123")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.RETRIES_UPDATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then - businessId is immutable and only set on CREATED
+    assertThat(entity.getBusinessId()).isNull();
+  }
+
+  @Test
   void testUpdateEntityOnJobCompleted() {
     // given
     final long recordKey = 789;
@@ -260,6 +362,7 @@ final class JobHandlerTest {
     final String tenantId = "tenantId";
     final String jobType = "jobType";
     final int retries = 3;
+    final int priority = 88;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -278,6 +381,7 @@ final class JobHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withType(jobType)
             .withRetries(retries)
+            .withPriority(priority)
             .withWorker(jobWorker)
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
@@ -320,6 +424,7 @@ final class JobHandlerTest {
     assertThat(entity.getJobKind()).isEqualTo(jobKind.name());
     assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType.name());
     assertThat(entity.getRetries()).isEqualTo(retries);
+    assertThat(entity.getPriority()).isEqualTo(priority);
     assertThat(entity.getWorker()).isEqualTo(jobWorker);
     assertThat(entity.getCustomHeaders()).isEqualTo(Map.of("key", "val"));
     assertThat(entity.getState()).isEqualTo("COMPLETED");
@@ -333,6 +438,35 @@ final class JobHandlerTest {
     // these values are only updated on JobIntent.COMPLETED
     assertThat(entity.isDenied()).isEqualTo(denied);
     assertThat(entity.getDeniedReason()).isEqualTo(deniedReason);
+  }
+
+  @Test
+  void shouldNotUpdateFlowNodeIdOnRetriesUpdated() {
+    // given
+    final long recordKey = 789;
+    final String existingFlowNodeId = "existingServiceTask";
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withElementId("differentElementId")
+            .withRetries(3)
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.RETRIES_UPDATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity =
+        new JobEntity().setId(String.valueOf(recordKey)).setFlowNodeId(existingFlowNodeId);
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then - pre-existing flowNodeId preserved; partial update must not overwrite it
+    assertThat(entity.getFlowNodeId()).isEqualTo(existingFlowNodeId);
   }
 
   @Test
@@ -400,11 +534,39 @@ final class JobHandlerTest {
   }
 
   @Test
+  void shouldSetPriorityWhenCompletingPreV810Entity() {
+    // given
+    final var entity = new JobEntity().setId("111");
+    assertThat(entity.getPriority()).isNull();
+
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withResult(ImmutableJobResultValue.builder().build())
+            .withPriority(10)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.COMPLETED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getPriority()).isEqualTo(10);
+  }
+
+  @Test
   void shouldUpsertEntityOnFlush() {
     // given
     final String jobId = "111";
     final String expectedIndexName = JobTemplate.INDEX_NAME;
     final int retries = 3;
+    final int priority = 55;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -423,6 +585,7 @@ final class JobHandlerTest {
             .setWorker(jobWorker)
             .setState(state)
             .setRetries(retries)
+            .setPriority(priority)
             .setErrorMessage(errorMessage)
             .setErrorCode(errorCode)
             .setEndTime(endTime)
@@ -437,6 +600,7 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
     expectedUpdateFields.put(JOB_STATE, jobEntity.getState());
     expectedUpdateFields.put(RETRIES, jobEntity.getRetries());
+    expectedUpdateFields.put(PRIORITY, jobEntity.getPriority());
     expectedUpdateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     expectedUpdateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     expectedUpdateFields.put(TIME, jobEntity.getEndTime());
@@ -448,14 +612,14 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
     expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(index, jobEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(expectedIndexName, jobEntity.getId(), jobEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, jobEntity.getId(), jobEntity, expectedUpdateFields);
   }
 
   @Test
@@ -465,6 +629,7 @@ final class JobHandlerTest {
     final String expectedIndexName = JobTemplate.INDEX_NAME;
     final String elementId = "elementId";
     final int retries = 2;
+    final int priority = 55;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -484,6 +649,7 @@ final class JobHandlerTest {
             .setWorker(jobWorker)
             .setState(state)
             .setRetries(retries)
+            .setPriority(priority)
             .setErrorMessage(errorMessage)
             .setErrorCode(errorCode)
             .setEndTime(endTime)
@@ -501,6 +667,7 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
     expectedUpdateFields.put(JOB_STATE, jobEntity.getState());
     expectedUpdateFields.put(RETRIES, jobEntity.getRetries());
+    expectedUpdateFields.put(PRIORITY, jobEntity.getPriority());
     expectedUpdateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     expectedUpdateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     expectedUpdateFields.put(TIME, jobEntity.getEndTime());
@@ -512,14 +679,14 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
     expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(index, jobEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(expectedIndexName, jobEntity.getId(), jobEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, jobEntity.getId(), jobEntity, expectedUpdateFields);
   }
 
   private Record<JobRecordValue> generateRecord(final JobIntent intent) {

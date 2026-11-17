@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.transfer;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
 
@@ -33,47 +35,26 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
   private final ConcurrentHashMap<UUID, CloseableSilently> timers = new ConcurrentHashMap<>();
 
   public SnapshotTransferImpl(
+      final PartitionId partitionId,
       final Function<ConcurrencyControl, SnapshotTransferService> service,
       final SnapshotMetrics snapshotMetrics,
       final ReceivableSnapshotStore snapshotStore) {
+    super("SnapshotTransfer", partitionId);
     this.snapshotMetrics = snapshotMetrics;
     this.snapshotStore = snapshotStore;
     this.service = service.apply(this);
   }
 
   @Override
-  public ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId) {
+  public ActorFuture<@Nullable PersistedSnapshot> getLatestSnapshot(final int partitionId) {
     final var transferId = UUID.randomUUID();
     timers.put(transferId, snapshotMetrics.startTransferTimer(true));
-    final var result =
+    final ActorFuture<@Nullable PersistedSnapshot> result =
         service
             // no requirements on last processing position
             .getLatestSnapshot(partitionId, -1, transferId)
-            .andThen(
-                snapshot -> {
-                  if (snapshot == null) {
-                    return CompletableActorFuture.completed(null);
-                  }
-                  return snapshotStore
-                      .newReceivedSnapshot(snapshot.getSnapshotId())
-                      .thenApply(
-                          fbsnapshot -> {
-                            fbsnapshot.apply(snapshot);
-                            return new Tuple<>(snapshot, fbsnapshot);
-                          });
-                },
-                actor)
-            .andThen(
-                tuple -> {
-                  if (tuple == null) {
-                    return CompletableActorFuture.completed(null);
-                  }
-                  final var future =
-                      receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
-                  future.onError(error -> tuple.getRight().abort());
-                  return future;
-                },
-                actor);
+            .andThen(this::startReceiving, actor)
+            .andThen(tuple -> persistReceived(partitionId, tuple, transferId), actor);
     result.onComplete(
         (ignored, error) ->
             Optional.ofNullable(timers.remove(transferId)).ifPresent(CloseableSilently::close));
@@ -84,6 +65,33 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
   @VisibleForTesting
   SnapshotTransferService snapshotTransferService() {
     return service;
+  }
+
+  private ActorFuture<@Nullable Tuple<SnapshotChunk, ReceivedSnapshot>> startReceiving(
+      final @Nullable SnapshotChunk snapshot) {
+    if (snapshot == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    return snapshotStore
+        .newReceivedSnapshot(snapshot.getSnapshotId())
+        .thenApply(
+            fbsnapshot -> {
+              fbsnapshot.apply(snapshot);
+              return new Tuple<>(snapshot, fbsnapshot);
+            });
+  }
+
+  private ActorFuture<@Nullable PersistedSnapshot> persistReceived(
+      final int partitionId,
+      final @Nullable Tuple<SnapshotChunk, ReceivedSnapshot> tuple,
+      final UUID transferId) {
+    if (tuple == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    final ActorFuture<@Nullable PersistedSnapshot> future =
+        receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId).asNullable();
+    future.onError(error -> tuple.getRight().abort());
+    return future;
   }
 
   private ActorFuture<PersistedSnapshot> receiveAllChunks(

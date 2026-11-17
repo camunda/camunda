@@ -14,12 +14,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -54,14 +56,16 @@ public class UserTaskTenancyIT {
   @UserDefinition
   private static final TestUser USER2_USER = new TestUser(USER2, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, USER1);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN);
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, USER1, TENANT_A);
-
     deployResource(adminClient, "process/bpm_variable_test.bpmn", TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
 
@@ -136,13 +140,42 @@ public class UserTaskTenancyIT {
         .contains("User Task with key '%s' not found".formatted(userTaskKey));
   }
 
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
+  @Test
+  void lookupShouldReturnTenantOwnedUserTask(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given
+    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_A);
+
+    // when
+    final var result = camundaClient.newLookupUserTaskCommand(userTaskKey).send().join();
+
+    // then
+    assertThat(result.getUserTaskKey()).isEqualTo(userTaskKey);
+    assertThat(result.getTenantId()).isEqualTo(TENANT_A);
   }
 
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
+  @Test
+  void lookupShouldReturnNotFoundForUserTaskOfOtherTenant(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given
+    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_B);
+
+    // when
+    final var problem =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(() -> camundaClient.newLookupUserTaskCommand(userTaskKey).send().join())
+            .actual();
+
+    // then
+    assertThat(problem.code())
+        .describedAs("a task of another tenant must look like it doesn't exist")
+        .isEqualTo(404);
+    assertThat(problem.details().getDetail())
+        .isEqualTo(
+            "Command 'FETCH' rejected with code 'NOT_FOUND': Expected to fetch user task with key"
+                + " '%d', but no such user task was found".formatted(userTaskKey));
   }
 
   private static void deployResource(
@@ -168,7 +201,7 @@ public class UserTaskTenancyIT {
 
   private static void waitForUserTasksBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

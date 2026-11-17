@@ -36,7 +36,10 @@ public class MessageSubscriptionEntityTransformer
         value.getTenantId(),
         value.getProcessDefinitionName(),
         value.getProcessDefinitionVersion(),
-        value.getExtensionProperties());
+        value.getToolProperties(),
+        value.getToolName(),
+        value.getInboundConnectorType(),
+        value.getBusinessId());
   }
 
   private io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState

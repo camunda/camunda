@@ -42,6 +42,12 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder withProperties(Properties properties);
 
   /**
+   * Sets the configuration from a {@link CamundaClientConfiguration} object. Can be used to
+   * configure a client from a base configuration.
+   */
+  CamundaClientBuilder withConfiguration(CamundaClientConfiguration configuration);
+
+  /**
    * Allows to disable the mechanism to override some properties by ENVIRONMENT VARIABLES. This is
    * useful if a client shall be constructed for test cases or in an environment that wants to fully
    * control properties (like Spring Boot).
@@ -71,6 +77,28 @@ public interface CamundaClientBuilder {
    *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   CamundaClientBuilder defaultTenantId(String tenantId);
+
+  /**
+   * @param physicalTenantId the physical tenant identifier sent as the {@code
+   *     Camunda-Physical-Tenant} gRPC metadata header on every outgoing call. When {@code null} the
+   *     header is omitted and the gateway applies its own default.
+   */
+  CamundaClientBuilder physicalTenantId(String physicalTenantId);
+
+  /**
+   * Controls whether the client prefixes the REST base path with {@code /physical-tenants/<id>}
+   * when a {@link #physicalTenantId(String) physical tenant id} is set (default {@code true}). Set
+   * to {@code false} to use the configured REST address verbatim — e.g. when a reverse proxy or a
+   * custom path layout already routes to the physical tenant. Has no effect on the gRPC {@code
+   * Camunda-Physical-Tenant} header, which is always sent when a physical tenant id is set.
+   *
+   * <p>Cluster-scoped endpoints such as the {@link CamundaClient#newStatusRequest() cluster status}
+   * report on the whole cluster and are served outside the per-tenant path, so a proxy fronting a
+   * physical tenant must pass them through unprefixed.
+   *
+   * @param prefixPhysicalTenantPath whether to auto-prefix the REST base path per physical tenant
+   */
+  CamundaClientBuilder prefixPhysicalTenantPath(boolean prefixPhysicalTenantPath);
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
@@ -221,6 +249,85 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder caCertificatePath(String certificatePath);
 
   /**
+   * Configures the client certificate used for mutual TLS (mTLS) against the cluster, for both the
+   * gRPC and the REST connection. Both the certificate chain and the private key must be PEM
+   * encoded; the key may be PKCS#8 (encrypted or unencrypted), PKCS#1 ({@code BEGIN RSA PRIVATE
+   * KEY}), or an EC key.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_CERT_PATH} and {@code CAMUNDA_MTLS_KEY_PATH}.
+   *
+   * <p>This configures the cluster transport only; it is independent of the OAuth token endpoint
+   * keystore ({@code CAMUNDA_SSL_CLIENT_KEYSTORE_*}). Mutually exclusive with {@link
+   * #clientKeystore(String, String, String)}.
+   *
+   * @param certificateChainPath path to the PEM file with the client certificate chain
+   * @param privateKeyPath path to the PEM file with the client private key
+   */
+  CamundaClientBuilder clientCertificate(String certificateChainPath, String privateKeyPath);
+
+  /**
+   * Like {@link #clientCertificate(String, String)}, but takes the PEM contents inline instead of
+   * file paths.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_CERT} and {@code CAMUNDA_MTLS_KEY}.
+   *
+   * @param certificateChainPem the PEM encoded client certificate chain
+   * @param privateKeyPem the PEM encoded client private key
+   */
+  CamundaClientBuilder clientCertificateContent(String certificateChainPem, String privateKeyPem);
+
+  /**
+   * The optional passphrase of an encrypted mTLS client private key.
+   *
+   * <p>Environment variable: {@code CAMUNDA_MTLS_KEY_PASSPHRASE}.
+   */
+  CamundaClientBuilder clientKeyPassphrase(String keyPassphrase);
+
+  /**
+   * Path to a PEM CA bundle used to verify the cluster's server certificate. The bundle replaces
+   * the JVM default trust store for the cluster connection, so it must contain every CA required to
+   * verify the cluster endpoints. Mutually exclusive with {@link #caCertificatePath(String)} and
+   * {@link #mtlsTruststore(String, String)}.
+   *
+   * <p>Environment variable: {@code CAMUNDA_MTLS_CA_PATH}.
+   */
+  CamundaClientBuilder mtlsCaCertificatePath(String caPath);
+
+  /**
+   * Like {@link #mtlsCaCertificatePath(String)}, but takes the PEM content inline.
+   *
+   * <p>Environment variable: {@code CAMUNDA_MTLS_CA}.
+   */
+  CamundaClientBuilder mtlsCaCertificateContent(String caPem);
+
+  /**
+   * Configures a Java keystore (PKCS#12 or JKS, selected by file extension) holding the client
+   * identity used for mutual TLS against the cluster. Mutually exclusive with {@link
+   * #clientCertificate(String, String)}.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_KEYSTORE_PATH}, {@code
+   * CAMUNDA_MTLS_KEYSTORE_PASSWORD}, and {@code CAMUNDA_MTLS_KEYSTORE_KEY_PASSWORD}.
+   *
+   * @param keystorePath path to the keystore file
+   * @param keystorePassword the keystore password (may be {@code null})
+   * @param keyPassword the password of the private key entry; defaults to the keystore password
+   *     when {@code null}
+   */
+  CamundaClientBuilder clientKeystore(
+      String keystorePath, String keystorePassword, String keyPassword);
+
+  /**
+   * Configures a Java truststore (PKCS#12 or JKS, selected by file extension) with the CA
+   * certificates used to verify the cluster's server certificate. Mutually exclusive with {@link
+   * #caCertificatePath(String)}, {@link #mtlsCaCertificatePath(String)}, and {@link
+   * #mtlsCaCertificateContent(String)}.
+   *
+   * <p>Environment variables: {@code CAMUNDA_MTLS_TRUSTSTORE_PATH} and {@code
+   * CAMUNDA_MTLS_TRUSTSTORE_PASSWORD}.
+   */
+  CamundaClientBuilder mtlsTruststore(String truststorePath, String truststorePassword);
+
+  /**
    * A custom {@link CredentialsProvider} which will be used to apply authentication credentials to
    * requests.
    */
@@ -264,6 +371,13 @@ public interface CamundaClientBuilder {
    * A custom maxMessageSize allows the client to receive larger or smaller responses from Camunda.
    * Technically, it specifies the maxInboundMessageSize of the gRPC channel. The default is 5242880
    * = 5MB.
+   *
+   * <p>For document downloads ({@link CamundaClient#newDocumentContentGetRequest(String)}), it is
+   * the size of the buffer that holds the content until the application reads it. It does not limit
+   * the size of the document. If the application reads more slowly than the network delivers the
+   * content, the buffer can grow larger than this, up to the size of the part of the document that
+   * has not been read yet. If there is not enough memory for that, reading the document fails with
+   * a {@link java.io.IOException}.
    */
   CamundaClientBuilder maxMessageSize(int maxSize);
 

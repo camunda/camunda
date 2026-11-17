@@ -57,6 +57,17 @@ public final class ClientProperties {
   public static final String DEFAULT_TENANT_ID = "camunda.client.tenantId";
 
   /**
+   * @see CamundaClientBuilder#physicalTenantId(String)
+   */
+  public static final String PHYSICAL_TENANT_ID = "camunda.client.physicalTenantId";
+
+  /**
+   * @see CamundaClientBuilder#prefixPhysicalTenantPath(boolean)
+   */
+  public static final String PREFIX_PHYSICAL_TENANT_PATH =
+      "camunda.client.prefixPhysicalTenantPath";
+
+  /**
    * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
    */
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS = "camunda.client.worker.tenantIds";
@@ -111,6 +122,66 @@ public final class ClientProperties {
    * @see CamundaClientBuilder#caCertificatePath(String)
    */
   public static final String CA_CERTIFICATE_PATH = "camunda.client.security.certpath";
+
+  /**
+   * @see CamundaClientBuilder#clientCertificate(String, String)
+   */
+  public static final String MTLS_CERT_PATH = "camunda.client.mtls.certPath";
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateContent(String, String)
+   */
+  public static final String MTLS_CERT = "camunda.client.mtls.cert";
+
+  /**
+   * @see CamundaClientBuilder#clientCertificate(String, String)
+   */
+  public static final String MTLS_KEY_PATH = "camunda.client.mtls.keyPath";
+
+  /**
+   * @see CamundaClientBuilder#clientCertificateContent(String, String)
+   */
+  public static final String MTLS_KEY = "camunda.client.mtls.key";
+
+  /**
+   * @see CamundaClientBuilder#clientKeyPassphrase(String)
+   */
+  public static final String MTLS_KEY_PASSPHRASE = "camunda.client.mtls.keyPassphrase";
+
+  /**
+   * @see CamundaClientBuilder#mtlsCaCertificatePath(String)
+   */
+  public static final String MTLS_CA_PATH = "camunda.client.mtls.caPath";
+
+  /**
+   * @see CamundaClientBuilder#mtlsCaCertificateContent(String)
+   */
+  public static final String MTLS_CA = "camunda.client.mtls.ca";
+
+  /**
+   * @see CamundaClientBuilder#clientKeystore(String, String, String)
+   */
+  public static final String MTLS_KEYSTORE_PATH = "camunda.client.mtls.keystorePath";
+
+  /**
+   * @see CamundaClientBuilder#clientKeystore(String, String, String)
+   */
+  public static final String MTLS_KEYSTORE_PASSWORD = "camunda.client.mtls.keystorePassword";
+
+  /**
+   * @see CamundaClientBuilder#clientKeystore(String, String, String)
+   */
+  public static final String MTLS_KEYSTORE_KEY_PASSWORD = "camunda.client.mtls.keystoreKeyPassword";
+
+  /**
+   * @see CamundaClientBuilder#mtlsTruststore(String, String)
+   */
+  public static final String MTLS_TRUSTSTORE_PATH = "camunda.client.mtls.truststorePath";
+
+  /**
+   * @see CamundaClientBuilder#mtlsTruststore(String, String)
+   */
+  public static final String MTLS_TRUSTSTORE_PASSWORD = "camunda.client.mtls.truststorePassword";
 
   /**
    * @see CamundaClientBuilder#keepAlive(Duration)

@@ -10,15 +10,15 @@ import {z} from 'zod';
 import {API_VERSION, getQueryRequestBodySchema, type Endpoint} from '../common';
 import {getQueryResponseBodySchema} from './common';
 
-const getIncidentProcessInstanceStatisticsByError: Endpoint = {
+const getIncidentProcessInstanceStatisticsByError = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-error`,
-};
+	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-error` as const,
+} as const satisfies Endpoint;
 
-const getIncidentProcessInstanceStatisticsByDefinition: Endpoint = {
+const getIncidentProcessInstanceStatisticsByDefinition = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-definition`,
-};
+	getUrl: () => `/${API_VERSION}/incidents/statistics/process-instances-by-definition` as const,
+} as const satisfies Endpoint;
 
 const incidentProcessInstanceStatisticsByErrorSchema = z.object({
 	errorHashCode: z.number(),

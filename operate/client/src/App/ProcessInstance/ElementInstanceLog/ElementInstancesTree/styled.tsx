@@ -14,13 +14,16 @@ import {TreeNode as BaseTreeNode} from '@carbon/react';
 const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
   $hasLeftMargin: boolean;
 }>`
+  flex-shrink: 0;
   ${({$hasLeftMargin}) => {
     return css`
-      ${$hasLeftMargin
-        ? css`
-            margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
-          `
-        : ''}
+      ${
+        $hasLeftMargin
+          ? css`
+              margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
+            `
+          : ''
+      }
     `;
   }}
 `;

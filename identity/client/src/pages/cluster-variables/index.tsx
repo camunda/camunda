@@ -6,15 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, lazy, Suspense } from "react";
+import { ListPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes.tsx";
-import Lazy from "src/components/router/Lazy.tsx";
-import Detail from "src/pages/groups/detail";
 
-const ClusterVariables: FC = () => (
+const List = lazy(() => import("./List"));
+
+type ClusterVariablesProps = {
+  isSaaS: boolean;
+};
+
+const ClusterVariables: FC<ClusterVariablesProps> = ({ isSaaS }) => (
   <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Detail />}
+    indexElement={
+      <Suspense fallback={<ListPageFallback />}>
+        <List isSaaS={isSaaS} />
+      </Suspense>
+    }
   />
 );
 

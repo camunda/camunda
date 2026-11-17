@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
+
 public interface ProcessDefinition {
 
   /**
@@ -56,4 +58,9 @@ public interface ProcessDefinition {
    * @return whether the start event of the process has an associated form key
    */
   Boolean getHasStartForm();
+
+  /**
+   * @return the state of the process definition
+   */
+  ProcessDefinitionState getState();
 }

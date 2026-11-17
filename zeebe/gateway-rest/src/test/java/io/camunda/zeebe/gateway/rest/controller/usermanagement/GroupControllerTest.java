@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -18,8 +19,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -27,14 +29,15 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -52,15 +57,20 @@ import org.springframework.test.json.JsonCompareMode;
 public class GroupControllerTest {
 
   private static final String GROUP_BASE_URL = "/v2/groups";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groupsClaim=g1"
+      })
   public class CamundaGroupsDisabledTest extends RestControllerTest {
 
-    public static final String FORBIDDEN_MESSAGE =
+    private static final String FORBIDDEN_MESSAGE =
         """
         {
           "type": "about:blank",
@@ -70,6 +80,7 @@ public class GroupControllerTest {
           "instance": "%%s"
         }"""
             .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @Test
     void shouldReturnErrorOnCreate() {
@@ -84,7 +95,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+              GroupCreateRequest.Builder.create()
+                  .groupId(groupId)
+                  .name(groupName)
+                  .description(description)
+                  .build())
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -106,7 +121,8 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -205,10 +221,172 @@ public class GroupControllerTest {
           .expectBody()
           .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
+
+    @Test
+    void shouldReturnErrorOnPhysicalTenantPrefixedPath() {
+      // given
+      final var groupId = "111";
+      final var uri = "/physical-tenants/acme/v2/groups/" + groupId;
+
+      // when
+      webClient
+          .delete()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
   }
 
   @Nested
   @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groups-claim=g1"
+      })
+  public class CamundaGroupsDisabledViaKebabCasePropertyTest extends RestControllerTest {
+
+    private static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+
+    // Like CamundaGroupsDisabledTest above, with the kebab-case key. Both the Groups API filter
+    // and GroupController's condition bind the configuration with relaxed binding, so the
+    // controller is not created; the mocks keep this test independent of that.
+    @MockitoBean private ServiceRegistry serviceRegistry;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+
+    @BeforeEach
+    void setup() {
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+    }
+
+    @Test
+    void shouldReturnErrorOnCreateWhenGroupsClaimSetViaKebabCaseKey() {
+      // given
+      final var groupName = "testGroup";
+      final var description = "description";
+      final var groupId = "g1";
+      // when
+      webClient
+          .post()
+          .uri(GROUP_BASE_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              GroupCreateRequest.Builder.create()
+                  .groupId(groupId)
+                  .name(groupName)
+                  .description(description)
+                  .build())
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groups-claim=g1",
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.groups-claim="
+      })
+  public class CamundaGroupsEnabledForAnotherPhysicalTenantTest extends RestControllerTest {
+
+    @MockitoBean private ServiceRegistry serviceRegistry;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @Autowired private ObjectProvider<GroupController> groupController;
+
+    @Test
+    void shouldServeTheGroupsApiForTheTenantThatManagesGroupsInCamunda() {
+      // the root takes groups from a claim, tenanta clears it: tenanta needs the controller, and
+      // the filter blocks the API only for the default tenant (see EndpointAccessErrorFilterTest)
+      assertThat(groupController.getIfAvailable()).isNotNull();
+      webClient.delete().uri(GROUP_BASE_URL + "/g1").exchange().expectStatus().isForbidden();
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=basic",
+        "camunda.security.authentication.oidc.groups-claim=g1"
+      })
+  public class CamundaGroupsEnabledUnderBasicAuthWithGroupsClaimTest extends RestControllerTest {
+
+    @MockitoBean private ServiceRegistry serviceRegistry;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+
+    @BeforeEach
+    void setup() {
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+    }
+
+    @Test
+    void shouldServeTheGroupsApiBecauseBasicAuthIgnoresTheGroupsClaim() {
+      // given
+      final String groupId = "g1";
+      when(groupServices.deleteGroup(eq(groupId), any()))
+          .thenReturn(CompletableFuture.completedFuture(new GroupRecord().setGroupId(groupId)));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then
+      verify(groupServices, times(1)).deleteGroup(eq(groupId), any());
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;
@@ -216,13 +394,17 @@ public class GroupControllerTest {
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     }
 
     @ParameterizedTest
@@ -247,7 +429,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+              GroupCreateRequest.Builder.create()
+                  .groupId(groupId)
+                  .name(groupName)
+                  .description(description)
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated();
@@ -264,7 +450,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("").groupId("groupId"))
+          .bodyValue(GroupCreateRequest.Builder.create().groupId("groupId").name("").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -293,7 +479,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name"))
+          .bodyValue(Map.of("name", "name"))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -322,7 +508,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(""))
+          .bodyValue(GroupCreateRequest.Builder.create().groupId("").name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -354,7 +540,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+          .bodyValue(GroupCreateRequest.Builder.create().groupId(groupId).name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -389,7 +575,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+          .bodyValue(GroupCreateRequest.Builder.create().groupId(groupId).name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -403,7 +589,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, GROUP_BASE_URL),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, GROUP_BASE_URL),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -430,7 +616,8 @@ public class GroupControllerTest {
           .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -473,7 +660,8 @@ public class GroupControllerTest {
           .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -507,7 +695,11 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(emptyGroupName).description("description"))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create()
+                  .name(emptyGroupName)
+                  .description("description")
+                  .build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -545,7 +737,8 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(name).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create().name(name).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -584,7 +777,8 @@ public class GroupControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -604,7 +798,11 @@ public class GroupControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name("updatedName").description("description"))
+          .bodyValue(
+              GroupUpdateRequest.Builder.create()
+                  .name("updatedName")
+                  .description("description")
+                  .build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -618,7 +816,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -834,7 +1032,7 @@ public class GroupControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -865,7 +1063,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -1057,7 +1255,7 @@ public class GroupControllerTest {
                   "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -1087,9 +1285,25 @@ public class GroupControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
+    }
+
+    @Test
+    void shouldNotBlockPhysicalTenantPrefixedPath() {
+      // given
+      final var groupId = "111";
+      final var uri = "/physical-tenants/default/v2/groups/" + groupId;
+
+      // when
+      webClient
+          .delete()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .value(status -> assertThat(status).isNotEqualTo(403));
     }
   }
 }

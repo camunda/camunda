@@ -30,11 +30,11 @@ import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -214,6 +214,40 @@ class UserTaskAuthorizationIT {
     assertThat(problemException.details().getDetail())
         .isEqualTo(
             "Unauthorized to perform any of the operations: 'READ_USER_TASK' on 'PROCESS_DEFINITION' or 'READ' on 'USER_TASK'");
+  }
+
+  @Test
+  void lookupShouldReturnAuthorizedUserTask(
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newLookupUserTaskCommand(processId1FirstTaskKey).send().join();
+
+    // then
+    assertThat(result.getUserTaskKey()).isEqualTo(processId1FirstTaskKey);
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
+    assertThat(result.getVariablesAsMap()).isNotEmpty();
+  }
+
+  @Test
+  void lookupShouldReturnForbiddenWithoutPermissions(
+      @Authenticated(USER_WITHOUT_PERMISSIONS) final CamundaClient camundaClient) {
+    // when
+    final ThrowingCallable executeLookup =
+        () -> camundaClient.newLookupUserTaskCommand(processId1FirstTaskKey).send().join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeLookup).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            ("Command 'FETCH' rejected with code 'FORBIDDEN': Insufficient permissions to perform"
+                    + " operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION', required"
+                    + " resource identifiers are one of '[*, %s]'; and Insufficient permissions to"
+                    + " perform operation 'READ' on resource 'USER_TASK', required resource"
+                    + " identifiers are one of '[*, %d]'")
+                .formatted(PROCESS_ID_1, processId1FirstTaskKey));
   }
 
   @Test
@@ -515,7 +549,7 @@ class UserTaskAuthorizationIT {
 
   private static void waitForProcessAndTasksBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -578,7 +612,7 @@ class UserTaskAuthorizationIT {
             .getAuthorizationKey();
 
     Awaitility.await("authorization with key '" + authorizationKey + "' to be created")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () ->

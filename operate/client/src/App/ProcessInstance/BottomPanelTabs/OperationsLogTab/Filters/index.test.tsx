@@ -61,9 +61,10 @@ describe('Process Instance OperationsLog Filters', () => {
     const [firstComboBox] = screen.getAllByRole('combobox');
     await user.click(firstComboBox!);
 
-    const [firstCheckbox] = screen.getAllByRole('checkbox');
-    await user.click(firstCheckbox!);
+    await user.click(await screen.findByRole('option', {name: 'Assign'}));
 
-    expect(screen.getByText(/Total items selected:\s+1/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Total items selected:\s+1/),
+    ).toBeInTheDocument();
   });
 });

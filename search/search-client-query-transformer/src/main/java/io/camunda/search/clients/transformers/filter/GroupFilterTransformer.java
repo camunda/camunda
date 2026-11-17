@@ -15,13 +15,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
-import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -34,18 +33,27 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
+
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
-      return createMultipleMemberTypeQuery(filter);
+      queries.add(createMultipleMemberTypeQuery(filter));
     }
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
+    }
+
+    return and(queries);
+  }
+
+  private ArrayList<SearchQuery> toSearchQueryFields(final GroupFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    if (filter.groupKey() != null) {
-      queries.add(term(KEY, filter.groupKey()));
-    }
     if (filter.groupIdOperations() != null && !filter.groupIdOperations().isEmpty()) {
       queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
     }
-    if (filter.name() != null) {
-      queries.add(term(NAME, filter.name()));
+    if (filter.nameOperations() != null && !filter.nameOperations().isEmpty()) {
+      queries.addAll(stringOperations(NAME, filter.nameOperations()));
     }
     if (filter.description() != null) {
       queries.add(term(GroupIndex.DESCRIPTION, filter.description()));
@@ -58,15 +66,13 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
                   IdentityJoinRelationshipType.MEMBER.getType(),
                   stringTerms(MEMBER_ID, filter.memberIds())));
     }
-    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
     if (filter.childMemberType() != null) {
       queries.add(
           hasChildQuery(
               IdentityJoinRelationshipType.MEMBER.getType(),
               term(GroupIndex.MEMBER_TYPE, filter.childMemberType().name())));
     }
-
-    return and(queries);
+    return queries;
   }
 
   private SearchQuery createMultipleMemberTypeQuery(final GroupFilter filter) {
@@ -83,7 +89,8 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(GROUP_ID, authorization.resourceIds());
   }
 }

@@ -14,15 +14,15 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
-import io.zeebe.containers.ZeebeNode;
 
 /**
  * Java interface for the node's rebalance actuator. To instantiate this interface, you can use
  * {@link Feign}; see {@link #of(String)} as an example.
  *
- * <p>You can use one of {@link #of(String)} or {@link #of(ZeebeNode)} to create a new client to use
- * for yourself.
+ * <p>You can use one of {@link #of(String)} or {@link #of(BrokerNode)} to create a new client to
+ * use for yourself.
  *
  * <p>Adding a new method is simple: simply define the input/output here as you normally would, and
  * make sure to add the correct JSON encoding headers (`Accept` for the response type,
@@ -37,7 +37,7 @@ public interface RebalanceActuator {
    * @param node the node to connect to
    * @return a new instance of {@link RebalanceActuator}
    */
-  static RebalanceActuator of(final ZeebeNode<?> node) {
+  static RebalanceActuator of(final BrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/rebalance", node.getExternalMonitoringAddress());
     return of(endpoint);

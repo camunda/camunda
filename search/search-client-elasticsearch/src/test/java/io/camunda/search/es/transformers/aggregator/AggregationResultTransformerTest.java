@@ -67,9 +67,13 @@ public class AggregationResultTransformerTest {
         // sum aggregation
         Arguments.arguments(
             "{'sum#totalCount': {'value': 42.0}}", "{'totalCount':{'docCount':42}}"),
+        // sum aggregation over an empty bucket, which the ES 9 client returns as null
+        Arguments.arguments("{'sum#totalCount': {'value': null}}", "{'totalCount':{'docCount':0}}"),
         // max aggregation
         Arguments.arguments(
             "{'max#maxValue': {'value': 1234567890.0}}", "{'maxValue':{'docCount':1234567890}}"),
+        // max aggregation over an empty bucket, which the ES 9 client returns as null
+        Arguments.arguments("{'max#maxValue': {'value': null}}", "{'maxValue':{'docCount':0}}"),
         // filter with sum and max sub-aggregations
         Arguments.arguments(
             """

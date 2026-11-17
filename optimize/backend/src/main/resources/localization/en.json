@@ -1,6 +1,39 @@
 {
   "appName": "Optimize",
   "appFullName": "Camunda Optimize",
+  "agenticControlPlane": {
+    "title": "Agentic control plane",
+    "description": "Monitor AI agent adoption, token spend, behavior, and reliability across your processes.",
+    "dateRange": "Date range",
+    "tokenUsage": "Token usage",
+    "reliabilityAndToolCalls": "Reliability & Tool Calls",
+    "duration": "Duration",
+    "topNNotice": "Top {shown} of {total}.",
+    "presets": {
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "last3Months": "Last 3 months",
+      "last6Months": "Last 6 months",
+      "last12Months": "Last 12 months"
+    },
+    "comparison": {
+      "wow": "WoW",
+      "mom": "MoM",
+      "qoq": "QoQ",
+      "hoh": "HoH",
+      "yoy": "YoY"
+    },
+    "processFilter": {
+      "label": "Process",
+      "placeholder": "All processes"
+    },
+    "versionFilter": {
+      "label": "Version",
+      "all": "All versions",
+      "latest": "Latest version",
+      "version": "Version {version}"
+    }
+  },
   "navigation": {
     "analysis": "Analysis",
     "logout": "Logout",
@@ -13,6 +46,7 @@
     "appSwitcher": "App switcher",
     "dashboards": "Dashboards",
     "collections": "Collections",
+    "agenticControlPlane": "Agentic Control Plane",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",
@@ -25,7 +59,17 @@
     "termsOfUse": "Terms of use",
     "imprint": "Imprint",
     "academy": "Camunda Academy",
-    "feedback": "Feedback and Support"
+    "feedback": "Feedback and Support",
+    "slackCommunityChannel": "Slack Community Channel",
+    "info": "Info",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "notificationsDismissAll": "Dismiss all",
+    "notificationsEmptyTitle": "No notifications",
+    "notificationsEmptyDescription": "New updates regarding your processes, clusters and more will appear here.",
+    "mainNavigation": "Main navigation",
+    "breadcrumb": "Camunda context",
+    "version": "Version {version}"
   },
   "login": {
     "label": "Log in",
@@ -195,6 +239,10 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
+    "outlierBand": {
+      "percentile": "P{value}",
+      "yAxis": "Tokens per execution"
+    },
     "textTile": "Text tile",
     "externalUrl": "External URL",
     "create": "Create report",
@@ -282,7 +330,12 @@
       "multi": "Count and duration",
       "evaluationCount": "Evaluation count",
       "variable": "Variable",
-      "process": "Process view"
+      "process": "Process view",
+      "agentInstance": "Agent instance",
+      "totalTokens": "Total tokens",
+      "inputTokens": "Input tokens",
+      "outputTokens": "Output tokens",
+      "toolCalls": "Tool calls"
     },
     "groupBy": {
       "label": "Group by",
@@ -918,6 +971,12 @@
     "instanceIds": "Instance IDs",
     "processInstanceIds": "Process instance IDs",
     "seeDocs": "See documentation",
+    "exportFilterHint": {
+      "iconLabel": "Information about export filtering",
+      "variableText": "The variables and results available here depend on your cluster's exporter configuration. Variable export filtering can affect which variables and process data appear.",
+      "reportSetupLabel": "Not seeing a process or variable?",
+      "reportSetupText": "The processes and variables available here depend on your cluster's exporter configuration. Process or variable export filtering can affect which processes and variables appear."
+    },
     "undefined": "undefined",
     "null": "null",
     "nullOrUndefined": "Null or undefined",
@@ -1465,6 +1524,7 @@
     "importDefinitionForbidden": "Import failed because you are not authorized to access some of the required definitions for the imported entity.",
     "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported.",
     "importDescriptionInvalid": "Import failed because the provided description was invalid. Must be null or not greater than 400 characters.",
+    "importNameInvalid": "Import failed because the provided name was invalid. Must be null or not exceed the configured maximum name length.",
     "invalidAlertEmailAddresses": "Users with the following email addresses are not available for receiving alerts: {invalidAlertEmails}",
     "payloadTooLarge": "The request payload is too large.",
     "reportNotSupportedForOpenSearch": "This type of report is currently not supported for OpenSearch."
@@ -1520,6 +1580,43 @@
         "altTextLabel": "Display text (optional)",
         "altTextPlaceholder": "Link to example.com"
       }
+    }
+  },
+  "agenticControl": {
+    "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
+    "report": {
+      "agenticKpiExecutionCompletedName": "Total Executions",
+      "agenticKpiExecutionCompletedDescription": "Total number of completed agentic process instances in the selected period.",
+      "agenticKpiExecutionAvgDurationName": "Avg execution duration",
+      "agenticKpiExecutionAvgDurationDescription": "Average execution duration of completed agentic process instances in the selected period.",
+      "agenticKpiExecutionIncidentRateName": "Incident rate",
+      "agenticKpiExecutionIncidentRateDescription": "Number of completed agentic process instances that encountered a resolved incident in the selected period.",
+      "agenticKpiExecutionAvgTokensName": "Avg tokens per execution",
+      "agenticKpiExecutionAvgTokensDescription": "Combined input and output tokens per execution. Growth at stable volume indicates prompt or response expansion.",
+      "agenticKpiExecutionMedianTokensName": "Median tokens per execution",
+      "agenticKpiExecutionMedianTokensDescription": "Midpoint token consumption across all executions. A large gap vs. average indicates outliers skewing cost.",
+      "agenticDurationStabilityName": "Execution duration stability (P50 / P95)",
+      "agenticDurationStabilityDescription": "P50 and P95 execution duration of completed agentic process instances over time in the selected period.",
+      "agenticKpiTokenTrendName": "Token Trend",
+      "agenticKpiTokenTrendFootnote": "If token use rises without more executions, prompts may be growing or the model is producing longer outputs. Raise with engineering.",
+      "agenticKpiTokenOutlierBandsName": "Token outlier bands (P5 / P50 / P95)",
+      "agenticKpiTokenOutlierBandsDescription": "P5, P50 and P95 total tokens consumed per completed agentic process instance over time in the selected period.",
+      "agenticKpiTokenOutlierBandsFootnote": "A widening gap between P5 and P95 means executions are behaving inconsistently. Look for prompt variability or non-determinism.",
+      "agenticKpiTokenConsumersName": "Top token consumers by process",
+      "agenticKpiTokenConsumersFootnote": "Reducing the top consumer will have the biggest impact on overall token spend.",
+      "agenticKpiDurationP50Name": "P50 execution duration",
+      "agenticKpiDurationP50Description": "Median (P50) execution duration of completed agentic process instances in the selected period.",
+      "agenticKpiDurationP95Name": "P95 execution duration",
+      "agenticKpiDurationP95Description": "95th percentile execution duration of completed agentic process instances in the selected period.",
+      "agenticFailureRateByVersionName": "Failure rate by process version",
+      "agenticFailureRateByVersionDescription": "Percentage of completed agentic process instances that encountered a resolved incident, broken down by process definition version.",
+      "agenticKpiToolCallsName": "Total tool calls",
+      "agenticKpiToolCallsDescription": "Total number of tool calls made by agents in completed agentic process instances in the selected period.",
+      "agenticKpiToolCallsFootnote": "A sustained rise in tool calls without a matching rise in executions can signal looping or inefficient tool use. Investigate the processes and flow nodes driving the increase.",
+      "agenticToolCallsHeatmapName": "Tool calls per flow node",
+      "agenticToolCallsHeatmapDescription": "Total tool calls made per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
+      "agenticDurationHeatmapName": "Duration per flow node",
+      "agenticDurationHeatmapDescription": "Average duration per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram."
     }
   },
   "managementDashboard": {

@@ -8,6 +8,7 @@
 
 import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
+import {getAgentInstance, queryAgentInstances, queryAgentInstanceHistory} from './agent-instance';
 import {
 	createAuthorization,
 	updateAuthorization,
@@ -31,7 +32,11 @@ import {
 	getDecisionDefinitionXml,
 	evaluateDecision,
 } from './decision-definition';
-import {queryDecisionInstances, getDecisionInstance, createDecisionInstancesDeletionBatchOperation} from './decision-instance';
+import {
+	queryDecisionInstances,
+	getDecisionInstance,
+	createDecisionInstancesDeletionBatchOperation,
+} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
 import {
@@ -40,6 +45,7 @@ import {
 	updateElementInstanceVariables,
 	queryElementInstanceIncidents,
 } from './element-instance';
+import {queryElementInstanceInspection} from './element-instance-inspection';
 import {
 	createGroup,
 	getGroup,
@@ -73,12 +79,17 @@ import {
 	getProcessInstance,
 	queryProcessInstances,
 	cancelProcessInstance,
+	suspendProcessInstance,
+	resumeProcessInstance,
 	queryProcessInstanceIncidents,
 	getProcessInstanceCallHierarchy,
 	getProcessInstanceStatistics,
+	getProcessInstanceWaitStateStatistics,
 	getProcessInstanceSequenceFlows,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
+	suspendProcessInstancesBatchOperation,
+	resumeProcessInstancesBatchOperation,
 	createDeletionBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
@@ -151,6 +162,7 @@ import {
 } from './tenant';
 import {createUser, queryUsers, getUser, deleteUser, updateUser} from './user';
 import {getUsageMetrics} from './usage-metrics';
+import {getSystemConfiguration} from './system-configuration';
 import {getAuditLog, queryAuditLogs} from './audit-log';
 import {queryUserTaskAuditLogs} from './user-task-audit-log';
 import {
@@ -184,6 +196,9 @@ const endpoints = {
 	getCurrentUser,
 
 	activateAdHocSubProcessActivities,
+	getAgentInstance,
+	queryAgentInstances,
+	queryAgentInstanceHistory,
 	createAuthorization,
 	updateAuthorization,
 	getAuthorization,
@@ -215,6 +230,7 @@ const endpoints = {
 	createDocumentLink,
 	queryElementInstances,
 	queryElementInstanceIncidents,
+	queryElementInstanceInspection,
 	getElementInstance,
 	updateElementInstanceVariables,
 	createGroup,
@@ -273,9 +289,12 @@ const endpoints = {
 	getProcessInstance,
 	queryProcessInstances,
 	cancelProcessInstance,
+	suspendProcessInstance,
+	resumeProcessInstance,
 	queryProcessInstanceIncidents,
 	getProcessInstanceCallHierarchy,
 	getProcessInstanceStatistics,
+	getProcessInstanceWaitStateStatistics,
 	getProcessInstanceSequenceFlows,
 	createDeployment,
 	deleteResource,
@@ -325,8 +344,11 @@ const endpoints = {
 	deleteUser,
 	updateUser,
 	getUsageMetrics,
+	getSystemConfiguration,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
+	suspendProcessInstancesBatchOperation,
+	resumeProcessInstancesBatchOperation,
 	createDeletionBatchOperation,
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
@@ -406,6 +428,52 @@ export {
 	type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
 } from './incident-statistics';
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
+export {
+	agentInstanceStatusSchema,
+	agentInstanceDefinitionSchema,
+	agentInstanceMetricsSchema,
+	agentInstanceLimitsSchema,
+	agentToolSchema,
+	agentInstanceSchema,
+	agentInstanceFilterSchema,
+	queryAgentInstancesRequestBodySchema,
+	queryAgentInstancesResponseBodySchema,
+	getAgentInstanceResponseBodySchema,
+	agentInstanceHistoryRoleSchema,
+	agentInstanceHistoryCommitStatusSchema,
+	agentInstanceTextContentSchema,
+	agentInstanceDocumentContentSchema,
+	agentInstanceObjectContentSchema,
+	agentInstanceMessageContentSchema,
+	agentInstanceToolCallSchema,
+	agentInstanceHistoryItemMetricsSchema,
+	agentInstanceHistoryItemSchema,
+	agentInstanceHistoryFilterSchema,
+	queryAgentInstanceHistoryRequestBodySchema,
+	queryAgentInstanceHistoryResponseBodySchema,
+	type AgentInstanceStatus,
+	type AgentInstanceDefinition,
+	type AgentInstanceMetrics,
+	type AgentInstanceLimits,
+	type AgentTool,
+	type AgentInstance,
+	type AgentInstanceFilter,
+	type QueryAgentInstancesRequestBody,
+	type QueryAgentInstancesResponseBody,
+	type GetAgentInstanceResponseBody,
+	type AgentInstanceHistoryRole,
+	type AgentInstanceHistoryCommitStatus,
+	type AgentInstanceTextContent,
+	type AgentInstanceDocumentContent,
+	type AgentInstanceObjectContent,
+	type AgentInstanceMessageContent,
+	type AgentInstanceToolCall,
+	type AgentInstanceHistoryItemMetrics,
+	type AgentInstanceHistoryItem,
+	type AgentInstanceHistoryFilter,
+	type QueryAgentInstanceHistoryRequestBody,
+	type QueryAgentInstanceHistoryResponseBody,
+} from './agent-instance';
 export {
 	activityTypeSchema,
 	queryActivatableActivitiesRequestBodySchema,
@@ -564,6 +632,18 @@ export {
 	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
 export {
+	waitStateTypeSchema,
+	waitStateDetailsSchema,
+	elementInstanceInspectionSchema,
+	queryElementInstanceInspectionRequestBodySchema,
+	queryElementInstanceInspectionResponseBodySchema,
+	type WaitStateType,
+	type WaitStateDetails,
+	type ElementInstanceInspection,
+	type QueryElementInstanceInspectionRequestBody,
+	type QueryElementInstanceInspectionResponseBody,
+} from './element-instance-inspection';
+export {
 	createGroupRequestBodySchema,
 	createGroupResponseBodySchema,
 	getGroupResponseBodySchema,
@@ -666,6 +746,7 @@ export {
 	queryCorrelatedMessageSubscriptionRequestBodySchema,
 	queryCorrelatedMessageSubscriptionsResponseBodySchema,
 	type MessageSubscriptionState,
+	type MessageSubscriptionType,
 	type MessageSubscription,
 	type QueryMessageSubscriptionsRequestBody,
 	type QueryMessageSubscriptionsResponseBody,
@@ -697,13 +778,21 @@ export {
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
+	suspendProcessInstanceRequestBodySchema,
+	resumeProcessInstanceRequestBodySchema,
 	queryProcessInstanceIncidentsRequestBodySchema,
 	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
+	getProcessInstanceWaitStateStatisticsResponseBodySchema,
+	waitStateStatisticSchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
 	createIncidentResolutionBatchOperationResponseBodySchema,
 	createCancellationBatchOperationResponseBodySchema,
+	suspendProcessInstancesBatchOperationRequestBodySchema,
+	suspendProcessInstancesBatchOperationResponseBodySchema,
+	resumeProcessInstancesBatchOperationRequestBodySchema,
+	resumeProcessInstancesBatchOperationResponseBodySchema,
 	createDeletionBatchOperationResponseBodySchema,
 	createMigrationBatchOperationResponseBodySchema,
 	createModificationBatchOperationResponseBodySchema,
@@ -712,11 +801,15 @@ export {
 	processInstanceSchema,
 	sequenceFlowSchema,
 	callHierarchySchema,
+	processInstanceVariableFilterSchema,
+	processInstanceVariableValueFilterSchema,
 	type CreateProcessInstanceRequestBody,
 	type CreateProcessInstanceResponseBody,
 	type QueryProcessInstancesRequestBody,
 	type QueryProcessInstancesResponseBody,
 	type CancelProcessInstanceRequestBody,
+	type SuspendProcessInstanceRequestBody,
+	type ResumeProcessInstanceRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type QueryProcessInstanceIncidentsResponseBody,
 	type CallHierarchy,
@@ -727,10 +820,16 @@ export {
 	type StatisticName,
 	type ProcessInstance,
 	type GetProcessInstanceStatisticsResponseBody,
+	type GetProcessInstanceWaitStateStatisticsResponseBody,
+	type WaitStateStatistic,
 	type CreateIncidentResolutionBatchOperationRequestBody,
 	type CreateIncidentResolutionBatchOperationResponseBody,
 	type CreateCancellationBatchOperationRequestBody,
 	type CreateCancellationBatchOperationResponseBody,
+	type SuspendProcessInstancesBatchOperationRequestBody,
+	type SuspendProcessInstancesBatchOperationResponseBody,
+	type ResumeProcessInstancesBatchOperationRequestBody,
+	type ResumeProcessInstancesBatchOperationResponseBody,
 	type CreateDeletionBatchOperationRequestBody,
 	type CreateDeletionBatchOperationResponseBody,
 	type CreateMigrationBatchOperationRequestBody,
@@ -738,6 +837,8 @@ export {
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
 	type ResolveProcessInstanceIncidentsResponseBody,
+	type ProcessInstanceVariableFilter,
+	type ProcessInstanceVariableValueFilter,
 } from './process-instance';
 export {
 	userTaskSchema,
@@ -780,6 +881,7 @@ export {
 	queryProcessDefinitionsRequestBodySchema,
 	queryProcessDefinitionsResponseBodySchema,
 	processDefinitionSchema,
+	processDefinitionStateSchema,
 	getProcessDefinitionInstanceStatisticsRequestBodySchema,
 	getProcessDefinitionInstanceStatisticsResponseBodySchema,
 	processDefinitionInstanceStatisticsSchema,
@@ -787,6 +889,7 @@ export {
 	getProcessDefinitionInstanceVersionStatisticsResponseBodySchema,
 	processDefinitionInstanceVersionStatisticsSchema,
 	type ProcessDefinition,
+	type ProcessDefinitionState,
 	type ProcessDefinitionStatistic,
 	type GetProcessDefinitionResponseBody,
 	type GetProcessDefinitionXmlResponseBody,
@@ -937,6 +1040,22 @@ export {
 	type GetUsageMetricsResponseBody,
 	type GetUsageMetricsParams,
 } from './usage-metrics';
+export {
+	jobMetricsConfigurationSchema,
+	componentsConfigurationSchema,
+	deploymentConfigurationSchema,
+	authenticationConfigurationSchema,
+	cloudConfigurationSchema,
+	systemConfigurationSchema,
+	getSystemConfigurationResponseBodySchema,
+	type JobMetricsConfiguration,
+	type ComponentsConfiguration,
+	type DeploymentConfiguration,
+	type AuthenticationConfiguration,
+	type CloudConfiguration,
+	type SystemConfiguration,
+	type GetSystemConfigurationResponseBody,
+} from './system-configuration';
 export {
 	clusterVariableScopeSchema,
 	clusterVariableSchema,

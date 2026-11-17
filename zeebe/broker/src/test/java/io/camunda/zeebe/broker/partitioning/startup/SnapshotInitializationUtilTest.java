@@ -24,6 +24,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
@@ -36,7 +37,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +73,7 @@ class SnapshotInitializationUtilTest {
             1, // brokerId
             2, // partitionId
             receiverSnapshotDir,
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             new SimpleMeterRegistry());
 
     // Create sender snapshot store (simulates the leader/sender)
@@ -83,7 +83,7 @@ class SnapshotInitializationUtilTest {
             2, // different brokerId
             1, // same partitionId
             senderSnapshotDir,
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             new SimpleMeterRegistry());
 
     scheduler.submitActor(receiverSnapshotStore).join();
@@ -142,7 +142,7 @@ class SnapshotInitializationUtilTest {
   }
 
   @Test
-  void shouldHandleNoSnapshotFromLeader() {
+  void shouldFailWhenLeaderReturnsNoSnapshot() {
     // given - no snapshot available from sender
     when(snapshotTransfer.getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION))
         .thenReturn(CompletableActorFuture.completed(null));
@@ -152,8 +152,11 @@ class SnapshotInitializationUtilTest {
         SnapshotInitializationUtil.initializeFromSnapshot(
             receiverSnapshotStore, snapshotTransfer, concurrencyControl);
 
-    // then
-    assertThat(result.join()).isNull();
+    // then - starting without the state of partition 1 must not be possible
+    assertThatThrownBy(result::join)
+        .isInstanceOf(ExecutionException.class)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no snapshot");
     assertThat(receiverSnapshotStore.getLatestSnapshot()).isEmpty();
   }
 
@@ -366,7 +369,7 @@ class SnapshotInitializationUtilTest {
             1, // brokerId
             2, // partitionId
             receiverSnapshotDir,
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             new SimpleMeterRegistry());
     scheduler.submitActor(receiverSnapshotStore).join();
   }

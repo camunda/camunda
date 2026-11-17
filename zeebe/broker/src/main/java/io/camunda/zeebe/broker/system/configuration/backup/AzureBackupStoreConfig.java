@@ -10,7 +10,10 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public class AzureBackupStoreConfig implements ConfigurationEntry {
   private String endpoint;
@@ -20,6 +23,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
   private String basePath;
   private boolean createContainer = true;
   private SasTokenConfig sasToken;
+
+  private Retry retry = new Retry(Optional.empty());
 
   public String getEndpoint() {
     return endpoint;
@@ -81,12 +86,25 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
     this.sasToken = sasToken;
   }
 
-  public static AzureBackupConfig toStoreConfig(final AzureBackupStoreConfig config) {
+  public Retry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final Retry retry) {
+    this.retry = retry;
+  }
+
+  public static AzureBackupConfig toStoreConfig(
+      final AzureBackupStoreConfig config,
+      final @Nullable Duration readTimeout,
+      final @Nullable Duration writeTimeout) {
     // if sas token is enabled, then we don't create the container initially. This is due to the
     // fact that both delegation sas token and service sas token don't have permissions to
     // create/list a container. On the other hand account sas token can be configured to have the
     // permissions to do so.
     return new AzureBackupConfig.Builder()
+        .withReadTimeout(readTimeout)
+        .withWriteTimeout(writeTimeout)
         .withEndpoint(config.getEndpoint())
         .withAccountName(config.getAccountName())
         .withAccountKey(config.getAccountKey())
@@ -94,13 +112,21 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         .withContainerName(config.getBasePath())
         .withCreateContainer(config.isCreateContainer())
         .withSasToken(config.getSasToken())
+        .withRetryMaxAttempts(config.getRetry().maxAttempts())
         .build();
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        endpoint, accountName, accountKey, connectionString, basePath, createContainer, sasToken);
+        endpoint,
+        accountName,
+        accountKey,
+        connectionString,
+        basePath,
+        createContainer,
+        sasToken,
+        retry);
   }
 
   @Override
@@ -118,7 +144,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(connectionString, that.connectionString)
         && Objects.equals(basePath, that.basePath)
         && createContainer == that.createContainer
-        && Objects.equals(sasToken, that.sasToken);
+        && Objects.equals(sasToken, that.sasToken)
+        && Objects.equals(retry, that.retry);
   }
 
   @Override
@@ -145,6 +172,15 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
             ? ", SasTokenConfig{ type: " + sasToken.type() + ",value: <redacted>}"
             : "null")
         + '\''
+        + ", retry="
+        + retry
         + '}';
   }
+
+  /**
+   * Optional limits on how the client retries failing requests.
+   *
+   * @param maxAttempts cap on the number of attempts the client makes for a failing request
+   */
+  public record Retry(Optional<Integer> maxAttempts) {}
 }

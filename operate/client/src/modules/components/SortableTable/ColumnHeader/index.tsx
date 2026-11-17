@@ -8,6 +8,7 @@
 
 import {useLocation, useNavigate} from 'react-router-dom';
 import {getSortParams} from 'modules/utils/filter';
+import {cn} from 'modules/utils/cn';
 import {Header, TableHeader} from '@carbon/react';
 
 const INITIAL_SORT_ORDER = 'desc';
@@ -31,6 +32,7 @@ function toggleSorting(
 }
 
 type Props = {
+  columnKey: string;
   label: string | React.ReactNode;
   sortKey: string;
   isDefault?: boolean;
@@ -39,8 +41,10 @@ type Props = {
 } & React.ComponentProps<typeof Header>;
 
 const ColumnHeader: React.FC<Props> = ({
+  columnKey,
   sortKey,
   label,
+  className,
   isDefault = false,
   isDisabled = false,
   onSort,
@@ -66,15 +70,24 @@ const ColumnHeader: React.FC<Props> = ({
   return (
     <TableHeader
       {...rest}
-      onClick={() => {
-        onSort?.(sortKey);
-        navigate({
-          search: toggleSorting(location.search, sortKey, currentSortOrder),
-        });
-      }}
+      className={cn(className, `sortable-table-column-${columnKey}`)}
+      onClick={
+        isDisabled
+          ? undefined
+          : () => {
+              onSort?.(sortKey);
+              navigate({
+                search: toggleSorting(
+                  location.search,
+                  sortKey,
+                  currentSortOrder,
+                ),
+              });
+            }
+      }
       isSortHeader={!isDisabled}
-      title={`Sort by ${label}`}
-      aria-label={`Sort by ${label}`}
+      title={isDisabled ? undefined : `Sort by ${label}`}
+      aria-label={isDisabled ? undefined : `Sort by ${label}`}
       sortDirection={
         displaySortIcon
           ? currentSortOrder === 'asc'

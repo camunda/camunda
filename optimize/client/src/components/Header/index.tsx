@@ -6,4 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as Header} from './Header';
+export {default as Header} from './HeaderV2';

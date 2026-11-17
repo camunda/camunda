@@ -14,12 +14,15 @@ This page has information and answers questions around how the [C8 monorepo CI](
 Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) and Docker images are available on [DockerHub](https://hub.docker.com/u/camunda/):
 
 * Pushed commits to `main` branch produce:
-  * Maven artifacts with version `8.10.0-SNAPSHOT` for all C8 components
-  * Docker images with tags `X.Y-SNAPSHOT` and `SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda), [Operate](https://hub.docker.com/r/camunda/operate), [Tasklist](https://hub.docker.com/r/camunda/tasklist), and [Zeebe](https://hub.docker.com/r/camunda/zeebe)
+  * Maven artifacts with version `8.11.0-SNAPSHOT` for all C8 components
+  * Docker images with tags `X.Y-SNAPSHOT` and `SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda)
   * Docker images with tags `X.Y-SNAPSHOT` and `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize)
+* Pushed commits to `stable/8.10` branch produce:
+  * Maven artifacts with version `8.10.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
+  * Docker images with tag `8.10-SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda/tags?name=8.10-SNAPSHOT), [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.10-SNAPSHOT)
 * Pushed commits to `stable/8.9` branch produce:
   * Maven artifacts with version `8.9.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
-  * Docker images with tag `8.9-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.9-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.9-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.9-SNAPSHOT)
+  * Docker images with tag `8.9-SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda/tags?name=8.9-SNAPSHOT), [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT)
 * Pushed commits to `stable/8.8` branch produce:
   * Maven artifacts with version `8.8.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
   * Docker images with tag `8.8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.8-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.8-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.8-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.8-SNAPSHOT)
@@ -76,6 +79,38 @@ Dealing with reported issues that are identified as urgent/**high severity**:
 **Q: How to deal with flaky tests that block CI?**
 
 > A: Disable the flaky test(s) and comment on existing ticket or create a new one that the flaky test needs to be re-enabled _after_ fixing it. No single test can be more important that the stability of the remaining CI system impacting dozens of developers.
+
+## Release-notes PR-gate
+
+The `Release-notes PR-gate` check verifies that a pull request can be attributed in the release notes: it must link a tracked **issue** (or explicitly opt out), and its title must be a conventional commit. Release notes are generated from those links, so an unlinked PR silently disappears from them.
+
+The check fails the job when the PR cannot be attributed. It is not (yet) a required status check in branch protection. On failure it posts a single sticky comment naming the reason, and adds the `no-issue` label when the issue link is what failed.
+
+### Causes and fixes
+
+| Reported reason | Cause | Fix |
+|---|---|---|
+| No linked issue and no opt-out | The `## Related issues` section has no reference, or the section is missing/renamed — the reference and the checkbox must both be **inside** that section | Add `closes #1234` to the `## Related issues` section, or tick the opt-out checkbox in that same section |
+| The section links a pull request | A closing keyword points at a PR instead of an issue | Reference the tracked **issue**; a PR is never a valid attribution target |
+| The referenced issue does not exist | The number is wrong, or the issue was deleted | Correct the number |
+| Only a cross-repo reference | `owner/repo#N` refers to another repository, which this check cannot validate | Link an issue in this repository, or tick the opt-out (its label covers an issue tracked in another repository) |
+| `Backport of #N` cannot be followed | The marker points at an issue, at nothing, or at another repository | Fix the marker so it names the original **pull request** in this repository |
+| `Backport of #N`, but that PR is not linked either | The original PR was merged without an issue link | Add the issue link to the **original** PR; the backport inherits it |
+| `Backport of #N`, but that PR's section links a pull request | The original PR itself has the "links a pull request instead of an issue" problem | Fix the **original** PR's link; the backport inherits it |
+| Title is not `type: subject` | The title does not follow [Conventional Commits](https://www.conventionalcommits.org/) | Rewrite as `fix: correct retry backoff` |
+| Unknown or upper-case type | The type is not in the allowed enum | Use one of `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`, `test`, lower-case |
+| Scopes are not used in this repo | The title carries a `(scope)` | Drop the scope: `fix: …`, not `fix(engine): …` |
+| Title too long | The header exceeds 120 characters | Shorten it |
+
+### When you do not need a linked issue
+
+Tick `- [ ] This PR does not need a linked issue` in the PR template. Use it for hotfixes, dependency bumps, and pure CI or refactoring work. `renovate[bot]` is exempt automatically and does not need the checkbox.
+
+If a PR is one of several for the same issue (an epic, or work split across releases), use `relates to #1234` or a bare `#1234` instead of `closes` — that satisfies the check without closing the issue on merge.
+
+### Fork pull requests
+
+On a pull request from a fork, GitHub issues a read-only token and withholds secrets, so the check cannot post its comment or apply the label. It still evaluates the PR fully and reports the verdict in the **job summary** of the failed run — open the check's log to see the reason. This is a GitHub limitation: writing to the PR would require a privileged token, which must not be exposed to code from a fork.
 
 ## GitHub Merge Queue
 
@@ -143,6 +178,9 @@ Workflows that seek inclusion to the Unified CI (and thus GitHub required status
   * handle flaky tests gracefully, options:
     1. retry them 3-5 times while staying in the timeout and report them via [detailed test statistics API](https://github.com/camunda/camunda/pull/26715) to [CI health](#ci-health-metrics)
     2. disable them and create a ticket to fix them long-term
+  * new quality gates should be added **non-blocking first**:
+    1. measure its false-positive rate against real traffic and refine it
+    2. only make it blocking once the signal is trustworthy
 * use [Vault for secret management](#ci-secret-management)
 * follow the [GitHub Actions Cache strategy](#caching-strategy) for the monorepo
 * follow all [CI Security best practices](#ci-security) for the monorepo, including [SHA pinning of third-party actions](#usage-of-third-party-github-actions)
@@ -198,19 +236,53 @@ Related resources:
 * entrypoint and main file for pipeline code of unified CI: [ci.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml)
 * see for example how [#19423 (actionlint)](https://github.com/camunda/camunda/pull/19423) and [#19436 (Java unit tests)](https://github.com/camunda/camunda/pull/19436) got added to unified CI
 
+### GitHub API job names vs. workflow job keys
+
+The GitHub API output of `/repos/<repo>/actions/runs/<run_id>/jobs` only contains the _display_ job
+names. It does not contain the `jobs.<job_key>` keys from the workflow YAML files. Do not write
+logic that maps one to the other, especially across called (reusable) workflows. Such a mapping is
+brittle (e.g. a parser that only reads `ci.yml` misses jobs of called workflows) and hard to
+maintain. If a job is only identifiable by its YAML key, find another way to get the information,
+e.g. pass it explicitly via job `outputs` or `needs`, or decide against the feature.
+
+See also [Third-Party Service Outage](./ci-runbooks.md#third-party-service-outage) for how far to
+take workarounds.
+
 ## CI Test Files
 
 ### Ownership
 
-Each CI test file has an owning team. The owning team can be found either through the `CODEOWNERS` file or on the metadata in the file itself. The `CODEOWNERS` file is organized and broken down by team, any additions to the file should follow that convention. The metadata on a GHA workflow file is used by a scraping tool so that it is easy to gather information about the current state of CI. You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+Each CI test file has an owning team. The owning team can be found in `.codeowners` (lookup via `codeowners-cli owner <path>`) with the same value also in the metadata in the GHA workflow YAML file itself. `.codeowners` is the source-of-truth, the metadata is for human overview only:
+
+You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+
+The owning team is the general point of contact for any questions or problems with the GHA workflow. Unless overwritten on the GHA job-level, the owning team will also own all job failures and their medic can be contacted to resolve those.
 
 Metadata follows this structure and is placed at the beginning of a GHA workflow file
 
 ```
 # <Description of what the GHA is running and what is being tested>
 # test location: <The filepath of the tests being run>
-# owner: <The name of the owning team>
+# owner: <The GitHub handle of the owning team>
 ```
+
+#### Automatic Alert Attribution
+
+For programmatic alert routing and medic assignment on CI incidents, each workflow also propagates the canonical GitHub team handle to [CI Analytics](#ci-health-metrics) via a workflow-level `env: TEST_OWNER:` block.
+
+The [`observe-build-status` action](#metrics-collection) reads this env var as the default for the `user_description` field it submits to CI Analytics. This can be overwritten on the job-level with more specific `env: TEST_OWNER:` blocks.
+
+See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, including how to override per-job and how to wire matrix-driven values.
+
+##### Code-ownership-based attribution for failed jobs
+
+`TEST_OWNER` is a static, job-level label, so a job that runs tests belonging to several teams attributes all of its failures to a single owner. To route auto-created incidents to the team that actually owns the failing code, the `observe-build-status` action resolves the owner of the failing test classes from `.codeowners` when a job **fails**:
+
+1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports, and from the Playwright JUnit report of the Orchestration Cluster E2E suite, whose test classes are spec paths), excluding skipped, passing and flaky-but-passed retries.
+2. Each failing class is mapped to its source file and then to its owning team via `codeowners-cli` (reusing the resolvers in `.ci/scripts/ci/setup-medic-lookup.sh`).
+3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER` and lists the candidate owners in the job log. One exception: failing Playwright specs owned by the job's `TEST_OWNER` (the shared flows and the framework of the Orchestration Cluster E2E suite) do not count against a single other owner, because they fail together with the area whose change broke them. Java tests owned by `TEST_OWNER` still count.
+
+This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
 
 ### Legacy CI
 
@@ -236,10 +308,10 @@ CI / <componentName> / [<testType>] <testName> / <ownerName> / ...
 
 `testType` can be things like: `UT` for Unit Tests, `IT` for Integration Tests, `Smoke` for smoke tests, etc.
 
-For example, Core Features Unit Tests for Tasklist would be appear as
+For example, Core Features Unit Tests for the orchestration-cluster webapp appear as
 
 ```
-CI / Tasklist / [UT] Core Features / Run Unit Tests
+CI / Webapp / [UT] Core Features / Run Unit Tests
 ```
 
 Importer Integration Tests for Operate would appear as
@@ -256,7 +328,7 @@ For Names for Legacy tests should be prefixed with `[Legacy] <componentName>` so
 
 Renovate supports many package ecosystems of which we use e.g. Maven, NPM, Docker and Helm. It can scan multiple branches (e.g. `main`, `stable/8.5`) inside of one repository and raise PRs independently for those.
 
-Renovate is configured via a [JSON configuration file on the `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json). In general we allow Renovate to run and **create PRs at any time** to avoid lagging behind with updates.
+Renovate is configured via a [JSON5](https://json5.org/) [configuration file on the `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json5). In general we allow Renovate to run and **create PRs at any time** to avoid lagging behind with updates.
 
 We also want Renovate to **automatically merge** dependency updates when CI is green and automated tests are passing. Assuming a nearly complete test coverage the efficiency gains outweigh the risks. This is achieved by Renovate requesting to put every Pull Requests into the [GitHub Merge Queue](#github-merge-queue) - GitHub will then ensure that [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging) pass before merging the PR.
 
@@ -274,7 +346,7 @@ Related resources:
 * [Renovate documentation](https://docs.renovatebot.com/)
 * [Dependency Dashboard (GH issue)](https://github.com/camunda/camunda/issues/12605)
 * [Renovate Dashboard](https://developer.mend.io/github/camunda/camunda)
-* [Renovate configuration file on `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json)
+* [Renovate configuration file on `main` branch](https://github.com/camunda/camunda/blob/main/.github/renovate.json5)
 
 ### FAQ
 
@@ -298,7 +370,7 @@ Related resources:
 
 > A: Click on the most recent run in the [Renovate Dashboard](https://developer.mend.io/github/camunda/camunda) and make sure to show debug information.
 
-**Q: Why are updates for dependency XYZ ignored in the [Renovate configuration file](https://github.com/camunda/camunda/blob/main/.github/renovate.json)?**
+**Q: Why are updates for dependency XYZ ignored in the [Renovate configuration file](https://github.com/camunda/camunda/blob/main/.github/renovate.json5)?**
 
 > A: The reasons for manually ignoring certain updates should be described in the comments. Using `git annotate` to figure out who put the ignore can also be a way to get more details.
 
@@ -355,6 +427,32 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 ```
+
+To attribute CI Analytics rows to an owning team, set a canonical handle as a workflow-level env var. This is read by `observe-build-status` as the default for its `user_description` input, so no inline argument is needed at the call site:
+
+```yaml
+# owner: @camunda/core-features
+env:
+  TEST_OWNER: '@camunda/core-features'
+```
+
+The handle must match with `.codeowners` (verify with `codeowners-cli owner <path>`). Override per job for outliers if necessary, including matrix-driven values:
+
+```yaml
+jobs:
+  per-suite-tests:
+    strategy:
+      matrix:
+        include:
+          - suite: CoreFeatures
+            owner: '@camunda/core-features'
+          - suite: DataLayer
+            owner: '@camunda/data-layer'
+    env:
+      TEST_OWNER: ${{ matrix.owner }}
+    # ...
+```
+
 
 Related resources:
 
@@ -431,6 +529,31 @@ Implementation:
 3. Use [setup-yarn-cache](https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache) action, see [usage example in #21607](https://github.com/camunda/camunda/pull/21607).
 4. No implementation since Golang usage is low.
 
+### Maven cache hit reporting
+
+[setup-maven-cache](https://github.com/camunda/camunda/tree/main/.github/actions/setup-maven-cache)
+classifies every restore as `exact` (primary key matched), `fallback` (a `restore-keys` prefix matched an
+older `pom.xml` hash, so most dependencies are present) or `miss` (cold repository), or `skipped` when the
+cache step did not run. The result is printed in the job's step summary and is available as the
+`cache-result` action output. `cache-hit` alone cannot be used for a hit ratio, as it is only `true` on an
+exact match.
+
+### Bounding a degraded cache backend
+
+`actions/cache` aborts a stalled segment download with a *warning* rather than a failure, then
+lets the build continue against a cold repository. A slow backend therefore surfaces as a job
+timeout somewhere later in the build instead of as a cache problem (INC-7899).
+
+`SEGMENT_DOWNLOAD_TIMEOUT_MINS` governs that abort and defaults to 10 minutes, which alone
+exceeds some jobs' whole budget. [setup-maven-cache](https://github.com/camunda/camunda/tree/main/.github/actions/setup-maven-cache)
+caps it at 3 minutes, overridable via its `cache-download-timeout-mins` input;
+[setup-build](https://github.com/camunda/camunda/tree/main/.github/actions/setup-build) forwards
+that as `maven-cache-download-timeout-mins`, which is the input jobs using the standard setup
+should reach for.
+
+Note that `timeout-minutes` cannot serve this purpose: GitHub ignores it on steps inside a
+composite action, so the bound has to come from the wrapped action's own configuration.
+
 ### Disable cache restoration for a Pull Request
 
 You can temporarily turn off cache restore functionality in a PR by using the `/ci-disable-cache` command as described under [ChatOps](#chatops). This could be useful to test GHA workflows without the caching mechanism. To restore standard functionality, you need to issue the `/ci-enable-cache` command or drop the empty commit.
@@ -444,6 +567,12 @@ You can temporarily turn off cache restore functionality in a PR by using the `/
 Every GHA workflow job is given a `GITHUB_TOKEN` environment variable with a valid GitHub API token by default. This token can have wide permissions which are unnecessary but open up _attack surface_, reducing security.
 
 **Best Practice:** All GHA workflow jobs must request only actually required [permissions on the `GITHUB_TOKEN`](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token). Set `permissions: {}` by default and add what is needed.
+
+### Avoid `pull_request_target` trigger
+
+This [GHA trigger](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) disables safeguards that combined with other factors can lead to compromise of CI, repository and secret integrity.
+
+For this reason we avoid using this trigger to minimize the attack surface and security risks.
 
 ### Usage of Third Party GitHub Actions
 
@@ -470,13 +599,15 @@ For `camunda/camunda` GHA workflows we use a GitHub feature to [technically limi
 * Allow actions in any [Camunda GitHub Enterprise organization](https://github.com/enterprises/camunda/organizations) like `camunda`, `bpmn-io`, etc.
 * Allow specific actions from 3rd parties that we need (full list see below).
 
-If you need to use a 3rd party action not on the list, ask the Monorepo DevOps team via Slack and explain the motivation.
+If you need to use a 3rd party action not on the list, ask the Engineering Operations team via Slack and explain the motivation.
 
 <details>
 <summary>List of allowed 3rd party actions and reusable workflows</summary>
 EnricoMi/publish-unit-test-result-action@*,
 YunaBraska/java-info-action@*,
+anthropics/claude-code-action@*,
 asdf-vm/actions/install@*,
+astral-sh/setup-uv@*,
 atomicjar/testcontainers-cloud-setup-action@*,
 aws-actions/configure-aws-credentials@*,
 blombard/move-to-next-iteration@*,
@@ -502,11 +633,13 @@ golangci/golangci-lint-action@*,
 google-github-actions/auth@*,
 google-github-actions/get-gke-credentials@*,
 google-github-actions/setup-gcloud@*,
+gradle/actions/setup-gradle@*,
 hadolint/hadolint-action@*,
 hashicorp/setup-terraform@*,
 hashicorp/vault-action@*,
 hoverkraft-tech/compose-action@*,
 jamesives/github-pages-deploy-action@*,
+jdx/mise-action@*,
 joelanford/go-apidiff@*,
 jwalton/gh-docker-logs@*,
 korthout/backport-action@*,
@@ -519,6 +652,7 @@ mxschmitt/action-tmate@*,
 ncipollo/release-action@*,
 nick-fields/retry@*,
 octokit/*@*,
+oven-sh/setup-bun@*,
 peaceiris/actions-gh-pages@*,
 peter-evans/create-or-update-comment@*,
 peter-evans/find-comment@*,
@@ -594,6 +728,10 @@ If the CI change matches one of the following:
   * fixes incorrect information that would mislead AI agents or developers working on stable versions
   * adds new knowledge about practices, tools, or procedures that apply to stable branch development
   * corrects build, test, or development instructions that affect stable branch workflows
+* is a new CI job for new product feature or test cases: backport **only if** the product feature is backported
+* is a new CI feature: backport **only if** required in the ticket
+* is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
+* is related to [Preview Environments](#preview-environments): **no need** to backport, only supported on `main`
 
 ### Documentation-specific backporting (monorepo-docs/* folders)
 
@@ -610,10 +748,6 @@ When touching `monorepo-docs/*` folders, use these guidelines:
 - Style/formatting improvements
 
 **Rationale:** Documentation in stable branches serves as AI context for developers working on that specific version. Only backport changes that fix critical errors or security issues, while avoiding feature additions that don't exist in that release.
-* is a new CI job for new product feature or test cases: backport **only if** the product feature is backported
-* is a new CI feature: backport **only if** required in the ticket
-* is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
-* is related to [Preview Environments](#preview-environments): **no need** to backport, only supported on `main`
 
 ## Slack Notifications
 
@@ -683,9 +817,15 @@ GitHub Action workflows with Maven testing Java code should use the [flaky-test-
 
 Please use the [CI stress testing functionality](#stress-testing) to avoid introducing new flaky tests.
 
+When a flake cannot be reproduced locally, prefer adding diagnostics over guessing at a fix: capture
+container logs, thread dumps, or structured test output on failure so the next occurrence in CI is actionable.
+
+The [**Flaky Test Gate**](./flaky-test-gate.md) blocks PRs that introduce new flaky tests not already known on `main`/`stable/*`. Once a test is flagged on a PR the alert is **sticky** — it remains until either the method body is modified and 3 subsequent CI runs observe the test clean in the affected job, or the `ci:flaky-test-bypass` label is applied. A re-run that happens to pass does not silence the alert. See the [Flaky Test Gate reference](./flaky-test-gate.md) for the full rules, comment templates, and operational concerns.
+
 Related resources:
 
 * [Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
+* [Flaky Test Gate reference](./flaky-test-gate.md)
 
 ### flaky-test-extractor-maven-plugin
 
@@ -780,6 +920,7 @@ Follow the Monorepo CI medic routines and check out the available [CI runbooks](
 There can be many factors influencing that and it is sometimes hard to find the root caues. Below list should provide guidance:
 
 1. Try to rerun the failing CI check(s) at least to overcome transient problems.
+   * Only re-run recent runs (up to 2 days old). Older runs have lost their short-lived artifacts, and a re-run whose commit is no longer the branch head skips its snapshot deploys so it can't roll the snapshot back. Start a new run instead (push or `workflow_dispatch`), see [this runbook entry](./ci-runbooks.md#re-run-of-an-old-workflow-run-in-the-deploy-jobs).
 2. If on a Pull Request, consider whether the code changes on that Pull Request might cause the CI check failure.
 3. Check if there is an [open issue](#issue-tracking) about that failing CI check, e.g. by searching for the error message.
 4. [Ask Copilot about the failure](https://github.blog/changelog/2025-01-15-copilot-users-can-ask-about-a-failed-actions-job-ga/) using the `Explain error` button
@@ -813,4 +954,3 @@ Is your CI check part of the [Unified CI's](#unified-ci) `ci.yml`?
    ```
 
    This loop will take a while (1 hour or more depending on the CI check) so let it run in the background. After it finished, visit https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3AYOURBRANCHNAME and see if there are any failures (indicates lack of robustness).
-

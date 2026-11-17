@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { spacing03 } from "@carbon/elements";
 import { moderate02 } from "@carbon/motion";
 
-export const minUnit = spacing03;
+export const minUnit = "var(--cds-spacing-03)";
 
 export const cssSize = (units: number) => `calc(${units} * ${minUnit})`;
 

@@ -18,11 +18,13 @@ import {mockInstance, Wrapper} from './index.setup';
 
 import {
   createIncident,
+  createProcessDefinition,
   createUser,
   mockCallActivityProcessXML,
   mockProcessXML,
   searchResult,
 } from 'modules/testUtils';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -32,6 +34,8 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstanceWaitStateStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -43,6 +47,9 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
     mockMe().withSuccess(createUser());
+    mockFetchProcessInstance().withSuccess(mockInstance);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({items: []});
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
   });
 
   it('should render process instance data', async () => {
@@ -161,6 +168,29 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId(`ACTIVE-icon`)).toBeInTheDocument();
   });
 
+  it('should display the suspended state before an incident state', async () => {
+    const suspendedInstance = {
+      ...mockInstance,
+      state: 'SUSPENDED',
+      hasIncident: true,
+    } satisfies typeof mockInstance;
+    mockSearchIncidentsByProcessInstance(
+      suspendedInstance.processInstanceKey,
+    ).withSuccess(searchResult([createIncident()]));
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={suspendedInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByRole('img', {name: 'suspended state'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', {name: 'incident state'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should render "View All" link for call activity process', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -269,7 +299,7 @@ describe('InstanceHeader', () => {
 
     mockDeleteProcessInstance().withSuccess(null, {expectPolling: false});
 
-    await user.click(screen.getByRole('button', {name: /danger delete/i}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'info',
@@ -313,6 +343,7 @@ describe('InstanceHeader', () => {
         tenantId: mockInstance.tenantId,
         resourceName: null,
         hasStartForm: false,
+        state: 'ACTIVE',
       },
     );
 
@@ -356,5 +387,92 @@ describe('InstanceHeader', () => {
         screen.queryByRole('button', {name: /Modify Instance/}),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it('should render a "Waiting" label under the process name when the process is blocked on a process-level wait state', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: mockInstance.processDefinitionId, waitingCount: 1}],
+    });
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(await screen.findByText('Waiting')).toBeInTheDocument();
+  });
+
+  it('should render the waiting count when multiple process-level wait states exist', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: mockInstance.processDefinitionId, waitingCount: 3}],
+    });
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(await screen.findByText('3 waiting')).toBeInTheDocument();
+  });
+
+  it('should not render a "Waiting" label when there is no process-level wait state', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'service-task-1', waitingCount: 1}],
+    });
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(screen.queryByText('Waiting')).not.toBeInTheDocument();
+  });
+
+  it('should render a draining tag when the process definition is draining', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: '123',
+          state: 'DRAINING',
+        }),
+      ]),
+    );
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(await screen.findByTestId('draining-tag')).toBeInTheDocument();
+  });
+
+  it('should not render a draining tag when the process definition is not draining', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(screen.queryByTestId('draining-tag')).not.toBeInTheDocument();
   });
 });

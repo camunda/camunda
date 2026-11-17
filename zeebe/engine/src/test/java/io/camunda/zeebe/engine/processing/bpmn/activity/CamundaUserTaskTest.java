@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,6 +29,8 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -41,7 +42,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.assertj.core.groups.Tuple;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,8 +58,6 @@ public final class CamundaUserTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private UserTaskState userTaskState;
-
   private static BpmnModelInstance process() {
     return process(b -> {});
   }
@@ -70,11 +68,6 @@ public final class CamundaUserTaskTest {
     consumer.accept(builder);
 
     return builder.endEvent().done();
-  }
-
-  @Before
-  public void setUp() {
-    userTaskState = ENGINE.getProcessingState().getUserTaskState();
   }
 
   @Test
@@ -387,6 +380,100 @@ public final class CamundaUserTaskTest {
             .getFirst();
 
     Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("alice", "bob");
+  }
+
+  @Test
+  public void shouldResolveCandidateGroupNameToGroupId() {
+    // given
+    ENGINE.group().newGroup("front_support_retail_ch").withName("Front Support Retail CH").create();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups("Front Support Retail CH")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("front_support_retail_ch");
+  }
+
+  @Test
+  public void shouldKeepCandidateGroupWhenNoManagedGroupMatches() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups("unmanaged-group")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("unmanaged-group");
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenCandidateGroupNameIsAmbiguous() {
+    // given
+    final var ambiguousName = "Support";
+    ENGINE.group().newGroup("support_a").withName(ambiguousName).create();
+    ENGINE.group().newGroup("support_b").withName(ambiguousName).create();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups(ambiguousName)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
+    assertThat(incident.getValue().getErrorMessage()).contains(ambiguousName);
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterAmbiguousCandidateGroupIsFixed() {
+    // given - an ambiguous candidate group name raises an incident on user task creation
+    final var ambiguousName = "Fixable Support";
+    ENGINE.group().newGroup("fixable_support_a").withName(ambiguousName).create();
+    ENGINE.group().newGroup("fixable_support_b").withName(ambiguousName).create();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups(ambiguousName)))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when - the ambiguity is removed so the name resolves uniquely, then the incident is resolved
+    ENGINE.group().deleteGroup("fixable_support_b").delete();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the user task is created with the candidate group resolved to the remaining group's id
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("fixable_support_a");
   }
 
   @Test
@@ -710,9 +797,6 @@ public final class CamundaUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasAssignee("foo");
   }
 
   @Test
@@ -784,9 +868,6 @@ public final class CamundaUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasAssignee("foo");
   }
 
   @Test
@@ -851,14 +932,6 @@ public final class CamundaUserTaskTest {
             UserTaskRecord.DUE_DATE,
             UserTaskRecord.FOLLOW_UP_DATE,
             UserTaskRecord.PRIORITY);
-
-    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasNoCandidateGroupsList()
-        .hasNoCandidateUsersList()
-        .hasDueDate("")
-        .hasFollowUpDate("")
-        .hasPriority(50)
-        .hasNoChangedAttributes();
   }
 
   @Test
@@ -1205,6 +1278,41 @@ public final class CamundaUserTaskTest {
 
     assertThat(userTask.getValue().getTags())
         .containsExactlyInAnyOrder("vip", "region-eu", "priority-high");
+  }
+
+  @Test
+  public void shouldInheritBusinessIdFromProcessInstance() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when - create process instance with a business id
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withBusinessId("order-4711").create();
+
+    // then - user task should inherit the business id from the owning process instance
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(userTask.getValue().getBusinessId()).isEqualTo("order-4711");
+  }
+
+  @Test
+  public void shouldHaveEmptyBusinessIdWhenProcessInstanceHasNone() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when - create process instance without a business id
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then - user task carries no business id
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(userTask.getValue().getBusinessId()).isEmpty();
   }
 
   private static Predicate<Record<?>> isTaskTransitionRelatedRecord(

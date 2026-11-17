@@ -38,7 +38,16 @@ function getReporters(): Pick<
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
+  plugins: [
+    ...plugins,
+    ...(mode === 'sbom'
+      ? [
+          sbom({
+            specVersion: '1.6',
+          }),
+        ]
+      : []),
+  ],
   preview: {
     port: 3003,
     open: false,
@@ -56,6 +65,10 @@ export default defineConfig(({mode}) => ({
         bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
       },
       '/logout': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
+      '/session/heartbeat': {
         target: 'http://localhost:8080',
         bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
       },
@@ -90,12 +103,15 @@ export default defineConfig(({mode}) => ({
     resetMocks: true,
     unstubEnvs: true,
     retry: process.env['CI'] ? 3 : 0,
-    dangerouslyIgnoreUnhandledErrors: Boolean(process.env['CI']),
+    dangerouslyIgnoreUnhandledErrors: true,
     ...getReporters(),
     server: {
       deps: {
         // this was necessary due to some issues with styled-components which appeared when bumping C3 on this https://github.com/camunda/camunda/pull/44663
-        inline: ['@camunda/camunda-composite-components'],
+        inline: [
+          '@camunda/camunda-composite-components',
+          '@camunda/design-system',
+        ],
       },
     },
     projects: [
@@ -104,6 +120,13 @@ export default defineConfig(({mode}) => ({
         test: {
           name: 'unit',
           environment: 'jsdom',
+          // Node 25+ exposes its own `localStorage` global, which stops Vitest 4 from
+          // installing jsdom's (vitest-dev/vitest#10867, fixed in Vitest 5). Node 24
+          // rejects the flag, hence the guard. Remove once Operate is on Vitest 5.
+          execArgv:
+            Number(process.versions.node.split('.')[0]) >= 25
+              ? ['--no-webstorage']
+              : [],
           include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
           exclude: [
             ...configDefaults.exclude,

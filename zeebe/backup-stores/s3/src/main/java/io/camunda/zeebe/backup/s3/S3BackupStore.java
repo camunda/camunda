@@ -8,11 +8,23 @@
 package io.camunda.zeebe.backup.s3;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.CONTENTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestPathPattern;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.parseManifestPath;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.atomix.cluster.BrokerMemberId;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -20,6 +32,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
@@ -36,18 +49,28 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -57,8 +80,11 @@ import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -67,7 +93,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * {@link BackupStore} for S3. Stores all backups in a given bucket.
  *
  * <p>All created object keys are prefixed by the {@link BackupIdentifier}, with the following
- * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
+ * scheme: {@code basePath/partitionId/checkpointId/memberId}, where {@code memberId} is {@code
+ * zone_nodeId} for zone-aware clusters or just {@code nodeId} for single-zone clusters.
  *
  * <p>Each backup contains:
  *
@@ -87,16 +114,18 @@ public final class S3BackupStore implements BackupStore {
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS);
-  static final String SNAPSHOT_PREFIX = "snapshot/";
-  static final String SEGMENTS_PREFIX = "segments/";
-  static final String MANIFEST_OBJECT_KEY = "manifest.json";
-  static final String METADATA_OBJECT_NAME = "metadata.json";
+  static final String SNAPSHOT_PREFIX = SNAPSHOT_FILESET_NAME + "/";
+  static final String SEGMENTS_PREFIX = SEGMENTS_FILESET_NAME + "/";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
+  private static final int LIST_PAGE_SIZE = 1000;
+  private static final int MAX_DELETE_BATCH_SIZE = 1000;
   private final Pattern backupIdentifierPattern;
+  private final Pattern legacyCheckpointPrefixPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
+  private final String basePath;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -106,11 +135,14 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
-    final var basePath = config.basePath();
-    final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
+    basePath = formatBasePath(config.basePath());
+    final var quotedBasePath = Pattern.quote(basePath);
     final var identifierSuffix =
-        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*";
-    backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
+        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(%s)).*"
+            .formatted(MemberId.regexPattern());
+    backupIdentifierPattern = Pattern.compile("^" + quotedBasePath + identifierSuffix);
+    legacyCheckpointPrefixPattern =
+        Pattern.compile("^" + quotedBasePath + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/$");
   }
 
   public static BackupStore of(final S3BackupConfig config) {
@@ -121,11 +153,13 @@ public final class S3BackupStore implements BackupStore {
     final var matcher = backupIdentifierPattern.matcher(key);
     if (matcher.matches()) {
       try {
-        final var nodeId = Integer.parseInt(matcher.group("nodeId"));
+        final var memberId = BrokerMemberId.from(matcher.group("memberId"));
         final var partitionId = Integer.parseInt(matcher.group("partitionId"));
         final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
-        return Optional.of(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
-      } catch (final NumberFormatException e) {
+        return Optional.of(
+            new BackupIdentifierImpl(
+                memberId.nodeIdx(), memberId.zone(), partitionId, checkpointId));
+      } catch (final IllegalArgumentException e) {
         LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key, e);
       }
     }
@@ -148,8 +182,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String legacyWildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return basePath + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   /**
@@ -163,30 +196,28 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + Directory.MANIFESTS.name
-        + "/"
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return manifestsPrefix(basePath, wildcard);
   }
 
   /** Backwards compatible object path for backups generated prior to 8.9 */
   public String legacyObjectPrefix(final BackupIdentifier id) {
     final var base = config.basePath();
-    return base.map(
-            s -> "%s/%s/%s/%s/".formatted(s, id.partitionId(), id.checkpointId(), id.nodeId()))
-        .orElseGet(() -> "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    final var brokerId = id.brokerId().id();
+    return base.map(s -> "%s/%s/%s/%s/".formatted(s, id.partitionId(), id.checkpointId(), brokerId))
+        .orElseGet(() -> "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), brokerId));
   }
 
   public String objectPrefix(final BackupIdentifier id, final Directory directory) {
     final var base = config.basePath();
+    final var brokerId = id.brokerId().id();
     return base.map(
             s ->
                 "%s/%s/%s/%s/%s/"
-                    .formatted(s, directory.name, id.partitionId(), id.checkpointId(), id.nodeId()))
+                    .formatted(s, directory.name, id.partitionId(), id.checkpointId(), brokerId))
         .orElseGet(
             () ->
                 "%s/%s/%s/%s/"
-                    .formatted(directory.name, id.partitionId(), id.checkpointId(), id.nodeId()));
+                    .formatted(directory.name, id.partitionId(), id.checkpointId(), brokerId));
   }
 
   public static void validateConfig(final S3BackupConfig config) {
@@ -248,9 +279,27 @@ public final class S3BackupStore implements BackupStore {
    * @implNote Even if S3 is unavailable, the returned future may complete successfully.
    */
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
-    return readManifestObjects(wildcard)
-        .thenApplyAsync(manifests -> manifests.stream().map(Manifest::toStatus).toList());
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
+    LOG.atTrace()
+        .addKeyValue("pattern", wildcard)
+        .addKeyValue("options", options)
+        .setMessage("Listing backups")
+        .log();
+    return listManifestKeys(wildcard)
+        .thenCompose(
+            keys -> {
+              final var candidates =
+                  new ListOptions(options.order(), options.startExclusive(), OptionalInt.empty())
+                      .selectCheckpointIds(keys.checkpointIds());
+              return readPage(
+                  wildcard,
+                  keys,
+                  candidates,
+                  options.limit().orElse(candidates.size()),
+                  new ArrayList<>());
+            })
+        .thenApply(statuses -> options.select(statuses, BackupStatus::id));
   }
 
   @Override
@@ -269,11 +318,11 @@ public final class S3BackupStore implements BackupStore {
             })
         .thenComposeAsync(
             manifest ->
-                listObjects(manifest, Directory.MANIFESTS)
+                listObjects(manifest, Directory.CONTENTS)
                     .thenComposeAsync(this::deleteBackupObjects)
                     .thenComposeAsync(
                         ignored ->
-                            listObjects(manifest, Directory.CONTENTS)
+                            listObjects(manifest, Directory.MANIFESTS)
                                 .thenComposeAsync(this::deleteBackupObjects)));
   }
 
@@ -346,8 +395,11 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> closeAsync() {
-    client.close();
-    return CompletableFuture.completedFuture(null);
+    return CompletableFuture.runAsync(
+        () -> {
+          fileSetManager.close();
+          client.close();
+        });
   }
 
   @Override
@@ -355,7 +407,7 @@ public final class S3BackupStore implements BackupStore {
     return client
         .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
         .whenCompleteAsync(
-            (ignore, err) -> {
+            (final HeadBucketResponse ignore, @Nullable final Throwable err) -> {
               if (err != null) {
                 throw new ConfigurationException("Failed to connect to S3", err);
               }
@@ -364,11 +416,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private String backupMetadataKey(final int partitionId) {
-    return "%smetadata/%d/%s"
-        .formatted(
-            config.basePath().map(base -> base + "/").orElse(""),
-            partitionId,
-            METADATA_OBJECT_NAME);
+    return metadataPath(basePath, partitionId);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
@@ -403,14 +451,14 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final String prefix) {
-    return client
-        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix))
-        .thenApplyAsync(
-            objects ->
-                objects.contents().stream()
-                    .map(S3Object::key)
-                    .map(key -> ObjectIdentifier.builder().key(key).build())
-                    .toList());
+    final var aggregator = new AsyncAggregatingSubscriber<ObjectIdentifier>(SCAN_PARALLELISM);
+    client
+        .listObjectsV2Paginator(req -> req.bucket(config.bucketName()).prefix(prefix))
+        .contents()
+        .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+        .map(CompletableFuture::completedFuture)
+        .subscribe(aggregator);
+    return aggregator.result().thenApply(List::copyOf);
   }
 
   private CompletableFuture<Void> deleteBackupObjects(
@@ -423,11 +471,21 @@ public final class S3BackupStore implements BackupStore {
       // Nothing to delete, which we must handle because the delete request would be invalid
       return CompletableFuture.completedFuture(null);
     }
+    final var list = List.copyOf(objectIdentifiers);
+    final int size = list.size();
+    CompletableFuture<Void> result = CompletableFuture.completedFuture(null);
+    for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
+      final var batch = list.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size));
+      result = result.thenComposeAsync(ignored -> deleteBatch(batch));
+    }
+    return result;
+  }
+
+  private CompletableFuture<Void> deleteBatch(final List<ObjectIdentifier> batch) {
     return client
         .deleteObjects(
             req ->
-                req.bucket(config.bucketName())
-                    .delete(delete -> delete.objects(objectIdentifiers).quiet(true)))
+                req.bucket(config.bucketName()).delete(delete -> delete.objects(batch).quiet(true)))
         .thenApplyAsync(
             response -> {
               if (!response.errors().isEmpty()) {
@@ -443,45 +501,234 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  SdkPublisher<BackupIdentifier> findBackupIds(
-      final BackupIdentifierWildcard wildcard, final boolean legacyStructure) {
-    final var prefix = legacyStructure ? legacyWildcardPrefix(wildcard) : wildcardPrefix(wildcard);
-    LOG.atTrace()
-        .addKeyValue("pattern", wildcard)
-        .setMessage("Searching for matching manifest files")
-        .log();
-    return client
-        .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
-        .contents()
-        .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
-        .map(S3Object::key)
-        .map(this::tryParseKeyAsId)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .filter(wildcard::matches);
+  /**
+   * Enumerates the manifest keys matching the wildcard without reading any manifest. Keys of the
+   * current layout parse to complete identifiers. Legacy backups store their contents next to the
+   * manifest, so listing them by key would walk every content object of every legacy backup; when
+   * the wildcard names a partition they are enumerated by checkpoint id with a delimiter listing
+   * instead, and the member copies of a checkpoint are resolved only once it is selected.
+   */
+  private CompletableFuture<ManifestKeys> listManifestKeys(
+      final BackupIdentifierWildcard wildcard) {
+    final Set<BackupIdentifier> identifiers = ConcurrentHashMap.newKeySet();
+    final Set<Long> legacyCheckpointIds = ConcurrentHashMap.newKeySet();
+    final var manifestPathPattern = manifestPathPattern(basePath, wildcard);
+    final var current =
+        forEachPage(
+            wildcardPrefix(wildcard),
+            Optional.empty(),
+            page ->
+                collectManifestIdentifiers(
+                    page,
+                    wildcard,
+                    key -> parseManifestKey(manifestPathPattern, key),
+                    identifiers));
+    final CompletableFuture<Void> legacy;
+    if (wildcard.partitionId().isPresent()) {
+      legacy =
+          forEachPage(
+              legacyCheckpointPrefix(wildcard),
+              Optional.of("/"),
+              page ->
+                  page.commonPrefixes().stream()
+                      .map(CommonPrefix::prefix)
+                      .map(this::tryParseLegacyCheckpointId)
+                      .flatMap(Optional::stream)
+                      .filter(wildcard.checkpointPattern()::matches)
+                      .forEach(legacyCheckpointIds::add));
+    } else {
+      // Without a partition the legacy prefix spans the whole bucket, there is no cheaper walk
+      legacy =
+          forEachPage(
+              legacyWildcardPrefix(wildcard),
+              Optional.empty(),
+              page ->
+                  collectManifestIdentifiers(page, wildcard, this::tryParseKeyAsId, identifiers));
+    }
+    return current.thenCombine(
+        legacy,
+        (ignoredCurrent, ignoredLegacy) ->
+            new ManifestKeys(
+                identifiers.stream()
+                    .collect(
+                        Collectors.groupingBy(BackupIdentifier::checkpointId, Collectors.toSet())),
+                legacyCheckpointIds));
   }
 
-  CompletableFuture<Collection<Manifest>> readManifestObjects(
-      final BackupIdentifierWildcard wildcard) {
+  private void collectManifestIdentifiers(
+      final ListObjectsV2Response page,
+      final BackupIdentifierWildcard wildcard,
+      final Function<String, Optional<BackupIdentifier>> parseKey,
+      final Set<BackupIdentifier> identifiers) {
+    page.contents().stream()
+        .map(S3Object::key)
+        .filter(key -> key.endsWith(MANIFEST_OBJECT_NAME))
+        .map(parseKey)
+        .flatMap(Optional::stream)
+        .filter(wildcard::matches)
+        .forEach(identifiers::add);
+  }
 
-    final var legacyAggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var legacyPublisher = findBackupIds(wildcard, true).map(this::readManifestObject);
-    legacyPublisher.subscribe(legacyAggregator);
+  private Optional<BackupIdentifier> parseManifestKey(final Pattern pattern, final String key) {
+    final var matcher = pattern.matcher(key);
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    final var id = parseManifestPath(matcher);
+    if (id.isEmpty()) {
+      LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key);
+    }
+    return id;
+  }
 
-    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
-    publisher.subscribe(aggregator);
-
-    return legacyAggregator
-        .result()
-        .thenCombine(
-            aggregator.result(),
-            (legacyManifests, manifests) -> {
-              final var combined = new HashSet<>(legacyManifests);
-              combined.addAll(manifests);
-              combined.removeIf(m -> !wildcard.matches(m.id()));
-              return combined;
+  private CompletableFuture<List<BackupStatus>> readPage(
+      final BackupIdentifierWildcard wildcard,
+      final ManifestKeys keys,
+      final List<Long> candidates,
+      final int remaining,
+      final List<BackupStatus> statuses) {
+    if (remaining == 0 || candidates.isEmpty()) {
+      return CompletableFuture.completedFuture(List.copyOf(statuses));
+    }
+    final var selected = candidates.subList(0, Math.min(remaining, candidates.size()));
+    return resolveIdentifiers(wildcard, keys, selected)
+        .thenCompose(this::readManifestObjects)
+        .thenCompose(
+            manifests -> {
+              final var existing =
+                  manifests.stream()
+                      .filter(manifest -> manifest.statusCode() != BackupStatusCode.DOES_NOT_EXIST)
+                      .map(Manifest::toStatus)
+                      .toList();
+              statuses.addAll(existing);
+              // Legacy prefixes may have no matching broker or only content left after deletion.
+              // Count existing checkpoints, not candidates or individual broker copies.
+              final var found =
+                  existing.stream()
+                      .map(status -> status.id().checkpointId())
+                      .collect(Collectors.toSet())
+                      .size();
+              return readPage(
+                  wildcard,
+                  keys,
+                  candidates.subList(selected.size(), candidates.size()),
+                  remaining - found,
+                  statuses);
             });
+  }
+
+  /** Resolves only the selected checkpoints to the identifiers of all their matching copies. */
+  private CompletableFuture<List<BackupIdentifier>> resolveIdentifiers(
+      final BackupIdentifierWildcard wildcard, final ManifestKeys keys, final List<Long> selected) {
+    final var selectedLegacy =
+        selected.stream().filter(keys.legacyCheckpointIds()::contains).toList();
+    final var legacyMembers =
+        new AsyncAggregatingSubscriber<Set<BackupIdentifier>>(SCAN_PARALLELISM);
+    SdkPublisher.fromIterable(selectedLegacy)
+        .map(checkpointId -> listLegacyMembers(wildcard, checkpointId))
+        .subscribe(legacyMembers);
+    return legacyMembers
+        .result()
+        .thenApply(
+            members -> {
+              final var byCheckpointId = new HashMap<Long, Set<BackupIdentifier>>();
+              Stream.concat(
+                      selected.stream()
+                          .flatMap(
+                              checkpointId ->
+                                  keys
+                                      .identifiersByCheckpointId()
+                                      .getOrDefault(checkpointId, Set.of())
+                                      .stream()),
+                      members.stream().flatMap(Set::stream))
+                  .forEach(
+                      id ->
+                          byCheckpointId
+                              .computeIfAbsent(id.checkpointId(), ignored -> new LinkedHashSet<>())
+                              .add(id));
+              return selected.stream()
+                  .flatMap(
+                      checkpointId -> byCheckpointId.getOrDefault(checkpointId, Set.of()).stream())
+                  .toList();
+            });
+  }
+
+  private CompletableFuture<Set<BackupIdentifier>> listLegacyMembers(
+      final BackupIdentifierWildcard wildcard, final long checkpointId) {
+    final var prefix = basePath + wildcard.partitionId().orElseThrow() + "/" + checkpointId + "/";
+    final Set<BackupIdentifier> members = ConcurrentHashMap.newKeySet();
+    return forEachPage(
+            prefix,
+            Optional.of("/"),
+            page ->
+                page.commonPrefixes().stream()
+                    .map(CommonPrefix::prefix)
+                    .map(this::tryParseKeyAsId)
+                    .flatMap(Optional::stream)
+                    .filter(wildcard::matches)
+                    .forEach(members::add))
+        .thenApply(ignored -> members);
+  }
+
+  private CompletableFuture<List<Manifest>> readManifestObjects(final List<BackupIdentifier> ids) {
+    final var manifests = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    SdkPublisher.fromIterable(ids).map(this::readManifestObject).subscribe(manifests);
+    return manifests.result().thenApply(List::copyOf);
+  }
+
+  /** Requests the pages of a listing one after another and hands each page to the consumer. */
+  private CompletableFuture<Void> forEachPage(
+      final String prefix,
+      final Optional<String> delimiter,
+      final Consumer<ListObjectsV2Response> onPage) {
+    return forEachPage(prefix, delimiter, Optional.empty(), onPage);
+  }
+
+  private CompletableFuture<Void> forEachPage(
+      final String prefix,
+      final Optional<String> delimiter,
+      final Optional<String> continuationToken,
+      final Consumer<ListObjectsV2Response> onPage) {
+    return client
+        .listObjectsV2(
+            request -> {
+              request.bucket(config.bucketName()).prefix(prefix).maxKeys(LIST_PAGE_SIZE);
+              delimiter.ifPresent(request::delimiter);
+              continuationToken.ifPresent(request::continuationToken);
+            })
+        .thenCompose(
+            response -> {
+              onPage.accept(response);
+              final var next = Optional.ofNullable(response.nextContinuationToken());
+              if (next.isEmpty()) {
+                return CompletableFuture.<Void>completedFuture(null);
+              }
+              return forEachPage(prefix, delimiter, next, onPage);
+            });
+  }
+
+  /**
+   * Prefix under which a delimiter listing yields one common prefix per legacy checkpoint of the
+   * wildcard's partition, narrowed by the checkpoint pattern where it has a prefix.
+   */
+  private String legacyCheckpointPrefix(final BackupIdentifierWildcard wildcard) {
+    return basePath
+        + wildcard.partitionId().orElseThrow()
+        + "/"
+        + wildcard.checkpointPattern().prefix();
+  }
+
+  private Optional<Long> tryParseLegacyCheckpointId(final String commonPrefix) {
+    final var matcher = legacyCheckpointPrefixPattern.matcher(commonPrefix);
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(Long.parseLong(matcher.group("checkpointId")));
+    } catch (final NumberFormatException e) {
+      LOG.warn("Tried interpreting prefix {} as a legacy checkpoint but failed", commonPrefix, e);
+      return Optional.empty();
+    }
   }
 
   private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
@@ -491,7 +738,7 @@ public final class S3BackupStore implements BackupStore {
         .getObject(
             req ->
                 req.bucket(config.bucketName())
-                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_KEY),
+                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_NAME),
             AsyncResponseTransformer.toBytes())
         .exceptionallyCompose(
             throwable -> {
@@ -500,7 +747,7 @@ public final class S3BackupStore implements BackupStore {
                 return client.getObject(
                     req ->
                         req.bucket(config.bucketName())
-                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_KEY),
+                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_NAME),
                     AsyncResponseTransformer.toBytes());
               }
               return CompletableFuture.failedFuture(throwable);
@@ -582,11 +829,13 @@ public final class S3BackupStore implements BackupStore {
                 request
                     .bucket(config.bucketName())
                     .key(
-                        derivePath(
-                                manifest.backupDescriptor().get(),
-                                manifest.id(),
-                                Directory.MANIFESTS)
-                            + MANIFEST_OBJECT_KEY)
+                        manifest
+                                .backupDescriptor()
+                                .map(
+                                    descriptor ->
+                                        derivePath(descriptor, manifest.id(), Directory.MANIFESTS))
+                                .orElseGet(() -> objectPrefix(manifest.id(), Directory.MANIFESTS))
+                            + MANIFEST_OBJECT_NAME)
                     .build(),
             body)
         .thenApply(resp -> manifest);
@@ -626,7 +875,7 @@ public final class S3BackupStore implements BackupStore {
     final var builder = S3AsyncClient.builder();
 
     // Enable auto-tuning of various parameters based on the environment
-    builder.defaultsMode(DefaultsMode.AUTO);
+    builder.defaultsMode(config.defaultsMode().toSdk());
 
     // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
     // compatible storage systems that expect MD5 checksums in the request.
@@ -634,15 +883,24 @@ public final class S3BackupStore implements BackupStore {
       builder.addPlugin(LegacyMd5Plugin.create());
     }
 
-    builder.httpClient(
+    final var httpClientBuilder =
         NettyNioAsyncHttpClient.builder()
             .maxConcurrency(config.maxConcurrentConnections())
             // We'd rather wait longer for a connection than have a failed backup. This helps in
             // smoothing out spikes when taking a backup.
-            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
-            .build());
+            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout());
+    config.readTimeout().ifPresent(httpClientBuilder::readTimeout);
+    config.writeTimeout().ifPresent(httpClientBuilder::writeTimeout);
+    builder.httpClient(httpClientBuilder.build());
 
-    builder.overrideConfiguration(cfg -> cfg.retryStrategy(RetryMode.ADAPTIVE_V2));
+    builder.overrideConfiguration(
+        cfg -> {
+          cfg.retryStrategy(RetryMode.ADAPTIVE_V2);
+          config.apiCallTimeout().ifPresent(cfg::apiCallTimeout);
+          config
+              .ssecKey()
+              .ifPresent(key -> cfg.addExecutionInterceptor(new SseCKeyInterceptor(key)));
+        });
     builder.forcePathStyle(config.forcePathStyleAccess());
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
@@ -654,15 +912,25 @@ public final class S3BackupStore implements BackupStore {
                     StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(
                             credentials.accessKey(), credentials.secretKey()))));
-    config
-        .apiCallTimeout()
-        .ifPresent(timeout -> builder.overrideConfiguration(cfg -> cfg.apiCallTimeout(timeout)));
     return builder.build();
   }
 
+  /**
+   * Manifest keys matching a wildcard: complete identifiers from the current layout, and legacy
+   * backups by checkpoint id only, whose member copies are resolved once they are selected.
+   */
+  private record ManifestKeys(
+      Map<Long, Set<BackupIdentifier>> identifiersByCheckpointId, Set<Long> legacyCheckpointIds) {
+    Set<Long> checkpointIds() {
+      final var checkpointIds = new HashSet<>(legacyCheckpointIds);
+      checkpointIds.addAll(identifiersByCheckpointId.keySet());
+      return checkpointIds;
+    }
+  }
+
   public enum Directory {
-    MANIFESTS("manifests"),
-    CONTENTS("contents");
+    MANIFESTS(MANIFESTS_DIRECTORY_NAME),
+    CONTENTS(CONTENTS_DIRECTORY_NAME);
 
     private final String name;
 

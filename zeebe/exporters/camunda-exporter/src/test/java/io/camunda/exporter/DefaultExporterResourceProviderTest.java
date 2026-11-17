@@ -9,20 +9,36 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.AuditLogHandler;
+import io.camunda.exporter.errorhandling.Error;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ProcessCreatedHandler;
+import io.camunda.exporter.handlers.ProcessDrainingHandler;
+import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateAddHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateRemoveHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateUpdateHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransformerRegistry;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -30,8 +46,12 @@ import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +59,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DefaultExporterResourceProviderTest {
 
@@ -144,16 +165,95 @@ public class DefaultExporterResourceProviderTest {
         TestObjectMapper.objectMapper());
 
     // then
-    // AuditLogHandlers are excluded because they by design have multiple instances
-    final var handlersExcludingAuditLog =
+    // AuditLogHandlers and WaitState handlers are excluded because they by design have multiple
+    // instances (one per transformer)
+    final var handlersExcludingMultiInstance =
         provider.getExportHandlers().stream()
             .filter(handler -> !(handler instanceof AuditLogHandler))
+            .filter(handler -> !(handler instanceof AuditLogCleanupHandler))
+            .filter(handler -> !(handler instanceof WaitStateAddHandler))
+            .filter(handler -> !(handler instanceof WaitStateUpdateHandler))
+            .filter(handler -> !(handler instanceof WaitStateRemoveHandler))
             .toList();
 
-    assertThat(handlersExcludingAuditLog)
+    assertThat(handlersExcludingMultiInstance)
         .hasSize(
             (int)
-                handlersExcludingAuditLog.stream().map(ExportHandler::getClass).distinct().count());
+                handlersExcludingMultiInstance.stream()
+                    .map(ExportHandler::getClass)
+                    .distinct()
+                    .count());
+  }
+
+  @Test
+  void shouldAddWaitStateHandlersFromAddWaitStateHandlersMethod() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var waitStateAddHandlers =
+        provider.getExportHandlers().stream()
+            .filter(WaitStateAddHandler.class::isInstance)
+            .map(h -> (WaitStateAddHandler<?>) h)
+            .toList();
+
+    // then — one WaitStateAddHandler per registered transformer, each with the correct ValueType
+    final Map<String, ValueType> expectedTransformers =
+        WaitStateTransformerRegistry.createAllTransformers().stream()
+            .collect(
+                Collectors.toMap(
+                    t -> t.getClass().getName(), transformer -> transformer.config().valueType()));
+
+    assertThat(
+            waitStateAddHandlers.stream()
+                .collect(
+                    Collectors.toMap(
+                        h -> h.getTransformer().getClass().getName(),
+                        ExportHandler::getHandledValueType)))
+        .containsExactlyInAnyOrderEntriesOf(expectedTransformers);
+
+    assertThat(waitStateAddHandlers)
+        .as(
+            "Should have exactly "
+                + expectedTransformers.size()
+                + " WaitStateAddHandler instances added by addWaitStateHandlers method")
+        .hasSize(expectedTransformers.size());
+  }
+
+  @Test
+  void shouldNotAddWaitStateHandlersWhenDisabled() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getWaitState().setEnabled(false);
+
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when / then
+    assertThat(
+            provider.getExportHandlers().stream()
+                .filter(WaitStateAddHandler.class::isInstance)
+                .toList())
+        .as("No WaitStateAddHandler should be registered when waitState is disabled")
+        .isEmpty();
+    assertThat(
+            provider.getExportHandlers().stream()
+                .filter(WaitStateRemoveHandler.class::isInstance)
+                .toList())
+        .as("No WaitStateRemoveHandler should be registered when waitState is disabled")
+        .isEmpty();
   }
 
   @ParameterizedTest
@@ -286,6 +386,208 @@ public class DefaultExporterResourceProviderTest {
         });
   }
 
+  @Test
+  void shouldRegisterProcessCreatedDrainingAndDeletionHandlersOnDeploymentPartition() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertThat(handlers).anyMatch(ProcessCreatedHandler.class::isInstance);
+    assertThat(handlers).anyMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).anyMatch(ProcessFullyDeletedHandler.class::isInstance);
+  }
+
+  @Test
+  void shouldNotRegisterProcessDrainingOrDeletionHandlersOnNonDeploymentPartition() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION + 1),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var handlers = provider.getExportHandlers();
+
+    // then
+    assertThat(handlers).anyMatch(ProcessCreatedHandler.class::isInstance);
+    assertThat(handlers).noneMatch(ProcessDrainingHandler.class::isInstance);
+    assertThat(handlers).noneMatch(ProcessFullyDeletedHandler.class::isInstance);
+  }
+
+  @Test
+  void shouldNotIgnoreErrorsByDefault() {
+    final var handlers = getCustomErrorHandlers();
+    assertThatThrownBy(
+            () -> handlers.accept("some-index", new Error("Simulated error", "problem", 404)))
+        .isInstanceOf(PersistenceException.class)
+        .hasMessageContaining("Simulated error");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"operate-operation-8.4.1_", "operate-list-view-8.3.0_"})
+  void shouldIgnoreDocumentDoesNotExistForAppropriateIndexes(final String index) {
+    final var handlers = getCustomErrorHandlers();
+    handlers.accept(
+        index,
+        new io.camunda.exporter.errorhandling.Error(
+            "Simulated error", "document_missing_exception", 500));
+    handlers.accept(index, new Error("Simulated error", "problem", 404));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"operate-operation-8.4.1_ord00001", "operate-list-view-8.3.0_ord12345"})
+  void shouldIgnoreDocumentDoesNotExistForAppropriateOrdinalIndexes(final String index) {
+    final var handlers = getCustomErrorHandlers();
+    handlers.accept(
+        index,
+        new io.camunda.exporter.errorhandling.Error(
+            "Simulated error", "document_missing_exception", 500));
+    handlers.accept(index, new Error("Simulated error", "problem", 404));
+  }
+
+  private static BiConsumer<String, Error> getCustomErrorHandlers() {
+    final var config = new ExporterConfiguration();
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    final var handlers = provider.getCustomErrorHandlers();
+    return handlers;
+  }
+
+  @Test
+  void shouldRecreateStateAfterResetAndInit() {
+    // given
+    final var resourceProvider = initializedProvider(mock(ExporterEntityCacheProvider.class));
+    final var processCache = resourceProvider.getProcessCache();
+    final var decisionRequirementsCache = resourceProvider.getDecisionRequirementsCache();
+    final var formCache = resourceProvider.getFormCache();
+    final var processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
+    final var exportHandlersByIdentity =
+        Collections.newSetFromMap(new IdentityHashMap<ExportHandler<?, ?>, Boolean>());
+    exportHandlersByIdentity.addAll(resourceProvider.getExportHandlers());
+
+    // when
+    resourceProvider.reset();
+    final var processCacheAfterReset = resourceProvider.getProcessCache();
+    final var decisionRequirementsCacheAfterReset = resourceProvider.getDecisionRequirementsCache();
+    final var formCacheAfterReset = resourceProvider.getFormCache();
+    initProvider(resourceProvider, mock(ExporterEntityCacheProvider.class));
+
+    // then
+    assertThat(processCacheAfterReset).isNull();
+    assertThat(decisionRequirementsCacheAfterReset).isNull();
+    assertThat(formCacheAfterReset).isNull();
+    assertThat(resourceProvider.getProcessCache()).isNotSameAs(processCache);
+    assertThat(resourceProvider.getDecisionRequirementsCache())
+        .isNotSameAs(decisionRequirementsCache);
+    assertThat(resourceProvider.getFormCache()).isNotSameAs(formCache);
+    assertThat(resourceProvider.getIndexDescriptor(ProcessIndex.class))
+        .isNotSameAs(processIndex)
+        .extracting(IndexDescriptor::getFullQualifiedName)
+        .isEqualTo(processIndex.getFullQualifiedName());
+    assertThat(resourceProvider.getExportHandlers())
+        .isNotEmpty()
+        .noneMatch(exportHandlersByIdentity::contains);
+  }
+
+  @Test
+  void shouldIgnoreMissingDocumentErrorsOnlyForConfiguredIndices() {
+    // given
+    final var resourceProvider = initializedProvider(mock(ExporterEntityCacheProvider.class));
+    final var operationIndex =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class).getFullQualifiedName();
+    final var batchOperationIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(BatchOperationTemplate.class)
+            .getFullQualifiedName();
+    final var listViewIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    final var processIndex =
+        resourceProvider.getIndexDescriptor(ProcessIndex.class).getFullQualifiedName();
+    final var configuredIndices =
+        Set.of(operationIndex, batchOperationIndex, listViewIndex, processIndex);
+    final var customErrorHandlers = resourceProvider.getCustomErrorHandlers();
+    // isolate each side of the production `status == 404 || type == document_missing_exception`
+    // check so a regression collapsing it to `&&` fails one of these, not just the combined case
+    final var missingDocumentByStatusOnly = new Error("missing", "some_other_exception_type", 404);
+    final var missingDocumentByTypeOnly = new Error("missing", "document_missing_exception", 400);
+    final var versionConflict = new Error("conflict", "version_conflict_engine_exception", 409);
+
+    // then
+    configuredIndices.forEach(
+        index -> {
+          assertThat(
+                  catchThrowable(
+                      () -> customErrorHandlers.accept(index, missingDocumentByStatusOnly)))
+              .isNull();
+          assertThat(
+                  catchThrowable(
+                      () -> customErrorHandlers.accept(index, missingDocumentByTypeOnly)))
+              .isNull();
+        });
+
+    // exhaustively assert every other index/template still throws, so the "only" claim keeps
+    // holding even if a future index is added to the ignore list without updating this test
+    final var otherIndices =
+        Stream.concat(
+                resourceProvider.getIndexDescriptors().stream()
+                    .map(IndexDescriptor::getFullQualifiedName),
+                resourceProvider.getIndexTemplateDescriptors().stream()
+                    .map(IndexTemplateDescriptor::getFullQualifiedName))
+            .filter(index -> !configuredIndices.contains(index))
+            .toList();
+    assertThat(otherIndices).isNotEmpty();
+    otherIndices.forEach(
+        index ->
+            assertThatThrownBy(() -> customErrorHandlers.accept(index, missingDocumentByStatusOnly))
+                .isInstanceOf(PersistenceException.class)
+                .hasMessage("missing"));
+
+    assertThatThrownBy(() -> customErrorHandlers.accept(operationIndex, versionConflict))
+        .isInstanceOf(PersistenceException.class)
+        .hasMessage("conflict");
+  }
+
+  private DefaultExporterResourceProvider initializedProvider(
+      final ExporterEntityCacheProvider cacheProvider) {
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    initProvider(resourceProvider, cacheProvider);
+    return resourceProvider;
+  }
+
+  private void initProvider(
+      final DefaultExporterResourceProvider resourceProvider,
+      final ExporterEntityCacheProvider cacheProvider) {
+    final var objectMapper = TestObjectMapper.objectMapper();
+    resourceProvider.init(
+        new ExporterConfiguration(),
+        cacheProvider,
+        new ExporterTestContext(),
+        new ExporterMetadata(objectMapper),
+        objectMapper);
+  }
+
   /**
    * Retrieves the `RecordValue` type parameter `R` from an `ExportHandler<T, R extends
    * RecordValue>`.
@@ -297,8 +599,25 @@ public class DefaultExporterResourceProviderTest {
       final ExportHandler<?, ?> handler) {
     // For AuditLogHandler, extract RecordValue from the transformer instance, because the handler
     // itself uses generic RecordValue
-    if (handler instanceof AuditLogHandler<?> auditLogHandler) {
+    if (handler instanceof final AuditLogHandler<?> auditLogHandler) {
       return findRecordValueTypeParameterFromClass(auditLogHandler.getTransformer().getClass());
+    }
+    if (handler instanceof final AuditLogCleanupHandler<?> auditLogCleanupHandler) {
+      return findRecordValueTypeParameterFromClass(
+          auditLogCleanupHandler.getTransformer().getClass());
+    }
+
+    // For WaitState handlers, extract RecordValue from the transformer instance for the same reason
+    if (handler instanceof final WaitStateAddHandler<?> waitStateAddHandler) {
+      return findRecordValueTypeParameterFromClass(waitStateAddHandler.getTransformer().getClass());
+    }
+    if (handler instanceof final WaitStateUpdateHandler<?> waitStateUpdateHandler) {
+      return findRecordValueTypeParameterFromClass(
+          waitStateUpdateHandler.getTransformer().getClass());
+    }
+    if (handler instanceof final WaitStateRemoveHandler<?> waitStateRemoveHandler) {
+      return findRecordValueTypeParameterFromClass(
+          waitStateRemoveHandler.getTransformer().getClass());
     }
 
     // For regular handlers, extract from class hierarchy

@@ -1,6 +1,6 @@
 # This action collects annotations from unsuccessful GitHub Actions jobs and posts them as a PR comment
 #
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Post CI Failure Reasons
 

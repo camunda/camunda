@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.UserTaskProperties;
@@ -20,21 +21,29 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationUserTaskBehavior {
@@ -60,41 +69,39 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   for process instance with key '%s'.
                   """;
 
+  private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+
   private static final Logger LOGGER = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private final long processInstanceKey;
-  private final ElementInstance elementInstance;
-  private final DeployedProcess sourceProcessDefinition;
-  private final DeployedProcess targetProcessDefinition;
-  private final String targetElementId;
-  private final ProcessInstanceRecord updatedElementInstanceRecord;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final JobState jobState;
+  private final UserTaskState userTaskState;
+  private final AgentDefinitionBehavior agentDefinitionBehavior;
 
   public ProcessInstanceMigrationUserTaskBehavior(
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
+      final JobState jobState,
+      final UserTaskState userTaskState,
+      final BpmnBehaviors bpmnBehaviors) {
+    this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
+    this.jobState = jobState;
+    this.userTaskState = userTaskState;
+    agentDefinitionBehavior = bpmnBehaviors.agentDefinitionBehavior();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
+  }
+
+  public void tryMigrateJobWorkerToCamundaUserTask(
       final long processInstanceKey,
       final ElementInstance elementInstance,
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
-      final BpmnBehaviors bpmnBehaviors,
       final String targetElementId,
-      final ProcessInstanceRecord updatedElementInstanceRecord,
-      final StateWriter stateWriter,
-      final JobState jobState) {
-    this.processInstanceKey = processInstanceKey;
-    this.elementInstance = elementInstance;
-    this.sourceProcessDefinition = sourceProcessDefinition;
-    this.targetProcessDefinition = targetProcessDefinition;
-    this.targetElementId = targetElementId;
-    this.updatedElementInstanceRecord = updatedElementInstanceRecord;
-    this.stateWriter = stateWriter;
-    this.jobState = jobState;
-    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
-  }
-
-  public void tryMigrateJobWorkerToCamundaUserTask() {
+      final ProcessInstanceRecord updatedElementInstanceRecord) {
     final var jobKey = elementInstance.getJobKey();
     final String elementId = elementInstance.getValue().getElementId();
 
@@ -130,7 +137,15 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     context.init(
         elementInstance.getKey(), updatedElementInstanceRecord, elementInstance.getState());
 
-    migrateForm(sourceElement, customHeaders, targetProperties, context, userTaskProperties);
+    migrateForm(
+        sourceElement,
+        customHeaders,
+        targetProperties,
+        context,
+        userTaskProperties,
+        targetElementId,
+        targetProcessDefinition,
+        processInstanceKey);
 
     final var userTaskRecord =
         createNewUserTask(
@@ -138,13 +153,107 @@ public class ProcessInstanceMigrationUserTaskBehavior {
             context,
             userTaskProperties,
             targetUserTask.getId(),
-            getCustomHeaders(customHeaders));
+            getCustomHeaders(customHeaders),
+            targetProcessDefinition,
+            elementInstance);
 
-    assignUser(userTaskProperties, userTaskRecord, context, targetProperties);
+    assignUser(
+        userTaskProperties, userTaskRecord, context, targetProperties, targetProcessDefinition);
 
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
+    if (agentDefinitionBehavior.belongsToAgent(job)) {
+      // The job is destroyed without completing — discard all its pending history items. The lease
+      // is left empty on purpose: the whole job is gone, so every activation's items must be
+      // discarded regardless of the lease they were created with. Today the cancelled job is a
+      // user-task job (never agentic), so this is a no-op; kept to future-proof job-worker user
+      // tasks that carry an associated agent instance.
+      commandWriter.appendNewCommand(
+          AgentHistoryIntent.DISCARD,
+          new AgentHistoryRecord()
+              .setJobKey(jobKey)
+              .ignoreLease()
+              .setProcessInstanceKey(job.getProcessInstanceKey())
+              .setStorageOrdinal(job.getStorageOrdinal()));
+    }
+  }
+
+  /**
+   * Determines whether a migration represents a conversion from a job worker user task to a Zeebe
+   * (Camunda) user task implementation.
+   *
+   * @param sourceProcessDefinition source process definition
+   * @param targetProcessDefinition target process definition
+   * @param targetElementId target element id in the target process
+   * @param elementInstance the element instance being migrated
+   * @return {@code true} if the migration converts a job worker user task to a Zeebe user task
+   */
+  public static boolean isJobWorkerToZeebeUserTaskConversion(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance) {
+    final var elementInstanceRecord = elementInstance.getValue();
+    if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
+      return false;
+    }
+
+    final AbstractFlowElement targetElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId);
+    if (targetElement == null) {
+      return false;
+    }
+
+    final BpmnElementType targetElementType = targetElement.getElementType();
+    if (targetElementType != BpmnElementType.USER_TASK
+        && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
+            && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
+      return false;
+    }
+
+    final ExecutableUserTask targetUserTask =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableUserTask.class);
+    final ExecutableUserTask sourceUserTask =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
+
+    final boolean sourceIsJobWorker = sourceUserTask.getUserTaskProperties() == null;
+    final boolean targetIsZeebeUserTask = targetUserTask.getUserTaskProperties() != null;
+
+    return sourceIsJobWorker && targetIsZeebeUserTask;
+  }
+
+  public void migrateUserTask(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey,
+      final String targetElementId) {
+    if (elementInstance.getUserTaskKey() > 0) {
+      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+      if (userTask == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a user task for process instance with key '%d', \
+                but could not find user task with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getUserTaskKey()));
+      }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getUserTaskKey(),
+          UserTaskIntent.MIGRATED,
+          userTask
+              .copy()
+              .setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId)
+              .setVariables(NIL_VALUE));
+    }
   }
 
   private void assignUser(
@@ -152,7 +261,8 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final UserTaskRecord userTaskRecord,
       final BpmnElementContextImpl context,
       final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
-          targetProperties) {
+          targetProperties,
+      final DeployedProcess targetProcessDefinition) {
 
     if (targetProperties.getAssignee() != null) {
       userTaskBehavior
@@ -179,7 +289,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final BpmnElementContextImpl context,
       final UserTaskProperties userTaskProperties,
       final DirectBuffer id,
-      final Map<String, String> taskHeaders) {
+      final Map<String, String> taskHeaders,
+      final DeployedProcess targetProcessDefinition,
+      final ElementInstance elementInstance) {
 
     userTaskBehavior
         .evaluatePriorityExpression(
@@ -201,7 +313,10 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
           targetElementProperties,
       final BpmnElementContextImpl context,
-      final UserTaskProperties userTaskProperties) {
+      final UserTaskProperties userTaskProperties,
+      final String targetElementId,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey) {
     final String jobFormKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
     final Expression workerFormId = sourceElement.getJobWorkerProperties().getFormId();
 

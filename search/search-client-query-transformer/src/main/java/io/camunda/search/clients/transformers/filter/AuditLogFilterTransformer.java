@@ -16,17 +16,17 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.*;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.filter.AuditLogFilter;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import java.util.Optional;
@@ -69,7 +69,9 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
         longOperations(USER_TASK_KEY, filter.userTaskKeyOperations()),
         stringOperations(RELATED_ENTITY_TYPE, filter.relatedEntityTypeOperations()),
         stringOperations(RELATED_ENTITY_KEY, filter.relatedEntityKeyOperations()),
-        stringOperations(ENTITY_DESCRIPTION, filter.entityDescriptionOperations()));
+        stringOperations(ENTITY_DESCRIPTION, filter.entityDescriptionOperations()),
+        stringOperations(INBOUND_CHANNEL_TYPE, filter.inboundChannelTypeOperations()),
+        stringOperations(INBOUND_CHANNEL_TOOL_NAME, filter.inboundChannelToolNameOperations()));
   }
 
   /*
@@ -112,7 +114,8 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
    * @return the constructed search query for authorization checks
    */
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
 
     final var resourceType = authorization.resourceType();
     if (AUDIT_LOG.equals(resourceType)) {

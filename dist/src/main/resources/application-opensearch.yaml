@@ -43,10 +43,6 @@ zeebe:
               verifyHostname: true
               selfSigned: false
 
-          bulk:
-            delay: 5
-            size: 1000
-
           index:
             prefix:
             zeebeIndexPrefix: zeebe-record
@@ -56,7 +52,7 @@ zeebe:
 
           history:
             elsRolloverDateFormat: "date"
-            rolloverBatchSize: 100
+            rolloverBatchSize: 500
             waitPeriodBeforeArchiving: "1h"
             delayBetweenRuns: 2000
             maxDelayBetweenRuns: 60000

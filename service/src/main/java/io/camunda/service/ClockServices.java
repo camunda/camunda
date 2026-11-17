@@ -7,23 +7,27 @@
  */
 package io.camunda.service;
 
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockAddRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockFetchRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockPinRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockResetRequest;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.util.concurrent.CompletableFuture;
 
-public final class ClockServices extends ApiServices<ClockServices> {
+public final class ClockServices extends PhysicalTenantScopedApiServices<ClockServices> {
 
   public ClockServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -35,7 +39,16 @@ public final class ClockServices extends ApiServices<ClockServices> {
     return sendBrokerRequest(new BrokerClockPinRequest(pinnedEpoch), authentication);
   }
 
+  public CompletableFuture<ClockRecord> addClock(
+      final long offsetMillis, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerClockAddRequest(offsetMillis), authentication);
+  }
+
   public CompletableFuture<ClockRecord> resetClock(final CamundaAuthentication authentication) {
     return sendBrokerRequest(new BrokerClockResetRequest(), authentication);
+  }
+
+  public CompletableFuture<ClockRecord> getClock(final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerClockFetchRequest(), authentication);
   }
 }

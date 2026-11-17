@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.gateway;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -20,10 +22,13 @@ import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
@@ -65,20 +70,23 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
-import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 public final class EndpointManager {
@@ -88,51 +96,55 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final BrokerRequestAuthorizationConverter authorizationConverter;
+  private final Map<String, BrokerRequestAuthorizationConverter>
+      authorizationConvertersByPhysicalTenant;
 
+  /**
+   * @param securityConfigurationsByPhysicalTenant security config of every physical tenant,
+   *     including {@code default}; a request is converted with the config of the tenant it targets
+   */
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final SecurityConfiguration securityConfiguration) {
-    this(
-        brokerClient,
-        activateJobsHandler,
-        streamJobsHandler,
-        securityConfiguration,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
-  }
-
-  public EndpointManager(
-      final BrokerClient brokerClient,
-      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
-      final StreamJobsHandler streamJobsHandler,
-      final SecurityConfiguration securityConfiguration,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final int maxVariableNameLength) {
+    final EngineSecurityConfig securityConfiguration =
+        securityConfigurationsByPhysicalTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
-    RequestMapper.setMultiTenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
+    RequestMapper.setMultiTenancyEnabled(securityConfiguration.isMultiTenancyChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
-    authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    authorizationConvertersByPhysicalTenant = new HashMap<>();
+    securityConfigurationsByPhysicalTenant.forEach(
+        (physicalTenantId, config) ->
+            authorizationConvertersByPhysicalTenant.put(
+                physicalTenantId, new BrokerRequestAuthorizationConverter(config)));
   }
 
   private void addBrokerInfo(
-      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final BrokerMemberId brokerId, final BrokerClusterState topology) {
     final String brokerAddress = topology.getBrokerAddress(brokerId);
     final Address address = Address.from(brokerAddress);
 
     brokerInfo
-        .setNodeId(brokerId)
+        .setNodeId(brokerId.nodeIdx())
         .setHost(address.host())
         .setPort(address.port())
-        .setVersion(topology.getBrokerVersion(brokerId));
+        .setBrokerId(brokerId.memberId().id())
+        .setZone(Optional.ofNullable(brokerId.zone()).orElse(""));
+
+    final var brokerVersion = topology.getBrokerVersion(brokerId);
+    if (brokerVersion != null) {
+      brokerInfo.setVersion(brokerVersion);
+    }
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final BrokerMemberId brokerId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -145,6 +157,11 @@ public final class EndpointManager {
               }
 
               final var status = topology.getPartitionHealth(brokerId, partitionId);
+              if (status == null) {
+                Loggers.GATEWAY_LOGGER.debug("Unsupported null partition broker health status");
+                return;
+              }
+
               switch (status) {
                 case HEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
                 case UNHEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
@@ -163,15 +180,15 @@ public final class EndpointManager {
    * @return true if it could set the role. False if no role was could be found.
    */
   private boolean setRole(
-      final Integer brokerId,
+      final BrokerMemberId brokerId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partitionBuilder) {
-    final int partitionLeader = topology.getLeaderForPartition(partitionId);
-    final Set<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final Set<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final BrokerMemberId partitionLeader = topology.getLeaderForPartition(partitionId);
+    final var partitionFollowers = topology.getFollowersForPartition(partitionId);
+    final var partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
-    if (partitionLeader == brokerId) {
+    if (brokerId.equals(partitionLeader)) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);
     } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
       partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
@@ -190,8 +207,12 @@ public final class EndpointManager {
     try {
       final JobActivationProperties brokerRequest =
           RequestMapper.toJobActivationProperties(request, getClaims());
+      final String physicalTenantId =
+          Objects.requireNonNullElse(
+              getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
-      streamJobsHandler.handle(request.getType(), brokerRequest, responseObserver);
+      streamJobsHandler.handle(
+          request.getType(), brokerRequest, responseObserver, physicalTenantId);
     } catch (final Exception e) {
       responseObserver.onError(e);
     }
@@ -347,7 +368,17 @@ public final class EndpointManager {
 
   public void topology(final ServerStreamObserver<TopologyResponse> responseObserver) {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
-    final BrokerClusterState topology = topologyManager.getTopology();
+    final String physicalTenantId;
+    try {
+      physicalTenantId = getPhysicalTenantId();
+    } catch (final Exception e) {
+      responseObserver.onError(e);
+      return;
+    }
+    final BrokerClusterState topology =
+        topologyManager.getTopology(
+            Objects.requireNonNullElse(
+                physicalTenantId, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
 
     final String gatewayVersion = VersionUtil.getVersion();
     if (gatewayVersion != null && !gatewayVersion.isBlank()) {
@@ -401,6 +432,16 @@ public final class EndpointManager {
         responseObserver);
   }
 
+  public void updateJobPriority(
+      final UpdateJobPriorityRequest request,
+      final ServerStreamObserver<UpdateJobPriorityResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toUpdateJobPriorityRequest,
+        ResponseMapper::toUpdateJobPriorityResponse,
+        responseObserver);
+  }
+
   public void modifyProcessInstance(
       final ModifyProcessInstanceRequest request,
       final ServerStreamObserver<ModifyProcessInstanceResponse> responseObserver) {
@@ -418,6 +459,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toMigrateProcessInstanceRequest,
         ResponseMapper::toMigrateProcessInstanceResponse,
+        responseObserver);
+  }
+
+  public void assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final ServerStreamObserver<AssignProcessInstanceBusinessIdResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toAssignProcessInstanceBusinessIdRequest,
+        ResponseMapper::toAssignProcessInstanceBusinessIdResponse,
         responseObserver);
   }
 
@@ -520,17 +571,44 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
     brokerRequest.setAuthorization(getClaims());
+    final String physicalTenantId = getPhysicalTenantId();
+    brokerRequest.setPartitionGroup(
+        Objects.requireNonNullElse(physicalTenantId, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
     return brokerRequest;
+  }
+
+  /**
+   * Returns the physical tenant id resolved by the {@code PhysicalTenantInterceptor} and stored in
+   * the gRPC {@link Context}, or {@code null} when no interceptor populated it (e.g. in tests that
+   * invoke the endpoint without the interceptor chain). The id doubles as the partition group name
+   * the request is dispatched to; a {@code null} leaves the request's default group unchanged.
+   */
+  private String getPhysicalTenantId() throws Exception {
+    return Context.current().call(InterceptorUtil.getPhysicalTenantIdKey()::get);
   }
 
   private Map<String, Object> getClaims() throws Exception {
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
+    final String physicalTenantId =
+        Objects.requireNonNullElse(
+            getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    final BrokerRequestAuthorizationConverter authorizationConverter =
+        authorizationConvertersByPhysicalTenant.get(physicalTenantId);
+    if (authorizationConverter == null) {
+      // fail instead of falling back to the default tenant, whose settings must not apply to
+      // another; not an NPE, so it is not mistaken for a missing claim
+      throw new IllegalStateException(
+          "No security config registered for physical tenant: " + physicalTenantId);
+    }
 
-    List<String> groups = null;
+    List<String> groups = List.of();
     Map<String, Object> tokenClaims = null;
     if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
-      groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+      // the handler sets no groups when the tenant configures no groups claim
+      groups =
+          Objects.requireNonNullElse(
+              Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get), List.of());
       tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     }
 

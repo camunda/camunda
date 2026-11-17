@@ -116,8 +116,8 @@ docker run --rm \
   -e RENOVATE_REQUIRE_CONFIG="ignored" \
   -e RENOVATE_SECRETS="${RENOVATE_SECRETS}" \
   ${RENOVATE_ENABLED_MANAGERS:+-e RENOVATE_ENABLED_MANAGERS="${RENOVATE_ENABLED_MANAGERS}"} \
-  -e RENOVATE_CONFIG_FILE="/usr/src/app/mounted-renovate-config.json" \
-  -v "${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
+  -e RENOVATE_CONFIG_FILE="/usr/src/app/mounted-renovate-config.json5" \
+  -v "${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json5:ro" \
   -e RENOVATE_BASE_DIR="/tmp/renovate" \
   -v "${LOCAL_BASE_DIR}:/tmp/renovate" \
   -e RENOVATE_CACHE_DIR="/cache/renovate" \

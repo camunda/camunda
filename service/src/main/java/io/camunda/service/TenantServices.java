@@ -15,9 +15,11 @@ import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,7 +28,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,12 +40,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   private final TenantSearchClient tenantSearchClient;
 
   public TenantServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -85,6 +90,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public CompletableFuture<TenantRecord> updateTenant(
       final TenantRequest request, final CamundaAuthentication authentication) {
+    final var rejection = rejectIfDefaultTenant(request.tenantId(), "update");
+    if (rejection != null) {
+      return rejection;
+    }
     return sendBrokerRequest(
         new BrokerTenantUpdateRequest(request.tenantId())
             .setName(request.name())
@@ -94,6 +103,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public CompletableFuture<TenantRecord> deleteTenant(
       final String tenantId, final CamundaAuthentication authentication) {
+    final var rejection = rejectIfDefaultTenant(tenantId, "delete");
+    if (rejection != null) {
+      return rejection;
+    }
     return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId), authentication);
   }
 
@@ -102,7 +115,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(request.tenantId())
-            .setEntity(request.entityType(), request.entityId()),
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
         authentication);
   }
 
@@ -111,8 +124,20 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(request.tenantId())
-            .setEntity(request.entityType(), request.entityId()),
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
         authentication);
+  }
+
+  private static CompletableFuture<TenantRecord> rejectIfDefaultTenant(
+      final String tenantId, final String operation) {
+    if (TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+      return CompletableFuture.failedFuture(
+          new ServiceException(
+              "Expected to %s tenant with id '%s', but the default tenant cannot be modified."
+                  .formatted(operation, tenantId),
+              ServiceException.Status.FORBIDDEN));
+    }
+    return null;
   }
 
   public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
@@ -132,7 +157,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        Authorization.withAuthorization(TENANT_READER_AUTHORIZATION, tenantId)))
+                        RequiredAuthorization.withRequiredAuthorization(
+                            TENANT_READER_AUTHORIZATION, tenantId)))
                 .getTenant(tenantId));
   }
 

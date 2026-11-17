@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.NodeIdProvider.Type;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.it.util.TestHelper;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
@@ -193,21 +193,25 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
       Thread.ofVirtual()
           .start(
               () -> {
-                final var restore =
-                    new TestRestoreApp()
-                        .withWorkingDirectory(workingDirectory)
-                        .withUnifiedConfig(
-                            cfg -> {
-                              cfg.getCluster().setSize(CLUSTER_SIZE);
-                              cfg.getCluster().setPartitionCount(PARTITIONS_COUNT);
-                              cfg.getCluster().setReplicationFactor(REPLICATION_FACTOR);
-                              configureNodeIdProvider(cfg);
-                              configureBackupStore(cfg);
-                            })
-                        .withBackupId(backupId)
-                        .start();
-                restore.close();
-                task.complete(null);
+                try {
+                  final var restore =
+                      new TestRestoreApp()
+                          .withWorkingDirectory(workingDirectory)
+                          .withUnifiedConfig(
+                              cfg -> {
+                                cfg.getCluster().setSize(CLUSTER_SIZE);
+                                cfg.getCluster().setPartitionCount(PARTITIONS_COUNT);
+                                cfg.getCluster().setReplicationFactor(REPLICATION_FACTOR);
+                                configureNodeIdProvider(cfg);
+                                configureBackupStore(cfg);
+                              })
+                          .withBackupId(backupId)
+                          .start();
+                  restore.close();
+                  task.complete(null);
+                } catch (final Throwable t) {
+                  task.completeExceptionally(t);
+                }
               });
       restoreTasks.add(task);
     }

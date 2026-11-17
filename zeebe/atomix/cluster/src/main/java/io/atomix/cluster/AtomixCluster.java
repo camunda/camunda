@@ -27,14 +27,12 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.ManagedClusterCommunicationService;
 import io.atomix.cluster.messaging.ManagedClusterEventService;
-import io.atomix.cluster.messaging.ManagedMessagingService;
-import io.atomix.cluster.messaging.ManagedUnicastService;
+import io.atomix.cluster.messaging.ManagedNetworkService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.cluster.messaging.impl.DefaultClusterCommunicationService;
 import io.atomix.cluster.messaging.impl.DefaultClusterEventService;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.cluster.messaging.impl.NettyUnicastService;
+import io.atomix.cluster.messaging.impl.NettyNetworkService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
@@ -44,6 +42,7 @@ import io.atomix.utils.net.Address;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,8 +91,7 @@ import org.slf4j.LoggerFactory;
 public class AtomixCluster implements BootstrapService, Managed<Void> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AtomixCluster.class);
-  protected final ManagedMessagingService messagingService;
-  protected final ManagedUnicastService unicastService;
+  protected final ManagedNetworkService networkService;
   protected final NodeDiscoveryProvider discoveryProvider;
   protected final GroupMembershipProtocol membershipProtocol;
   protected final ManagedClusterMembershipService membershipService;
@@ -109,24 +107,19 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final Version version,
       final String actorSchedulerName,
       final MeterRegistry registry) {
-    this(config, version, null, null, actorSchedulerName, registry);
+    this(config, version, null, actorSchedulerName, registry);
   }
 
   protected AtomixCluster(
       final ClusterConfig config,
       final Version version,
-      final ManagedMessagingService messagingService,
-      final ManagedUnicastService unicastService,
+      final ManagedNetworkService networkService,
       final String actorSchedulerName,
       final MeterRegistry registry) {
-    this.messagingService =
-        messagingService != null
-            ? messagingService
-            : buildMessagingService(config, actorSchedulerName, registry);
-    this.unicastService =
-        unicastService != null
-            ? unicastService
-            : buildUnicastService(config, actorSchedulerName, registry);
+    this.networkService =
+        networkService != null
+            ? networkService
+            : buildNetworkService(config, actorSchedulerName, registry, threadContext);
 
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config, actorSchedulerName, registry);
@@ -170,7 +163,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    */
   @Override
   public MessagingService getMessagingService() {
-    return messagingService;
+    return networkService.messagingService();
   }
 
   /**
@@ -184,7 +177,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
    */
   @Override
   public UnicastService getUnicastService() {
-    return unicastService;
+    return networkService.unicastService();
   }
 
   /**
@@ -254,9 +247,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   protected CompletableFuture<Void> startServices() {
-    return messagingService
+    return networkService
         .start()
-        .thenComposeAsync(v -> unicastService.start(), threadContext)
         .thenComposeAsync(v -> membershipService.start(), threadContext)
         .thenComposeAsync(v -> communicationService.start(), threadContext)
         .thenComposeAsync(v -> eventService.start(), threadContext)
@@ -281,10 +273,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
         .exceptionally(e -> logServiceStopError("eventService", e))
         .thenComposeAsync(v -> membershipService.stop(), threadContext)
         .exceptionally(e -> logServiceStopError("membershipService", e))
-        .thenComposeAsync(v -> unicastService.stop(), threadContext)
-        .exceptionally(e -> logServiceStopError("unicastService", e))
-        .thenComposeAsync(v -> messagingService.stop(), threadContext)
-        .exceptionally(e -> logServiceStopError("messagingService", e));
+        .thenComposeAsync(v -> networkService.stop(), threadContext)
+        .exceptionally(e -> logServiceStopError("networkService", e));
   }
 
   protected CompletableFuture<Void> completeShutdown() {
@@ -299,26 +289,19 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     return toStringHelper(this).toString();
   }
 
-  /** Builds a default messaging service. */
-  protected static ManagedMessagingService buildMessagingService(
-      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
-    return new NettyMessagingService(
+  /** Builds the default network service, i.e. the node's messaging and unicast transports. */
+  protected static ManagedNetworkService buildNetworkService(
+      final ClusterConfig config,
+      final String actorSchedulerName,
+      final MeterRegistry registry,
+      final Executor executor) {
+    return new NettyNetworkService(
         config.getClusterId(),
         config.getNodeConfig().getAddress(),
         config.getMessagingConfig(),
         actorSchedulerName,
-        registry);
-  }
-
-  /** Builds a default unicast service. */
-  protected static ManagedUnicastService buildUnicastService(
-      final ClusterConfig config, final String actorSchedulerName, final MeterRegistry registry) {
-    return new NettyUnicastService(
-        config.getClusterId(),
-        config.getNodeConfig().getAddress(),
-        config.getMessagingConfig(),
-        actorSchedulerName,
-        registry);
+        registry,
+        executor);
   }
 
   /** Builds a member location provider. */

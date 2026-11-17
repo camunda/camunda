@@ -10,13 +10,15 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.List;
@@ -43,9 +45,11 @@ public class ExpressionControllerTest extends RestControllerTest {
   @MockitoBean ExpressionServices expressionServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.expressionServices(any())).thenReturn(expressionServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
@@ -85,7 +89,8 @@ public class ExpressionControllerTest extends RestControllerTest {
             {
                 "expression": "=x + y",
                 "result": "10",
-                "warnings": []
+                "warnings": [],
+                "referencedSecrets": []
             }""",
             JsonCompareMode.STRICT);
 
@@ -93,6 +98,7 @@ public class ExpressionControllerTest extends RestControllerTest {
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
+    assertThat(capturedRequest.scopeKey()).isNull();
   }
 
   @Test
@@ -133,7 +139,8 @@ public class ExpressionControllerTest extends RestControllerTest {
             {
                 "expression": "=x + y",
                 "result": "10",
-                "warnings": []
+                "warnings": [],
+                "referencedSecrets": []
             }""",
             JsonCompareMode.STRICT);
 
@@ -183,7 +190,8 @@ public class ExpressionControllerTest extends RestControllerTest {
                     {
                         "message": "No function found with name 'invalid_function' and 0 parameters"
                     }
-                ]
+                ],
+                "referencedSecrets": []
             }""",
             JsonCompareMode.STRICT);
   }
@@ -259,5 +267,81 @@ public class ExpressionControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectEvaluationWithMalformedScopeKey() {
+    // given
+    final var request =
+        """
+        {
+            "expression": "=x",
+            "tenantId": "tenant1",
+            "scopeKey": "abc"
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The provided scopeKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
+              "instance": "%s"
+            }"""
+            .formatted(EXPRESSION_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(expressionServices, never())
+        .evaluateExpression(any(ExpressionEvaluationRequest.class), any());
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithScopeKey() {
+    // given
+    final var expressionRecord = mock(ExpressionRecord.class);
+    when(expressionRecord.getExpression()).thenReturn("=x");
+    when(expressionRecord.getResultValue()).thenReturn("1");
+    when(expressionRecord.getWarnings()).thenReturn(List.of());
+
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
+
+    final var request =
+        """
+        {
+            "expression": "=x",
+            "tenantId": "tenant1",
+            "scopeKey": "2251799813685249"
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
+    final var captured = requestCaptor.getValue();
+    assertThat(captured.scopeKey()).isEqualTo(2251799813685249L);
   }
 }

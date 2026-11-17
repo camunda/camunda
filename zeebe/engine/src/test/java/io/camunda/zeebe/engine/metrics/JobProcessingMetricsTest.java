@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeThat;
 
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -76,13 +77,12 @@ public class JobProcessingMetricsTest {
 
   @Test
   public void allCountsStartAtNull() {
-    assertThat(findJobCounter("created", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("activated", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("timed out", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("completed", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("failed", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("canceled", JOB_TYPE, scenario.jobKind)).isEmpty();
-    assertThat(findJobCounter("error thrown", JOB_TYPE, scenario.jobKind)).isEmpty();
+    // derived from the enum rather than listed, so an action added later is covered without an
+    // edit here — the hand-maintained list had already gone stale on "workers notified" and
+    // "pushed". EngineMetricsDocTest pins which label each action emits
+    for (final var action : JobAction.values()) {
+      assertThat(findJobCounter(action.getLabel(), JOB_TYPE, scenario.jobKind)).isEmpty();
+    }
   }
 
   @Test
@@ -110,6 +110,44 @@ public class JobProcessingMetricsTest {
 
     // then
     assertThat(jobMetric("activated", jobType, scenario.jobKind)).isOne();
+  }
+
+  @Test
+  public void shouldCountSkipped() {
+    // given
+    engine.deployment().withXmlResource(scenario.process).deploy();
+
+    // use a unique job type so the skip counter is isolated from other tests
+    final String jobType = String.format("%s_%s_skipped", JOB_TYPE, scenario.jobKind);
+    final long processInstanceKey = createProcessInstanceWithJob(jobType);
+
+    // lease the job, then fail it back to activatable so it stays leased but activatable
+    final String jobLeaseToken =
+        engine
+            .jobs()
+            .withType(jobType)
+            .withLease()
+            .activate()
+            .getValue()
+            .getJobs()
+            .get(0)
+            .getJobLeaseToken();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(jobType)
+        .withJobLeaseToken(jobLeaseToken)
+        .withRetries(1)
+        .fail();
+    RecordingExporter.jobRecords(JobIntent.FAILED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when activating without a lease, the leased job is skipped
+    engine.jobs().withType(jobType).activate();
+
+    // then
+    assertThat(jobMetric("skipped", jobType, scenario.jobKind)).isOne();
   }
 
   @Test

@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.broker.system;
 
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.util.Map;
+import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -33,16 +37,17 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   public EmbeddedGatewayService(
       final Duration shutdownTimeout,
       final BrokerCfg configuration,
-      final SecurityConfiguration securityConfiguration,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
       final ActorSchedulingService actorScheduler,
       final ConcurrencyControl concurrencyControl,
       final JobStreamClient jobStreamClient,
       final BrokerClient brokerClient,
-      final UserServices userServices,
+      final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
-      final MeterRegistry meterRegistry) {
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
+      final MeterRegistry meterRegistry,
+      final PhysicalTenantIds physicalTenantIds) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
@@ -50,16 +55,17 @@ public final class EmbeddedGatewayService implements AutoCloseable {
         new Gateway(
             shutdownTimeout,
             configuration.getGateway(),
-            securityConfiguration,
+            securityConfigurationsByPhysicalTenant,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices,
+            jwtDecoderFactory,
+            oidcClaimsProviderFactory,
+            userServicesForTenant,
             passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
             meterRegistry,
-            configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength());
+            configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
+            physicalTenantIds);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.conditional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -25,15 +26,19 @@ public final class ConditionalStartedProcessInstance extends ObjectValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public ConditionalStartedProcessInstance() {
-    super(2);
-    declareProperty(processDefinitionKeyProp).declareProperty(processInstanceKeyProp);
+    super(3);
+    declareProperty(processDefinitionKeyProp)
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   @Override
@@ -57,6 +62,16 @@ public final class ConditionalStartedProcessInstance extends ObjectValue
     return this;
   }
 
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public ConditionalStartedProcessInstance setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
+    return this;
+  }
+
   /**
    * Copies the values from another ConditionalStartedProcessInstance.
    *
@@ -65,5 +80,6 @@ public final class ConditionalStartedProcessInstance extends ObjectValue
   public void copy(final ConditionalStartedProcessInstance other) {
     setProcessDefinitionKey(other.getProcessDefinitionKey());
     setProcessInstanceKey(other.getProcessInstanceKey());
+    setStorageOrdinal(other.getStorageOrdinal());
   }
 }

@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -36,11 +37,13 @@ public interface TypedRecordProcessorContext {
 
   EngineConfiguration getConfig();
 
-  SecurityConfiguration getSecurityConfig();
+  EngineSecurityConfig getSecurityConfig();
 
   ControllableStreamClock getClock();
 
   TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState();
 
   MeterRegistry getMeterRegistry();
+
+  SuspensionMetrics getSuspensionMetrics();
 }

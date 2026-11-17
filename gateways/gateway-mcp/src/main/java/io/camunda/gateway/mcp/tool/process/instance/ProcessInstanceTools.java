@@ -20,9 +20,10 @@ import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.service.ProcessInstanceServices;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -36,15 +37,15 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class ProcessInstanceTools {
 
-  private final ProcessInstanceServices processInstanceServices;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessInstanceTools(
-      final ProcessInstanceServices processInstanceServices,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.processInstanceServices = processInstanceServices;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
@@ -62,8 +63,11 @@ public class ProcessInstanceTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
-              processInstanceServices.search(
-                  processInstanceQuery.get(), authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .processInstanceServices(PhysicalTenantContext.current())
+                  .search(
+                      processInstanceQuery.get(),
+                      authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -71,7 +75,8 @@ public class ProcessInstanceTools {
 
   @CamundaMcpTool(
       description = "Get process instance by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult getProcessInstance(
       @McpToolParam(
               description =
@@ -82,8 +87,10 @@ public class ProcessInstanceTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstance(
-              processInstanceServices.getByKey(
-                  processInstanceKey, authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .processInstanceServices(PhysicalTenantContext.current())
+                  .getByKey(
+                      processInstanceKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -93,7 +100,8 @@ public class ProcessInstanceTools {
       description =
           """
           Create a new process instance of the given process definition. Either a processDefinitionKey or
-          a processDefinitionId (with an optional processDefinitionVersion) need to be passed.
+          a processDefinitionId (with an optional processDefinitionVersion or processDefinitionVersionTag)
+          need to be passed.
 
           When using the awaitCompletion flag, the tool will wait for the process instance to complete
           and return its result variables. When using awaitCompletion, always include a unique tag
@@ -115,14 +123,17 @@ public class ProcessInstanceTools {
       final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
       if (Boolean.TRUE.equals(processInstanceCreateRequest.awaitCompletion())) {
         return CallToolResultMapper.from(
-            processInstanceServices.createProcessInstanceWithResult(
-                processInstanceCreateRequest, camundaAuthentication),
+            serviceRegistry
+                .processInstanceServices(PhysicalTenantContext.current())
+                .createProcessInstanceWithResult(
+                    processInstanceCreateRequest, camundaAuthentication),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
       }
 
       return CallToolResultMapper.from(
-          processInstanceServices.createProcessInstance(
-              processInstanceCreateRequest, camundaAuthentication),
+          serviceRegistry
+              .processInstanceServices(PhysicalTenantContext.current())
+              .createProcessInstance(processInstanceCreateRequest, camundaAuthentication),
           ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

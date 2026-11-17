@@ -53,6 +53,10 @@ public class TestBackupProvider {
   public static Stream<? extends Arguments> provideArguments() throws Exception {
     return Stream.of(
         arguments(named("stub", simpleBackup())),
+        arguments(
+            named(
+                "stub zone aware",
+                simpleBackupWithId(new BackupIdentifierImpl(1, "zone-a", 2, 3)))),
         arguments(named("stub without snapshot", backupWithoutSnapshot())));
   }
 

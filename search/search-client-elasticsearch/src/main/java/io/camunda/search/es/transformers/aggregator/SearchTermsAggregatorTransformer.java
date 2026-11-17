@@ -42,7 +42,7 @@ public final class SearchTermsAggregatorTransformer
                 termsAggregation.script(
                     builder -> {
                       Optional.ofNullable(value.lang()).ifPresent(builder::lang);
-                      return builder.source(script);
+                      return builder.source(src -> src.scriptString(script));
                     }));
 
     final var builder = new Aggregation.Builder().terms(termsAggregation.build());

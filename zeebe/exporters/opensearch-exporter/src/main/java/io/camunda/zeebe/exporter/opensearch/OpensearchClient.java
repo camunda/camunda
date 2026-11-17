@@ -31,6 +31,7 @@ import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateResponse;
@@ -51,6 +52,8 @@ import org.opensearch.client.opensearch.ism.States;
 import org.opensearch.client.opensearch.ism.Transition;
 import org.opensearch.client.transport.Endpoint;
 import org.opensearch.client.transport.endpoints.SimpleEndpoint;
+import org.opensearch.client.util.BinaryData;
+import org.opensearch.client.util.ContentType;
 
 public class OpensearchClient implements AutoCloseable {
   public static final String ISM_INITIAL_STATE = "initial";
@@ -206,10 +209,11 @@ public class OpensearchClient implements AutoCloseable {
   }
 
   private void exportBulk() {
+    final var bulkOperations =
+        bulkIndexRequest.bulkOperations().stream().map(this::toBulkOperation).toList();
     final BulkResponse response;
     try {
-      final BulkRequest bulkRequest =
-          BulkRequest.of(b -> b.operations(bulkIndexRequest.bulkOperations()));
+      final BulkRequest bulkRequest = BulkRequest.of(b -> b.operations(bulkOperations));
       response = openSearchClient.bulk(bulkRequest);
     } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to flush bulk", e);
@@ -218,6 +222,17 @@ public class OpensearchClient implements AutoCloseable {
     if (response.errors()) {
       throwCollectedBulkError(response);
     }
+  }
+
+  private BulkOperation toBulkOperation(final BulkIndexRequest.IndexOperation op) {
+    return BulkOperation.of(
+        b ->
+            b.index(
+                i ->
+                    i.index(op.metadata().index())
+                        .id(op.metadata().id())
+                        .routing(op.metadata().routing())
+                        .document(BinaryData.of(op.source(), ContentType.APPLICATION_JSON))));
   }
 
   private void throwCollectedBulkError(final BulkResponse bulkResponse) {

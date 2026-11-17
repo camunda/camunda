@@ -34,8 +34,8 @@ import io.camunda.client.api.response.UnassignUserTaskResponse;
 import io.camunda.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -50,6 +50,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -78,7 +79,7 @@ public class MultiTenancyIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private static final String TENANT_A = "tenantA";
@@ -112,14 +113,13 @@ public class MultiTenancyIT {
                                   USER_TENANT_A_AND_B,
                                   "test@camunda.com"))))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put(
-                          "admin",
-                          Map.of(
-                              "users",
-                              List.of(USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin",
+                    Map.of("users", List.of(USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private String processId;
   private String migratedProcessId;
@@ -1611,7 +1611,7 @@ public class MultiTenancyIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to modify a process instance with key '%d', but no such process instance was found"
+              "Expected to modify process instance but no process instance found with key '%d'"
                   .formatted(processInstanceKey));
     }
   }
@@ -1744,7 +1744,7 @@ public class MultiTenancyIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               String.format(
-                  "Expected to migrate a process instance with key '%d', but no such process instance was found",
+                  "Expected to migrate process instance but no process instance found with key '%d'",
                   processInstanceKey));
     }
   }

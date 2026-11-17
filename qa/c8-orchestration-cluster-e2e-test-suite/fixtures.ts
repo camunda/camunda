@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base} from '@playwright/test';
+import {test as base, expect, type Cookie} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {OperateHomePage} from '@pages/OperateHomePage';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
@@ -24,7 +24,6 @@ import {OperateProcessInstanceViewModificationModePage} from '@pages/OperateProc
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
-import {PublicFormsPage} from '@pages/PublicFormsPage';
 import {IdentityHeader} from '@pages/IdentityHeader';
 import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
 import {IdentityGroupsPage} from '@pages/IdentityGroupsPage';
@@ -34,8 +33,13 @@ import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
+import {IdentityGlobalTaskListenersPage} from '@pages/IdentityGlobalTaskListenersPage';
+import {IdentityMcpProcessesPage} from '@pages/IdentityMcpProcessesPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
+import {SwaggerPage} from '@pages/SwaggerPage';
+import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
+import {logInViaApi} from 'utils/logInViaApi';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -54,11 +58,11 @@ type PlaywrightFixtures = {
   operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
   operateOperationsDetailsPage: OperateOperationsDetailsPage;
   operateOperationsLogPage: OperateOperationsLogPage;
+  operateBatchOperationsPage: OperateBatchOperationsPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
   resetData: () => Promise<void>;
-  publicFormsPage: PublicFormsPage;
   identityHeader: IdentityHeader;
   identityMappingRulesPage: IdentityMappingRulesPage;
   identityUsersPage: IdentityUsersPage;
@@ -68,10 +72,13 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  identityMcpProcessesPage: IdentityMcpProcessesPage;
+  swaggerPage: SwaggerPage;
+  identityGlobalTaskListenersPage: IdentityGlobalTaskListenersPage;
   suppressHelperModals: void;
 };
 
-const test = base.extend<PlaywrightFixtures>({
+const publicTest = base.extend<PlaywrightFixtures>({
   suppressHelperModals: [
     async ({page}, use) => {
       await page.addInitScript(() => {
@@ -117,6 +124,9 @@ const test = base.extend<PlaywrightFixtures>({
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
   },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
+  },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));
   },
@@ -144,6 +154,9 @@ const test = base.extend<PlaywrightFixtures>({
   operateOperationsLogPage: async ({page}, use) => {
     await use(new OperateOperationsLogPage(page));
   },
+  operateBatchOperationsPage: async ({page}, use) => {
+    await use(new OperateBatchOperationsPage(page));
+  },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
   },
@@ -152,9 +165,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
-  },
-  publicFormsPage: async ({page}, use) => {
-    await use(new PublicFormsPage(page));
   },
 
   identityHeader: async ({page}, use) => {
@@ -190,6 +200,71 @@ const test = base.extend<PlaywrightFixtures>({
   identityAuditLogPage: async ({page}, use) => {
     await use(new IdentityAuditLogPage(page));
   },
+  identityGlobalTaskListenersPage: async ({page}, use) => {
+    await use(new IdentityGlobalTaskListenersPage(page));
+  },
+  identityMcpProcessesPage: async ({page}, use) => {
+    await use(new IdentityMcpProcessesPage(page));
+  },
 });
 
-export {test};
+type AuthWorkerFixtures = {
+  loginUser: {username: string; password: string};
+  loginState: {cookies: Cookie[]; csrfToken: string};
+};
+
+const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
+  loginUser: [
+    {
+      username: process.env.TEST_USERNAME ?? 'demo',
+      password: process.env.TEST_PASSWORD ?? 'demo',
+    },
+    {scope: 'worker'},
+  ],
+  loginState: [
+    async ({browser, loginUser}, use) => {
+      const baseURL =
+        process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+      const context = await browser.newContext();
+      let csrfToken = '';
+      let cookies: Cookie[] = [];
+      // loginState is worker-scoped, so a login that silently fails would send
+      // every test on this worker (and its retries) to the login screen. Retry
+      // the login until the session cookie is actually established, and fail
+      // loudly if it never is, instead of proceeding unauthenticated.
+      await expect(async () => {
+        const login = await logInViaApi(context.request, baseURL, loginUser);
+        expect(login.response.status()).toBe(204);
+        csrfToken = login.csrfToken;
+        cookies = await context.cookies();
+        expect(
+          cookies.some((cookie) => cookie.name === 'camunda-session'),
+        ).toBe(true);
+      }).toPass({timeout: 30_000});
+      await context.close();
+      await use({cookies, csrfToken});
+    },
+    {scope: 'worker'},
+  ],
+  page: async ({context, loginState, loginUser}, use) => {
+    await context.addCookies(loginState.cookies);
+    // The worker's session can expire during a long run. Renew it here, before
+    // the CSRF init script is registered, so only one script writes the token
+    // and it matches the session cookie in this context.
+    const baseURL = process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+    const me = await context.request.get(`${baseURL}/v2/authentication/me`);
+    if (me.status() === 401) {
+      const login = await logInViaApi(context.request, baseURL, loginUser);
+      expect(login.response.status()).toBe(204);
+      loginState.csrfToken = login.csrfToken;
+      loginState.cookies = await context.cookies();
+    }
+    await context.addInitScript((csrfToken) => {
+      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+    }, loginState.csrfToken);
+    const page = await context.newPage();
+    await use(page);
+  },
+});
+
+export {test, publicTest};

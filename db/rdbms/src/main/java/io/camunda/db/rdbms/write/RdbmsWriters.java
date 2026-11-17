@@ -8,7 +8,9 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
+import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
+import io.camunda.db.rdbms.sql.AgentHistoryMapper;
+import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
@@ -30,7 +32,11 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.AgentDefinitionWriter;
+import io.camunda.db.rdbms.write.service.AgentHistoryWriter;
+import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
@@ -64,11 +70,15 @@ import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
+import io.camunda.db.rdbms.write.service.WaitStateWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class RdbmsWriters {
+public class RdbmsWriters implements AutoCloseable {
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsWriters.class);
 
   private final RdbmsPurger rdbmsPurger;
   private final ExecutionQueue executionQueue;
@@ -96,7 +106,6 @@ public class RdbmsWriters {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -106,7 +115,11 @@ public class RdbmsWriters {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final AgentDefinitionMapper agentDefinitionMapper,
+      final AgentHistoryMapper agentHistoryMapper,
+      final AgentInstanceMapper agentInstanceMapper,
+      final WaitStateMapper waitStateMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -152,11 +165,7 @@ public class RdbmsWriters {
     writers.put(
         BatchOperationWriter.class,
         new BatchOperationWriter(
-            batchOperationReader,
-            executionQueue,
-            batchOperationMapper,
-            config,
-            vendorDatabaseProperties));
+            executionQueue, batchOperationMapper, config, vendorDatabaseProperties));
     writers.put(
         JobWriter.class,
         new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
@@ -170,7 +179,8 @@ public class RdbmsWriters {
         UsageMetricTUWriter.class, new UsageMetricTUWriter(executionQueue, usageMetricTUMapper));
     writers.put(
         MessageSubscriptionWriter.class,
-        new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper));
+        new MessageSubscriptionWriter(
+            executionQueue, messageSubscriptionMapper, vendorDatabaseProperties));
     writers.put(
         CorrelatedMessageSubscriptionWriter.class,
         new CorrelatedMessageSubscriptionWriter(
@@ -183,6 +193,16 @@ public class RdbmsWriters {
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
     writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
+    writers.put(
+        AgentDefinitionWriter.class,
+        new AgentDefinitionWriter(agentDefinitionMapper, executionQueue));
+    writers.put(
+        AgentHistoryWriter.class,
+        new AgentHistoryWriter(executionQueue, agentHistoryMapper, vendorDatabaseProperties));
+    writers.put(
+        AgentInstanceWriter.class,
+        new AgentInstanceWriter(executionQueue, agentInstanceMapper, vendorDatabaseProperties));
+    writers.put(WaitStateWriter.class, new WaitStateWriter(executionQueue, waitStateMapper));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -191,6 +211,10 @@ public class RdbmsWriters {
 
   public AuditLogWriter getAuditLogWriter() {
     return getWriter(AuditLogWriter.class);
+  }
+
+  public WaitStateWriter getWaitStateWriter() {
+    return getWriter(WaitStateWriter.class);
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
@@ -301,6 +325,18 @@ public class RdbmsWriters {
     return getWriter(DeployedResourceWriter.class);
   }
 
+  public AgentDefinitionWriter getAgentDefinitionWriter() {
+    return getWriter(AgentDefinitionWriter.class);
+  }
+
+  public AgentHistoryWriter getAgentHistoryWriter() {
+    return getWriter(AgentHistoryWriter.class);
+  }
+
+  public AgentInstanceWriter getAgentInstanceWriter() {
+    return getWriter(AgentInstanceWriter.class);
+  }
+
   public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
     return writers.values().stream()
         .filter(ProcessInstanceDependant.class::isInstance)
@@ -355,5 +391,17 @@ public class RdbmsWriters {
    */
   public int getErrorMessageSize() {
     return vendorDatabaseProperties.errorMessageSize();
+  }
+
+  @Override
+  public void close() throws Exception {
+    try {
+      flush(true);
+    } catch (final Exception e) {
+      LOG.warn("Failed to execute final flush on close");
+      throw e;
+    } finally {
+      getExecutionQueue().reset();
+    }
   }
 }

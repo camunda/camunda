@@ -8,7 +8,11 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor;
@@ -22,6 +26,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +74,90 @@ public class IncidentResolvedApplierTest {
 
     // then
     assertThat(job.getElementId()).isEqualTo(elementId);
+  }
+
+  @Test
+  void shouldMakeJobActivatableByPriorityOnIncidentResolutionV4() {
+    // given
+    final var incidentKey = 1L;
+    final var jobKey = 2L;
+    final var priority = 7;
+    final var incidentRecord =
+        new IncidentRecord()
+            .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
+            .setJobKey(jobKey)
+            .setElementId(BufferUtil.wrapString("elementId"));
+
+    final var job =
+        new JobRecord()
+            .setType("test")
+            .setPriority(priority)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setElementId("elementId");
+    when(jobStateMock.getState(jobKey)).thenReturn(State.FAILED);
+    when(jobStateMock.getJob(jobKey)).thenReturn(job);
+
+    final var v4Applier =
+        new IncidentResolvedV4Applier(incidentState, jobStateMock, elementInstanceStateMock);
+
+    // when
+    v4Applier.applyState(incidentKey, incidentRecord);
+
+    // then
+    verify(jobStateMock).updateJobRecord(jobKey, job);
+    verify(jobStateMock).updateJobState(jobKey, State.ACTIVATABLE);
+    verify(jobStateMock).removeJobDeadline(jobKey, job.getDeadline());
+    verify(jobStateMock)
+        .makeJobActivatableByPriority(
+            job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
+  }
+
+  @Test
+  void shouldMakeParkedJobActivatableWhenSecretResolutionIncidentIsResolvedV4() {
+    // given - a job parked for secret resolution is not FAILED or ERROR_THROWN, so the regular
+    //         resolution path does not apply to it
+    final var incidentKey = 1L;
+    final var jobKey = 2L;
+    final var incidentRecord =
+        new IncidentRecord()
+            .setErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+            .setJobKey(jobKey)
+            .setElementId(BufferUtil.wrapString("elementId"));
+
+    final var v4Applier =
+        new IncidentResolvedV4Applier(incidentState, jobStateMock, elementInstanceStateMock);
+
+    // when
+    v4Applier.applyState(incidentKey, incidentRecord);
+
+    // then - the reactivation is delegated to job state, which reactivates the job only if it is
+    //        still waiting; the regular resolution path is not taken
+    verify(jobStateMock).makeActivatableAfterSecretResolution(jobKey);
+    verify(jobStateMock, never()).updateJobState(anyLong(), any());
+  }
+
+  @Test
+  void shouldNotReactivateJobOfNonSecretIncidentWhenResolvedV4() {
+    // given - an incident that is not about secret resolution, raised for a job that is neither
+    //         FAILED nor ERROR_THROWN
+    final var incidentKey = 1L;
+    final var jobKey = 2L;
+    final var incidentRecord =
+        new IncidentRecord()
+            .setErrorType(ErrorType.IO_MAPPING_ERROR)
+            .setJobKey(jobKey)
+            .setElementId(BufferUtil.wrapString("elementId"));
+    when(jobStateMock.getState(jobKey)).thenReturn(State.WAITING_FOR_SECRET_RESOLUTION);
+
+    final var v4Applier =
+        new IncidentResolvedV4Applier(incidentState, jobStateMock, elementInstanceStateMock);
+
+    // when
+    v4Applier.applyState(incidentKey, incidentRecord);
+
+    // then - the secret resolution reactivation is reserved for secret resolution incidents
+    verify(jobStateMock, never()).makeActivatableAfterSecretResolution(anyLong());
+    verify(jobStateMock, never()).updateJobState(anyLong(), any());
   }
 
   @Test

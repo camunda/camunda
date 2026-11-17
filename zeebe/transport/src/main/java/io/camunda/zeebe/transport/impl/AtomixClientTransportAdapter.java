@@ -14,13 +14,13 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,21 +32,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       "Failed to send request to %s, no remote address found.";
 
   private final MessagingService messagingService;
-  private final TopicSupplier topicSupplier;
 
   public AtomixClientTransportAdapter(final MessagingService messagingService) {
-    this(messagingService, TopicSupplier.withLegacyTopicName());
-  }
-
-  public AtomixClientTransportAdapter(
-      final MessagingService messagingService, final TopicSupplier topicSupplier) {
     this.messagingService = messagingService;
-    this.topicSupplier = topicSupplier;
   }
 
   @Override
   public ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final Duration timeout) {
@@ -56,18 +49,26 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   @Override
   public ActorFuture<DirectBuffer> sendRequest(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final ClientRequest clientRequest,
       final Duration timeout) {
     return sendRequestInternal(nodeAddressSupplier, r -> true, clientRequest, false, timeout);
   }
 
   private ActorFuture<DirectBuffer> sendRequestInternal(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final boolean shouldRetry,
       final Duration timeout) {
+
+    final var requestFuture = new CompletableActorFuture<DirectBuffer>();
+    final var partitionGroup = clientRequest.getPartitionGroup();
+    if (partitionGroup == null) {
+      requestFuture.completeExceptionally(
+          new IllegalStateException("Cannot send a request without a partition group"));
+      return requestFuture;
+    }
 
     // copy once
     final var length = clientRequest.getLength();
@@ -77,9 +78,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
     final var partitionId = clientRequest.getPartitionId();
     final var requestType = clientRequest.getRequestType();
-    final var topicName = topicSupplier.apply(partitionId, requestType);
-
-    final var requestFuture = new CompletableActorFuture<DirectBuffer>();
+    final var topicName = AtomixServerTransport.topicName(partitionGroup, partitionId, requestType);
     final var requestContext =
         new RequestContext(
             requestFuture,
@@ -171,7 +170,9 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
   }
 
   private void handleResponse(
-      final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
+      final RequestContext requestContext,
+      final byte[] response,
+      final @Nullable Throwable errorOnRequest) {
     if (requestContext.isDone()) {
       if (LOG.isTraceEnabled()) {
         LOG.trace("Handle response, but request {} is already done", requestContext.hashCode());
@@ -224,7 +225,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     }
   }
 
-  private boolean exceptionShowsConnectionIssue(final Throwable throwable) {
+  private boolean exceptionShowsConnectionIssue(final @Nullable Throwable throwable) {
     return throwable instanceof ConnectException
         || throwable instanceof MessagingException.NoRemoteHandler;
   }

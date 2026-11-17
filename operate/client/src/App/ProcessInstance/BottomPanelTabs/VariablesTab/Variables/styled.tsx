@@ -30,7 +30,7 @@ const VariableName = styled.div`
 `;
 
 const StructuredList = styled(BaseStructuredList)`
-  padding: var(--cds-spacing-05);
+  padding: 0 var(--cds-spacing-05) var(--cds-spacing-05);
   [role='table'] {
     table-layout: fixed;
   }
@@ -43,4 +43,35 @@ const EmptyMessageWrapper = styled.div`
   align-items: center;
 `;
 
-export {VariablesContent, VariableName, StructuredList, EmptyMessageWrapper};
+const DimmableResults = styled.div<{$dimmed: boolean}>`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  transition: opacity 150ms ease;
+  opacity: ${({$dimmed}) => ($dimmed ? 0.5 : 1)};
+  pointer-events: ${({$dimmed}) => ($dimmed ? 'none' : 'auto')};
+`;
+
+const FilterSwitcherContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cds-spacing-04);
+  padding: 0 var(--cds-spacing-05) var(--cds-spacing-05);
+  border-bottom: solid 1px var(--cds-border-subtle-01);
+`;
+
+const VariablesSearch = styled.div`
+  width: 100%;
+`;
+
+export {
+  VariablesContent,
+  VariableName,
+  StructuredList,
+  EmptyMessageWrapper,
+  DimmableResults,
+  FilterSwitcherContainer,
+  VariablesSearch,
+};

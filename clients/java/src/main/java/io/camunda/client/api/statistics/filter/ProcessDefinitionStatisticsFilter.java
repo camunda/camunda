@@ -84,6 +84,14 @@ public interface ProcessDefinitionStatisticsFilter extends ProcessDefinitionStat
   @Override
   ProcessDefinitionStatisticsFilter hasIncident(final Boolean hasIncident);
 
+  /** Filter by suspendedDate */
+  @Override
+  ProcessDefinitionStatisticsFilter suspendedDate(final OffsetDateTime suspendedDate);
+
+  /** Filter by suspendedDate using {@link DateTimeProperty} consumer */
+  @Override
+  ProcessDefinitionStatisticsFilter suspendedDate(final Consumer<DateTimeProperty> fn);
+
   /** Filter by tenantId */
   @Override
   ProcessDefinitionStatisticsFilter tenantId(final String tenantId);
@@ -168,6 +176,14 @@ public interface ProcessDefinitionStatisticsFilter extends ProcessDefinitionStat
   /** Filter by incidentErrorHashCode using {@link IntegerProperty} */
   @Override
   ProcessDefinitionStatisticsFilter incidentErrorHashCode(final Consumer<IntegerProperty> fn);
+
+  /** Filter by businessId */
+  @Override
+  ProcessDefinitionStatisticsFilter businessId(final String businessId);
+
+  /** Filter by businessId using {@link StringProperty} consumer */
+  @Override
+  ProcessDefinitionStatisticsFilter businessId(final Consumer<StringProperty> fn);
 
   /** Filter by or conjunction using {@link ProcessInstanceFilterBase} consumer */
   ProcessDefinitionStatisticsFilter orFilters(

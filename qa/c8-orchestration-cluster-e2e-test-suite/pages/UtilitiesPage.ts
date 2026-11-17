@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, expect} from '@playwright/test';
+import {Locator, Page, expect} from '@playwright/test';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {sleep} from '../utils/sleep';
@@ -14,21 +14,18 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 
 export async function navigateToApp(
   page: Page,
+  appName: 'operate' | 'tasklist' | 'admin',
+): Promise<void> {
+  await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/login`);
+}
+
+export async function navigateToAppHome(
+  page: Page,
   appName: string,
 ): Promise<void> {
-  if (appName == 'operate') {
-    await page.goto(
-      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
-    );
-  } else if (appName == 'tasklist') {
-    await page.goto(
-      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
-    );
-  } else if (appName == 'admin') {
-    await page.goto(
-      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
-    );
-  }
+  await page.goto(
+    `${process.env.CORE_APPLICATION_URL}/${appName.toLowerCase()}/`,
+  );
 }
 
 export async function hideHelperModals(page: Page): Promise<void> {
@@ -73,11 +70,6 @@ export async function gotoProcessesPage(
   await page.goto(url);
 }
 
-export async function validateURL(page: Page, URL: RegExp): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises, playwright/missing-playwright-await
-  expect(page).toHaveURL(URL);
-}
-
 export async function completeTaskWithRetry(
   taskPanelPage: TaskPanelPage,
   taskDetailsPage: TaskDetailsPage,
@@ -87,7 +79,13 @@ export async function completeTaskWithRetry(
 ): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await taskPanelPage.openTask(taskName);
+      // Give the task list the same 60s per-attempt budget used elsewhere in
+      // the suite for tasks that were just created/completed (e.g.
+      // task-details.spec.ts's processWithDeployedForm calls) -- the default
+      // 10s is regularly too tight for a task to become searchable under CI
+      // load, especially for sequential multi-task flows like the priority
+      // chain in hto-user-flows.spec.ts.
+      await taskPanelPage.openTask(taskName, {timeout: 60000});
       await sleep(500);
       if (!(await taskDetailsPage.assignedToMeText.isVisible())) {
         await taskDetailsPage.clickAssignToMeButton();
@@ -104,14 +102,16 @@ export async function completeTaskWithRetry(
               taskPanelPage.availableTasks
                 .getByText(taskName, {exact: true})
                 .first(),
-            ).not.toBeVisible({timeout: 10000});
+            ).not.toBeVisible({timeout: 20000});
           },
           onFailure: async () => {
             console.log(
-              `Task ${taskName} still visible, retrying waitForAssertion...`,
+              `Task ${taskName} still visible, reloading page and retrying...`,
             );
+            await taskPanelPage.reloadPage();
+            await sleep(1000);
           },
-          maxRetries: 4,
+          maxRetries: 3,
         });
         assertionPassed = true;
       } catch (error) {
@@ -134,4 +134,13 @@ export async function completeTaskWithRetry(
       }
     }
   }
+}
+
+/**
+ * Carbon renders a tooltip's content as a page-level popover rather than inside
+ * the element it annotates, so it cannot be reached through that element's own
+ * locator tree.
+ */
+export function tooltipWithText(page: Page, text: string): Locator {
+  return page.getByRole('tooltip', {name: text});
 }

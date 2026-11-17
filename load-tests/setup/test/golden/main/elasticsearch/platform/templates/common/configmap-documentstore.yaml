@@ -1,0 +1,20 @@
+---
+# Source: camunda-platform/templates/common/configmap-documentstore.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-golden-main-elasticsearch-camunda-platform-documentstore-env-vars
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-main-elasticsearch
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+  annotations:
+    {}
+data:
+  DOCUMENT_DEFAULT_STORE_ID: "inmemory"
+  DOCUMENT_STORE_INMEMORY_CLASS: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"

@@ -142,7 +142,7 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
   test('Activate AdHoc Activities FailsWithMissingElements', async ({
     request,
   }) => {
-    const adHocKey = state.adHocSubProcessInstanceKey as string;
+    const adHocKey = state.adHocSubProcessInstanceKeySimple as string;
 
     const invalidBody = {
       cancelRemainingInstances: false,
@@ -170,7 +170,7 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
   test('Activate AdHoc Activities ReturnsUnauthorizedWithoutAuth', async ({
     request,
   }) => {
-    const adHocKey = state.adHocSubProcessInstanceKey as string;
+    const adHocKey = state.adHocSubProcessInstanceKeySimple as string;
 
     const body = {
       elements: [

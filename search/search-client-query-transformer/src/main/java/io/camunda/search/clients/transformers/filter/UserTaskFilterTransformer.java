@@ -13,8 +13,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -24,25 +26,37 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.util.NumberParsingUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
+
+  /** Task states that end at the latest when the process instance of the task ends. */
+  private static final Set<String> UNFINISHED_TASK_STATES =
+      Set.of(
+          UserTaskState.CREATING.name(),
+          UserTaskState.CREATED.name(),
+          UserTaskState.ASSIGNING.name(),
+          UserTaskState.UPDATING.name(),
+          UserTaskState.COMPLETING.name(),
+          UserTaskState.CANCELING.name());
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskFilterTransformer.class);
 
@@ -55,20 +69,45 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   }
 
   @Override
+  protected boolean matchesOnlyRuntimeData(final UserTaskFilter filter) {
+    return matchesOnlyUnfinishedTasks(filter)
+        || allMatch(filter.orFilters(), UserTaskFilterTransformer::matchesOnlyUnfinishedTasks);
+  }
+
+  private static boolean matchesOnlyUnfinishedTasks(final UserTaskFilter filter) {
+    return restrictsTo(filter.stateOperations(), UNFINISHED_TASK_STATES);
+  }
+
+  @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
+    final var queries = new ArrayList<>(toSearchQueryFields(filter));
+    queries.add(exists("flowNodeInstanceId")); // Default to task
+    queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      queries.add(or(orQueries));
+    }
+
+    return and(queries);
+  }
+
+  private List<SearchQuery> toSearchQueryFields(final UserTaskFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
-    ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
-    ofNullable(getProcessDefinitionKeyQuery(filter.processDefinitionKeys()))
-        .ifPresent(queries::add);
-    ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
+    queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
+    queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
+    queries.addAll(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()));
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     queries.addAll(getNameQuery(filter.nameOperations()));
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
+    queries.addAll(getBusinessIdQuery(filter.businessIdOperations()));
     queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
     queries.addAll(getStatesQuery(filter.stateOperations()));
+    ofNullable(filter.isSuspended()).ifPresent(f -> queries.add(getIsSuspendedQuery(f)));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getCreationTimeQuery(filter.creationDateOperations()));
@@ -99,14 +138,12 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     // No need validate parent as the localVariable is the only children from Task
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
-    queries.add(exists("flowNodeInstanceId")); // Default to task
-    queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
-
-    return and(queries);
+    return queries;
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return switch (authorization.resourceType()) {
       case PROCESS_DEFINITION -> stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
       case USER_TASK -> longTerms(KEY, NumberParsingUtil.parseLongs(authorization.resourceIds()));
@@ -122,7 +159,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
-      final Authorization<?> authorization, final CamundaAuthentication authentication) {
+      final RequiredAuthorization<?> authorization, final CamundaAuthentication authentication) {
 
     if (authorization.resourceType() != AuthorizationResourceType.USER_TASK) {
       LOG.warn(
@@ -139,17 +176,17 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
     for (final var propertyName : authorization.resourcePropertyNames()) {
       switch (propertyName) {
-        case Authorization.PROP_ASSIGNEE -> {
+        case RequiredAuthorization.PROP_ASSIGNEE -> {
           if (StringUtils.isNotEmpty(username)) {
             queries.add(term(ASSIGNEE, username));
           }
         }
-        case Authorization.PROP_CANDIDATE_USERS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_USERS -> {
           if (StringUtils.isNotEmpty(username)) {
             queries.add(stringTerms(CANDIDATE_USERS, List.of(username)));
           }
         }
-        case Authorization.PROP_CANDIDATE_GROUPS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_GROUPS -> {
           if (groups != null && !groups.isEmpty()) {
             queries.add(stringTerms(CANDIDATE_GROUPS, groups));
           }
@@ -168,12 +205,15 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return or(queries);
   }
 
-  private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
-    return longTerms(PROCESS_INSTANCE_ID, processInstanceKeys);
+  private List<SearchQuery> getProcessInstanceKeyQuery(
+      final List<Operation<Long>> processInstanceKeys) {
+    return longOperations(PROCESS_INSTANCE_ID, processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
-    return longTerms(PROCESS_DEFINITION_ID, processDefinitionIds);
+  private List<SearchQuery> getProcessDefinitionKeyQuery(
+      final List<Operation<Long>> processDefinitionKeys) {
+    // In ElasticSearch, "processDefinitionKey" is stored in field "processDefinitionId"
+    return longOperations(PROCESS_DEFINITION_ID, processDefinitionKeys);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
@@ -190,6 +230,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private List<SearchQuery> getAssigneesQuery(final List<Operation<String>> assignees) {
     return stringOperations(ASSIGNEE, assignees);
+  }
+
+  private List<SearchQuery> getBusinessIdQuery(final List<Operation<String>> businessIds) {
+    return stringOperations(BUSINESS_ID, businessIds);
   }
 
   private List<SearchQuery> getPrioritiesQuery(final List<Operation<Integer>> priorities) {
@@ -215,6 +259,13 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return dateTimeOperations(DUE_DATE, dueTime);
   }
 
+  private SearchQuery getIsSuspendedQuery(final boolean isSuspended) {
+    // documents indexed before the field existed carry no isSuspended value and read as false
+    return isSuspended
+        ? term(IS_SUSPENDED, true)
+        : or(term(IS_SUSPENDED, false), not(exists(IS_SUSPENDED)));
+  }
+
   private List<SearchQuery> getStatesQuery(final List<Operation<String>> states) {
     return stringOperations(STATE, states);
   }
@@ -223,8 +274,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return stringOperations(TENANT_ID, tenant);
   }
 
-  private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
-    return stringTerms(BPMN_PROCESS_ID, bpmnProcessId);
+  private List<SearchQuery> getProcessDefinitionIdsQuery(
+      final List<Operation<String>> processDefinitionIds) {
+    // In ElasticSearch, "processDefinitionId" is stored in field "bpmnProcessId"
+    return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }
 
   private SearchQuery getElementInstanceKeyQuery(final List<Long> elementInstanceKeys) {

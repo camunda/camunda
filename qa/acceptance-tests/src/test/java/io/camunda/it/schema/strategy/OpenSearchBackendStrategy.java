@@ -8,10 +8,10 @@
 package io.camunda.it.schema.strategy;
 
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_OPENSEARCH_VERSION;
 
 import io.camunda.application.Profile;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestStandaloneBackupManager;
@@ -53,7 +53,7 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
     container =
         new GenericContainer<>(
                 DockerImageName.parse("opensearchproject/opensearch")
-                    .withTag(SUPPORTED_OPENSEARCH_VERSION))
+                    .withTag(TEST_OPENSEARCH_VERSION))
             .withEnv("discovery.type", "single-node")
             .withEnv("DISABLE_SECURITY_PLUGIN", "false")
             .withEnv("plugins.security.ssl.http.enabled", "false")
@@ -143,7 +143,6 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         .withUnauthenticatedAccess()
         .withProperty(CREATE_SCHEMA_PROPERTY, "false")
         .withProperty("camunda.operate.opensearch.health-check-enabled", "false")
-        .withProperty("camunda.tasklist.opensearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.opensearch)
         .withUnifiedConfig(
             cfg -> {

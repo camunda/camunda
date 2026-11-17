@@ -38,7 +38,10 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private MessageSubscriptionType messageSubscriptionType;
   private String processDefinitionName;
   private Integer processDefinitionVersion;
-  private Map<String, String> extensionProperties;
+  private Map<String, String> toolProperties;
+  private String toolName;
+  private String inboundConnectorType;
+  private String businessId;
 
   @Override
   public Long getMessageSubscriptionKey() {
@@ -116,13 +119,27 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   }
 
   @Override
-  public Map<String, String> getExtensionProperties() {
-    return extensionProperties;
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
   }
 
-  public MessageSubscriptionBuilder setExtensionProperties(
-      final Map<String, String> extensionProperties) {
-    this.extensionProperties = extensionProperties;
+  @Override
+  public String getToolName() {
+    return toolName;
+  }
+
+  @Override
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public MessageSubscriptionBuilder setToolProperties(final Map<String, String> toolProperties) {
+    this.toolProperties = toolProperties;
     return this;
   }
 
@@ -201,6 +218,21 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setMessageSubscriptionKey(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setToolName(final String toolName) {
+    this.toolName = toolName;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setInboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setBusinessId(final String businessId) {
+    this.businessId = businessId;
     return this;
   }
 

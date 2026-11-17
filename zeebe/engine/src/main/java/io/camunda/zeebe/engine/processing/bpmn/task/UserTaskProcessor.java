@@ -99,7 +99,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   protected Either<Failure, ?> onCompleteInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
     return variableMappingBehavior
-        .applyOutputMappings(context, element)
+        .applyUserTaskOutputMappings(context, element)
         .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
   }
 
@@ -138,13 +138,16 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         userTaskBehavior.userTaskCanceling(elementInstance);
     if (cancelingUserTask.isPresent()) {
       final var firstCancelingListener =
-          taskListeners.stream()
-              .filter(l -> l.getEventType() == ZeebeTaskListenerEventType.canceling)
+          userTaskBehavior
+              .getTaskListeners(
+                  element, elementInstance.getUserTaskKey(), ZeebeTaskListenerEventType.canceling)
+              .stream()
               .findFirst();
       if (firstCancelingListener.isPresent()) {
         jobBehavior.createNewTaskListenerJob(
             context,
             cancelingUserTask.get(),
+            element,
             firstCancelingListener.get(),
             Collections.emptyList());
         return TransitionOutcome.AWAIT;
@@ -201,7 +204,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             .findFirst();
     if (firstCreatingListener.isPresent()) {
       jobBehavior.createNewTaskListenerJob(
-          context, userTaskRecord, firstCreatingListener.get(), Collections.emptyList());
+          context, userTaskRecord, element, firstCreatingListener.get(), Collections.emptyList());
       lifecycleState = LifecycleState.CREATING;
     } else {
       userTaskRecord.unsetAssignee();
@@ -226,7 +229,11 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .ifPresentOrElse(
             listener ->
                 jobBehavior.createNewTaskListenerJob(
-                    context, userTaskRecord, listener, userTaskRecord.getChangedAttributes()),
+                    context,
+                    userTaskRecord,
+                    element,
+                    listener,
+                    userTaskRecord.getChangedAttributes()),
             () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 

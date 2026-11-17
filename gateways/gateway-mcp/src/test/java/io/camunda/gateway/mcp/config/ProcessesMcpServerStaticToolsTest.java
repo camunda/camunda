@@ -16,7 +16,6 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
@@ -43,7 +42,7 @@ class ProcessesMcpServerStaticToolsTest extends ProcessesToolsTest {
   void shouldCallStaticallyConfiguredTools() {
     // when
     final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("staticProcess").build());
+        mcpClient.callTool(CallToolRequest.builder("staticProcess").build());
 
     // then
     assertThat(result.isError()).isFalse();
@@ -66,11 +65,9 @@ class ProcessesMcpServerStaticToolsTest extends ProcessesToolsTest {
                 "staticProcess",
                 SyncToolSpecification.builder()
                     .tool(
-                        Tool.builder()
-                            .name("staticProcess")
+                        Tool.builder("staticProcess", Map.of("type", "object"))
                             .title("staticProcess")
                             .description("Static fallback process tool")
-                            .inputSchema(new JsonSchema("object", null, null, false, null, null))
                             .build())
                     .callHandler(
                         (context, callToolRequest) ->

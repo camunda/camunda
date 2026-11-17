@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -351,6 +353,102 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             .create();
 
     // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .withTags("secondInstance")
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(secondProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectCreateProcessInstanceWhenBusinessIdHeldByMessageStartedInstance() {
+    final String processId = helper.getBpmnProcessId();
+    final String messageName = processId + "_msg";
+    final String messageStartJobType = processId + "_msg_job";
+    final String businessId = "biz-123";
+
+    // given an instance started by a message-start event holds the business id for this definition.
+    // This is the converse of the cross-API direction pinned in
+    // MessageStartEventBusinessIdUniquenessTest (a CreateProcessInstance holder blocking a message
+    // start): a message-started instance must hold its business id in the same uniqueness index.
+    ENGINE
+        .deployment()
+        .withXmlResource(dualStartProcess(processId, messageName, messageStartJobType))
+        .deploy();
+    ENGINE
+        .message()
+        .withName(messageName)
+        .withCorrelationKey("start-key")
+        .withBusinessId(businessId)
+        .publish();
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType(messageStartJobType).getFirst();
+
+    // when a CreateProcessInstance with the same business id for the same definition is attempted
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withBusinessId(businessId)
+        .withTags("rejectedInstance")
+        .expectRejection()
+        .create();
+
+    // then it is rejected because the message-started instance already holds the business id
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .withTags("rejectedInstance")
+                .withBpmnProcessId(processId)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            """
+            Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition '%s'"""
+                .formatted(businessId, processId));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessIdNoLongerInUseDueToMessageStartedHolderEnd() {
+    final String processId = helper.getBpmnProcessId();
+    final String messageName = processId + "_msg";
+    final String messageStartJobType = processId + "_msg_job";
+    final String businessId = "biz-123";
+
+    // given a message-started instance holds the business id (a create with the same business id is
+    // rejected at this point — see the test above)
+    ENGINE
+        .deployment()
+        .withXmlResource(dualStartProcess(processId, messageName, messageStartJobType))
+        .deploy();
+    ENGINE
+        .message()
+        .withName(messageName)
+        .withCorrelationKey("start-key")
+        .withBusinessId(businessId)
+        .publish();
+    final var holderJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(messageStartJobType).getFirst();
+
+    // when the message-started holder completes, freeing the business id
+    ENGINE.job().withKey(holderJob.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderJob.getValue().getProcessInstanceKey())
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then a CreateProcessInstance with the same business id now succeeds
+    final var secondProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
     assertThat(
             RecordingExporter.processInstanceCreationRecords()
                 .withIntent(ProcessInstanceCreationIntent.CREATED)
@@ -924,5 +1022,23 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             Expected to create instance of process with business id '%s', \
             but an instance with this business id already exists for process definition '%s'"""
                 .formatted(businessId, processId));
+  }
+
+  // One definition reachable two ways: a none-start event (used by CreateProcessInstance) and a
+  // message-start event (used by a published message), so a PI started either way contends for the
+  // same business id slot. The message-start arm parks on a service task so the holder stays active
+  // and can be completed deterministically by its job key.
+  private static BpmnModelInstance dualStartProcess(
+      final String processId, final String messageName, final String messageStartJobType) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent("none-start")
+        .userTask("none-task", AbstractUserTaskBuilder::zeebeUserTask)
+        .endEvent()
+        .moveToProcess(processId)
+        .startEvent("message-start")
+        .message(messageName)
+        .serviceTask("message-task", t -> t.zeebeJobType(messageStartJobType))
+        .endEvent()
+        .done();
   }
 }

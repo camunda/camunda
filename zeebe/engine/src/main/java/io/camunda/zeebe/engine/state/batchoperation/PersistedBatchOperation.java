@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state.batchoperation;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
@@ -27,19 +27,23 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationJobUpdatePlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.util.ProjectionOf;
 import java.util.Comparator;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** The persisted record for a batch operation in the rocksDb state. */
-public class PersistedBatchOperation extends UnpackedObject implements DbValue {
+public class PersistedBatchOperation extends UnpackedObject
+    implements DbValue, ProjectionOf<BatchOperationCreationRecord, PersistedBatchOperation> {
 
   /** The key of the batch operation. This is a unique identifier for the batch operation. */
   private final LongProperty keyProp = new LongProperty("key");
@@ -50,6 +54,9 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
    */
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>("batchOperationType", BatchOperationType.class);
+
+  /** The storage ordinal the batch operation inherited from the active ordinal at creation. */
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
 
   /** The status of the batch operation. */
   private final EnumProperty<BatchOperationStatus> statusProp =
@@ -74,6 +81,13 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
    */
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
+
+  /**
+   * An optional job update plan for the batch operation. Usually only filled for the batch
+   * operation type <code>UPDATE_JOB</code>.
+   */
+  private final ObjectProperty<BatchOperationJobUpdatePlan> jobUpdatePlanProp =
+      new ObjectProperty<>("jobUpdatePlan", new BatchOperationJobUpdatePlan());
 
   /**
    * A flag indicating whether the batch operation has been initialized. This flag should be true
@@ -133,13 +147,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ObjectProperty<>("followUpCommand", new NestedRecord());
 
   public PersistedBatchOperation() {
-    super(17);
+    super(19);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
+        .declareProperty(storageOrdinalProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
+        .declareProperty(jobUpdatePlanProp)
         .declareProperty(chunkKeysProp)
         .declareProperty(initializedProp)
         .declareProperty(initializationSearchCursorProp)
@@ -153,12 +169,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(followUpCommandProp);
   }
 
+  @Override
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
     setKey(record.getBatchOperationKey());
     setBatchOperationType(record.getBatchOperationType());
+    setStorageOrdinal(record.getStorageOrdinal());
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
+    setJobUpdatePlan(record.getJobUpdatePlan());
     setAuthentication(record.getAuthenticationBuffer());
     setPartitions(record.getPartitionIds());
     setFollowUpCommand(record.getFollowUpCommand());
@@ -232,6 +251,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public PersistedBatchOperation setBatchOperationType(
       final BatchOperationType batchOperationType) {
     batchOperationTypeProp.setValue(batchOperationType);
+    return this;
+  }
+
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public PersistedBatchOperation setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
@@ -314,6 +342,16 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public PersistedBatchOperation setMigrationPlan(
       final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
     migrationPlanProp.getValue().wrap(migrationPlan);
+    return this;
+  }
+
+  public BatchOperationJobUpdatePlan getJobUpdatePlan() {
+    return jobUpdatePlanProp.getValue();
+  }
+
+  public PersistedBatchOperation setJobUpdatePlan(
+      final BatchOperationJobUpdatePlanValue jobUpdatePlan) {
+    jobUpdatePlanProp.getValue().wrap(jobUpdatePlan);
     return this;
   }
 

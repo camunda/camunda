@@ -20,11 +20,11 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
 public interface ExportersActuator {
@@ -35,7 +35,7 @@ public interface ExportersActuator {
    * @param node the node to connect to
    * @return a new instance of {@link ExportersActuator}
    */
-  static ExportersActuator of(final ZeebeNode<?> node) {
+  static ExportersActuator of(final BrokerNode<?> node) {
     return ofAddress(node.getExternalMonitoringAddress());
   }
 
@@ -81,8 +81,19 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("POST /{exporterId}/disable")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse disableExporter(@Param final String exporterId);
+
+  /**
+   * Request to disable an exporter in the given physical tenant only, leaving the other physical
+   * tenants untouched.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /{exporterId}/disable?physicalTenant={physicalTenant}")
+  @Headers("Accept: application/json")
+  PlannedOperationsResponse disableExporter(
+      @Param final String exporterId, @Param final String physicalTenant);
 
   /**
    * Request to enable an exporter
@@ -100,8 +111,19 @@ public interface ExportersActuator {
   }
 
   @RequestLine("POST /{exporterId}/enable")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse enableExporter(@Param final String exporterId);
+
+  /**
+   * Request to enable an exporter in the given physical tenant only, leaving the other physical
+   * tenants untouched.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /{exporterId}/enable?physicalTenant={physicalTenant}")
+  @Headers("Accept: application/json")
+  PlannedOperationsResponse enableExporterForTenant(
+      @Param final String exporterId, @Param final String physicalTenant);
 
   /**
    * Request to delete an exporter
@@ -109,17 +131,39 @@ public interface ExportersActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("DELETE /{exporterId}")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   PlannedOperationsResponse deleteExporter(@Param final String exporterId);
 
   /**
-   * Returns the list of exporters with their status
+   * Request to delete an exporter from the given physical tenant only, leaving the other physical
+   * tenants untouched.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /{exporterId}?physicalTenant={physicalTenant}")
+  @Headers("Accept: application/json")
+  PlannedOperationsResponse deleteExporter(
+      @Param final String exporterId, @Param final String physicalTenant);
+
+  /**
+   * Returns the list of exporters with their status, for every physical tenant. Each entry names
+   * the physical tenant it belongs to, {@code default} included.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("GET")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Headers("Accept: application/json")
   List<ExporterStatus> getExporters();
+
+  /**
+   * Returns the list of exporters with their status for the given physical tenant only.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx), notably 404 if
+   *     the physical tenant is unknown
+   */
+  @RequestLine("GET ?physicalTenant={physicalTenant}")
+  @Headers("Accept: application/json")
+  List<ExporterStatus> getExporters(@Param final String physicalTenant);
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   @JsonInclude(Include.NON_EMPTY)

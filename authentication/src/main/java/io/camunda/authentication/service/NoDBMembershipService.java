@@ -7,54 +7,58 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.OidcGroupsLoader;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.oidc.OidcClaimExtractor;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import java.util.List;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+/**
+ * Host-side {@link MembershipPort} for deployments without secondary storage. Only OIDC
+ * groups-claim extraction is available; roles, tenants, and mapping rules always return empty since
+ * no DB is available.
+ */
 @Service
 @ConditionalOnSecondaryStorageDisabled
-public class NoDBMembershipService implements MembershipService {
+public class NoDBMembershipService implements MembershipPort {
 
-  private final OidcGroupsLoader oidcGroupsLoader;
-  private final boolean isGroupsClaimConfigured;
+  private final PhysicalTenantGroupsClaims groupsClaims;
 
-  public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    oidcGroupsLoader =
-        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured =
-        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
+  public NoDBMembershipService(
+      final CamundaSecurityLibraryProperties cslProperties, final Environment environment) {
+    groupsClaims = new PhysicalTenantGroupsClaims(cslProperties, environment);
   }
 
   @Override
-  public CamundaAuthentication resolveMemberships(
-      final Map<String, Object> tokenClaims,
-      final String principalId,
-      final PrincipalType principalType)
-      throws OAuth2AuthenticationException {
-    final Set<String> groups =
-        isGroupsClaimConfigured
-            ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
-            : Collections.emptySet();
+  public List<String> mappingRuleIds(final MembershipQuery query) {
+    return List.of();
+  }
 
-    return CamundaAuthentication.of(
-        a -> {
-          if (principalType.equals(PrincipalType.CLIENT)) {
-            a.clientId(principalId);
-          } else {
-            a.user(principalId);
-          }
-          return a.roleIds(Collections.emptyList())
-              .groupIds(groups.stream().toList())
-              .mappingRule(Collections.emptyList())
-              .tenants(Collections.emptyList())
-              .claims(tokenClaims);
-        });
+  @Override
+  public List<String> groupIds(final MembershipQuery query) {
+    final var tenantGroupsClaims = groupsClaims.current();
+    if (!tenantGroupsClaims.groupsClaimConfigured()) {
+      return List.of();
+    }
+    return OidcClaimExtractor.extractOrFallback(
+            () -> tenantGroupsClaims.extract(query.tokenClaims()),
+            List.<String>of(),
+            "membership.groupIds.noDb")
+        .stream()
+        .distinct()
+        .toList();
+  }
+
+  @Override
+  public List<String> roleIds(final MembershipQuery query) {
+    return List.of();
+  }
+
+  @Override
+  public List<String> tenantIds(final MembershipQuery query) {
+    return List.of();
   }
 }

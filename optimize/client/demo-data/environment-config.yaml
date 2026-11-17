@@ -1,4 +1,4 @@
 zeebe:
   # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
-  enabled: ${ZEEBE_IMPORT_ENABLED:false}
+  enabled: ${CAMUNDA_OPTIMIZE_ZEEBE_ENABLED:false}
   partitionCount: 2

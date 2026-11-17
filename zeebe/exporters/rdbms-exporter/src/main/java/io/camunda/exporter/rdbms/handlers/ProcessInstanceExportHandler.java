@@ -17,6 +17,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -66,6 +67,12 @@ public class ProcessInstanceExportHandler
       finishAndScheduleCleanup(record, ProcessInstanceState.CANCELED);
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_MIGRATED)) {
       processInstanceWriter.update(map(record));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.SUSPENDED)) {
+      processInstanceWriter.suspend(
+          record.getValue().getProcessInstanceKey(),
+          DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.RESUMED)) {
+      processInstanceWriter.resume(record.getValue().getProcessInstanceKey());
     }
   }
 
@@ -109,6 +116,7 @@ public class ProcessInstanceExportHandler
         .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
         .businessId(emptyToNull(value.getBusinessId()))
+        .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value))
         .build();
   }
 

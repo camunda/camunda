@@ -14,6 +14,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
@@ -23,24 +24,65 @@ import java.util.Map;
 public class ExpressionBehavior {
 
   private final ExpressionProcessor clusterExpressionProcessor;
+  private final VariableState variableState;
+  private final ReferencedSecretCollector referencedSecretCollector;
 
   public ExpressionBehavior(
       final NamespacedEvaluationContext namespaceFullClusterContext,
       final ExpressionLanguage expressionLanguage,
-      final Duration expressionEvaluationTimeout) {
+      final Duration expressionEvaluationTimeout,
+      final VariableState variableState,
+      final ReferencedSecretCollector referencedSecretCollector) {
+    this.referencedSecretCollector = referencedSecretCollector;
+    // Resolve camunda.secrets.<name> references to their own placeholder string (as the engine
+    // does for input mappings), so callers of the expression endpoint — e.g. inbound connectors,
+    // which have no job to trigger job-activation resolution — receive the reference text instead
+    // of null. Only that path is affected; camunda.vars.* and every other lookup forward unchanged.
+    // The collector records references resolved from trusted sources so they can be reported.
     clusterExpressionProcessor =
         new ExpressionProcessor(
-            expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout);
+                expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout)
+            .withSecretReferenceContext(referencedSecretCollector);
+    this.variableState = variableState;
   }
 
+  /**
+   * Evaluates the given expression with the following variable resolution priority (highest first):
+   *
+   * <ol>
+   *   <li>Variables provided in the record body.
+   *   <li>Process/element instance variables visible from the record's scope, walked up the scope
+   *       tree.
+   *   <li>Tenant-scoped cluster variables.
+   *   <li>Global cluster variables.
+   * </ol>
+   */
   public Either<Rejection, ExpressionRecord> resolveExpression(
       final Expression expression, final ExpressionRecord expressionRecord) {
+    // A single collector instance is reused across evaluations (stream processing is
+    // single-threaded per partition). Only the endpoint's contexts hold a collector — the BPMN
+    // path uses collector-free contexts — so a fresh reset here is enough to isolate this
+    // evaluation's references.
+    referencedSecretCollector.reset();
+    final long scopeKey = expressionRecord.getScopeKey();
     final var variables = expressionRecord.getVariables();
-    final var contextAsEvaluationContext =
+    final var bodyContext =
         variables == null
             ? new InMemoryVariableEvaluationContext(Map.of())
             : new InMemoryVariableEvaluationContext(variables);
-    return evaluate(expression, contextAsEvaluationContext, expressionRecord.getTenantId())
+
+    ExpressionProcessor processor = clusterExpressionProcessor;
+    if (scopeKey >= 0) {
+      // Process/element instance variables: walked up from scopeKey by VariableState#getVariable.
+      processor = processor.prependContext(new VariableEvaluationContext(variableState));
+    }
+    // Body-provided variables take precedence over everything else.
+    processor = processor.prependContext(bodyContext);
+
+    return processor
+        .evaluateAnyExpression(expression, scopeKey, expressionRecord.getTenantId())
+        .mapLeft(this::mapEvaluationFailure)
+        .flatMap(this::rejectIfEvaluationFailed)
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
   }
 
@@ -56,27 +98,26 @@ public class ExpressionBehavior {
     }
   }
 
-  private Either<Rejection, EvaluationResult> evaluate(
-      final Expression expression, final ScopedEvaluationContext context, final String tenantId) {
-    return clusterExpressionProcessor
-        .prependContext(context)
-        .evaluateAnyExpression(expression, -1, tenantId)
-        .mapLeft(this::mapEvaluationFailure)
-        .flatMap(this::rejectIfEvaluationFailed);
-  }
-
   private Rejection mapEvaluationFailure(final Failure failure) {
     return new Rejection(RejectionType.PROCESSING_ERROR, failure.getMessage());
   }
 
   private ExpressionRecord mapSuccess(
       final EvaluationResult evaluationResult, final ExpressionRecord expressionRecord) {
-    return new ExpressionRecord()
-        .setTenantId(expressionRecord.getTenantId())
-        .setExpression(expressionRecord.getExpression())
-        .setVariables(expressionRecord.getVariablesBuffer())
-        .setWarnings(
-            evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
-        .setResultValue(evaluationResult.toBuffer());
+    final var mapped =
+        new ExpressionRecord()
+            .setTenantId(expressionRecord.getTenantId())
+            .setExpression(expressionRecord.getExpression())
+            .setVariables(expressionRecord.getVariablesBuffer())
+            .setScopeKey(expressionRecord.getScopeKey())
+            .setWarnings(
+                evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
+            .setResultValue(evaluationResult.toBuffer());
+    referencedSecretCollector
+        .drain()
+        .forEach(
+            reference ->
+                mapped.addReferencedSecret(reference.storeId(), reference.secretReference()));
+    return mapped;
   }
 }

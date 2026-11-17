@@ -160,6 +160,31 @@ public class SemanticSimilarityAssertTest {
 
     @Test
     @CamundaAssertExpectFailure
+    void shouldEvaluateSimilarityOnlyOnceWhenFailing() {
+      // given - orthogonal vectors → score below threshold; the variable exists, so the await
+      // resolves on the first poll and the (expensive) embedding must run exactly once.
+      when(embeddingModel.embed("hello there")).thenReturn(UNIT_VEC_X);
+      when(embeddingModel.embed("\"hello, world!\"")).thenReturn(UNIT_VEC_Y);
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
+
+      final Variable variable = newVariable("result", "\"Hello, World!\"");
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then - the assertion fails, but the embedding is not repeated per poll
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSimilarTo("result", "Hello there"))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("did not satisfy similarity check");
+
+      verify(embeddingModel, times(1)).embed("hello there");
+      verify(embeddingModel, times(1)).embed("\"hello, world!\"");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
     void shouldFailWhenVariableDoesNotExist() {
       // given
       CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
@@ -289,6 +314,43 @@ public class SemanticSimilarityAssertTest {
           .hasMessageContaining("0.00")
           .hasMessageContaining("0.50")
           .hasMessageContaining("some expectation");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldEvaluateLocalVariableSimilarityOnlyOnceWhenFailing() {
+      // given - orthogonal vectors → score below threshold; the variable exists, so the await
+      // resolves on the first poll and the (expensive) embedding must run exactly once.
+      when(embeddingModel.embed("some expectation")).thenReturn(UNIT_VEC_X);
+      when(embeddingModel.embed("\"local value\"")).thenReturn(UNIT_VEC_Y);
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  ElementInstanceBuilder.newActiveElementInstance("task1", PROCESS_INSTANCE_KEY)
+                      .setElementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .build()));
+
+      final Variable variable =
+          VariableBuilder.newVariable("localVar", "\"local value\"")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .setScopeKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then - the assertion fails, but the embedding is not repeated per poll
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasLocalVariableSimilarTo(
+                          ElementSelectors.byId("task1"), "localVar", "some expectation"))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("did not satisfy similarity check");
+
+      verify(embeddingModel, times(1)).embed("some expectation");
+      verify(embeddingModel, times(1)).embed("\"local value\"");
     }
 
     @Test

@@ -21,6 +21,7 @@ import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
+import {FINISHED_STATE_SEARCH_PARAMS} from 'modules/hooks/useBatchOperationMutationRequestBody';
 
 const Footer: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
@@ -156,22 +157,22 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
-                  const variable =
-                    'variable' in batchOperationQuery
-                      ? batchOperationQuery.variable
+                  const conditions =
+                    'conditions' in batchOperationQuery
+                      ? batchOperationQuery.conditions
                       : undefined;
 
+                  // The migration endpoint rejects finished states, so they are left out of the filter.
+                  const requestSearchParams = new URLSearchParams(searchParams);
+                  FINISHED_STATE_SEARCH_PARAMS.forEach((param) =>
+                    requestSearchParams.delete(param),
+                  );
+
                   const requestBody = buildMutationRequestBody({
-                    searchParams,
+                    searchParams: requestSearchParams,
                     includeIds,
                     excludeIds,
-                    variableFilter:
-                      variable !== undefined
-                        ? {
-                            name: variable.name,
-                            values: variable.values.join(','),
-                          }
-                        : undefined,
+                    conditions,
                     processDefinitionKey:
                       sourceProcessDefinition?.processDefinitionKey,
                   });
@@ -202,6 +203,7 @@ const Footer: React.FC = observer(() => {
                         navigate(
                           Locations.processes({
                             active: true,
+                            suspended: true,
                             incidents: true,
                             processDefinitionId:
                               targetProcessDefinition.processDefinitionId,

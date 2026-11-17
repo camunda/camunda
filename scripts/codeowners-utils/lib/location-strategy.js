@@ -34,11 +34,6 @@ export const LOCATION_CLASSIFICATION_RULES = [
     type: 'integration',
     pattern: /^operate\/qa\//,
     description: 'Integration tests under operate/qa/'
-  },
-  {
-    type: 'integration',
-    pattern: /^tasklist\/qa\//,
-    description: 'Integration tests under tasklist/qa/'
   }
 ];
 

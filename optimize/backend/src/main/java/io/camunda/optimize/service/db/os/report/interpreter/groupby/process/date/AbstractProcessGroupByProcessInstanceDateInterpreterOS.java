@@ -120,7 +120,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult result,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

@@ -9,25 +9,33 @@
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 import {useVariable} from 'modules/queries/variables/useVariable';
+import type {DocumentParseResult} from './parseDocumentVariable';
+import {DocumentValueCell} from './DocumentValueCell';
 
 type Props = {
   variableKey: string;
   variableName: string;
   value: string;
+  documentResult: DocumentParseResult | null;
   isTruncated: boolean | null;
   isModificationModeEnabled: boolean | undefined;
-  isProcessInstanceRunning: boolean | undefined;
+  canEditVariables: boolean | undefined;
 };
 
 const VariableValueCell: React.FC<Props> = ({
   variableKey,
   variableName,
   value,
+  documentResult,
   isTruncated,
   isModificationModeEnabled,
-  isProcessInstanceRunning,
+  canEditVariables,
 }) => {
   const {refetch} = useVariable(variableKey, {enabled: false});
+
+  if (documentResult !== null) {
+    return <DocumentValueCell result={documentResult} />;
+  }
 
   return (
     <InlineJsonEditor
@@ -58,9 +66,7 @@ const VariableValueCell: React.FC<Props> = ({
                 variableName={variableName}
                 variableValue={value}
                 buttonLabel="Show all"
-                canEdit={
-                  !isModificationModeEnabled && !!isProcessInstanceRunning
-                }
+                canEdit={!isModificationModeEnabled && !!canEditVariables}
               />
             )
           : undefined

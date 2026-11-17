@@ -37,6 +37,8 @@ public interface Job {
 
   Integer getRetries();
 
+  Integer getPriority();
+
   Boolean isDenied();
 
   String getDeniedReason();
@@ -70,6 +72,16 @@ public interface Job {
    */
   Long getRootProcessInstanceKey();
 
+  /**
+   * Returns the business ID of the owning process instance, inherited when the job was created.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for jobs created before version 8.10 and
+   * when the owning process instance has no business ID.
+   *
+   * @return the business ID, or {@code null} when not set
+   */
+  String getBusinessId();
+
   String getElementId();
 
   Long getElementInstanceKey();
@@ -79,4 +91,14 @@ public interface Job {
   OffsetDateTime getCreationTime();
 
   OffsetDateTime getLastUpdateTime();
+
+  /**
+   * Returns the storage ordinal this job's data belongs to.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} unless the data was exported with
+   * archiverless mode enabled (version 8.11 or later).
+   *
+   * @return the storage ordinal, or {@code null}
+   */
+  Integer getStorageOrdinal();
 }

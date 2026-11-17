@@ -12,8 +12,10 @@
 
 import {z} from 'zod';
 
-const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
+const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'SUSPENDED', 'TERMINATED']);
 type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
+const processDefinitionStateSchema = z.enum(['ACTIVE', 'DRAINING', 'DELETED']);
+type ProcessDefinitionState = z.infer<typeof processDefinitionStateSchema>;
 type StatisticName = 'element-instances';
 
 const processInstanceSchema = z.object({
@@ -23,6 +25,7 @@ const processInstanceSchema = z.object({
 	processDefinitionVersionTag: z.string().nullable(),
 	startDate: z.string(),
 	endDate: z.string().nullable(),
+	suspendedDate: z.string().nullable(),
 	state: processInstanceStateSchema,
 	hasIncident: z.boolean(),
 	tenantId: z.string(),
@@ -32,6 +35,7 @@ const processInstanceSchema = z.object({
 	parentElementInstanceKey: z.string().nullable(),
 	rootProcessInstanceKey: z.string().nullable(),
 	tags: z.array(z.string()),
+	businessId: z.string().nullable(),
 });
 type ProcessInstance = z.infer<typeof processInstanceSchema>;
 
@@ -44,6 +48,7 @@ const processDefinitionSchema = z.object({
 	tenantId: z.string(),
 	processDefinitionKey: z.string(),
 	hasStartForm: z.boolean(),
+	state: processDefinitionStateSchema,
 });
 type ProcessDefinition = z.infer<typeof processDefinitionSchema>;
 
@@ -56,5 +61,18 @@ const processDefinitionStatisticSchema = z.object({
 });
 type ProcessDefinitionStatistic = z.infer<typeof processDefinitionStatisticSchema>;
 
-export {processInstanceStateSchema, processInstanceSchema, processDefinitionSchema, processDefinitionStatisticSchema};
-export type {ProcessInstance, ProcessInstanceState, StatisticName, ProcessDefinition, ProcessDefinitionStatistic};
+export {
+	processInstanceStateSchema,
+	processDefinitionStateSchema,
+	processInstanceSchema,
+	processDefinitionSchema,
+	processDefinitionStatisticSchema,
+};
+export type {
+	ProcessInstance,
+	ProcessInstanceState,
+	ProcessDefinitionState,
+	StatisticName,
+	ProcessDefinition,
+	ProcessDefinitionStatistic,
+};

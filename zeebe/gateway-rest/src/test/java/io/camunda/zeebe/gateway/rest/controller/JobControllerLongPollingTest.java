@@ -15,12 +15,13 @@ import com.jayway.jsonpath.JsonPath;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -30,9 +31,10 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -64,16 +66,21 @@ public class JobControllerLongPollingTest extends RestControllerTest {
 
   @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
+  @Autowired JobServices<JobActivationResult> jobServices;
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
+  @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   @BeforeEach
   void setup() {
     responseObserver.reset();
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
+    Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
   }
 
   @Test
@@ -418,7 +425,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
                   GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
               .setRequestCanceledExceptionProvider(
                   GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-              .setMetrics(LongPollingMetrics.noop())
+              .setMetricsFactory(LongPollingMetricsFactory.noop())
               .build();
       final var future = new CompletableFuture<>();
       final var actor =
@@ -435,12 +442,14 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
       return new JobServices<>(
+          "default",
           brokerClient,
           new SecurityContextProvider(),
           activateJobsHandler,
           null,
           new ApiServicesExecutorProvider(1, 1, 1, 1),
-          new BrokerRequestAuthorizationConverter(new SecurityConfiguration()));
+          new BrokerRequestAuthorizationConverter(
+              EngineSecurityConfigurations.unauthenticatedAndUnauthorized()));
     }
   }
 }

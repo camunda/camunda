@@ -34,6 +34,7 @@ public class JobImpl implements Job {
   private final JobKind kind;
   private final ListenerEventType listenerEventType;
   private final Integer retries;
+  private final Integer priority;
   private final Boolean isDenied;
   private final String deniedReason;
   private final Boolean hasFailedWithRetriesLeft;
@@ -46,11 +47,13 @@ public class JobImpl implements Job {
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long rootProcessInstanceKey;
+  private final String businessId;
   private final String elementId;
   private final Long elementInstanceKey;
   private final String tenantId;
   private final OffsetDateTime creationTime;
   private final OffsetDateTime lastUpdatedTime;
+  private final Integer storageOrdinal;
 
   public JobImpl(final JobSearchResult item) {
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
@@ -60,6 +63,7 @@ public class JobImpl implements Job {
     kind = EnumUtil.convert(item.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(item.getListenerEventType(), ListenerEventType.class);
     retries = item.getRetries();
+    priority = item.getPriority();
     isDenied = item.getIsDenied();
     deniedReason = item.getDeniedReason();
     hasFailedWithRetriesLeft = item.getHasFailedWithRetriesLeft();
@@ -72,11 +76,13 @@ public class JobImpl implements Job {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
+    businessId = item.getBusinessId();
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     tenantId = item.getTenantId();
     creationTime = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationTime());
     lastUpdatedTime = ParseUtil.parseOffsetDateTimeOrNull(item.getLastUpdateTime());
+    storageOrdinal = item.getStorageOrdinal();
   }
 
   @Override
@@ -112,6 +118,11 @@ public class JobImpl implements Job {
   @Override
   public Integer getRetries() {
     return retries;
+  }
+
+  @Override
+  public Integer getPriority() {
+    return priority;
   }
 
   @Override
@@ -175,6 +186,11 @@ public class JobImpl implements Job {
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
   public String getElementId() {
     return elementId;
   }
@@ -197,5 +213,10 @@ public class JobImpl implements Job {
   @Override
   public OffsetDateTime getLastUpdateTime() {
     return lastUpdatedTime;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
   }
 }

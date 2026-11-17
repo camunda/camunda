@@ -229,6 +229,115 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Search Global Task Listeners - filter by type', async ({request}) => {
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/global-task-listeners/search'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {type: {$eq: listeners[0].type}},
+          },
+        },
+      );
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        res,
+      );
+      const body = await res.json();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0].id).toBe(listeners[0].id);
+      expect(body.items[0].type).toBe(listeners[0].type);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  // Skipped due to bug #56636: https://github.com/camunda/camunda/issues/56636
+  // The `eventTypes` search filter is mis-declared as an array of filter
+  // properties; it should be a single GlobalTaskListenerEventTypeFilterProperty
+  // like every other enum filter (e.g. `state`), so `eventTypes: {$in: [...]}` —
+  // the correct convention used here — is not yet accepted by the API.
+  test.skip('Search Global Task Listeners - filter by eventTypes', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/global-task-listeners/search'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              id: {$in: listeners.map((l) => l.id)},
+              eventTypes: {$in: ['creating']},
+            },
+          },
+        },
+      );
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        res,
+      );
+      const body = await res.json();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0].id).toBe(`${prefix}-c`);
+      expect(body.items[0].eventTypes).toContain('creating');
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Global Task Listeners - pagination with limit and from', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const firstPage = await request.post(
+        buildUrl('/global-task-listeners/search'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {id: {$in: listeners.map((l) => l.id)}},
+            sort: [{field: 'id', order: 'ASC'}],
+            page: {from: 0, limit: 2},
+          },
+        },
+      );
+
+      await assertStatusCode(firstPage, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        firstPage,
+      );
+      const firstBody = await firstPage.json();
+      expect(firstBody.items).toHaveLength(2);
+      expect(firstBody.page.totalItems).toBe(3);
+      expect(firstBody.items[0].id).toBe(`${prefix}-a`);
+      expect(firstBody.items[1].id).toBe(`${prefix}-b`);
+
+      const secondPage = await request.post(
+        buildUrl('/global-task-listeners/search'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {id: {$in: listeners.map((l) => l.id)}},
+            sort: [{field: 'id', order: 'ASC'}],
+            page: {from: 2, limit: 2},
+          },
+        },
+      );
+
+      await assertStatusCode(secondPage, 200);
+      await validateResponse(
+        {path: '/global-task-listeners/search', method: 'POST', status: '200'},
+        secondPage,
+      );
+      const secondBody = await secondPage.json();
+      expect(secondBody.items).toHaveLength(1);
+      expect(secondBody.page.totalItems).toBe(3);
+      expect(secondBody.items[0].id).toBe(`${prefix}-c`);
+    }).toPass(defaultAssertionOptions);
+  });
+
   test('Search Global Task Listeners - invalid sort field returns 400', async ({
     request,
   }) => {

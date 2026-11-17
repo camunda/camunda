@@ -7,18 +7,19 @@
  */
 package io.camunda.it.rdbms.db.incident;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
-import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.it.rdbms.db.util.RdbmsDataJdbcTest;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.IncidentFilter;
@@ -26,35 +27,34 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.sort.IncidentSort;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
-@Tag("rdbms")
-@DataJdbcTest
-@ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
-@AutoConfigurationPackage
+@RdbmsDataJdbcTest
 @TestPropertySource(
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class IncidentSpecificFilterIT {
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired private RdbmsServiceFactory rdbmsServiceFactory;
+  private RdbmsService rdbmsService;
 
-  @Autowired private IncidentDbReader processDefinitionReader;
+  private IncidentDbReader incidentDbReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
+    rdbmsService =
+        rdbmsServiceFactory.createRdbmsService(
+            DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     rdbmsWriters = rdbmsService.createWriter(0L);
+    incidentDbReader = rdbmsService.getIncidentReader();
   }
 
   @ParameterizedTest
@@ -81,7 +81,7 @@ public class IncidentSpecificFilterIT {
                     .tenantId("sorting-tenant1")));
 
     final var searchResult =
-        processDefinitionReader.search(
+        incidentDbReader.search(
             new IncidentQuery(
                 filter, IncidentSort.of(b -> b), SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -100,6 +100,14 @@ public class IncidentSpecificFilterIT {
         new IncidentFilter.Builder().flowNodeInstanceKeys(4000L).build(),
         new IncidentFilter.Builder().errorTypes(ErrorType.JOB_NO_RETRIES.name()).build(),
         new IncidentFilter.Builder().errorMessages("error-message-5000").build(),
+        // errorMessage matching must be case-insensitive on RDBMS to stay in parity with the
+        // ES/OS match_phrase query (see #64014) - LOWER(...) LIKE LOWER(...) on both sides.
+        new IncidentFilter.Builder()
+            .errorMessageOperations(Operation.eq("ERROR-MESSAGE-5000"))
+            .build(),
+        new IncidentFilter.Builder()
+            .errorMessageOperations(Operation.like("*MESSAGE-5000*"))
+            .build(),
         new IncidentFilter.Builder().states(IncidentState.ACTIVE.name()).build(),
         new IncidentFilter.Builder().jobKeys(6000L).build(),
         new IncidentFilter.Builder()

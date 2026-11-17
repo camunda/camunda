@@ -18,4 +18,9 @@ public class ProcessInstanceModificationAuditLogTransformer
   public TransformerConfig config() {
     return PROCESS_INSTANCE_MODIFICATION_CONFIG;
   }
+
+  @Override
+  public Class<ProcessInstanceModificationRecordValue> getRecordValueType() {
+    return ProcessInstanceModificationRecordValue.class;
+  }
 }

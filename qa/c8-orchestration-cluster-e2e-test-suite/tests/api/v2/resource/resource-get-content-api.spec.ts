@@ -9,13 +9,17 @@
 import {expect, test} from '@playwright/test';
 import {
   assertStatusCode,
-  buildUrl,
-  defaultHeaders,
   assertUnauthorizedRequest,
+  assertNotAcceptableRequest,
   assertNotFoundRequest,
 } from '../../../../utils/http';
 import {getExpectedContent} from '../../../../utils/beans/requestBeans';
-import {deployResourceAndGetMetadata} from '@requestHelpers';
+import {
+  deployInlineResource,
+  deployResourceAndGetMetadata,
+  getResourceContent,
+  uniqueResourceName,
+} from '@requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe.parallel('Resource Get Content API', () => {
@@ -29,17 +33,31 @@ test.describe.parallel('Resource Get Content API', () => {
     const expectedContent = getExpectedContent(resourceName);
 
     await expect(async () => {
-      const res = await request.get(
-        buildUrl('/resources/{resourceKey}/content', {
-          resourceKey: metadata.resourceKey,
-        }),
-        {
-          headers: defaultHeaders(),
-        },
-      );
+      const res = await getResourceContent(request, metadata.resourceKey);
 
       await assertStatusCode(res, 200);
       expect(await res.text()).toBe(expectedContent);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get Resource Content - Not Acceptable 406 for a non-RPA resource', async ({
+    request,
+  }) => {
+    const resource = await deployInlineResource(
+      request,
+      uniqueResourceName('system-prompt', 'md'),
+      '# System prompt',
+    );
+
+    await expect(async () => {
+      const res = await getResourceContent(request, resource.resourceKey);
+
+      await assertNotAcceptableRequest(
+        res,
+        new RegExp(
+          `Resource with key '${resource.resourceKey}' is of type '.*', expected 'rpa'`,
+        ),
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -47,14 +65,7 @@ test.describe.parallel('Resource Get Content API', () => {
   test('Get Resource Content - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}/content', {
-        resourceKey: nonExistentResourceKey,
-      }),
-      {
-        headers: defaultHeaders(),
-      },
-    );
+    const res = await getResourceContent(request, nonExistentResourceKey);
 
     await assertNotFoundRequest(
       res,
@@ -64,14 +75,7 @@ test.describe.parallel('Resource Get Content API', () => {
 
   // eslint-disable-next-line playwright/expect-expect
   test('Get Resource Content - Unauthorized 401', async ({request}) => {
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}/content', {
-        resourceKey: 'someKey',
-      }),
-      {
-        headers: {},
-      },
-    );
+    const res = await getResourceContent(request, 'someKey', {headers: {}});
 
     await assertUnauthorizedRequest(res);
   });

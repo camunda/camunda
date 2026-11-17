@@ -59,19 +59,19 @@ public class ProcessGroupByProcessInstanceEndDateInterpreterES
     return END_DATE;
   }
 
-  public ConfigurationService getConfigurationService() {
+  protected ConfigurationService getConfigurationService() {
     return this.configurationService;
   }
 
-  public DateAggregationServiceES getDateAggregationService() {
+  protected DateAggregationServiceES getDateAggregationService() {
     return this.dateAggregationService;
   }
 
-  public MinMaxStatsServiceES getMinMaxStatsService() {
+  protected MinMaxStatsServiceES getMinMaxStatsService() {
     return this.minMaxStatsService;
   }
 
-  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+  protected ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
   }
 

@@ -20,12 +20,12 @@ Follow the steps below to get started and run the tests locally.
   - [C8 SM Requirements (Self-Managed)](#c8-sm-requirements-self-managed)
 - [Test Suite Structure (Page Object Model)](#test-suite-structure-page-object-model)
 - [GitHub Actions for Testing](#github-actions-for-testing)
+  - [Automatic PR Check](#automatic-pr-check)
   - [Running the On-Demand Workflow](#running-the-on-demand-workflow)
   - [Automated Nightly Test Runs](#automated-nightly-test-runs)
   - [CI Test Results](#ci-test-results)
 - [Contributing](#contributing)
   - [Project Board](#project-board)
-  - [TestRail Integration](#testrail-integration)
   - [How to Request a New Test Case](#how-to-request-a-new-test-case)
 
 ---
@@ -215,6 +215,45 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ## GitHub Actions for Testing
 
+### Automatic PR Check
+
+When a pull request changes non-Markdown files under `qa/c8-orchestration-cluster-e2e-test-suite/`,
+`c8-orchestration-cluster-e2e-tests-pr.yml` runs the suite's test matrix for the PR's head commit,
+sized for the PR's target branch, as jobs of the check, so each job's result shows on the PR. On
+`main` it uses the PR's own copy of the test workflow, so changes to it are tested too; on the
+stable branches, which have no suite workflows, it uses `main`'s. A newer push cancels the PR's
+run in progress. Each suite job, here and in on-demand runs, writes its counts and failing tests
+(spec, project and error) to the run's summary page.
+
+The check is **not** required: a red result does not block the merge, but any failure must be
+reviewed and documented in the PR description. It does not run for pull requests from forks, which
+get no secrets: for those, a maintainer reviews the PR, pushes its head commit to a branch in `camunda/camunda` and runs the
+on-demand workflow against that branch.
+
+When a suite job fails, its failed tests are re-run with the base branch's version of the test
+code, in the same job and environment, and the check comments on the PR and tags the author (for a
+bot PR, its assignees) with what that showed:
+
+- **Regression from this PR's test changes**: observed in that run: failed with the PR's test code
+  in every attempt (including any retry) and passed first time with the base test code. An
+  intermittent test can rarely do this too; re-run the PR check if in doubt.
+- **Intermittent, not caused by this PR's test changes**: the same, but the PR does not change the
+  suite's test code, so both runs used identical test code against the same Camunda instance. A
+  product or workflow change in the PR can still be the cause, notably in the H2/RDBMS jobs, which
+  build Camunda from the PR.
+- **New tests failing**: the spec does not exist on the base branch.
+- **Also fails with the base test code**: failed with it in every job it failed in, so the PR's test
+  changes are not the cause. The base re-run uses the same Camunda instance, so a test that needs a
+  clean state can also fail there for that reason.
+
+Everything else is listed as **not verified**, with the reason per job; it is not guessed at: more
+than 15 failures in a job, not enough time left in the job, a renamed test, a test that was flaky
+with the base test code or passed in one base run and failed in another, a test in a teardown
+project (it needs its parent project's tests first), or a job that was not compared. Tests in
+serial specs are compared by re-running the whole spec, since they depend on the earlier tests.
+Each failed test is listed with the first lines of its error. When a later run passes, it posts
+one comment saying so.
+
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
@@ -228,14 +267,10 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Automated Nightly Test Runs
 
-- `c8-orchestration-cluster-e2e-tests-nightly.yml`: Runs nightly across all monorepo versions
-  Nightly tests ensure continuous stability
-
-- All nightly test runs can be accessed from [C8 Orchestration Cluster E2E Tests Nightly](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)
-
-- Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results` with TestRail links
-
-- Failures are reviewed by the `qa-automated-release-manager`
+- `c8-orchestration-cluster-nightly-<version>-<type>.yml`: Runs nightly for `main` and each supported `stable/*` branch, as UI (`e2e`) and API (`api-es`, `api-rdbms`) runs
+- Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results`
+- Failures are triaged every weekday by `C8 Orchestration Cluster Nightly Triage`, which dispatches a fix agent per failing version
+- See the [nightly runbook](docs/nightly-runbook.md) for the schedule, test ownership, and how to fix, skip, or escalate a failure
 
 ---
 
@@ -243,7 +278,6 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 - Results available under the **Actions** tab for each workflow run
 - View logs, traces, and download artifacts
-- Test runs are published to [TestRail](https://camunda.testrail.com/index.php?/runs/overview/33) for visibility
 
 ---
 
@@ -253,7 +287,17 @@ We welcome contributions! To contribute:
 
 - Follow the POM pattern
 - Test cases must involve at least one core component
-- Reviewer must be the someone from the Test Automation Team and a product team developer
+- Reviewers must include someone from the Test Automation Team and a product team developer
+
+> [!IMPORTANT]
+> **Do not request a review until the suite has run and the results have been verified.**
+> Before assigning reviewers to your PR:
+> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, a maintainer reviews it, pushes its head commit to a branch in `camunda/camunda` and runs the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against that branch instead; wait for it to complete. A PR that changes only Markdown files does not trigger the check and needs no run.
+> 2. Wait for the workflow to complete.
+> 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
+> 4. Only then request a review.
+>
+> PRs assigned for review without a completed test run will be returned to the author.
 
 ### Project Board
 
@@ -262,14 +306,6 @@ We track progress via the [C8 Orchestration Cluster E2E Tests Project Board](htt
 - View test case statuses
 - See who's assigned to what
 - Link your PR to the board if needed
-
----
-
-### TestRail Integration
-
-If a PR modifies any test or page file, link the corresponding [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description.
-
-Need TestRail access? Contact the QA team.
 
 ---
 

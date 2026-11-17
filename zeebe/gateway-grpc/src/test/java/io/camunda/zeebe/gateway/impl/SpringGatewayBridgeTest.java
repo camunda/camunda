@@ -11,17 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class SpringGatewayBridgeTest {
 
   private SpringGatewayBridge sutBrigde;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     sutBrigde = new SpringGatewayBridge();
   }
@@ -49,26 +50,26 @@ public class SpringGatewayBridgeTest {
   }
 
   @Test
-  public void shouldReturnNoClusterStateByDefault() {
+  public void shouldReturnEmptyClusterStatesByDefault() {
     // when
-    final var actual = sutBrigde.getClusterState();
+    final var actual = sutBrigde.getClusterStates();
 
     // then
-    assertThat(actual).describedAs("Cluster status when no supplier is set").isEmpty();
+    assertThat(actual).describedAs("Cluster states when no supplier is set").isEmpty();
   }
 
   @Test
-  public void shouldUseClusterStateSupplierWhenSet() {
+  public void shouldUseClusterStatesSupplierWhenRegistered() {
     // given
     final var mockClusterState = Mockito.mock(BrokerClusterState.class);
-
-    final Supplier<Optional<BrokerClusterState>> testSupplier = () -> Optional.of(mockClusterState);
-    sutBrigde.registerClusterStateSupplier(testSupplier);
+    final Supplier<Map<String, BrokerClusterState>> testSupplier =
+        () -> Map.of("default", mockClusterState);
+    sutBrigde.registerClusterStatesSupplier(testSupplier);
 
     // when
-    final var actual = sutBrigde.getClusterState();
+    final var actual = sutBrigde.getClusterStates();
 
     // then
-    assertThat(actual).contains(mockClusterState);
+    assertThat(actual).containsExactly(Map.entry("default", mockClusterState));
   }
 }

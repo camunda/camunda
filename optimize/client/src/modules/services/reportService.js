@@ -59,14 +59,15 @@ export function isAlertCompatibleReport(report) {
   );
 }
 
+export function applyMissingVariableLabel(entries) {
+  return entries.map((entry) =>
+    entry.key === 'missing' ? {...entry, label: t('report.missingVariableValue')} : entry
+  );
+}
+
 function formatResult(result, {groupBy: {type}}) {
   if (type === 'variable') {
-    return {
-      ...result,
-      data: result.data.map((row) =>
-        row.key === 'missing' ? {...row, label: t('report.missingVariableValue')} : row
-      ),
-    };
+    return {...result, data: applyMissingVariableLabel(result.data)};
   }
 
   return result;

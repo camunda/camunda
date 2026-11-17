@@ -27,9 +27,7 @@ import org.junit.rules.TestWatcher;
 public class GlobalListenerCreateTest {
 
   @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+  public final EngineRule engine = EngineRule.singlePartition().withAuthorizationsEnabled(true);
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 

@@ -1,5 +1,5 @@
 # type: CI Helper - Manual
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Update Identity Version
 
 on:
@@ -33,7 +33,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job commits the bump and pushes the branch.
+        # zizmor: ignore[artipacked]
         with:
           ref: ${{ inputs.targetBranch }}
       - name: Git User Setup
@@ -42,7 +44,7 @@ jobs:
           git config --global user.name "github-actions[update-identity]@users.noreply.github.com"
       - name: Get current identity version from `./parent/pom.xml`
         id: get-current-identity-version
-        uses: mavrosxristoforos/get-xml-info@cc0a00b30a53c3adf0ea2cbfd8314cea394fbbad # 2.1.0
+        uses: mavrosxristoforos/get-xml-info@219e509082288b248df8a825f6c9abb323ef4e06 # 2.2.1
         with:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
@@ -69,7 +71,7 @@ jobs:
       - name: Import Camunda Secrets
         if: success()
         id: camunda-secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -78,7 +80,33 @@ jobs:
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
+      - name: Mask Camunda client credentials
+        if: success()
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
       - name: Notify Camunda of completion
+        if: success()
+        uses: camunda-community-hub/camunda-platform-8-github-action@9ceee922b16da4ac2b0d7b9e852b319b09382478
+        with:
+          clientConfig: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
+          operation: publishMessage
+          messageName: 'identity-workflow-completed'
+          correlationKey: 'identity-update-${{ inputs.targetBranch }}'
+          timeToLive: '240000'
+          variables: |
+            {
+              "workflow_run": {
+                "name": "Update Identity Version",
+                "conclusion": "success",
+                "head_branch": "${{ github.head_ref || github.ref_name }}",
+                "target_branch": "${{ inputs.targetBranch }}"
+              },
+              "action": "completed"
+            }
+      # Remove when no camunda-release instance waits on the version key any more: from 8.11 on,
+      # several releases can use the same Identity version, so only the branch key is unique.
+      - name: Notify Camunda of completion (version key)
         if: success()
         uses: camunda-community-hub/camunda-platform-8-github-action@9ceee922b16da4ac2b0d7b9e852b319b09382478
         with:
@@ -97,6 +125,9 @@ jobs:
               },
               "action": "completed"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -117,7 +148,7 @@ jobs:
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -128,7 +159,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -153,6 +184,11 @@ jobs:
               ]
             }
 
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true

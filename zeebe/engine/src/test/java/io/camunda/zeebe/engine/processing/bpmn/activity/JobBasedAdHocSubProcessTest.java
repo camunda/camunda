@@ -1180,7 +1180,8 @@ public class JobBasedAdHocSubProcessTest {
 
   @Test
   public void shouldCompleteAgenticJobWithFollowupMetadata() {
-    // given
+    // given — the legacy agentic job type prefix, with no agent definition anywhere; this
+    // exercises the 8.9 compatibility fallback in JobCompleteProcessor#hasAgenticPrefix()
     final var jobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
     final BpmnModelInstance process =
         process(jobType, adHocSubProcess -> adHocSubProcess.task("A1").task("A2"));
@@ -1199,8 +1200,106 @@ public class JobBasedAdHocSubProcessTest {
                     r ->
                         r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
                             && r.getKey() == processInstanceKey))
+        .describedAs(
+            "the legacy agentic job type prefix alone, without any agent definition, must still "
+                + "carry the agent element id on follow-up records")
         .isNotEmpty()
         .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
+  }
+
+  @Test
+  public void shouldCompleteJobWithFollowupMetadataWhenAdHocSubProcessHasAgentDefinition() {
+    // given — a job type that does not carry the legacy agentic prefix; only the ad-hoc
+    // sub-process's own agent definition marks it as agentic
+    final var jobType = "ahsp-agent-task";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                AHSP_ELEMENT_ID, adHocSubProcess -> adHocSubProcess.task("A1").task("A2"))
+            .zeebeJobType(jobType)
+            .zeebeAiAgentSubProcessDefinition()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var jobCompleted = completeJob(jobType, true, Map.of("bar", "foo"));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompleted.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == processInstanceKey))
+        .describedAs(
+            "a job type not matching the legacy agentic prefix must still carry the agent "
+                + "element id when the ad-hoc sub-process has a resolved agent definition")
+        .isNotEmpty()
+        .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
+  }
+
+  @Test
+  public void shouldNotLeakInnerInstanceLocalVariablesWhenActivityHasOutputMapping() {
+    // given
+    final var ahspJobType = UUID.randomUUID().toString();
+    final var taskJobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            ahspJobType,
+            adHocSubProcess ->
+                adHocSubProcess
+                    .serviceTask("A", t -> t.zeebeJobType(taskJobType))
+                    .zeebeOutputExpression("=1", "outputResult"));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when - the ad-hoc job worker activates A and sets `toolCall` local on the inner instance
+    completeJob(ahspJobType, false, false, activateElement("A", Map.of("toolCall", "abc")));
+
+    // ... and the activated service task completes, triggering applyOutputMappings on A
+    final var taskJobKey =
+        ENGINE.jobs().withType(taskJobType).activate().getValue().getJobKeys().getFirst();
+    ENGINE.job().withKey(taskJobKey).complete();
+
+    // then - wait for A's inner instance to complete (output mapping has run by then)
+    final var innerInstanceCompleted =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_INNER_ELEMENT_ID)
+            .getFirst();
+
+    // complete the ad-hoc sub-process
+    // guaranteed that all variable records of interest have been exported
+    completeJob(ahspJobType, true, false);
+    final var processCompleted =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(PROCESS_ID)
+            .getFirst();
+
+    // sanity check: the output mapping was actually applied
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("outputResult")
+                .exists())
+        .as("output mapping for service task A must have produced `outputResult`")
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= processCompleted.getPosition())
+                .variableRecords()
+                .withIntents(VariableIntent.CREATED, VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("toolCall"))
+        .extracting(r -> r.getValue().getScopeKey())
+        .containsOnly(innerInstanceCompleted.getKey());
   }
 
   private void completeJob(

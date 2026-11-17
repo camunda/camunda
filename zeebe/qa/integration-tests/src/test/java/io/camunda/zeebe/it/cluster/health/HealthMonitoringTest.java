@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.time.Duration;
@@ -42,12 +43,15 @@ public class HealthMonitoringTest {
             });
 
     // when
-    leader
-        .getBrokerContext()
-        .getPartitionManager()
-        .getRaftPartition(START_PARTITION_ID)
-        .getServer()
-        .stop();
+    final var raft =
+        leader
+            .getBrokerContext()
+            .getPartitionManager()
+            .getRaftPartition(START_PARTITION_ID)
+            .getServer()
+            .getServer()
+            .getContext();
+    raft.getThreadContext().execute(() -> raft.transition(Role.INACTIVE));
 
     // then
     /* timeouts are selected generously as at the time of this implementation there is a

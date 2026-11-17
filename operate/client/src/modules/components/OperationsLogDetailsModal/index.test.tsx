@@ -43,6 +43,8 @@ const baseAuditLog: AuditLog = {
   relatedEntityType: null,
   entityDescription: null,
   agentElementId: null,
+  inboundChannelType: null,
+  inboundChannelToolName: null,
 };
 
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
@@ -119,5 +121,49 @@ describe('DetailsModal', () => {
     });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/batch-operations/999');
+  });
+
+  it('renders inbound channel rows for an MCP audit log', () => {
+    const mcpAuditLog: AuditLog = {
+      ...baseAuditLog,
+      inboundChannelType: 'MCP',
+      inboundChannelToolName: 'someTool',
+    };
+
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={mcpAuditLog} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText(/inbound channel:/i)).toBeInTheDocument();
+    expect(screen.getByText('MCP')).toBeInTheDocument();
+    expect(screen.getByTestId('mcp-icon')).toBeInTheDocument();
+    expect(screen.getByText(/inbound channel tool name:/i)).toBeInTheDocument();
+    expect(screen.getByText('someTool')).toBeInTheDocument();
+  });
+
+  it('does not render inbound channel rows when not set', () => {
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={baseAuditLog} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.queryByText(/inbound channel:/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/inbound channel tool name:/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders the inbound channel row without the MCP icon for non-MCP channel types', () => {
+    const restAuditLog: AuditLog = {
+      ...baseAuditLog,
+      inboundChannelType: 'REST',
+    };
+
+    render(<DetailsModal isOpen onClose={() => {}} auditLog={restAuditLog} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText(/inbound channel:/i)).toBeInTheDocument();
+    expect(screen.getByText('REST')).toBeInTheDocument();
+    expect(screen.queryByTestId('mcp-icon')).not.toBeInTheDocument();
   });
 });

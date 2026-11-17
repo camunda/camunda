@@ -31,8 +31,7 @@ import {
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
-test.describe
-  .parallel('Get Process Instance Statistics By Error API Tests', () => {
+test.describe('Get Process Instance Statistics By Error API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
@@ -84,7 +83,7 @@ test.describe
     request,
   }) => {
     const errorMessage =
-      "Expected result of the expression 'goUp < 0' to be 'BOOLEAN', but was 'NULL'. The evaluation reported the following warnings:\n[NO_VARIABLE_FOUND] No variable found with name 'goUp'\n[NOT_COMPARABLE] Can't compare 'null' with '0'";
+      "Expected result of the condition expression 'goUp < 0' of sequence flow 'SequenceFlow_1goon4z' to be 'BOOLEAN', but was 'NULL'. The evaluation reported the following warnings:\n[NO_VARIABLE_FOUND] No variable found with name 'goUp'\n[NOT_COMPARABLE] Can't compare 'null' with '0'";
     let processInstanceKeyToSearch: string;
 
     await test.step('Start a process instance that will throw an error', async () => {
@@ -107,7 +106,7 @@ test.describe
     await test.step('Get process instance statistics by error', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(`/incidents/statistics/process-instances-by-error`),
+          buildUrl('/incidents/statistics/process-instances-by-error'),
           {
             headers: jsonHeaders(),
           },
@@ -162,7 +161,7 @@ test.describe
 
     await test.step('Get process instance statistics by error sorted ASC by activeInstancesWithErrorCount', async () => {
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-error`),
+        buildUrl('/incidents/statistics/process-instances-by-error'),
         {
           headers: jsonHeaders(),
           data: {
@@ -199,7 +198,7 @@ test.describe
   }) => {
     await expect(async () => {
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-error`),
+        buildUrl('/incidents/statistics/process-instances-by-error'),
         {
           headers: jsonHeaders(),
           data: {
@@ -223,7 +222,7 @@ test.describe
   }) => {
     const invalidSortField = 'invalid';
     const res = await request.post(
-      buildUrl(`/incidents/statistics/process-instances-by-error`),
+      buildUrl('/incidents/statistics/process-instances-by-error'),
       {
         headers: jsonHeaders(),
         data: {
@@ -246,7 +245,7 @@ test.describe
     request,
   }) => {
     const res = await request.post(
-      buildUrl(`/incidents/statistics/process-instances-by-error`),
+      buildUrl('/incidents/statistics/process-instances-by-error'),
       {
         headers: {},
         data: {},
@@ -264,7 +263,7 @@ test.describe
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
       const res = await request.post(
-        buildUrl(`/incidents/statistics/process-instances-by-error`),
+        buildUrl('/incidents/statistics/process-instances-by-error'),
         {
           headers: jsonHeaders(token),
           data: {},

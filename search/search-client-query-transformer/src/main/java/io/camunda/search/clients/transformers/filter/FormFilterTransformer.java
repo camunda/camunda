@@ -18,7 +18,7 @@ import static io.camunda.webapps.schema.descriptors.index.FormIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.FormFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.Optional;
 
@@ -37,7 +37,8 @@ public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return matchAll();
   }
 }

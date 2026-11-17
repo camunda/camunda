@@ -12,11 +12,14 @@ import static io.camunda.util.ValueTypeUtil.mapDouble;
 import static io.camunda.util.ValueTypeUtil.mapLong;
 
 import io.camunda.db.rdbms.write.util.TruncateUtil;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.util.List;
 import java.util.function.Function;
 
 public record ClusterVariableDbModel(
@@ -29,7 +32,9 @@ public record ClusterVariableDbModel(
     String fullValue,
     boolean isPreview,
     String tenantId,
-    ClusterVariableScope scope)
+    ClusterVariableScope scope,
+    List<MetadataEntry> metadata,
+    ClusterVariableKind kind)
     implements Copyable<ClusterVariableDbModel> {
 
   @Override
@@ -42,7 +47,9 @@ public record ClusterVariableDbModel(
                 .name(name)
                 .value(value)
                 .tenantId(tenantId)
-                .scope(scope))
+                .scope(scope)
+                .metadata(metadata)
+                .kind(kind))
         .build();
   }
 
@@ -70,7 +77,27 @@ public record ClusterVariableDbModel(
         fullValue,
         isPreview,
         tenantId,
-        scope);
+        scope,
+        truncateMetadata(sizeLimit, byteLimit),
+        kind);
+  }
+
+  // Metadata values have no full-value fallback column, so oversized values are truncated to fit
+  // the METADATA_VALUE column rather than failing the insert.
+  private List<MetadataEntry> truncateMetadata(final int sizeLimit, final Integer byteLimit) {
+    if (metadata == null || metadata.isEmpty()) {
+      return List.of();
+    }
+    return metadata.stream()
+        .map(
+            entry ->
+                entry.value() == null
+                    ? entry
+                    : new MetadataEntry(
+                        entry.key(),
+                        TruncateUtil.truncateValue(entry.value(), sizeLimit, byteLimit),
+                        entry.valueNumber()))
+        .toList();
   }
 
   public static class ClusterVariableDbModelBuilder
@@ -79,6 +106,8 @@ public record ClusterVariableDbModel(
     private String value;
     private String tenantId;
     private ClusterVariableScope scope;
+    private List<MetadataEntry> metadata = List.of();
+    private ClusterVariableKind kind;
 
     public ClusterVariableDbModelBuilder name(final String name) {
       this.name = name;
@@ -97,6 +126,16 @@ public record ClusterVariableDbModel(
 
     public ClusterVariableDbModelBuilder tenantId(final String tenantId) {
       this.tenantId = tenantId;
+      return this;
+    }
+
+    public ClusterVariableDbModelBuilder metadata(final List<MetadataEntry> metadata) {
+      this.metadata = metadata == null ? List.of() : metadata;
+      return this;
+    }
+
+    public ClusterVariableDbModelBuilder kind(final ClusterVariableKind kind) {
+      this.kind = kind;
       return this;
     }
 
@@ -122,7 +161,9 @@ public record ClusterVariableDbModel(
           null,
           false,
           tenantId,
-          scope);
+          scope,
+          metadata,
+          kind);
     }
 
     private String getCompositeId() {
@@ -131,7 +172,18 @@ public record ClusterVariableDbModel(
 
     private ClusterVariableDbModel getModel(final ValueTypeEnum valueTypeEnum, final String value) {
       return new ClusterVariableDbModel(
-          getCompositeId(), name, valueTypeEnum, null, null, value, null, false, tenantId, scope);
+          getCompositeId(),
+          name,
+          valueTypeEnum,
+          null,
+          null,
+          value,
+          null,
+          false,
+          tenantId,
+          scope,
+          metadata,
+          kind);
     }
 
     private ClusterVariableDbModel getDoubleModel() {
@@ -145,7 +197,9 @@ public record ClusterVariableDbModel(
           null,
           false,
           tenantId,
-          scope);
+          scope,
+          metadata,
+          kind);
     }
   }
 }

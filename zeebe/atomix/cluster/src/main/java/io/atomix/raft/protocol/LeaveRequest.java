@@ -30,7 +30,7 @@ public final class LeaveRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(leaving);
+    return Objects.hashCode(leaving);
   }
 
   @Override

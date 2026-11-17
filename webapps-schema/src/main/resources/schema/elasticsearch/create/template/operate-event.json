@@ -100,11 +100,20 @@
       "processDefinitionVersion": {
         "type": "integer"
       },
-      "extensionProperties": {
+      "toolProperties": {
         "type": "object",
         "enabled": false
       },
       "messageSubscriptionType": {
+        "type": "keyword"
+      },
+      "toolName": {
+        "type": "keyword"
+      },
+      "inboundConnectorType": {
+        "type": "keyword"
+      },
+      "businessId": {
         "type": "keyword"
       }
 		}

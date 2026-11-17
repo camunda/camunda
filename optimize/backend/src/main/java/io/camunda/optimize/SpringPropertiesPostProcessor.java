@@ -26,6 +26,12 @@ public class SpringPropertiesPostProcessor implements EnvironmentPostProcessor {
   @Override
   public void postProcessEnvironment(
       final ConfigurableEnvironment environment, final SpringApplication application) {
+    if (!OptimizeApplicationDetector.isOptimizeApplication(application)) {
+      // See OptimizeApplicationDetector: without this guard, Optimize's server.http2.enabled
+      // default also leaks (lowest precedence) into any other SpringApplication sharing the
+      // classpath, e.g. the embedded broker Optimize's own CCSM ITs boot alongside themselves.
+      return;
+    }
     final Map<String, Object> propertiesToAddMap = createSpringProperties();
     addToDefaultProperties(environment.getPropertySources(), propertiesToAddMap);
   }

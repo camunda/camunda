@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +32,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
-      "camunda.security.authentication.oidc.jwk-set-uri=jwks.example.com",
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
+      "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com",
       "camunda.security.saas.cluster-id=foo",
       "camunda.security.saas.organization-id=bar"
     })

@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 public class DecisionHandler
-    implements ExportHandler<DecisionDefinitionEntity, DecisionRecordValue> {
+    implements MainIndexExporterHandler<DecisionDefinitionEntity, DecisionRecordValue> {
 
   private static final Set<String> STATES = Set.of(ProcessIntent.CREATED.name());
   private final String indexName;
@@ -80,8 +81,11 @@ public class DecisionHandler
   }
 
   @Override
-  public void flush(final DecisionDefinitionEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final TargetIndex index,
+      final DecisionDefinitionEntity entity,
+      final BatchRequest batchRequest) {
+    batchRequest.add(index, entity);
   }
 
   @Override

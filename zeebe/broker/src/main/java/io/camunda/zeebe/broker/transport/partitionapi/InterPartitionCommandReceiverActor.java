@@ -10,14 +10,20 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.utils.serializer.serializers.DefaultSerializers;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
+import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 
 /**
@@ -29,34 +35,25 @@ import org.slf4j.Logger;
 public final class InterPartitionCommandReceiverActor extends Actor
     implements DiskSpaceUsageListener, CheckpointListener {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-  private final String actorName;
   private final ClusterCommunicationService communicationService;
-  private final int partitionId;
   private final InterPartitionCommandReceiverImpl receiver;
   private final List<String> receivingSubjects;
+  private ActorFuture<Void> previousMessageHandled = CompletableActorFuture.completed();
 
   public InterPartitionCommandReceiverActor(
-      final int partitionId,
+      final PartitionId partitionId,
       final ClusterCommunicationService communicationService,
       final LogStreamWriter logStreamWriter,
+      final PersistedSnapshotStore snapshotStore,
+      final SnapshotTrigger snapshotTrigger,
+      final CheckpointState checkpointState,
       final List<String> receivingSubjects) {
-    this.partitionId = partitionId;
+    super("InterPartitionCommandReceiverActor", partitionId);
     this.communicationService = communicationService;
-    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
-    actorName = buildActorName(getClass().getSimpleName(), partitionId);
+    final var snapshotReserver =
+        new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
+    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, snapshotReserver, actor);
     this.receivingSubjects = receivingSubjects;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
@@ -89,11 +86,29 @@ public final class InterPartitionCommandReceiverActor extends Actor
     actor.run(() -> receiver.setCheckpointInfo(checkpointId, checkpointType));
   }
 
+  /**
+   * Handles messages one after the other. A message whose checkpoint first needs a snapshot
+   * reserved delays the ones after it, so no command is written before the checkpoint it depends
+   * on.
+   */
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {
+    if (previousMessageHandled.isDone()) {
+      previousMessageHandled = handleMessage(memberId, message);
+    } else {
+      previousMessageHandled =
+          previousMessageHandled.andThen(
+              (ignored, previousError) -> handleMessage(memberId, message), actor::submit);
+    }
+  }
+
+  private ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
     try {
-      receiver.handleMessage(memberId, message);
+      final var handled = receiver.handleMessage(memberId, message);
+      handled.onError(error -> LOG.error("Error while handling message", error), actor);
+      return handled;
     } catch (final RuntimeException e) {
       LOG.error("Error while handling message", e);
+      return CompletableActorFuture.completed();
     }
   }
 }

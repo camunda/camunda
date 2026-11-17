@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupConfig;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;

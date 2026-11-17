@@ -8,210 +8,380 @@
 package io.camunda.application.commons.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
+import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
+import io.camunda.application.commons.search.SearchEngineSchemaInitializer.TerminalSchemaInitializationException;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
+import io.camunda.configuration.beans.SearchEngineIndexProperties;
+import io.camunda.configuration.beans.SearchEngineRetentionProperties;
+import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.lang.reflect.Field;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.mock.env.MockEnvironment;
 
+/**
+ * Covers the storage-specific half of schema initialization — which failures are terminal, what one
+ * attempt does, how per-tenant state is reported, and whether this node holds startup at the gate.
+ * The gate rule itself and the retry loop belong to {@code PerTenantSchemaInitializationTest}.
+ *
+ * <p>No Elasticsearch is involved: building a search client performs no I/O, and an unreachable one
+ * fails within its connect timeout, which is the situation the design exists to survive.
+ */
+@Timeout(60)
 class SearchEngineSchemaInitializerTest {
 
-  private SearchEngineSchemaInitializer createInitializer() {
-    return new SearchEngineSchemaInitializer(null, new SimpleMeterRegistry(), true);
+  private static final String DEFAULT_TENANT = "default";
+  private static final String TENANT_B = "tenantb";
+
+  /** Nothing listens here, so an attempt fails on connect instead of hanging. */
+  private static final String UNREACHABLE_URL = "http://localhost:1";
+
+  private SearchEngineSchemaInitializer initializer;
+
+  @BeforeAll
+  @AfterAll
+  static void clearStaticEnvironment() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
   }
 
-  /** Sets the private {@code isShutdown} flag on the initializer via reflection. */
-  private static void setShutdown(
-      final SearchEngineSchemaInitializer initializer, final boolean value) {
-    try {
-      final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("isShutdown");
-      field.setAccessible(true);
-      ((AtomicBoolean) field.get(initializer)).set(value);
-    } catch (final ReflectiveOperationException e) {
-      throw new RuntimeException("Failed to set isShutdown via reflection", e);
-    }
-  }
-
-  @Nested
-  class SynchronousInitialization {
-
-    private ExecutorService executor;
-
-    @AfterEach
-    void tearDown() {
-      if (executor != null && !executor.isShutdown()) {
-        executor.shutdownNow();
-      }
-      // Clear interrupt flag to avoid leaking to other tests
-      Thread.interrupted();
-    }
-
-    @Test
-    void shouldCompleteSuccessfully() throws Exception {
-      // given
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-      final var future = CompletableFuture.completedFuture((Void) null);
-
-      // when
-      initializer.synchronousSchemaInitialization(future, executor);
-
-      // then — no exception thrown, executor is closed
-      assertThat(executor.isShutdown()).isTrue();
-    }
-
-    @Test
-    void shouldNotInterruptThreadOnShutdownTriggeredInterrupt() throws Exception {
-      // given — simulate shutdown-triggered interrupt
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-      setShutdown(initializer, true);
-
-      // Use an incomplete future so that future.get() blocks and sees the interrupt flag
-      final var blockingFuture = new CompletableFuture<Void>();
-
-      // when — interrupt the thread so future.get() throws InterruptedException
-      Thread.currentThread().interrupt();
-      initializer.synchronousSchemaInitialization(blockingFuture, executor);
-
-      // then — thread should NOT be interrupted (shutdown swallows the interrupt)
-      assertThat(Thread.currentThread().isInterrupted()).isFalse();
-      assertThat(executor.isShutdown()).isTrue();
-    }
-
-    @Test
-    void shouldReInterruptThreadOnNonShutdownInterrupt() throws Exception {
-      // given — NOT a shutdown, something else interrupted
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-      // isShutdown remains false (default)
-
-      final var blockingFuture = new CompletableFuture<Void>();
-
-      // when — interrupt the current thread so future.get() throws InterruptedException
-      Thread.currentThread().interrupt();
-      initializer.synchronousSchemaInitialization(blockingFuture, executor);
-
-      // then — thread should be re-interrupted
-      assertThat(Thread.currentThread().isInterrupted()).isTrue();
-      assertThat(executor.isShutdown()).isTrue();
-    }
-
-    @Test
-    void shouldSuppressExceptionDuringShutdown() {
-      // given — shutdown is in progress and the future fails with a non-interrupt exception.
-      // CompletableFuture.get() wraps the cause in ExecutionException, which falls into
-      // the catch(Exception) block where isShutdown=true causes a silent return.
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-      setShutdown(initializer, true);
-
-      final var future = new CompletableFuture<Void>();
-      future.completeExceptionally(new RuntimeException("ES connection failed"));
-
-      // when/then — should not throw, exception is suppressed during shutdown
-      assertThatNoException()
-          .isThrownBy(() -> initializer.synchronousSchemaInitialization(future, executor));
-      assertThat(executor.isShutdown()).isTrue();
-    }
-
-    @Test
-    void shouldPropagateExceptionWhenNotShutdown() {
-      // given — NOT a shutdown, the future fails with a real error.
-      // CompletableFuture.get() wraps the cause in ExecutionException.
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-      // isShutdown remains false
-
-      final var cause = new RuntimeException("ES connection refused");
-      final var future = new CompletableFuture<Void>();
-      future.completeExceptionally(cause);
-
-      // when/then — ExecutionException wrapping the cause should propagate
-      assertThatThrownBy(() -> initializer.synchronousSchemaInitialization(future, executor))
-          .isInstanceOf(ExecutionException.class)
-          .hasCause(cause);
-      assertThat(executor.isShutdown()).isTrue();
-    }
-
-    @Test
-    void shouldAlwaysCloseExecutorEvenOnException() {
-      // given
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-
-      final var future = new CompletableFuture<Void>();
-      future.completeExceptionally(new RuntimeException("schema init failed"));
-
-      // when
-      try {
-        initializer.synchronousSchemaInitialization(future, executor);
-      } catch (final Exception ignored) {
-        // expected
-      }
-
-      // then — executor must be closed regardless
-      assertThat(executor.isShutdown()).isTrue();
-    }
-
-    @Test
-    void shouldAlwaysCloseExecutorOnInterrupt() throws Exception {
-      // given
-      final var initializer = createInitializer();
-      executor = Executors.newSingleThreadExecutor();
-
-      final var blockingFuture = new CompletableFuture<Void>();
-      Thread.currentThread().interrupt();
-
-      // when
-      initializer.synchronousSchemaInitialization(blockingFuture, executor);
-
-      // then — executor must be closed regardless
-      assertThat(executor.isShutdown()).isTrue();
+  @AfterEach
+  void tearDown() {
+    if (initializer != null) {
+      // stops the background retry loop, which would otherwise keep hammering the unreachable URL
+      // for the rest of the suite
+      initializer.destroy();
+      initializer = null;
     }
   }
 
-  @Nested
-  class AsynchronousInitialization {
+  @Test
+  void shouldNotHoldStartupWithoutAnHttpGateway() {
+    // given - a node whose storage is unreachable and which serves no HTTP surface: its exporter
+    // retries per partition, and nothing about its startup benefits from waiting
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, Map.of()));
 
-    @Test
-    void shouldCloseExecutorOnSuccess() throws Exception {
-      // given
-      final var initializer = createInitializer();
-      final var executor = Executors.newSingleThreadExecutor();
-      final var future = CompletableFuture.completedFuture((Void) null);
+    // when / then - startup carries on, the tenant is simply not ready
+    assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+    assertThat(initializer.isInitialized()).isFalse();
+  }
 
-      // when
-      initializer.asyncSchemaInitialization(future, executor);
+  @Test
+  void shouldNotFailStartupWhenNoTenantCanBeInitialized() {
+    // given - two tenants, neither reachable: the case that used to abort the context
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, unreachableTenantB()));
 
-      // then — wait a bit for the whenCompleteAsync callback to run
-      executor.awaitTermination(2, TimeUnit.SECONDS);
-      assertThat(executor.isShutdown()).isTrue();
+    // when / then
+    assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+    assertThat(initializer.isInitialized(TENANT_B)).isFalse();
+  }
+
+  @Test
+  void shouldHoldStartupWithAnHttpGatewayUntilATenantIsServiceable() throws Exception {
+    // given - a node that serves HTTP and whose only tenant's storage is unreachable
+    initializer = gatewayInitializerFor(tenants(camunda -> {}, Map.of()));
+    final var returned = new CountDownLatch(1);
+    Thread.ofPlatform()
+        .name("test-startup")
+        .start(
+            () -> {
+              initializer.afterPropertiesSet();
+              returned.countDown();
+            });
+
+    // when / then - the port stays shut rather than opening on the first connect timeout and
+    // serving the webapp 503 from every endpoint that needs secondary storage
+    assertThat(returned.await(500, TimeUnit.MILLISECONDS)).isFalse();
+
+    // and - shutdown still releases it
+    initializer.destroy();
+    assertThat(returned.await(10, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
+  void shouldReportReadyImmediatelyWhenSchemaCreationIsDisabled() {
+    // given - with createSchema=false there is nothing to apply, so the tenant is serviceable at
+    // once and opens the gate, even though its storage is unreachable
+    initializer =
+        gatewayInitializerFor(
+            tenants(SearchEngineSchemaInitializerTest::noSchemaCreation, Map.of()));
+
+    // when
+    initializer.afterPropertiesSet();
+
+    // then
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isTrue();
+    assertThat(initializer.isInitialized()).isTrue();
+  }
+
+  @Test
+  void shouldReportPerTenantReadinessIndependently() {
+    // given - one tenant with nothing to apply, one whose storage is unreachable
+    initializer =
+        gatewayInitializerFor(
+            tenants(SearchEngineSchemaInitializerTest::noSchemaCreation, unreachableTenantB()));
+
+    // when - the gate opens on the serviceable tenant
+    initializer.afterPropertiesSet();
+
+    // then - one tenant's failure does not withhold the other
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isTrue();
+    assertThat(initializer.isInitialized(TENANT_B)).isFalse();
+    assertThat(initializer.isInitialized()).isFalse();
+  }
+
+  @Test
+  void shouldSynthesizeDefaultTenantWhenNoneDeclared() {
+    // given
+    initializer = backgroundInitializerFor(tenants(camunda -> {}, Map.of()));
+
+    // when / then
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+    assertThat(initializer.isInitialized()).isFalse();
+  }
+
+  @Test
+  void shouldTreatAnUnbuildableSearchClientAsTerminal() {
+    // given - connect settings that no search client can be built from. Retrying a static
+    // misconfiguration like this would never succeed, so the tenant is left degraded instead
+    initializer = terminallyMisconfiguredInitializer(false);
+
+    // when / then
+    assertThatThrownBy(() -> initializer.initializeTenant(DEFAULT_TENANT))
+        .isInstanceOf(TerminalSchemaInitializationException.class)
+        .cause()
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldAbortStartupWithAnHttpGatewayWhenEveryTenantFailsTerminally() {
+    // given - a node whose only tenant is misconfigured in a way retrying cannot repair
+    initializer = terminallyMisconfiguredInitializer(true);
+
+    // when / then - it takes itself down rather than coming up able to serve nobody, never
+    // becoming ready, and exporting into the schema the classification just refused
+    assertThatThrownBy(() -> initializer.afterPropertiesSet())
+        .isInstanceOf(EveryTenantTerminallyFailedException.class)
+        .hasMessageContaining(DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldNotAbortStartupWithoutAnHttpGatewayWhenEveryTenantFailsTerminally() {
+    // given - the same misconfiguration on a node that waits at no gate
+    initializer = terminallyMisconfiguredInitializer(false);
+
+    // when / then - the abort belongs to the gate, so a node without one stays up with its tenant
+    // degraded and its exporter retrying per partition, as it does today
+    assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+  }
+
+  @Test
+  void shouldNotTouchTheSchemaOfARecoveringTenant() {
+    // given - a node restarted into a tenant that is being restored from a backup. The tenant is
+    // also misconfigured in a way that is terminal on the first attempt, which is what makes "no
+    // attempt was made" observable without a search engine.
+    initializer = terminallyMisconfiguredInitializer(true, tenantId -> true);
+
+    // when / then - startup neither aborts nor holds: the attempt that would have classified the
+    // tenant terminal never ran, and the gate opens so an operator can still reach this node to
+    // drive the restore it is waiting on
+    assertThatCode(() -> initializer.afterPropertiesSet()).doesNotThrowAnyException();
+
+    // then - and the tenant stays unserviceable meanwhile, so its requests keep being rejected
+    assertThat(initializer.isInitialized(DEFAULT_TENANT)).isFalse();
+    assertThat(initializer.isInitialized()).isFalse();
+  }
+
+  @Test
+  void shouldClassifyFailuresThatRetryingCannotRepair() {
+    // given / when / then
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IncompatibleVersionException("schema is from an incompatible version")))
+        .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new TerminalSchemaInitializationException("no client", new RuntimeException())))
+        .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new SearchEngineHealthCheckPermissionException(
+                    "missing 'monitor' privilege", new RuntimeException())))
+        .as("a missing cluster:monitor privilege will not be granted by retrying")
+        .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IndexSchemaValidationException(
+                    "Unsupported index changes have been introduced. Data migration is required.")))
+        .as("a field whose type changed needs a data migration, not another attempt")
+        .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new IndexSchemaValidationException(
+                    "Ambiguous schema update. Multiple indices for mapping 'foo' have different"
+                        + " fields.")))
+        .as("indices behind one alias that disagree are refused the same way on every attempt")
+        .isTrue();
+  }
+
+  @Test
+  void shouldClassifyStorageFailuresAsRetryable() {
+    // given / when / then - an unreachable cluster and a rejected request are both repairable
+    // without restarting the node
+    assertThat(SearchEngineSchemaInitializer.isTerminal(new IOException("connection refused")))
+        .isFalse();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(new IllegalStateException("strict mapping")))
+        .isFalse();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new SearchEngineSchemaInitializer.SchemaNotReadyException(
+                    "cluster health check failed")))
+        .as("a cluster still red/yellow right after schema creation may recover shortly after")
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotFailTheTenantWhenTheSearchClientCannotBeClosed() throws Exception {
+    // given - the client is only released once the schema has been applied
+    final var clientAdapter = mock(ClientAdapter.class);
+    doThrow(new IOException("connection reset")).when(clientAdapter).close();
+
+    // when / then - failing here would retry an initialization that already succeeded
+    assertThatCode(() -> SearchEngineSchemaInitializer.closeQuietly(clientAdapter, DEFAULT_TENANT))
+        .doesNotThrowAnyException();
+  }
+
+  /** A node with an HTTP gateway: it holds startup at the gate. */
+  private SearchEngineSchemaInitializer gatewayInitializerFor(
+      final PhysicalTenantResolver resolver) {
+    return initializerFor(resolver, true);
+  }
+
+  /** A node without one: it starts the tasks and carries on. */
+  private SearchEngineSchemaInitializer backgroundInitializerFor(
+      final PhysicalTenantResolver resolver) {
+    return initializerFor(resolver, false);
+  }
+
+  private SearchEngineSchemaInitializer initializerFor(
+      final PhysicalTenantResolver resolver, final boolean holdsStartup) {
+    return new SearchEngineSchemaInitializer(
+        configsFor(resolver),
+        descriptorsFor(resolver),
+        new SimpleMeterRegistry(),
+        holdsStartup,
+        tenantId -> false);
+  }
+
+  /**
+   * A single tenant whose connect settings no search client can be built from, so it is terminal
+   * from its first attempt and stays that way — the shortest route to "every tenant terminal"
+   * without a container.
+   */
+  private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
+      final boolean holdsStartup) {
+    return terminallyMisconfiguredInitializer(holdsStartup, tenantId -> false);
+  }
+
+  private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
+      final boolean holdsStartup, final Predicate<String> recovering) {
+    final PhysicalTenantResolver resolver = tenants(camunda -> {}, Map.of());
+    final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
+    configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
+    return new SearchEngineSchemaInitializer(
+        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup, recovering);
+  }
+
+  /**
+   * The default tenant is the {@link Camunda} instance itself (the resolver synthesizes it when no
+   * {@code default} is declared), while declared tenants bind from the environment — hence the two
+   * ways of configuring one.
+   */
+  private static PhysicalTenantResolver tenants(
+      final Consumer<Camunda> defaultTenant, final Map<String, String> declaredTenants) {
+    final var environment = new MockEnvironment();
+    if (!declaredTenants.isEmpty()) {
+      environment
+          .getPropertySources()
+          .addFirst(new MapPropertySource("test", Map.copyOf(declaredTenants)));
     }
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    camunda.getData().getSecondaryStorage().getElasticsearch().setUrl(UNREACHABLE_URL);
+    defaultTenant.accept(camunda);
+    return PhysicalTenantResolver.of(environment, camunda);
+  }
 
-    @Test
-    void shouldCloseExecutorOnFailure() throws Exception {
-      // given
-      final var initializer = createInitializer();
-      final var executor = Executors.newSingleThreadExecutor();
-      final var future = new CompletableFuture<Void>();
-      future.completeExceptionally(new RuntimeException("ES unavailable"));
+  private static void noSchemaCreation(final Camunda camunda) {
+    camunda.getData().getSecondaryStorage().getElasticsearch().setCreateSchema(false);
+  }
 
-      // when
-      initializer.asyncSchemaInitialization(future, executor);
+  /** A second tenant on its own index prefix, also pointed at an unreachable cluster. */
+  private static Map<String, String> unreachableTenantB() {
+    return Map.of(
+        "camunda.physical-tenants.tenantb.data.secondary-storage.type",
+        "elasticsearch",
+        "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.url",
+        UNREACHABLE_URL,
+        "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+        TENANT_B,
+        "camunda.physical-tenants.tenantb.security.initialization.default-roles.admin.users[0]",
+        "tenantb-admin");
+  }
 
-      // then — wait a bit for the whenCompleteAsync callback to run
-      executor.awaitTermination(2, TimeUnit.SECONDS);
-      assertThat(executor.isShutdown()).isTrue();
-    }
+  private static Map<String, IndexDescriptors> descriptorsFor(
+      final PhysicalTenantResolver resolver) {
+    return new SearchClientReaderConfiguration().physicalTenantScopedIndexDescriptors(resolver);
+  }
+
+  private static Map<String, SearchEngineConfiguration> configsFor(
+      final PhysicalTenantResolver resolver) {
+    return resolver.mapValues(
+        tenantCamunda -> {
+          final var index = new SearchEngineIndexProperties();
+          SearchEngineIndexPropertiesOverride.applyTo(tenantCamunda, index);
+          final var retention = new SearchEngineRetentionProperties();
+          SearchEngineRetentionPropertiesOverride.applyTo(tenantCamunda, retention);
+          final var schemaManager = new SearchEngineSchemaManagerProperties();
+          SearchEngineSchemaManagerPropertiesOverride.applyTo(tenantCamunda, schemaManager);
+          return SearchEngineConfiguration.of(
+              b ->
+                  b.connect(new Converter(tenantCamunda).convert())
+                      .index(index)
+                      .retention(retention)
+                      .schemaManager(schemaManager));
+        });
   }
 }

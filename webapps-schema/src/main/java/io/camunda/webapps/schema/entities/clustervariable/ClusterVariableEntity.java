@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.clustervariable;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import java.util.List;
 import java.util.Objects;
 
 public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEntity> {
@@ -33,6 +34,12 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String tenantId;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private List<MetadataEntry> metadata;
+
+  @SinceVersion("8.10.0")
+  private ClusterVariableKind kind = ClusterVariableKind.JSON;
 
   public boolean getIsPreview() {
     return isPreview;
@@ -99,9 +106,27 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
     return this;
   }
 
+  public List<MetadataEntry> getMetadata() {
+    return metadata;
+  }
+
+  public ClusterVariableEntity setMetadata(final List<MetadataEntry> metadata) {
+    this.metadata = metadata;
+    return this;
+  }
+
+  public ClusterVariableKind getKind() {
+    return kind;
+  }
+
+  public ClusterVariableEntity setKind(final ClusterVariableKind kind) {
+    this.kind = kind;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, value, fullValue, isPreview, scope, tenantId);
+    return Objects.hash(id, name, value, fullValue, isPreview, scope, tenantId, metadata, kind);
   }
 
   @Override
@@ -116,7 +141,9 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
         && Objects.equals(value, that.value)
         && Objects.equals(fullValue, that.fullValue)
         && scope == that.scope
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(metadata, that.metadata)
+        && kind == that.kind;
   }
 
   @Override
@@ -141,6 +168,12 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
         + ", tenantId='"
         + tenantId
         + '\''
+        + ", metadata="
+        + metadata
+        + ", kind="
+        + kind
         + '}';
   }
+
+  public record MetadataEntry(String key, String value, Double valueNumber) {}
 }

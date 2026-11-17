@@ -25,11 +25,15 @@ export function getFormatter(measure) {
       return formatters.duration;
     case 'percentage':
       return formatters.percentage;
+    case 'compact':
+      return formatters.compact;
     default:
       return (v) => v;
   }
 }
 
-export const formatValue = (value, measure, precision) => {
-  return getFormatter(measure)(value, precision);
+export const formatValue = (value, measure, precision, shortNotation) => {
+  // shortNotation is only meaningful for the duration formatter; the other formatters
+  // ignore the extra argument, so passing it through is always safe.
+  return getFormatter(measure)(value, precision, shortNotation);
 };

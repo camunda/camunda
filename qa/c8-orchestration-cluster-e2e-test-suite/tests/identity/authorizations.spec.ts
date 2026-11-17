@@ -7,11 +7,12 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {
   LOGIN_CREDENTIALS,
   createTestData,
   createComponentAuthorization,
+  createSecretAuthorization,
   createUserAuthorization,
 } from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
@@ -65,7 +66,7 @@ test.describe.serial('component authorizations CRUD', () => {
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
     );
-    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    await expect(page).toHaveURL(/admin\/authorizations/);
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -76,23 +77,28 @@ test.describe.serial('component authorizations CRUD', () => {
   test('tries to create an authorization with invalid id', async ({
     identityAuthorizationsPage,
   }) => {
+    await identityAuthorizationsPage.selectResourceType(
+      NEW_COMPONENT_AUTHORIZATION.resourceType,
+    );
     await identityAuthorizationsPage.createAuthorizationButton.click();
     await identityAuthorizationsPage.selectAuthorizationOwnerType({
       ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
     });
-    await identityAuthorizationsPage.selectAuthorizationOwner({
-      ownerId: NEW_COMPONENT_AUTHORIZATION.ownerId,
-    });
-    await identityAuthorizationsPage.selectResourceType(
-      NEW_COMPONENT_AUTHORIZATION.resourceType,
-    );
+
+    // No owner is selected here: the owner field is now a search that only
+    // lists existing owners, and this role is intentionally never created.
+    // Resource ID validation is field-level and independent of the owner.
+    // selectAuthorizationOwnerType() already waits for the owner combobox's
+    // trigger to be visible, so no extra readiness wait is needed before
+    // moving on -- the search input itself only mounts once that trigger is
+    // opened, which this test never does.
     await identityAuthorizationsPage.fillResourceId('invalid!!%');
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,
     ).toContainText('Please enter a valid Resource ID');
     await expect(
       identityAuthorizationsPage.createAuthorizationResourceIdField,
-    ).toHaveAttribute('data-invalid', 'true');
+    ).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('create user authorization', async ({
@@ -132,7 +138,7 @@ test.describe.serial('component authorizations CRUD', () => {
       await identityRolesDetailsPage.assignUser(NEW_USER);
 
       await identityAuthorizationsPage.navigateToAuthorizations();
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await expect(page).toHaveURL(/admin\/authorizations/);
     });
 
     await test.step(`Assign authorization to new user`, async () => {
@@ -179,7 +185,7 @@ test.describe.serial('component authorizations CRUD', () => {
       await identityHeader.navigateToAuthorizations();
       const componentAuth = NEW_COMPONENT_AUTHORIZATION;
       const resourceType = componentAuth.resourceType;
-      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
+      await identityAuthorizationsPage.selectResourceType(resourceType);
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(role.id);
 
       await expect(
@@ -190,12 +196,12 @@ test.describe.serial('component authorizations CRUD', () => {
         identityAuthorizationsPage.deleteAuthorizationModal,
       ).toBeHidden();
 
-      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
+      await identityAuthorizationsPage.selectResourceType(resourceType);
       const item = identityAuthorizationsPage.getAuthorizationCell(role.id);
       await waitForItemInList(page, item, {
         shouldBeVisible: false,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab(resourceType),
+          identityAuthorizationsPage.selectResourceType(resourceType),
       });
     });
 
@@ -226,7 +232,7 @@ test.describe('authorization scenarios', () => {
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
     );
-    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    await expect(page).toHaveURL(/admin\/authorizations/);
   });
 
   test.afterAll(async ({request}) => {
@@ -263,13 +269,13 @@ test.describe('authorization scenarios', () => {
       await identityUsersPage.createUser(testUser);
 
       await identityAuthorizationsPage.navigateToAuthorizations();
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await expect(page).toHaveURL(/admin\/authorizations/);
     });
 
     await test.step(`Create component authorization for user`, async () => {
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: testUser.name,
+        ownerId: testUser.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
@@ -282,7 +288,7 @@ test.describe('authorization scenarios', () => {
         shouldBeVisible: true,
         timeout: 10000,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+          identityAuthorizationsPage.selectResourceType('Component'),
         clickNext: true,
       });
     });
@@ -291,6 +297,197 @@ test.describe('authorization scenarios', () => {
       await identityHeader.logout();
       await loginPage.login(testUser.username, testUser.password);
       await expect(identityUsersPage.userCell(testUser.email)).toBeVisible();
+    });
+  });
+});
+
+test.describe('create authorization modal — resource type field', () => {
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(/admin\/authorizations/);
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('prefills resource type from the active tab and disables the dropdown', async ({
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.selectResourceType('Component');
+
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toBeVisible();
+
+    await expect(identityAuthorizationsPage.resourceTypeComboBox).toHaveText(
+      /Component/i,
+    );
+    await expect(
+      identityAuthorizationsPage.resourceTypeComboBox,
+    ).toBeDisabled();
+  });
+});
+
+test.describe('secret authorizations', () => {
+  const createdSecretUserIds: string[] = [];
+  const createdSecretRoleIds: string[] = [];
+
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(/admin\/authorizations/);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdSecretUserIds);
+    await cleanupRoles(request, createdSecretRoleIds);
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('renders READ and REVEAL as independent checkboxes on the SECRET tab', async ({
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.selectResourceType('Secret');
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toBeVisible();
+
+    const readCheckbox =
+      identityAuthorizationsPage.accessPermissionCheckbox('read');
+    const revealCheckbox =
+      identityAuthorizationsPage.accessPermissionCheckbox('reveal');
+
+    await expect(readCheckbox).not.toBeChecked();
+    await expect(revealCheckbox).not.toBeChecked();
+
+    // Selecting REVEAL must not cascade to READ.
+    await identityAuthorizationsPage
+      .createAuthorizationAccessPermission('reveal')
+      .click();
+
+    await expect(revealCheckbox).toBeChecked();
+    await expect(readCheckbox).not.toBeChecked();
+
+    // Reset REVEAL, then verify the opposite direction: selecting READ must
+    // not cascade to REVEAL.
+    await identityAuthorizationsPage
+      .createAuthorizationAccessPermission('reveal')
+      .click();
+    await expect(revealCheckbox).not.toBeChecked();
+
+    await identityAuthorizationsPage
+      .createAuthorizationAccessPermission('read')
+      .click();
+
+    await expect(readCheckbox).toBeChecked();
+    await expect(revealCheckbox).not.toBeChecked();
+  });
+
+  test('grants SECRET REVEAL-only with a wildcard resource id', async ({
+    page,
+    identityUsersPage,
+    identityAuthorizationsPage,
+  }) => {
+    const testData = createTestData({user: true});
+    const testUser = testData.user!;
+    createdSecretUserIds.push(testUser.username);
+
+    await test.step('Create a new test user', async () => {
+      await identityUsersPage.navigateToUsers();
+      await identityUsersPage.createUser(testUser);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(/admin\/authorizations/);
+    });
+
+    await test.step('Grant SECRET REVEAL-only with wildcard resource id', async () => {
+      const secretAuth = createSecretAuthorization(
+        {name: testUser.username},
+        ['reveal'],
+        'User',
+      );
+      await identityAuthorizationsPage.createAuthorization(secretAuth);
+    });
+
+    await test.step('Assert the grant lists REVEAL and not READ', async () => {
+      await identityAuthorizationsPage.assertAuthorizationExists(
+        testUser.username,
+        'User',
+        ['reveal'],
+        'Secret',
+      );
+
+      const authorizationRow =
+        identityAuthorizationsPage.authorizationRowByOwnerId(testUser.username);
+      await expect(authorizationRow).not.toContainText('READ');
+    });
+  });
+
+  test('grants SECRET READ and REVEAL to a role for a single secret reference', async ({
+    page,
+    identityHeader,
+    identityRolesPage,
+    identityAuthorizationsPage,
+  }) => {
+    const testData = createTestData({authRole: true});
+    const testRole = testData.authRole!;
+    const secretReference = `secret-${testData.id}`;
+    createdSecretRoleIds.push(testRole.id);
+
+    await test.step('Create a new test role', async () => {
+      await identityHeader.navigateToRoles();
+      await expect(page).toHaveURL(relativizePath(Paths.roles()));
+      await identityRolesPage.createRole(testRole);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(/admin\/authorizations/);
+    });
+
+    await test.step('Grant SECRET READ and REVEAL for a concrete resource id', async () => {
+      await identityAuthorizationsPage.createAuthorization(
+        createSecretAuthorization(
+          testRole,
+          ['read', 'reveal'],
+          'Role',
+          secretReference,
+        ),
+      );
+    });
+
+    await test.step('Assert the grant lists both permissions for that reference', async () => {
+      await identityAuthorizationsPage.assertAuthorizationExists(
+        testRole.id,
+        'Role',
+        ['read', 'reveal'],
+        'Secret',
+      );
+
+      // The resource-id cell renders the fully-qualified value
+      // (`camunda.secrets.<reference>`) inside a button that truncates its
+      // visible text with an ellipsis when long, so toContainText -- which
+      // reads the truncated visible text -- no longer sees the full reference.
+      // The complete value is preserved as the cell's accessible name, so
+      // assert against that instead.
+      await expect(
+        identityAuthorizationsPage
+          .authorizationRowByOwnerId(testRole.id)
+          .getByRole('cell', {name: secretReference}),
+      ).toBeVisible();
     });
   });
 });

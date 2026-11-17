@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.engine.impl;
 
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;

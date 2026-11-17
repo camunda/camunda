@@ -17,10 +17,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ class RoleDbReaderTest {
     final RoleQuery query = RoleQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.role().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.role().read())),
             TenantCheck.disabled());
 
     final var items = roleDbReader.search(query, resourceAccessChecks).items();

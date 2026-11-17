@@ -52,9 +52,9 @@ class RecordExporter {
     }
   }
 
-  boolean export() {
+  ExportOutcome export() {
     if (!shouldExport) {
-      return true;
+      return ExportOutcome.EXPORTED;
     }
 
     final ValueType valueType = typedEvent.getValueType();
@@ -75,16 +75,17 @@ class RecordExporter {
 
       try (final var timer =
           exporterMetrics.startExporterExportingTimer(valueType, container.getId())) {
-        if (container.exportRecord(rawMetadata, typedEvent)) {
+        final ExportOutcome outcome = container.exportRecord(rawMetadata, typedEvent);
+        if (outcome == ExportOutcome.EXPORTED) {
           exporterIndex++;
           exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
         } else {
-          return false;
+          return outcome;
         }
       }
     }
 
-    return true;
+    return ExportOutcome.EXPORTED;
   }
 
   TypedRecordImpl getTypedEvent() {

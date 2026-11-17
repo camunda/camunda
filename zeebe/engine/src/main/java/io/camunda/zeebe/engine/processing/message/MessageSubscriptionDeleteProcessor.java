@@ -28,6 +28,10 @@ public final class MessageSubscriptionDeleteProcessor
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to close message subscription for element with key '%d' and message name '%s', "
           + "but no such message subscription exists";
+  private static final String STALE_DELETE_MESSAGE =
+      "Expected to close message subscription for element with key '%d' and message name '%s' "
+          + "with subscription key '%d', but the current subscription has key '%d'; "
+          + "the delete command is stale and is ignored";
 
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
@@ -56,14 +60,20 @@ public final class MessageSubscriptionDeleteProcessor
         subscriptionState.get(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
-    if (messageSubscription != null) {
-      stateWriter.appendFollowUpEvent(
-          messageSubscription.getKey(),
-          MessageSubscriptionIntent.DELETED,
-          messageSubscription.getRecord());
-
-    } else {
+    if (messageSubscription == null) {
       rejectCommand(record);
+    } else {
+      final long requestedKey = subscriptionRecord.getSubscriptionKey();
+      final long storedKey = messageSubscription.getKey();
+      if (requestedKey != -1L && storedKey != requestedKey) {
+        // A resume already replaced this subscription with a new one; ack so the PI side stops
+        // retrying, and do NOT delete the live replacement.
+        rejectStaleCommand(record, requestedKey, storedKey);
+        sendAcknowledgeCommand();
+        return;
+      }
+      stateWriter.appendFollowUpEvent(
+          storedKey, MessageSubscriptionIntent.DELETED, messageSubscription.getRecord());
     }
 
     sendAcknowledgeCommand();
@@ -80,12 +90,29 @@ public final class MessageSubscriptionDeleteProcessor
     rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
   }
 
+  private void rejectStaleCommand(
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final long requestedKey,
+      final long storedKey) {
+    final var subscription = record.getValue();
+    final var reason =
+        String.format(
+            STALE_DELETE_MESSAGE,
+            subscription.getElementInstanceKey(),
+            BufferUtil.bufferAsString(subscription.getMessageNameBuffer()),
+            requestedKey,
+            storedKey);
+
+    rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
+  }
+
   private boolean sendAcknowledgeCommand() {
     return commandSender.closeProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getProcessDefinitionKey(),
         subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.getTenantId());
+        subscriptionRecord.getTenantId(),
+        subscriptionRecord.getStorageOrdinal());
   }
 }

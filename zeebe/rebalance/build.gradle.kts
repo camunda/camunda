@@ -1,0 +1,33 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
+plugins {
+  id("buildlogic.protobuf-conventions")
+}
+
+sourceSets { main { proto { srcDir("src/main/resources/proto") } } }
+
+dependencies {
+  implementation(project(":zeebe-scheduler"))
+  implementation(project(":zeebe-cluster-config-api"))
+  implementation(project(":camunda-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
+  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-utils"))
+  implementation(libs.com.google.protobuf.protobuf.java)
+  implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
+  implementation(libs.org.slf4j.slf4j.api)
+  implementation(libs.org.jspecify.jspecify)
+  implementation(libs.io.micrometer.micrometer.core)
+  implementation(libs.io.micrometer.micrometer.commons)
+
+  testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+  testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
+  testRuntimeOnly(libs.org.junit.jupiter.junit.jupiter.engine)
+  testImplementation(libs.org.assertj.assertj.core)
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
+  testImplementation(project(":zeebe-test-util"))
+}
+
+description = "Zeebe Rebalance"

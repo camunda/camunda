@@ -8,7 +8,9 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -27,10 +29,14 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionT
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import java.time.InstantSource;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 
 class LogStreamPartitionTransitionStepTest {
   final TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
@@ -115,6 +121,61 @@ class LogStreamPartitionTransitionStepTest {
     assertThat(transitionContext.getStreamProcessor()).isNull();
     verify(logStreamFromPrevRole).close();
     verify(logStreamBuilder, never()).build();
+  }
+
+  @Test
+  void shouldReturnFailedFutureIfClosingLogStreamThrows() {
+    // given
+    final var testException = new IllegalStateException("Failed to close");
+    initializeContext(Role.LEADER);
+    doThrow(testException).when(logStreamFromPrevRole).close();
+
+    // when
+    final var future = step.prepareTransition(transitionContext, 2, Role.FOLLOWER);
+
+    // then
+    assertThatThrownBy(future::join)
+        .isInstanceOf(ExecutionException.class)
+        .hasRootCause(testException);
+
+    assertThat(transitionContext.getLogStream()).isSameAs(logStreamFromPrevRole);
+  }
+
+  @Test
+  void shouldSetStreamClockBeforeBuildingLogStream() {
+    // given
+    transitionContext.setCurrentRole(Role.INACTIVE);
+    final var clockCaptor = ArgumentCaptor.forClass(InstantSource.class);
+
+    // when
+    step.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    verify(logStreamBuilder).withClock(clockCaptor.capture());
+    assertThat(clockCaptor.getValue())
+        .as("log stream is built with the installed stream clock")
+        .isNotNull()
+        .isSameAs(transitionContext.getStreamClock());
+  }
+
+  @Test
+  void shouldReturnFailedFutureIfLogStreamBuildFails() {
+    // given
+    final var testException = new IllegalStateException("Segment is already closed");
+    transitionContext.setCurrentRole(Role.INACTIVE);
+    doThrow(testException).when(logStreamBuilder).build();
+
+    // when
+    final var transitionFuture = step.transitionTo(transitionContext, 1, Role.LEADER);
+
+    // then
+    assertThatThrownBy(transitionFuture::join)
+        .isInstanceOf(ExecutionException.class)
+        .rootCause()
+        .isSameAs(testException);
+
+    assertThat(transitionContext.getLogStream()).isNull();
+    assertThat(transitionContext.getStreamClock()).isNull();
   }
 
   private void initializeContext(final Role currentRole) {

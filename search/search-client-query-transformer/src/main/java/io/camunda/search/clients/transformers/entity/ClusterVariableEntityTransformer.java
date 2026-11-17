@@ -9,7 +9,10 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
+import java.util.List;
 
 public class ClusterVariableEntityTransformer
     implements ServiceTransformer<
@@ -19,6 +22,11 @@ public class ClusterVariableEntityTransformer
   @Override
   public ClusterVariableEntity apply(
       final io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity value) {
+    final var webappsKind = value.getKind();
+    final ClusterVariableKind kind =
+        webappsKind != null
+            ? ClusterVariableKind.valueOf(webappsKind.name())
+            : ClusterVariableKind.JSON;
     return new ClusterVariableEntity(
         value.getId(),
         value.getName(),
@@ -26,6 +34,21 @@ public class ClusterVariableEntityTransformer
         value.getFullValue(),
         value.getIsPreview(),
         ClusterVariableScope.valueOf(value.getScope().name()),
-        value.getTenantId());
+        value.getTenantId(),
+        toMetadata(value.getMetadata()),
+        kind);
+  }
+
+  private List<MetadataEntry> toMetadata(
+      final List<
+              io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity
+                  .MetadataEntry>
+          metadata) {
+    if (metadata == null) {
+      return null;
+    }
+    return metadata.stream()
+        .map(m -> new MetadataEntry(m.key(), m.value(), m.valueNumber()))
+        .toList();
   }
 }

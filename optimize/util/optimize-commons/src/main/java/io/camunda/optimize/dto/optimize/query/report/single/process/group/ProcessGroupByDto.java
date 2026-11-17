@@ -13,6 +13,8 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_RUNNING_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_START_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_USER_TASKS_TYPE;
@@ -45,6 +47,12 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = AssigneeGroupByDto.class, name = GROUP_BY_ASSIGNEE),
   @JsonSubTypes.Type(value = CandidateGroupGroupByDto.class, name = GROUP_BY_CANDIDATE_GROUP),
   @JsonSubTypes.Type(value = DurationGroupByDto.class, name = GROUP_BY_DURATION),
+  @JsonSubTypes.Type(
+      value = ProcessDefinitionKeyGroupByDto.class,
+      name = GROUP_BY_PROCESS_DEFINITION_KEY),
+  @JsonSubTypes.Type(
+      value = ProcessDefinitionVersionGroupByDto.class,
+      name = GROUP_BY_PROCESS_DEFINITION_VERSION),
 })
 public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
     implements Combinable {

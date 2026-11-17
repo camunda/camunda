@@ -22,6 +22,11 @@ public class MessageSubscriptionSortImpl extends SearchRequestSortBase<MessageSu
     implements MessageSubscriptionSort {
 
   @Override
+  public MessageSubscriptionSort businessId() {
+    return field("businessId");
+  }
+
+  @Override
   public MessageSubscriptionSort messageSubscriptionKey() {
     return field("messageSubscriptionKey");
   }
@@ -84,6 +89,16 @@ public class MessageSubscriptionSortImpl extends SearchRequestSortBase<MessageSu
   @Override
   public MessageSubscriptionSort processDefinitionVersion() {
     return field("processDefinitionVersion");
+  }
+
+  @Override
+  public MessageSubscriptionSort toolName() {
+    return field("toolName");
+  }
+
+  @Override
+  public MessageSubscriptionSort inboundConnectorType() {
+    return field("inboundConnectorType");
   }
 
   @Override

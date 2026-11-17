@@ -14,7 +14,7 @@ import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuer
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface IncidentSearchClient {
 

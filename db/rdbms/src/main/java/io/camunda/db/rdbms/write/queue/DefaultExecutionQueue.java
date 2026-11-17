@@ -10,10 +10,10 @@ package io.camunda.db.rdbms.write.queue;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.util.PerMessageThrottledLogger;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.slf4j.Logger;
@@ -38,8 +39,9 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
           Pattern.compile(".*update.*HistoryCleanupDate$"),
-          Pattern.compile("io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists"),
-          Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"));
+          Pattern.compile(".*\\.createIfNotExists$"),
+          Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"),
+          Pattern.compile("io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateNameIfNull"));
 
   private final SqlSessionFactory sessionFactory;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
@@ -80,9 +82,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       queue.add(entry);
-      // Track memory consumption
-      final long entrySize = ObjectSizeEstimator.estimateSize(entry);
-      currentQueueMemoryBytes += entrySize;
 
       metrics.recordEnqueuedStatement(entry.statementId());
     }
@@ -135,7 +134,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       try (final var ignored = metrics.measureFlushDuration()) {
         // Record memory usage before flush
         metrics.recordQueueMemoryUsage(currentQueueMemoryBytes);
-        final int numFlushedElements = doFLush();
+        final int numFlushedElements = doFlush();
         metrics.stopFlushLatencyMeasurement();
         metrics.recordBulkSize(numFlushedElements);
         // Reset memory tracking after flush
@@ -162,12 +161,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
         if (merger.canBeMerged(item)) {
           LOG.trace("Merging new item with item {}, {}", item.contextType(), item.id());
-          final QueueItem oldItem = item;
-          final long oldSize = ObjectSizeEstimator.estimateSize(oldItem);
-          final QueueItem newItem = merger.merge(oldItem);
-          final long newSize = ObjectSizeEstimator.estimateSize(newItem);
-          queue.set(index, newItem);
-          currentQueueMemoryBytes = currentQueueMemoryBytes - oldSize + newSize;
+          queue.set(index, merger.merge(item));
           metrics.recordMergedQueueItem(item.contextType(), item.statementId());
           return true;
         }
@@ -176,6 +170,13 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       return false;
+    }
+  }
+
+  @Override
+  public void addEstimatedBytes(final long bytes) {
+    synchronized (queue) {
+      currentQueueMemoryBytes += bytes;
     }
   }
 
@@ -226,7 +227,18 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     return false;
   }
 
-  private int doFLush() {
+  @Override
+  public void reset() {
+    synchronized (queue) {
+      queue.clear();
+      currentQueueMemoryBytes = 0;
+      preFlushListeners.clear();
+      postFlushListeners.clear();
+      inTransactionHooks.clear();
+    }
+  }
+
+  private int doFlush() {
     LOG.debug(
         "[RDBMS ExecutionQueue, Partition {}] Flushing execution queue with {} items",
         partitionId,
@@ -235,12 +247,14 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     final var startMillis = System.currentTimeMillis();
 
     final var session =
-        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
 
     var flushedElements = 0;
     final var optimizedItems = optimizeQueueOrder(queue);
 
     try {
+      assertManualCommitMode(session);
+
       if (!inTransactionHooks.isEmpty()) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call in-transaction hooks", partitionId);
         for (final InTransactionHook hook : inTransactionHooks) {
@@ -251,13 +265,12 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       for (final var entry : optimizedItems) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Executing entry: {}", partitionId, entry);
         session.update(entry.statementId(), entry.parameter());
-        queue.remove();
         flushedElements++;
       }
 
       final var batchResult = session.flushStatements();
       for (final BatchResult singleBatchResult : batchResult) {
-        if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
+        if (hasUnexpectedZeroRowUpdate(singleBatchResult.getUpdateCounts())
             && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
           THROTTLED_LOG.warn(
               "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
@@ -270,6 +283,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       session.commit();
+
+      queue.clear();
       if (!postFlushListeners.isEmpty()) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
         postFlushListeners.forEach(PostFlushListener::onPostFlush);
@@ -282,9 +297,19 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       return flushedElements;
     } catch (final Exception e) {
-      LOG.error("[RDBMS ExecutionQueue, Partition {}] Error while executing queue", partitionId, e);
-      session.rollback();
-
+      LOG.error(
+          "[RDBMS ExecutionQueue, Partition {}] Error while executing queue ({} items)",
+          partitionId,
+          optimizedItems.size(),
+          e);
+      try {
+        session.rollback();
+      } catch (final Exception rollbackError) {
+        LOG.error(
+            "[RDBMS ExecutionQueue, Partition {}] Rollback failed after flush error",
+            partitionId,
+            rollbackError);
+      }
       throw e;
     } finally {
       session.close();
@@ -302,8 +327,11 @@ public class DefaultExecutionQueue implements ExecutionQueue {
    * group is still preserved.<br>
    * <br>
    * In the second step the items inside the groups are sorted by the {@link WriteStatementType}
-   * (natural order) and {@link QueueItem#statementId()}. For some entities this step will lead to
-   * errors. Therefore, this second step can be deactivated in the {@link ContextType}.
+   * (natural order), then {@link QueueItem#order()} (default {@code 0}), then {@link
+   * QueueItem#statementId()}. The {@code order} field lets an individual item be placed before or
+   * after the others it would otherwise tie with, without changing how any other item in the group
+   * is sorted. For some entities this step will lead to errors. Therefore, this second step can be
+   * deactivated in the {@link ContextType}.
    *
    * @param items queue of items
    * @return optimized queue of items
@@ -320,12 +348,36 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       } else {
         final var contextItems = new ArrayList<>(entry.getValue());
         contextItems.sort(
-            Comparator.comparing(QueueItem::statementType).thenComparing(QueueItem::statementId));
+            Comparator.comparing(QueueItem::statementType)
+                .thenComparing(QueueItem::order)
+                .thenComparing(QueueItem::statementId));
         resultList.addAll(contextItems);
       }
     }
 
     return resultList;
+  }
+
+  /**
+   * Verifies that the session's connection manages commits manually ({@code autoCommit = false}).
+   *
+   * <p>The flush relies on every statement of a batch committing or rolling back atomically via
+   * {@link org.apache.ibatis.session.SqlSession#commit()} / {@link
+   * org.apache.ibatis.session.SqlSession#rollback()}. Failing fast here turns that silent
+   * corruption into an immediate, diagnosable error and guards against a misconfigured data source.
+   */
+  private static void assertManualCommitMode(final SqlSession session) {
+    try {
+      if (session.getConnection().getAutoCommit()) {
+        throw new IllegalStateException(
+            "RDBMS connection is in autoCommit=true mode, but the execution queue requires "
+                + "autoCommit=false so that all statements of a flush commit or roll back atomically. "
+                + "Aborting flush to prevent partially-committed batches and duplicate-key errors on retry.");
+      }
+    } catch (final SQLException e) {
+      throw new IllegalStateException(
+          "Failed to verify autoCommit mode of the RDBMS connection before flushing", e);
+    }
   }
 
   LinkedList<QueueItem> getQueue() {
@@ -334,5 +386,25 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
   static boolean shouldIgnoreWhenNoRowsAffected(final String statementId) {
     return IGNORE_EMPTY_UPDATES.stream().anyMatch(p -> p.matcher(statementId).matches());
+  }
+
+  /**
+   * Returns whether any statement in this batch reported affecting 0 rows, treating {@link
+   * Statement#SUCCESS_NO_INFO} (-2) anywhere in the batch as "the driver can't tell" rather than "0
+   * rows" - once JDBC batch rewriting is enabled (rewriteBatchedStatements/useBulkStmts), or in
+   * other driver-specific circumstances unrelated to that setting, the driver can return {@code
+   * SUCCESS_NO_INFO} for every statement in the batch instead of a real per-statement count. Scans
+   * once and short-circuits as soon as {@code SUCCESS_NO_INFO} is seen, since none of the counts in
+   * that batch can be trusted at that point.
+   */
+  static boolean hasUnexpectedZeroRowUpdate(final int[] updateCounts) {
+    var anyZero = false;
+    for (final int count : updateCounts) {
+      if (count == Statement.SUCCESS_NO_INFO) {
+        return false;
+      }
+      anyZero |= count == 0;
+    }
+    return anyZero;
   }
 }

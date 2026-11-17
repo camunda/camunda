@@ -1,0 +1,80 @@
+{
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.11/schema.json",
+  "testCases": [
+    {
+      "name": "Mock job worker with FEEL expression",
+      "description": "Using an FEEL expression to mock a job worker that completes the job with calculated variables.",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "test",
+          "variablesExpression": "{ total: amount * 2 }"
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "amount": 21
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "state": "IS_COMPLETED"
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "total": 42
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mock job worker with variables table",
+      "description": "Using a variables table to mock a job worker that completes the job with different variables based on conditions.",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "test",
+          "variablesTable": [
+            {"when":  {"orderId": "order-1"}, "variables": {"status": "approved"}},
+            {"when":  {}, "variables": {"status": "rejected"}}
+          ]
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "orderId": "order-1"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "state": "IS_COMPLETED"
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "status": "approved"
+          }
+        }
+      ]
+    }
+  ]
+}

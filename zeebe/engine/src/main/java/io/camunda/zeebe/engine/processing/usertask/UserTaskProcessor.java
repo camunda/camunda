@@ -17,8 +17,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -46,7 +48,8 @@ import java.util.Optional;
 import java.util.Set;
 
 @ExcludeAuthorizationCheck
-public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
+public class UserTaskProcessor
+    implements TypedRecordProcessor<UserTaskRecord>, SuspensionAware<UserTaskRecord> {
 
   private static final String USER_TASK_COMPLETION_REJECTION =
       "Completion of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";
@@ -81,10 +84,17 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck) {
     commandProcessors =
         new UserTaskCommandProcessors(
-            state, keyGenerator, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
+            state,
+            keyGenerator,
+            bpmnBehaviors,
+            writers,
+            asyncRequestBehavior,
+            cslCheck,
+            tenantCheck);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
@@ -138,7 +148,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
               final var changedAttributes =
                   intermediateUserTaskRecord.determineChangedAttributes(currentUserTask);
               jobBehavior.createNewTaskListenerJob(
-                  context, intermediateUserTaskRecord, listener, changedAttributes);
+                  context,
+                  intermediateUserTaskRecord,
+                  userTaskElement,
+                  listener,
+                  changedAttributes);
             },
             () -> finalizeCommand(command, lifecycleState, intermediateUserTaskRecord));
   }
@@ -215,7 +229,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
       jobBehavior.createNewTaskListenerJob(
-          context, persistedRecord, listener, persistedRecord.getChangedAttributes());
+          context,
+          persistedRecord,
+          userTaskElement,
+          listener,
+          persistedRecord.getChangedAttributes());
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
@@ -228,7 +246,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void handleCommandRejection(
       final TypedRecord<UserTaskRecord> command, final Rejection rejection) {
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private Optional<TaskListener> findNextTaskListener(
@@ -264,7 +282,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
             request -> {
               switch (request.valueType()) {
                 case USER_TASK ->
-                    responseWriter.writeRejection(
+                    responseWriter.writeRejectedResponse(
                         command.getKey(),
                         mapDeniedIntentToResponseIntent(intentToWrite),
                         command.getValue(),
@@ -292,7 +310,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                               final var deniedReason =
                                   USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
                                       userTaskInstanceKey, command.getValue().getDeniedReason());
-                              responseWriter.writeRejection(
+                              responseWriter.writeRejectedResponse(
                                   variableDocumentKey,
                                   VariableDocumentIntent.UPDATE,
                                   variableDocumentRecord,
@@ -395,5 +413,15 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<UserTaskRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<UserTaskRecord> record) {
+    return SuspensionAction.REJECT;
   }
 }

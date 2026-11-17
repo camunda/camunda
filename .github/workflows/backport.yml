@@ -1,5 +1,5 @@
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Backport labeled merged pull requests
 
@@ -13,14 +13,17 @@ jobs:
   backport:
     name: Create backport PRs
     runs-on: ubuntu-latest
-    # Only run when pull request is merged
+    # Only run when pull request is merged and carries at least one `backport ` label
     # or when a comment starting with `/backport` is created by someone other than a bot:
     # - https://github.com/backport-action bot user (user id: 97796249)
     # - Monorepo DevOps Automation GitHub App bot user (user id: 248077375)
+    # The label check uses toJSON + contains to match any label whose name starts with
+    # `backport ` (the leading `"` anchors the match to the start of a label name).
     if: >
       (
         github.event_name == 'pull_request' &&
-        github.event.pull_request.merged
+        github.event.pull_request.merged &&
+        contains(toJSON(github.event.pull_request.labels.*.name), '"backport ')
       ) || (
         github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
@@ -34,7 +37,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -44,12 +47,19 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: backport-action pushes the backport branches.
+        # zizmor: ignore[artipacked]
         with:
           # Token for git actions, e.g. git push
           token: ${{ steps.github-token.outputs.token }}
+      - name: Keep the ESUP warning script
+        id: esup-script
+        # backport-action checks out each target's backport branch and doesn't switch back, so
+        # the script is copied out of the workspace before it runs.
+        run: cp .github/scripts/esup-backport-warning.mjs "$RUNNER_TEMP/"
       - name: Create backport PRs
-        uses: korthout/backport-action@3c06f323a58619da1e8522229ebc8d5de2633e46 # v4.3.0
+        uses: korthout/backport-action@ad272ff24e4a8593bf18a951a154ae6af93b26b8 # v5.0.0
         with:
           # Token to authenticate requests to GitHub
           github_token: ${{ steps.github-token.outputs.token }}
@@ -74,7 +84,20 @@ jobs:
 
           add_author_as_assignee: true
           add_author_as_reviewer: true
+          comment_style: summary
           experimental: >
             {
               "conflict_resolution": "draft_commit_conflicts"
             }
+      - name: Warn about ESUP targets
+        # Also after a failed backport, so the warning isn't lost. Marks the ESUP rows of this
+        # run's summary comment and adds a warning block; see esup-branch-warning.yml for the
+        # other two warnings.
+        if: ${{ !cancelled() && steps.esup-script.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          MODE: backport-summary
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: node "$RUNNER_TEMP/esup-backport-warning.mjs"

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, ReactNode, useMemo } from "react";
+import { FC, Fragment, ReactNode, useMemo } from "react";
 import {
   Button,
   DataTable,
@@ -18,6 +18,8 @@ import {
   TableBody,
   TableCell,
   TableExpandHeader,
+  TableExpandRow,
+  TableExpandedRow,
   TableHead,
   TableHeader,
   TableRow,
@@ -76,7 +78,7 @@ type TextMenuItem<D> = {
   label: string;
   onClick: (entity: D) => void;
   isDangerous?: boolean;
-  disabled?: boolean;
+  disabled?: boolean | ((entity: D) => boolean);
   hidden?: boolean;
 };
 
@@ -117,6 +119,7 @@ type EntityListProps<D extends EntityData> = {
     | undefined;
   setSort?: (sort: SortConfig[] | undefined) => void;
   setSearch?: (search: Record<string, string> | undefined) => void;
+  renderExpandedRow?: (entity: D) => ReactNode;
 };
 
 const MAX_ICON_ACTIONS = 2;
@@ -145,10 +148,12 @@ const EntityList = <D extends EntityData>({
   page: pageData,
   setSort = () => {},
   setSearch = () => {},
+  renderExpandedRow,
 }: EntityListProps<D>): ReturnType<FC> => {
   const { t } = useTranslate("components");
 
   const hasMenu = menuItems && menuItems.length > 0;
+  const isExpandable = !!renderExpandedRow;
 
   const [index, tableData] = useMemo(() => {
     const entityIndex: { [id: string]: D } = {};
@@ -201,6 +206,12 @@ const EntityList = <D extends EntityData>({
           ),
       };
 
+  const rowColSpan =
+    headers.length +
+    (isExpandable ? 1 : 0) +
+    (batchSelection ? 1 : 0) +
+    (hasMenu ? 1 : 0);
+
   return (
     <DataTable
       rows={tableData}
@@ -210,7 +221,14 @@ const EntityList = <D extends EntityData>({
         return 0;
       }}
     >
-      {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
+      {({
+        rows,
+        getHeaderProps,
+        getRowProps,
+        getExpandedRowProps,
+        getToolbarProps,
+        getTableProps,
+      }) => (
         <StyledTableContainer {...tableContainerProps}>
           <>
             {(searchKey || addEntityLabel) && (
@@ -249,6 +267,7 @@ const EntityList = <D extends EntityData>({
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
+                    {isExpandable && <TableExpandHeader />}
                     {batchSelection && (
                       <TableSelectAll
                         id="select-all"
@@ -300,7 +319,7 @@ const EntityList = <D extends EntityData>({
                 {areRowsEmpty && !loading && (
                   <TableBody>
                     <TableRow>
-                      <StyledTableCell colSpan={headers.length + 1}>
+                      <StyledTableCell colSpan={rowColSpan}>
                         {t("No results found")}
                       </StyledTableCell>
                     </TableRow>
@@ -308,84 +327,101 @@ const EntityList = <D extends EntityData>({
                 )}
                 {!areRowsEmpty && (
                   <TableBody>
-                    {rows.map(({ id: rowId, cells }) => (
-                      <TableRow key={rowId}>
-                        {batchSelection && (
-                          <TableSelectRow
-                            id={`select-${rowId}`}
-                            name={`select-${rowId}`}
-                            checked={batchSelection.isSelected(index[rowId])}
-                            onSelect={() => {
-                              const item = index[rowId];
+                    {rows.map((row) => {
+                      const { id: rowId, cells, isExpanded } = row;
 
-                              if (batchSelection.isSelected(item)) {
-                                batchSelection.onUnselect(item);
-                              } else {
-                                batchSelection.onSelect(item);
-                              }
-                            }}
-                          />
-                        )}
-                        {cells.map(({ id: cellId, value }, index) => {
-                          const displayValue = Array.isArray(value)
-                            ? value.join(", ")
-                            : value;
+                      const cellContent = (
+                        <>
+                          {batchSelection && (
+                            <TableSelectRow
+                              id={`select-${rowId}`}
+                              name={`select-${rowId}`}
+                              checked={batchSelection.isSelected(index[rowId])}
+                              onSelect={() => {
+                                const item = index[rowId];
 
-                          const truncatedValue =
-                            displayValue &&
-                            displayValue.toString().length >
-                              maxDisplayCellLength ? (
-                              <StyledToolTip
-                                label={displayValue}
-                                autoAlign
-                                align="bottom"
-                              >
-                                <TooltipTrigger>
-                                  {displayValue
-                                    .substring(0, maxDisplayCellLength)
-                                    .concat("…")}
-                                </TooltipTrigger>
-                              </StyledToolTip>
-                            ) : (
-                              displayValue
-                            );
+                                if (batchSelection.isSelected(item)) {
+                                  batchSelection.onUnselect(item);
+                                } else {
+                                  batchSelection.onSelect(item);
+                                }
+                              }}
+                            />
+                          )}
+                          {cells.map(({ id: cellId, value }, index) => {
+                            const displayValue = Array.isArray(value)
+                              ? value.join(", ")
+                              : value;
 
-                          return (
-                            <StyledTableCell
-                              key={cellId}
-                              onClick={handleEntityClick(rowId)}
-                              $isClickable={isEntityClickable}
-                            >
-                              {index === 0 && isEntityClickable ? (
-                                <Link>{displayValue}</Link>
+                            const truncatedValue =
+                              displayValue &&
+                              displayValue.toString().length >
+                                maxDisplayCellLength ? (
+                                <StyledToolTip
+                                  label={displayValue}
+                                  autoAlign
+                                  align="bottom"
+                                >
+                                  <TooltipTrigger>
+                                    {displayValue
+                                      .substring(0, maxDisplayCellLength)
+                                      .concat("…")}
+                                  </TooltipTrigger>
+                                </StyledToolTip>
                               ) : (
-                                truncatedValue
-                              )}
-                            </StyledTableCell>
-                          );
-                        })}
-                        {hasMenu && (
-                          <TableCell>
-                            {menuItems?.length > MAX_ICON_ACTIONS ? (
-                              <OverflowMenu flipped>
-                                {getVisibleMenuItems(menuItems).map(
-                                  ({ label, onClick, isDangerous }) => (
-                                    <OverflowMenuItem
-                                      key={`${label}-${rowId}`}
-                                      itemText={<p>{label}</p>}
-                                      isDelete={isDangerous}
-                                      onClick={handleMenuItemClick(
-                                        rowId,
-                                        onClick,
-                                      )}
-                                    />
-                                  ),
+                                displayValue
+                              );
+
+                            return (
+                              <StyledTableCell
+                                key={cellId}
+                                onClick={handleEntityClick(rowId)}
+                                $isClickable={isEntityClickable}
+                              >
+                                {index === 0 && isEntityClickable ? (
+                                  <Link>{displayValue}</Link>
+                                ) : (
+                                  truncatedValue
                                 )}
-                              </OverflowMenu>
-                            ) : (
-                              <Flex>
-                                {getVisibleMenuItems(menuItems).map(
-                                  (menuItem) => {
+                              </StyledTableCell>
+                            );
+                          })}
+                          {hasMenu && (
+                            <TableCell>
+                              {menuItems?.length > MAX_ICON_ACTIONS ? (
+                                <OverflowMenu flipped>
+                                  {getVisibleMenuItems(
+                                    menuItems,
+                                    index[rowId],
+                                  ).map(
+                                    ({
+                                      label,
+                                      onClick,
+                                      isDangerous,
+                                      disabled,
+                                    }) => (
+                                      <OverflowMenuItem
+                                        key={`${label}-${rowId}`}
+                                        itemText={<p>{label}</p>}
+                                        isDelete={isDangerous}
+                                        disabled={resolveMenuItemFlag(
+                                          disabled,
+                                          index[rowId],
+                                        )}
+                                        onClick={handleMenuItemClick(
+                                          rowId,
+                                          onClick,
+                                        )}
+                                      />
+                                    ),
+                                  )}
+                                </OverflowMenu>
+                              ) : (
+                                <Flex>
+                                  {getVisibleMenuItems(
+                                    menuItems,
+                                    index[rowId],
+                                  ).map((menuItem) => {
                                     const {
                                       label,
                                       onClick,
@@ -404,7 +440,10 @@ const EntityList = <D extends EntityData>({
                                         key={`${label}-${rowId}`}
                                         kind={kind}
                                         size="md"
-                                        disabled={disabled}
+                                        disabled={resolveMenuItemFlag(
+                                          disabled,
+                                          index[rowId],
+                                        )}
                                         hasIconOnly={hasIconOnly}
                                         renderIcon={icon}
                                         tooltipAlignment="end"
@@ -417,14 +456,40 @@ const EntityList = <D extends EntityData>({
                                         {hasIconOnly ? "" : label}
                                       </Button>
                                     );
-                                  },
-                                )}
-                              </Flex>
-                            )}
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
+                                  })}
+                                </Flex>
+                              )}
+                            </TableCell>
+                          )}
+                        </>
+                      );
+
+                      if (!isExpandable) {
+                        return <TableRow key={rowId}>{cellContent}</TableRow>;
+                      }
+
+                      return (
+                        <Fragment key={rowId}>
+                          <TableExpandRow
+                            // > Warning: A props object containing a "key" prop is being spread into JSX.
+                            // A key is already configured in the fragment. Overwriting the
+                            // key prevents the error from being reported.
+                            {...getRowProps({ row })}
+                            key={undefined}
+                          >
+                            {cellContent}
+                          </TableExpandRow>
+                          <TableExpandedRow
+                            colSpan={rowColSpan}
+                            {...getExpandedRowProps({ row })}
+                          >
+                            {isExpanded &&
+                              index[rowId] &&
+                              renderExpandedRow(index[rowId])}
+                          </TableExpandedRow>
+                        </Fragment>
+                      );
+                    })}
                   </TableBody>
                 )}
               </Table>
@@ -460,9 +525,23 @@ const EntityList = <D extends EntityData>({
 };
 
 function getVisibleMenuItems<D>(
-  menuItems?: (MenuItem<D> | TextMenuItem<D>)[],
+  menuItems: (MenuItem<D> | TextMenuItem<D>)[] | undefined,
+  entity: D | undefined,
 ): (MenuItem<D> | TextMenuItem<D>)[] {
-  return menuItems ? menuItems.filter((item) => !item.hidden) : [];
+  if (!menuItems) {
+    return [];
+  }
+  return menuItems.filter((item) => !resolveMenuItemFlag(item.hidden, entity));
+}
+
+function resolveMenuItemFlag<D>(
+  flag: boolean | ((entity: D) => boolean) | undefined,
+  entity: D | undefined,
+): boolean {
+  if (typeof flag === "function") {
+    return entity !== undefined && flag(entity);
+  }
+  return !!flag;
 }
 
 export default EntityList;

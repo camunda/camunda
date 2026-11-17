@@ -22,9 +22,11 @@ const runningInstance: InstanceMock = {
     processDefinitionVersionTag: null,
     endDate: null,
     parentProcessInstanceKey: null,
+    suspendedDate: null,
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
   },
   callHierarchy: [],
   xml: `<?xml version="1.0" encoding="UTF-8"?>

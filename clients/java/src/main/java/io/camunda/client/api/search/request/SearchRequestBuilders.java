@@ -15,6 +15,9 @@
  */
 package io.camunda.client.api.search.request;
 
+import io.camunda.client.api.search.filter.AgentDefinitionFilter;
+import io.camunda.client.api.search.filter.AgentInstanceFilter;
+import io.camunda.client.api.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
@@ -33,6 +36,7 @@ import io.camunda.client.api.search.filter.MappingRuleFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ResourceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.filter.TenantFilter;
 import io.camunda.client.api.search.filter.UserFilter;
@@ -46,6 +50,9 @@ import io.camunda.client.api.search.page.CursorBackwardPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.page.LimitPage;
 import io.camunda.client.api.search.page.OffsetPage;
+import io.camunda.client.api.search.sort.AgentDefinitionSort;
+import io.camunda.client.api.search.sort.AgentInstanceHistorySort;
+import io.camunda.client.api.search.sort.AgentInstanceSort;
 import io.camunda.client.api.search.sort.AuditLogSort;
 import io.camunda.client.api.search.sort.AuthorizationSort;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
@@ -57,6 +64,7 @@ import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
+import io.camunda.client.api.search.sort.ElementInstanceWaitStateSort;
 import io.camunda.client.api.search.sort.GlobalTaskListenerSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
@@ -66,6 +74,7 @@ import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.api.search.sort.MessageSubscriptionSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.client.api.search.sort.ResourceSort;
 import io.camunda.client.api.search.sort.RoleGroupSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.api.search.sort.RoleUserSort;
@@ -78,6 +87,9 @@ import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
 import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.client.impl.search.filter.AgentDefinitionFilterImpl;
+import io.camunda.client.impl.search.filter.AgentInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.AgentInstanceHistoryFilterImpl;
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
@@ -95,6 +107,7 @@ import io.camunda.client.impl.search.filter.MappingRuleFilterImpl;
 import io.camunda.client.impl.search.filter.MessageSubscriptionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.ResourceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
 import io.camunda.client.impl.search.filter.TenantFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
@@ -109,6 +122,9 @@ import io.camunda.client.impl.search.page.CursorForwardPageImpl;
 import io.camunda.client.impl.search.page.LimitPageImpl;
 import io.camunda.client.impl.search.page.OffsetPageImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.AgentDefinitionSortImpl;
+import io.camunda.client.impl.search.sort.AgentInstanceHistorySortImpl;
+import io.camunda.client.impl.search.sort.AgentInstanceSortImpl;
 import io.camunda.client.impl.search.sort.AuditLogSortImpl;
 import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
@@ -120,6 +136,7 @@ import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ElementInstanceWaitStateSortImpl;
 import io.camunda.client.impl.search.sort.GlobalTaskListenerSortImpl;
 import io.camunda.client.impl.search.sort.GroupSortImpl;
 import io.camunda.client.impl.search.sort.GroupUserSortImpl;
@@ -129,6 +146,7 @@ import io.camunda.client.impl.search.sort.MappingRuleSortImpl;
 import io.camunda.client.impl.search.sort.MessageSubscriptionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ResourceSortImpl;
 import io.camunda.client.impl.search.sort.RoleGroupSortImpl;
 import io.camunda.client.impl.search.sort.RoleSortImpl;
 import io.camunda.client.impl.search.sort.RoleUserSortImpl;
@@ -535,6 +553,22 @@ public final class SearchRequestBuilders {
     return filter;
   }
 
+  public static io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter
+      elementInstanceWaitStateFilter(
+          final Consumer<io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter> fn) {
+    final io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter filter =
+        new io.camunda.client.impl.search.filter.ElementInstanceWaitStateFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ElementInstanceWaitStateSort elementInstanceWaitStateSort(
+      final Consumer<ElementInstanceWaitStateSort> fn) {
+    final ElementInstanceWaitStateSort sort = new ElementInstanceWaitStateSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
   public static AuditLogSort auditLogSort(final Consumer<AuditLogSort> fn) {
     final AuditLogSort sort = new AuditLogSortImpl();
     fn.accept(sort);
@@ -558,6 +592,57 @@ public final class SearchRequestBuilders {
   public static GlobalTaskListenerSort globalTaskListenerSort(
       final Consumer<GlobalTaskListenerSort> fn) {
     final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AgentDefinitionFilter agentDefinitionFilter(
+      final Consumer<AgentDefinitionFilter> fn) {
+    final AgentDefinitionFilter filter = new AgentDefinitionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AgentDefinitionSort agentDefinitionSort(final Consumer<AgentDefinitionSort> fn) {
+    final AgentDefinitionSort sort = new AgentDefinitionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AgentInstanceFilter agentInstanceFilter(final Consumer<AgentInstanceFilter> fn) {
+    final AgentInstanceFilter filter = new AgentInstanceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AgentInstanceSort agentInstanceSort(final Consumer<AgentInstanceSort> fn) {
+    final AgentInstanceSort sort = new AgentInstanceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ResourceFilter resourceFilter(final Consumer<ResourceFilter> fn) {
+    final ResourceFilter filter = new ResourceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ResourceSort resourceSort(final Consumer<ResourceSort> fn) {
+    final ResourceSort sort = new ResourceSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AgentInstanceHistoryFilter agentInstanceHistoryFilter(
+      final Consumer<AgentInstanceHistoryFilter> fn) {
+    final AgentInstanceHistoryFilter filter = new AgentInstanceHistoryFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AgentInstanceHistorySort agentInstanceHistorySort(
+      final Consumer<AgentInstanceHistorySort> fn) {
+    final AgentInstanceHistorySort sort = new AgentInstanceHistorySortImpl();
     fn.accept(sort);
     return sort;
   }

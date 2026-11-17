@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -224,6 +224,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <scope>test</scope>
@@ -257,6 +263,22 @@
     </dependency>
 
     <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
@@ -265,6 +287,18 @@
     <dependency>
       <groupId>com.github.dasniko</groupId>
       <artifactId>testcontainers-keycloak</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core-test</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -278,6 +312,22 @@
         <directory>src/main/resources</directory>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>client-java-testcontainers.properties</exclude>
+        </excludes>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources</directory>
+        <includes>
+          <include>client-java-testcontainers.properties</include>
+        </includes>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
@@ -314,9 +364,16 @@
             <typeMapping>OffsetDateTime=String</typeMapping>
             <!-- map complex String schemas to String -->
             <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+            <typeMapping>ClearableDateTime=String</typeMapping>
+            <!-- map metadata values (oneOf string/number) to Object so they can carry their value -->
+            <typeMapping>ClusterVariableResultBaseMetadataValue=Object</typeMapping>
+            <!-- generates named models for inline oneOf properties -->
+            <typeMapping>AdvancedMetadataValueFilterEq=Object</typeMapping>
+            <typeMapping>AdvancedMetadataValueFilterNeq=Object</typeMapping>
             <typeMapping>ResourceKey=String</typeMapping>
             <typeMapping>ScopeKey=String</typeMapping>
             <!-- map specific filter properties to basic filter types -->
+            <typeMapping>AgentDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -329,6 +386,7 @@
             <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -373,6 +431,27 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
+        <dependencies>
+          <!-- snakeyaml powers DiscriminatorModelPostProcessor's spec loading; roaster builds
+               the emitted Java AST. Listed here because the antrun plugin classloader does not
+               see project compile dependencies. Versions come from parent's dependencyManagement;
+               roaster uses the shared parent property. -->
+          <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${version.snakeyaml}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-api</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>strip-jsonformat-from-generated-sources</id>
@@ -385,6 +464,28 @@
                 <replaceregexp flags="g" match="@JsonFormat\(shape=JsonFormat\.Shape\.OBJECT\)\n" replace="">
                   <fileset dir="${project.build.directory}/generated-sources/openapi" includes="**/*.java"/>
                 </replaceregexp>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>apply-discriminator-post-processor</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-sources</phase>
+            <configuration>
+              <target>
+                <mkdir dir="${project.build.directory}/tool-classes"/>
+                <javac classpathref="maven.plugin.classpath" debug="true" destdir="${project.build.directory}/tool-classes" encoding="UTF-8" includeantruntime="false" release="21" srcdir="${project.basedir}/src/tool/java"/>
+                <java classname="io.camunda.client.protocol.tools.DiscriminatorModelPostProcessor" failonerror="true" fork="true">
+                  <classpath>
+                    <pathelement location="${project.build.directory}/tool-classes"/>
+                    <path refid="maven.plugin.classpath"/>
+                  </classpath>
+                  <arg value="${openapi.dir}"/>
+                  <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
+                  <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
+                </java>
               </target>
             </configuration>
           </execution>

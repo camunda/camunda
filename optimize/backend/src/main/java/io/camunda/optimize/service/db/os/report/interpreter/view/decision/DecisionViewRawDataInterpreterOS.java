@@ -251,7 +251,7 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
   }
 
   @Override
-  public DecisionVariableReader getDecisionVariableReader() {
+  protected DecisionVariableReader getDecisionVariableReader() {
     return decisionVariableReader;
   }
 }

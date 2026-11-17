@@ -18,10 +18,12 @@ package io.camunda.zeebe.exporter.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -79,6 +81,16 @@ public final class ExporterTest {
 
     // then
     assertThat(exporter.isExported(record)).isFalse();
+  }
+
+  @Test
+  public void shouldProvidePhysicalTenantFromContext() {
+    // given
+    final var context = new TestContext();
+
+    // then
+    assertThat(context.getPhysicalTenantId())
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private static final class TestExporterContainer {
@@ -148,6 +160,21 @@ public final class ExporterTest {
     @Override
     public int getPartitionId() {
       return 0;
+    }
+
+    @Override
+    public String getPhysicalTenantId() {
+      return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+    }
+
+    @Override
+    public String getClusterId() {
+      return "";
+    }
+
+    @Override
+    public String getLicenseKey() {
+      return null;
     }
 
     public RecordFilter getFilter() {
@@ -238,6 +265,16 @@ public final class ExporterTest {
 
     @Override
     public Agent getAgent() {
+      return null;
+    }
+
+    @Override
+    public ChannelType getRequestChannelType() {
+      return null;
+    }
+
+    @Override
+    public String getRequestToolName() {
       return null;
     }
 

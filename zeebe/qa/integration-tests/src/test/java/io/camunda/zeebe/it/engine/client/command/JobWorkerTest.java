@@ -204,6 +204,50 @@ final class JobWorkerTest {
   }
 
   @Test
+  void shouldCompleteABacklogAndPushedJobsOnAWorkerWithAReservablePollLane() {
+    // given a backlog created before any stream was registered, so only the poll can drain it
+    final int jobsPerPhase = 12;
+    client.deployProcess(
+        Bpmn.createExecutableProcess(jobType)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(jobType))
+            .endEvent()
+            .done());
+    for (int i = 0; i < jobsPerPhase; i++) {
+      createProcessInstance(jobType, Map.of());
+    }
+
+    // when a streaming worker with four slots, one of which it keeps for the poll whenever pushed
+    // jobs crowd the poll out, drains that backlog and gets more jobs pushed
+    final var jobHandler =
+        new RecordingJobHandler(
+            (jobClient, job) -> jobClient.newCompleteCommand(job).send().join());
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .maxJobsActive(4)
+            .pollInterval(Duration.ofMillis(50))
+            .streamEnabled(true);
+    try (final var ignored = builder.open()) {
+      awaitStreamRegistered(jobType);
+      for (int i = 0; i < jobsPerPhase; i++) {
+        createProcessInstance(jobType, Map.of());
+      }
+
+      // then every job is completed, so no slot or push permit is lost whether or not the lane is
+      // reserved along the way
+      assertThat(
+              RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                  .withType(jobType)
+                  .limit(2L * jobsPerPhase))
+          .hasSize(2 * jobsPerPhase);
+    }
+  }
+
+  @Test
   void shouldRecreateStreamOnGatewayRestart() {
     // given
     final var jobHandler = new RecordingJobHandler();

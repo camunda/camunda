@@ -8,11 +8,13 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.search.filter.FilterBase;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -53,6 +55,12 @@ public class BrokerCreateBatchOperationRequest
     return this;
   }
 
+  public BrokerCreateBatchOperationRequest setJobUpdatePlan(
+      final BatchOperationJobUpdatePlan jobUpdatePlan) {
+    requestDto.setJobUpdatePlan(jobUpdatePlan);
+    return this;
+  }
+
   public BrokerCreateBatchOperationRequest setMigrationPlan(
       final BatchOperationProcessInstanceMigrationPlan migrationPlan) {
     requestDto.setMigrationPlan(migrationPlan);
@@ -73,9 +81,15 @@ public class BrokerCreateBatchOperationRequest
   }
 
   public BrokerCreateBatchOperationRequest setAuthorizationCheck(
-      final Authorization<?> authorization) {
-    requestDto.setAuthorizationCheck(
-        new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authorization)));
+      final RequiredAuthorization<?> authorization) {
+    final var check =
+        new BatchOperationAuthorizationCheck(
+            authorization.resourceType(),
+            authorization.permissionType(),
+            authorization.resourceIds(),
+            authorization.resourcePropertyNames(),
+            authorization.transitive());
+    requestDto.setAuthorizationCheck(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(check)));
     return this;
   }
 }

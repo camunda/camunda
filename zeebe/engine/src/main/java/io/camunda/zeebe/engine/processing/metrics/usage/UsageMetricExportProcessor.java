@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.metrics.usage;
 
+import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -19,6 +20,8 @@ import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,16 +35,19 @@ public class UsageMetricExportProcessor implements TypedRecordProcessor<UsageMet
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
+  private final TenantMetrics tenantMetrics;
 
   public UsageMetricExportProcessor(
       final UsageMetricState usageMetricState,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TenantMetrics tenantMetrics) {
     this.usageMetricState = usageMetricState;
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.clock = clock;
+    this.tenantMetrics = tenantMetrics;
   }
 
   @Override
@@ -59,6 +65,13 @@ public class UsageMetricExportProcessor implements TypedRecordProcessor<UsageMet
     // Additionally, ensure the fromTime is set. This can happen if metrics were recorded before the
     // first applier.
     final PersistedUsageMetrics finalBucket = bucket.close(now);
+
+    // Accumulate all tenant IDs seen in this interval into the broker-lifetime set
+    final Set<String> tenantIds = new HashSet<>();
+    tenantIds.addAll(finalBucket.getTenantRPIMap().keySet());
+    tenantIds.addAll(finalBucket.getTenantEDIMap().keySet());
+    tenantIds.addAll(finalBucket.getTenantTUMap().keySet());
+    tenantMetrics.tenantsSeen(tenantIds);
 
     // export usage metric events if there is data
     Stream.of(EventType.RPI, EventType.EDI, EventType.TU)

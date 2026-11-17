@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.converters;
 
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import org.jspecify.annotations.Nullable;
 
 public final class AuditLogActorTypeConverter implements CustomConverter<String> {
 
@@ -18,10 +19,7 @@ public final class AuditLogActorTypeConverter implements CustomConverter<String>
   }
 
   @Override
-  public String convertValue(final Object value) {
-    if (value == null) {
-      return null;
-    }
+  public @Nullable String convertValue(final Object value) {
     if (value instanceof final AuditLogActorTypeEnum categoryEnum) {
       return toInternalActorTypeAsString(categoryEnum);
     }
@@ -33,15 +31,14 @@ public final class AuditLogActorTypeConverter implements CustomConverter<String>
                 AuditLogActorTypeEnum.class.getSimpleName()));
   }
 
-  public static String toInternalActorTypeAsString(final AuditLogActorTypeEnum categoryEnum) {
+  public static @Nullable String toInternalActorTypeAsString(
+      final @Nullable AuditLogActorTypeEnum categoryEnum) {
     final AuditLogActorType internalType = toInternalActorType(categoryEnum);
     return internalType == null ? null : internalType.name();
   }
 
-  public static AuditLogActorType toInternalActorType(final AuditLogActorTypeEnum categoryEnum) {
-    if (categoryEnum == null) {
-      return null;
-    }
-    return AuditLogActorType.valueOf(categoryEnum.name());
+  public static @Nullable AuditLogActorType toInternalActorType(
+      final @Nullable AuditLogActorTypeEnum categoryEnum) {
+    return categoryEnum == null ? null : AuditLogActorType.valueOf(categoryEnum.name());
   }
 }

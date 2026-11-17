@@ -26,6 +26,7 @@ public class PaginationScrollableDto extends PaginationDto {
     final PaginationScrollableDto paginationObject = new PaginationScrollableDto();
     paginationObject.limit = pagination.getLimit();
     paginationObject.offset = pagination.getOffset();
+    paginationObject.total = pagination.getTotal();
     if (pagination instanceof PaginationScrollableDto) {
       paginationObject.scrollId = ((PaginationScrollableDto) pagination).getScrollId();
       paginationObject.scrollTimeout = ((PaginationScrollableDto) pagination).getScrollTimeout();

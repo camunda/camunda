@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
+import io.camunda.client.impl.CamundaClientEnvironmentVariables;
+import io.camunda.client.impl.util.Environment;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Properties;
@@ -30,8 +32,6 @@ import org.junit.jupiter.api.Test;
  * Camunda client builder via {@link ContainerRuntimePropertiesUtil}.
  */
 public class ClientPropertiesConfigurationTest {
-
-  private final GitPropertiesUtil emptyGitProperties = new GitPropertiesUtil(new Properties());
 
   @Test
   void shouldApplyRestAddressFromClientProperties() {
@@ -283,7 +283,7 @@ public class ClientPropertiesConfigurationTest {
 
     // then
     assertThat(config.getRestAddress())
-        .isEqualTo(URI.create("https://eu-west.zeebe.camunda.io:443/my-cluster"));
+        .isEqualTo(URI.create("https://eu-west.api.camunda.io:443/my-cluster"));
     assertThat(config.getGrpcAddress())
         .isEqualTo(URI.create("https://my-cluster.eu-west.zeebe.camunda.io:443"));
   }
@@ -317,6 +317,45 @@ public class ClientPropertiesConfigurationTest {
   }
 
   @Test
+  void shouldDisableEnvironmentVariableOverridesByDefault() {
+    // given
+    final Environment environment = Environment.system();
+    environment.put(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR, "http://env-host:8080");
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.REST_ADDRESS, "http://properties-host:8080");
+
+    try {
+      // when
+      final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+      // then
+      assertThat(config.getRestAddress()).isEqualTo(URI.create("http://properties-host:8080"));
+    } finally {
+      environment.remove(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR);
+    }
+  }
+
+  @Test
+  void shouldAllowEnablingEnvironmentVariableOverridesViaClientProperties() {
+    // given
+    final Environment environment = Environment.system();
+    environment.put(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR, "http://env-host:8080");
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.REST_ADDRESS, "http://properties-host:8080");
+    properties.setProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES, "true");
+
+    try {
+      // when
+      final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+      // then
+      assertThat(config.getRestAddress()).isEqualTo(URI.create("http://env-host:8080"));
+    } finally {
+      environment.remove(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR);
+    }
+  }
+
+  @Test
   void shouldOverrideStandardClientPropertiesWithRemoteClientAddress() {
     // given - remote.client overrides the standard ClientProperties
     final Properties properties = buildVersionProperties();
@@ -332,7 +371,7 @@ public class ClientPropertiesConfigurationTest {
 
   private CamundaClientConfiguration buildClientConfiguration(final Properties properties) {
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+        new ContainerRuntimePropertiesUtil(properties);
     final CamundaClient client = propertiesUtil.getCamundaClientBuilderFactory().get().build();
     try {
       return client.getConfiguration();

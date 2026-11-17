@@ -24,12 +24,15 @@ import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
+import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
+import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
 import io.camunda.optimize.service.db.es.schema.index.CollectionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DashboardShareIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.InstantPreviewDashboardMetadataIndexES;
+import io.camunda.optimize.service.db.es.schema.index.JobRegistryIndexES;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
@@ -38,6 +41,7 @@ import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
+import io.camunda.optimize.service.db.es.schema.index.WebSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
@@ -292,7 +296,7 @@ public class ElasticSearchSchemaManager
     try {
       final GetIndicesSettingsResponse settingsResponse = esClient.getOldIndexSettings();
       indexBlocked =
-          settingsResponse.result().values().stream()
+          settingsResponse.settings().values().stream()
               .anyMatch(
                   settings -> {
                     final IndexSettingBlocks s = settings.settings().blocks();
@@ -378,16 +382,20 @@ public class ElasticSearchSchemaManager
     return Arrays.asList(
         new AlertIndexES(),
         new BusinessKeyIndexES(),
+        new BusinessValueOverviewIndexES(),
+        new BusinessValueTargetIndexES(),
         new CollectionIndexES(),
         new DashboardIndexES(),
         new DashboardShareIndexES(),
         new DecisionDefinitionIndexES(),
+        new JobRegistryIndexES(),
         new MetadataIndexES(),
         new ProcessDefinitionIndexES(),
         new ReportShareIndexES(),
         new SettingsIndexES(),
         new TenantIndexES(),
         new TerminatedUserSessionIndexES(),
+        new WebSessionIndexES(),
         new TimestampBasedImportIndexES(),
         new PositionBasedImportIndexES(),
         new CombinedReportIndexES(),

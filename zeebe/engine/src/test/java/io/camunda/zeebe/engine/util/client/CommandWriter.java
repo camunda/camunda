@@ -69,6 +69,14 @@ public interface CommandWriter {
       final String... authorizedTenants);
 
   long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final AuthInfo authorizations,
+      final UnifiedRecordValue recordValue);
+
+  long writeCommand(
       final int requestStreamId,
       final long requestId,
       final Intent intent,

@@ -21,12 +21,14 @@ import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import net.jqwik.api.Tag;
 import net.jqwik.api.arbitraries.ListArbitrary;
 import net.jqwik.api.lifecycle.AfterProperty;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.assertj.core.util.Files;
 
+@Tag("randomized")
 public class ColumnFamilyRandomizedPropertyTest {
 
   private Map<Long, Long> map;
@@ -189,7 +191,7 @@ public class ColumnFamilyRandomizedPropertyTest {
       try {
         modify(columnFamily).accept(dbKey, dbValue);
       } catch (final RuntimeException e) {
-        assertThat(e).hasRootCauseInstanceOf(ZeebeDbInconsistentException.class);
+        assertThat(e).isInstanceOf(ZeebeDbInconsistentException.class);
       }
     }
 

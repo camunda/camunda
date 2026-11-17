@@ -9,20 +9,30 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionModeHandler;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
-  private static final int ERROR_CODE_ON_INCONSISTENT_TOPOLOGY = 3;
+
+  private final String physicalTenantId;
+  private TopologyManagerImpl topologyManager;
+  private PartitionModeHandler modeHandler;
+
+  PartitionManagerStep(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+  }
 
   @Override
   public String getName() {
-    return "Partition Manager";
+    return "Partition Manager [" + physicalTenantId + "]";
   }
 
   @Override
@@ -30,50 +40,47 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
-    final var partitionManager =
-        new PartitionManagerImpl(
-            brokerStartupContext.getConcurrencyControl(),
-            brokerStartupContext.getActorSchedulingService(),
-            brokerStartupContext.getBrokerConfiguration(),
-            brokerStartupContext.getBrokerInfo(),
-            brokerStartupContext.getClusterServices(),
-            brokerStartupContext.getHealthCheckService(),
-            brokerStartupContext.getDiskSpaceUsageMonitor(),
-            brokerStartupContext.getPartitionListeners(),
-            brokerStartupContext.getPartitionRaftListeners(),
-            brokerStartupContext.getCommandApiService(),
-            brokerStartupContext.getSnapshotApiRequestHandler(),
-            brokerStartupContext.getExporterRepository(),
-            brokerStartupContext.getGatewayBrokerTransport(),
-            brokerStartupContext.getJobStreamService().jobStreamer(),
-            brokerStartupContext.getClusterConfigurationService(),
-            brokerStartupContext.getMeterRegistry(),
-            brokerStartupContext.getBrokerClient(),
-            brokerStartupContext.getSecurityConfiguration(),
-            brokerStartupContext.getSearchClientsProxy(),
-            brokerStartupContext.getBrokerRequestAuthorizationConverter());
-    concurrencyControl.run(
-        () -> {
-          try {
-            brokerStartupContext
-                .getClusterConfigurationService()
-                .registerInconsistentConfigurationListener(
-                    (newTopology, oldTopology) ->
-                        shutdownOnInconsistentTopology(
-                            brokerStartupContext.getBrokerInfo().getNodeId(),
-                            brokerStartupContext.getSpringBrokerBridge(),
-                            newTopology,
-                            oldTopology));
-            partitionManager.start();
-            brokerStartupContext.setPartitionManager(partitionManager);
-            brokerStartupContext
-                .getClusterConfigurationService()
-                .registerPartitionChangeExecutors(partitionManager, partitionManager);
-            startupFuture.complete(brokerStartupContext);
-          } catch (final Exception e) {
-            startupFuture.completeExceptionally(e);
-          }
-        });
+
+    final var brokerInfo = brokerStartupContext.getBrokerInfo();
+
+    topologyManager =
+        new TopologyManagerImpl(
+            brokerStartupContext.getClusterServices().getMembershipService(),
+            brokerInfo.withPartitionGroup(physicalTenantId));
+
+    // Register mode handler before starting the respective partition manager so that cluster
+    // services already have the executor value set
+    modeHandler = new PartitionModeHandler(brokerStartupContext, physicalTenantId, topologyManager);
+    modeHandler.register();
+
+    try {
+      final var partitionStartupFuture =
+          brokerStartupContext
+              .getActorSchedulingService()
+              .submitActor(topologyManager)
+              .thenApply((ignore) -> buildPartitionManager(brokerStartupContext, topologyManager))
+              .thenAccept(
+                  (partitionManager) -> {
+                    brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
+
+                    // We intentionally do not wait for start() to complete: broker startup only
+                    // needs the partition manager registered. Individual partitions bootstrap
+                    // asynchronously afterwards
+                    partitionManager.start();
+                  });
+
+      concurrencyControl.runOnCompletion(
+          partitionStartupFuture,
+          (ignore, error) -> {
+            if (error == null) {
+              startupFuture.complete(brokerStartupContext);
+            } else {
+              startupFuture.completeExceptionally(error);
+            }
+          });
+    } catch (final Exception e) {
+      startupFuture.completeExceptionally(e);
+    }
   }
 
   @Override
@@ -81,45 +88,68 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerShutdownContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
-    final var partitionManager = brokerShutdownContext.getPartitionManager();
+    final var partitionManager = brokerShutdownContext.getPartitionManagers().get(physicalTenantId);
     if (partitionManager == null) {
-      shutdownFuture.complete(null);
+      shutdownFuture.complete(brokerShutdownContext);
       return;
     }
 
-    brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
-
     concurrencyControl.runOnCompletion(
-        partitionManager.stop(),
+        stopModeChangeHandler()
+            .andThen(ignore -> partitionManager.stop(), concurrencyControl)
+            .andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
         (ok, error) -> {
-          brokerShutdownContext.setPartitionManager(null);
+          brokerShutdownContext.removePartitionManager(physicalTenantId);
           if (error != null) {
             shutdownFuture.completeExceptionally(error);
           } else {
             shutdownFuture.complete(brokerShutdownContext);
           }
         });
-
-    brokerShutdownContext
-        .getClusterConfigurationService()
-        .removeInconsistentConfigurationListener();
   }
 
-  private void shutdownOnInconsistentTopology(
-      final int localBrokerId,
-      final SpringBrokerBridge springBrokerBridge,
-      final ClusterConfiguration newTopology,
-      final ClusterConfiguration oldTopology) {
-    final MemberId localMemberId = MemberId.from(String.valueOf(localBrokerId));
-    LOGGER.warn(
-        """
-          Received a newer topology which has a different state for this broker.
-          State of this broker in new topology :'{}'
-          State of this broker in old topology: '{}'
-          This usually happens when the topology was changed forcefully when this broker was unreachable or this broker encountered a data loss. Shutting down the broker. Please restart the broker to use the new topology.
-        """,
-        newTopology.getMember(localMemberId),
-        oldTopology.getMember(localMemberId));
-    springBrokerBridge.initiateShutdown(ERROR_CODE_ON_INCONSISTENT_TOPOLOGY);
+  private PartitionManager buildPartitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+
+    final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
+    final MemberId memberId = MemberId.from(clusterCfg.getZone(), clusterCfg.getNodeId());
+
+    if (isRecovering(brokerStartupContext, memberId)) {
+      LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
+      return recoveryPartitionManager(brokerStartupContext, topologyManager);
+    } else {
+      return partitionManager(brokerStartupContext, topologyManager);
+    }
+  }
+
+  PartitionManager partitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+    return PartitionManager.createPartitionManager(
+        brokerStartupContext, physicalTenantId, topologyManager);
+  }
+
+  PartitionManager recoveryPartitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+    return PartitionManager.createRecoveryPartitionManager(
+        brokerStartupContext, physicalTenantId, topologyManager);
+  }
+
+  private boolean isRecovering(
+      final BrokerStartupContext brokerStartupContext, final MemberId memberId) {
+
+    final var clusterConfiguration =
+        brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
+
+    final PartitionGroupConfiguration partitionGroupConfiguration =
+        clusterConfiguration.partitionGroup(physicalTenantId);
+    if (partitionGroupConfiguration == null) {
+      return false;
+    }
+    final var memberState = partitionGroupConfiguration.members().get(memberId);
+    return memberState != null && memberState.mode() == Mode.RECOVERING;
+  }
+
+  private ActorFuture<Void> stopModeChangeHandler() {
+    return modeHandler != null ? modeHandler.closeAsync() : CompletableActorFuture.completed(null);
   }
 }

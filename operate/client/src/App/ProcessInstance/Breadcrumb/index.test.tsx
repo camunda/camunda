@@ -45,6 +45,8 @@ const processInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   endDate: null,
+  businessId: null,
+  suspendedDate: null,
 };
 
 const callHierarchy: CallHierarchy[] = [

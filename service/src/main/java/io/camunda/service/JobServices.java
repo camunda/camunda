@@ -16,6 +16,7 @@ import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobQuery;
@@ -23,22 +24,26 @@ import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +57,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   private final int maxVariableNameLength;
 
   public JobServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
@@ -59,6 +65,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         activateJobsHandler,
@@ -69,6 +76,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   }
 
   public JobServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
@@ -77,6 +85,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -98,10 +107,12 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTenantFilter(request.tenantFilter())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
-            .setVariables(request.fetchVariable());
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+            .setVariables(request.fetchVariable())
+            .setWithLease(request.withLease());
+    // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
+    // partition group) so job activation round-robins over the tenant's partition group. The
+    // handler reads brokerRequest.getPartitionGroup() when selecting partitions.
+    applyBrokerRequestMutators(brokerRequest, authentication);
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
   }
@@ -112,11 +123,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Long retryBackOff,
       final Map<String, Object> variables,
+      final String jobLeaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
             .setVariables(getDocumentOrEmpty(variables))
             .setErrorMessage(errorMessage);
+    if (jobLeaseToken != null) {
+      request.setJobLeaseToken(jobLeaseToken);
+    }
     return sendBrokerRequest(request, authentication);
   }
 
@@ -125,11 +140,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables,
+      final String jobLeaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
             .setErrorMessage(errorMessage)
             .setVariables(getDocumentOrEmpty(variables));
+    if (jobLeaseToken != null) {
+      request.setJobLeaseToken(jobLeaseToken);
+    }
     return sendBrokerRequest(request, authentication);
   }
 
@@ -137,22 +156,35 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Map<String, Object> variables,
       final JobResult result,
+      final String jobLeaseToken,
+      final String businessId,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
+    final var request =
         new BrokerCompleteJobRequest(
-            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength),
-        authentication);
+            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength);
+    if (jobLeaseToken != null) {
+      request.setJobLeaseToken(jobLeaseToken);
+    }
+    if (businessId != null) {
+      request.setBusinessId(businessId);
+    }
+    return sendBrokerRequest(request, authentication);
   }
 
   public CompletableFuture<JobRecord> updateJob(
       final long jobKey,
       final Long operationReference,
       final UpdateJobChangeset changeset,
+      final String jobLeaseToken,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
-        new BrokerUpdateJobRequest(jobKey, changeset.retries(), changeset.timeout());
+        new BrokerUpdateJobRequest(
+            jobKey, changeset.retries(), changeset.timeout(), changeset.priority());
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
+    }
+    if (jobLeaseToken != null) {
+      brokerRequest.setJobLeaseToken(jobLeaseToken);
     }
     return sendBrokerRequest(brokerRequest, authentication);
   }
@@ -176,7 +208,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getGlobalJobStatistics(query));
   }
 
@@ -187,7 +219,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getJobTypeStatistics(query));
   }
 
@@ -198,7 +230,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getJobWorkerStatistics(query));
   }
 
@@ -209,7 +241,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getJobTimeSeriesStatistics(query));
   }
 
@@ -224,6 +256,29 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
                 .getJobErrorStatistics(query));
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> updateJobsBatchOperation(
+      final BatchUpdateJobRequest request, final CamundaAuthentication authentication) {
+    final var plan = new BatchOperationJobUpdatePlan();
+    if (request.changeset().retries() != null) {
+      plan.setRetries(request.changeset().retries());
+    }
+    if (request.changeset().timeout() != null) {
+      plan.setTimeout(request.changeset().timeout());
+    }
+    if (request.changeset().priority() != null) {
+      plan.setPriority(request.changeset().priority());
+    }
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(request.filter())
+            .setJobUpdatePlan(plan)
+            .setBatchOperationType(BatchOperationType.UPDATE_JOB)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public record ActivateJobsRequest(
       String type,
       int maxJobsToActivate,
@@ -232,7 +287,10 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       long timeout,
       String worker,
       List<String> fetchVariable,
-      long requestTimeout) {}
+      long requestTimeout,
+      boolean withLease) {}
 
-  public record UpdateJobChangeset(Integer retries, Long timeout) {}
+  public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
+
+  public record BatchUpdateJobRequest(JobFilter filter, UpdateJobChangeset changeset) {}
 }

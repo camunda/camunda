@@ -60,6 +60,12 @@ try {
 	const __dirname = path.dirname(fileURLToPath(import.meta.url));
 	const repoRoot = path.resolve(__dirname, '..');
 
+	console.log('🗑️  Removing downloaded specs and generated schemas...');
+	execSync('npm run clean -w @camunda/camunda-api-zod-schemas', {
+		stdio: 'inherit',
+		cwd: repoRoot,
+	});
+
 	console.log('🗑️  Removing node_modules directories...');
 	deleteDirectoriesRecursively(repoRoot, 'node_modules');
 
@@ -74,8 +80,14 @@ try {
 		cwd: repoRoot,
 	});
 
-	console.log('🔧 Running lint, typecheck, and build in parallel...');
-	await runInParallel(['lint', 'typecheck', 'build'], repoRoot);
+	console.log('🔧 Running build...');
+	execSync('npm run build -w @camunda/camunda-api-zod-schemas -w @camunda/session-heartbeat', {
+		stdio: 'inherit',
+		cwd: repoRoot,
+	});
+
+	console.log('🔧 Running lint and typecheck in parallel...');
+	await runInParallel(['lint', 'typecheck'], repoRoot);
 
 	console.log('🎉 All done!');
 } catch (error) {

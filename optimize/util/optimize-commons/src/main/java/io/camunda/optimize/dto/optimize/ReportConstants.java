@@ -19,11 +19,17 @@ public final class ReportConstants {
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
   public static final String VIEW_VARIABLE_ENTITY = "variable";
   public static final String VIEW_INCIDENT_ENTITY = "incident";
+  public static final String VIEW_AGENT_INSTANCE_ENTITY = "agentInstance";
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
   public static final String VIEW_PERCENTAGE_PROPERTY = "percentage";
+  public static final String VIEW_AUTOMATION_RATE_PROPERTY = "automationRate";
   public static final String VIEW_RAW_DATA_PROPERTY = "rawData";
+  public static final String VIEW_INPUT_TOKENS_PROPERTY = "inputTokens";
+  public static final String VIEW_OUTPUT_TOKENS_PROPERTY = "outputTokens";
+  public static final String VIEW_TOOL_CALLS_PROPERTY = "toolCalls";
+  public static final String VIEW_TOTAL_TOKENS_PROPERTY = "totalTokens";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";
@@ -35,6 +41,8 @@ public final class ReportConstants {
   public static final String GROUP_BY_ASSIGNEE = "assignee";
   public static final String GROUP_BY_CANDIDATE_GROUP = "candidateGroup";
   public static final String GROUP_BY_DURATION = "duration";
+  public static final String GROUP_BY_PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String GROUP_BY_PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
 
   public static final String GROUP_BY_EVALUATION_DATE_TYPE = "evaluationDateTime";
   public static final String GROUP_BY_INPUT_VARIABLE_TYPE = "inputVariable";
@@ -60,6 +68,7 @@ public final class ReportConstants {
   public static final String BADGE_VISUALIZATION = "badge";
   public static final String PIE_VISUALIZATION = "pie";
   public static final String BAR_LINE_VISUALIZATION = "barLine";
+  public static final String OUTLIER_BAND_VISUALIZATION = "outlierBand";
 
   public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
 

@@ -34,7 +34,9 @@ public class ProcessInstanceEntityTransformer
         source.getTenantId(),
         source.getTreePath(),
         source.getTags(),
-        emptyToNull(source.getBusinessId()));
+        emptyToNull(source.getBusinessId()),
+        source.getSuspendedDate(),
+        source.getStorageOrdinal());
   }
 
   private static String emptyToNull(final String value) {
@@ -51,6 +53,8 @@ public class ProcessInstanceEntityTransformer
         return ProcessInstanceState.ACTIVE;
       case COMPLETED:
         return ProcessInstanceState.COMPLETED;
+      case SUSPENDED:
+        return ProcessInstanceState.SUSPENDED;
       case CANCELED:
         return ProcessInstanceState.CANCELED;
       default:

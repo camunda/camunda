@@ -9,21 +9,30 @@ package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.response.EvaluationWarning;
+import io.camunda.client.api.response.SecretReference;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -301,6 +310,101 @@ public class ExpressionEvaluationIT {
     assertThat(response.getWarnings())
         .extracting(EvaluationWarning::getMessage)
         .contains("No function found with name 'invalid_function' and 0 parameters");
+  }
+
+  // ============ SECRET REFERENCE TESTS ============
+
+  @Test
+  void shouldEvaluateSecretReferenceToItsPlaceholder() {
+    // inbound connectors have no job, so they resolve secret references through this endpoint; a
+    // camunda.secrets.<name> reference must evaluate to its own placeholder, never the real value
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.secrets.TEST")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("camunda.secrets.TEST");
+    assertThat(response.getWarnings()).isEmpty();
+    // a reference used directly in the expression is trusted, so the endpoint reports it, letting
+    // an inbound connector safely resolve it in the result
+    assertThat(response.getReferencedSecrets())
+        .extracting(SecretReference::getStoreId, SecretReference::getSecretName)
+        .containsExactly(tuple("default", "TEST"));
+  }
+
+  @Test
+  void shouldReportReferencedSecretFromSecretReferenceClusterVariable() {
+    // given a SECRET_REFERENCE-kind cluster variable whose value carries a secret reference
+    final String variableName = "secretRefVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String secretName = "clusterToken_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, Map.of("apiToken", "camunda.secrets." + secretName))
+        .kind(ClusterVariableKind.SECRET_REFERENCE)
+        .send()
+        .join();
+
+    // when the expression reads the reference through the cluster variable
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName + ".apiToken")
+            .send()
+            .join();
+
+    // then the reference is resolved to its placeholder and reported as trusted
+    assertThat(response.getResult()).isEqualTo("camunda.secrets." + secretName);
+    assertThat(response.getReferencedSecrets())
+        .extracting(SecretReference::getStoreId, SecretReference::getSecretName)
+        .containsExactly(tuple("default", secretName));
+  }
+
+  @Test
+  void shouldNotReportSecretLookingValueFromJsonClusterVariable() {
+    // given a plain JSON cluster variable whose value merely looks like a secret reference
+    final String variableName = "jsonSecretVar_" + UUID.randomUUID().toString().replace("-", "");
+    final String injected =
+        "camunda.secrets.INJECTED_" + UUID.randomUUID().toString().replace("-", "");
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, injected)
+        .kind(ClusterVariableKind.JSON)
+        .send()
+        .join();
+
+    // when the expression reads it
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=camunda.vars.cluster." + variableName)
+            .send()
+            .join();
+
+    // then the reference-looking value is not treated as a trusted secret: resolving it would
+    // reintroduce the secret-injection vulnerability, so it must not be reported
+    assertThat(response.getResult()).isEqualTo(injected);
+    assertThat(response.getReferencedSecrets()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateSecretReferenceInsideConcatenation() {
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=\"Bearer \" + camunda.secrets.TEST")
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isEqualTo("Bearer camunda.secrets.TEST");
+    assertThat(response.getWarnings()).isEmpty();
   }
 
   // ============ GLOBAL SCOPED CLUSTER VARIABLE TESTS ============
@@ -890,4 +994,226 @@ public class ExpressionEvaluationIT {
         .extracting(ClientHttpException::code)
         .isEqualTo(500);
   }
+
+  // ============ SCOPE CONTEXT TESTS ============
+
+  @Test
+  void shouldEvaluateExpressionWithProcessInstanceScopeKey() {
+    // given
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x + y")
+            .scopeKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getResult()).isEqualTo(30);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithElementInstanceScopeKey() {
+    // given
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x + y")
+            .scopeKey(instance.elementInstanceKey)
+            .send()
+            .join();
+
+    // then - element instance inherits from the process instance scope
+    assertThat(response.getResult()).isEqualTo(30);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnNullWhenProcessVariableNotInScope() {
+    // given - process started without any variables, so x is not in scope
+    final ProcessAndElement instance = deployAndStart(Map.of());
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
+        .anySatisfy(message -> assertThat(message).contains("No variable found with name 'x'"));
+  }
+
+  // ---- precedence: same variable name at process and element scope ----
+
+  @Test
+  void shouldReadProcessLevelVariableWhenUsingProcessInstanceScopeKey() {
+    // given - process-level x=10, element-local x=99 (shadows only the element scope)
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - asking with process instance scope key resolves at the process root scope
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then - process-level value wins because the element-local var is not visible at root
+    assertThat(response.getResult()).isEqualTo(10);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldReadElementLevelVariableWhenUsingElementInstanceScopeKey() {
+    // given - same setup as above: process-level x=10, element-local x=99
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - asking with element instance scope key resolves starting at the element scope
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.elementInstanceKey)
+            .send()
+            .join();
+
+    // then - element-local value shadows the process-level value
+    assertThat(response.getResult()).isEqualTo(99);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  // ---- precedence: request-body variables override engine variables ----
+
+  @Test
+  void shouldOverrideProcessVariableWithRequestVariableInProcessContext() {
+    // given - process-level x=10
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+
+    // when - request-body variable x=999 is supplied alongside a process instance scope key
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.processInstanceKey)
+            .variable("x", 999)
+            .send()
+            .join();
+
+    // then - request-body value takes precedence over the engine variable
+    assertThat(response.getResult()).isEqualTo(999);
+  }
+
+  @Test
+  void shouldOverrideElementVariableWithRequestVariableInElementContext() {
+    // given - process-level x=10, element-local x=99
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - request-body variable x=999 is supplied alongside an element instance scope key
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .scopeKey(instance.elementInstanceKey)
+            .variable("x", 999)
+            .send()
+            .join();
+
+    // then - request-body value takes precedence over both engine scopes
+    assertThat(response.getResult()).isEqualTo(999);
+  }
+
+  // ============ HELPERS ============
+
+  private ProcessAndElement deployAndStart(final Map<String, Object> processVariables) {
+    final String processId = "expr_proc_" + UUID.randomUUID().toString().replace("-", "");
+    final String taskId = "wait_task";
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(taskId, t -> t.zeebeJobType("expr-eval-it-noop"))
+            .endEvent()
+            .done();
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+
+    final long processInstanceKey =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(processVariables)
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    final long elementInstanceKey = waitForActiveElementInstance(processInstanceKey, taskId);
+    return new ProcessAndElement(processInstanceKey, elementInstanceKey);
+  }
+
+  private long waitForActiveElementInstance(final long processInstanceKey, final String elementId) {
+    Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .elementId(elementId)
+                                        .state(ElementInstanceState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    final ElementInstance element =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processInstanceKey(processInstanceKey)
+                        .elementId(elementId)
+                        .state(ElementInstanceState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+    return element.getElementInstanceKey();
+  }
+
+  private void setLocalVariable(
+      final long elementInstanceKey, final String key, final Object value) {
+    camundaClient
+        .newSetVariablesCommand(elementInstanceKey)
+        .variables(Map.of(key, value))
+        .local(true)
+        .send()
+        .join();
+  }
+
+  private record ProcessAndElement(long processInstanceKey, long elementInstanceKey) {}
 }

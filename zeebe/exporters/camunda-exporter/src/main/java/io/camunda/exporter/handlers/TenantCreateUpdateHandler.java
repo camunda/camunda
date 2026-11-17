@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
@@ -19,7 +20,8 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
+public class TenantCreateUpdateHandler
+    implements MainIndexExporterHandler<TenantEntity, TenantRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(TenantIntent.CREATED, TenantIntent.UPDATED);
   private final String indexName;
@@ -68,9 +70,10 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
   }
 
   @Override
-  public void flush(final TenantEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final TenantEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

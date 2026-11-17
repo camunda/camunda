@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -117,7 +117,7 @@ public final class DbIncidentState implements MutableIncidentState {
 
   @Override
   public IncidentRecord getIncidentRecord(
-      final long incidentKey, final AuthorizedTenants authorizedTenantIds) {
+      final long incidentKey, final TenantAccess authorizedTenantIds) {
     final IncidentRecord incident = getIncidentRecord(incidentKey);
     if (incident != null && authorizedTenantIds.isAuthorizedForTenantId(incident.getTenantId())) {
       return incident;

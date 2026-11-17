@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {createGlobalStyle, css} from 'styled-components';
 import {
   EDITOR_DECORATION_WIDTH,
   EDITOR_FONT_FAMILY,
@@ -32,6 +32,7 @@ const EditorWrapper = styled.div<{
   $invalid?: boolean;
 }>`
   position: relative;
+  min-width: 0;
 
   ${({$invalid}) =>
     $invalid &&
@@ -44,10 +45,6 @@ const EditorWrapper = styled.div<{
         color: var(--cds-text-error);
       }
     `}
-`;
-
-const EditorLoader = styled.div<{$height: number}>`
-  height: ${({$height}) => $height}px;
 `;
 
 const ReadOnlyEditorWrapper = styled.div<{
@@ -111,6 +108,11 @@ const ReadOnlyEditorWrapper = styled.div<{
       background-color: var(--cds-field);
       padding-left: ${EDITOR_DECORATION_WIDTH}px;
       border-block-end: 1px solid var(--cds-border-strong);
+
+      .operate-nav-v2 & {
+        border: 1px solid var(--cds-border-subtle-01);
+        border-radius: var(--cds-spacing-03);
+      }
     `};
 `;
 
@@ -152,6 +154,7 @@ const ReadOnlyEditorContent = styled.pre`
   font-family: ${EDITOR_FONT_FAMILY};
   tab-size: 2;
   text-wrap: wrap;
+  overflow-wrap: anywhere;
 
   &:focus-visible {
     outline: 2px solid var(--cds-focus);
@@ -160,31 +163,95 @@ const ReadOnlyEditorContent = styled.pre`
 `;
 
 const WriteModeEditor = styled.div<{
+  $height: number;
   $invalid?: boolean;
 }>`
-  .monaco-editor {
-    width: 100% !important;
-    --vscode-editor-background: var(--cds-field) !important;
-    --vscode-editorGutter-background: var(--cds-field) !important;
-    background-color: var(--cds-field) !important;
+  min-width: 0;
 
-    &:focus-within::after {
+  .cm-editor {
+    width: 100%;
+    height: ${({$height}) => $height}px;
+    min-height: ${EDITOR_MIN_HEIGHT}px;
+    color: var(--cds-text-primary);
+    background-color: var(--cds-field);
+    font-family: ${EDITOR_FONT_FAMILY};
+    font-size: ${EDITOR_FONT_SIZE}px;
+    line-height: ${EDITOR_LINE_HEIGHT}px;
+
+    .operate-nav-v2 & {
+      border: 1px solid var(--cds-border-subtle-01);
+      border-radius: var(--cds-spacing-03);
+      overflow: hidden;
+    }
+
+    &.cm-focused::after {
       ${ring('var(--cds-focus)')}
     }
 
     ${({$invalid}) =>
       $invalid &&
       css`
-        &:focus-within::after {
+        &::after,
+        &.cm-focused::after {
           ${ring('var(--cds-support-error)')}
         }
       `}
   }
+
+  .cm-scroller {
+    overflow: auto;
+    font-family: inherit;
+    line-height: inherit;
+  }
+
+  .cm-content {
+    min-width: 0;
+    padding: ${EDITOR_PADDING_TOP}px ${EDITOR_DECORATION_WIDTH}px
+      ${EDITOR_PADDING_BOTTOM}px;
+    caret-color: var(--cds-text-primary);
+  }
+
+  .cm-cursor,
+  .cm-dropCursor {
+    border-left-color: var(--cds-text-primary);
+  }
+
+  .cm-line {
+    padding: 0;
+  }
+
+  .cm-placeholder {
+    color: var(--cds-text-placeholder);
+    font-style: normal;
+  }
+
+  .cm-editor.cm-focused {
+    outline: none;
+  }
+
+  .cm-selectionBackground {
+    background-color: var(--cds-highlight) !important;
+  }
+`;
+
+const CompletionStyles = createGlobalStyle`
+  .cm-tooltip.inline-json-completions {
+    background-color: var(--cds-layer);
+    color: var(--cds-text-primary);
+    border: 1px solid var(--cds-border-subtle);
+    font-family: ${EDITOR_FONT_FAMILY};
+    font-size: ${EDITOR_FONT_SIZE}px;
+  }
+
+  .cm-tooltip.inline-json-completions > ul > li[aria-selected] {
+    background-color: var(--cds-layer-selected);
+    color: var(--cds-text-primary);
+  }
 `;
 
 export {
+  CompletionStyles,
   EditorWrapper,
-  EditorLoader,
   ReadOnlyEditorContainer,
   ReadOnlyEditorWrapper,
   ReadOnlyEditorContent,

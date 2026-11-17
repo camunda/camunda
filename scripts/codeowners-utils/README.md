@@ -109,7 +109,7 @@ Example:
 
 ```
 zeebe/engine/src/test/java/io/camunda/zeebe/engine/EngineTest.java | @camunda/core-features | unit
-qa/acceptance-tests/src/test/java/io/camunda/it/client/ClientIT.java | @camunda/camundaex | acceptance
+qa/acceptance-tests/src/test/java/io/camunda/it/client/ClientIT.java | @camunda/core-features | acceptance
 ```
 
 ### JSON Format
@@ -207,7 +207,6 @@ Each file is classified with:
 - `qa/` → integration
 - `zeebe/qa/` → integration
 - `operate/qa/` → integration
-- `tasklist/qa/` → integration
 - **Overrides previous testType** - Location-based rules take precedence
 
 **Characteristics**:
@@ -268,7 +267,7 @@ npm run collect-tests -- --strategies naming,annotation,location
 
 ### ⚠️ IMPORTANT: QA Modules
 
-**In `qa/`, `zeebe/qa/`, `operate/qa/`, and `tasklist/qa/` modules:**
+**In `qa/`, `zeebe/qa/`, and `operate/qa/` modules:**
 
 - **Surefire is SKIPPED** (no unit tests run via surefire)
 - **ALL tests run via Failsafe** (integration test plugin)

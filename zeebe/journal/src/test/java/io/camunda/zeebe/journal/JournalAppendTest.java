@@ -37,18 +37,18 @@ final class JournalAppendTest {
   @TempDir Path directory;
   final JournalMetaStore metaStore = new MockJournalMetastore();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private DirectBufferWriter recordDataWriter;
+  private DirectBufferWriter otherRecordDataWriter;
 
-  private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
-  private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
   private Journal journal;
 
   @BeforeEach
   void setup() {
     final byte[] entry = "TestData".getBytes();
-    recordDataWriter.wrap(new UnsafeBuffer(entry));
+    recordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entry));
 
     final var entryOther = "TestData".getBytes();
-    otherRecordDataWriter.wrap(new UnsafeBuffer(entryOther));
+    otherRecordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entryOther));
 
     journal = openJournal();
   }
@@ -65,7 +65,7 @@ final class JournalAppendTest {
   private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
     final var builder =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data").toFile())
+            .withDirectory(directory.resolve("data"))
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)
             .withJournalIndexDensity(5);
@@ -89,7 +89,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {
@@ -141,7 +141,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {
@@ -189,7 +189,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {
@@ -198,7 +198,12 @@ final class JournalAppendTest {
       // when
       final var invalidChecksumRecord =
           new TestJournalRecord(
-              record.index(), record.asqn(), -1, record.data(), record.serializedRecord());
+              record.index(),
+              record.asqn(),
+              -1,
+              record.data(),
+              record.serializedRecord(),
+              record.size());
 
       // then
       assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
@@ -234,7 +239,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {
@@ -257,7 +262,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {
@@ -296,7 +301,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {
@@ -330,7 +335,7 @@ final class JournalAppendTest {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data-2").toFile())
+            .withDirectory(directory.resolve("data-2"))
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
             .build()) {

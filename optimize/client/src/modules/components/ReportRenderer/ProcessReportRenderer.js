@@ -39,6 +39,7 @@ function getComponent(visualization) {
     case 'line':
     case 'pie':
     case 'barLine':
+    case 'outlierBand':
       return Chart;
     case 'heat':
       return Heatmap;

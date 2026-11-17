@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,11 +56,11 @@ class SegmentsManagerTest {
     try (final var newSegments = journalFactory.segmentsManager(directory)) {
       newSegments.open();
       // then
-      final File logDirectory = directory.resolve("data").toFile();
+      final Path logDirectory = directory.resolve("data");
       assertThat(logDirectory)
           .isDirectoryNotContaining(
-              file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-          .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+              p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+          .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
     }
   }
 
@@ -71,9 +71,12 @@ class SegmentsManagerTest {
       journal.append(journalFactory.entry()).index();
     }
 
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream.filter(p -> p.getFileName().toString().endsWith(".log")).findFirst().orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -91,9 +94,15 @@ class SegmentsManagerTest {
     }
     journalFactory.metaStore().storeLastFlushedIndex(index);
 
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream
+              .filter(p -> p.getFileName().toString().endsWith("2.log"))
+              .findFirst()
+              .orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when
@@ -111,9 +120,12 @@ class SegmentsManagerTest {
     // given
     final var journal = openJournal();
     journal.close();
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream.filter(p -> p.getFileName().toString().endsWith(".log")).findFirst().orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when
@@ -185,10 +197,9 @@ class SegmentsManagerTest {
   @Test
   void shouldHandlePartiallyWrittenDescriptor() throws Exception {
     // given
-    final File dataFile = directory.resolve("data").toFile();
-    assertThat(dataFile.mkdirs()).isTrue();
-    final File emptyLog = new File(dataFile, "journal-1.log");
-    assertThat(emptyLog.createNewFile()).isTrue();
+    final Path dataFile = directory.resolve("data");
+    Files.createDirectories(dataFile);
+    Files.createFile(dataFile.resolve("journal-1.log"));
 
     // when
     segments = journalFactory.segmentsManager(directory);

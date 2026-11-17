@@ -112,6 +112,7 @@ const invoiceClassification: GetDecisionInstanceResponseBody = {
     areAgeRequirementsSatisfied: 'satisfied',
     paragraph: 'sbl §17',
   }),
+  businessId: null,
 };
 
 const assignApproverGroup: GetDecisionInstanceResponseBody = {
@@ -154,6 +155,7 @@ const assignApproverGroup: GetDecisionInstanceResponseBody = {
   ],
   decisionDefinitionType: 'DECISION_TABLE',
   result: '',
+  businessId: null,
 };
 
 const assignApproverGroupWithoutVariables: GetDecisionInstanceResponseBody = {
@@ -182,6 +184,7 @@ const literalExpression: GetDecisionInstanceResponseBody = {
   matchedRules: [],
   decisionDefinitionType: 'LITERAL_EXPRESSION',
   result: '',
+  businessId: null,
 };
 
 export {

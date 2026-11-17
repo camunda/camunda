@@ -14,14 +14,12 @@ import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
 import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
-import org.jspecify.annotations.NullMarked;
 
 /** Flow control metrics for the log storage appender. */
 @SuppressWarnings("NullableProblems")
-@NullMarked
 public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
   /** The count of records passing through the flow control, organized by context and outcome */
   FLOW_CONTROL_OUTCOME {
@@ -509,7 +507,8 @@ public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
   public enum FlowControlOutcome {
     ACCEPTED("accepted"),
     WRITE_RATE_LIMIT_EXHAUSTED("writeRateLimitExhausted"),
-    REQUEST_LIMIT_EXHAUSTED("requestLimitExhausted");
+    REQUEST_LIMIT_EXHAUSTED("requestLimitExhausted"),
+    PARTITION_PAUSED("partitionPaused");
 
     private final String value;
 

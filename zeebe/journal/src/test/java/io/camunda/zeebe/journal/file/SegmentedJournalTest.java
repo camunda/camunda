@@ -18,6 +18,7 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
@@ -35,14 +36,14 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -400,6 +401,130 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldNotOverwriteDeletedRecordsThatAReaderRead() {
+    // given - a reader that read a record which is deleted afterwards
+    journal = openJournal("aaaa", 4);
+    final var reader = journal.openConcurrentReader();
+    journal.append(1, journalFactory.entry());
+    final var deletedIndex = journal.append(2, journalFactory.entry()).index();
+    reader.next();
+    final var deletedRecord = reader.next();
+
+    // when - a new record is written at the index of the deleted one
+    journal.deleteAfter(deletedIndex - 1);
+    final var newRecord = journal.append(2, entry("bbbb"));
+
+    // then - the record the reader is still holding is unchanged
+    assertThat(newRecord.index()).isEqualTo(deletedIndex);
+    assertThat(BufferUtil.bufferAsString(deletedRecord.data())).isEqualTo("aaaa");
+  }
+
+  @Test
+  void shouldKeepDeletedSegmentReadableForAReaderThatReadFromIt() {
+    // given - a reader that read a record from a segment which is deleted afterwards
+    journal = openJournal("aaaa", 1);
+    final var reader = journal.openReader();
+    final var keptIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, entry("bbbb"));
+    reader.next();
+    final var deletedRecord = reader.next();
+
+    // when - the whole segment holding that record is deleted
+    journal.deleteAfter(keptIndex);
+
+    // then - the record the reader is still holding is readable, i.e. the segment is still mapped
+    assertThat(BufferUtil.bufferAsString(deletedRecord.data())).isEqualTo("bbbb");
+  }
+
+  @Test
+  void shouldReadRecordsWrittenAfterTheReaderReadDeletedRecords() {
+    // given - a reader that read a record which is deleted afterwards
+    journal = openJournal("aaaa", 4);
+    final var reader = journal.openReader();
+    journal.append(1, journalFactory.entry());
+    final var deletedIndex = journal.append(2, journalFactory.entry()).index();
+    reader.next();
+    reader.next();
+
+    // when
+    journal.deleteAfter(deletedIndex - 1);
+    journal.append(2, entry("bbbb"));
+
+    // then - the reader reads the new record instead of the deleted one
+    assertThat(reader.hasNext()).isTrue();
+    final var record = reader.next();
+    assertThat(record.index()).isEqualTo(deletedIndex);
+    assertThat(BufferUtil.bufferAsString(record.data())).isEqualTo("bbbb");
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldReadRecordsWrittenAfterTheSegmentAReaderReadFromIsDeleted() {
+    // given - a reader that read a record from a segment which is deleted afterwards
+    journal = openJournal(1);
+    final var reader = journal.openReader();
+    final var keptIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry());
+    reader.next();
+    reader.next();
+
+    // when
+    journal.deleteAfter(keptIndex);
+    final var newRecord = journal.append(2, journalFactory.entry());
+
+    // then
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().index()).isEqualTo(newRecord.index());
+  }
+
+  @Test
+  void shouldOverwriteDeletedRecordsThatOnlyANonConcurrentReaderRead() {
+    // given - a reader on the writer's thread that read a record which is deleted afterwards
+    journal = openJournal("aaaa", 4);
+    final var reader = journal.openReader();
+    final var keptIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry());
+    reader.next();
+    reader.next();
+    final var segment = journal.getLastSegment();
+
+    // when
+    journal.deleteAfter(keptIndex);
+    journal.append(2, entry("bbbb"));
+
+    // then - the deleted record is overwritten in place instead of in a new segment
+    assertThat(journal.getLastSegment()).isSameAs(segment);
+  }
+
+  @Test
+  void shouldNotReadDeletedRecordsAfterRestart() {
+    // given - records deleted while a reader was holding them
+    journal = openJournal("aaaa", 8);
+    final var reader = journal.openConcurrentReader();
+    journal.append(1, journalFactory.entry());
+    final var deletedIndex = journal.append(2, journalFactory.entry()).index();
+    journal.append(3, journalFactory.entry());
+    reader.next();
+    reader.next();
+    reader.next();
+    journal.deleteAfter(deletedIndex - 1);
+    journal.append(2, entry("bbbb"));
+
+    // when
+    journal.close();
+    journal = openJournal("aaaa", 8);
+
+    // then - the deleted records are gone, and what replaced them is not
+    assertThat(journal.getLastIndex()).isEqualTo(deletedIndex);
+    final var records = new ArrayList<String>();
+    final var reopenedReader = journal.openReader();
+    while (reopenedReader.hasNext()) {
+      records.add(BufferUtil.bufferAsString(reopenedReader.next().data()));
+    }
+    assertThat(records).containsExactly("aaaa", "bbbb");
+  }
+
+  @Test
   void shouldCompactUpToStartOfSegment() {
     final int entryPerSegment = 2;
     journal = openJournal(entryPerSegment);
@@ -466,9 +591,7 @@ class SegmentedJournalTest {
     journal.deleteAfter(first - 1);
     final var lastRecord =
         journal.append(
-            3,
-            new DirectBufferWriter()
-                .wrap(new UnsafeBuffer("new".getBytes(StandardCharsets.UTF_8))));
+            3, new DirectBufferWriter(new UnsafeBuffer("new".getBytes(StandardCharsets.UTF_8))));
 
     // then
     assertThat(first).isEqualTo(lastRecord.index());
@@ -484,11 +607,11 @@ class SegmentedJournalTest {
 
     // when
     final var firstRecord =
-        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("12345".getBytes())));
+        journal.append(new DirectBufferWriter(new UnsafeBuffer("12345".getBytes())));
     final var secondRecord =
-        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("1234567".getBytes())));
+        journal.append(new DirectBufferWriter(new UnsafeBuffer("1234567".getBytes())));
     final var thirdRecord =
-        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("1234567890".getBytes())));
+        journal.append(new DirectBufferWriter(new UnsafeBuffer("1234567890".getBytes())));
 
     // then
     assertThat(reader.next()).isEqualTo(firstRecord);
@@ -549,10 +672,9 @@ class SegmentedJournalTest {
   @Test
   void shouldContinueAppendAfterDetectingPartiallyWrittenDescriptor() throws Exception {
     // given
-    final File dataFile = directory.resolve("data").toFile();
-    assertThat(dataFile.mkdirs()).isTrue();
-    final File emptyLog = new File(dataFile, "journal-1.log");
-    assertThat(emptyLog.createNewFile()).isTrue();
+    final Path dataFile = directory.resolve("data");
+    Files.createDirectories(dataFile);
+    Files.createFile(dataFile.resolve("journal-1.log"));
 
     // when
     journal = openJournal(10);
@@ -571,9 +693,12 @@ class SegmentedJournalTest {
     // given
     journal = openJournal(1);
     journal.close();
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream.filter(p -> p.getFileName().toString().endsWith(".log")).findFirst().orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -600,7 +725,8 @@ class SegmentedJournalTest {
                 firstRecord.index(),
                 firstRecord.asqn(),
                 BufferUtil.cloneBuffer(firstRecord.data())),
-            BufferUtil.cloneBuffer(firstRecord.serializedRecord()));
+            BufferUtil.cloneBuffer(firstRecord.serializedRecord()),
+            firstRecord.size());
     journal.append(journalFactory.entry());
 
     // close the journal before corrupting the segment; since we "flush" when closing, we need to
@@ -609,9 +735,15 @@ class SegmentedJournalTest {
     journal.close();
     journalFactory.metaStore().storeLastFlushedIndex(lastFlushedIndex);
 
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream
+              .filter(p -> p.getFileName().toString().endsWith("2.log"))
+              .findFirst()
+              .orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -640,11 +772,11 @@ class SegmentedJournalTest {
     journal.reset(100);
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
     assertThat(logDirectory)
         .isDirectoryContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
   }
 
   @Test
@@ -714,11 +846,11 @@ class SegmentedJournalTest {
     reader.close();
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
   }
 
   @Test
@@ -731,15 +863,15 @@ class SegmentedJournalTest {
     journal.reset(100);
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
   }
 
   @Test
-  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() {
+  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() throws Exception {
     // given
     journal = openJournal(2);
     journal.append(journalFactory.entry());
@@ -751,16 +883,23 @@ class SegmentedJournalTest {
     journal.reset(200);
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
 
     // there are two files deferred for deletion
-    assertThat(
-            logDirectory.listFiles(
-                file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
-        .hasSize(2);
-    assertThat(
-            logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
-        .hasSize(1);
+    try (final var stream = Files.list(logDirectory)) {
+      assertThat(
+              stream
+                  .filter(
+                      p ->
+                          SegmentFile.isDeletedSegmentFile(
+                              JOURNAL_NAME, p.getFileName().toString()))
+                  .toList())
+          .hasSize(2);
+    }
+    try (final var stream = Files.list(logDirectory)) {
+      assertThat(stream.filter(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p)).toList())
+          .hasSize(1);
+    }
   }
 
   @Test
@@ -799,9 +938,9 @@ class SegmentedJournalTest {
         SegmentedJournal.builder(meterRegistry)
             .withSegmentAllocator(SegmentAllocator.defaultAllocator())
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile())
+            .withDirectory(tmpDir)
             .withMetaStore(new MockJournalMetastore());
-    final File firstSegment;
+    final Path firstSegment;
 
     // when
     try (final var journal = builder.build()) {
@@ -822,9 +961,9 @@ class SegmentedJournalTest {
         SegmentedJournal.builder(meterRegistry)
             .withSegmentAllocator(SegmentAllocator.noop())
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile())
+            .withDirectory(tmpDir)
             .withMetaStore(new MockJournalMetastore());
-    final File firstSegment;
+    final Path firstSegment;
 
     // when
     try (final var journal = builder.build()) {
@@ -1051,8 +1190,116 @@ class SegmentedJournalTest {
         .hasMessage("Nope, no free space.");
   }
 
+  @Test
+  void shouldCloseSegmentsWhileHoldingWriteLock() {
+    // given
+    journalFactory = new TestJournalFactory("test", 2);
+    final var segments = spy(journalFactory.segmentsManager(directory));
+    final var barrier = new Phaser(2);
+    doAnswer(
+            invocation -> {
+              barrier.arriveAndAwaitAdvance(); // signal we are inside segments.close()
+              barrier.arriveAndAwaitAdvance(); // wait for the test to inspect the lock
+              return invocation.callRealMethod();
+            })
+        .when(segments)
+        .close();
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+
+    // when
+    final var closed = CompletableFuture.runAsync(() -> journal.close());
+
+    // then
+    barrier.arriveAndAwaitAdvance();
+    assertThat(journal.rwlock().isWriteLocked()).isTrue();
+    assertThat(journal.rwlock().tryReadLock())
+        .describedAs("a reader cannot acquire the read lock while close() unmaps segments")
+        .isZero();
+    barrier.arrive();
+    assertThat(closed).succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  @Test
+  void shouldRejectAppendAfterClose() {
+    // given
+    journalFactory = new TestJournalFactory("test", 2);
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    journal.append(1, journalFactory.entry());
+    journal.close();
+
+    // when - then
+    assertThatThrownBy(() -> journal.append(2, journalFactory.entry()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("journal not open");
+    assertThatThrownBy(() -> journal.append(journalFactory.entry()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("journal not open");
+    assertThatThrownBy(() -> journal.append(1L, "data".getBytes(StandardCharsets.UTF_8)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("journal not open");
+  }
+
+  // A leader flushes only on commit, so its uncommitted tail can span a segment boundary. When it
+  // becomes a follower and the new leader's log differs after an entry in the newer segment, the
+  // truncation keeps the unflushed entries before it. They must be flushed like any other entry:
+  // after a crash, everything up to the truncation index has to be on disk.
+  @Test
+  void shouldNotLoseUnflushedEntriesBeforeTruncationIntoNewerSegmentOnCrash() throws Exception {
+    // given - a crash keeps only what was flushed: the segments each flush forces are copied to a
+    // separate directory (a file read sees the mapped writes), and the journal restarts from there
+    journalFactory = new TestJournalFactory("test", 5);
+    final var flushed = directory.resolve("flushed");
+    Files.createDirectories(flushed.resolve("data"));
+    final var segments = spy(journalFactory.segmentsManager(directory));
+    doAnswer(
+            invocation -> {
+              final var tail = (SortedMap<?, ?>) invocation.callRealMethod();
+              for (final var segment : tail.values()) {
+                final var file = ((Segment) segment).file().file();
+                Files.copy(
+                    file,
+                    flushed.resolve("data").resolve(file.getFileName()),
+                    StandardCopyOption.REPLACE_EXISTING);
+              }
+              return tail;
+            })
+        .when(segments)
+        .getTailSegments(anyLong());
+    journal = journalFactory.journal(segments);
+    closeables.add(journal);
+
+    // entries 1-7 are flushed: segment 1 holds 1-5, segment 2 holds 6-7
+    for (int i = 0; i < 7; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.flush();
+    // as a leader, 8-12 are appended without flushing: 8-10 in segment 2, 11-12 in segment 3
+    for (int i = 0; i < 5; i++) {
+      journal.append(journalFactory.entry());
+    }
+
+    // when - the new leader's log differs after 11, so the follower truncates and flushes
+    journal.deleteAfter(11);
+    journal.flush();
+
+    // then - after a crash, the journal restarts with every entry up to 11
+    final var restartFactory = new TestJournalFactory("test", 5);
+    restartFactory
+        .metaStore()
+        .storeLastFlushedIndex(journalFactory.metaStore().loadLastFlushedIndex());
+    final var restarted = restartFactory.journal(restartFactory.segmentsManager(flushed));
+    closeables.add(restarted);
+    assertThat(restarted.getLastIndex()).isEqualTo(11);
+  }
+
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
+  }
+
+  /** An entry with custom data, of the same size as {@link TestJournalFactory#entry()}. */
+  private DirectBufferWriter entry(final String data) {
+    return new DirectBufferWriter(BufferUtil.wrapString(data));
   }
 
   private SegmentedJournal openJournal(final String data, final int entriesPerSegment) {

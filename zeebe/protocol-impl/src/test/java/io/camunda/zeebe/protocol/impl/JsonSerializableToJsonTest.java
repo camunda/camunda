@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -19,19 +20,31 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistorybatch.AgentHistoryBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
@@ -40,7 +53,10 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
@@ -67,7 +83,18 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyAuthorizationDeleteEntry;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionResolvedVersion;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -81,48 +108,67 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
+import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
+import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -189,9 +235,8 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
-              final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AuthInfo authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo"));
               final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
-
               recordMetadata
                   .intent(intent)
                   .protocolVersion(protocolVersion)
@@ -205,6 +250,8 @@ final class JsonSerializableToJsonTest {
                   .requestStreamId(requestStreamId)
                   .authorization(authInfo)
                   .agent(agentInfo)
+                  .requestChannelType(ChannelType.MCP)
+                  .requestToolName("myTool")
                   .operationReference(1234)
                   .batchOperationReference(5678);
 
@@ -251,11 +298,13 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "fails",
                   "brokerVersion": "1.2.3",
                   "authorizations": {
-                    "foo" : "bar"
+                    "authorized_username" : "foo"
                   },
                   "agent": {
                     "elementId": "agent-element"
                   },
+                  "requestChannelType": "MCP",
+                  "requestToolName": "myTool",
                   "recordVersion": 10,
                   "operationReference": 1234,
                   "batchOperationReference": 5678,
@@ -324,6 +373,8 @@ final class JsonSerializableToJsonTest {
                   "brokerVersion": "0.0.0",
                   "authorizations": {},
                   "agent": null,
+                  "requestChannelType": null,
+                  "requestToolName": "",
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,
@@ -620,9 +671,10 @@ final class JsonSerializableToJsonTest {
               final ErrorRecord record = new ErrorRecord();
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               record.setProcessInstanceKey(4321);
+              record.setStorageOrdinal(1234);
               return record;
             },
-        errorRecordAsJson(4321)
+        errorRecordAsJson(4321, 1234)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// Empty ErrorRecord
@@ -637,7 +689,7 @@ final class JsonSerializableToJsonTest {
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               return record;
             },
-        errorRecordAsJson(-1)
+        errorRecordAsJson(-1, 0)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ExpressionRecord
@@ -652,9 +704,12 @@ final class JsonSerializableToJsonTest {
               record
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
+                  .setScopeKey(1)
+                  .setStorageOrdinal(1234)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .addReferencedSecret("default", "token");
               return record;
             },
         """
@@ -662,10 +717,18 @@ final class JsonSerializableToJsonTest {
                   "tenantId":"test-tenant",
                   "expression":"=10 + 5",
                   "resultValue":49,
+                  "scopeKey":1,
+                  "storageOrdinal":1234,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
-                  }
+                  },
+                  "referencedSecrets":[
+                    {
+                      "storeId":"default",
+                      "secretReference":"token"
+                    }
+                  ]
                 }
                 """
       },
@@ -689,6 +752,7 @@ final class JsonSerializableToJsonTest {
               final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
+              final int storageOrdinal = 5;
               return new IncidentRecord()
                   .setElementInstanceKey(elementInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
@@ -701,7 +765,8 @@ final class JsonSerializableToJsonTest {
                   .setVariableScopeKey(elementInstanceKey)
                   .setElementInstancePath(elementInstancePath)
                   .setProcessDefinitionPath(processDefinitionPath)
-                  .setCallingElementPath(callingElementPath);
+                  .setCallingElementPath(callingElementPath)
+                  .setStorageOrdinal(storageOrdinal);
             },
         """
                 {
@@ -718,7 +783,8 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[[101, 102], [103, 104]],
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
-                  "rootProcessInstanceKey": 101
+                  "rootProcessInstanceKey": 101,
+                  "storageOrdinal": 5
                 }
                 """
       },
@@ -745,7 +811,8 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[],
                   "processDefinitionPath":[],
                   "callingElementPath":[],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -770,7 +837,8 @@ final class JsonSerializableToJsonTest {
                       .setTimeout(timeout)
                       .setType(type)
                       .setWorker(worker)
-                      .setTruncated(true);
+                      .setTruncated(true)
+                      .setWithLease(true);
 
               record.jobKeys().add().setValue(3L);
               final JobRecord jobRecord = record.jobs().add();
@@ -780,6 +848,7 @@ final class JsonSerializableToJsonTest {
               final int processDefinitionVersion = 12;
               final int processInstanceKey = 1234;
               final int rootProcessInstanceKey = 4321;
+              final int storageOrdinal = 7;
               final String activityId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
@@ -830,7 +899,9 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionVersion(processDefinitionVersion)
                   .setProcessInstanceKey(processInstanceKey)
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinal(storageOrdinal)
                   .setElementId(wrapString(activityId))
+                  .setElementType(BpmnElementType.SERVICE_TASK)
                   .setElementInstanceKey(activityInstanceKey)
                   .setChangedAttributes(changedAttributes)
                   .setResult(result)
@@ -845,6 +916,7 @@ final class JsonSerializableToJsonTest {
                   "type": "type",
                   "worker": "worker",
                   "truncated": true,
+                  "withLease": true,
                   "jobKeys": [
                     3
                   ],
@@ -855,6 +927,7 @@ final class JsonSerializableToJsonTest {
                       "processDefinitionVersion": 12,
                       "processInstanceKey": 1234,
                       "elementId": "activity",
+                      "elementType": "SERVICE_TASK",
                       "elementInstanceKey": 123,
                       "type": "type",
                       "worker": "worker",
@@ -862,6 +935,9 @@ final class JsonSerializableToJsonTest {
                         "foo": "bar"
                       },
                       "retries": 3,
+                      "priority": 0,
+                      "businessId": "",
+                      "jobLeaseToken": "",
                       "jobKind": "BPMN_ELEMENT",
                       "jobListenerEventType": "UNSPECIFIED",
                       "retryBackoff": 1002,
@@ -873,6 +949,7 @@ final class JsonSerializableToJsonTest {
                       "timeout": -1,
                       "tenantId": "<default>",
                       "rootProcessInstanceKey": 4321,
+                      "storageOrdinal": 7,
                       "changedAttributes": ["bar", "foo"],
                       "tags": ["tag1", "tag2"],
                       "jobToUserTaskMigration": true,
@@ -912,7 +989,8 @@ final class JsonSerializableToJsonTest {
                         ],
                         "completionConditionFulfilled": true,
                         "cancelRemainingInstances": true
-                      }
+                      },
+                      "secretReferences": []
                     }
                   ],
                   "timeout": 2,
@@ -939,6 +1017,7 @@ final class JsonSerializableToJsonTest {
                   "type": "type",
                   "maxJobsToActivate": -1,
                   "truncated": false,
+                  "withLease": false,
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,
@@ -967,7 +1046,9 @@ final class JsonSerializableToJsonTest {
               final int processDefinitionVersion = 12;
               final int processInstanceKey = 1234;
               final int rootProcessInstanceKey = 4321;
+              final int storageOrdinal = 7;
               final String elementId = "activity";
+              final BpmnElementType elementType = BpmnElementType.SERVICE_TASK;
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
               final JobResult result =
@@ -1022,12 +1103,18 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionVersion(processDefinitionVersion)
                       .setProcessInstanceKey(processInstanceKey)
                       .setElementId(wrapString(elementId))
+                      .setElementType(elementType)
                       .setElementInstanceKey(activityInstanceKey)
                       .setChangedAttributes(changedAttributes)
                       .setResult(result)
                       .setTags(Set.of("tag1", "tag2"))
                       .setRootProcessInstanceKey(rootProcessInstanceKey)
-                      .setIsJobToUserTaskMigration(true);
+                      .setStorageOrdinal(storageOrdinal)
+                      .setIsJobToUserTaskMigration(true)
+                      .setPriority(42)
+                      .setBusinessId("biz-42")
+                      .setJobLeaseToken("lease-abc-123")
+                      .addSecretReference("store-1", "token", "/tokens/token");
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -1040,12 +1127,16 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1234,
                   "elementId": "activity",
                   "elementInstanceKey": 123,
+                  "elementType": "SERVICE_TASK",
                   "worker": "myWorker",
                   "type": "myType",
                   "variables": {
                     "foo": "bar"
                   },
                   "retries": 12,
+                  "priority": 42,
+                  "businessId": "biz-42",
+                  "jobLeaseToken": "lease-abc-123",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 1003,
@@ -1059,6 +1150,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": 14,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 4321,
+                  "storageOrdinal": 7,
                   "tags": ["tag1", "tag2"],
                   "jobToUserTaskMigration": true,
                   "changedAttributes": ["bar", "foo"],
@@ -1098,7 +1190,14 @@ final class JsonSerializableToJsonTest {
                     ],
                     "completionConditionFulfilled": true,
                     "cancelRemainingInstances": true
-                  }
+                  },
+                  "secretReferences": [
+                    {
+                      "storeId": "store-1",
+                      "secretReference": "token",
+                      "path": "/tokens/token"
+                    }
+                  ]
                 }
                 """
       },
@@ -1120,9 +1219,13 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "processInstanceKey": -1,
                   "elementInstanceKey": -1,
+                  "elementType": "UNSPECIFIED",
                   "variables": {},
                   "worker": "",
                   "retries": -1,
+                  "priority": 0,
+                  "businessId": "",
+                  "jobLeaseToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1134,6 +1237,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "tags": [],
                   "jobToUserTaskMigration": false,
                   "changedAttributes": [],
@@ -1153,7 +1257,8 @@ final class JsonSerializableToJsonTest {
                     "activateElements": [],
                     "completionConditionFulfilled": false,
                     "cancelRemainingInstances": false
-                  }
+                  },
+                  "secretReferences": []
                 }
                 """
       },
@@ -1177,6 +1282,7 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "processInstanceKey": -1,
                   "elementId": "",
+                  "elementType": "UNSPECIFIED",
                   "elementInstanceKey": -1,
                   "variables": {
                     "foo": null
@@ -1185,6 +1291,9 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "worker": "",
                   "retries": -1,
+                  "priority": 0,
+                  "businessId": "",
+                  "jobLeaseToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1194,6 +1303,7 @@ final class JsonSerializableToJsonTest {
                   "customHeaders": {},
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "tags": [],
                   "jobToUserTaskMigration": false,
                   "changedAttributes": [],
@@ -1213,7 +1323,8 @@ final class JsonSerializableToJsonTest {
                     "activateElements": [],
                     "completionConditionFulfilled": false,
                     "cancelRemainingInstances": false
-                  }
+                  },
+                  "secretReferences": []
                 }
                 """
       },
@@ -1238,7 +1349,8 @@ final class JsonSerializableToJsonTest {
                   .setTimeToLive(timeToLive)
                   .setDeadline(22L)
                   .setMessageId(wrapString(messageId))
-                  .setTenantId("foo");
+                  .setTenantId("foo")
+                  .setBusinessId("biz-42");
             },
         """
                 {
@@ -1250,7 +1362,8 @@ final class JsonSerializableToJsonTest {
                   "messageId": "test-id",
                   "name": "test-message",
                   "deadline": 22,
-                  "tenantId": "foo"
+                  "tenantId": "foo",
+                  "businessId": "biz-42"
                 }
                 """
       },
@@ -1280,7 +1393,8 @@ final class JsonSerializableToJsonTest {
                   "messageId": "",
                   "name": "test-message",
                   "deadline": -1,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "businessId": ""
                 }
                 """
       },
@@ -1292,7 +1406,9 @@ final class JsonSerializableToJsonTest {
         "MessageBatchRecord",
         (Supplier<UnifiedRecordValue>) MessageBatchRecord::new,
         """
-                {}
+                {
+                  "messageKeys": []
+                }
                 """
       },
 
@@ -1318,7 +1434,9 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(2L)
                   .setMessageKey(3L)
                   .setCorrelationKey(wrapString("test-key"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setBusinessId(wrapString("test-business-id"))
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setStorageOrdinal(6);
             },
         """
                 {
@@ -1329,10 +1447,12 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 2,
                   "messageKey": 3,
                   "correlationKey": "test-key",
+                  "businessId": "test-business-id",
                   "variables": {
                     "foo": "bar"
                   },
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 6
                 }
                 """
       },
@@ -1360,8 +1480,10 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": -1,
                   "messageKey": -1,
                   "correlationKey": "",
+                  "businessId": "",
                   "variables": {},
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -1382,6 +1504,8 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 6L;
               final String correlationKey = "key";
               final long messageKey = 3L;
+              final int storageOrdinal = 8;
+              final long subscriptionKey = 42L;
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1391,7 +1515,13 @@ final class JsonSerializableToJsonTest {
                   .setMessageName(wrapString(messageName))
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setBusinessId("biz-42")
+                  .setElementId("catch-1")
+                  .setRootProcessInstanceKey(99L)
+                  .setStorageOrdinal(storageOrdinal)
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setSubscriptionKey(subscriptionKey);
             },
         """
                 {
@@ -1406,7 +1536,13 @@ final class JsonSerializableToJsonTest {
                     "foo": "bar"
                   },
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "businessId": "biz-42",
+                  "elementId": "catch-1",
+                  "rootProcessInstanceKey": 99,
+                  "storageOrdinal": 8,
+                  "elementType": "RECEIVE_TASK",
+                  "subscriptionKey": 42
                 }
                 """
       },
@@ -1436,7 +1572,13 @@ final class JsonSerializableToJsonTest {
                   "messageKey": -1,
                   "variables": {},
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "businessId": "",
+                  "elementId": "",
+                  "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
+                  "elementType": "UNSPECIFIED",
+                  "subscriptionKey": -1
                 }
                 """
       },
@@ -1459,6 +1601,8 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 444;
               final String correlationKey = "key";
               final long rootProcessInstanceKey = 5678L;
+              final int storageOrdinal = 8;
+              final long subscriptionKey = 42L;
 
               return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1471,7 +1615,12 @@ final class JsonSerializableToJsonTest {
                   .setVariables(VARIABLES_MSGPACK)
                   .setCorrelationKey(wrapString(correlationKey))
                   .setElementId(wrapString("A"))
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setBusinessId("biz-42")
+                  .setStorageOrdinal(storageOrdinal)
+                  .setElementType(BpmnElementType.RECEIVE_TASK)
+                  .setSubscriptionKey(subscriptionKey)
+                  .setClosedForSuspend(true);
             },
         """
                 {
@@ -1488,7 +1637,12 @@ final class JsonSerializableToJsonTest {
                   "elementId": "A",
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 5678
+                  "rootProcessInstanceKey": 5678,
+                  "businessId": "biz-42",
+                  "storageOrdinal": 8,
+                  "elementType": "RECEIVE_TASK",
+                  "subscriptionKey": 42,
+                  "closedForSuspend": true
                 }
                 """
       },
@@ -1522,7 +1676,12 @@ final class JsonSerializableToJsonTest {
                   "elementId": "",
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": "",
+                  "storageOrdinal": 0,
+                  "elementType": "UNSPECIFIED",
+                  "subscriptionKey": -1,
+                  "closedForSuspend": false
                 }
                 """
       },
@@ -1542,6 +1701,7 @@ final class JsonSerializableToJsonTest {
               final int elementInstanceKey = 567;
               final String handlerNodeId = "node1";
               final int repetitions = 3;
+              final int storageOrdinal = 4;
 
               return new TimerRecord()
                   .setDueDate(dueDate)
@@ -1549,7 +1709,8 @@ final class JsonSerializableToJsonTest {
                   .setTargetElementId(wrapString(handlerNodeId))
                   .setRepetitions(repetitions)
                   .setProcessInstanceKey(processInstanceKey)
-                  .setProcessDefinitionKey(processDefinitionKey);
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setStorageOrdinal(storageOrdinal);
             },
         """
                 {
@@ -1559,7 +1720,12 @@ final class JsonSerializableToJsonTest {
                   "targetElementId": "node1",
                   "repetitions": 3,
                   "processDefinitionKey": 13,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "rootProcessInstanceKey": -1,
+                  "bpmnProcessId": "",
+                  "elementId": "node1",
+                  "storageOrdinal": 4,
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },
@@ -1580,6 +1746,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
               final long rootProcessInstanceKey = 5;
+              final int storageOrdinal = 6;
               final VariableSourceRecord source = VariableSourceRecord.api();
 
               return new VariableRecord()
@@ -1590,7 +1757,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinal(storageOrdinal);
             },
         """
                 {
@@ -1602,6 +1770,7 @@ final class JsonSerializableToJsonTest {
                   "value": "1",
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5,
+                  "storageOrdinal": 6,
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
@@ -1622,6 +1791,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
               final long rootProcessInstanceKey = 5;
+              final int storageOrdinal = 6;
               final VariableSourceRecord source = VariableSourceRecord.api();
 
               return new VariableRecord()
@@ -1633,7 +1803,8 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
                   .setTenantId("tenant-test")
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinal(storageOrdinal);
             },
         """
                 {
@@ -1645,6 +1816,7 @@ final class JsonSerializableToJsonTest {
                   "value": "1",
                   "tenantId": "tenant-test",
                   "rootProcessInstanceKey": 5,
+                  "storageOrdinal": 6,
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
@@ -1668,7 +1840,8 @@ final class JsonSerializableToJsonTest {
               return new VariableDocumentRecord()
                   .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
                   .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
-                  .setScopeKey(scopeKey);
+                  .setScopeKey(scopeKey)
+                  .setStorageOrdinal(1234);
             },
         """
                 {
@@ -1677,6 +1850,7 @@ final class JsonSerializableToJsonTest {
                     "foo": 1
                   },
                   "scopeKey": 3,
+                  "storageOrdinal": 1234,
                   "tenantId": "<default>"
                 }
                 """
@@ -1700,6 +1874,7 @@ final class JsonSerializableToJsonTest {
                   "updateSemantics": "PROPAGATE",
                   "variables": {},
                   "scopeKey": 3,
+                  "storageOrdinal": 0,
                   "tenantId": "<default>"
                 }
                 """
@@ -1719,6 +1894,7 @@ final class JsonSerializableToJsonTest {
               final int version = 1;
               final long instanceKey = 2L;
               final long rootProcessInstanceKey = 3L;
+              final int storageOrdinal = 6;
               final String businessId = "business-id-456";
 
               return new ProcessInstanceCreationRecord()
@@ -1734,7 +1910,9 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
-                  .setBusinessId(businessId);
+                  .setStorageOrdinal(storageOrdinal)
+                  .setBusinessId(businessId)
+                  .setVersionTag("v1.0");
             },
         """
                 {
@@ -1755,7 +1933,9 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 3,
+                  "storageOrdinal": 6,
                   "businessId": "business-id-456",
+                  "versionTag": "v1.0",
                   "elementInstanceKey": -1
                 }
                 """
@@ -1781,7 +1961,9 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [],
                   "tags": [],
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "businessId": "",
+                  "versionTag": "",
                   "elementInstanceKey": -1
                 }
                 """
@@ -1802,6 +1984,7 @@ final class JsonSerializableToJsonTest {
               final var ancestorScopeKey = 3L;
               final var variableInstructionElementId = "sub-process";
               final var rootProcessInstanceKey = 4L;
+              final var storageOrdinal = 6;
               final var processDefinitionKey = 5L;
               final var bpmnProcessId = "bpmnProcessId";
 
@@ -1832,6 +2015,7 @@ final class JsonSerializableToJsonTest {
                                   .setElementId(variableInstructionElementId))
                           .addAncestorScopeKeys(Set.of(key, ancestorScopeKey)))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinal(storageOrdinal)
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(bpmnProcessId);
             },
@@ -1870,6 +2054,7 @@ final class JsonSerializableToJsonTest {
                   "ancestorScopeKeys": [1,3],
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 4,
+                  "storageOrdinal": 6,
                   "processDefinitionKey": 5,
                   "bpmnProcessId": "bpmnProcessId",
                   "elementInstanceKey": -1
@@ -1895,6 +2080,7 @@ final class JsonSerializableToJsonTest {
                   "ancestorScopeKeys": [],
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
                   "elementInstanceKey": -1
@@ -1922,6 +2108,7 @@ final class JsonSerializableToJsonTest {
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
               final var rootProcessInstanceKey = 9999L;
+              final var storageOrdinal = 6;
               final var businessId = "business-id-123";
 
               return new ProcessInstanceRecord()
@@ -1940,6 +2127,7 @@ final class JsonSerializableToJsonTest {
                   .setCallingElementPath(callingElementPath)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinal(storageOrdinal)
                   .setBusinessId(businessId);
             },
         """
@@ -1960,7 +2148,10 @@ final class JsonSerializableToJsonTest {
                   "callingElementPath": [12345, 67890],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 9999,
+                  "storageOrdinal": 6,
                   "businessId": "business-id-123",
+                  "resumeFromJobKey": -1,
+                  "resumeFromUserTaskKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -1992,7 +2183,10 @@ final class JsonSerializableToJsonTest {
                   "callingElementPath": [],
                   "tags": [],
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "businessId": "",
+                  "resumeFromJobKey": -1,
+                  "resumeFromUserTaskKey": -1,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2103,6 +2297,7 @@ final class JsonSerializableToJsonTest {
         "DecisionEvaluationRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
+              final int storageOrdinal = 9;
               final var record =
                   new DecisionEvaluationRecord()
                       .setDecisionKey(1L)
@@ -2121,7 +2316,9 @@ final class JsonSerializableToJsonTest {
                       .setElementId("element-id")
                       .setEvaluationFailureMessage("evaluation-failure-message")
                       .setFailedDecisionId("failed-decision-id")
-                      .setRootProcessInstanceKey(6L);
+                      .setRootProcessInstanceKey(6L)
+                      .setBusinessId("business-id")
+                      .setStorageOrdinal(storageOrdinal);
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
@@ -2203,7 +2400,9 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"evaluation-failure-message",
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 6
+                  "rootProcessInstanceKey": 6,
+                  "businessId": "business-id",
+                  "storageOrdinal": 9
                 }
                 """
       },
@@ -2213,6 +2412,7 @@ final class JsonSerializableToJsonTest {
         "DecisionEvaluationRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
+              final int storageOrdinal = 10;
               final var record =
                   new DecisionEvaluationRecord()
                       .setDecisionKey(1L)
@@ -2232,7 +2432,9 @@ final class JsonSerializableToJsonTest {
                       .setEvaluationFailureMessage("evaluation-failure-message")
                       .setFailedDecisionId("failed-decision-id")
                       .setTenantId("tenant-test")
-                      .setRootProcessInstanceKey(6L);
+                      .setRootProcessInstanceKey(6L)
+                      .setBusinessId("business-id")
+                      .setStorageOrdinal(storageOrdinal);
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
@@ -2315,7 +2517,9 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"evaluation-failure-message",
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "tenant-test",
-                  "rootProcessInstanceKey": 6
+                  "rootProcessInstanceKey": 6,
+                  "businessId": "business-id",
+                  "storageOrdinal": 10
                 }
                 """
       },
@@ -2347,7 +2551,9 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"",
                   "failedDecisionId":"",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": "",
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -2362,13 +2568,15 @@ final class JsonSerializableToJsonTest {
                     .setCheckpointId(1L)
                     .setCheckpointPosition(10L)
                     .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                    .setFirstLogPosition(100L),
+                    .setFirstLogPosition(100L)
+                    .setSnapshotId("1-1-1-0-0-123"),
         """
                 {
                   "checkpointId":1,
                   "checkpointPosition":10,
                   "checkpointType":"SCHEDULED_BACKUP",
-                  "firstLogPosition":100
+                  "firstLogPosition":100,
+                  "snapshotId":"1-1-1-0-0-123"
                 }
                 """
       },
@@ -2384,7 +2592,8 @@ final class JsonSerializableToJsonTest {
                   "checkpointId":1,
                   "checkpointPosition":10,
                   "checkpointType":"MANUAL_BACKUP",
-                  "firstLogPosition":-1
+                  "firstLogPosition":-1,
+                  "snapshotId":""
                 }
                 """
       },
@@ -2401,13 +2610,15 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(4L)
                     .setEscalationCode("escalation")
                     .setThrowElementId(wrapString("throw"))
-                    .setCatchElementId(wrapString("catch")),
+                    .setCatchElementId(wrapString("catch"))
+                    .setStorageOrdinal(1234),
         """
                 {
                   "processInstanceKey":4,
                   "escalationCode": "escalation",
                   "throwElementId": "throw",
                   "catchElementId": "catch",
+                  "storageOrdinal":1234,
                   "tenantId": "<default>"
                 }
                 """
@@ -2427,6 +2638,7 @@ final class JsonSerializableToJsonTest {
                   "escalationCode": "",
                   "throwElementId": "",
                   "catchElementId": "",
+                  "storageOrdinal":0,
                   "tenantId": "<default>"
                 }
                 """
@@ -2501,15 +2713,20 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setCatchEventInstanceKey(3L)
+                  .setBpmnElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
                   .setTenantId("acme");
             },
         """
                 {
-                  "processDefinitionKey":22334,
-                  "signalName": "name",
                   "catchEventId": "startEvent",
-                  "bpmnProcessId": "process",
+                  "signalName": "name",
                   "catchEventInstanceKey":3,
+                  "bpmnElementType":"INTERMEDIATE_CATCH_EVENT",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "storageOrdinal":0,
+                  "bpmnProcessId": "process",
                   "tenantId": "acme"
                 }
                 """
@@ -2530,11 +2747,15 @@ final class JsonSerializableToJsonTest {
             },
         """
                 {
-                  "processDefinitionKey":22334,
-                  "signalName":"",
                   "catchEventId":"",
-                  "bpmnProcessId":"",
+                  "signalName":"",
                   "catchEventInstanceKey":-1,
+                  "bpmnElementType":"UNSPECIFIED",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "storageOrdinal":0,
+                  "bpmnProcessId":"",
                   "tenantId": "<default>"
                 }
                 """
@@ -2550,6 +2771,7 @@ final class JsonSerializableToJsonTest {
             () -> {
               final var resourceKey = 1L;
               final var batchOperationKey = 2L;
+              final int storageOrdinal = 3;
 
               return new ResourceDeletionRecord()
                   .setResourceKey(resourceKey)
@@ -2558,7 +2780,8 @@ final class JsonSerializableToJsonTest {
                   .setBatchOperationKey(batchOperationKey)
                   .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
                   .setResourceType(ResourceType.PROCESS_DEFINITION)
-                  .setResourceId("foo");
+                  .setResourceId("foo")
+                  .setStorageOrdinal(storageOrdinal);
             },
         """
                 {
@@ -2568,7 +2791,8 @@ final class JsonSerializableToJsonTest {
                   "batchOperationKey": 2,
                   "batchOperationType": "DELETE_PROCESS_INSTANCE",
                   "resourceType": "PROCESS_DEFINITION",
-                  "resourceId": "foo"
+                  "resourceId": "foo",
+                  "storageOrdinal": 3
                 }
                 """
       },
@@ -2590,7 +2814,8 @@ final class JsonSerializableToJsonTest {
                   "batchOperationKey": -1,
                   "batchOperationType": "DELETE_PROCESS_INSTANCE",
                   "resourceType": "UNKNOWN",
-                  "resourceId": ""
+                  "resourceId": "",
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -2608,7 +2833,8 @@ final class JsonSerializableToJsonTest {
                   new AdHocSubProcessInstructionRecord()
                       .setAdHocSubProcessInstanceKey(1234L)
                       .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-                      .setCompletionConditionFulfilled(true);
+                      .setCompletionConditionFulfilled(true)
+                      .setStorageOrdinal(1001);
 
               adHocSubProcessInstructionRecord.activateElements().add().setElementId("123");
               adHocSubProcessInstructionRecord
@@ -2638,7 +2864,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "cancelRemainingInstances": true,
-                  "completionConditionFulfilled": true
+                  "completionConditionFulfilled": true,
+                  "storageOrdinal": 1001
                 }
                 """
       },
@@ -2657,7 +2884,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "activateElements": [],
                   "cancelRemainingInstances": false,
-                  "completionConditionFulfilled": false
+                  "completionConditionFulfilled": false,
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -2692,10 +2920,12 @@ final class JsonSerializableToJsonTest {
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
-                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")));
+                  .setAuthInfo(AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "foo")))
+                  .setStartTime(123L);
             },
         """
                 {
+                  "startTime": 123,
                   "partitionId": 1,
                   "queueId": "totally-random-queue-id",
                   "valueType": "DEPLOYMENT",
@@ -2723,7 +2953,7 @@ final class JsonSerializableToJsonTest {
                     "tenantId": "<default>",
                     "deploymentKey": -1
                   },
-                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{"authorized_username": "foo"}}
                 }
                 """
       },
@@ -2738,12 +2968,96 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) () -> new CommandDistributionRecord().setPartitionId(1),
         """
                 {
+                  "startTime": -1,
                   "partitionId": 1,
                   "queueId": null,
                   "valueType": "NULL_VAL",
                   "intent": "UNKNOWN",
                   "commandValue": null,
-                  "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
+                  "authInfo":{"format":"UNKNOWN","claims":{}}
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// BufferedCommandRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BufferedCommandRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var commandValue =
+                  new ProcessInstanceRecord()
+                      .setProcessInstanceKey(1234)
+                      .setElementId("activity")
+                      .setBpmnElementType(BpmnElementType.SERVICE_TASK);
+
+              return new BufferedCommandRecord()
+                  .setProcessInstanceKey(1234)
+                  .setProcessDefinitionKey(13)
+                  .setTenantId("tenant-1")
+                  .setCommandKey(5678)
+                  .setValueType(ValueType.PROCESS_INSTANCE)
+                  .setIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+                  .setCommandValue(commandValue);
+            },
+        """
+                {
+                  "processInstanceKey": 1234,
+                  "processDefinitionKey": 13,
+                  "tenantId": "tenant-1",
+                  "commandKey": 5678,
+                  "valueType": "PROCESS_INSTANCE",
+                  "intent": "ACTIVATE_ELEMENT",
+                  "storageOrdinal": 0,
+                  "commandValue": {
+                    "bpmnProcessId": "",
+                    "version": -1,
+                    "processDefinitionKey": -1,
+                    "processInstanceKey": 1234,
+                    "elementId": "activity",
+                    "flowScopeKey": -1,
+                    "bpmnElementType": "SERVICE_TASK",
+                    "parentProcessInstanceKey": -1,
+                    "parentElementInstanceKey": -1,
+                    "bpmnEventType": "UNSPECIFIED",
+                    "tenantId": "<default>",
+                    "elementInstancePath":[],
+                    "processDefinitionPath": [],
+                    "callingElementPath": [],
+                    "tags": [],
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": "",
+                    "resumeFromJobKey": -1,
+                    "resumeFromUserTaskKey": -1,
+                    "elementInstanceKey": -1
+                  }
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// Empty BufferedCommandRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty BufferedCommandRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new BufferedCommandRecord().setProcessInstanceKey(1234),
+        """
+                {
+                  "processInstanceKey": 1234,
+                  "processDefinitionKey": -1,
+                  "tenantId": "<default>",
+                  "commandKey": -1,
+                  "valueType": "NULL_VAL",
+                  "intent": "UNKNOWN",
+                  "storageOrdinal": 0,
+                  "commandValue": null
                 }
                 """
       },
@@ -2761,14 +3075,152 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(234L)
                     .setBatchElementInstanceKey(456L)
-                    .setIndex(10L),
+                    .setIndex(10L)
+                    .setStorageOrdinal(9),
         """
                 {
                   "processInstanceKey": 123,
                   "processDefinitionKey": 234,
                   "batchElementInstanceKey": 456,
                   "index": 10,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 9
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ElementInstanceWalkRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ElementInstanceWalkRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ElementInstanceWalkRecord()
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(234L)
+                    .setElementInstanceKey(456L)
+                    .setParentKey(345L)
+                    .setIndex(567L)
+                    .setStorageOrdinal(1001),
+        """
+                {
+                  "processInstanceKey": 123,
+                  "processDefinitionKey": 234,
+                  "elementInstanceKey": 456,
+                  "parentKey": 345,
+                  "index": 567,
+                  "storageOrdinal": 1001
+                }
+                """
+      },
+      {
+        "Empty ElementInstanceWalkRecord",
+        (Supplier<UnifiedRecordValue>) ElementInstanceWalkRecord::new,
+        """
+                {
+                  "processInstanceKey": -1,
+                  "processDefinitionKey": -1,
+                  "elementInstanceKey": -1,
+                  "parentKey": -1,
+                  "index": -1,
+                  "storageOrdinal": 0
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// UserTaskLookupRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new UserTaskLookupRecord()
+                    .setFetchVariables(List.of("foo", "bar"))
+                    .setTenantId("tenant-1")
+                    .setUserTask(
+                        new UserTaskRecord()
+                            .setUserTaskKey(123)
+                            .setElementId("task")
+                            .setAssignee("demo")
+                            .setVariables(
+                                new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':1}"))))
+                    .setLifecycleState(UserTaskLifecycleState.CREATED),
+        """
+                {
+                  "fetchVariables": ["foo", "bar"],
+                  "tenantId": "tenant-1",
+                  "userTask": {
+                    "bpmnProcessId": "",
+                    "processDefinitionKey": -1,
+                    "processDefinitionVersion": -1,
+                    "processInstanceKey": -1,
+                    "elementId": "task",
+                    "elementInstanceKey": -1,
+                    "assignee": "demo",
+                    "candidateGroupsList": [],
+                    "candidateUsersList": [],
+                    "creationTimestamp": -1,
+                    "dueDate": "",
+                    "followUpDate": "",
+                    "changedAttributes": [],
+                    "externalFormReference": "",
+                    "variables": {"foo": 1},
+                    "customHeaders": {},
+                    "action": "",
+                    "formKey": -1,
+                    "userTaskKey": 123,
+                    "tenantId": "<default>",
+                    "priority": 50,
+                    "tags": [],
+                    "deniedReason": "",
+                    "listenersConfigKey": -1,
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": ""
+                  },
+                  "lifecycleState": "CREATED"
+                }
+                """
+      },
+      {
+        "Empty UserTaskLookupRecord",
+        (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
+        """
+                {
+                  "fetchVariables": [],
+                  "tenantId": "<default>",
+                  "userTask": {
+                    "bpmnProcessId": "",
+                    "processDefinitionKey": -1,
+                    "processDefinitionVersion": -1,
+                    "processInstanceKey": -1,
+                    "elementId": "",
+                    "elementInstanceKey": -1,
+                    "assignee": "",
+                    "candidateGroupsList": [],
+                    "candidateUsersList": [],
+                    "creationTimestamp": -1,
+                    "dueDate": "",
+                    "followUpDate": "",
+                    "changedAttributes": [],
+                    "externalFormReference": "",
+                    "variables": {},
+                    "customHeaders": {},
+                    "action": "",
+                    "formKey": -1,
+                    "userTaskKey": -1,
+                    "tenantId": "<default>",
+                    "priority": 50,
+                    "tags": [],
+                    "deniedReason": "",
+                    "listenersConfigKey": -1,
+                    "rootProcessInstanceKey": -1,
+                    "storageOrdinal": 0,
+                    "businessId": ""
+                  },
+                  "lifecycleState": "UNSPECIFIED"
                 }
                 """
       },
@@ -2791,7 +3243,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "batchElementInstanceKey": 456,
                   "index": -1,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -2829,7 +3282,9 @@ final class JsonSerializableToJsonTest {
                     .setPriority(80)
                     .setDeniedReason("Reason to deny lifecycle transition")
                     .setListenersConfigKey(42L)
-                    .setRootProcessInstanceKey(4321L),
+                    .setRootProcessInstanceKey(4321L)
+                    .setStorageOrdinal(7)
+                    .setBusinessId("order-4711"),
         """
                 {
                   "bpmnProcessId": "test-process",
@@ -2860,7 +3315,9 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "Reason to deny lifecycle transition",
                   "listenersConfigKey": 42,
-                  "rootProcessInstanceKey": 4321
+                  "rootProcessInstanceKey": 4321,
+                  "storageOrdinal": 7,
+                  "businessId": "order-4711"
                 }
                 """
       },
@@ -2899,7 +3356,9 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
+                  "businessId": ""
                 }
                 """
       },
@@ -2943,7 +3402,9 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
+                  "businessId": ""
                 }
                 """
       },
@@ -2972,6 +3433,7 @@ final class JsonSerializableToJsonTest {
                         new ProcessInstanceMigrationMappingInstruction()
                             .setTargetElementId("targetId3"))
                     .setRootProcessInstanceKey(321L)
+                    .setStorageOrdinal(6)
                     .setProcessDefinitionKey(234L)
                     .setBpmnProcessId("bpmnProcessId"),
         """
@@ -2990,6 +3452,7 @@ final class JsonSerializableToJsonTest {
                     "targetElementId": "targetId3"
                   }],
                   "rootProcessInstanceKey": 321,
+                  "storageOrdinal": 6,
                   "processDefinitionKey": 234,
                   "bpmnProcessId": "bpmnProcessId",
                   "elementInstanceKey": -1
@@ -3016,6 +3479,60 @@ final class JsonSerializableToJsonTest {
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [],
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
+                  "processDefinitionKey": -1,
+                  "bpmnProcessId": "",
+                  "elementInstanceKey": -1
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// ProcessInstanceBusinessIdRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessInstanceBusinessIdRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ProcessInstanceBusinessIdRecord()
+                    .setTenantId("tenantId")
+                    .setProcessInstanceKey(123L)
+                    .setBusinessId("order-42")
+                    .setRootProcessInstanceKey(321L)
+                    .setProcessDefinitionKey(234L)
+                    .setBpmnProcessId("bpmnProcessId"),
+        """
+                {
+                  "tenantId": "tenantId",
+                  "processInstanceKey": 123,
+                  "businessId": "order-42",
+                  "rootProcessInstanceKey": 321,
+                  "storageOrdinal": 0,
+                  "processDefinitionKey": 234,
+                  "bpmnProcessId": "bpmnProcessId",
+                  "elementInstanceKey": -1
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty ProcessInstanceBusinessIdRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ProcessInstanceBusinessIdRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new ProcessInstanceBusinessIdRecord().setProcessInstanceKey(123L),
+        """
+                {
+                  "tenantId": "<default>",
+                  "processInstanceKey": 123,
+                  "businessId": "",
+                  "rootProcessInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
                   "elementInstanceKey": -1
@@ -3043,6 +3560,7 @@ final class JsonSerializableToJsonTest {
                     .setCompensationHandlerInstanceKey(100L)
                     .setCompensableActivityScopeKey(789L)
                     .setCompensableActivityInstanceKey(123L)
+                    .setStorageOrdinal(1234)
                     .setVariables(VARIABLES_MSGPACK),
         """
                 {
@@ -3056,6 +3574,7 @@ final class JsonSerializableToJsonTest {
                   "compensationHandlerInstanceKey": 100,
                   "compensableActivityScopeKey": 789,
                   "compensableActivityInstanceKey": 123,
+                  "storageOrdinal": 1234,
                   "variables": {
                     "foo": "bar"
                   }
@@ -3083,6 +3602,7 @@ final class JsonSerializableToJsonTest {
                   "compensationHandlerInstanceKey": -1,
                   "compensableActivityScopeKey": -1,
                   "compensableActivityInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "variables": {}
                 }
                 """
@@ -3102,6 +3622,7 @@ final class JsonSerializableToJsonTest {
               final long messageKey = 2L;
               final long requestId = 3L;
               final int requestStreamId = 4;
+              final int storageOrdinal = 6;
 
               return new MessageCorrelationRecord()
                   .setCorrelationKey(correlationKey)
@@ -3112,7 +3633,9 @@ final class JsonSerializableToJsonTest {
                   .setMessageKey(messageKey)
                   .setRequestId(requestId)
                   .setRequestStreamId(requestStreamId)
-                  .setProcessDefinitionKey(5L);
+                  .setProcessDefinitionKey(5L)
+                  .setBusinessId("biz-42")
+                  .setStorageOrdinal(storageOrdinal);
             },
         """
                 {
@@ -3126,7 +3649,9 @@ final class JsonSerializableToJsonTest {
                   "messageKey": 2,
                   "requestId": 3,
                   "requestStreamId": 4,
-                  "processDefinitionKey": 5
+                  "processDefinitionKey": 5,
+                  "businessId": "biz-42",
+                  "storageOrdinal": 6
                 }
                 """
       },
@@ -3209,6 +3734,67 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "time": 0
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ClusterVariableRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ClusterVariableRecord (minimal)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("tenantVar")
+                    .setTenantScope()
+                    .setTenantId("tenant-1")
+                    .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42"))),
+        """
+                {
+                  "name": "tenantVar",
+                  "value": "42",
+                  "scope": "TENANT",
+                  "tenantId": "tenant-1",
+                  "metadata": {},
+                  "kind": "JSON",
+                  "secretReferences": []
+                }
+                """
+      },
+      {
+        "ClusterVariableRecord (fully populated)",
+        (Supplier<ClusterVariableRecord>)
+            () ->
+                new ClusterVariableRecord()
+                    .setName("secretVar")
+                    .setGlobalScope()
+                    .setTenantId("<default>")
+                    .setValue(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(
+                                Map.of("auth", "camunda.secrets.token"))))
+                    .setMetadata(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2"))))
+                    .setKind(ClusterVariableKind.SECRET_REFERENCE)
+                    .addSecretReference("default", "token", "/auth"),
+        """
+                {
+                  "name": "secretVar",
+                  "value": "{\\"auth\\":\\"camunda.secrets.token\\"}",
+                  "scope": "GLOBAL",
+                  "tenantId": "<default>",
+                  "metadata": { "credentialType": "OAUTH2" },
+                  "kind": "SECRET_REFERENCE",
+                  "secretReferences": [
+                    {
+                      "storeId": "default",
+                      "secretReference": "token",
+                      "path": "/auth"
+                    }
+                  ]
                 }
                 """
       },
@@ -3321,7 +3907,9 @@ final class JsonSerializableToJsonTest {
                   "messageKey": -1,
                   "requestId": -1,
                   "requestStreamId": -1,
-                  "processDefinitionKey": -1
+                  "processDefinitionKey": -1,
+                  "businessId": "",
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -3807,13 +4395,15 @@ final class JsonSerializableToJsonTest {
                   "partitionIds": [1, 2, 3],
                   "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
                   "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+                  "jobUpdatePlan":{"timeout":null,"retries":null,"priority":null,"changedAttributes":[],"empty":false,"encodedLength":48},
                   "authenticationBuffer": {"expandable":false},
                   "authorizationCheckBuffer": {"expandable":false},
                   "followUpCommand": {
                     "valueType": "NULL_VAL",
                     "intent": "UNKNOWN",
                     "recordValue": null
-                  }
+                  },
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -3881,7 +4471,8 @@ final class JsonSerializableToJsonTest {
                         HistoryDeletionIntent.DELETE,
                         new HistoryDeletionRecord()
                             .setResourceKey(1)
-                            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)),
+                            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION))
+                    .setStorageOrdinal(11),
         """
                 {
                    "batchOperationKey": 12345,
@@ -3922,6 +4513,14 @@ final class JsonSerializableToJsonTest {
                      "empty": false,
                      "encodedLength": 265
                    },
+                   "jobUpdatePlan": {
+                     "retries": null,
+                     "timeout": null,
+                     "priority": null,
+                     "changedAttributes": [],
+                     "empty": false,
+                     "encodedLength": 48
+                   },
                    "authenticationBuffer": {
                      "expandable": false
                    },
@@ -3934,12 +4533,52 @@ final class JsonSerializableToJsonTest {
                       "recordValue": {
                         "resourceKey": 1,
                         "resourceType": "PROCESS_DEFINITION",
+                        "resourceStorageOrdinal": 0,
                         "processId": "",
                         "tenantId": "<default>",
                         "decisionDefinitionId": ""
                       }
-                    }
+                    },
+                    "storageOrdinal": 11
                  }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// UpdateJob BatchOperationCreationRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UpdateJob BatchOperationCreationRecord",
+        (Supplier<BatchOperationCreationRecord>)
+            () ->
+                new BatchOperationCreationRecord()
+                    .setBatchOperationKey(12345L)
+                    .setPartitionIds(List.of(1, 2, 3))
+                    .setBatchOperationType(BatchOperationType.UPDATE_JOB)
+                    .setEntityFilter(toMessagePack("{'type': 'myJobType'}"))
+                    .setJobUpdatePlan(
+                        new BatchOperationJobUpdatePlan().setPriority(80).setRetries(5))
+                    .setStorageOrdinal(12),
+        """
+                {
+                  "batchOperationKey": 12345,
+                  "batchOperationType": "UPDATE_JOB",
+                  "entityFilterBuffer": {"expandable":false},
+                  "entityFilter": "{\\"type\\":\\"myJobType\\"}",
+                  "partitionIds": [1, 2, 3],
+                  "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
+                  "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+                  "jobUpdatePlan":{"retries":5,"timeout":null,"priority":80,"changedAttributes":["retries","priority"],"empty":false,"encodedLength":65},
+                  "authenticationBuffer": {"expandable":false},
+                  "authorizationCheckBuffer": {"expandable":false},
+                  "followUpCommand": {
+                    "valueType": "NULL_VAL",
+                    "intent": "UNKNOWN",
+                    "recordValue": null
+                  },
+                  "storageOrdinal": 12
+                }
                 """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -3954,7 +4593,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "items": []
+                  "items": [],
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -3971,11 +4611,9 @@ final class JsonSerializableToJsonTest {
                     .setBatchOperationKey(12345L)
                     .setItems(
                         List.of(
-                            new BatchOperationItem()
-                                .setItemKey(1L)
-                                .setProcessInstanceKey(2L)
-                                .setRootProcessInstanceKey(3L),
-                            new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L))),
+                            new BatchOperationItem(1L, 2L, 3L, 1001),
+                            new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L)))
+                    .setStorageOrdinal(14),
         """
                 {
                   "items": [
@@ -3983,18 +4621,21 @@ final class JsonSerializableToJsonTest {
                       "itemKey": 1,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": 3,
+                      "storageOrdinal": 1001,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 72
                     },
                     {
                       "itemKey": 2,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": -1,
+                      "storageOrdinal": 0,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 70
                     }
                   ],
-                  "batchOperationKey": 12345
+                  "batchOperationKey": 12345,
+                  "storageOrdinal": 14
                 }
                 """
       },
@@ -4009,11 +4650,45 @@ final class JsonSerializableToJsonTest {
             () ->
                 new BatchOperationExecutionRecord()
                     .setBatchOperationKey(12345L)
-                    .setItemKeys(Set.of(1L, 2L)),
+                    .setItems(
+                        List.of(
+                            new BatchOperationExecutionItem(1L, 1001),
+                            new BatchOperationExecutionItem(2L, 1002)))
+                    .setStorageOrdinal(15),
         """
                 {
                   "batchOperationKey": 12345,
-                  "itemKeys": [1, 2]
+                  "itemKeys": [1, 2],
+                  "items": [
+                    { "itemKey": 1, "storageOrdinal": 1001 },
+                    { "itemKey": 2, "storageOrdinal": 1002 }
+                  ],
+                  "storageOrdinal": 15
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////// BatchOperationExecutionRecord with keys only
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationExecutionRecord with keys only",
+        (Supplier<BatchOperationExecutionRecord>)
+            () ->
+                new BatchOperationExecutionRecord()
+                    .setBatchOperationKey(12345L)
+                    .setItemKeys(new TreeSet<>(Set.of(1L, 2L)))
+                    .setStorageOrdinal(15),
+        """
+                {
+                  "batchOperationKey": 12345,
+                  "itemKeys": [1, 2],
+                  "items": [
+                    { "itemKey": 1, "storageOrdinal": 0 },
+                    { "itemKey": 2, "storageOrdinal": 0 }
+                  ],
+                  "storageOrdinal": 15
                 }
                 """
       },
@@ -4029,7 +4704,9 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "itemKeys": []
+                  "itemKeys": [],
+                  "items": [],
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -4041,11 +4718,15 @@ final class JsonSerializableToJsonTest {
       {
         "BatchOperationLifecycleManagementRecord",
         (Supplier<BatchOperationLifecycleManagementRecord>)
-            () -> new BatchOperationLifecycleManagementRecord().setBatchOperationKey(12345L),
+            () ->
+                new BatchOperationLifecycleManagementRecord()
+                    .setBatchOperationKey(12345L)
+                    .setStorageOrdinal(16),
         """
                 {
                   "batchOperationKey": 12345,
-                  "errors":[]
+                  "errors":[],
+                  "storageOrdinal": 16
                 }
                 """
       },
@@ -4137,10 +4818,12 @@ final class JsonSerializableToJsonTest {
                         List.of(
                             new UnsafeBuffer(MsgPackConverter.convertToMsgPack("1")),
                             new UnsafeBuffer(MsgPackConverter.convertToMsgPack("2")),
-                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("3")))),
+                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("3"))))
+                    .setStorageOrdinal(1234),
         """
                 {
-                  "inputCollection": ["1", "2", "3"]
+                  "inputCollection": ["1", "2", "3"],
+                  "storageOrdinal": 1234
                 }
                 """
       },
@@ -4154,7 +4837,8 @@ final class JsonSerializableToJsonTest {
         (Supplier<MultiInstanceRecord>) MultiInstanceRecord::new,
         """
                 {
-                  "inputCollection": []
+                  "inputCollection": [],
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -4169,13 +4853,15 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(12345L)
                     .setProcessDefinitionKey(6L)
                     .setTenantId("tenant_1")
-                    .setElementId("element_1"),
+                    .setElementId("element_1")
+                    .setStorageOrdinal(3),
         """
       {
         "tenantId": "tenant_1",
         "elementId": "element_1",
         "processInstanceKey": 12345,
-        "processDefinitionKey": 6
+        "processDefinitionKey": 6,
+        "storageOrdinal": 3
       }
       """
       },
@@ -4190,7 +4876,8 @@ final class JsonSerializableToJsonTest {
         "tenantId": "",
         "elementId": "",
         "processInstanceKey": -1,
-        "processDefinitionKey": -1
+        "processDefinitionKey": -1,
+        "storageOrdinal": 0
       }
       """
       },
@@ -4204,6 +4891,7 @@ final class JsonSerializableToJsonTest {
                 new HistoryDeletionRecord()
                     .setResourceKey(1L)
                     .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                    .setResourceStorageOrdinal(7)
                     .setProcessId("processId")
                     .setTenantId("tenantId")
                     .setDecisionDefinitionId("decisionDefinitionId"),
@@ -4211,6 +4899,7 @@ final class JsonSerializableToJsonTest {
       {
         "resourceKey": 1,
         "resourceType": "PROCESS_INSTANCE",
+        "resourceStorageOrdinal": 7,
         "processId": "processId",
         "tenantId": "tenantId",
         "decisionDefinitionId": "decisionDefinitionId"
@@ -4231,6 +4920,7 @@ final class JsonSerializableToJsonTest {
       {
         "resourceKey": 1,
         "resourceType": "PROCESS_INSTANCE",
+        "resourceStorageOrdinal": 0,
         "processId": "",
         "tenantId": "<default>",
         "decisionDefinitionId": ""
@@ -4257,7 +4947,10 @@ final class JsonSerializableToJsonTest {
                     .setCondition(BufferUtil.wrapString("=x > 5"))
                     .setVariableNames(List.of("x", "y"))
                     .setVariableEvents(List.of("CREATED", "UPDATED"))
-                    .setInterrupting(true),
+                    .setInterrupting(true)
+                    .setRootProcessInstanceKey(999L)
+                    .setStorageOrdinal(7)
+                    .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT),
         """
                 {
                   "tenantId":"tenant-1",
@@ -4270,7 +4963,10 @@ final class JsonSerializableToJsonTest {
                   "variableNames":["x","y"],
                   "variableEvents":["CREATED","UPDATED"],
                   "bpmnProcessId":"process-1",
-                  "processDefinitionKey":456
+                  "processDefinitionKey":456,
+                  "rootProcessInstanceKey":999,
+                  "storageOrdinal":7,
+                  "elementType":"INTERMEDIATE_CATCH_EVENT"
                 }
                 """
       },
@@ -4295,7 +4991,10 @@ final class JsonSerializableToJsonTest {
                   "variableNames":[],
                   "variableEvents":[],
                   "bpmnProcessId":"",
-                  "processDefinitionKey":-1
+                  "processDefinitionKey":-1,
+                  "rootProcessInstanceKey":-1,
+                  "storageOrdinal":0,
+                  "elementType":"UNSPECIFIED"
                 }
                 """
       },
@@ -4312,25 +5011,60 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-1")
                     .setProcessDefinitionKey(456L)
                     .setVariables(VARIABLES_MSGPACK)
-                    .addStartedProcessInstance(123L, 789L)
-                    .addStartedProcessInstance(456L, 999L),
+                    .addStartedProcessInstance(123L, 789L, 1234)
+                    .addStartedProcessInstance(456L, 999L, 1234),
         """
                 {
                   "processDefinitionKey": 456,
                   "startedProcessInstances": [
                     {
                       "processDefinitionKey": 123,
-                      "processInstanceKey": 789
+                      "processInstanceKey": 789,
+                      "storageOrdinal": 1234
                     },
                     {
                       "processDefinitionKey": 456,
-                      "processInstanceKey": 999
+                      "processInstanceKey": 999,
+                      "storageOrdinal": 1234
                     }
                   ],
                   "tenantId": "tenant-1",
                   "variables": {
                     "foo": "bar"
                   }
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// ConditionalEvaluationRecord with default storage ordinal
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ConditionalEvaluationRecord with default storage ordinal",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var record =
+                  new ConditionalEvaluationRecord()
+                      .setTenantId("tenant-1")
+                      .setProcessDefinitionKey(456L);
+              record
+                  .startedProcessInstances()
+                  .add()
+                  .setProcessDefinitionKey(123L)
+                  .setProcessInstanceKey(789L);
+              return record;
+            },
+        """
+                {
+                  "processDefinitionKey": 456,
+                  "startedProcessInstances": [
+                    {
+                      "processDefinitionKey": 123,
+                      "processInstanceKey": 789,
+                      "storageOrdinal": 0
+                    }
+                  ],
+                  "tenantId": "tenant-1",
+                  "variables": {}
                 }
                 """
       },
@@ -4624,16 +5358,1208 @@ final class JsonSerializableToJsonTest {
       "configKey": -1
     }
     """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ResourceReexportRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ResourceReexportRecord",
+        (Supplier<ResourceReexportRecord>)
+            () -> new ResourceReexportRecord().setResourceKey(123L).setTenantId("tenant-1"),
+        """
+        {
+          "resourceKey": 123,
+          "tenantId": "tenant-1"
+        }
+        """
+      },
+      {
+        "Empty ResourceReexportRecord",
+        (Supplier<ResourceReexportRecord>) ResourceReexportRecord::new,
+        """
+        {
+          "resourceKey": -1,
+          "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ProbeRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeRecord",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                    .setTenantId("tenant-1")
+                    .setInputExpression("={accessKey: camunda.secrets.awsKey}")
+                    .setInput(VARIABLES_MSGPACK)
+                    .addSecretReference("default", "awsKey", "/accessKey")
+                    .setRequestTimeout(5000L)
+                    .setDeadline(123L)
+                    .setWorker("connectors")
+                    .setOutcome(ProbeOutcome.ERROR)
+                    .setData(VARIABLES_MSGPACK)
+                    .setMessage("AWS is unreachable.")
+                    .setEndReason(ProbeEndReason.WORKER_DID_NOT_ANSWER),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:aws-credential:1",
+          "tenantId": "tenant-1",
+          "inputExpression": "={accessKey: camunda.secrets.awsKey}",
+          "input": {"foo": "bar"},
+          "secretReferences": [
+            {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+          ],
+          "requestTimeout": 5000,
+          "deadline": 123,
+          "worker": "connectors",
+          "outcome": "ERROR",
+          "data": {"foo": "bar"},
+          "message": "AWS is unreachable.",
+          "endReason": "WORKER_DID_NOT_ANSWER"
+        }
+        """
+      },
+      {
+        "Empty ProbeRecord",
+        (Supplier<ProbeRecord>) ProbeRecord::new,
+        """
+        {
+          "probeId": "",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "",
+          "outcome": "UNSPECIFIED",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      {
+        "ProbeRecord with reset data",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setProbeId("validate-configuration/io.camunda:slack:1")
+                    .setWorker("connectors")
+                    .setOutcome(ProbeOutcome.OK)
+                    .setData(VARIABLES_MSGPACK)
+                    .resetData(),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:slack:1",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "connectors",
+          "outcome": "OK",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////// ProbeBatchRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>)
+            () ->
+                new ProbeBatchRecord()
+                    .setProbeIds(
+                        List.of(
+                            "validate-configuration/io.camunda:aws-credential:1",
+                            "validate-configuration/io.camunda:slack:1"))
+                    .setWorker("connectors")
+                    .setMaxProbesToActivate(4)
+                    .setTenantIds(List.of("tenant-1"))
+                    .setTenantFilter(TenantFilter.ASSIGNED)
+                    .setTruncated(true)
+                    .addProbe(
+                        2251799813685464L,
+                        new ProbeRecord()
+                            .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                            .setTenantId("tenant-1")
+                            .setInput(VARIABLES_MSGPACK)
+                            .addSecretReference("default", "awsKey", "/accessKey")
+                            .setDeadline(1000L)
+                            .setWorker("connectors")),
+        """
+        {
+          "probeIds": [
+            "validate-configuration/io.camunda:aws-credential:1",
+            "validate-configuration/io.camunda:slack:1"
+          ],
+          "worker": "connectors",
+          "maxProbesToActivate": 4,
+          "probeKeys": [2251799813685464],
+          "probes": [
+            {
+              "probeId": "validate-configuration/io.camunda:aws-credential:1",
+              "tenantId": "tenant-1",
+              "inputExpression": "",
+              "input": {"foo": "bar"},
+              "secretReferences": [
+                {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+              ],
+              "requestTimeout": 0,
+              "deadline": 1000,
+              "worker": "connectors",
+              "outcome": "UNSPECIFIED",
+              "data": {},
+              "message": "",
+              "endReason": "UNSPECIFIED"
+            }
+          ],
+          "truncated": true,
+          "tenantIds": ["tenant-1"],
+          "tenantFilter": "ASSIGNED"
+        }
+        """
+      },
+      {
+        "Empty ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>) ProbeBatchRecord::new,
+        """
+        {
+          "probeIds": [],
+          "worker": "",
+          "maxProbesToActivate": -1,
+          "probeKeys": [],
+          "probes": [],
+          "truncated": false,
+          "tenantIds": [],
+          "tenantFilter": "PROVIDED"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ProcessDefinitionRestoreRecord
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionRestoreRecord",
+        (Supplier<ProcessDefinitionRestoreRecord>)
+            () ->
+                new ProcessDefinitionRestoreRecord()
+                    .setProcessDefinitionKey(123L)
+                    .setTenantId("tenant-1")
+                    .setRestoredCount(7),
+        """
+        {
+          "processDefinitionKey": 123,
+          "tenantId": "tenant-1",
+          "restoredCount": 7
+        }
+        """
+      },
+      {
+        "Empty ProcessDefinitionRestoreRecord",
+        (Supplier<ProcessDefinitionRestoreRecord>) ProcessDefinitionRestoreRecord::new,
+        """
+        {
+          "processDefinitionKey": -1,
+          "tenantId": "",
+          "restoredCount": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// PolicyUpdateRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "PolicyUpdateRecord",
+        (Supplier<PolicyUpdateRecord>)
+            () ->
+                new PolicyUpdateRecord()
+                    .setPolicyId("policy-1")
+                    .setPolicyVersion(3)
+                    .setBasePolicyVersion(2)
+                    .setSeqNo(42)
+                    .setUpdateId("update-1")
+                    .setChunkIndex(1)
+                    .setChunkCount(2)
+                    .setTenants(
+                        List.of(new TenantRecord().setTenantId("tenant-1").setName("Tenant 1")))
+                    .setRoles(List.of(new RoleRecord().setRoleId("role-1").setName("Role 1")))
+                    .setGroups(List.of(new GroupRecord().setGroupId("group-1").setName("Group 1")))
+                    .setMappingRules(
+                        List.of(
+                            new MappingRuleRecord()
+                                .setMappingRuleId("rule-1")
+                                .setName("Rule 1")
+                                .setClaimName("department")
+                                .setClaimValue("sales")))
+                    .setMemberships(
+                        List.of(
+                            new PolicyMembershipEntry()
+                                .setTargetType(PolicyUpdateEntityType.ROLE)
+                                .setTargetId("role-1")
+                                .setMemberType(EntityType.USER)
+                                .setMemberId("user-1")))
+                    .setAuthorizations(
+                        List.of(
+                            new AuthorizationRecord()
+                                .setOwnerType(AuthorizationOwnerType.ROLE)
+                                .setOwnerId("role-1")
+                                .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .setResourceMatcher(AuthorizationResourceMatcher.ID)
+                                .setResourceId("process-1")
+                                .setPermissionTypes(
+                                    Set.of(PermissionType.READ_PROCESS_DEFINITION))))
+                    .setDeletes(
+                        List.of(
+                            new PolicyDeleteEntry()
+                                .setEntityType(PolicyUpdateEntityType.GROUP)
+                                .setId("group-2")))
+                    .setMembershipDeletes(
+                        List.of(
+                            new PolicyMembershipEntry()
+                                .setTargetType(PolicyUpdateEntityType.GROUP)
+                                .setTargetId("group-1")
+                                .setMemberType(EntityType.USER)
+                                .setMemberId("user-2")))
+                    .setAuthorizationDeletes(
+                        List.of(
+                            new PolicyAuthorizationDeleteEntry()
+                                .setOwnerType(AuthorizationOwnerType.USER)
+                                .setOwnerId("user-2")
+                                .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .setResourceMatcher(AuthorizationResourceMatcher.ANY)
+                                .setResourceId("*")))
+                    .setErrorMessage("failed"),
+        """
+        {
+          "policyId": "policy-1",
+          "policyVersion": 3,
+          "basePolicyVersion": 2,
+          "seqNo": 42,
+          "updateId": "update-1",
+          "chunkIndex": 1,
+          "chunkCount": 2,
+          "tenants": [
+            {
+              "tenantKey": -1,
+              "tenantId": "tenant-1",
+              "name": "Tenant 1",
+              "description": "",
+              "entityId": "",
+              "entityType": "UNSPECIFIED"
+            }
+          ],
+          "roles": [
+            {
+              "roleKey": -1,
+              "roleId": "role-1",
+              "name": "Role 1",
+              "description": "",
+              "entityId": "",
+              "entityType": "UNSPECIFIED"
+            }
+          ],
+          "groups": [
+            {
+              "groupKey": -1,
+              "groupId": "group-1",
+              "name": "Group 1",
+              "description": "",
+              "entityId": "",
+              "entityType": "UNSPECIFIED"
+            }
+          ],
+          "mappingRules": [
+            {
+              "mappingRuleKey": -1,
+              "mappingRuleId": "rule-1",
+              "name": "Rule 1",
+              "claimName": "department",
+              "claimValue": "sales"
+            }
+          ],
+          "memberships": [
+            {
+              "targetType": "ROLE",
+              "targetId": "role-1",
+              "memberType": "USER",
+              "memberId": "user-1"
+            }
+          ],
+          "authorizations": [
+            {
+              "authorizationKey": -1,
+              "ownerId": "role-1",
+              "ownerType": "ROLE",
+              "resourceType": "PROCESS_DEFINITION",
+              "resourceMatcher": "ID",
+              "resourceId": "process-1",
+              "resourcePropertyName": "",
+              "permissionTypes": ["READ_PROCESS_DEFINITION"]
+            }
+          ],
+          "deletes": [
+            {
+              "entityType": "GROUP",
+              "id": "group-2"
+            }
+          ],
+          "membershipDeletes": [
+            {
+              "targetType": "GROUP",
+              "targetId": "group-1",
+              "memberType": "USER",
+              "memberId": "user-2"
+            }
+          ],
+          "authorizationDeletes": [
+            {
+              "ownerType": "USER",
+              "ownerId": "user-2",
+              "resourceType": "PROCESS_DEFINITION",
+              "resourceMatcher": "ANY",
+              "resourceId": "*",
+              "resourcePropertyName": ""
+            }
+          ],
+          "errorMessage": "failed"
+        }
+        """
+      },
+      {
+        "Empty PolicyUpdateRecord",
+        (Supplier<PolicyUpdateRecord>) PolicyUpdateRecord::new,
+        """
+        {
+          "policyId": "",
+          "policyVersion": 0,
+          "basePolicyVersion": 0,
+          "seqNo": 0,
+          "updateId": "",
+          "chunkIndex": -1,
+          "chunkCount": -1,
+          "tenants": [],
+          "roles": [],
+          "groups": [],
+          "mappingRules": [],
+          "memberships": [],
+          "authorizations": [],
+          "deletes": [],
+          "membershipDeletes": [],
+          "authorizationDeletes": [],
+          "errorMessage": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////// ProcessDefinitionSuspensionRecord /////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionSuspensionRecord",
+        (Supplier<ProcessDefinitionSuspensionRecord>)
+            () ->
+                new ProcessDefinitionSuspensionRecord()
+                    .setProcessDefinitionKey(1L)
+                    .setBpmnProcessId("process-1")
+                    .setVersion(3)
+                    .setTenantId("tenant-1")
+                    .setIncludeProcessInstances(true)
+                    .addResolvedVersion(
+                        new ProcessDefinitionSuspensionResolvedVersion()
+                            .setProcessDefinitionKey(1L)
+                            .setVersion(3)
+                            .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED))
+                    .addResolvedVersion(
+                        new ProcessDefinitionSuspensionResolvedVersion()
+                            .setProcessDefinitionKey(2L)
+                            .setVersion(2)
+                            .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED))
+                    .setBatchOperationKey(99L),
+        """
+        {
+          "processDefinitionKey": 1,
+          "bpmnProcessId": "process-1",
+          "version": 3,
+          "tenantId": "tenant-1",
+          "includeProcessInstances": true,
+          "resolvedVersions": [
+            {
+              "processDefinitionKey": 1,
+              "version": 3,
+              "outcome": "SUSPENDED"
+            },
+            {
+              "processDefinitionKey": 2,
+              "version": 2,
+              "outcome": "ALREADY_SUSPENDED"
+            }
+          ],
+          "batchOperationKey": 99
+        }
+        """
+      },
+      {
+        "Empty ProcessDefinitionSuspensionRecord",
+        (Supplier<ProcessDefinitionSuspensionRecord>) ProcessDefinitionSuspensionRecord::new,
+        """
+        {
+          "processDefinitionKey": -1,
+          "bpmnProcessId": "",
+          "version": -1,
+          "tenantId": "<default>",
+          "includeProcessInstances": false,
+          "resolvedVersions": [],
+          "batchOperationKey": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////// CaseRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "CaseRecord",
+        (Supplier<CaseRecord>)
+            () ->
+                new CaseRecord()
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(456L)
+                    .setBpmnProcessId("order-process")
+                    .setTenantId("tenant-1")
+                    .setBusinessId("order-42")
+                    .setTitle("Order #42 for ACME")
+                    .addStage("review", CaseStageStatus.ACTIVE)
+                    .setStorageOrdinal(1001),
+        """
+        {
+          "processInstanceKey": 123,
+          "processDefinitionKey": 456,
+          "bpmnProcessId": "order-process",
+          "tenantId": "tenant-1",
+          "businessId": "order-42",
+          "title": "Order #42 for ACME",
+          "stages": [
+            {
+              "elementId": "review",
+              "status": "ACTIVE"
+            }
+          ],
+          "storageOrdinal": 1001
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ResourceRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ResourceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final ResourceRecord record = new ResourceRecord();
+              record
+                  .setResourceId("my-resource")
+                  .setResourceName("my-resource.jpg")
+                  .setResourceKey(123L)
+                  .setVersion(1)
+                  .setVersionTag("v1.0")
+                  .setDeploymentKey(456L)
+                  .setTenantId("<default>")
+                  .setChecksum(wrapString("checksum"))
+                  .setResource(wrapArray("content".getBytes(StandardCharsets.UTF_8)));
+              return record;
+            },
+        """
+        {
+          "resourceProp": "content",
+          "resourceId": "my-resource",
+          "resourceKey": 123,
+          "tenantId": "<default>",
+          "deploymentKey": 456,
+          "versionTag": "v1.0",
+          "checksum": "Y2hlY2tzdW0=",
+          "resourceName": "my-resource.jpg",
+          "duplicate": false,
+          "version": 1
+        }
+        """
+      },
+      {
+        "Empty ResourceRecord",
+        (Supplier<UnifiedRecordValue>) ResourceRecord::new,
+        """
+        {
+          "resourceProp": "",
+          "resourceId": "",
+          "resourceKey": -1,
+          "tenantId": "<default>",
+          "deploymentKey": -1,
+          "versionTag": "",
+          "checksum": "",
+          "resourceName": "",
+          "duplicate": false,
+          "version": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentDefinitionRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentDefinitionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AgentDefinitionRecord()
+                    .setAgentDefinitionKey(2251799813685251L)
+                    .setAgentType(AgentDefinitionType.AI_AGENT_TASK)
+                    .setName("Invoice Data Extraction")
+                    .setElementId("invoice-data-extraction-agent")
+                    .setBpmnProcessId("invoice-handling-process")
+                    .setProcessDefinitionKey(2251799813685100L)
+                    .setProcessDefinitionVersion(3)
+                    .setProcessDefinitionVersionTag("v1.0")
+                    .setTenantId("<default>"),
+        """
+        {
+          "agentDefinitionKey": 2251799813685251,
+          "agentType": "AI_AGENT_TASK",
+          "name": "Invoice Data Extraction",
+          "elementId": "invoice-data-extraction-agent",
+          "bpmnProcessId": "invoice-handling-process",
+          "processDefinitionKey": 2251799813685100,
+          "processDefinitionVersion": 3,
+          "processDefinitionVersionTag": "v1.0",
+          "tenantId": "<default>"
+        }
+        """
+      },
+      {
+        "Empty AgentDefinitionRecord",
+        (Supplier<UnifiedRecordValue>) AgentDefinitionRecord::new,
+        """
+        {
+          "agentDefinitionKey": -1,
+          "agentType": "UNSPECIFIED",
+          "name": "",
+          "elementId": "",
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "processDefinitionVersionTag": "",
+          "tenantId": "<default>"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentInstanceRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentInstanceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final AgentInstanceRecord record =
+                  new AgentInstanceRecord()
+                      .setAgentInstanceKey(2251799813685251L)
+                      .setElementInstanceKey(2251799813685249L)
+                      .setElementInstanceKeys(List.of(2251799813685248L, 2251799813685249L))
+                      .setElementId("invoice-data-extraction-agent")
+                      .setProcessInstanceKey(2251799813685248L)
+                      .setRootProcessInstanceKey(2251799813685248L)
+                      .setBpmnProcessId("invoice-handling-process")
+                      .setProcessDefinitionKey(2251799813685100L)
+                      .setProcessDefinitionVersion(3)
+                      .setAgentDefinitionKey(2251799813685077L)
+                      .setProcessDefinitionVersionTag("v1.2")
+                      .setTenantId("<default>")
+                      .setStatus(AgentInstanceStatus.TOOL_CALLING)
+                      .setTools(
+                          List.of(
+                              new AgentInstanceTool()
+                                  .setName("extract_line_items")
+                                  .setElementId("extract-line-items-task"),
+                              new AgentInstanceTool()
+                                  .setName("MCP_ocr___scan_document")
+                                  .setElementId("MCP_ocr")))
+                      .setChangedAttributes(List.of("status", "metrics"))
+                      .setStorageOrdinal(11);
+              record
+                  .getDefinition()
+                  .setModel("gpt-4o")
+                  .setProvider("openai")
+                  .setSystemPrompt(
+                      List.of(
+                          new AgentHistoryMessageContent()
+                              .setContentType(AgentHistoryContentType.TEXT)
+                              .setText(
+                                  "Extract vendor, amount, date, and line items from the invoice.")));
+              record.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
+              record
+                  .getMetrics()
+                  .setInputTokens(512L)
+                  .setOutputTokens(148L)
+                  .setModelCalls(1)
+                  .setToolCalls(1);
+              return record;
+            },
+        """
+        {
+          "agentInstanceKey": 2251799813685251,
+          "elementInstanceKey": 2251799813685249,
+          "elementInstanceKeys": [2251799813685248, 2251799813685249],
+          "elementId": "invoice-data-extraction-agent",
+          "processInstanceKey": 2251799813685248,
+          "rootProcessInstanceKey": 2251799813685248,
+          "bpmnProcessId": "invoice-handling-process",
+          "processDefinitionKey": 2251799813685100,
+          "processDefinitionVersion": 3,
+          "agentDefinitionKey": 2251799813685077,
+          "processDefinitionVersionTag": "v1.2",
+          "tenantId": "<default>",
+          "status": "TOOL_CALLING",
+          "definition": {
+            "model": "gpt-4o",
+            "provider": "openai",
+            "systemPrompt": [
+              {
+                "contentType": "TEXT",
+                "text": "Extract vendor, amount, date, and line items from the invoice.",
+                "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+                "object": null
+              }
+            ]
+          },
+          "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 1, "toolCalls": 1 },
+          "tools": [
+            { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
+            { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
+          ],
+          "changedAttributes": ["status", "metrics"],
+          "jobKey": -1,
+          "jobLeaseToken": "",
+          "history": [],
+          "storageOrdinal": 11
+        }
+        """
+      },
+      {
+        "Empty AgentInstanceRecord",
+        (Supplier<UnifiedRecordValue>) AgentInstanceRecord::new,
+        """
+        {
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "elementInstanceKeys": [],
+          "elementId": "",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "agentDefinitionKey": -1,
+          "processDefinitionVersionTag": "",
+          "tenantId": "<default>",
+          "status": "UNSPECIFIED",
+          "definition": { "model": "", "provider": "", "systemPrompt": [] },
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
+          "tools": [],
+          "changedAttributes": [],
+          "jobKey": -1,
+          "jobLeaseToken": "",
+          "history": [],
+          "storageOrdinal": 0
+        }
+        """
+      },
+      {
+        "AgentInstanceRecord with embedded history batch",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var item =
+                  new AgentHistoryRecord()
+                      .setHistoryItemId("item-config-1")
+                      .setRole(AgentHistoryRole.ASSISTANT)
+                      .setModel("gpt-4o")
+                      .setProvider("openai")
+                      .setProducedAt(1717199999000L)
+                      .setDuplicate(true);
+              item.addSystemPrompt(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("You are an invoice extraction assistant."));
+              item.setTools(List.of(new AgentInstanceTool().setName("extract_line_items")));
+              item.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
+              item.getMetrics()
+                  .setInputTokens(512L)
+                  .setOutputTokens(148L)
+                  .setReasoningTokenCount(64L)
+                  .setCacheCreationTokenCount(32L)
+                  .setCacheReadTokenCount(16L)
+                  .setDurationMs(1200L);
+
+              final AgentInstanceRecord record =
+                  new AgentInstanceRecord()
+                      .setJobKey(2251799813685252L)
+                      .setJobLeaseToken("job-lease-abc123")
+                      .setHistory(List.of(item));
+              return record;
+            },
+        """
+        {
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "elementInstanceKeys": [],
+          "elementId": "",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "agentDefinitionKey": -1,
+          "processDefinitionVersionTag": "",
+          "tenantId": "<default>",
+          "status": "UNSPECIFIED",
+          "definition": { "model": "", "provider": "", "systemPrompt": [] },
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "reasoningTokenCount": 0, "cacheCreationTokenCount": 0, "cacheReadTokenCount": 0, "modelCalls": 0, "toolCalls": 0 },
+          "tools": [],
+          "changedAttributes": [],
+          "jobKey": 2251799813685252,
+          "jobLeaseToken": "job-lease-abc123",
+          "history": [
+            {
+              "agentHistoryKey": -1,
+              "agentInstanceKey": -1,
+              "elementInstanceKey": -1,
+              "jobKey": -1,
+              "jobLeaseToken": "",
+              "loopIteration": 0,
+              "role": "ASSISTANT",
+              "producedAt": 1717199999000,
+              "content": [],
+              "systemPrompt": [
+                {
+                  "contentType": "TEXT",
+                  "text": "You are an invoice extraction assistant.",
+                  "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+                  "object": null
+                }
+              ],
+              "toolCalls": [],
+              "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": 64, "cacheCreationTokenCount": 32, "cacheReadTokenCount": 16, "durationMs": 1200 },
+              "tenantId": "<default>",
+              "processInstanceKey": -1,
+              "rootProcessInstanceKey": -1,
+              "bpmnProcessId": "",
+              "processDefinitionKey": -1,
+              "historyItemId": "item-config-1",
+              "tools": [
+                { "name": "extract_line_items", "description": "", "elementId": "" }
+              ],
+              "model": "gpt-4o",
+              "provider": "openai",
+              "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
+              "changedAttributes": [],
+              "duplicate": true,
+              "storageOrdinal": 0
+            }
+          ],
+          "storageOrdinal": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentHistoryBatchRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentHistoryBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AgentHistoryBatchRecord()
+                    .setAgentInstanceKey(2251799813685251L)
+                    .setHistoryItemIds(List.of("item-config-1", "item-config-2"))
+                    .setStorageOrdinal(1234),
+        """
+        {
+          "agentInstanceKey": 2251799813685251,
+          "historyItemIds": ["item-config-1", "item-config-2"],
+          "storageOrdinal": 1234
+        }
+        """
+      },
+      {
+        "Empty AgentHistoryBatchRecord",
+        (Supplier<UnifiedRecordValue>) AgentHistoryBatchRecord::new,
+        """
+        {
+          "agentInstanceKey": -1,
+          "historyItemIds": [],
+          "storageOrdinal": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentHistoryRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentHistoryRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final AgentHistoryRecord record =
+                  new AgentHistoryRecord()
+                      .setAgentHistoryKey(2251799813685250L)
+                      .setAgentInstanceKey(2251799813685251L)
+                      .setElementInstanceKey(2251799813685249L)
+                      .setJobKey(2251799813685252L)
+                      .setJobLeaseToken("job-lease-abc123")
+                      .setLoopIteration(3)
+                      .setRole(AgentHistoryRole.ASSISTANT)
+                      .setProducedAt(1748860800000L)
+                      .setBpmnProcessId("process")
+                      .setStorageOrdinal(10);
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("I will extract the line items from the invoice."));
+              final var docContent =
+                  new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
+              docContent
+                  .getDocumentReference()
+                  .setDocumentId("doc-001")
+                  .setStoreId("gcs-store")
+                  .setContentHash("sha256-doc001");
+              record.addContent(docContent);
+              final var docContentWithMetadata =
+                  new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
+              docContentWithMetadata
+                  .getDocumentReference()
+                  .setDocumentId("doc-002")
+                  .setStoreId("s3-store")
+                  .setContentHash("sha256-doc002");
+              docContentWithMetadata
+                  .getDocumentReference()
+                  .getMetadata()
+                  .setContentType("application/pdf")
+                  .setFileName("invoice.pdf")
+                  .setExpiresAt(1748860800000L)
+                  .setSize(10240L)
+                  .setProcessDefinitionId("order-process")
+                  .setProcessInstanceKey(2251799813685249L)
+                  .setCustomProperties(Map.of("region", "eu-west", "version", 2, "active", true));
+              record.addContent(docContentWithMetadata);
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(Map.of("page", 1)));
+              record.addSystemPrompt(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("You are an invoice extraction assistant."));
+              record.addToolCall(
+                  new AgentHistoryEmbeddedToolCall()
+                      .setToolCallId("call_abc123")
+                      .setToolName("extract_line_items")
+                      .setElementId("extract-line-items-task")
+                      .setArguments(Map.of("documentId", "inv-001")));
+              record.getMetrics().setInputTokens(512L).setOutputTokens(148L).setDurationMs(1200L);
+              return record;
+            },
+        """
+        {
+          "agentHistoryKey": 2251799813685250,
+          "agentInstanceKey": 2251799813685251,
+          "elementInstanceKey": 2251799813685249,
+          "jobKey": 2251799813685252,
+          "jobLeaseToken": "job-lease-abc123",
+          "loopIteration": 3,
+          "role": "ASSISTANT",
+          "producedAt": 1748860800000,
+          "content": [
+            {
+              "contentType": "TEXT",
+              "text": "I will extract the line items from the invoice.",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": null
+            },
+            {
+              "contentType": "DOCUMENT",
+              "text": "",
+              "documentReference": { "documentId": "doc-001", "storeId": "gcs-store", "contentHash": "sha256-doc001", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": null
+            },
+            {
+              "contentType": "DOCUMENT",
+              "text": "",
+              "documentReference": { "documentId": "doc-002", "storeId": "s3-store", "contentHash": "sha256-doc002", "metadata": { "contentType": "application/pdf", "fileName": "invoice.pdf", "expiresAt": 1748860800000, "size": 10240, "processDefinitionId": "order-process", "processInstanceKey": 2251799813685249, "customProperties": { "region": "eu-west", "version": 2, "active": true } } },
+              "object": null
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": { "page": 1 }
+            }
+          ],
+          "systemPrompt": [
+            {
+              "contentType": "TEXT",
+              "text": "You are an invoice extraction assistant.",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": null
+            }
+          ],
+          "toolCalls": [
+            {
+              "toolCallId": "call_abc123",
+              "toolName": "extract_line_items",
+              "elementId": "extract-line-items-task",
+              "arguments": { "documentId": "inv-001" }
+            }
+          ],
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": 1200 },
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "process",
+          "processDefinitionKey": -1,
+          "historyItemId": "",
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": [],
+          "duplicate": false,
+          "storageOrdinal": 10
+        }
+        """
+      },
+      {
+        "AgentHistoryRecord OBJECT content types",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final AgentHistoryRecord record = new AgentHistoryRecord();
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(List.of(Map.of("id", 1), Map.of("id", 2))));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(List.of(10, 20, 30)));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(42));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(true));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject("hello"));
+              return record;
+            },
+        """
+        {
+          "agentHistoryKey": -1,
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "jobKey": -1,
+          "jobLeaseToken": "",
+          "loopIteration": 0,
+          "role": "UNSPECIFIED",
+          "producedAt": -1,
+          "content": [
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": [{"id": 1}, {"id": 2}]
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": [10, 20, 30]
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": 42
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": true
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": "hello"
+            }
+          ],
+          "systemPrompt": [],
+          "toolCalls": [],
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": -1 },
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "historyItemId": "",
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": [],
+          "duplicate": false,
+          "storageOrdinal": 0
+        }
+        """
+      },
+      {
+        "Empty AgentHistoryRecord",
+        (Supplier<UnifiedRecordValue>) AgentHistoryRecord::new,
+        """
+        {
+          "agentHistoryKey": -1,
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "jobKey": -1,
+          "jobLeaseToken": "",
+          "loopIteration": 0,
+          "role": "UNSPECIFIED",
+          "producedAt": -1,
+          "content": [],
+          "systemPrompt": [],
+          "toolCalls": [],
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "reasoningTokenCount": -1, "cacheCreationTokenCount": -1, "cacheReadTokenCount": -1, "durationMs": -1 },
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
+          "processDefinitionKey": -1,
+          "historyItemId": "",
+          "tools": [],
+          "model": "",
+          "provider": "",
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "changedAttributes": [],
+          "duplicate": false,
+          "storageOrdinal": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// SecretReferenceRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty SecretReferenceRecord",
+        (Supplier<UnifiedRecordValue>) SecretReferenceRecord::new,
+        """
+        {
+          "storeId": "default",
+          "secretReference": "",
+          "resolutionState": "UNSPECIFIED",
+          "jobKeys": []
+        }
+        """
+      },
+      {
+        "SecretReferenceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final SecretReferenceRecord record = new SecretReferenceRecord();
+              record.setStoreId("my-store");
+              record.setSecretReference("my-secret");
+              record.setResolutionState(ResolutionState.SUCCESS);
+              record.addJobKey(100L);
+              record.addJobKey(200L);
+              return record;
+            },
+        """
+        {
+          "storeId": "my-store",
+          "secretReference": "my-secret",
+          "resolutionState": "SUCCESS",
+          "jobKeys": [100, 200]
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AsyncRequestRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AsyncRequestRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AsyncRequestRecord()
+                    .setScopeKey(123L)
+                    .setValueType(ValueType.PROCESS_INSTANCE)
+                    .setIntent(ProcessInstanceIntent.CANCEL)
+                    .setRequestId(456L)
+                    .setRequestStreamId(7)
+                    .setOperationReference(789L)
+                    .setBatchOperationReference(1011L)
+                    .setStorageOrdinal(1234),
+        """
+        {
+          "scopeKey": 123,
+          "valueType": "PROCESS_INSTANCE",
+          "intent": "CANCEL",
+          "requestId": 456,
+          "requestStreamId": 7,
+          "operationReference": 789,
+          "batchOperationReference": 1011,
+          "storageOrdinal": 1234
+        }
+        """
+      },
+      {
+        "AsyncRequestRecord with default storage ordinal",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AsyncRequestRecord()
+                    .setScopeKey(123L)
+                    .setValueType(ValueType.PROCESS_INSTANCE)
+                    .setIntent(ProcessInstanceIntent.CANCEL)
+                    .setRequestId(456L)
+                    .setRequestStreamId(7),
+        """
+        {
+          "scopeKey": 123,
+          "valueType": "PROCESS_INSTANCE",
+          "intent": "CANCEL",
+          "requestId": 456,
+          "requestStreamId": 7,
+          "operationReference": -1,
+          "batchOperationReference": -1,
+          "storageOrdinal": 0
+        }
+        """
       }
     };
   }
 
-  private static String errorRecordAsJson(final long processInstanceKey) {
+  private static String errorRecordAsJson(final long processInstanceKey, final int storageOrdinal) {
     final Map<String, Object> params = new HashMap<>();
     params.put("exceptionMessage", "test");
     params.put("processInstanceKey", processInstanceKey);
     params.put("errorEventPosition", 123);
     params.put("stacktrace", STACK_TRACE);
+    params.put("storageOrdinal", storageOrdinal);
 
     try {
       return new ObjectMapper().writeValueAsString(params);

@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.incidentSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.IncidentSearchClient;
@@ -21,8 +21,8 @@ import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuer
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -38,12 +38,14 @@ public class IncidentServices
   private final IncidentSearchClient incidentSearchClient;
 
   public IncidentServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -76,7 +78,7 @@ public class IncidentServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             INCIDENT_READ_AUTHORIZATION, IncidentEntity::processDefinitionId)))
                 .getIncident(key));
   }

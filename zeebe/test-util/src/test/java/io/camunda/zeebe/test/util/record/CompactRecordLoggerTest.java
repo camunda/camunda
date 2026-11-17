@@ -11,10 +11,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableCaseRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableCaseStageValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskLookupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +74,157 @@ class CompactRecordLoggerTest {
    */
   @Nested
   class CompactSummaryTest {
+
+    @Test
+    void shouldSummarizeElementInstanceWalkRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.ELEMENT_INSTANCE_WALK)
+              .withValue(
+                  ImmutableElementInstanceWalkRecordValue.builder()
+                      .withProcessInstanceKey(123L)
+                      .withProcessDefinitionKey(234L)
+                      .withElementInstanceKey(456L)
+                      .withParentKey(345L)
+                      .withIndex(567L)
+                      .withStorageOrdinal(1001)
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeElementInstanceWalk(record);
+
+      // then
+      assertThat(summary).isEqualTo("PI:K123 EI:K456 parent:K345 idx:K567");
+    }
+
+    @Test
+    void shouldSummarizeProcessDefinitionSuspensionByKey() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
+              .withValue(
+                  ImmutableProcessDefinitionSuspensionRecordValue.builder()
+                      .withProcessDefinitionKey(123L)
+                      .withIncludeProcessInstances(true)
+                      .withResolvedVersions(
+                          List.of(
+                              ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
+                                  .withProcessDefinitionKey(123L)
+                                  .withVersion(1)
+                                  .withOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED)
+                                  .build()))
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeProcessDefinitionSuspension(record);
+
+      // then
+      assertThat(summary).isEqualTo("pdKey:K123 includeProcessInstances resolved:1");
+    }
+
+    @Test
+    void shouldSummarizeProcessDefinitionSuspensionByBpmnProcessId() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
+              .withValue(
+                  ImmutableProcessDefinitionSuspensionRecordValue.builder()
+                      .withBpmnProcessId("order")
+                      .withVersion(2)
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeProcessDefinitionSuspension(record);
+
+      // then
+      assertThat(summary).isEqualTo("\"order\" v2 resolved:0");
+    }
+
+    @Test
+    void shouldSummarizeUserTaskLookupRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.USER_TASK_LOOKUP)
+              .withValue(
+                  ImmutableUserTaskLookupRecordValue.builder()
+                      .withFetchVariables(List.of("foo", "bar"))
+                      .withTenantId("tenant-1")
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeUserTaskLookup(record);
+
+      // then
+      assertThat(summary).isEqualTo("fetchVariables:[foo, bar] (tenant: tenant-1)");
+    }
+
+    @Test
+    void shouldSummarizeCaseRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.CASE)
+              .withValue(
+                  ImmutableCaseRecordValue.builder()
+                      .withProcessInstanceKey(123L)
+                      .withBpmnProcessId("order-process")
+                      .withBusinessId("order-42")
+                      .withTenantId("tenant-1")
+                      .withTitle("Order #42 for ACME")
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeCase(record);
+
+      // then
+      assertThat(summary)
+          .isEqualTo(
+              "title:Order #42 for ACME in <process \"order-process\"[K123]\"order-42\"> (tenant: tenant-1)");
+    }
+
+    @Test
+    void shouldSummarizeStagesOfCaseRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.CASE)
+              .withValue(
+                  ImmutableCaseRecordValue.builder()
+                      .withProcessInstanceKey(123L)
+                      .withBpmnProcessId("order-process")
+                      .withBusinessId("")
+                      .withTitle("Order #42 for ACME")
+                      .addStages(
+                          ImmutableCaseStageValue.builder()
+                              .withElementId("review")
+                              .withStatus(CaseStageStatus.ACTIVE)
+                              .build())
+                      .addStages(
+                          ImmutableCaseStageValue.builder()
+                              .withElementId("approve")
+                              .withStatus(CaseStageStatus.NOT_STARTED)
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeCase(record);
+
+      // then
+      assertThat(summary)
+          .isEqualTo(
+              "title:Order #42 for ACME stages:[review=ACTIVE, approve=NOT_STARTED]"
+                  + " in <process \"order-process\"[K123]>");
+    }
 
     @Test
     void shouldSummarizeUsageMetricsWithCounterCorrectly() {
@@ -137,6 +310,262 @@ class CompactRecordLoggerTest {
           .contains(
               """
               in <process "procID"[K123]"bizzID">""");
+    }
+
+    @Test
+    void shouldSummarizeAgentDefinitionRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_DEFINITION)
+              .withValue(
+                  ImmutableAgentDefinitionRecordValue.builder()
+                      .withAgentDefinitionKey(1L)
+                      .withAgentType(AgentDefinitionType.AI_AGENT_TASK)
+                      .withName("Customer Support Escalation Agent")
+                      .withElementId("Activity_1")
+                      .withBpmnProcessId("orderProcess")
+                      .withProcessDefinitionKey(2L)
+                      .withProcessDefinitionVersion(3)
+                      .withProcessDefinitionVersionTag("v1.0")
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentDefinition(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              "K1 AI_AGENT_TASK @\"Activity_1\" \"Custome..n Agent\" of <process \"orderProcess\"[K2] v3 tag:v1.0>");
+    }
+
+    @Test
+    void shouldSummarizeAgentDefinitionRecordWithoutName() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_DEFINITION)
+              .withValue(
+                  ImmutableAgentDefinitionRecordValue.builder()
+                      .withAgentDefinitionKey(1L)
+                      .withAgentType(AgentDefinitionType.AI_AGENT_TASK)
+                      .withElementId("Activity_1")
+                      .withBpmnProcessId("orderProcess")
+                      .withProcessDefinitionKey(2L)
+                      .withProcessDefinitionVersion(3)
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentDefinition(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo("K1 AI_AGENT_TASK @\"Activity_1\" of <process \"orderProcess\"[K2] v3>");
+    }
+
+    @Test
+    void shouldSummarizeAgentInstanceRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_INSTANCE)
+              .withValue(
+                  ImmutableAgentInstanceRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withAgentDefinitionKey(4L)
+                      .withElementId("Activity_1")
+                      .withElementInstanceKey(3L)
+                      .withProcessDefinitionKey(2L)
+                      .withProcessInstanceKey(5L)
+                      .withStatus(AgentInstanceStatus.TOOL_CALLING)
+                      .withDefinition(
+                          ImmutableAgentInstanceDefinitionValue.builder()
+                              .withModel("gpt-4o")
+                              .withProvider("openai")
+                              .build())
+                      .withChangedAttributes(List.of("status", "metrics"))
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentInstance(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              "K1 def:K4 @\"Activity_1\"[K3] in <process K2[K5]> model:gpt-4o/openai status:TOOL_CALLING changed:[s, m]");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.ASSISTANT)
+                      .withJobLeaseToken("1")
+                      .withLoopIteration(2)
+                      .withMetrics(
+                          ImmutableAgentHistoryMetricsValue.builder()
+                              .withInputTokens(100)
+                              .withOutputTokens(50)
+                              .withDurationMs(1234)
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.TEXT)
+                              .withText("I will analyze the customer data")
+                              .build())
+                      .addToolCalls(
+                          ImmutableAgentHistoryEmbeddedToolCallValue.builder()
+                              .withToolCallId("call_xyz")
+                              .withToolName("getAccount")
+                              .withElementId("task_2")
+                              .build())
+                      .addToolCalls(
+                          ImmutableAgentHistoryEmbeddedToolCallValue.builder()
+                              .withToolCallId("call_abc")
+                              .withToolName("getOrderDetails")
+                              .withElementId("task_1")
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#2 ASSISTANT @K2 K3#1 tokens:100/50 ms:1234
+                     I will analyze the customer data
+                     calling tools: getAccount, getOrderDetails""");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryWithMultipleObjectContentTypes() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.TOOL_RESULT)
+                      .withJobLeaseToken("1")
+                      .withLoopIteration(3)
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(Arrays.asList(Map.of("id", 1), Map.of("id", 2)))
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(Arrays.asList(10, 20, 30))
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(42)
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(true)
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject("search-complete")
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#3 TOOL_RESULT @K2 K3#1
+                     [{id=1}, {id=2}]
+                     [10, 20, 30]
+                     42
+                     true
+                     search-complete""");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryDocumentContent() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.ASSISTANT)
+                      .withJobLeaseToken("1")
+                      .withLoopIteration(1)
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.DOCUMENT)
+                              .withDocumentReference(
+                                  ImmutableDocumentReferenceValue.builder()
+                                      .withDocumentId("doc-001")
+                                      .withStoreId("gcs-store")
+                                      .withContentHash("sha256-abc")
+                                      .withMetadata(
+                                          ImmutableDocumentReferenceMetadataValue.builder()
+                                              .withFileName("invoice.pdf")
+                                              .build())
+                                      .build())
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.DOCUMENT)
+                              .withDocumentReference(
+                                  ImmutableDocumentReferenceValue.builder()
+                                      .withDocumentId("doc-002")
+                                      .withStoreId("s3-store")
+                                      .withContentHash("sha256-xyz")
+                                      .withMetadata(
+                                          ImmutableDocumentReferenceMetadataValue.builder().build())
+                                      .build())
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#1 ASSISTANT @K2 K3#1
+                     doc:gcs-store/doc-001 (invoice.pdf)
+                     doc:s3-store/doc-002""");
     }
   }
 }

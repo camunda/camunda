@@ -27,7 +27,7 @@ public final class PanelNotificationRequestDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(notification);
+    return Objects.hashCode(notification);
   }
 
   @Override

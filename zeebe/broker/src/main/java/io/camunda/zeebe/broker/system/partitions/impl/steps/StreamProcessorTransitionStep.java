@@ -10,9 +10,11 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
 import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -127,13 +129,21 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         || (newRole == Role.CANDIDATE && currentRole != Role.FOLLOWER);
   }
 
+  // the max message size is a network setting, so EngineCfg can't set it
+  static EngineConfiguration createEngineConfiguration(final BrokerCfg brokerCfg) {
+    return brokerCfg
+        .getExperimental()
+        .getEngine()
+        .createEngineConfiguration()
+        .setMaxResponseMessageSize((int) brokerCfg.getNetwork().getMaxMessageSizeInBytes());
+  }
+
   private static StreamProcessor createStreamProcessor(
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
 
-    final var experimentalCfg = context.getBrokerCfg().getExperimental();
-    final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
+    final var engineCfg = createEngineConfiguration(context.getBrokerCfg());
 
     final var engine =
         new Engine(
@@ -165,20 +175,20 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     return StreamProcessor.builder()
         .meterRegistry(context.getPartitionTransitionMeterRegistry())
         .logStream(context.getLogStream())
+        .partitionId(context.partitionId())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)
-        .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
-        .setEnableAsyncScheduledTasks(
-            context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
+        .maxRecoverableRetries(context.getBrokerCfg().getProcessing().getMaxRecoverableRetries())
+        .maxPendingSideEffects(context.getBrokerCfg().getProcessing().getMaxPendingSideEffects())
         .setScheduledTaskCheckInterval(
             context.getBrokerCfg().getProcessing().getScheduledTaskCheckInterval())
         .processingFilter(processingFilter)
         .listener(
-            processedCommand ->
-                context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
+            processedPosition ->
+                context.getLogStream().getFlowControl().onProcessed(processedPosition))
         .addLifecycleListener(
             new StreamProcessorLifecycleAware() {
               @Override

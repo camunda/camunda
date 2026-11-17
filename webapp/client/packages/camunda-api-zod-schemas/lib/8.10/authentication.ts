@@ -10,9 +10,10 @@ import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
 
 const currentUserSchema = z.object({
-	username: z.string(),
-	displayName: z.string(),
-	email: z.string(),
+	isAnonymous: z.boolean(),
+	username: z.string().nullable(),
+	displayName: z.string().nullable(),
+	email: z.string().nullable(),
 	authorizedComponents: z.array(z.string()),
 	tenants: z.array(
 		z.object({
@@ -30,10 +31,10 @@ const currentUserSchema = z.object({
 
 type CurrentUser = z.infer<typeof currentUserSchema>;
 
-const getCurrentUser: Endpoint = {
+const getCurrentUser = {
 	method: 'GET',
-	getUrl: () => `/${API_VERSION}/authentication/me`,
-};
+	getUrl: () => `/${API_VERSION}/authentication/me` as const,
+} as const satisfies Endpoint;
 
 export {currentUserSchema, getCurrentUser};
 export type {CurrentUser};

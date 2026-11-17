@@ -75,15 +75,4 @@ public record ReplicatableJournalRecord(
         + recordToString
         + '}';
   }
-
-  /**
-   * Returns the approximate size needed when serializing this class. The exact size depends on the
-   * serializer.
-   *
-   * @return approximate size
-   */
-  public int approximateSize() {
-    // serializedJournalRecord + index + term + checksum
-    return serializedJournalRecord.length + (3 * Long.BYTES);
-  }
 }

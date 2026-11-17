@@ -10,14 +10,13 @@ import { FC, useEffect, useRef, useState } from "react";
 import { CSSTransition } from "react-transition-group";
 import styled from "styled-components";
 import { ToastNotification } from "@carbon/react";
-import { spacing03 } from "@carbon/elements";
 import { NotificationOptions } from "./NotificationContext";
 
 const NOTIFICATION_TIMEOUT = 10000;
 const TRANSITION_DURATION = 300;
 
 const StyledCSSTransition = styled(CSSTransition)`
-  margin-bottom: ${spacing03};
+  margin-bottom: var(--cds-spacing-03);
 
   &.toast-enter {
     transform: translateX(120%);

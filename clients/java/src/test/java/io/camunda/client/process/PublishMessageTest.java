@@ -81,6 +81,26 @@ public final class PublishMessageTest extends ClientTest {
   }
 
   @Test
+  public void shouldPublishMessageWithBusinessId() {
+    // given
+    final long messageKey = 123L;
+    gatewayService.onPublishMessageRequest(messageKey);
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .businessId("order-12345")
+        .send()
+        .join();
+
+    // then
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(request.getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
   public void shouldPublishMessageWithStringVariables() {
     // when
     client

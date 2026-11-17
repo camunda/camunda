@@ -1,0 +1,390 @@
+{
+  "description": "Generated request-validation tests that currently fail against a live Camunda instance because the endpoint has a real, not-yet-fixed validation gap (not flaky - deterministic). Matching entries are emitted as `test.skip` instead of `test` by src/emit/qaEmitter.ts, so the nightly run stays green while the gap is tracked here instead of silently disappearing. Match key is the exact {describe, title} pair Playwright reports, as emitted by qaEmitter.ts's buildFile()/buildBaseTitle(). Regenerating the suite re-applies this list automatically. When a listed endpoint is fixed, delete its entry so the test starts running (and failing loudly) again - do not let entries accumulate for endpoints that were actually fixed.",
+  "entries": [
+    {
+      "describe": "Secrets Validation API Tests",
+      "title": "resolveSecrets - Constraint violation references.0 (#1)",
+      "reason": "over-long individual reference is deliberately reported as a per-reference 200 error (SecretErrorCode.INVALID_REFERENCE, see SecretServices.MAX_REFERENCE_LENGTH), not a 400 - the generator assumes every constraint violation is a 400, which doesn't hold for this alpha (Phase 1, #56567) endpoint's per-item-error design"
+    },
+    {
+      "describe": "Secrets Validation API Tests",
+      "title": "resolveSecrets - Constraint violation references.0 (#2)",
+      "reason": "over-long individual reference is deliberately reported as a per-reference 200 error (SecretErrorCode.INVALID_REFERENCE, see SecretServices.MAX_REFERENCE_LENGTH), not a 400 - the generator assumes every constraint violation is a 400, which doesn't hold for this alpha (Phase 1, #56567) endpoint's per-item-error design"
+    },
+    {
+      "describe": "Auditlogs Validation API Tests",
+      "title": "getAuditLog - Path param auditLogKey pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Decisioninstances Validation API Tests",
+      "title": "deleteDecisionInstance - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Decisioninstances Validation API Tests",
+      "title": "deleteDecisionInstance - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Decisioninstances Validation API Tests",
+      "title": "deleteDecisionInstancesBatchOperation - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Decisioninstances Validation API Tests",
+      "title": "deleteDecisionInstancesBatchOperation - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Additional prop __unexpectedField",
+      "reason": "multipart request bodies aren't run through the same additional-property validation as JSON bodies"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Body wrong top-level type",
+      "reason": "multipart request bodies aren't run through the same top-level-type validation as JSON bodies"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Param resources.0 wrong type",
+      "reason": "multipart part type mismatch not rejected"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Param tenantId wrong type",
+      "reason": "multipart part type mismatch not rejected"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Constraint violation tenantId (#1)",
+      "reason": "multipart tenantId constraint not enforced"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Constraint violation tenantId (#2)",
+      "reason": "multipart tenantId constraint not enforced"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Constraint violation tenantId (#3)",
+      "reason": "multipart tenantId constraint not enforced"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Constraint violation tenantId (#4)",
+      "reason": "multipart tenantId constraint not enforced"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Missing resources (#1)",
+      "reason": "multipart required-part omission not rejected"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Missing body",
+      "reason": "empty multipart submission not rejected"
+    },
+    {
+      "describe": "Deployments Validation API Tests",
+      "title": "createDeployment - Missing resources (#2)",
+      "reason": "multipart required-part omission not rejected"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocument - Additional prop __unexpectedField",
+      "reason": "multipart request bodies aren't run through the same additional-property validation as JSON bodies"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocument - Body wrong top-level type",
+      "reason": "multipart request bodies aren't run through the same top-level-type validation as JSON bodies"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocument - Param file wrong type",
+      "reason": "multipart part type mismatch not rejected"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocument - Missing body",
+      "reason": "empty multipart submission not rejected"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocument - Missing file",
+      "reason": "multipart required-part omission not rejected"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocuments - Additional prop __unexpectedField",
+      "reason": "multipart request bodies aren't run through the same additional-property validation as JSON bodies"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocuments - Body wrong top-level type",
+      "reason": "multipart request bodies aren't run through the same top-level-type validation as JSON bodies"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocuments - Param files.0 wrong type",
+      "reason": "multipart part type mismatch not rejected"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocuments - Constraint violation files",
+      "reason": "multipart files constraint not enforced"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocuments - Missing body",
+      "reason": "empty multipart submission not rejected"
+    },
+    {
+      "describe": "Documents Validation API Tests",
+      "title": "createDocuments - Missing files",
+      "reason": "multipart required-part omission not rejected"
+    },
+    {
+      "describe": "Groups Validation API Tests",
+      "title": "deleteGroup - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Groups Validation API Tests",
+      "title": "getGroup - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Groups Validation API Tests",
+      "title": "updateGroup - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Incidents Validation API Tests",
+      "title": "resolveIncident - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Incidents Validation API Tests",
+      "title": "resolveIncident - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Jobs Validation API Tests",
+      "title": "updateJob - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Jobs Validation API Tests",
+      "title": "updateJob - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Mappingrules Validation API Tests",
+      "title": "deleteMappingRule - Path param mappingRuleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Mappingrules Validation API Tests",
+      "title": "getMappingRule - Path param mappingRuleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "cancelProcessInstancesBatchOperation - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "cancelProcessInstancesBatchOperation - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "deleteProcessInstance - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "deleteProcessInstance - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "deleteProcessInstancesBatchOperation - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "deleteProcessInstancesBatchOperation - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "resolveIncidentsBatchOperation - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "resolveIncidentsBatchOperation - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "resumeProcessInstancesBatchOperation - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "resumeProcessInstancesBatchOperation - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "suspendProcessInstancesBatchOperation - Constraint violation operationReference (#2)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Processinstances Validation API Tests",
+      "title": "suspendProcessInstancesBatchOperation - Constraint violation operationReference (#3)",
+      "reason": "operationReference validator only rejects the first invalid-format variant the generator produces"
+    },
+    {
+      "describe": "Restore Validation API Tests",
+      "title": "restore - format invalid from",
+      "reason": "restore request from/to format validation (added in 3621ed9d6d96) is incomplete"
+    },
+    {
+      "describe": "Restore Validation API Tests",
+      "title": "restore - format invalid to",
+      "reason": "restore request from/to format validation (added in 3621ed9d6d96) is incomplete"
+    },
+    {
+      "describe": "Restore Validation API Tests",
+      "title": "restore - Missing body",
+      "reason": "restore request from/to format validation (added in 3621ed9d6d96) is incomplete"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "assignRoleToGroup - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "deleteRole - Path param roleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "getRole - Path param roleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "searchClientsForRole - Path param roleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "searchGroupsForRole - Path param roleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "searchMappingRulesForRole - Path param roleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "searchUsersForRole - Path param roleId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Roles Validation API Tests",
+      "title": "unassignRoleFromGroup - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "System Validation API Tests",
+      "title": "getUsageMetrics - Query param tenantId pattern violation",
+      "reason": "#59378 - getUsageMetrics binds tenantId as a plain String and passes it straight to UsageMetricsFilter, so the TenantId pattern (^(<default>|[\\w\\.\\-]{1,31})$) is never checked and the request succeeds with a 200. Previously masked by #58948: the scenario sent no query string at all, so its 400 came from the missing required startTime/endTime"
+    },
+    {
+      "describe": "Setup Validation API Tests",
+      "title": "createAdminUser - Missing password (#1)",
+      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
+    },
+    {
+      "describe": "Setup Validation API Tests",
+      "title": "createAdminUser - Missing password (#2)",
+      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
+    },
+    {
+      "describe": "Setup Validation API Tests",
+      "title": "createAdminUser - Missing username",
+      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
+    },
+    {
+      "describe": "Setup Validation API Tests",
+      "title": "createAdminUser - Missing combo username,password",
+      "reason": "createAdminUser body validation reorder (28d20717880f) is incomplete"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "assignGroupToTenant - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "deleteTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "getTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "searchClientsForTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "searchGroupIdsForTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "searchMappingRulesForTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "searchRolesForTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "searchUsersForTenant - Path param tenantId pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Tenants Validation API Tests",
+      "title": "unassignGroupFromTenant - Path param groupId length-min violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Users Validation API Tests",
+      "title": "deleteUser - Path param username pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    },
+    {
+      "describe": "Users Validation API Tests",
+      "title": "getUser - Path param username pattern violation",
+      "reason": "empty trailing path segment never reaches the controller (resolves as a static-resource 404 in Spring MVC before validation runs) - routing-level fix needed, not a validator fix"
+    }
+  ]
+}

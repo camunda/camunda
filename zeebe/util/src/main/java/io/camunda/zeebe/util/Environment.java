@@ -74,6 +74,6 @@ public final class Environment {
   }
 
   public Optional<List<String>> getList(final String name) {
-    return get(name).map(v -> v.split(",")).map(Arrays::asList).map(StringUtil.LIST_SANITIZER);
+    return get(name).map(v -> v.split(",")).map(Arrays::asList).map(StringUtil::sanitizeList);
   }
 }

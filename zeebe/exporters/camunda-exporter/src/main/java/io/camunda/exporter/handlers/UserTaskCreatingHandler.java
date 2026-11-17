@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
@@ -29,7 +30,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTaskRecordValue> {
+public class UserTaskCreatingHandler
+    implements OrdinalIndexExportHandler<TaskEntity, UserTaskRecordValue> {
 
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS = EnumSet.of(UserTaskIntent.CREATING);
 
@@ -84,11 +86,12 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
   }
 
   @Override
-  public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final TaskEntity entity, final BatchRequest batchRequest) {
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.addWithRouting(
-        indexName,
+        index,
         entity,
         previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getProcessInstanceId());
   }
@@ -146,6 +149,10 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
+    final String businessId = record.getValue().getBusinessId();
+    if (!ExporterUtil.isEmpty(businessId)) {
+      entity.setBusinessId(businessId);
     }
     final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
     joinRelation.setName(TaskJoinRelationshipType.TASK.getType());

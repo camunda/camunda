@@ -64,6 +64,23 @@ class ResponseValidationAdviceTest {
     assertThat(advice.supports(null, null)).isTrue();
   }
 
+  @SuppressWarnings("NullAway")
+  private static LicenseResponse licenseResponseViaReflection(
+      final Boolean validLicense,
+      final String licenseType,
+      final Boolean isCommercial,
+      final String expiresAt) {
+    try {
+      final var ctor =
+          LicenseResponse.class.getDeclaredConstructor(
+              Boolean.class, String.class, Boolean.class, String.class);
+      ctor.setAccessible(true);
+      return ctor.newInstance(validLicense, licenseType, isCommercial, expiresAt);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Helper to invoke beforeBodyWrite with mock request/response objects. The MethodParameter,
    * MediaType, and converter type are not used by the advice logic.
@@ -105,13 +122,14 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldPassThroughValidDto() {
-      // given — all required fields set
+      // given
       final LicenseResponse validResponse =
-          new LicenseResponse()
+          LicenseResponse.Builder.create()
               .validLicense(true)
               .licenseType("saas")
               .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+              .expiresAt("2025-12-31T23:59:59Z")
+              .build();
 
       // when
       final Object result = callBeforeBodyWrite(validResponse);
@@ -140,10 +158,7 @@ class ResponseValidationAdviceTest {
     void shouldThrowWhenRequiredFieldIsNull() {
       // given — validLicense is null (violates @NotNull)
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .licenseType("saas")
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+          licenseResponseViaReflection(null, "saas", true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -153,8 +168,8 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldThrowWhenMultipleRequiredFieldsAreNull() {
-      // given — all required fields are null (empty DTO)
-      final LicenseResponse invalidResponse = new LicenseResponse();
+      // given
+      final LicenseResponse invalidResponse = licenseResponseViaReflection(null, null, null, null);
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -170,13 +185,9 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldIncludePropertyPathInViolationMessage() {
-      // given
+      // given — licenseType is null
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
-      // licenseType is null
+          licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -189,10 +200,7 @@ class ResponseValidationAdviceTest {
     void shouldIncludeInvalidValueInViolationMessage() {
       // given — licenseType is null
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+          licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -208,10 +216,7 @@ class ResponseValidationAdviceTest {
     void shouldExposeViolationsInException() {
       // given — only licenseType is null
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+          licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))

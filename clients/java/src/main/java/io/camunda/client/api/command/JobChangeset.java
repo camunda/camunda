@@ -19,6 +19,7 @@ public class JobChangeset {
 
   private Integer retries;
   private Long timeout;
+  private Integer priority;
 
   public Integer getRetries() {
     return retries;
@@ -35,6 +36,15 @@ public class JobChangeset {
 
   public JobChangeset setTimeout(Long timeout) {
     this.timeout = timeout;
+    return this;
+  }
+
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public JobChangeset setPriority(Integer priority) {
+    this.priority = priority;
     return this;
   }
 }

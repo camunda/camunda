@@ -35,6 +35,8 @@ public class DecisionInstanceEntityTransformer
         source.getProcessDefinitionKey(),
         source.getProcessInstanceKey(),
         source.getRootProcessInstanceKey(),
+        source.getBusinessId(),
+        source.getStorageOrdinal(),
         source.getElementInstanceKey(),
         source.getTenantId(),
         source.getDecisionId(),

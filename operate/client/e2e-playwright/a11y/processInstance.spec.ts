@@ -156,7 +156,8 @@ test.describe('process detail', () => {
 
     await expect(page.getByRole('switch', {name: /end date/i})).toBeEnabled();
 
-    await page.getByRole('button', {name: /modify instance/i}).click();
+    await page.getByRole('button', {name: 'Actions'}).click();
+    await page.getByRole('menuitem', {name: 'Modify'}).click();
     const results = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
       .analyze();

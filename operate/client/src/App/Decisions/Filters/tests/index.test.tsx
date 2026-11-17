@@ -60,6 +60,7 @@ const MOCK_FILTERS_PARAMS = {
   failed: 'true',
   decisionEvaluationInstanceKey: '2251799813689540-1',
   processInstanceKey: '2251799813689549',
+  businessId: 'eq_order-12345',
 } as const;
 
 describe('<Filters />', () => {
@@ -106,6 +107,7 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText('Process Instance Key'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Business ID')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Evaluation Date Range'),
     ).not.toBeInTheDocument();
@@ -141,6 +143,10 @@ describe('<Filters />', () => {
       screen.getByText('Process Instance Key'),
       '2251799813689549',
     );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Business ID'));
+    await user.type(screen.getByLabelText('Business ID'), 'order-12345');
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
 
@@ -228,6 +234,7 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Business ID')).toHaveValue('order-12345');
   });
 
   it('initialize filter values from url - evaluation date range', async () => {
@@ -258,6 +265,7 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText('Process Instance Key'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Business ID')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Evaluation Date Range'),
     ).not.toBeInTheDocument();
@@ -269,12 +277,16 @@ describe('<Filters />', () => {
     await user.click(screen.getByText('Process Instance Key'));
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Business ID'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Evaluation Date Range'));
 
     expect(
       screen.getByLabelText('Decision Instance Key(s)'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Process Instance Key')).toBeInTheDocument();
+    expect(screen.getByLabelText('Business ID')).toBeInTheDocument();
 
     unmount();
 
@@ -289,6 +301,7 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText('Process Instance Key'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Business ID')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Evaluation Date Range'),
     ).not.toBeInTheDocument();
@@ -306,12 +319,16 @@ describe('<Filters />', () => {
     await user.click(screen.getByText('Process Instance Key'));
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Business ID'));
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Evaluation Date Range'));
 
     expect(
       screen.getByLabelText('Decision Instance Key(s)'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Process Instance Key')).toBeInTheDocument();
+    expect(screen.getByLabelText('Business ID')).toBeInTheDocument();
     expect(screen.getByLabelText('Evaluation Date Range')).toBeInTheDocument();
 
     await user.hover(screen.getByLabelText('Decision Instance Key(s)'));
@@ -324,6 +341,9 @@ describe('<Filters />', () => {
       screen.getByLabelText('Remove Process Instance Key Filter'),
     );
 
+    await user.hover(screen.getByLabelText('Business ID'));
+    await user.click(screen.getByLabelText('Remove Business ID Filter'));
+
     await user.hover(screen.getByLabelText('Evaluation Date Range'));
     await user.click(
       screen.getByLabelText('Remove Evaluation Date Range Filter'),
@@ -335,6 +355,7 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText('Process Instance Key'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Business ID')).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText('Evaluation Date Range'),
     ).not.toBeInTheDocument();

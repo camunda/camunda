@@ -73,6 +73,11 @@ public class RaftLogUncommittedReader implements RaftLogReader {
   }
 
   @Override
+  public long bytesUntilEnd() {
+    return journalReader.bytesUntilEnd();
+  }
+
+  @Override
   public void close() {
     journalReader.close();
   }

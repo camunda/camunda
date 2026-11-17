@@ -8,18 +8,25 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.cluster.Partitioning.Scheme;
+import io.camunda.configuration.cluster.Zone;
+import io.camunda.configuration.cluster.partitioning.ZoneAware;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 @SuppressWarnings({"unused", "resource"})
 public final class TestClusterBuilder {
 
-  private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  private static final Duration MULTI_ZONE_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(15);
 
   private String name = DEFAULT_CLUSTER_NAME;
 
@@ -40,6 +47,7 @@ public final class TestClusterBuilder {
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
   private boolean setNodeId = true;
+  private List<Zone> multiZoneConfigs = List.of();
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -282,7 +290,12 @@ public final class TestClusterBuilder {
     createGateways();
 
     return new TestCluster(
-        name, replicationFactor, partitionsCount, new HashMap<>(brokers), new HashMap<>(gateways));
+        name,
+        replicationFactor,
+        partitionsCount,
+        new HashMap<>(brokers),
+        new HashMap<>(gateways),
+        multiZoneConfigs);
   }
 
   private void applyConfigFunctions(final MemberId id, final TestApplication<?> zeebe) {
@@ -298,7 +311,7 @@ public final class TestClusterBuilder {
   }
 
   private void validate() {
-    if (replicationFactor > brokersCount) {
+    if (multiZoneConfigs.isEmpty() && replicationFactor > brokersCount) {
       throw new IllegalStateException(
           "Expected replicationFactor to be less than or equal to brokersCount, but was "
               + replicationFactor
@@ -327,9 +340,10 @@ public final class TestClusterBuilder {
     for (int i = 0; i < brokersCount; i++) {
       final var memberId = MemberId.from(String.valueOf(i));
       final var broker = createBroker(i);
+      final var brokerId = multiZoneConfigs.isEmpty() ? memberId : broker.nodeId();
 
-      applyConfigFunctions(memberId, broker);
-      brokers.put(memberId, broker);
+      applyConfigFunctions(brokerId, broker);
+      brokers.put(brokerId, broker);
     }
 
     // since initial contact points has to contain all known brokers, we can only configure it
@@ -355,6 +369,7 @@ public final class TestClusterBuilder {
                   cluster.setSize(brokersCount);
                   cluster.setName(name);
                 })
+            .withUnifiedConfig(uc -> applyMultiZoneConfig(index, uc))
             .withUnifiedConfig(
                 uc -> {
                   final var replicas = (partitionsCount * replicationFactor) / brokersCount;
@@ -366,6 +381,34 @@ public final class TestClusterBuilder {
             .withGatewayEnabled(useEmbeddedGateway)
             .withRecordingExporter(useRecordingExporter);
     return broker;
+  }
+
+  private void applyMultiZoneConfig(final int brokerIndex, final Camunda config) {
+    final var zoneCount = zoneCount();
+    if (zoneCount == 0) {
+      return;
+    }
+
+    final var zoneIndex = ZoneLayout.zoneRankForBareNodeIdx(brokerIndex, zoneCount);
+    final var cluster = config.getCluster();
+    cluster.setZone(multiZoneConfigs.get(zoneIndex).name());
+    cluster.setNodeId(ZoneLayout.localNodeIdxForBareNodeIdx(brokerIndex, zoneCount));
+    cluster.getPartitioning().setScheme(Scheme.ZONE_AWARE);
+    cluster
+        .getPartitioning()
+        .setZoneAware(
+            new ZoneAware(IntStream.range(0, zoneCount).mapToObj(this::zoneConfig).toList()));
+    // cross-zone gossip during bootstrap needs more headroom than the 5s default used for
+    // single-zone test clusters
+    cluster.getMetadata().setBootstrapTimeout(MULTI_ZONE_BOOTSTRAP_TIMEOUT);
+  }
+
+  private Zone zoneConfig(final int zoneIndex) {
+    return multiZoneConfigs.get(zoneIndex);
+  }
+
+  private int zoneCount() {
+    return multiZoneConfigs.size();
   }
 
   private void createGateways() {
@@ -395,5 +438,14 @@ public final class TestClusterBuilder {
     return brokers.values().stream()
         .map(builder -> builder.address(TestZeebePort.CLUSTER))
         .toList();
+  }
+
+  /**
+   * Configures this cluster as a zone-aware cluster where the brokers are distributed round-robin
+   * across the configured zones.
+   */
+  public TestClusterBuilder multiZone(final List<Zone> zoneConfigs) {
+    multiZoneConfigs = List.copyOf(zoneConfigs);
+    return this;
   }
 }

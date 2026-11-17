@@ -1,0 +1,102 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+const PROCESS_INSTANCE_TABS = [
+	'history',
+	'incidents',
+	'details',
+	'variables',
+	'input-mappings',
+	'output-mappings',
+	'listeners',
+	'operations-log',
+] as const;
+
+type ProcessInstanceTab = (typeof PROCESS_INSTANCE_TABS)[number];
+
+const TAB_LABEL_KEYS = {
+	history: 'operate.processInstance.history.title',
+	variables: 'operate.processInstance.history.variables',
+	'input-mappings': 'operate.processInstance.history.inputMappings',
+	'output-mappings': 'operate.processInstance.history.outputMappings',
+	incidents: 'operate.processInstance.history.incidents',
+	listeners: 'operate.processInstance.history.listeners',
+	'operations-log': 'operate.processInstance.history.operationsLog',
+	details: 'operate.processInstance.history.details',
+} as const satisfies Record<ProcessInstanceTab, string>;
+
+function getProcessInstanceTabFromPath(pathname: string): ProcessInstanceTab {
+	const segment = pathname.split('/').filter(Boolean).pop();
+
+	return PROCESS_INSTANCE_TABS.find((tab) => tab === segment) ?? 'variables';
+}
+
+type VisibleTabsInput = {
+	hasIncidentsTab: boolean;
+	hasSelection: boolean;
+	isProcessLevelWaiting: boolean;
+	isMobile?: boolean;
+};
+
+function getVisibleProcessInstanceTabs({
+	hasIncidentsTab,
+	hasSelection,
+	isProcessLevelWaiting,
+	isMobile = false,
+}: VisibleTabsInput): readonly ProcessInstanceTab[] {
+	return PROCESS_INSTANCE_TABS.filter((tab) => {
+		switch (tab) {
+			case 'history':
+				return isMobile;
+			case 'incidents':
+				return hasIncidentsTab;
+			case 'details':
+				return hasSelection || isProcessLevelWaiting;
+			case 'input-mappings':
+			case 'output-mappings':
+				return hasSelection;
+			default:
+				return true;
+		}
+	});
+}
+
+type TabRedirectInput = {
+	activeTab: ProcessInstanceTab;
+	visibleTabs: readonly ProcessInstanceTab[];
+	hasSelection: boolean;
+	isProcessLevelWaiting: boolean;
+	isWaitStateLoading: boolean;
+};
+
+function getHiddenTabRedirect({
+	activeTab,
+	visibleTabs,
+	hasSelection,
+	isProcessLevelWaiting,
+	isWaitStateLoading,
+}: TabRedirectInput): 'incidents' | 'details' | 'variables' | null {
+	if (visibleTabs.includes(activeTab) || (!hasSelection && isWaitStateLoading)) {
+		return null;
+	}
+
+	if (activeTab === 'history' && visibleTabs.includes('incidents')) {
+		return 'incidents';
+	}
+
+	return hasSelection || isProcessLevelWaiting ? 'details' : 'variables';
+}
+
+export {
+	PROCESS_INSTANCE_TABS,
+	TAB_LABEL_KEYS,
+	getHiddenTabRedirect,
+	getProcessInstanceTabFromPath,
+	getVisibleProcessInstanceTabs,
+};
+export type {ProcessInstanceTab};

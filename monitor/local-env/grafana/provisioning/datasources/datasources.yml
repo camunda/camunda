@@ -1,0 +1,37 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Prometheus port-forwarded
+    orgId: 1
+
+datasources:
+- name: Prometheus
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://prometheus:9090
+  basicAuth: false
+  isDefault: true
+  jsonData:
+     graphiteVersion: "1.1"
+     tlsAuth: false
+     tlsAuthWithCACert: false
+  version: 1
+  editable: true
+# Reaches a Prometheus forwarded from the host (e.g. an existing cluster's, via `kubectl
+# port-forward`). Unreachable until the port-forward is started; see ../../../README.md.
+- name: Prometheus (port forward)
+  uid: prometheus-port-forwarded
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://host.docker.internal:9091
+  basicAuth: false
+  isDefault: false
+  jsonData:
+    httpMethod: POST
+    timeInterval: 30s
+  version: 1
+  editable: true

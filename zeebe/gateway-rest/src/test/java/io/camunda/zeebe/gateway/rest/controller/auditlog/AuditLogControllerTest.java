@@ -30,8 +30,9 @@ import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.AuditLogSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +78,8 @@ public class AuditLogControllerTest extends RestControllerTest {
             "decisionDefinitionKey": "333",
             "decisionEvaluationKey": "444",
             "agentElementId": null,
+            "inboundChannelType": null,
+            "inboundChannelToolName": null,
             "deploymentKey": null,
             "entityDescription": null,
             "formKey": null,
@@ -122,6 +125,8 @@ public class AuditLogControllerTest extends RestControllerTest {
         "decisionDefinitionKey": "333",
         "decisionEvaluationKey": "444",
         "agentElementId": null,
+        "inboundChannelType": null,
+        "inboundChannelToolName": null,
         "deploymentKey": null,
         "entityDescription": null,
         "formKey": null,
@@ -161,9 +166,11 @@ public class AuditLogControllerTest extends RestControllerTest {
 
   @MockitoBean AuditLogServices auditLogServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setUp() {
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -368,7 +375,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
+                  "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, inboundChannelType, inboundChannelToolName, result, tenantId, timestamp, userTaskKey]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

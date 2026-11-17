@@ -57,6 +57,7 @@ v2/
 ├── filters.yaml               ← Advanced filter schemas (string, integer, date-time)
 ├── keys.yaml                  ← Key type schemas (LongKey, ProcessDefinitionKey, …)
 ├── identifiers.yaml           ← Identifier types (TenantId, ProcessDefinitionId, …)
+├── common-schemas.yaml        ← Value schemas shared across domains (ClearableDateTime, …)
 ├── cursors.yaml               ← Cursor schemas for pagination
 ├── <domain>.yaml              ← Per-domain paths + schemas (e.g., process-definitions.yaml)
 ```
@@ -76,6 +77,36 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 | **Tags**: Sentence case, no trailing period              | `tags: [Process definition]`                                       |
 | **Resource references in text**: lower case              | ✅ "the process definition" ❌ "the Process Definition"              |
 
+#### Values that cross an entity boundary
+
+Within one entity's own request and response, a property name usually omits the entity context:
+most Job schema fields carry no `job` prefix. Once a value crosses from one entity's response into a
+*different* entity's request, that context is gone — the receiving schema no longer says where the
+value came from — so the name must carry its origin. When a property is going to cross that boundary,
+it is qualified everywhere it appears, including on the entity that originates it, so both sides use
+the same name instead of being renamed at the crossing:
+
+```yaml
+# jobs.yaml — the activation response is where the value originates; already qualified here
+# because it is destined to cross into another entity's request below
+ActivatedJobResult:
+  properties:
+    jobLeaseToken: ...
+
+# agent-instances.yaml — a different entity consuming that same value, same name
+AgentInstanceCreationRequest:
+  properties:
+    jobLeaseToken: ...
+```
+
+The qualified name is what lets a caller — or a compiler, linter, or model — see that the two sides
+are the same value, rather than having to recover the correlation from prose.
+
+This is the same reason every key property is `${entity}Key` and never a bare `key`: keys are
+chained from one response into the next request. `no-ambiguous-identifier-property` (§3.3) enforces
+only the narrowest case, bare `id` and `key`. The general rule is not linted, so apply it in review
+whenever a new property carries a value that another entity produced.
+
 ### 2.3 Path and operation conventions
 
 **Every operation MUST have:**
@@ -86,6 +117,7 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 - `tags` — exactly one tag matching the resource
 - `x-eventually-consistent` — explicitly `true` or `false` (see §2.5)
 - `x-added-in-version` — the Camunda version in which the operation was introduced, e.g., `"8.9"` (see §2.17)
+- `x-scope` — `cluster-wide` or `physical-tenant`, matching whether the endpoint is reachable via a physical-tenant-prefixed route (see §2.20)
 
 **Path patterns:**
 
@@ -269,16 +301,26 @@ This is enforced by the `array-properties-must-be-required` Spectral rule.
 
 Use `nullable: true` only when the property can genuinely be `null` in the response (e.g., `name` on a process definition that may not have one). Never use `nullable` on array properties.
 
+For how the `required` / `nullable` flags propagate from the spec down through the generated POJOs, search-domain entities, transformers, and response mapper — and how NullAway and ArchUnit enforce the contract at compile and build time — see [api-entities-nullaway-enforcement.md](api-entities-nullaway-enforcement.md).
+
+On request schemas, the `nullable` property is **not** used to express optionality. Request schema fields are optional by default, and must be added to the `required` array if they are not optional and must be set by the client. If a request field can be omitted by the client, **do not** mark it as `nullable: true` - simply omit it from the `required` array. The Jackson deserialiser will produce an object with `null` for request fields that are not sent by the client. In Java, not present and `null` are the same thing. In JSON, `null` is an explicit value, distinct from "not present". Both JSON `null` and "not present" deserialise to `null` in Java. Marking an *optional* request schema field as `nullable: true` does not make it optional (its omission from `required` does that). It generates ternary client types in languages such as JavaScript and Python, where "not present" (JS `undefined` / Python `Unset`) are *distinct* from present and explicitly null (JS `null` / Python `None`).
+
+You are probably reaching for `T | undefined` in JS, and `T | Unset` in Python. Just leave it out of the required array. Marking it `nullable: true` will create `T | undefined | null` in JS and `T | Unset | None` in Python.
+
+The exception to this is a PATCH operation where sending an explicit `null` is semantically meaningful: it erases any previous set value.
+
+This is enforced by the `no-nullable-request-properties` Spectral rule. The rule has no built-in PATCH exemption: none of the existing PATCH fields erase a value on `null` (they treat it like omission), so exempting PATCH by method would approve exactly those. A field where an explicit `null` genuinely erases the stored value is added to the rule's allowlist, `zeebe/gateway-protocol/spectral-functions/verifyNoNullableRequestProperties.allowlist.json`, keyed by operationId and normalized field path (e.g. `changeset.dueDate`, `items[].name`, or `<root>` for the body schema itself). Each entry belongs to a group carrying a `reason` that explains the erase semantics, and needs API Governance review. Request fields that were already released as `nullable` are grandfathered in the same file.
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
-Every operation **should** declare `x-eventually-consistent` explicitly:
+Every operation **must** declare `x-eventually-consistent` explicitly:
 
 |                     Operation type                      |  Value  |                   Reason                    |
 |---------------------------------------------------------|---------|---------------------------------------------|
 | **Queries** (search, statistics, GET reads)             | `true`  | Read from eventually-consistent projections |
 | **Commands** (create, update, delete, complete, assign) | `false` | Synchronous writes                          |
 
-> **What the Spectral rule enforces:** The `no-eventually-consistent-on-commands` rule only prevents command (mutating) operations from being marked `x-eventually-consistent: true`. It does **not** require the extension to be present on every operation, nor does it enforce that query operations set it to `true`. Declaring the annotation on all operations is a **team convention** for clarity and SDK correctness; setting `true` on a command causes SDK generators to emit unnecessary polling wrappers.
+> **What the Spectral rules enforce:** `require-eventually-consistent` fails the build when an operation does not declare `x-eventually-consistent` as a boolean `true` or `false`. `no-eventually-consistent-on-commands` additionally prevents command (mutating) operations from being marked `true`, since that makes SDK generators emit unnecessary polling wrappers. Neither rule checks that query operations set it to `true` — that remains a reviewer responsibility.
 
 #### Relationship to `@RequiresSecondaryStorage`
 
@@ -664,10 +706,11 @@ ProcessInstanceCreationInstruction:
   x-polymorphic-schema: true
   description: |
     Instructions for creating a process instance. The process definition can be
-    specified either by id or by key.
+    specified either by id, by id and version tag, or by key.
   oneOf:
     - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
     - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
+    - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByVersionTag'
 
 # Variant A — identified by key
 ProcessInstanceCreationInstructionByKey:
@@ -710,6 +753,27 @@ ProcessInstanceCreationInstructionById:
     tenantId:
       allOf:
         - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+
+# Variant C — identified by id and version tag
+ProcessInstanceCreationInstructionByVersionTag:
+  type: object
+  title: Process creation by version tag
+  required:
+    - processDefinitionId
+    - processDefinitionVersionTag
+  additionalProperties: false
+  properties:
+    processDefinitionId:
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+    processDefinitionVersionTag:
+      type: string
+      minLength: 1
+      description: The version tag of the process definition.
+    variables:
+      type: object
+      additionalProperties: true
+      description: Variables for the root scope.
 ```
 
 #### When to use a `discriminator`
@@ -748,7 +812,7 @@ Omit the discriminator when:
 
 |                  Wrapper schema                   |            File             |                                    Variants                                    |
 |---------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------|
-| `ProcessInstanceCreationInstruction`              | `process-instances.yaml`    | `...ByKey`, `...ById`                                                          |
+| `ProcessInstanceCreationInstruction`              | `process-instances.yaml`    | `...ByKey`, `...ById`, `...ByVersionTag`                                       |
 | `ProcessInstanceCreationRuntimeInstruction`       | `process-instances.yaml`    | `...TerminateInstruction`                                                      |
 | `ProcessInstanceMigrationInstruction`             | `process-instances.yaml`    | `...ByProcessDefinitionKey`, `...ByProcessDefinitionId`                        |
 | `ProcessInstanceModificationTerminateInstruction` | `process-instances.yaml`    | `...ByIdInstruction`, `...ByKeyInstruction`                                    |
@@ -765,6 +829,8 @@ Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes d
 ### 2.16 Controller–spec alignment and the `@Hidden` annotation
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
+
+> **Note:** `SpecControllerAlignmentTest` in `zeebe/gateway-rest` fails the build in both directions: when a spec operation has no matching controller method, and when a public controller endpoint has no spec operation (unless its handler is `@Hidden`). Legacy `/v1` aliases are exempt.
 
 #### `@Hidden` for undocumented internal endpoints
 
@@ -790,9 +856,9 @@ If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart 
 
 > **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against `x-eventually-consistent`. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
 
-### 2.17 Operation versioning annotation (`x-added-in-version`)
+### 2.17 Operation and property versioning annotations (`x-added-in-version`, `x-properties-added-in-version`)
 
-Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` extension. This enables generated docs and SDKs to surface endpoint version availability to consumers.
+Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` field extension on the operation, and each of its versioned properties **must** be recorded via an entry in the parent schema's `x-properties-added-in-version` list. This enables generated docs and SDKs to surface endpoint and property version availability to consumers.
 
 ```yaml
 /process-instances/{processInstanceKey}/sequence-flows:
@@ -805,7 +871,7 @@ Every operation **must** declare the Camunda version in which it was introduced 
       - Process instance
 ```
 
-#### Rules
+#### Endpoint-level annotation rules
 
 - The value is a **string** containing the minor version (e.g., `"8.6"`, `"8.9"`). Patch versions are not used.
 - Set the value to the version in which the endpoint **first** ships. Do **not** update it on subsequent changes — that's what changelogs and the breaking-change rules in §2.7 are for.
@@ -820,6 +886,721 @@ If you add a new endpoint without this annotation, CI will fail with a message s
 Operation "createMyResource" (POST /my-resources) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.
 ```
 
+The shape of `x-properties-added-in-version` (see below) is enforced by the
+`properties-added-in-version-shape` Spectral rule (severity `error`): each entry
+must be an object with exactly `propertyName` (non-empty string) and
+`addedInVersion` (matching `^[0-9]+\.[0-9]+(\.[0-9]+)?$`), no other keys.\
+Typos like `propertyame` or extra fields fail the file-level lint pass. Whether
+the annotation is _correct_ (right property, right version) is checked
+separately by the CI verifier linked below.
+
+#### Property-level annotation rules
+
+The property-level rules are enforced in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../.github/scripts/x-added-in-version-check/README.md), which compares the spec against a generated version map.
+
+For these property versioning annotations, we use `x-properties-added-in-version` — a list set on a **schema object** (the node that owns a `properties:` map). Each entry has the form `{ propertyName, addedInVersion }` and records when a single property under that schema was introduced — unless that entry is suppressed by one of the rules below.
+
+##### Rule 1 — Property version differs from its endpoint version
+
+A property is annotated only when its introduction version is different from the endpoint's own introduction version. Same version ⇒ skipped, since the endpoint-level `x-added-in-version` already covers it.
+
+```yaml
+# POST /jobs/activation introduced in 8.6
+paths:
+  /jobs/activation:
+    post:
+      x-added-in-version: '8.6'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                type:      { type: string }    # 8.6 — same as endpoint, NOT annotated
+                worker:    { type: string }    # 8.6 — NOT annotated
+                tenantIds: { type: array, items: { type: string } }   # 8.7 — added later, annotated on the parent schema below
+              x-properties-added-in-version:
+                - propertyName: tenantIds
+                  addedInVersion: '8.7'
+```
+
+##### Rule 2 — Property version differs from its nearest property ancestor
+
+A child property added in the SAME version as its nearest ancestor property is skipped (the ancestor property already covers it). A child property added in a LATER version gets its own annotation.
+
+The parent/child relation also traverses `$ref` boundaries. For example, `DecisionInstanceFilter.evaluationDate` (in `decision-instances.yaml`) is recognised as the parent of `DateTimeFilterProperty.$eq` (in a separately referenced schema), even though the two properties live in different YAML files. Suppression only fires when every aggregated consumer's ancestor property location shares the same intro version as the child property — otherwise the child property gets its own annotation.
+
+```yaml
+# endpoint introduced in 8.6
+SomeRequest:
+  properties:
+    result:
+      type: object
+      properties:
+        variables:                 # 8.7 — same as ancestor property, NOT annotated
+          type: object
+        denied:                    # 8.8 — later than ancestor property, annotated on `result`
+          type: boolean
+      x-properties-added-in-version:
+        - propertyName: denied
+          addedInVersion: '8.8'
+  x-properties-added-in-version:
+    - propertyName: result      # ancestor property annotated (later than endpoint)
+      addedInVersion: '8.7'
+```
+
+##### Rule 3 — Shared schemas: earliest version across all consumers
+
+When a schema (or property) is referenced from multiple endpoints (via `$ref` or `allOf`), the chosen introduction version is the earliest version seen across all consumers. The property is then annotated unless every consumer endpoint's own introduction version equals the property's earliest version — in which case all endpoint-level annotations already cover it.
+
+Example — `element-instances.yaml#/components/schemas/AdvancedElementInstanceStateFilter` is referenced from seven endpoints. The `$exists` operator inside it was first seen in 8.8 by every consumer (the filter itself was introduced in 8.8), but the consuming endpoints span three different intro versions:
+
+|                                    Endpoint                                     | Endpoint version | First saw `$exists` |
+|---------------------------------------------------------------------------------|------------------|---------------------|
+| `POST /process-instances/search`                                                | 8.6              | 8.8                 |
+| `POST /process-definitions/{processDefinitionKey}/statistics/element-instances` | 8.8              | 8.8                 |
+| `POST /process-instances/cancellation`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/incident-resolution`                                   | 8.8              | 8.8                 |
+| `POST /process-instances/migration`                                             | 8.8              | 8.8                 |
+| `POST /process-instances/modification`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/deletion`                                              | 8.9              | 8.8                 |
+
+Earliest property version across consumers = 8.8. Not every consumer endpoint was introduced in 8.8 (`/process-instances/search` is 8.6 and `/process-instances/deletion` is 8.9), so a property-level annotation is required to cover those mismatched cases:
+
+```yaml
+# element-instances.yaml
+AdvancedElementInstanceStateFilter:
+  properties:
+    $exists:
+      type: boolean
+  x-properties-added-in-version:
+    - propertyName: "$exists"
+      addedInVersion: '8.8'
+```
+
+Had every consumer endpoint also been introduced in 8.8, no property-level annotation would be written — each endpoint's own `x-added-in-version: '8.8'` would already cover the shared schema.
+
+##### Reverse check — orphan annotations
+
+The verifier also walks the other direction: every `x-properties-added-in-version` entry it finds in the YAML must correspond to a property that the version map knows about at that location. Entries that don't are flagged as one of:
+
+- `ORPHAN_PROPERTY_ANNOTATION` — the parent schema has no such property at all (likely a typo or a leftover after a rename/removal).
+- `UNKNOWN_PROPERTY_ANNOTATION` — the property exists in YAML but the version map has no record of it (annotation added without a corresponding upstream change, or the version map is stale).
+
+---
+
+### 2.18 Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`, `x-semantic-provider`, `x-semantic-client-minted`)
+
+These annotations declare the **producer/consumer dependencies between
+operations and entities**, and are consumed by the API test generator
+(camunda/api-test-generator) to plan dependency-respecting integration test
+chains. They have no effect on generated SDK code or the published wire
+contract — they're vendor extensions for tooling.
+
+The single source of truth for which kinds exist is
+[`zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json`](../zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json).
+Read the `$comment` block at the top of that file before adding a new
+entry.
+
+Tracking issues: camunda/camunda#52169 (audit), camunda/camunda#52272
+(establishes/requires), camunda/camunda#52320 (`shape: external-entity`),
+camunda/camunda#52322 (`identifiedBy.acceptsExternal`).
+
+#### `x-semantic-establishes` (operation-level)
+
+Declares that an operation **creates** (or first observes the existence
+of) an instance of an entity or edge. Mutating CRUD endpoints, edge
+assignments, and a small number of search endpoints that are the only
+observation point for a derived entity all carry it.
+
+```yaml
+/groups:
+  post:
+    operationId: createGroup
+    x-semantic-establishes:
+      kind: Group               # PascalCase singular noun, must appear in semantic-kinds.json
+      identifiedBy:
+        - { in: body, name: groupId, semanticType: GroupId }
+
+/roles/{roleId}/groups/{groupId}:
+  put:
+    operationId: assignRoleToGroup
+    x-semantic-establishes:
+      kind: RoleGroupMembership
+      shape: edge               # required for membership-style relationships
+      identifiedBy:
+        - { in: path, name: roleId,  semanticType: RoleId }
+        - { in: path, name: groupId, semanticType: GroupId }
+```
+
+The shape above is the **closed-graph slice**: it describes the
+annotations needed for the default embedded-IDC deployment, where
+Groups CRUD is enabled and `groupId` is produced by `createGroup`. Real
+production `assignRoleToGroup` carries `acceptsExternal: true` on the
+`groupId` tuple to encode the BYOG/OIDC-`groupsClaim` variant where
+the runtime accepts an externally-minted IdP ID; see the [Per-tuple
+`acceptsExternal: true`](#per-tuple-acceptsexternal-true-camundacamunda52322)
+section below for that worked example. The orthogonal
+*operation-availability* axis (e.g. that `createGroup` itself is
+disabled in OIDC-`groupsClaim` mode) is not yet annotated; it is
+tracked in camunda/camunda#52511.
+
+Field reference:
+
+|     Field      |                                                  Meaning                                                  |
+|----------------|-----------------------------------------------------------------------------------------------------------|
+| `kind`         | The kind name, registered in `semantic-kinds.json`. PascalCase singular noun.                             |
+| `shape`        | Optional. Defaults to `entity`. Use `edge` for memberships observable only via member-list search.        |
+| `identifiedBy` | Ordered tuple of identifying members. Length 1 for single-key entities, ≥ 2 for composite keys and edges. |
+
+Each `identifiedBy[]` entry has `in` (`body` / `path` / `query` / `header`),
+`name` (the parameter or top-level body property name), `semanticType`
+(the `x-semantic-type` of the identifier — must match the registered
+`identifiers` of exactly one entity kind in `semantic-kinds.json`), and
+optionally `acceptsExternal: true` (see below).
+
+#### `x-semantic-requires` (operation-level)
+
+Declares that an operation **needs** an existing entity to operate on.
+Maps each member of the established tuple to a local parameter of the
+consumer.
+
+```yaml
+/groups/{groupId}:
+  get:
+    operationId: getGroup
+    x-semantic-requires:
+      kind: Group
+      bind:
+        groupId: { from: path, name: groupId }
+```
+
+The planner uses `requires` to schedule a call to a `Group`-establishing
+operation (e.g. `createGroup`) before this one. The `bind` map propagates
+the identifier values produced by the upstream call into this call's
+parameters.
+
+> **Edge producers do not declare explicit `x-semantic-requires`.**
+> The planner derives the implicit requires for an `edge` producer
+> from each foreign identifier in its `identifiedBy` tuple (resolved
+> via single-owner identifier resolution). Adding an explicit
+> `x-semantic-requires` on a membership endpoint such as
+> `assignUserToGroup` or `assignRoleToGroup` is redundant — use this
+> annotation only on entity consumers (operations without an
+> `x-semantic-establishes`, or whose `shape` defaults to `entity`).
+>
+> **Composite-key entities — declare a `requires` for every foreign
+> identifier you borrow.** When an entity producer's `identifiedBy`
+> includes an identifier registered to a different entity kind (e.g.
+> `createTenantClusterVariable` carries `TenantId`, which is owned by
+> `Tenant`, in its identity tuple), the operation MUST also declare an
+> `x-semantic-requires` on that owning kind. The runtime rejects
+> requests against unknown referenced entities (`NOT_FOUND`); without
+> the explicit `requires`, downstream chain planners walk the producer
+> as a root, synthesise the identifier value, and the call fails.
+> Enforced by `verify-semantic-kinds-registered`. Exceptions: edge
+> producers (the planner derives implicit `requires` from the edge's
+> `identifiedBy`), and the multi-owner sibling pattern where the
+> identifier is also one of the establishing kind's own `identifiers`
+> (e.g. `ClusterVariableName` is shared between
+> `GlobalClusterVariable` and `TenantClusterVariable` as parallel
+> variants, not parent/child).
+>
+> When the foreign identifier is owned by an `external-entity` kind
+> (e.g. `ClientId`, owned by `Client`), `x-semantic-requires` is
+> **not** the answer — direct `requires` on an external-entity is
+> forbidden. The producer MUST instead set `acceptsExternal: true` on
+> that `identifiedBy` entry (see the section below), declaring that
+> the site accepts an externally-minted ID. Without either an
+> `acceptsExternal: true` or a routable `requires`, the producer is
+> unreachable via chain planning and is flagged as an unreachable
+> orphan.
+>
+> **Producer must include the establishing kind's own identifier.**
+> An entity producer's `identifiedBy` MUST contain at least one entry
+> whose `semanticType` is one of the establishing kind's own
+> `identifiers` in `semantic-kinds.json`. A producer that lists only
+> foreign identifiers does not actually produce the kind's identifier
+> tuple, even though it satisfies the producer-existence gate;
+> downstream consumers' orphan errors would silently disappear.
+> Enforced by `verify-semantic-kinds-registered`. Edge producers are
+> exempt (every edge `identifiedBy` is a foreign identifier by
+> definition, resolved via single-owner edge-endpoint resolution).
+>
+> **Consumer must bind the full identifier tuple.** Every
+> `x-semantic-requires.bind` for an entity-kind consumer MUST cover
+> the kind's complete identity tuple. For composite-key entities
+> registered with `requiredBindKeys` (e.g. `TenantClusterVariable`
+> requires `[tenantId, name]`), every listed key must be present;
+> otherwise the planner has an under-specified reference. For
+> non-composite kinds, every `camelCase(identifier)` must be bound
+> (substitutable via `legacyBindKeys`). Enforced by
+> `verify-semantic-kinds-registered`.
+
+#### Per-tuple `acceptsExternal: true` (camunda/camunda#52322)
+
+Marks a single `identifiedBy` endpoint as **bimodal** — either an in-API
+producer (the canonical local entity) OR an externally-minted ID is
+acceptable. Set it on edge endpoints whose runtime accepts client-minted
+IDs in some deployments but the kind itself is still locally producible
+elsewhere.
+
+> Note: this annotation encodes **identifier provenance** (the value at
+> this site may originate inside or outside the API), which is
+> orthogonal to **operation availability** (whether the producer
+> endpoint itself is callable in a given deployment mode). The
+> mode-availability axis — for example, that the entire Groups API is
+> disabled when `oidc.groupsClaim` is set — is not yet annotated and
+> is tracked in camunda/camunda#52511.
+
+```yaml
+# roles.yaml — assignRoleToGroup
+x-semantic-establishes:
+  kind: RoleGroupMembership
+  shape: edge
+  identifiedBy:
+    - { in: path, name: roleId,  semanticType: RoleId }
+    # BYOG: under OIDC `groupsClaim`, runtime accepts external IdP IDs.
+    - { in: path, name: groupId, semanticType: GroupId, acceptsExternal: true }
+```
+
+Effect on the verifier: single-owner identifier resolution still runs
+(typo / config-error check), but the resolved entity kind is **not**
+pushed onto the producer-existence required-set for that tuple. A chain
+planner that prefers an in-API producer when one exists still sees the
+`createGroup → assignRoleToGroup` chain, but is free to fall back to
+client-minting an external ID when no producer is reachable.
+
+Distinct from kind-level `shape: external-entity` (below) — use the
+per-tuple flag when the kind IS locally producible elsewhere and only a
+specific edge endpoint is bimodal.
+
+#### Kind-level `shape: external-entity` (camunda/camunda#52320)
+
+Set in `semantic-kinds.json` (not in the path YAML files) for kinds
+whose identifier is **always** minted outside the Camunda REST API
+(e.g. `Client` IDs minted by Console or an external IdP). External
+kinds are referenced via edge `identifiedBy` tuples only — it is an
+error to use them directly in operation-level
+`x-semantic-establishes` or `x-semantic-requires`, and the
+producer-existence cross-reference is skipped for them entirely.
+
+```jsonc
+// semantic-kinds.json
+{ "name": "Client", "shape": "external-entity", "identifiers": ["ClientId"] }
+```
+
+#### `x-semantic-provider` (schema-level)
+
+Declares that a response/result schema is the **canonical producer** of
+one or more identifier values. Lists the property names that carry the
+produced IDs.
+
+```yaml
+DeploymentProcessResult:
+  description: A deployed process.
+  x-semantic-provider:
+    - processDefinitionKey
+    - processDefinitionId
+  type: object
+  required:
+    - processDefinitionId
+    # …
+```
+
+Used by the test generator to lift identifier values out of upstream
+responses and bind them into downstream `x-semantic-requires.bind`
+slots. Schema-level annotation; a single schema can provide multiple
+identifiers.
+
+> **Caveat — shared response schemas.** Because the annotation lives on
+> the schema, it implicitly claims provider semantics for **every**
+> operation whose response `$ref`s that schema. Do not add
+> `x-semantic-provider` to a schema that is shared across operations
+> with different identity contracts (e.g. a single `FooResult` reused by
+> `createFoo`, `getFoo`, `updateFoo`, and `searchFoos`) — the create
+> response is the canonical producer of `id`, but the search items are
+> not, and the annotation cannot distinguish. In that case either split
+> the schema (a dedicated `FooCreateResult` for the producing
+> operation), or omit `x-semantic-provider` and let consumers chain via
+> `x-semantic-establishes` on the producing operation instead. A
+> structural lint guard for this is tracked in
+> [#52414](https://github.com/camunda/camunda/issues/52414).
+
+#### `x-semantic-client-minted` (identifier-level)
+
+Set on identifier schemas in `identifiers.yaml` to declare that the ID
+value is **minted by the client** rather than allocated by the server
+(e.g. `TenantId`, `Username`, `RoleId`, `GroupId`). The test generator
+uses this signal to know it can synthesise a fresh value at chain-plan
+time instead of needing to extract one from an upstream response.
+
+```yaml
+# identifiers.yaml
+TenantId:
+  description: The unique identifier of the tenant.
+  type: string
+  format: TenantId
+  x-semantic-type: TenantId
+  x-semantic-client-minted: true
+  pattern: ^(<default>|[\w\.\-]{1,31})$
+```
+
+#### What the Spectral rules enforce
+
+- `semantic-establishes-shape` (severity `error`) — `x-semantic-establishes` matches the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal`).
+- `semantic-requires-shape` (severity `error`) — `x-semantic-requires` matches the documented schema (`kind`, `bind` map of `from` / `name`).
+- `verify-semantic-kinds-registered` (severity `error`, custom JS function) — every referenced `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; an operation's `x-semantic-establishes.shape` (defaulting to `entity` when omitted) must match the kind's registered shape, so e.g. forgetting `shape: edge` on a membership operation is a lint error rather than a style issue; every `identifiedBy` / `bind` member references a parameter or top-level requestBody property that exists; no operation directly establishes/requires an `external-entity` kind; per-tuple `acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+
+`x-semantic-provider` and `x-semantic-client-minted` are **not** lint-enforced — they're consumer-only signals. Add them by review.
+
+### 2.19 Required-permission annotations (`x-required-permissions`)
+
+Declares the authorization permission(s) a given operation enforces — the
+canonical, machine-readable endpoint → permission binding (single source of
+truth for RBAC). See ADR
+[`docs/adr/security/001-endpoint-required-permission-mapping.md`](adr/security/001-endpoint-required-permission-mapping.md).
+
+**Every operation MUST declare `x-required-permissions`.** It is an array; the
+entries are ANDed. An empty array means the endpoint enforces no permission
+(**unrestricted** — note this is an *authorization* property: the endpoint is
+still authenticated, it just needs no specific permission; it is not "public" in
+the unauthenticated sense). Requiring the key even when empty distinguishes
+"explicitly unrestricted" from "forgot to annotate".
+
+```yaml
+# Static single permission — the common case
+/process-instances:
+  post:
+    operationId: createProcessInstance
+    x-required-permissions:
+      - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
+
+# Explicitly unrestricted — authenticated, but no specific permission required
+/topology:
+  get:
+    operationId: getTopology
+    x-required-permissions: []
+```
+
+Three entry shapes are supported:
+
+|  Shape  |                             YAML                             |                              Meaning                               |
+|---------|--------------------------------------------------------------|--------------------------------------------------------------------|
+| static  | `{ resourceType: X, permissionType: Y }`                     | A concrete permission. Both are enum members and a **valid pair**. |
+| any-of  | `{ anyOf: [ {resourceType, permissionType}, ... ] }`         | At least one of the listed permissions suffices (OR).              |
+| dynamic | `{ dynamic: true, note: "<how it is resolved at runtime>" }` | Permission resolved from the request body/path at runtime.         |
+
+```yaml
+# any-of (e.g. a user task readable via the process or the task itself)
+x-required-permissions:
+  - anyOf:
+      - { resourceType: PROCESS_DEFINITION, permissionType: READ_USER_TASK }
+      - { resourceType: USER_TASK, permissionType: READ }
+
+# dynamic (e.g. resource deletion — permission depends on the resource type)
+x-required-permissions:
+  - dynamic: true
+    note: Resolved from the deployed resource type — DELETE_PROCESS, DELETE_DRD, DELETE_FORM or DELETE_RESOURCE on RESOURCE.
+```
+
+`resourceType` must be a member of `AuthorizationResourceType`, `permissionType`
+a member of `PermissionType`, and the **pair** one the resource type actually
+supports. Valid pairs are recorded in
+[`resource-permissions.json`](../zeebe/gateway-protocol/src/main/proto/v2/resource-permissions.json),
+which mirrors `AuthorizationResourceType.buildResourcePermissionsMap()` and is
+kept honest by `ResourcePermissionsRegistryTest`.
+
+#### What the Spectral rules enforce
+
+- `required-permissions-shape` (severity `error`) — each entry matches the
+  documented schema (exactly one of: a static `{resourceType, permissionType}`
+  pair, an `anyOf` group, or `{dynamic: true, note}`).
+- `verify-required-permissions` (severity `error`, custom JS function) — every
+  operation under `paths` declares `x-required-permissions`, and every static
+  `{resourceType, permissionType}` pair is a valid pair per
+  `resource-permissions.json`. Adding a new endpoint without a declared binding
+  is therefore a lint error, not a style nit.
+- `permission-enforcement-shape` (severity `error`) — when present,
+  `x-permission-enforcement` is either `reject` or `filter` (see below).
+
+The engine remains the sole **enforcer**; the declared mapping is kept honest by
+a separate drift guard (see the ADR).
+
+#### Deny outcome (`x-permission-enforcement`)
+
+`x-required-permissions` says *what* permission an endpoint requires; it does not
+say *how* the endpoint behaves when the caller lacks it. That deny outcome is not
+uniform:
+
+- **`reject`** (the default when the marker is absent) — the caller receives a
+  `4xx` and no data. Writes return `403 Forbidden`; single-resource point reads
+  (`get…ByKey`) return `404 Not Found`, because an unauthorized resource is
+  indistinguishable from a missing one.
+- **`filter`** — the caller receives `200 OK` with the result set **scoped to the
+  resources they are authorized for** (possibly empty). This is the contract of
+  collection/aggregate reads backed directly by the search client, where
+  authorization is pushed into the query as a filter rather than evaluated as a
+  gate — i.e. the top-level `search…` collection queries, the membership/relation
+  `search…For{Group,Role,Tenant}` queries, the `…Statistics` / usage-metrics
+  aggregates — plus `activateJobs`, which silently filters out jobs of process
+  definitions the caller cannot update (enforced in `JobBatchCollector`, not the
+  `@ExcludeAuthorizationCheck` processor).
+
+Note that **not every `search…` endpoint filters.** Sub-resource searches that
+gate on a parent point-read first (e.g. `searchProcessInstanceIncidents`,
+`searchUserTaskVariables`, `searchUserTaskAuditLogs` call `getByKey` on the parent
+before querying) **reject** with the parent's `404` when the caller cannot read
+the parent — so they are left at the default `reject`.
+
+```yaml
+operationId: searchUsers
+x-permission-enforcement: filter
+x-required-permissions:
+  - { resourceType: USER, permissionType: READ }
+```
+
+The marker is **optional**: omit it for the common `reject` case, set it
+explicitly to `filter` where results are scoped. A `filter` endpoint must declare
+at least one required permission (an unrestricted `[]` endpoint has nothing to filter
+by) — `verify-required-permissions` enforces this.
+
+This classification is a *claim*; the deterministic *proof* is the spec-driven
+runtime auth test (api-test-generator#374), which uses the marker to assert the
+correct deny shape — `4xx` for `reject`, `200` + target-absent for `filter`. See
+ADR decision **D8** for why static derivation of the deny outcome is unsound and
+the runtime oracle is authoritative.
+
+### 2.20 Scope annotation (`x-scope`)
+
+Every operation **must** declare `x-scope` as either `cluster-wide` or
+`physical-tenant`. This tells the docs API reference whether an operation acts
+on the whole cluster or on a single physical tenant, without having to
+fragment the existing tag-based grouping (`groupPathsBy: "tag"`) to express
+it. See
+[camunda-docs#8886 (comment)](https://github.com/camunda/camunda-docs/issues/8886#issuecomment-5414815612)
+for the motivating discussion and camunda/camunda#61157 for the annotation's
+introduction.
+
+```yaml
+/backups/runtime:
+  post:
+    operationId: takeRuntimeBackup
+    x-scope: physical-tenant
+    tags:
+      - Backup
+
+/cluster/v2/backups/runtime:
+  post:
+    operationId: takeClusterRuntimeBackup
+    x-scope: cluster-wide
+    tags:
+      - Backup
+```
+
+#### How to pick a value
+
+The value must match reachability — whether
+`PhysicalTenantRequestMappingHandlerMapping` actually registers a
+`/physical-tenants/{id}/...`-prefixed sibling route for the operation's
+controller — not a guess based on the path or tag:
+
+- `physical-tenant` — the default. A tenant-prefixed sibling route is
+  registered for the operation's controller, so it operates within a single
+  physical tenant's context (the default tenant when called without a
+  prefix).
+- `cluster-wide` — no tenant-prefixed sibling is registered; the operation
+  exists exactly once, cluster-wide. Today this is exactly the set of
+  `/cluster/v2/...` operations sourced from `cluster-admin.yaml`.
+
+The usual signal for `cluster-wide` is a controller annotated
+`@io.camunda.zeebe.gateway.rest.annotation.ClusterScoped`. That annotation is
+not, by itself, what makes a route unreachable per tenant, though: `prefix()`
+only builds a tenant-prefixed sibling when the path matches one of
+`PhysicalTenantRequestMappingHandlerMapping`'s `PREFIXABLE_ROOTS` (`/v2`,
+`/v3/api-docs`, `/post-logout`, `/custom.css`, the web apps). `/cluster/v2/...`
+paths match none of them, so they get no tenant-prefixed sibling whether or
+not their controller carries `@ClusterScoped` — the annotation and the
+prefixable-root check happen to agree for every controller today, but only
+the reachability check is the actual definition. When adding a new endpoint,
+verify reachability directly rather than relying on the annotation alone; if
+`@ClusterScoped` and reachability ever disagree, treat that as a bug to fix,
+not a reason to pick a value with `x-scope`.
+
+`x-scope` tracks reachability, not whether the returned data happens to be
+identical across tenants. Two known cases where reachability and semantics
+diverge:
+
+- `GET /license` is annotated `x-scope: physical-tenant` because it is
+  reachable under a `/physical-tenants/{id}/` prefix, even though the license
+  itself is a single cluster-wide fact that does not vary per tenant.
+- `GET /status` (`getStatus`) is annotated `x-scope: physical-tenant`, but it
+  is only reachable at the default physical tenant's prefix
+  (`/physical-tenants/default/v2/status`); every other physical tenant id
+  returns `404`. A two-valued reachability badge cannot express "default
+  tenant only," so the badge will read as "works for any physical tenant,"
+  which for this endpoint is not true.
+
+These are documented warts, not endpoints to imitate — most operations are
+either genuinely cluster-wide or genuinely usable at any physical tenant
+prefix.
+
+#### What the Spectral rule enforces
+
+The `require-scope` rule (severity `error`) checks every operation under
+`paths` (`get`, `post`, `put`, `patch`, `delete`) and fails the build if
+`x-scope` is missing, is not one of `cluster-wide` / `physical-tenant`, or
+disagrees with the path-derived expectation (`cluster-wide` for
+`/cluster/v2/...` paths, `physical-tenant` otherwise). The rule does not
+cross-check the value against the `@ClusterScoped` annotation in Java directly
+— that agreement is a reviewer responsibility.
+
+---
+
+### 2.21 Conditional-presence annotation (`x-present-when`)
+
+Some response properties are only meaningful for certain request shapes. The
+canonical case is `activateJobs`: `ActivatedJobResult.jobLeaseToken` is populated
+only when the request was made with `withLease: true`; when `withLease` is
+`false` or omitted, the server returns no lease token. OpenAPI 3.x binds exactly
+one response schema per operation/status, so it cannot express that a response
+field's presence depends on a request field. Left unannotated, every generated
+SDK types `jobLeaseToken` as always-nullable, and a user who reads it after an
+unleased activation writes code that compiles but fails at runtime.
+
+`x-present-when` encodes that request→response dependency as ground truth on the
+response property. It is the single source of truth from which each SDK's
+facade/post-generation layer derives dependent typing; the SDKs must not
+hardcode the relationship.
+
+#### Shape
+
+Place the marker on the response property whose presence is conditional:
+
+```yaml
+ActivatedJobResult:
+  required:
+    - ...
+    - jobLeaseToken # stays required + nullable on the wire (see below)
+  properties:
+    jobLeaseToken:
+      description: The lease token; `null` when activated without a lease.
+      nullable: true
+      x-present-when:
+        request: withLease   # a TOP-LEVEL property of the operation's request body
+        equals: true         # a scalar literal (boolean / string / number)
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+```
+
+- **`request`** — the name of a top-level property on the operation's request
+  body. Nested paths are not supported (decision: top-level only).
+- **`equals`** — a single scalar literal (`boolean`, `string`, or `number`).
+  Composite/array matchers are not supported (decision: scalar only).
+
+The `present-when-shape` Spectral rule validates this structure (see §3). The
+marker is **inert on the wire**: the property keeps its declared `nullable`
+shape and stays in `required`, so the server contract and any consumer that does
+not derive from the marker are completely unaffected. Adding or removing the
+marker is not a wire-breaking change.
+
+#### Derivation contract (what every SDK implements)
+
+For an operation with request body `R` and 200-response schema `S`, walk `S`
+transitively (including through arrays and nested objects) for any property
+annotated `x-present-when: { request: F, equals: V }`, where `F` is a top-level
+property of `R`. Project the property three ways on the compile-time value of
+`F`, and propagate the projection outward through every enclosing type (e.g.
+`JobActivationResult.jobs[] → ActivatedJobResult.jobLeaseToken`):
+
+|                                                               `F` at the call site                                                                |                                                                                              Projection of the annotated property                                                                                               |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| the literal `V`                                                                                                                                   | **present** — required, non-null                                                                                                                                                                                                |
+| any other compile-time literal ≠ `V` — `false` / `null` / omitted, or a non-matching string/number (e.g. `mode: "summary"` when `equals: "full"`) | **absent** — omitted for nominal languages (Go, Rust, C#); typed `?: never` for JS/TS; for Python (no `?: never` equivalent) modelled via an overload whose return type omits the property (e.g. a `TypedDict` without the key) |
+| not a compile-time literal (dynamic value of `F`'s type, variable)                                                                                | base schema unchanged — property stays nullable (preserves backward compatibility)                                                                                                                                              |
+
+Method surface derived from the marker (stated generally in terms of the
+request field `F` and its match literal `V`; the `withLease: true` / boolean
+case is the current production instance):
+
+- **Literal-overload languages (JS/TS, Python):** emit overloads keyed on the
+  `F` literal — `F` set to `V` returns the present projection, `F` set to any
+  other compile-time literal returns the absent projection, and a non-literal
+  `F` returns the base, nullable projection. The dynamic overload must accept
+  `F`'s **full declared type including `null`** (for `withLease`, which is
+  `nullable: true`, that is `boolean | null`) so a runtime `boolean | null`
+  value resolves to the base projection rather than falling between the literal
+  overloads. These languages model this with TS function overloads on literal
+  types / Python `@overload` on `Literal[...]`. For `activateJobs` this is:
+  `withLease: true` returns the present projection, `withLease?: false | null |
+  undefined` returns the absent projection, and the general
+  `withLease: boolean | null` overload returns the dynamic (base, nullable)
+  projection.
+- **Distinct-surface languages (Go, Rust, C#):** these cannot select a return
+  type from a literal argument value — Go and Rust have no overloading, and C#
+  overload resolution distinguishes neither a `true` from a `false` argument nor
+  the return type. Emit two distinct methods instead: a base method
+  (`activateJobs` / `ActivateJobs`) that returns the **base nullable projection**
+  (token present but nullable) — this is the safe surface for both the absent
+  case and a runtime dynamic `F`, since the caller reads the nullable token — and
+  a second method named `<baseMethod> + PascalCase(F)` (`activateJobsWithLease` /
+  `ActivateJobsWithLease`) for the present projection (token required non-null).
+  These are technical preview, so the surface change is acceptable.
+
+The present-variant method must additionally assert at runtime that the property
+is populated and fail fast if it is absent. This covers the later-client →
+earlier-server case: a newer SDK that requested a lease against an older server
+that ignores `withLease` gets a clear failure rather than a silent null.
+
+Because the lease token is optional on every wire (REST `nullable`, gRPC proto3
+`optional`), none of this changes the wire; it is a pure client-typing
+refinement.
+
+#### When to add a new `x-present-when`
+
+Only when a response property's presence genuinely depends on a scalar
+top-level request field. This is rare — as of writing, `activateJobs` is the
+only production case. Do not use it for data-provenance or response-state
+conditioning (those use different mechanisms). If a new case needs nested
+request paths or non-scalar matchers, extend this section and the
+`present-when-shape` rule together rather than overloading the existing shape.
+
+### 2.22 Clearable values (`x-clearable`)
+
+Some request fields have three states: omitted or `null` keeps the persisted value, a value sets
+it, and an empty string clears it. Do not declare such a field with a typed `format` such as
+`date-time` alone: `""` is not a valid date-time, so the schema would reject the documented way
+to clear the field, and generated SDKs would type the field so that it cannot hold `""`.
+
+Reference a clearable schema from `common-schemas.yaml` instead, and state in the description how
+the field is cleared:
+
+```yaml
+dueDate:
+  allOf:
+    - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
+  description: The due date of the task. Clear by providing an empty String.
+```
+
+`ClearableDateTime` is an `anyOf` of a `date-time` string and an empty string (`maxLength: 0`),
+marked with `x-clearable: true`. `x-clearable` tells SDK generators to keep the typed value (for
+example a date-time type) and add an explicit way to clear it, rather than generating a string
+union. To make another type clearable, add a schema of the same shape to `common-schemas.yaml`.
+The gateway and the Java client map `ClearableDateTime` to `String` (`typeMappings` in
+`gateways/gateway-model` and `clients/java`, in both the Maven and Gradle builds); a new
+clearable schema needs the same mappings.
+
+Two Spectral rules check the marker and its uses:
+
+- `clearable-schema-accepts-empty-string`: a schema with `x-clearable` must set it to `true`,
+  must not declare its own `format`, and must accept `""` through an `anyOf` member with
+  `maxLength: 0`.
+- `clearable-reference-declares-no-format`: a property that references a clearable schema must
+  not declare a `format` next to the reference.
+
+The rules cannot tell which fields are meant to be clearable: nothing checks that a field
+described as cleared by an empty string actually references a clearable schema. That decision,
+and the description wording, are left to the author and reviewer.
+
 ---
 
 ## 3. Spectral linting & custom rules
@@ -832,7 +1613,7 @@ Operation "createMyResource" (POST /my-resources) is missing x-added-in-version.
 
 ```bash
 # Install (one-time)
-npm install -g @stoplight/spectral-cli
+npm install -g @camunda8/spectral-cli
 
 # From the repository root, run BOTH passes:
 
@@ -853,20 +1634,28 @@ spectral lint "zeebe/gateway-protocol/src/main/proto/v2/*.yaml" \
 
 The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions are in `spectral-functions/`.
 
-|                    Rule                    | Severity |                                          What it checks                                           |
-|--------------------------------------------|----------|---------------------------------------------------------------------------------------------------|
-| `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                        |
-| `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                         |
-| `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                  |
-| `require-property-descriptions`            | error    | Every schema property must have a `description`                                                   |
-| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                            |
-| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`) |
-| `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                   |
-| `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                   |
-| `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                  |
-| `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                   |
-| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                     |
-| `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                           |
+|                    Rule                    | Severity |                                                                  What it checks                                                                   |
+|--------------------------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                                                                        |
+| `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                                                                         |
+| `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                                                                  |
+| `require-property-descriptions`            | error    | Every schema property must have a `description`                                                                                                   |
+| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                                                                            |
+| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                                 |
+| `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                   |
+| `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                   |
+| `no-nullable-request-properties`           | error    | Request body fields must not be `nullable` (see §2.4). Released contracts and approved PATCH "null erases" fields are allowlisted                 |
+| `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                                                                  |
+| `require-eventually-consistent`            | error    | Every operation must declare `x-eventually-consistent` as `true` or `false` (see §2.5)                                                            |
+| `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                                                                   |
+| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                                                                     |
+| `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17)                                                 |
+| `require-scope`                            | error    | Every operation must declare `x-scope` as `cluster-wide` or `physical-tenant` (see §2.20)                                                         |
+| `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                                                                           |
+| `no-ambiguous-identifier-property`         | error    | Schema properties must not be a bare `id` or `key` — use a qualified name (see §2.2). Pre-existing contracts are grandfathered via an allowlist   |
+| `no-ambiguous-identifier-property-inline`  | error    | Same check for inline request/response/parameter schemas, with no allowlist                                                                       |
+| `clearable-schema-accepts-empty-string`    | error    | A schema with `x-clearable` must set it to `true`, declare no `format`, and accept `""` through an `anyOf` member with `maxLength: 0` (see §2.22) |
+| `clearable-reference-declares-no-format`   | error    | A property referencing a clearable schema must not declare a `format` next to the reference (see §2.22)                                           |
 
 ### 3.4 Adding new Spectral rules
 
@@ -1132,7 +1921,7 @@ Failures are reported to Slack and visible in the [Actions tab](https://github.c
 **What this means for contributors:**
 
 - If you change an endpoint's response shape, remove a field, or alter error codes, the forward compatibility tests will detect it.
-- If your PR intentionally introduces a breaking change (see §2.7), coordinate with `@camunda/camunda-ex` to update the test expectations on the affected older branches _before_ merging.
+- If your PR intentionally introduces a breaking change (see §2.7), coordinate with `@camunda/core-features` to update the test expectations on the affected older branches _before_ merging.
 
 There is also an **on-demand workflow** ([`c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml`](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml)) that builds the server _and_ runs the tests from the same branch. This is useful for verifying that a feature branch passes all API tests — both against Elasticsearch _and_ H2/RDBMS — before merging. It also detects differential behavior between storage engines.
 
@@ -1155,6 +1944,8 @@ Before opening a PR:
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
 - [ ] **`x-added-in-version`** field present on every new operation (see §2.17)
+- [ ] **`x-scope`** field present on every new operation, matching whether the endpoint is reachable via a physical-tenant-prefixed route (see §2.20)
+- [ ] **`x-properties-added-in-version`** entries added for properties whose intro version differs from their endpoint / nearest ancestor property, per Rules 1–3 in §2.17
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`
 - [ ] **Controller implemented** following conventions (§4)

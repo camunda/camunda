@@ -22,7 +22,10 @@ import {
   UserAvatar,
   Password,
   ParentNode,
+  Tools,
+  Channels,
 } from '@carbon/react/icons';
+import McpIcon from 'modules/components/Icon/mcp.svg?react';
 import {
   TitleListCell,
   FirstColumn,
@@ -38,15 +41,15 @@ import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon'
 import {
   formatBatchTitle,
   formatModalHeading,
-  getActorIcon,
+  hasActorIcon,
   isValidProcessInstanceKey,
   mapToCellDetailsData,
   mapToCellEntityKeyData,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
-import {useMemo} from 'react';
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {ActorIcon} from 'modules/utils/operationsLog/ActorIcon';
 
 type Props = {
   isOpen: boolean;
@@ -60,7 +63,6 @@ type DetailsModalState = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
-  const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog]);
   const clientConfig = getClientConfig();
   const entityKeyData = mapToCellEntityKeyData(
     auditLog,
@@ -118,11 +120,11 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               </IconText>
             </FirstColumn>
             <SecondColumn>
-              {!ActorIcon ? (
+              {!hasActorIcon(auditLog) ? (
                 auditLog.actorId
               ) : (
                 <IconText>
-                  <ActorIcon />
+                  <ActorIcon auditLog={auditLog} />
                   <CodeSnippet type="inline" wrapText>
                     {auditLog.actorId}
                   </CodeSnippet>
@@ -134,6 +136,32 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                   <CodeSnippet type="inline" wrapText>
                     {auditLog.agentElementId}
                   </CodeSnippet>
+                </IconTextWithTopMargin>
+              )}
+              {auditLog.inboundChannelType && (
+                <IconTextWithTopMargin>
+                  {auditLog.inboundChannelType === 'MCP' ? (
+                    <McpIcon data-testid="mcp-icon" />
+                  ) : (
+                    <Channels />
+                  )}
+                  <span>
+                    Inbound channel:{' '}
+                    <CodeSnippet type="inline" wrapText>
+                      {auditLog.inboundChannelType}
+                    </CodeSnippet>
+                  </span>
+                </IconTextWithTopMargin>
+              )}
+              {auditLog.inboundChannelToolName && (
+                <IconTextWithTopMargin>
+                  <Tools />
+                  <span>
+                    Inbound channel tool name:{' '}
+                    <CodeSnippet type="inline" wrapText>
+                      {auditLog.inboundChannelToolName}
+                    </CodeSnippet>
+                  </span>
                 </IconTextWithTopMargin>
               )}
             </SecondColumn>

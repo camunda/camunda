@@ -23,6 +23,11 @@ public class CorrelatedMessageSubscriptionSortImpl
     implements CorrelatedMessageSubscriptionSort {
 
   @Override
+  public CorrelatedMessageSubscriptionSort businessId() {
+    return field("businessId");
+  }
+
+  @Override
   public CorrelatedMessageSubscriptionSort correlationKey() {
     return field("correlationKey");
   }

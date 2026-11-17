@@ -15,4 +15,8 @@ public interface RdbmsExportHandler<T extends RecordValue> {
   boolean canExport(Record<T> record);
 
   void export(Record<T> record);
+
+  default boolean shouldFlushAfterRecordProcessed() {
+    return false;
+  }
 }

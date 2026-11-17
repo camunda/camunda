@@ -15,10 +15,10 @@ import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
 
 public class VariableSourceRecord extends UnifiedRecordValue implements VariableSourceValue {
 
-  public static final VariableSourceRecord API =
-      new VariableSourceRecord().setType(VariableOperationType.API);
-  public static final VariableSourceRecord NONE =
-      new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
+  //  public static final VariableSourceRecord API =
+  //      new VariableSourceRecord().setType(VariableOperationType.API);
+  //  public static final VariableSourceRecord NONE =
+  //      new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
 
   private static final StringValue TYPE_KEY = new StringValue("type");
 
@@ -43,5 +43,13 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
 
   public void wrap(final VariableSourceRecord variableSourceRecord) {
     setType(variableSourceRecord.getType());
+  }
+
+  public static VariableSourceRecord api() {
+    return new VariableSourceRecord().setType(VariableOperationType.API);
+  }
+
+  public static VariableSourceRecord none() {
+    return new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
   }
 }

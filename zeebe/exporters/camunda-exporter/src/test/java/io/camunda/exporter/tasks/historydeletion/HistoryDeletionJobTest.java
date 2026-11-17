@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
@@ -55,6 +56,7 @@ final class HistoryDeletionJobTest {
   private DecisionInstanceTemplate decisionInstanceTemplate;
   private DecisionRequirementsIndex decisionRequirementsIndex;
   private DecisionIndex decisionIndex;
+  private AgentDefinitionIndex agentDefinitionIndex;
 
   @BeforeEach
   void setUp() {
@@ -74,6 +76,7 @@ final class HistoryDeletionJobTest {
     decisionRequirementsIndex =
         resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
     decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
+    agentDefinitionIndex = resourceProvider.getIndexDescriptor(AgentDefinitionIndex.class);
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
     when(repository.createAuditLogCleanupEntries(anyList(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
@@ -352,6 +355,42 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .deleteDocumentsById(
             historyDeletionIndex.getFullQualifiedName(), List.of(processInstanceEntity.getId()));
+  }
+
+  @Test
+  void shouldDeleteAgentDefinitionsWhenDeletingProcessDefinitionHistory() {
+    // given
+    final var entity1 =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var entity2 =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity1, entity2))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsByField(
+            agentDefinitionIndex.getFullQualifiedName(),
+            AgentDefinitionIndex.PROCESS_DEFINITION_KEY,
+            List.of(entity1.getResourceKey(), entity2.getResourceKey()));
   }
 
   @Test

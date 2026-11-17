@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.historydeletion;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.index.AgentDefinitionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
@@ -17,6 +18,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -50,6 +52,8 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final DecisionInstanceTemplate decisionInstanceTemplate;
   private final DecisionRequirementsIndex decisionRequirementsIndex;
   private final DecisionIndex decisionIndex;
+  private final MessageSubscriptionTemplate messageSubscriptionTemplate;
+  private final AgentDefinitionIndex agentDefinitionIndex;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -72,6 +76,9 @@ public class HistoryDeletionJob implements BackgroundTask {
     decisionRequirementsIndex =
         resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
     decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
+    messageSubscriptionTemplate =
+        resourceProvider.getIndexTemplateDescriptor(MessageSubscriptionTemplate.class);
+    agentDefinitionIndex = resourceProvider.getIndexDescriptor(AgentDefinitionIndex.class);
   }
 
   @Override
@@ -192,8 +199,9 @@ public class HistoryDeletionJob implements BackgroundTask {
   }
 
   /**
-   * This method will delete a batch of process definitions by deleting the process definitions from
-   * the process index
+   * This method will delete a batch of process definitions by deleting their dependants (message
+   * subscriptions, agent definitions) and then the process definitions themselves from the process
+   * index.
    *
    * @param batch The batch of entities to delete
    * @return A future containing the list of history-deletion IDs that were processed
@@ -206,9 +214,21 @@ public class HistoryDeletionJob implements BackgroundTask {
     }
 
     return deleterRepository
-        .deleteDocumentsById(
-            processIndex.getFullQualifiedName(),
-            processDefinitions.stream().map(Object::toString).toList())
+        .deleteDocumentsByField(
+            messageSubscriptionTemplate.getIndexPattern(),
+            MessageSubscriptionTemplate.PROCESS_KEY,
+            processDefinitions)
+        .thenCompose(
+            ignored ->
+                deleterRepository.deleteDocumentsByField(
+                    agentDefinitionIndex.getFullQualifiedName(),
+                    AgentDefinitionIndex.PROCESS_DEFINITION_KEY,
+                    processDefinitions))
+        .thenCompose(
+            ignored ->
+                deleterRepository.deleteDocumentsById(
+                    processIndex.getFullQualifiedName(),
+                    processDefinitions.stream().map(Object::toString).toList()))
         .thenApply(
             ignored -> {
               final var ids = new ArrayList<>(deletedResourceIds);

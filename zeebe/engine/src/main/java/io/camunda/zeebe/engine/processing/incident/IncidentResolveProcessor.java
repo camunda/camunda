@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -32,6 +36,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -39,14 +44,15 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
-public final class IncidentResolveProcessor implements TypedRecordProcessor<IncidentRecord> {
+public final class IncidentResolveProcessor
+    implements TypedRecordProcessor<IncidentRecord>, SuspensionAware<IncidentRecord> {
 
   public static final String NO_RETRIES_LEFT_MSG =
       "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
-      "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
+      "Expected incident to refer to element in state ELEMENT_ACTIVATING, ELEMENT_COMPLETING, or ELEMENT_TERMINATING, but element is in state %s";
   private static final String UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG =
       "Unexpected user task lifecycle state: '%s' encountered during conversion to failed user task command.";
 
@@ -61,8 +67,10 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
+  private final CslTenantCheck tenantCheck;
   private final IncidentMetrics incidentMetrics;
+  private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
@@ -70,7 +78,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
@@ -82,14 +91,16 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     userTaskState = processingState.getUserTaskState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
+    this.tenantCheck = tenantCheck;
     this.incidentMetrics = incidentMetrics;
+    bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
-    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenantIds = tenantCheck.resolveAuthorizedTenants(command);
     final var incident = incidentState.getIncidentRecord(key, authorizedTenantIds);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
@@ -97,15 +108,30 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(incident.getTenantId())
-            .addResourceId(incident.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    // Check if the process instance is banned
+    final var bannedInstanceCheckResult = bannedInstanceCheck.check(incident);
+    if (bannedInstanceCheckResult.isLeft()) {
+      final var rejection = bannedInstanceCheckResult.getLeft();
+      enrichRejectionCommand(command, incident);
+      rejectResolveCommand(command, rejection.reason(), rejection.type());
+      return;
+    }
+
+    final var isAuthorized =
+        cslCheck.check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(incident.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       enrichRejectionCommand(command, incident);
@@ -122,7 +148,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     }
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
-    responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();
 
     publishIncidentRelatedJob(jobKey);
@@ -137,7 +163,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final RejectionType rejectionType) {
 
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, errorMessage);
   }
 
   /**
@@ -268,12 +294,15 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     return switch (instanceState) {
       case ELEMENT_ACTIVATING -> Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
       case ELEMENT_COMPLETING -> Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
+      case ELEMENT_TERMINATING -> Either.right(ProcessInstanceIntent.TERMINATE_ELEMENT);
       default -> Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
     };
   }
 
   private void publishIncidentRelatedJob(final long jobKey) {
-    if (isJobRelatedIncident(jobKey)) {
+    // a job the resolution left in another state must not be handed out: a FAILED job waiting for
+    // its backoff would be activated without recurring, which leaves its backoff entry behind
+    if (isJobRelatedIncident(jobKey) && jobState.isInState(jobKey, JobState.State.ACTIVATABLE)) {
       final JobRecord failedJobRecord = jobState.getJob(jobKey);
       jobActivationBehavior.publishWork(jobKey, failedJobRecord);
     }
@@ -281,5 +310,15 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
   private static boolean isJobRelatedIncident(final long jobKey) {
     return jobKey > 0;
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<IncidentRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<IncidentRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 }

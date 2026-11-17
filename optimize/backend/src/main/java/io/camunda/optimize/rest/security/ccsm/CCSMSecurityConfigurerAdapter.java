@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.security.ccsm;
 import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
+import static io.camunda.optimize.rest.AuthenticationRestService.LOGOUT;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -27,14 +28,17 @@ import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.OptimizeApiConfiguration;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -50,14 +54,22 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
+// Active only when an operator explicitly opts back into the legacy stack
+// (optimize.security.csl.enabled=false); CSL is the default since 8.10 (camunda/camunda#58483).
+// The flag and this legacy stack are removed together at 8.11 (camunda/camunda#58484).
+// https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0038-optimize-reuses-stateful-oidc-webapp-chain.md
 @Configuration
 @EnableWebSecurity
 @Conditional(CCSMCondition.class)
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "false",
+    matchIfMissing = false)
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
@@ -107,6 +119,32 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     return registration;
   }
 
+  /**
+   * Registers the OIDC redirect diagnostics filter when {@code
+   * security.auth.ccsm.diagnosticsEnabled=true}. The filter logs DEBUG/WARN diagnostics about
+   * forwarded-header mismatches and session-cookie issues in the OIDC redirect flow.
+   */
+  @Bean
+  @Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
+  FilterRegistrationBean<OidcRedirectDiagnosticsFilter> oidcRedirectDiagnosticsFilter() {
+    final var registration = new FilterRegistrationBean<OidcRedirectDiagnosticsFilter>();
+    final boolean enabled =
+        configurationService
+            .getAuthConfiguration()
+            .getCcsmAuthConfiguration()
+            .isDiagnosticsEnabled();
+    final String callbackPath = REST_API_PATH + AUTHENTICATION_PATH + CALLBACK;
+    registration.setFilter(new OidcRedirectDiagnosticsFilter(callbackPath));
+    registration.addUrlPatterns("/*");
+    registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE);
+    registration.setEnabled(enabled);
+    if (enabled) {
+      LOG.info(
+          "OIDC redirect diagnostics filter enabled (security.auth.ccsm.diagnosticsEnabled=true)");
+    }
+    return registration;
+  }
+
   @Bean
   @Order(1)
   protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
@@ -124,73 +162,106 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   @Order(2)
   protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
     try {
-      return super.configureGenericSecurityOptions(http)
-          // Then we configure the specific web security for CCSM
-          .authorizeHttpRequests(
-              requests ->
-                  requests
-                      // ready endpoint is public
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(READYZ_PATH)))
-                      .permitAll()
-                      // Identity callback request handling is public
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)))
-                      .permitAll()
-                      // Static resources
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults().matcher("/*.ico"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/*.html"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.js"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.css"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.html"))
-                      .permitAll()
-                      // public share resources
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults().matcher(EXTERNAL_SUB_PATH + "/"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/index*"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/*.js"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/*.ico"))
-                      .permitAll()
-                      // public share related resources (API)
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/api/**"))
-                      .permitAll()
-                      // common public api resources
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(UI_CONFIGURATION_PATH)),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(LOCALIZATION_PATH)))
-                      .permitAll()
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(ACTUATOR_ENDPOINT + "/**"))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .addFilterBefore(
-              ccsmAuthenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
-          .exceptionHandling(
-              exceptionHandling ->
-                  exceptionHandling
-                      .defaultAuthenticationEntryPointFor(
-                          new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                          PathPatternRequestMatcher.withDefaults().matcher(REST_API_PATH + "/**"))
-                      .defaultAuthenticationEntryPointFor(
-                          this::redirectToIdentity,
-                          PathPatternRequestMatcher.withDefaults().matcher("/**")))
-          .build();
+      final var httpSecurity =
+          super.configureGenericSecurityOptions(http)
+              // Then we configure the specific web security for CCSM
+              .authorizeHttpRequests(
+                  requests ->
+                      requests
+                          // ready endpoint is public
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(READYZ_PATH)))
+                          .permitAll()
+                          // Identity callback and logout are public — logout must work even
+                          // when the session token has already expired
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(AUTHENTICATION_PATH + LOGOUT)))
+                          .permitAll()
+                          // An error dispatch must complete without the authentication entry
+                          // point, otherwise it starts the login flow again and causes a
+                          // redirect loop. Only the ERROR dispatch is public here: a direct
+                          // request to /error still needs authentication.
+                          .dispatcherTypeMatchers(DispatcherType.ERROR)
+                          .permitAll()
+                          // Static resources
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults().matcher("/*.ico"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/*.html"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/static/*.js"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/static/*.css"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/static/*.html"))
+                          .permitAll()
+                          // public share resources
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/index*"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/*.js"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/*.ico"))
+                          .permitAll()
+                          // public share related resources (API)
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/api/**"))
+                          .permitAll()
+                          // common public api resources
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(UI_CONFIGURATION_PATH)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(LOCALIZATION_PATH)))
+                          .permitAll()
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(ACTUATOR_ENDPOINT + "/**"))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              // Register cookie filter before BearerTokenAuthenticationFilter (position 1100).
+              // When jwtAuthForApiEnabled=true, oauth2ResourceServer adds
+              // BearerTokenAuthenticationFilter at 1100 and the cookie filter sits just before it.
+              // When jwtAuthForApiEnabled=false, no BearerTokenAuthenticationFilter instance is
+              // registered, but Spring still uses BearerTokenAuthenticationFilter.class as the
+              // anchor for ordering, so the cookie filter keeps this relative position.
+              .addFilterBefore(
+                  ccsmAuthenticationCookieFilter(http), BearerTokenAuthenticationFilter.class)
+              .exceptionHandling(
+                  exceptionHandling ->
+                      exceptionHandling
+                          .defaultAuthenticationEntryPointFor(
+                              new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(REST_API_PATH + "/**"))
+                          .defaultAuthenticationEntryPointFor(
+                              this::redirectToIdentity,
+                              PathPatternRequestMatcher.withDefaults().matcher("/**")));
+
+      // When the flag is on, enable Spring's native bearer-token support. This adds
+      // BearerTokenAuthenticationFilter (order 1100) to the chain. The cookie filter registered
+      // above still runs first at 1099, so it only acts as a no-op when no relevant auth cookies
+      // are present (which is typical for M2M bearer-token clients). Spring's bearer-token filter
+      // then handles auth and populates the SecurityContext before
+      // AbstractPreAuthenticatedProcessingFilter (1500) can interfere.
+      if (configurationService.getOptimizeApiConfiguration().isJwtAuthForApiEnabled()) {
+        LOG.info(
+            "JWT bearer-token authentication for /api/** is ENABLED "
+                + "(api.jwtAuthForApiEnabled=true)");
+        httpSecurity.oauth2ResourceServer(
+            oauth2 -> oauth2.jwt(jwt -> jwt.decoder(publicApiJwtDecoder())));
+      }
+
+      return httpSecurity.build();
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(e);
     }
@@ -200,9 +271,19 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     return configurationService.getOptimizeApiConfiguration().getAudience();
   }
 
+  @Bean
   @Override
   protected JwtDecoder publicApiJwtDecoder() {
-    return Optional.ofNullable(configurationService.getOptimizeApiConfiguration().getJwtSetUri())
+    final OptimizeApiConfiguration apiConfig = configurationService.getOptimizeApiConfiguration();
+    if (apiConfig.isJwtAuthForApiEnabled()) {
+      final String jwtSetUri = apiConfig.getJwtSetUri();
+      if (jwtSetUri == null || jwtSetUri.isEmpty()) {
+        throw new IllegalStateException(
+            "api.jwtAuthForApiEnabled is true but api.jwtSetUri is not configured");
+      }
+      return createJwtDecoderWithAudience(jwtSetUri);
+    }
+    return Optional.ofNullable(apiConfig.getJwtSetUri())
         .map(this::createJwtDecoderWithAudience)
         .orElseGet(() -> new OptimizeStaticTokenDecoder(configurationService));
   }

@@ -13,9 +13,9 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.stream.Collectors;
@@ -37,7 +37,8 @@ public class ProcessInstanceItemProvider implements ItemProvider {
     this.filter = filter;
     securityContext =
         createSecurityContext(
-            authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
+            authentication,
+            RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance()));
   }
 
   @Override
@@ -70,7 +71,8 @@ public class ProcessInstanceItemProvider implements ItemProvider {
                     new Item(
                         pi.processInstanceKey(),
                         pi.processInstanceKey(),
-                        pi.rootProcessInstanceKey()))
+                        pi.rootProcessInstanceKey(),
+                        pi.storageOrdinal()))
             .collect(Collectors.toList()),
         result.endCursor(),
         result.total(),

@@ -9,16 +9,21 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
-import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.pt.SchemaInitializer;
+import io.camunda.application.commons.secrets.SecretStoreRegistries;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -27,13 +32,19 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -49,99 +60,113 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
       "io.camunda.zeebe.shared",
     })
 @Profile("broker")
-@DependsOn(
-    "dataDirectoryProvider") // ensure that the data directory is set up before starting the broker
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
   private final BrokerBasedConfiguration configuration;
-  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
-  private final SecurityConfiguration securityConfiguration;
-  private final UserServices userServices;
+  private final UnifiedConfiguration unifiedConfiguration;
+  private final PhysicalTenantResolver physicalTenantResolver;
+  private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+  private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
+  private final Map<String, IntFunction<Long>> rdbmsExportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
+  private final WorkingDirectory workingDirectory;
+  private final SecretStoreRegistries secretStoreRegistries;
+  private final ResolvedDataDirectory resolvedDataDirectory;
+  private final ObjectProvider<SchemaInitializer> schemaInitializer;
 
   private Broker broker;
 
   @Autowired
   public BrokerModuleConfiguration(
       final BrokerBasedConfiguration configuration,
-      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration,
-      // The UserServices class is not available if you want to start-up the Standalone Broker
-      @Autowired(required = false) final UserServices userServices,
+      final UnifiedConfiguration unifiedConfiguration,
+      final PhysicalTenantResolver physicalTenantResolver,
+      // The ServiceRegistry is not available if you want to start-up the Standalone Broker
+      @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
-      @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
+      @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false)
+          final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
-      final NodeIdProvider nodeIdProvider) {
+      @Autowired(required = false) final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final NodeIdProvider nodeIdProvider,
+      final WorkingDirectory workingDirectory,
+      final SecretStoreRegistries secretStoreRegistries,
+      final ResolvedDataDirectory resolvedDataDirectory,
+      final ObjectProvider<SchemaInitializer> schemaInitializer) {
     this.configuration = configuration;
-    this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    this.securityConfiguration = securityConfiguration;
-    this.userServices = userServices;
+    this.unifiedConfiguration = unifiedConfiguration;
+    this.physicalTenantResolver = physicalTenantResolver;
+    this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider =
-        oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider();
+    this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
+    this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
+    rdbmsExportedPositionSuppliers = exportedPositionSuppliers(rdbmsMapperBundles);
     this.nodeIdProvider = nodeIdProvider;
-  }
-
-  @Bean
-  public ExporterRepository exporterRepository(
-      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
-    if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
-      LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
-      return new ExporterRepository(exporterDescriptors);
-    } else {
-      return new ExporterRepository();
-    }
+    this.workingDirectory = workingDirectory;
+    this.secretStoreRegistries = secretStoreRegistries;
+    this.resolvedDataDirectory = resolvedDataDirectory;
+    this.schemaInitializer = schemaInitializer;
   }
 
   @Bean(destroyMethod = "close")
-  public Broker broker(final ExporterRepository exporterRepository) {
+  public Broker broker(
+      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
+    final Function<String, UserServices> userServicesForTenant =
+        physicalTenantId -> serviceRegistry.userServices(physicalTenantId);
+    final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
+        authentication -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authentication);
+    final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
+        authentication -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authentication);
+
     final SystemContext systemContext =
-        new SystemContext(
-            configuration.shutdownTimeout(),
-            configuration.config(),
-            identityConfiguration,
-            actorScheduler,
-            cluster,
-            brokerClient,
-            meterRegistry,
-            securityConfiguration,
-            userServices,
-            passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
-            searchClientsProxy,
-            new BrokerRequestAuthorizationConverter(securityConfiguration),
-            nodeIdProvider);
-    springBrokerBridge.registerShutdownHelper(
-        errorCode -> shutdownHelper.initiateShutdown(errorCode));
-    broker =
-        new Broker(systemContext, springBrokerBridge, Collections.emptyList(), exporterRepository);
+        new SystemContextLoader()
+            .withShutdownTimeout(configuration.shutdownTimeout())
+            .withRootBrokerCfg(configuration.config())
+            .withRootCamunda(unifiedConfiguration.getCamunda())
+            .withActorScheduler(actorScheduler)
+            .withCluster(cluster)
+            .withBrokerClient(brokerClient)
+            .withMeterRegistry(meterRegistry)
+            .withPhysicalTenantResolver(physicalTenantResolver)
+            .withUserServicesForTenant(userServicesForTenant)
+            .withPasswordEncoder(passwordEncoder)
+            .withJwtDecoderFactory(jwtDecoderFactory)
+            .withOidcClaimsProviderFactory(oidcClaimsProviderFactory)
+            .withSearchClientsProxy(searchClientsProxy)
+            .withNodeIdProvider(nodeIdProvider)
+            .withWorkingDirectory(workingDirectory.path())
+            .withExporterDescriptors(exporterDescriptors)
+            .withExportedPositionSupplier(rdbmsExportedPositionSuppliers)
+            .withSecretStoreRegistries(secretStoreRegistries)
+            .withResolvedDataDirectory(resolvedDataDirectory)
+            .createSystemContext();
+    springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
+    springBrokerBridge.registerSchemaInitializerLookup(schemaInitializerLookupSupplier());
+    broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
 
     // already initiate starting the broker
     // to ensure that the necessary ports
@@ -164,6 +189,34 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     } finally {
       cleanupWorkingDirectory();
     }
+  }
+
+  private static Map<String, IntFunction<Long>> exportedPositionSuppliers(
+      final @Nullable Map<String, RdbmsMapperBundle> rdbmsMapperBundles) {
+    if (rdbmsMapperBundles == null) {
+      return Map.of();
+    }
+    final Map<String, IntFunction<Long>> suppliers = new HashMap<>();
+    rdbmsMapperBundles.forEach(
+        (physicalTenantId, rdbmsMapperBundle) ->
+            suppliers.put(physicalTenantId, exportedPositionSupplier(rdbmsMapperBundle)));
+    return Map.copyOf(suppliers);
+  }
+
+  private static IntFunction<Long> exportedPositionSupplier(
+      final RdbmsMapperBundle rdbmsMapperBundle) {
+    final var exporterPositionMapper = rdbmsMapperBundle.exporterPositionMapper();
+    return partition -> {
+      final var position = exporterPositionMapper.findOne(partition);
+      return position == null ? null : position.lastExportedPosition();
+    };
+  }
+
+  private @NonNull Function<String, Runnable> schemaInitializerLookupSupplier() {
+    return tenantId -> {
+      final var initializer = schemaInitializer.getIfAvailable();
+      return initializer == null ? null : () -> initializer.initializeNow(tenantId);
+    };
   }
 
   private void cleanupWorkingDirectory() {

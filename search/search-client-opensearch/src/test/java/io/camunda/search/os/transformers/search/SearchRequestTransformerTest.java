@@ -213,6 +213,47 @@ public class SearchRequestTransformerTest {
   }
 
   @Test
+  public void shouldTransformSearchAfterWithNullSortValue() {
+    // given a searchAfter cursor whose first element is null (e.g. a null businessId at the
+    // boundary between rows without and with a businessId)
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(
+            b ->
+                b.index("operate-list-view-8.3.0_")
+                    .sort((s) -> s.field((f) -> f.field("businessId").asc()))
+                    .searchAfter(new Object[] {null, "2251799813685249"}));
+
+    // when the request is transformed and serialized (as it is when sent to OpenSearch)
+    final SearchRequest actual = transformer.apply(request);
+
+    // then the null must be carried as an explicit null FieldValue and serialization must not
+    // throw (a raw null previously produced an NPE, surfacing as HTTP 500 for the caller)
+    assertThat(actual.searchAfter()).hasSize(2);
+    assertThat(actual.searchAfter().getFirst().isNull()).isTrue();
+    assertThat(osQuerySerializer.serialize(actual))
+        .contains("\"search_after\":[null,\"2251799813685249\"]");
+  }
+
+  @Test
+  public void shouldTransformSearchAfterPreservingNumericSortValue() {
+    // given a searchAfter cursor with a numeric sort value (as decoded from a cursor, where
+    // integers are deserialized as Long)
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(
+            b ->
+                b.index("operate-list-view-8.3.0_")
+                    .sort((s) -> s.field((f) -> f.field("key").asc()))
+                    .searchAfter(new Object[] {2251799813685249L}));
+
+    // when
+    final SearchRequest actual = transformer.apply(request);
+
+    // then the value must be serialized as a number, not coerced to a string, so search_after
+    // keeps matching the numeric sort field
+    assertThat(osQuerySerializer.serialize(actual)).contains("\"search_after\":[2251799813685249]");
+  }
+
+  @Test
   public void shouldTransformSort() {
     // given
     final SearchQueryRequest request =

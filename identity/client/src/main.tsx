@@ -8,8 +8,11 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.scss";
+import { IS_NEW_DESIGN_SYSTEM_ENABLED } from "./feature-flags";
+
+const App = IS_NEW_DESIGN_SYSTEM_ENABLED
+  ? (await import("./AppV2")).default
+  : (await import("./App")).default;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

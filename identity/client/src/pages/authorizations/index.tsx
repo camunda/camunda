@@ -6,15 +6,44 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import Lazy from "src/components/router/Lazy";
+import { FC, lazy, Suspense } from "react";
+import { ListPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes";
+import type {
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
-const Authorizations: FC = () => (
-  <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Lazy load={() => import("./List")} />}
-  />
-);
+const List = lazy(() => import("./List"));
+
+type AuthorizationsProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  isTenantsApiEnabled: boolean;
+  resourcePermissions: Record<ResourceType, PermissionType[]>;
+  defaultRoleIds: string[];
+};
+
+const Authorizations: FC<AuthorizationsProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  isTenantsApiEnabled,
+  resourcePermissions,
+  defaultRoleIds,
+}) => {
+  const list = (
+    <Suspense fallback={<ListPageFallback />}>
+      <List
+        isOIDC={isOIDC}
+        isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+        isTenantsApiEnabled={isTenantsApiEnabled}
+        resourcePermissions={resourcePermissions}
+        defaultRoleIds={defaultRoleIds}
+      />
+    </Suspense>
+  );
+
+  return <PageRoutes indexElement={list} detailElement={list} />;
+};
 
 export default Authorizations;

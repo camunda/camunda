@@ -53,4 +53,15 @@ public interface MessageCorrelationRecordValue
    * @return the request stream id of the initial correlate command
    */
   int getRequestStreamId();
+
+  /**
+   * The optional business id used to additionally constrain message correlation. When non-empty, a
+   * correlation only succeeds against subscriptions whose stored business id matches. When empty,
+   * business id is not used as a constraint and the message correlates regardless of the
+   * subscription's stored business id.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.10
+   */
+  String getBusinessId();
 }

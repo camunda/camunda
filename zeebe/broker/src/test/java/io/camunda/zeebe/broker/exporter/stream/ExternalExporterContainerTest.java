@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -48,6 +50,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
  */
 @Execution(ExecutionMode.CONCURRENT)
 final class ExternalExporterContainerTest {
+  private static final PartitionId PARTITION_ID =
+      new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
   private static final String EXPORTER_CLASS_NAME = "com.acme.TestExporter";
   private ExporterContainerRuntime runtime;
 
@@ -67,7 +71,7 @@ final class ExternalExporterContainerTest {
     final var exporterClass = createUnloadedExporter();
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
-    final var container = runtime.newContainer(descriptor, 0);
+    final var container = runtime.newContainer(descriptor, PARTITION_ID);
 
     // when
     container.configureExporter();
@@ -89,7 +93,7 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = runtime.newContainer(descriptor, 0);
+    final var container = runtime.newContainer(descriptor, PARTITION_ID);
 
     // when
     container.openExporter();
@@ -109,7 +113,7 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = runtime.newContainer(descriptor, 0);
+    final var container = runtime.newContainer(descriptor, PARTITION_ID);
 
     // when
     final var record = mock(TypedRecord.class);
@@ -135,10 +139,13 @@ final class ExternalExporterContainerTest {
     final var container =
         new ExporterContainer(
             descriptor,
-            0,
+            PARTITION_ID,
+            "",
+            null,
             new ExporterInitializationInfo(0, null),
             new SimpleMeterRegistry(),
-            InstantSource.system());
+            InstantSource.system(),
+            pos -> true);
 
     // when
     container.close();
@@ -162,10 +169,13 @@ final class ExternalExporterContainerTest {
     final var container =
         new ExporterContainer(
             descriptor,
-            0,
+            PARTITION_ID,
+            "",
+            null,
             new ExporterInitializationInfo(0, null),
             registry,
-            InstantSource.system());
+            InstantSource.system(),
+            pos -> true);
 
     // when
     container.configureExporter();

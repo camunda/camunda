@@ -14,7 +14,7 @@ public final class AggregationResultMappingUtil {
   private AggregationResultMappingUtil() {}
 
   public static Double mapToDoubleOrNull(final Double value) {
-    return Double.isInfinite(value) || Double.isNaN(value) ? null : value;
+    return value == null || Double.isInfinite(value) || Double.isNaN(value) ? null : value;
   }
 
   public static Optional<String> firstField(final String... fields) {

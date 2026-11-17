@@ -40,7 +40,7 @@ public class IndexSchemaValidatorTest {
             jsonToIndexMappingProperties("/mappings.json", index.getFullQualifiedName()));
 
     // when
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of());
 
     // then
     assertThat(difference)
@@ -68,7 +68,7 @@ public class IndexSchemaValidatorTest {
             jsonToIndexMappingProperties("/mappings.json", fullQualifiedName + "_2"));
 
     // when
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of());
 
     // then
     assertThat(difference)
@@ -92,7 +92,7 @@ public class IndexSchemaValidatorTest {
     final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of());
 
     assertThat(difference).isEmpty();
   }
@@ -102,7 +102,7 @@ public class IndexSchemaValidatorTest {
 
     // given, when, then
     final var index = createTestIndexDescriptor("index_name", "/mappings.json");
-    final var difference = VALIDATOR.validateIndexMappings(Map.of(), Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(Map.of(), Set.of(index), Map.of());
 
     assertThat(difference).isEmpty();
   }
@@ -122,9 +122,12 @@ public class IndexSchemaValidatorTest {
 
     // when
     // then
-    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex)))
+    assertThatThrownBy(
+            () -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex), Map.of()))
         .isInstanceOf(IndexSchemaValidationException.class)
-        .hasMessageContaining("Ambiguous schema update.");
+        .hasMessageContaining("Ambiguous schema update.")
+        .hasMessageContaining(qualifiedName)
+        .hasMessageContaining(qualifiedName + "_2");
   }
 
   @Test
@@ -133,20 +136,57 @@ public class IndexSchemaValidatorTest {
     final var indexMapping =
         createTestIndexDescriptor("index_name", "/mappings-dynamic-property.json");
     final String fullQualifiedName = indexMapping.getFullQualifiedName();
+    // both indices also differ from the descriptor in "world"'s dynamic sub-properties (noise,
+    // filtered out), but have genuinely different, non-dynamic types for "hello" - a real,
+    // distinct difference each - so this must still be reported as ambiguous
     final var currentIndices =
         Map.of(
             fullQualifiedName,
-            jsonToIndexMappingProperties(
-                "/mappings-dynamic-property-properties.json", fullQualifiedName),
+            new IndexMapping.Builder()
+                .indexName(fullQualifiedName)
+                .properties(
+                    Set.of(
+                        new IndexMappingProperty.Builder()
+                            .name("hello")
+                            .typeDefinition(Map.of("type", "keyword"))
+                            .build(),
+                        new IndexMappingProperty.Builder()
+                            .name("world")
+                            .typeDefinition(
+                                Map.of(
+                                    "type",
+                                    "object",
+                                    "dynamic",
+                                    true,
+                                    "properties",
+                                    Map.of("header1", Map.of("type", "keyword"))))
+                            .build()))
+                .dynamic("strict")
+                .build(),
             fullQualifiedName + "_2",
-            jsonToIndexMappingProperties(
-                "/mappings-dynamic-property-properties-deleted.json", fullQualifiedName + "_2"));
+            new IndexMapping.Builder()
+                .indexName(fullQualifiedName + "_2")
+                .properties(
+                    Set.of(
+                        new IndexMappingProperty.Builder()
+                            .name("hello")
+                            .typeDefinition(Map.of("type", "integer"))
+                            .build(),
+                        new IndexMappingProperty.Builder()
+                            .name("world")
+                            .typeDefinition(Map.of("type", "object", "dynamic", true))
+                            .build()))
+                .dynamic("strict")
+                .build());
 
     // when
     // then
-    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping)))
+    assertThatThrownBy(
+            () -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping), Map.of()))
         .isInstanceOf(IndexSchemaValidationException.class)
-        .hasMessageContaining("Ambiguous schema update.");
+        .hasMessageContaining("Ambiguous schema update.")
+        .hasMessageContaining(fullQualifiedName)
+        .hasMessageContaining(fullQualifiedName + "_2");
   }
 
   @Test
@@ -164,7 +204,8 @@ public class IndexSchemaValidatorTest {
                 "/mappings-dynamic-property-properties.json", fullQualifiedName + "_2"));
 
     // when
-    final var actual = VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping));
+    final var actual =
+        VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping), Map.of());
 
     // then
     assertThat(actual).hasSize(1);
@@ -175,6 +216,44 @@ public class IndexSchemaValidatorTest {
                     .name("foo")
                     .typeDefinition(Map.of("type", "keyword"))
                     .build()));
+  }
+
+  @Test
+  void shouldTreatPurelyDynamicPropertyDifferenceAsUpToDate() throws IOException {
+    // given
+    final var index = createTestIndexDescriptor("index_name", "/mappings-dynamic-property.json");
+    final var fullQualifiedName = index.getFullQualifiedName();
+    // "world" only differs from the descriptor in its dynamic sub-properties, which is the only
+    // difference here - once dynamic noise is filtered out, no real difference remains
+    final var actualMapping =
+        new IndexMapping.Builder()
+            .indexName(fullQualifiedName)
+            .properties(
+                Set.of(
+                    new IndexMappingProperty.Builder()
+                        .name("hello")
+                        .typeDefinition(Map.of("type", "text"))
+                        .build(),
+                    new IndexMappingProperty.Builder()
+                        .name("world")
+                        .typeDefinition(
+                            Map.of(
+                                "type",
+                                "object",
+                                "dynamic",
+                                true,
+                                "properties",
+                                Map.of("header1", Map.of("type", "keyword"))))
+                        .build()))
+            .dynamic("strict")
+            .build();
+    final var currentIndices = Map.of(fullQualifiedName, actualMapping);
+
+    // when
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of());
+
+    // then
+    assertThat(difference).isEmpty();
   }
 
   @Test
@@ -189,7 +268,7 @@ public class IndexSchemaValidatorTest {
     final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of());
 
     assertThat(difference).isEmpty();
   }
@@ -206,10 +285,37 @@ public class IndexSchemaValidatorTest {
 
     // when
     // then
-    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index)))
+    assertThatThrownBy(
+            () -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of()))
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining(
-            "Unsupported index changes have been introduced. Data migration is required.");
+            "Unsupported index changes have been introduced. Data migration is required.")
+        .hasMessageContaining(index.getFullQualifiedName());
+  }
+
+  @Test
+  void shouldNameAllMatchingIndicesWhenSameUnsupportedChangeAffectsMultipleIndices()
+      throws IOException {
+    // given
+    final var index =
+        createTestIndexDescriptor("index_name", "/mappings-changed-property-invalid.json");
+    final var fullQualifiedName = index.getFullQualifiedName();
+    final var currentIndices =
+        Map.of(
+            fullQualifiedName,
+            jsonToIndexMappingProperties("/mappings.json", fullQualifiedName),
+            fullQualifiedName + "_2",
+            jsonToIndexMappingProperties("/mappings.json", fullQualifiedName + "_2"));
+
+    // when
+    // then
+    assertThatThrownBy(
+            () -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), Map.of()))
+        .isInstanceOf(IndexSchemaValidationException.class)
+        .hasMessageContaining(
+            "Unsupported index changes have been introduced. Data migration is required.")
+        .hasMessageContaining(fullQualifiedName)
+        .hasMessageContaining(fullQualifiedName + "_2");
   }
 
   @Test
@@ -223,7 +329,8 @@ public class IndexSchemaValidatorTest {
             jsonToIndexMappingProperties("/mappings.json", indexTemplate.getFullQualifiedName()));
 
     // when
-    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate), Map.of());
 
     // then
     assertThat(difference)
@@ -248,7 +355,8 @@ public class IndexSchemaValidatorTest {
         createTestTemplateDescriptor("template_name", "/mappings-deleted-property.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate), Map.of());
 
     assertThat(difference).isEmpty();
   }
@@ -265,7 +373,8 @@ public class IndexSchemaValidatorTest {
     final var index = createTestIndexDescriptor("index_name", "/mappings-with-list-2.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(index));
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(index), Map.of());
 
     assertThat(difference).isEmpty();
   }
@@ -288,9 +397,151 @@ public class IndexSchemaValidatorTest {
                 .metaProperties(Map.of("meta_key", "meta_value"))
                 .build());
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(index));
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(index), Map.of());
 
     assertThat(difference).isEmpty();
+  }
+
+  @Test
+  void shouldDetectTemplateWithAddedPropertyWhenNoBackingIndexExists() throws IOException {
+    // given - all indices of the template were dropped, only the template itself remains
+    final var indexTemplate =
+        createTestTemplateDescriptor("template_name", "/mappings-added-property.json");
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference)
+        .containsExactly(
+            entry(
+                indexTemplate,
+                Set.of(
+                    new IndexMappingProperty.Builder()
+                        .name("foo")
+                        .typeDefinition(Map.of("type", "text"))
+                        .build())));
+  }
+
+  @Test
+  void shouldTreatUpToDateTemplateAsValidWhenNoBackingIndexExists() throws IOException {
+    // given
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateTemplateWithChangedPropertyTypeWhenNoBackingIndexExists() throws IOException {
+    // given - a changed field type would be an unsupported change for an existing index (data
+    // migration required), but there is no backing index/data here, so it must not be rejected
+    final var indexTemplate =
+        createTestTemplateDescriptor("template_name", "/mappings-changed-property-invalid.json");
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference).containsKey(indexTemplate);
+  }
+
+  @Test
+  void shouldReplaceTemplateWithDeletedFieldWhenNoBackingIndexExists() {
+    // given - the stored template has "bar", which the descriptor no longer defines; since there
+    // is no backing index/data for this descriptor at all, it is safe to drop "bar"
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+    final var existingTemplateMapping =
+        new IndexMapping.Builder()
+            .indexName(indexTemplate.getTemplateName())
+            .properties(
+                Set.of(
+                    new IndexMappingProperty.Builder()
+                        .name("hello")
+                        .typeDefinition(Map.of("type", "text"))
+                        .build(),
+                    new IndexMappingProperty.Builder()
+                        .name("world")
+                        .typeDefinition(Map.of("type", "keyword"))
+                        .build(),
+                    new IndexMappingProperty.Builder()
+                        .name("bar")
+                        .typeDefinition(Map.of("type", "keyword"))
+                        .build()))
+            .dynamic("strict")
+            .build();
+    final var templateMappings = Map.of(indexTemplate.getTemplateName(), existingTemplateMapping);
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference).containsKey(indexTemplate);
+  }
+
+  @Test
+  void shouldIgnoreTemplateThatDoesNotExistEitherWhenNoBackingIndexExists() {
+    // given - neither the index nor the template itself has been created yet
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(Map.of(), Set.of(indexTemplate), Map.of());
+
+    // then
+    assertThat(difference).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateStaleTemplateEvenWhenBackingIndexIsUpToDate() throws IOException {
+    // given - the backing index already matches the descriptor, but the template itself was never
+    // refreshed. Retrying after a partial failure must still catch this.
+    final var indexTemplate =
+        createTestTemplateDescriptor("template_name", "/mappings-added-property.json");
+    final var currentMappings =
+        Map.of(
+            indexTemplate.getFullQualifiedName(),
+            jsonToIndexMappingProperties(
+                "/mappings-added-property.json", indexTemplate.getFullQualifiedName()));
+    final var templateMappings =
+        Map.of(
+            indexTemplate.getTemplateName(),
+            jsonToIndexMappingProperties("/mappings.json", indexTemplate.getTemplateName()));
+
+    // when
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate), templateMappings);
+
+    // then
+    assertThat(difference)
+        .containsExactly(
+            entry(
+                indexTemplate,
+                Set.of(
+                    new IndexMappingProperty.Builder()
+                        .name("foo")
+                        .typeDefinition(Map.of("type", "text"))
+                        .build())));
   }
 
   @SuppressWarnings("unchecked")

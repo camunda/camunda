@@ -21,7 +21,7 @@ import java.time.Duration;
 public interface UpdateJobCommandStep1 {
 
   /**
-   * Update the retries and/or the timeout of this job.
+   * Update the retries, timeout, and/or priority of this job.
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription and a related incident will be marked as resolved.
@@ -37,7 +37,7 @@ public interface UpdateJobCommandStep1 {
   UpdateJobCommandStep2 update(JobChangeset jobChangeset);
 
   /**
-   * Update the retries and/or the timeout of this job.
+   * Update the retries, timeout, and/or priority of this job.
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription and a related incident will be marked as resolved.
@@ -88,7 +88,40 @@ public interface UpdateJobCommandStep1 {
    */
   UpdateJobCommandStep2 updateTimeout(Duration timeout);
 
+  /**
+   * Set the priority of this job.
+   *
+   * @param priority the priority of this job
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdateJobCommandStep2 updatePriority(int priority);
+
   interface UpdateJobCommandStep2 extends FinalCommandStep<UpdateJobResponse> {
     // the place for new optional parameters
+
+    /**
+     * Sets the lease token identifying the job's activation, fencing this command against a
+     * superseded activation of the same job. Obtain it from {@link
+     * io.camunda.client.api.response.ActivatedJob#getJobLeaseToken()
+     * ActivatedJob#getJobLeaseToken()}.
+     *
+     * <p>For a leased job, a supplied token is validated to prove the command comes from the worker
+     * that holds the current lease; a command carrying a stale token is rejected, fencing the job
+     * against a superseded activation (e.g. after the job timed out or failed and was re-activated
+     * by another worker). An update without a token always applies, to support operator and bulk
+     * updates of leased jobs; this differs from lifecycle commands like complete, fail, and
+     * throw-error, which always require a token for leased jobs. A job that was activated without a
+     * lease requires no token.
+     *
+     * <p>When this command is created from an activated job (e.g. {@code
+     * newUpdateJobCommand(activatedJob)}) the job's lease token is carried automatically, so this
+     * method is only needed when building the command from a job key.
+     *
+     * @param jobLeaseToken the opaque lease token the worker received when the job was activated
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    UpdateJobCommandStep2 withJobLeaseToken(String jobLeaseToken);
   }
 }

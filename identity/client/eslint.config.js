@@ -54,6 +54,7 @@ export default [
       ...tseslint.configs.recommended.rules,
       ...prettierPlugin.configs.recommended.rules,
       ...prettierConfig.rules,
+      ...reactHooksPlugin.configs.recommended.rules,
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-floating-promises": "error",
     },

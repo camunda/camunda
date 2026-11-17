@@ -11,12 +11,17 @@ import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionComma
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.List;
+import java.util.Objects;
 
 public final class InterPartitionCommandServiceStep implements PartitionTransitionStep {
 
@@ -94,21 +99,27 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
     final var logStreamWriter = context.getLogStream().newLogStreamWriter();
 
     final var config = context.getBrokerCfg().getExperimental();
-    final var partitionId = context.getPartitionId();
-    final var legacyReceivingSubject = LEGACY_TOPIC_PREFIX + partitionId;
-    final var receivingSubject =
-        TOPIC_PREFIX.formatted(config.getDefaultEngineName()) + partitionId;
+    final var partitionId = context.partitionId();
+    final var legacyReceivingSubject = LEGACY_TOPIC_PREFIX + partitionId.number();
+    final var receivingSubject = TOPIC_PREFIX.formatted(partitionId.group()) + partitionId.number();
 
     final var receivingSubjects =
         config.isReceiveOnLegacySubject()
+                && Objects.equals(partitionId.group(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
             ? List.of(legacyReceivingSubject, receivingSubject)
             : List.of(receivingSubject);
 
+    final var checkpointState =
+        new DbCheckpointState(context.getZeebeDb(), context.getZeebeDb().createContext());
+
     final var receiver =
         new InterPartitionCommandReceiverActor(
-            context.getPartitionId(),
+            partitionId,
             context.getClusterCommunicationService(),
             logStreamWriter,
+            context.getPersistedSnapshotStore(),
+            snapshotTrigger(context),
+            checkpointState,
             receivingSubjects);
     context
         .getActorSchedulingService()
@@ -126,18 +137,24 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
     return future;
   }
 
+  private SnapshotTrigger snapshotTrigger(final PartitionTransitionContext context) {
+    return () -> {
+      final var snapshotDirector = context.getSnapshotDirector();
+      return snapshotDirector != null
+          ? snapshotDirector.forceSnapshot()
+          : CompletableActorFuture.completed(null);
+    };
+  }
+
   private ActorFuture<Void> installSender(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getConcurrencyControl().createFuture();
 
-    final var config = context.getBrokerCfg().getExperimental();
-    final var sendingSubject =
-        config.isSendOnLegacySubject()
-            ? LEGACY_TOPIC_PREFIX
-            : TOPIC_PREFIX.formatted(config.getDefaultEngineName());
+    final var partitionId = context.partitionId();
+    final var sendingSubject = TOPIC_PREFIX.formatted(partitionId.group());
 
     final var sender =
         new InterPartitionCommandSenderService(
-            context.getClusterCommunicationService(), context.getPartitionId(), sendingSubject);
+            context.partitionId(), context.getClusterCommunicationService(), sendingSubject);
     final var actorStarted = context.getActorSchedulingService().submitActor(sender);
     actorStarted.onComplete(
         (ignore, error) -> {

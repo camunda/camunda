@@ -22,10 +22,13 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
-import org.agrona.collections.Int2IntHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
 
   public static final String LEGACY_TOPIC_PREFIX = "inter-partition-";
@@ -34,7 +37,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final ClusterCommunicationService communicationService;
 
-  private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(-1);
+  private final Int2ObjectHashMap<MemberId> partitionLeaders = new Int2ObjectHashMap<>();
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
   private CheckpointType checkpointType = CheckpointType.MANUAL_BACKUP;
   private final String sendingSubjectPrefix;
@@ -59,7 +62,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final Long recordKey,
+      final @Nullable Long recordKey,
       final UnifiedRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
   }
@@ -69,10 +72,11 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final Long recordKey,
+      final @Nullable Long recordKey,
       final UnifiedRecordValue command,
-      final AuthInfo authInfo) {
-    if (!partitionLeaders.containsKey(receiverPartitionId)) {
+      final @Nullable AuthInfo authInfo) {
+    final var partitionLeader = partitionLeaders.get(receiverPartitionId);
+    if (partitionLeader == null) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",
           valueType,
@@ -80,7 +84,6 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
           receiverPartitionId);
       return;
     }
-    final int partitionLeader = partitionLeaders.get(receiverPartitionId);
 
     LOG.trace(
         "Sending command {} {} to partition {}, leader {}",
@@ -104,7 +107,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         sendingSubjectPrefix + receiverPartitionId,
         message,
         DefaultSerializers.BASIC::encode,
-        MemberId.from("" + partitionLeader),
+        partitionLeader,
         true);
   }
 
@@ -113,8 +116,8 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
     this.checkpointType = checkpointType;
   }
 
-  void setCurrentLeader(final int partitionId, final int currentLeader) {
-    partitionLeaders.put(partitionId, currentLeader);
+  void setCurrentLeader(final int partitionId, final MemberId leaderId) {
+    partitionLeaders.put(partitionId, leaderId);
   }
 
   private static final class Encoder {
@@ -125,9 +128,9 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
-        final Long recordKey,
+        final @Nullable Long recordKey,
         final BufferWriter command,
-        final BufferWriter authInfo) {
+        final @Nullable BufferWriter authInfo) {
       final var commandLength = command.getLength();
       final var authInfoLength = authInfo != null ? authInfo.getLength() : 0;
       final var messageLength =

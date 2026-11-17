@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,7 +28,14 @@ public class BrokerDifferentRuntimeDirectoryTest {
 
   @Test
   public void shouldUseConfiguredRuntimeDirectory() {
-    final var runtimeDirectory = brokerRule.getBrokerBase().resolve(STATE);
+    // the partition-group name is part of the resolved path (see
+    // ZeebePartitionFactory#resolveRuntimeDirectory) so that different physical tenants sharing
+    // the same root runtime directory cannot collide on the same on-disk partition directory
+    final var runtimeDirectory =
+        brokerRule
+            .getBrokerBase()
+            .resolve(STATE)
+            .resolve(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(runtimeDirectory).isNotEmptyDirectory();

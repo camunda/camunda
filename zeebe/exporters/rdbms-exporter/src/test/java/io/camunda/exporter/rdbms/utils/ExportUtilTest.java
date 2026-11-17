@@ -74,4 +74,18 @@ class ExportUtilTest {
     // then
     assertThat(treePath).isEqualTo("123/456");
   }
+
+  @Test
+  void shouldReturnNullForNegativeValuesInNullIfNegative() {
+    assertThat(ExportUtil.nullIfNegative(-1L)).isNull();
+    assertThat(ExportUtil.nullIfNegative(-100L)).isNull();
+    assertThat(ExportUtil.nullIfNegative(Long.MIN_VALUE)).isNull();
+  }
+
+  @Test
+  void shouldReturnValueForNonNegativeValuesInNullIfNegative() {
+    assertThat(ExportUtil.nullIfNegative(0L)).isEqualTo(0L);
+    assertThat(ExportUtil.nullIfNegative(1L)).isEqualTo(1L);
+    assertThat(ExportUtil.nullIfNegative(512L)).isEqualTo(512L);
+  }
 }

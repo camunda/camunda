@@ -49,7 +49,7 @@ public class DocumentValidator {
     return validate(
         violations -> {
           final Long timeToLive = request.getTimeToLive();
-          if (timeToLive <= 0) {
+          if (timeToLive != null && timeToLive <= 0) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
                     "timeToLive", timeToLive, "greater than 0"));

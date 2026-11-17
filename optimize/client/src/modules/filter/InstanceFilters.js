@@ -7,11 +7,10 @@
  */
 
 import {MenuItem} from '@carbon/react';
-import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import classnames from 'classnames';
 
 import {useUiConfig} from 'hooks';
-import {Select} from 'components';
+import {Select, MenuDropdown} from 'components';
 import {t} from 'translation';
 
 export default function InstanceFilters({openNewFilterModal, processDefinitionIsNotSelected}) {

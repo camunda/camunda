@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {color} from 'chart.js/helpers';
 import deepEqual from 'fast-deep-equal';
+
+import {addAlpha} from './colorsUtils';
 
 const COLOR_FADE_OPACITY = 0.15;
 
@@ -133,8 +134,4 @@ export default function fadeOnHover({visualization, isStacked}) {
       }
     },
   };
-}
-
-function addAlpha(colorString, opacity) {
-  return color(colorString).alpha(opacity).rgbString();
 }

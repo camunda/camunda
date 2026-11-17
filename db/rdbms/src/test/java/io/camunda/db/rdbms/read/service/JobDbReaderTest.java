@@ -16,10 +16,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.search.query.JobQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +33,8 @@ class JobDbReaderTest {
     final JobQuery query = JobQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.readProcessInstance().read())),
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.readProcessInstance().read())),
             TenantCheck.disabled());
 
     final var items = jobDbReader.search(query, resourceAccessChecks).items();

@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import java.time.Duration;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +52,7 @@ public class CommandRedistributionSchedulerTest {
   @Mock private DistributionMetrics mockDistributionMetrics;
   @Mock private InterPartitionCommandSender mockCommandSender;
   @Mock private ReadonlyStreamProcessorContext mockContext;
+  @Mock private ControllableStreamClock clock;
 
   private CommandRedistributionScheduler commandRedistributor;
   private long distributionKey;
@@ -118,7 +120,7 @@ public class CommandRedistributionSchedulerTest {
     // then
     verify(mockCommandSender, times(1))
         .sendCommand(
-            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
   }
 
   private CommandRedistributionScheduler getCommandRedistributor(
@@ -141,7 +143,8 @@ public class CommandRedistributionSchedulerTest {
             1,
             routingInfo,
             mockCommandSender,
-            mockDistributionMetrics);
+            mockDistributionMetrics,
+            clock);
 
     final var config =
         new EngineConfiguration()
@@ -174,13 +177,13 @@ public class CommandRedistributionSchedulerTest {
       // then
       verify(mockCommandSender, times(1))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
       verify(mockCommandSender, times(1))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
       verify(mockCommandSender, never())
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
     }
 
     @Test
@@ -194,13 +197,13 @@ public class CommandRedistributionSchedulerTest {
       // then
       verify(mockCommandSender, times(1))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
       verify(mockCommandSender, times(1))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
       verify(mockCommandSender, never())
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
 
       // then
       // Partition 3 is now scaled up, so it should be redistributed to
@@ -211,7 +214,7 @@ public class CommandRedistributionSchedulerTest {
       commandRedistributor.runRetryCycle();
       verify(mockCommandSender, times(1))
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
     }
   }
 
@@ -271,10 +274,10 @@ public class CommandRedistributionSchedulerTest {
 
       verify(mockCommandSender, times(4))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
       verify(mockCommandSender, times(4))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
     }
   }
 }

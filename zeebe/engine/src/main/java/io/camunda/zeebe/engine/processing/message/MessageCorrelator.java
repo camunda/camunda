@@ -12,12 +12,18 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import org.agrona.collections.MutableBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class MessageCorrelator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MessageCorrelator.class);
 
   private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
@@ -68,21 +74,46 @@ public final class MessageCorrelator {
     final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 
-    final boolean correlateMessage =
+    final boolean isCorrelatable =
         message.getDeadline() > clock.millis()
             && !messageState.existMessageCorrelation(
                 messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
-
-    if (correlateMessage) {
-      subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
-
-      stateWriter.appendFollowUpEvent(
-          subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
-
-      sendCorrelateCommand(subscriptionRecord);
+    if (!isCorrelatable) {
+      return false;
     }
 
-    return correlateMessage;
+    if (!businessIdMatches(message, subscriptionRecord)) {
+      LOG.atTrace()
+          .addKeyValue("messageKey", messageKey)
+          .addKeyValue("subscriptionKey", subscriptionKey)
+          .log("Skipping subscription: business ID mismatch");
+      return false;
+    }
+
+    subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
+
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
+
+    sendCorrelateCommand(subscriptionRecord);
+
+    return true;
+  }
+
+  /**
+   * Asymmetric business-id matching rule from the design: a buffered message without a business id
+   * correlates regardless of the subscription's stored business id; a buffered message with a
+   * business id only correlates to subscriptions whose stored business id matches exactly. The
+   * subscription's business id was captured at OPEN time from the process instance, so this stays a
+   * local, on-partition check.
+   */
+  private static boolean businessIdMatches(
+      final MessageRecord message, final MessageSubscriptionRecord subscription) {
+    final var messageBusinessId = message.getBusinessIdBuffer();
+    if (messageBusinessId.capacity() == 0) {
+      return true;
+    }
+    return BufferUtil.equals(messageBusinessId, subscription.getBusinessIdBuffer());
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
@@ -95,6 +126,8 @@ public final class MessageCorrelator {
         subscriptionRecord.getMessageKey(),
         subscriptionRecord.getVariablesBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
-        subscriptionRecord.getTenantId());
+        subscriptionRecord.getTenantId(),
+        subscriptionRecord.getSubscriptionKey(),
+        subscriptionRecord.getStorageOrdinal());
   }
 }

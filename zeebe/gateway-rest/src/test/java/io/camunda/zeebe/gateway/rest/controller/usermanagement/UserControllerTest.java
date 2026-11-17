@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.USERS_API_DISABLED_ERROR_MESSAGE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -18,11 +19,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,22 +52,26 @@ import org.springframework.test.json.JsonCompareMode;
 public class UserControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(UserController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=basic")
   public class CamundaUsersEnabledTest extends RestControllerTest {
 
     @MockitoBean private UserServices userServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -155,7 +162,8 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithMissingUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username(null);
+      final var request =
+          Map.of("password", "zabraboof", "name", "Foo Bar", "email", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -175,7 +183,7 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username("");
+      final var request = userRequestWith("", "zabraboof", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -195,7 +203,7 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithEmptyPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password(null);
+      final var request = Map.of("username", "foo", "name", "Foo Bar", "email", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -215,7 +223,7 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password("");
+      final var request = userRequestWith("foo", "", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -271,7 +279,7 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithInvalidEmail() {
       // given
       final var email = "invalid@email.reject";
-      final var request = validUserWithPasswordRequest().email(email);
+      final var request = userRequestWith("foo", "zabraboof", email);
 
       // when then
       assertRequestRejectedExceptionally(
@@ -292,7 +300,7 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithTooLongUsername() {
       // given
       final var username = "x".repeat(257);
-      final var request = validUserWithPasswordRequest().username(username);
+      final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -318,7 +326,7 @@ public class UserControllerTest {
         })
     void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
       // given
-      final var request = validUserWithPasswordRequest().username(username);
+      final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -331,7 +339,7 @@ public class UserControllerTest {
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-              .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, USER_BASE_URL));
+              .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, USER_BASE_URL));
       verifyNoInteractions(userServices);
     }
 
@@ -378,10 +386,11 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new UserUpdateRequest()
+              UserUpdateRequest.Builder.create()
                   .name(user.name())
                   .email(user.email())
-                  .password(user.password()))
+                  .password(user.password())
+                  .build())
           .exchange()
           .expectStatus()
           .isOk();
@@ -394,15 +403,21 @@ public class UserControllerTest {
     }
 
     private UserRequest validUserWithPasswordRequest() {
-      return new UserRequest()
-          .username("foo")
+      return userRequestWith("foo", "zabraboof", "bar@baz.com");
+    }
+
+    private UserRequest userRequestWith(
+        final String username, final String password, final String email) {
+      return UserRequest.Builder.create()
+          .username(username)
+          .password(password)
           .name("Foo Bar")
-          .email("bar@baz.com")
-          .password("zabraboof");
+          .email(email)
+          .build();
     }
 
     private void assertRequestRejectedExceptionally(
-        final UserRequest request, final String expectedError) {
+        final Object request, final String expectedError) {
       webClient
           .post()
           .uri(USER_BASE_URL)
@@ -414,6 +429,22 @@ public class UserControllerTest {
           .isBadRequest()
           .expectBody()
           .json(expectedError, JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void shouldNotBlockPhysicalTenantPrefixedPath() {
+      // given
+      final var username = "alice-test";
+      final var uri = "/physical-tenants/default/v2/users/" + username;
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .value(status -> assertThat(status).isNotEqualTo(403));
     }
   }
 
@@ -467,10 +498,11 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new UserUpdateRequest()
+              UserUpdateRequest.Builder.create()
                   .name(user.name())
                   .email(user.email())
-                  .password(user.password()))
+                  .password(user.password())
+                  .build())
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -526,6 +558,24 @@ public class UserControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void shouldReturnErrorOnPhysicalTenantPrefixedPath() {
+      // given
+      final var username = "alice-test";
+      final var uri = "/physical-tenants/acme/v2/users/" + username;
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()

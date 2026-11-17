@@ -10,10 +10,13 @@ package io.camunda.zeebe.protocol.impl.record.value.timer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -29,16 +32,27 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final EnumProperty<BpmnElementType> elementTypeProp =
+      new EnumProperty<>(
+          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public TimerRecord() {
-    super(7);
+    super(11);
     declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
         .declareProperty(processDefinitionKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalProp)
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(elementTypeProp);
   }
 
   @JsonIgnore
@@ -113,6 +127,46 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
 
   public TimerRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public TimerRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public TimerRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public TimerRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public TimerRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

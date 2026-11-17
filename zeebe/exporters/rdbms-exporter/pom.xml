@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
   <artifactId>rdbms-exporter</artifactId>
@@ -55,17 +55,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-db-rdbms-schema</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-bpmn-model</artifactId>
+      <artifactId>zeebe-micrometer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>
@@ -93,6 +93,16 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
     </dependency>
 
     <!-- testing -->

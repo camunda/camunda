@@ -55,4 +55,18 @@ final class BrokerCreateProcessInstanceRequestTest {
         .get()
         .isInstanceOf(HashBasedDispatchStrategy.class);
   }
+
+  @Test
+  void shouldDefaultVersionTagToEmptyWhenNullOrUnset() {
+    // given
+    final var unset = new BrokerCreateProcessInstanceRequest();
+    final var nulled = new BrokerCreateProcessInstanceRequest();
+
+    // when
+    nulled.setVersionTag(null);
+
+    // then
+    assertThat(unset.getRequestWriter().getVersionTag()).isEmpty();
+    assertThat(nulled.getRequestWriter().getVersionTag()).isEmpty();
+  }
 }

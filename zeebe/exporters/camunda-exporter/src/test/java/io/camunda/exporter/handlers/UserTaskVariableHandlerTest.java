@@ -8,13 +8,18 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -81,7 +86,8 @@ public class UserTaskVariableHandlerTest {
     // given
     final long processDefinitionKey = 789L;
     processCache.put(
-        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+        processDefinitionKey,
+        new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false, Map.of()));
 
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
@@ -103,7 +109,8 @@ public class UserTaskVariableHandlerTest {
     // given
     final long processDefKey = 123L;
     processCache.put(
-        processDefKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), true));
+        processDefKey,
+        new CachedProcessEntity("test", 1, null, List.of(), Map.of(), true, Map.of()));
 
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
@@ -128,7 +135,8 @@ public class UserTaskVariableHandlerTest {
 
     final long processDefinitionKey = 789L;
     processCache.put(
-        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+        processDefinitionKey,
+        new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false, Map.of()));
 
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
@@ -146,8 +154,11 @@ public class UserTaskVariableHandlerTest {
   }
 
   @Test
-  void shouldGenerateId() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long processInstanceKey = 123L;
     final String name = "name";
     final Record<VariableRecordValue> processInstanceRecord =
@@ -162,11 +173,9 @@ public class UserTaskVariableHandlerTest {
                             .withScopeKey(processInstanceKey)
                             .build()));
 
-    // when
-    final var idList = underTest.generateIds(processInstanceRecord);
-
-    // then
-    assertThat(idList).containsExactly(processInstanceKey + "-" + name);
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, processInstanceRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(processInstanceKey + "-" + name), index));
   }
 
   @Test
@@ -203,6 +212,7 @@ public class UserTaskVariableHandlerTest {
             .setScopeKey(456L);
 
     variableBatch.getVariables().addAll(List.of(processVariableEntity, taskVariableEntity));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final ArgumentCaptor<String> idCaptor = ArgumentCaptor.forClass(String.class);
@@ -213,13 +223,13 @@ public class UserTaskVariableHandlerTest {
     final ArgumentCaptor<String> routingCaptor = ArgumentCaptor.forClass(String.class);
 
     // when
-    underTest.flush(variableBatch, mockRequest);
+    underTest.flush(index, variableBatch, mockRequest);
 
     // then
     assertThat(variableBatch.getVariables()).hasSize(2);
     verify(mockRequest, times(2))
         .upsertWithRouting(
-            eq(indexName),
+            eq(index),
             idCaptor.capture(),
             entityCaptor.capture(),
             updateFieldsCaptor.capture(),

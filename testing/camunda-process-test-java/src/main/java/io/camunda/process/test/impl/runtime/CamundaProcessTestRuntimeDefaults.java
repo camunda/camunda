@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
 import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
@@ -28,10 +29,10 @@ import java.util.Map;
 public class CamundaProcessTestRuntimeDefaults {
 
   public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME = "camunda/camunda";
-  public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "SNAPSHOT";
+  public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "8.11-SNAPSHOT";
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
-  public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "SNAPSHOT";
-  public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.13.0";
+  public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "8.11-SNAPSHOT";
+  public static final String DEFAULT_ELASTICSEARCH_VERSION = "9.5.6";
 
   public static final String DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
 
@@ -46,6 +47,8 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final Duration DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT = Duration.ofMinutes(1);
 
   public static final String DEFAULT_COVERAGE_REPORT_DIRECTORY = "target/coverage-report";
+
+  public static final int DEFAULT_QUERY_PAGE_LIMIT = 100;
 
   private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
       ContainerRuntimePropertiesUtil.readProperties();
@@ -73,6 +76,7 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getConnectorsEnvVars();
   public static final Map<String, String> CONNECTORS_SECRETS =
       PROPERTIES_UTIL.getConnectorsSecrets();
+  public static final Map<String, String> CLUSTER_SECRETS = PROPERTIES_UTIL.getClusterSecrets();
   public static final List<Integer> CONNECTORS_EXPOSED_PORTS =
       PROPERTIES_UTIL.getConnectorsExposedPorts();
 
@@ -90,14 +94,20 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 
   public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
+  public static final boolean CLOCK_RESET_ENABLED = PROPERTIES_UTIL.isClockResetEnabled();
+  public static final DataDeletionMode DATA_DELETION_MODE = PROPERTIES_UTIL.getDataDeletionMode();
 
   public static final String COVERAGE_REPORT_DIRECTORY =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
   public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
+  public static final List<String> COVERAGE_EXCLUDED_DECISIONS =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedDecisions();
 
   public static final AssertionProperties ASSERTION_PROPERTIES =
       PROPERTIES_UTIL.getAssertionProperties();
+
+  public static final int QUERY_PAGE_LIMIT = PROPERTIES_UTIL.getQueryPageLimit();
 
   public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
   public static final SemanticSimilarityProperties SEMANTIC_SIMILARITY_PROPERTIES =

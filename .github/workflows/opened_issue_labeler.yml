@@ -1,5 +1,5 @@
 # type: Project Management
-# owner: Engineering Ops
+# owner: @camunda/engineering-operations
 name: "Opened Issue Labeler"
 on:
   issues:
@@ -15,7 +15,7 @@ jobs:
     steps:
     - name: Generate GitHub token
       id: github-token
-      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
       with:
         github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
         github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -25,7 +25,7 @@ jobs:
         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
         vault-url: ${{ secrets.VAULT_ADDR }}
-    - uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
+    - uses: github/issue-labeler@ccca1e16fcb66762200e616fc29b57b940c1cb67 # v3.5
       with:
         configuration-path: .github/opened_issue_labeler.yml
         enable-versioned-regex: 0

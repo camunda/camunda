@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,7 +24,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
-public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobRecurAfterBackoffProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private static final String NOT_FAILED_JOB_MESSAGE =
       "Expected to back off failed job with key '%d', but %s";
@@ -70,6 +72,15 @@ public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRe
         case ERROR_THROWN:
           textState = "it is in error state";
           break;
+        case WAITING_FOR_SECRET_RESOLUTION:
+          textState = "it is waiting for a secret to be resolved";
+          break;
+        case SUSPENDED:
+          textState = "its process instance is suspended";
+          break;
+        case FAILED:
+          textState = "its backoff has not ended yet";
+          break;
         default:
           textState = "no such job was found";
           break;
@@ -80,7 +91,22 @@ public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRe
     }
   }
 
+  /**
+   * Uses the same boundary as {@link JobState#findBackedOffJobs}, which hands over a job whose
+   * backoff ends at the current time and does not check that job again. Rejecting it here would
+   * leave the job failed.
+   */
   private boolean hasRecurred(final JobRecord job) {
-    return job.getRecurringTime() < clock.millis();
+    return job.getRecurringTime() <= clock.millis();
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.BUFFER;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

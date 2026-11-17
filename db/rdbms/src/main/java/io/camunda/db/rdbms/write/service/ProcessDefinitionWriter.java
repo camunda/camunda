@@ -36,6 +36,26 @@ public class ProcessDefinitionWriter implements RdbmsWriter {
             processDefinition));
   }
 
+  public void markDeleted(final Long processDefinitionKey) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_DEFINITION,
+            WriteStatementType.UPDATE,
+            processDefinitionKey,
+            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDeleted",
+            processDefinitionKey));
+  }
+
+  public void markDraining(final Long processDefinitionKey) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_DEFINITION,
+            WriteStatementType.UPDATE,
+            processDefinitionKey,
+            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDraining",
+            processDefinitionKey));
+  }
+
   public void deleteByKeys(final List<Long> processDefinitionKeys) {
     processDefinitionMapper.deleteByKeys(processDefinitionKeys);
   }

@@ -15,14 +15,21 @@ import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.time.Instant;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 
 public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
+
+  private static final Set<JobIntent> FAILED_JOB_EVENTS =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
+  private static final Set<JobIntent> INTENTS_RETAINING_ELEMENT_ID =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN, JobIntent.RETRIES_UPDATED);
 
   private static final Set<JobIntent> EXPORTABLE_INTENTS =
       Set.of(
@@ -33,7 +40,9 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
           JobIntent.RETRIES_UPDATED,
           JobIntent.CANCELED,
           JobIntent.ERROR_THROWN,
-          JobIntent.MIGRATED);
+          JobIntent.MIGRATED,
+          JobIntent.PRIORITY_UPDATED,
+          JobIntent.TIMEOUT_UPDATED);
 
   private final JobWriter jobWriter;
 
@@ -64,8 +73,10 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
         new Builder()
             .jobKey(record.getKey())
             .partitionId(record.getPartitionId())
+            .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value))
             .processInstanceKey(value.getProcessInstanceKey())
             .rootProcessInstanceKey(value.getRootProcessInstanceKey())
+            .businessId(StringUtils.defaultIfEmpty(value.getBusinessId(), null))
             .elementInstanceKey(value.getElementInstanceKey())
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())
@@ -74,11 +85,18 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
             .worker(value.getWorker())
             .state(JobState.valueOf(record.getIntent().name()))
             .retries(value.getRetries())
+            .priority(value.getPriority())
             .errorMessage(value.getErrorMessage())
             .errorCode(value.getErrorCode())
             .customHeaders(value.getCustomHeaders())
-            .kind(JobKind.valueOf(value.getJobKind().name()))
-            .elementId(value.getElementId());
+            .kind(JobKind.valueOf(value.getJobKind().name()));
+
+    // Skip setting elementId for intents that may contain NO_CATCH_EVENT_FOUND sentinel
+    // to preserve the existing value in RDBMS (partial update pattern)
+    final Intent intent = record.getIntent();
+    if (!INTENTS_RETAINING_ELEMENT_ID.contains(intent)) {
+      builder.elementId(value.getElementId());
+    }
 
     final var recordTimestampAsOffsetDateTime =
         DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
@@ -92,7 +110,6 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
       builder.endTime(recordTimestampAsOffsetDateTime);
     }
 
-    final Intent intent = record.getIntent();
     if (intent.equals(JobIntent.COMPLETED)) {
       builder
           .isDenied(value.getResult().isDenied())
@@ -106,8 +123,7 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
       builder.deadline(DateUtil.toOffsetDateTime(value.getDeadline()));
     }
 
-    if (intent.equals(JobIntent.FAILED) || intent.equals(JobIntent.ERROR_THROWN)) {
-      builder.elementId(null);
+    if (FAILED_JOB_EVENTS.contains(intent)) {
       builder.hasFailedWithRetriesLeft(value.getRetries() > 0);
     }
     return builder.build();

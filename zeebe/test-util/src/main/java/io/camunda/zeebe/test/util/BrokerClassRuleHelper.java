@@ -48,6 +48,10 @@ public final class BrokerClassRuleHelper extends TestWatcher {
     return "end-" + getExecutionListenerType();
   }
 
+  public String getBeforeAllExecutionListenerType() {
+    return "before-all-" + getExecutionListenerType();
+  }
+
   private String getExecutionListenerType() {
     return "el-".concat(currentTestMethod);
   }

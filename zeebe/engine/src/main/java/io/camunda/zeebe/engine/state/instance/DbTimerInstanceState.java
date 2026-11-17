@@ -23,7 +23,6 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, TimerInstance>
       timerInstanceColumnFamily;
-  private final TimerInstance timerInstance;
   private final DbLong timerKey;
   private final DbForeignKey<DbLong> elementInstanceKey;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> elementAndTimerKey;
@@ -39,7 +38,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
   public DbTimerInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    timerInstance = new TimerInstance();
+    final TimerInstance timerInstance = new TimerInstance();
     timerKey = new DbLong();
     elementInstanceKey =
         new DbForeignKey<>(
@@ -80,7 +79,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     timerInstanceColumnFamily.deleteExisting(elementAndTimerKey);
 
     dueDate.wrapLong(timer.getDueDate());
-    dueDateColumnFamily.deleteExisting(dueDateCompositeKey);
+    dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
   }
 
   @Override
@@ -88,6 +87,27 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
     timerKey.wrapLong(timer.getKey());
     timerInstanceColumnFamily.update(elementAndTimerKey, timer);
+  }
+
+  @Override
+  public void suspend(final long elementInstanceKey, final long timerKey, final long dueDate) {
+    wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
+    dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
+  }
+
+  @Override
+  public void resume(final long elementInstanceKey, final long timerKey, final long dueDate) {
+    if (get(elementInstanceKey, timerKey) != null) {
+      wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
+      dueDateColumnFamily.upsert(dueDateCompositeKey, DbNil.INSTANCE);
+    }
+  }
+
+  private void wrapDueDateKey(
+      final long elementInstanceKey, final long timerKey, final long dueDate) {
+    this.elementInstanceKey.inner().wrapLong(elementInstanceKey);
+    this.timerKey.wrapLong(timerKey);
+    this.dueDate.wrapLong(dueDate);
   }
 
   @Override

@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler.NextEx
 import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler.NextExecution.Scheduled;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.RegeneratingTask;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -20,6 +21,7 @@ import java.time.InstantSource;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.jspecify.annotations.NonNull;
 
 /**
  * The Due Date Checker is a special purpose checker (for due date related tasks) that doesn't
@@ -50,6 +52,21 @@ public final class DueDateCheckScheduler implements StreamProcessorLifecycleAwar
   private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(new None());
 
   private final InstantSource clock;
+
+  private final RegeneratingTask checkerTask =
+      new RegeneratingTask() {
+        @Override
+        public @NonNull TaskResult execute(final @NonNull TaskResultBuilder taskResultBuilder) {
+          return DueDateCheckScheduler.this.execute(taskResultBuilder);
+        }
+
+        @Override
+        public void onResultAbandoned() {
+          // Back off for the timer resolution. When more timers are due, execute() already
+          // scheduled the next execution that soon, and schedule() keeps it.
+          schedule(clock.millis() + timerResolution);
+        }
+      };
 
   /**
    * @param timerResolution The resolution in ms for the timer
@@ -119,7 +136,7 @@ public final class DueDateCheckScheduler implements StreamProcessorLifecycleAwar
               final long scheduleFor = now + Math.max(dueDate - now, timerResolution);
               if (!(currentlyPlanned instanceof final Scheduled currentlyScheduled)
                   || (currentlyScheduled.scheduledFor() - scheduleFor > timerResolution)) {
-                final var task = scheduleService.runAt(scheduleFor, this::execute);
+                final var task = scheduleService.runAt(scheduleFor, checkerTask);
                 return Optional.of(new Scheduled(scheduleFor, task));
               }
               return Optional.empty();

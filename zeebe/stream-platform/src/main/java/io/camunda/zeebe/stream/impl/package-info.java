@@ -12,4 +12,7 @@
  * sources, but not for the test sources. The test sources can best be refactored after the engine
  * abstraction was fully introduced.
  */
+@NullMarked
 package io.camunda.zeebe.stream.impl;
+
+import org.jspecify.annotations.NullMarked;

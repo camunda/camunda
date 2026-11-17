@@ -22,13 +22,17 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-atomix-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-atomix-cluster</artifactId>
   <packaging>jar</packaging>
 
   <name>Zeebe Atomix Cluster</name>
+
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -38,7 +42,27 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-membership-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
     </dependency>
 
     <dependency>
@@ -146,6 +170,11 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-dns</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
     </dependency>
 
     <!-- test dependencies -->

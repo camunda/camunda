@@ -230,101 +230,30 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
     }
 
     final Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
+    final BoolQuery.Builder variableQueryBuilder = supplier.get();
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
         return createEqualsOneOrMoreValuesQueryBuilder(dto);
       case LESS_THAN:
-        builder.nested(
-            n ->
-                n.path(getVariablePath())
-                    .scoreMode(ChildScoreMode.None)
-                    .query(
-                        q ->
-                            q.bool(
-                                supplier
-                                    .get()
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .lt(convertToDouble(value)))))
-                                    .build())));
-        break;
       case GREATER_THAN:
-        builder.nested(
-            n ->
-                n.path(getVariablePath())
-                    .scoreMode(ChildScoreMode.None)
-                    .query(
-                        q ->
-                            q.bool(
-                                supplier
-                                    .get()
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .gt(convertToDouble(value)))))
-                                    .build())));
-        break;
       case LESS_THAN_EQUALS:
-        builder.nested(
-            n ->
-                n.path(getVariablePath())
-                    .scoreMode(ChildScoreMode.None)
-                    .query(
-                        q ->
-                            q.bool(
-                                supplier
-                                    .get()
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .lte(convertToDouble(value)))))
-                                    .build())));
-        break;
       case GREATER_THAN_EQUALS:
-        builder.nested(
-            n ->
-                n.path(getVariablePath())
-                    .scoreMode(ChildScoreMode.None)
-                    .query(
-                        q ->
-                            q.bool(
-                                supplier
-                                    .get()
-                                    .must(
-                                        m ->
-                                            m.range(
-                                                r ->
-                                                    r.number(
-                                                        nf ->
-                                                            nf.field(nestedVariableValueFieldLabel)
-                                                                .gte(convertToDouble(value)))))
-                                    .build())));
+        variableQueryBuilder.must(
+            createNumericRangeQuery(
+                nestedVariableValueFieldLabel, dto.getType(), data.getOperator(), value));
         break;
       default:
-        builder.nested(
-            n ->
-                n.path(getVariablePath())
-                    .scoreMode(ChildScoreMode.None)
-                    .query(q -> q.bool(supplier.get().build())));
         logger.warn(
             "Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
             data.getOperator(),
             dto.getType());
     }
+    builder.nested(
+        n ->
+            n.path(getVariablePath())
+                .scoreMode(ChildScoreMode.None)
+                .query(q -> q.bool(variableQueryBuilder.build())));
     return builder;
   }
 
@@ -516,9 +445,5 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
 
   private String getVariableIdField() {
     return DecisionVariableHelper.getVariableClauseIdField(getVariablePath());
-  }
-
-  private static Double convertToDouble(final Object value) {
-    return value == null ? null : ((Number) value).doubleValue();
   }
 }

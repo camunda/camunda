@@ -66,17 +66,22 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobStatus;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
-import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.service.db.DatabaseConstants;
+import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
+import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -90,6 +95,8 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
@@ -105,7 +112,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -165,10 +173,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         .getConfiguredZeebe()
         .setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
-    deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then process activating event has been imported
@@ -181,7 +191,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             });
 
     // when
-    importAllZeebeEntitiesFromLastIndex(); // fetch process activated event - not imported
     importAllZeebeEntitiesFromLastIndex(); // fetch and import flownode activating event
 
     // then
@@ -232,7 +241,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        4, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -297,9 +307,11 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // We wait for the service task to be exported before cancelling the process
     // (1 * process event, 2 * "start_event" events). Then again for the import of cancellation
     // events (2 cancel events)
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        4, deployedInstance.getProcessInstanceKey());
     zeebeExtension.cancelProcessInstance(deployedInstance.getProcessInstanceKey());
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -365,14 +377,16 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        4, deployedInstance.getProcessInstanceKey());
     try {
       zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
     } catch (final IOException | InterruptedException e) {
       throw new OptimizeRuntimeException(e);
     }
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        8, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -430,8 +444,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
   @Test
   public void importZeebeProcessInstanceData_multipleInstancesForSameProcess() {
-    // given
-    final String processName = "someProcess";
+    // given - unique name so version counter starts at 1 regardless of prior tests on the
+    // class-scoped broker
+    final String processName = "someProcess-" + IdGenerator.getNextId();
     final Process deployedProcess =
         zeebeExtension.deployProcess(createStartEndProcess(processName));
     final ProcessInstanceEvent firstInstance =
@@ -441,7 +456,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
     // when
     // Each instance generates 6 events
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, firstInstance.getProcessInstanceKey());
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, secondInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -468,7 +486,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
     // when
     // both processes have 6 importable events, wait until all records for both have been exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, firstInstance.getProcessInstanceKey());
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, secondInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -483,17 +504,19 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
   @Test
   public void importZeebeProcessInstanceData_instancesWithDifferentVersionsOfSameProcess() {
-    // given
-    final String processName = "someProcess";
+    // given - use a unique process name so the version counter starts at 1 regardless of how many
+    // times the broker (which is class-scoped) has seen this process in prior tests
+    final String processName = "someProcess-" + IdGenerator.getNextId();
     final ProcessInstanceEvent v1Instance =
         deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
     final ProcessInstanceEvent v2Instance =
         deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
 
     // when
-    // The first instance generates 6 events, so the 7th indicates that both processes have been
-    // exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, v1Instance.getProcessInstanceKey());
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, v2Instance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -512,13 +535,16 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void importZeebeProcessInstanceData_processContainsLoop() {
     // given
     final String processName = "someProcess";
-    deployAndStartInstanceForProcess(createLoopingProcess(processName));
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createLoopingProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        1, deployedInstance.getProcessInstanceKey());
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
-    waitUntilMinimumProcessInstanceEventsExportedCount(18);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        18, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -564,10 +590,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
     // given
     final String processName = "someProcess";
-    deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(6);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -588,11 +616,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final String processName = "someProcess";
     final Process process =
         zeebeExtension.deployProcess(createInclusiveGatewayProcess(processName));
-    zeebeExtension.startProcessInstanceWithVariables(
-        process.getBpmnProcessId(), Map.of("varName", "a,b"));
+    final long instanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            process.getBpmnProcessId(), Map.of("varName", "a,b"));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(8, instanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -616,11 +645,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final String processName = "someProcess";
     final Process process =
         zeebeExtension.deployProcess(createInclusiveGatewayProcessWithConverging(processName));
-    zeebeExtension.startProcessInstanceWithVariables(
-        process.getBpmnProcessId(), Map.of("varName", "a,b"));
+    final long instanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            process.getBpmnProcessId(), Map.of("varName", "a,b"));
 
     // when
-    waitUntilInstanceRecordWithElementIdExported(END_EVENT);
+    waitUntilInstanceRecordWithElementIdForInstanceExported(END_EVENT, instanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -641,7 +671,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        1, processInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -679,11 +710,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final BpmnModelInstance model =
         readProcessDiagramAsInstance("/bpmn/compatibility/adventure.bpmn");
     final String processId = zeebeExtension.deployProcess(model).getBpmnProcessId();
-    zeebeExtension.startProcessInstanceWithVariables(
-        processId, Map.of("space", true, "time", true));
+    final long instanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            processId, Map.of("space", true, "time", true));
 
     // when
-    waitUntilInstanceRecordWithElementIdExported("milkAdventureEndEventId");
+    waitUntilInstanceRecordWithElementIdForInstanceExported("milkAdventureEndEventId", instanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // then all new events were imported
@@ -746,14 +778,16 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_processContainsCompensationTasks() {
     // given
-    deployAndStartInstanceForProcess(createCompensationEventProcess());
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createCompensationEventProcess());
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK_WITH_COMPENSATION_EVENT);
     zeebeExtension.completeTaskForInstanceWithJobType(COMPENSATION_EVENT_TASK);
 
     // when
     waitUntilInstanceRecordWithElementTypeAndIntentExported(
         BpmnElementType.BOUNDARY_EVENT, ELEMENT_COMPLETED);
-    waitUntilMinimumProcessInstanceEventsExportedCount(12);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        12, deployedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -785,11 +819,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             process ->
                 process.zeebeActiveElementsCollectionExpression(ACTIVATE_ELEMENTS).task(TASK));
     final String processId = zeebeExtension.deployProcess(adHocSubProcessModel).getBpmnProcessId();
-    zeebeExtension.startProcessInstanceWithVariables(
-        processId, Map.of(ACTIVATE_ELEMENTS, List.of(TASK)));
+    final long instanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            processId, Map.of(ACTIVATE_ELEMENTS, List.of(TASK)));
 
     // when
-    waitUntilInstanceRecordWithElementIdExported(END_EVENT);
+    waitUntilInstanceRecordWithElementIdForInstanceExported(END_EVENT, instanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -813,22 +848,27 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             deployedProcess.getProcessDefinitionKey(), Map.of("triggerStart", true));
 
     // when
-    waitUntilInstanceRecordWithElementIdExported(CONDITIONAL_PROCESS_SERVICE_TASK_1);
+    waitUntilInstanceRecordWithElementIdForInstanceExported(
+        CONDITIONAL_PROCESS_SERVICE_TASK_1, processInstanceKey);
     zeebeExtension.addVariablesToScope(
         processInstanceKey, Map.of("triggerBoundaryNonInt", true), false);
     zeebeExtension.addVariablesToScope(
         processInstanceKey, Map.of("triggerSubProcessNonInt", true), false);
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
-    waitUntilInstanceRecordWithElementIdExported(CONDITIONAL_INTERMEDIATE_CATCH);
+    waitUntilInstanceRecordWithElementIdForInstanceExported(
+        CONDITIONAL_INTERMEDIATE_CATCH, processInstanceKey);
     zeebeExtension.addVariablesToScope(
         processInstanceKey, Map.of("triggerIntermediate", true), false);
-    waitUntilInstanceRecordWithElementIdExported(CONDITIONAL_PROCESS_SERVICE_TASK_2);
+    waitUntilInstanceRecordWithElementIdForInstanceExported(
+        CONDITIONAL_PROCESS_SERVICE_TASK_2, processInstanceKey);
     zeebeExtension.addVariablesToScope(
         processInstanceKey, Map.of("triggerBoundaryInt", true), false);
-    waitUntilInstanceRecordWithElementIdExported("serviceTaskAfterBoundary");
+    waitUntilInstanceRecordWithElementIdForInstanceExported(
+        "serviceTaskAfterBoundary", processInstanceKey);
     zeebeExtension.addVariablesToScope(
         processInstanceKey, Map.of("triggerSubProcessInt", true), false);
-    waitUntilInstanceRecordWithElementIdExported("interruptingSubProcessEnd");
+    waitUntilInstanceRecordWithElementIdForInstanceExported(
+        "interruptingSubProcessEnd", processInstanceKey);
 
     importAllZeebeEntitiesFromScratch();
 
@@ -857,8 +897,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void importZeebeProcess_defaultTenantIdForRecordsWithoutTenantId() {
     // given a process deployed before zeebe implemented multi tenancy (pre 8.3.0 this test is
     // disabled)
-    deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
-    waitUntilInstanceRecordWithElementIdExported(START_EVENT);
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
+    waitUntilInstanceRecordWithElementIdForInstanceExported(
+        START_EVENT, deployedInstance.getProcessInstanceKey());
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -881,22 +923,29 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_tenantIdImported() {
     // given
-    deployAndStartInstanceForProcess(createStartEndProcess("aProcess"));
-    waitUntilInstanceRecordWithElementIdExported(START_EVENT);
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("aProcess"));
+    // Wait for all 6 process events (PROCESS + startEvent + endEvent, each ACTIVATED+COMPLETED)
+    // before patching tenant so the patch covers every flow-node record, not just startEvent
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
     final String expectedTenantId = "testTenant";
     setTenantIdForExportedZeebeRecords(ZEEBE_PROCESS_INSTANCE_INDEX_NAME, expectedTenantId);
 
     // when
     importAllZeebeEntitiesFromScratch();
 
-    // then
+    // then — filter by this test's instance key so stale records from prior tests don't interfere
+    final String instanceId = String.valueOf(deployedInstance.getProcessInstanceKey());
     final List<ProcessInstanceDto> instances =
         databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(instances)
+        .filteredOn(pi -> instanceId.equals(pi.getProcessInstanceId()))
         .extracting(ProcessInstanceDto::getTenantId)
         .singleElement()
         .isEqualTo(expectedTenantId);
     assertThat(instances)
+        .filteredOn(pi -> instanceId.equals(pi.getProcessInstanceId()))
         .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
         .extracting(FlowNodeInstanceDto::getTenantId)
         .hasSize(2)
@@ -917,7 +966,11 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final long startedInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), processVariables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    // Wait for both process events AND the initial variables (var1, var2) to be exported so that
+    // the first import captures them — without this, currentNestedDocCount would be computed
+    // without variables and the nested-doc limit would be set too low for instance 2 to import.
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, startedInstanceKey);
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto firstInstanceOnFirstRoundImport =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
@@ -932,18 +985,32 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
     // Now add additional variables to go beyond the nested document limit
     zeebeExtension.addVariablesToScope(startedInstanceKey, additionalVariables, true);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    // Wait for var3 + var4 CREATED events for the first instance (total: 2 initial + 2 additional)
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(4, startedInstanceKey);
 
     // and start a second instance, which should still be imported
     final long secondInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), processVariables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, secondInstanceKey);
+    // Wait for instance 2's var1 + var2 CREATED events
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, secondInstanceKey);
+    // Create a registry for this test so that the counter is not affected by other tests or
+    // Optimize context
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    Metrics.addRegistry(meterRegistry);
 
-    // when
-    importAllZeebeEntitiesFromScratch();
+    try {
+      // when
+      importAllZeebeEntitiesFromScratch();
+    } finally {
+      // cleanup
+      Metrics.removeRegistry(meterRegistry);
+    }
 
     // then the first instance does not get updated with new nested data
+    assertThat(getNestedLimitSkippedDocuments(meterRegistry)).isPositive();
     final ProcessInstanceDto firstInstanceAfterSecondRoundImport =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
     assertThat(firstInstanceAfterSecondRoundImport.getVariables())
@@ -1052,12 +1119,92 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         processDefinitionKey, nestedDocLimit, embeddedOptimizeExtension.getConfigurationService());
   }
 
-  private void waitUntilMinimumVariableDocumentsExportedCount(final int minExportedEventCount) {
-    final TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
-    variableBoolQuery.addTermQuery(
-        ZeebeVariableRecordDto.Fields.intent, VariableIntent.CREATED.name());
+  @Test
+  public void shouldImportProcessInstance_whenNoDeletionJobEntryExists() {
+    // given
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("noDeletionJobProcess"));
 
-    waitUntilMinimumDataExportedCount(
-        minExportedEventCount, DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME, variableBoolQuery);
+    // when
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey())));
+  }
+
+  @ParameterizedTest
+  @EnumSource(JobStatus.class)
+  public void shouldSuppressImport_whenDeletionJobEntryExistsForDefinition(
+      final JobStatus jobStatus) {
+    // given a deletion job entry for this exact process definition version, in any status --
+    // including QUEUED, simulating a batch racing a delete that hasn't been picked up yet
+    final ProcessInstanceEvent deployedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("suppressedProcess"));
+    final JobRegistryWriter jobRegistryWriter =
+        embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
+    final var jobEntry =
+        jobRegistryWriter.createJobEntry(
+            JobType.DELETE,
+            EntityType.PROCESS_DEFINITION,
+            String.valueOf(deployedInstance.getProcessDefinitionKey()));
+    if (jobStatus != JobStatus.QUEUED) {
+      jobRegistryWriter.updateJobStatus(jobEntry.getId(), jobStatus, null);
+    }
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, deployedInstance.getProcessInstanceKey());
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()).isEmpty();
+  }
+
+  @Test
+  public void shouldOnlySuppressMatchingDefinition_inMixedBatch() {
+    // given two distinct process definitions in flight, only one has a deletion job entry
+    final ProcessInstanceEvent suppressedInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("mixedBatchSuppressedProcess"));
+    final ProcessInstanceEvent keptInstance =
+        deployAndStartInstanceForProcess(createStartEndProcess("mixedBatchKeptProcess"));
+    final JobRegistryWriter jobRegistryWriter =
+        embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
+    jobRegistryWriter.createJobEntry(
+        JobType.DELETE,
+        EntityType.PROCESS_DEFINITION,
+        String.valueOf(suppressedInstance.getProcessDefinitionKey()));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, suppressedInstance.getProcessInstanceKey());
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        6, keptInstance.getProcessInstanceKey());
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getProcessInstanceId())
+                    .isEqualTo(String.valueOf(keptInstance.getProcessInstanceKey())));
+  }
+
+  private static double getNestedLimitSkippedDocuments(final MeterRegistry meterRegistry) {
+    final Counter counter =
+        meterRegistry
+            .find("optimize.import.nestedLimitSkippedDocuments")
+            .tag("ITEM", "Zeebe process instances")
+            .counter();
+    return counter == null ? 0 : counter.count();
   }
 }

@@ -79,15 +79,24 @@ public final class OAuthCredentialsProviderBuilder {
   public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   public static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
   public static final Duration DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD = Duration.ofSeconds(30);
+
+  /**
+   * Historical default path for the persistent credentials cache file. This path is <b>not</b>
+   * applied automatically; file-based caching is opt-in and activates only when {@link
+   * #credentialsCachePath(String)} is set to a non-empty value (directly, via Spring property, or
+   * via {@code CAMUNDA_CLIENT_CONFIG_PATH}). Callers wanting to reproduce the pre-8.10 default
+   * behavior can reference this constant explicitly.
+   */
   public static final String DEFAULT_CREDENTIALS_CACHE_PATH =
       Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
           .toAbsolutePath()
           .toString();
+
   public static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   public static final int DEFAULT_TOKEN_FETCH_MAX_RETRIES = 5;
   public static final Duration DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF = Duration.ofSeconds(1);
   public static final double DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER = 2.0;
-  public static final Duration DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN = Duration.ofSeconds(30);
 
   /**
    * HTTP status codes from the token endpoint that should trigger a retry with backoff. Any other
@@ -299,8 +308,10 @@ public final class OAuthCredentialsProviderBuilder {
   }
 
   /**
-   * The location for the credentials cache file. If none (or null) is specified the default will be
-   * $HOME/.camunda/credentials
+   * The location for the persistent credentials cache file. If unset or empty, the provider caches
+   * credentials only in memory and does not persist them across restarts — this is the default. Set
+   * this to a writable path to opt in to file-based caching; the path must be writable or the first
+   * cache write will fail.
    */
   public OAuthCredentialsProviderBuilder credentialsCachePath(final String cachePath) {
     credentialsCachePath = cachePath;
@@ -310,7 +321,7 @@ public final class OAuthCredentialsProviderBuilder {
   /**
    * @see OAuthCredentialsProviderBuilder#credentialsCachePath(String)
    */
-  File getCredentialsCache() {
+  public File getCredentialsCache() {
     return credentialsCache;
   }
 
@@ -475,9 +486,9 @@ public final class OAuthCredentialsProviderBuilder {
    * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
    * non-200 status code outside this set trips the non-retryable-failure cooldown: token fetches
    * fail fast for the duration configured via {@link #tokenFetchNonRetryableCooldown(Duration)}
-   * (default 5 minutes), after which the provider automatically probes again. The default is {@link
-   * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default; callers
-   * wanting to extend or shrink the default should derive from {@link
+   * (default 30 seconds), after which the provider automatically probes again. The default is
+   * {@link #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default;
+   * callers wanting to extend or shrink the default should derive from {@link
    * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}.
    */
   public OAuthCredentialsProviderBuilder tokenFetchRetryableStatusCodes(
@@ -767,10 +778,6 @@ public final class OAuthCredentialsProviderBuilder {
   }
 
   private void applyDefaults() {
-    if (credentialsCachePath == null) {
-      credentialsCachePath = DEFAULT_CREDENTIALS_CACHE_PATH;
-    }
-
     if (connectTimeout == null) {
       connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     }
@@ -830,11 +837,16 @@ public final class OAuthCredentialsProviderBuilder {
         throw new IllegalArgumentException("Truststore path does not exist: " + keystorePath);
       }
 
-      credentialsCache = new File(credentialsCachePath);
+      if (credentialsCachePath != null && !credentialsCachePath.isEmpty()) {
+        credentialsCache = new File(credentialsCachePath);
 
-      if (credentialsCache.isDirectory()) {
-        throw new IllegalArgumentException(
-            "Expected specified credentials cache to be a file but found directory instead.");
+        if (credentialsCache.isDirectory()) {
+          throw new IllegalArgumentException(
+              "Expected specified credentials cache to be a file but found directory instead.");
+        }
+      } else {
+        // Clear any file from a previous build() so reused builders do not leak stale state.
+        credentialsCache = null;
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");

@@ -9,8 +9,8 @@
 import {useState, useEffect} from 'react';
 import {MenuItemSelectable} from '@carbon/react';
 import {UpdateNow} from '@carbon/icons-react';
-import {MenuButton} from '@camunda/camunda-optimize-composite-components';
 
+import {MenuButton} from 'components';
 import {t} from 'translation';
 
 import AutoRefreshIcon from './AutoRefreshIcon';

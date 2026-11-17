@@ -1,5 +1,5 @@
 # Checks for active licensing issues across all tracking branches for camunda/camunda@* FOSSA projects
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Check Licenses (Active Issues)
 
@@ -13,6 +13,7 @@ on:
   workflow_dispatch:
 
 env:
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
@@ -21,11 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -37,21 +40,21 @@ jobs:
 
     - name: Get Issues for camunda/camunda@single-app (all tracked branches)
       # Tracked branches are defiened in FOSSA UI
-      uses: camunda/infra-global-github-actions/fossa/get-issues@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/get-issues@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
       id: single-app
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@single-app
 
     - name: Get Issues for camunda/camunda@optimize (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/get-issues@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
       id: optimize
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@optimize
 
     - name: Get Issues for camunda/camunda@c8run (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/get-issues@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
       id: c8run
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
@@ -83,7 +86,7 @@ jobs:
 
           project_issues=""
           project_total=0
-          
+
           # Iterate over each branch in this project
           while read -r branch; do
             branch_name=$(echo "$branch" | jq -r '.branch')
@@ -103,7 +106,7 @@ jobs:
               issues_list="${issues_list}*${project_name}* (${project_total} total)\n${project_issues}\n"
           fi
         done < <(echo "$ISSUES" | jq -s 'add | group_by(."project-title")' | jq -c '.[]')
-        
+
         echo "Total licensing issues: $total_issues"
 
         {
@@ -113,7 +116,7 @@ jobs:
 
     - name: Send Slack notification
       if: steps.check-issues.outputs.active-issues-found != '0' && github.event_name != 'pull_request'
-      uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+      uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
       with:
         payload: |
           {
@@ -129,7 +132,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}\n\nDRI: <!subteam^S07D6C6B18T|monorepo-ci-medic>\n<https://confluence.camunda.com/spaces/HAN/pages/245403757/C8+Monorepo+CI+Processes#C8MonorepoCIProcesses-Triageproblemsreportedin%23top-monorepo-ci|Triage Guide>"
+                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}\n\nDRI: <!subteam^S07D6C6B18T|monorepo-ci-medic>\n<https://camunda.github.io/camunda/processes/#unhandled-fossa-licensing-issues-reported-in-top-monorepo-ci|Triage Guide>"
                 }
               }
             ]

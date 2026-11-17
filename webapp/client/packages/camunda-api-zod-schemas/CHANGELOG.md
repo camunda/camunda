@@ -1,5 +1,465 @@
 # Changelog
 
+## v0.0.97
+
+### 🚀 Enhancements
+
+- Add `authenticatedCurrentUserSchema` and `AuthenticatedCurrentUser` to the 8.11 schemas, for a current user with `isAnonymous` set to `false` and a set `username` ([#66964](https://github.com/camunda/camunda/pull/66964))
+- Add the `PROBE` resource type and the `ANSWER` permission to the 8.11 authorization schemas ([#68863](https://github.com/camunda/camunda/issues/68863))
+
+### 🩹 Fixes
+
+- Accept the anonymous current user of an unprotected API in the 8.10 schema (`isAnonymous`, and a `null` username, display name and email) ([#66964](https://github.com/camunda/camunda/pull/66964))
+
+### ❤️ Contributors
+
+- Mathias Vandaele ([@mathias-vandaele](https://github.com/mathias-vandaele))
+- Tim Cline ([@timcline](https://github.com/timcline))
+- Vinícius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.96
+
+### 🩹 Fixes
+
+- Mark the process definition id/key of jobs, element instances and sequence flows, the process definition key of correlated message subscriptions, and job `elementId` as nullable in the 8.10 response schemas, matching the spec for legacy documents ([#66159](https://github.com/camunda/camunda/issues/66159))
+
+### ❤️ Contributors
+
+- Houssain Barouni ([@houssain-barouni](https://github.com/houssain-barouni))
+
+## v0.0.95
+
+### 🩹 Fixes
+
+- Add `businessId` to the 8.9, 8.10 and 8.11 process definition statistics filter schemas, matching the spec ([#64678](https://github.com/camunda/camunda/pull/64678))
+
+### ❤️ Contributors
+
+- Francesco Esposito ([@phoinixi](https://github.com/phoinixi))
+
+## v0.0.94
+
+### 🚀 Enhancements
+
+- Add the `8.11` schema version, mirroring 8.10 and adding `isTenantsApiEnabled` (deployment) and `isCamundaGroupsEnabled` (authentication) to the system configuration schema ([#63648](https://github.com/camunda/camunda/pull/63648))
+
+### 🩹 Fixes
+
+- Make `batchOperationType` nullable in the 8.10 and 8.11 batch operation schemas, for legacy Operate batches and documents without a stored type ([#63685](https://github.com/camunda/camunda/pull/63685))
+
+### ⚠️ Breaking Changes
+
+- Rename `jobLease` to `jobLeaseToken` on 8.10 and 8.11 agent instance history items, matching the REST API rename ([#63086](https://github.com/camunda/camunda/pull/63086))
+
+### ❤️ Contributors
+
+- HeleneW-dot ([@HeleneW-dot](https://github.com/HeleneW-dot))
+- Nicola Puppa ([@nicpuppa](https://github.com/nicpuppa))
+- Victor Ronnerstedt ([@Krypt0r7](https://github.com/Krypt0r7))
+
+## v0.0.93
+
+### 🩹 Fixes
+
+- Add `reasoningTokenCount`, `cacheCreationTokenCount`, and `cacheReadTokenCount` to the 8.10 agent instance metrics and history item metrics schemas [#59320](https://github.com/camunda/camunda/issues/59320)
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.92
+
+### 🚀 Enhancements
+
+- Add `state` field (`ACTIVE`, `DRAINING`, `DELETED`) to the 8.8 and 8.9 process-definition schemas, exposing and enabling filtering on the draining state ([#56988](https://github.com/camunda/camunda/issues/56988))
+
+### ❤️ Contributors
+
+- Ambrose Tan ([@tanjinyi](https://github.com/tanjinyi))
+
+## v0.0.91
+
+### 🚀 Enhancements
+
+- Accept a top-level `$or` clause in the 8.10 user task search filter, matching the other search endpoints ([#59998](https://github.com/camunda/camunda/issues/59998))
+
+### ❤️ Contributors
+
+- Aleksander Dytko ([@aleksander-dytko](https://github.com/aleksander-dytko))
+
+## v0.0.90
+
+### 🩹 Fixes
+
+- Type `AgentInstanceDefinition.systemPrompt` as a content block array instead of a plain string, matching the breaking API change from [#60602](https://github.com/camunda/camunda/pull/60602) ([#60624](https://github.com/camunda/camunda/issues/60624))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.89
+
+### 🩹 Fixes
+
+- Align agent instance types with their latest OpenAPI spec
+  - Add `agentDefinitionKey` to agent instances, their search filter, and sort fields
+  - Add `CONFIGURATION` to the agent instance history role enum
+  - Add `historyItemId`, `tools`, `model`, `provider`, `limits`, and `systemPrompt` to agent instance history items
+  - Widen `AgentInstanceObjectContent.object` to accept any JSON value instead of only objects
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.88
+
+### 🚀 Enhancements
+
+- Add single-instance and batch suspend/resume request/response schemas and endpoints, plus `SUSPEND_PROCESS_INSTANCE`/`RESUME_PROCESS_INSTANCE` batch-operation types, to the 8.10 process-instance schemas ([#57534](https://github.com/camunda/camunda/issues/57534))
+
+### ❤️ Contributors
+
+- Francesco Esposito (@phoinixi)
+
+## v0.0.87
+
+### 🚀 Enhancements
+
+- Add `state` field (`ACTIVE`, `DRAINING`, `DELETED`) to the 8.10 process-definition schema, exposing and enabling filtering on the draining state ([#56988](https://github.com/camunda/camunda/issues/56988))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.86
+
+### 🩹 Fixes
+
+- Mark `AgentInstanceHistoryItem.loopIteration` as non-nullable in the response schema ([#57399](https://github.com/camunda/camunda/issues/57399))
+
+### ❤️ Contributors
+
+- [@christoph-fricke](https://github.com/christoph-fricke)
+
+## v0.0.85
+
+### 🚀 Enhancements
+
+- Add `creationTime` as a sortable field to the 8.10 jobs search schema, enabling jobs (including execution/task listeners) to be sorted by their creation time ([#58500](https://github.com/camunda/camunda/issues/58500))
+
+### ❤️ Contributors
+
+- [@aleksander-dytko](https://github.com/aleksander-dytko)
+
+## v0.0.84
+
+### 🚀 Enhancements
+
+- Add `SECRET` authorization resource type and `REVEAL` permission ([#58391](https://github.com/camunda/camunda/pull/58391))
+
+### ❤️ Contributors
+
+- [@HeleneW-dot](https://github.com/HeleneW-dot)
+
+## v0.0.83
+
+### 🚀 Enhancements
+
+- Add `suspendedDate` to the 8.10 process-instance schemas — nullable date-time on the `ProcessInstance` result, an advanced date-time filter, and a new sort field — completing the `SUSPENDED` state support added in [#58035](https://github.com/camunda/camunda/pull/58035) ([#58564](https://github.com/camunda/camunda/issues/58564))
+
+### ❤️ Contributors
+
+- [@danielkelemen](https://github.com/danielkelemen)
+
+## v0.0.82
+
+### 🩹 Fixes
+
+- Mark `AgentInstanceHistoryItemMetrics` sub-fields as nullable in preparation for the upcoming API contract change ([#57703](https://github.com/camunda/camunda/issues/57703)). The following fields are now nullable:
+  - `inputTokens`
+  - `outputTokens`
+  - `durationMs`
+
+### ❤️ Contributors
+
+- [@ce-dmelnych](https://github.com/ce-dmelnych)
+
+## v0.0.81
+
+### 🚀 Enhancements
+
+- Rename `iteration` to `loopIteration` in agent instance history schemas (`AgentInstanceHistoryItem`, filter, and sort) ([#56504](https://github.com/camunda/camunda/issues/56504))
+
+### ❤️ Contributors
+
+- [@fabiopaini-camunda](https://github.com/fabiopaini-camunda)
+
+## v0.0.80
+
+### 🚀 Enhancements
+
+- enhance endpoint mapping types ([#56683](https://github.com/camunda/camunda/issues/56683))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.79
+
+### 🚀 Enhancements
+
+- Add wait state statistics endpoint to the 8.10 process-instance schema ([#56422](https://github.com/camunda/camunda/issues/56422))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.78
+
+### 🚀 Enhancements
+
+- Add `businessId` property to decision-instance schema ([#52098](https://github.com/camunda/camunda/issues/52098))
+- Add `businessId` property to user-task schema ([#51691](https://github.com/camunda/camunda/issues/51691))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.77
+
+### 🚀 Enhancements
+
+- Add MCP inbound channel fields to the 8.10 audit log schema ([#53594](https://github.com/camunda/camunda/issues/53594))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.76
+
+### 🩹 Fixes
+
+- Align agent instance types with their latest OpenAPI spec
+  - Add `UNKNOWN` to agent instance status enum
+  - Add available tools as `tools` to agent instances
+  - Add `rootProcessInstanceKey`, `processDefinitionId`, `processDefinitionVersion`, and `processDefinitionVersionTag` to agent instances
+- Reword `searchAgentInstances` -> `queryAgentInstances` and `searchAgentInstanceHistory` -> `queryAgentInstanceHistory` to align with the wording throughout the library
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.75
+
+### 🚀 Enhancements
+
+- Align element instance wait state (inspection) schemas with the OpenAPI definition for 8.10 ([#55099](https://github.com/camunda/camunda/issues/55099))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.74
+
+### 🚀 Enhancements
+
+- Add `priority` field to `jobChangesetSchema` for job update requests
+- Use `.int()` constraint on `retries` in `jobChangesetSchema` to match the OpenAPI `int32` schema
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@etcd](https://github.com/etcd))
+
+## v0.0.73
+
+### 🚀 Enhancements
+
+- Introduce `BEFORE_ALL` listener event type
+
+### ❤️ Contributors
+
+- Konstantinos Mylosis ([@konstantinos-mylosis](https://github.com/konstantinos-mylosis))
+
+## v0.0.72
+
+### 🚀 Enhancements
+
+- Add agent instance history API schemas and endpoints for 8.10 ([#52123](https://github.com/camunda/camunda/issues/52123))
+  - `agentInstanceHistoryRoleSchema` enum (`USER`, `ASSISTANT`, `TOOL_RESULT`) and `agentInstanceHistoryCommitStatusSchema` enum (`COMMITTED`, `PENDING`, `DISCARDED`)
+  - `agentInstanceMessageContentSchema` — discriminated union of `agentInstanceTextContentSchema`, `agentInstanceDocumentContentSchema`, and `agentInstanceObjectContentSchema` on `contentType`
+  - `agentInstanceToolCallSchema` and `agentInstanceHistoryItemMetricsSchema` for tool calls and per-item LLM metrics
+  - `agentInstanceHistoryItemSchema` — full history item with key, role, content, toolCalls, metrics, commitStatus, and producedAt
+  - `POST /v2/agent-instances/{agentInstanceKey}/history` endpoint for creating a history item
+  - `POST /v2/agent-instances/{agentInstanceKey}/history/search` endpoint for querying history items
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.71
+
+### 🩹 Fixes
+
+- Align `DocumentReference` nullable fields with OpenAPI schema. The following fields are now nullable:
+  - `contentHash`
+  - `metadata.expiresAt`
+  - `metadata.processDefinitionId`
+  - `metadata.processInstanceKey`
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.70
+
+### 🚀 Enhancements
+
+- Add typed variable filter schemas for `8.10/process-instance`
+  - `processInstanceVariableValueFilterSchema` a discriminated union of single-key operator objects (`$eq` / `$neq` / `$like` / `$in` / `$notIn` / `$exists`) plus the shorthand bare-string form; mirrors
+    backend schema
+  - `processInstanceVariableFilterSchema` now uses the tighter value schema and is exported top-level
+  - `ProcessInstanceVariableFilter` and `ProcessInstanceVariableValueFilter` types exported
+  - Tightens variable filter validation: rejects multi-operator combinations (e.g. `{$eq: "x", $neq: "y"}`), unknown keys, and operator-shape mismatches
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
+## v0.0.69
+
+### 🚀 Enhancements
+
+- Add Element Instance Inspection schemas and endpoint for 8.10 ([#52038](https://github.com/camunda/camunda/issues/52038))
+  - `elementInstanceInspectionSchema` with `waitStateType`, `details`, and related fields
+  - `queryElementInstanceInspectionFilterSchema` for search filtering
+  - `POST /v2/element-instances/wait-states/search` endpoint
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
+## v0.0.68
+
+### 🚀 Enhancements
+
+- Add `priority` field to job schemas
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
+## v0.0.67
+
+### 🚀 Enhancements
+
+- Remove redundant fields from system configuration schemas
+  - `deploymentConfigurationSchema`: removed `isEnterprise` and `contextPath`
+  - `cloudConfigurationSchema`: removed `organizationId`, `clusterId`, `mixpanelToken`, and `mixpanelAPIHost`
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.66
+
+### 🚀 Enhancements
+
+- Add `batchOperationKey` field
+- Mark `batchOperationId` field deprecated
+
+### ❤️ Contributors
+
+- Patrick Dehn ([@pedesen](https://github.com/pedesen))
+
+## v0.0.65
+
+### 🚀 Enhancements
+
+- Add `elementInstanceKeys` to agent instance schema and search filter ([#52888](https://github.com/camunda/camunda/issues/52888))
+  - `elementInstanceKeys: z.array(z.string())` on `agentInstanceSchema` (response)
+  - `elementInstanceKeys: z.array(basicStringFilterSchema)` on `agentInstanceFilterSchema` (search filter)
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
+## v0.0.64
+
+### 🚀 Enhancements
+
+- Add System Configuration schemas and endpoint for 8.10 ([#51313](https://github.com/camunda/camunda/issues/51313))
+  - `systemConfigurationSchema` with `jobMetrics`, `components`, `deployment`, `authentication`, and `cloud` sections
+  - `GET /v2/system/configuration` endpoint
+
+### ❤️ Contributors
+
+- Yedidiah Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
+## v0.0.63
+
+### 🚀 Enhancements
+
+- Add Agent Instance schemas and endpoints for 8.10 ([#51919](https://github.com/camunda/camunda/issues/51919))
+  - `agentInstanceSchema` with status, definition, metrics, limits, and timestamps
+  - `agentInstanceFilterSchema` for search filtering
+  - `GET /v2/agent-instances/{agentInstanceKey}` endpoint
+  - `POST /v2/agent-instances/search` endpoint
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
+## v0.0.62
+
+### 🚀 Enhancements
+
+- Rename `extensionProperties` to `toolProperties` in message subscriptions ([#52526](https://github.com/camunda/camunda/issues/52526))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.61
+
+### 🚀 Enhancements
+
+- Add `businessId` property to process-instance schema ([#52097](https://github.com/camunda/camunda/issues/52097))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.60
+
+### 🩹 Fixes
+
+- Replace `postinstall` script with `prepare`. Makes it possible to install the package again.
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.59
+
+### 🚀 Enhancements
+
+- Sync new properties to `MessageSubscription` that result in support for MCP Tools ([#51241](https://github.com/camunda/camunda/issues/51241))
+  - `messageSubscriptionType` enum
+  - `extensionProperties` (is a new loosely typed record)
+  - `processDefinitionName`
+  - `processDefinitionVersion`
+  - `toolName`
+  - `inboundConnectorType`
+
+### 🩹 Fixes
+
+- Mark `elementInstanceKey` and `correlationKey` as `nullable` in `CorrelatedMessageSubscription`
+- Mark `elementInstanceKey`, `correlationKey`, `processDefinitionKey`, and `processInstanceKey` as `nullable` in `MessageSubscription`
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.58
 
 ### 🚀 Enhancements

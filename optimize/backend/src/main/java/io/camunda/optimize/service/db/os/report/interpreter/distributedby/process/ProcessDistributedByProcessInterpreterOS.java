@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
 import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_PROCESS;
@@ -70,7 +71,7 @@ public class ProcessDistributedByProcessInterpreterOS
       final Query baseQuery) {
     final Integer size =
         configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
-    final Map<String, SortOrder> order = Map.of("_key", SortOrder.Asc);
+    final Map<String, SortOrder> order = Map.of(AGGREGATION_FIELD_KEY, SortOrder.Asc);
     final Aggregation tenantAgg =
         new Aggregation.Builder()
             .terms(

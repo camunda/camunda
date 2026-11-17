@@ -7,146 +7,222 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
-import io.camunda.db.rdbms.NoopSchemaManager;
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
+import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.PerTenantSchemaConfig;
+import io.camunda.db.rdbms.RdbmsSchemaManagers;
+import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
-import io.camunda.db.rdbms.sql.AuditLogMapper;
-import io.camunda.db.rdbms.sql.AuthorizationMapper;
-import io.camunda.db.rdbms.sql.BatchOperationMapper;
-import io.camunda.db.rdbms.sql.ClusterVariableMapper;
-import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
-import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
-import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
-import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
-import io.camunda.db.rdbms.sql.DeployedResourceMapper;
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
-import io.camunda.db.rdbms.sql.FormMapper;
-import io.camunda.db.rdbms.sql.GlobalListenerMapper;
-import io.camunda.db.rdbms.sql.GroupMapper;
-import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
-import io.camunda.db.rdbms.sql.IncidentMapper;
-import io.camunda.db.rdbms.sql.JobMapper;
-import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
-import io.camunda.db.rdbms.sql.MappingRuleMapper;
-import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
-import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
-import io.camunda.db.rdbms.sql.PurgeMapper;
-import io.camunda.db.rdbms.sql.RoleMapper;
-import io.camunda.db.rdbms.sql.SequenceFlowMapper;
-import io.camunda.db.rdbms.sql.TableMetricsMapper;
-import io.camunda.db.rdbms.sql.TenantMapper;
-import io.camunda.db.rdbms.sql.UsageMetricMapper;
-import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
-import io.camunda.db.rdbms.sql.UserMapper;
-import io.camunda.db.rdbms.sql.UserTaskMapper;
-import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.ParameterMetaDataInterceptor;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
-import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.mybatis.spring.SqlSessionFactoryBean;
-import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-@Import(DataSourceAutoConfiguration.class)
+@NullMarked
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
+  /**
+   * The registry every consumer of "is this tenant's schema ready" resolves — the RDBMS exporter,
+   * the request-time rejection path and the per-tenant readiness gauge. It reports nothing as
+   * initialized until {@link #rdbmsSchemaInitializer} binds itself to it.
+   */
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.data.secondary-storage.rdbms",
-      name = "auto-ddl",
-      havingValue = "true",
-      matchIfMissing = true)
-  public RdbmsSchemaManager rdbmsExporterLiquibase(
-      final DataSource dataSource,
-      final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix,
-      @Value("${camunda.data.secondary-storage.rdbms.ddl-lock-wait-timeout:PT15M}")
-          final Duration lockWaitTimeout) {
-    final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
-    LOGGER.info(
-        "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
+  @Profile("!restore")
+  public LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry() {
+    return new LazyInitializedRdbmsSchemaRegistry();
+  }
 
-    final var moduleConfig = new LiquibaseSchemaManager();
-    moduleConfig.setDataSource(dataSource);
-    moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
-    moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
-    moduleConfig.setParameters(
-        Map.of(
-            "prefix",
-            trimmedPrefix,
-            "userCharColumnSize",
-            Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
-            "errorMessageSize",
-            Integer.toString(vendorDatabaseProperties.errorMessageSize()),
-            "treePathSize",
-            Integer.toString(vendorDatabaseProperties.treePathSize())));
-    // changelog file located in src/main/resources directly in the module
-    moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
-    moduleConfig.setDdlLockWaitTimeout(lockWaitTimeout);
+  /** The bean that initializes each tenant's schema in isolation. */
+  @Bean
+  @Profile("!restore")
+  public RdbmsSchemaInitializer rdbmsSchemaInitializer(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver,
+      final BrokerTopologyManager brokerTopologyManager,
+      final LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry,
+      // if present, then it will ensure that the broker is started first, so that the recovery
+      // check reads the broker's own cluster configuration
+      @Autowired(required = false) final @Nullable Broker broker) {
+    // VersionUtil.getVersion() may not be a valid semantic version during local development;
+    // the schema-version check is skipped in that case.
+    final var initializer =
+        new RdbmsSchemaInitializer(
+            RdbmsSchemaManagers.fromConfigs(
+                physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+                VersionUtil.getVersion()),
+            physicalTenantId -> retryConfiguration(physicalTenantResolver, physicalTenantId),
+            PerTenantSchemaInitialization.DeferralCheck.of(
+                new SchemaInitializationRecoveryCheck(brokerTopologyManager)::shouldDefer));
+    rdbmsSchemaManagerRegistry.bind(initializer);
+    return initializer;
+  }
 
-    return moduleConfig;
+  /**
+   * Reports each physical tenant's schema initialization for operators. Like the RDBMS status
+   * indicator, it is in no probe group.
+   */
+  @Bean
+  @Profile("!restore")
+  public HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final RdbmsSchemaInitializer rdbmsSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(rdbmsSchemaInitializer::statuses);
+  }
+
+  private static RetryConfiguration retryConfiguration(
+      final PhysicalTenantResolver physicalTenantResolver, final String physicalTenantId) {
+    final var retry =
+        physicalTenantResolver
+            .forPhysicalTenant(physicalTenantId)
+            .getData()
+            .getSecondaryStorage()
+            .getRdbms()
+            .getRetry();
+    final var converted = new RetryConfiguration();
+    converted.setMaxRetries(retry.getMaxRetries());
+    converted.setMinRetryDelay(retry.getMinRetryDelay());
+    converted.setMaxRetryDelay(retry.getMaxRetryDelay());
+    return converted;
+  }
+
+  /**
+   * Reports whether every physical tenant's RDBMS schema has migrated to the running application
+   * version, for the upgrade-readiness endpoint (camunda/product-hub#3067). Built from the same
+   * per-tenant configs as {@link #rdbmsSchemaInitializer}, but independently — this needs to read
+   * the schema version regardless of whether this application's own Liquibase run applied it or an
+   * operator's external tooling did.
+   */
+  @Bean
+  public RdbmsSchemaMigrationStatusProvider rdbmsSchemaMigrationStatusProvider(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return RdbmsSchemaMigrationStatusProvider.fromConfigs(
+        physicalTenantSchemaConfigs(rdbmsDataSources, physicalTenantResolver),
+        VersionUtil.getVersion());
+  }
+
+  private Map<String, PerTenantSchemaConfig> physicalTenantSchemaConfigs(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final Map<String, PerTenantSchemaConfig> physicalTenantConfigs = new LinkedHashMap<>();
+    for (final String physicalTenantId : physicalTenantResolver.getAll().keySet()) {
+      final var rdbms =
+          physicalTenantResolver
+              .forPhysicalTenant(physicalTenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms();
+      final var trimmedPrefix = StringUtils.trimToEmpty(rdbms.getPrefix());
+      LOGGER.info(
+          "Initializing Liquibase for physical RDBMS tenant '{}' with table prefix '{}'.",
+          physicalTenantId,
+          trimmedPrefix);
+      physicalTenantConfigs.put(
+          physicalTenantId,
+          new PerTenantSchemaConfig(
+              rdbmsDataSources.dataSourceFor(physicalTenantId),
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
+              trimmedPrefix,
+              rdbms.getAutoDdl(),
+              rdbms.getDdlLockWaitTimeout()));
+    }
+    return physicalTenantConfigs;
   }
 
   @Bean
-  @ConditionalOnMissingBean(RdbmsSchemaManager.class)
-  public RdbmsSchemaManager rdbmsNoopSchemaManager() {
-    return new NoopSchemaManager();
-  }
-
-  @Bean
-  public RdbmsDatabaseIdProvider databaseIdProvider(
-      @Value("${camunda.data.secondary-storage.rdbms.database-vendor-id:}") final String vendorId) {
-    return new RdbmsDatabaseIdProvider(vendorId);
-  }
-
-  @Bean
-  public VendorDatabaseProperties databaseProperties(
-      final DataSource dataSource, final RdbmsDatabaseIdProvider databaseIdProvider)
+  public RdbmsDataSources rdbmsDataSources(
+      final PhysicalTenantResolver physicalTenantResolver, final MeterRegistry meterRegistry)
       throws IOException {
-    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
-    LOGGER.info("Detected databaseId: {}", databaseId);
-
-    return VendorDatabasePropertiesLoader.load(databaseId);
+    return RdbmsDataSources.of(
+        physicalTenantResolver.mapValues(
+            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+        meterRegistry);
   }
 
   @Bean
-  public SqlSessionFactory sqlSessionFactory(
-      final DataSource dataSource,
-      final DatabaseIdProvider databaseIdProvider,
-      final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
+  public Map<String, SqlSessionFactory> sqlSessionFactories(
+      final RdbmsDataSources rdbmsDataSources, final PhysicalTenantResolver physicalTenantResolver)
       throws Exception {
+    final var factories = new LinkedHashMap<String, SqlSessionFactory>();
+    for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
+      final var prefix =
+          physicalTenantResolver
+              .forPhysicalTenant(tenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms()
+              .getPrefix();
+      factories.put(
+          tenantId,
+          buildSqlSessionFactory(
+              rdbmsDataSources.dataSourceFor(tenantId),
+              rdbmsDataSources.vendorPropertiesFor(tenantId),
+              prefix));
+    }
+    return Map.copyOf(factories);
+  }
 
+  @Bean
+  public Map<String, RdbmsMapperBundle> rdbmsMapperBundles(
+      final Map<String, SqlSessionFactory> sqlSessionFactories,
+      final RdbmsDataSources rdbmsDataSources) {
+    final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
+    for (final var entry : sqlSessionFactories.entrySet()) {
+      final var physicalTenantId = entry.getKey();
+      final var factory = entry.getValue();
+      bundles.put(
+          physicalTenantId,
+          RdbmsMapperBundle.from(
+              factory,
+              new SqlSessionTemplate(factory),
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
+    }
+    return Map.copyOf(bundles);
+  }
+
+  private SqlSessionFactory buildSqlSessionFactory(
+      final DataSource dataSource,
+      final VendorDatabaseProperties databaseProperties,
+      final String prefix)
+      throws Exception {
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
+    configuration.addInterceptor(new ParameterMetaDataInterceptor());
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
+    // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
+    // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
+    // a second time. SqlSessionFactoryBean would only call setDatabaseId on this same object.
+    configuration.setDatabaseId(databaseProperties.databaseId());
 
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
     factoryBean.setConfiguration(configuration);
     factoryBean.setDataSource(dataSource);
-    factoryBean.setDatabaseIdProvider(databaseIdProvider);
     factoryBean.addMapperLocations(
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
@@ -154,205 +230,13 @@ public class MyBatisConfiguration {
     p.put("prefix", StringUtils.trimToEmpty(prefix));
     p.putAll(databaseProperties.properties());
     factoryBean.setConfigurationProperties(p);
-    return factoryBean.getObject();
-  }
-
-  @Bean
-  public MapperFactoryBean<AuthorizationMapper> authorizationMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuthorizationMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<AuditLogMapper> auditLogMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuditLogMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<DecisionDefinitionMapper> decisionDefinitionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionDefinitionMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<DecisionInstanceMapper> decisionInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionInstanceMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<DecisionRequirementsMapper> decisionRequirementsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionRequirementsMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<FlowNodeInstanceMapper> flowNodeInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, FlowNodeInstanceMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<GroupMapper> groupInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, GroupMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<IncidentMapper> incidentMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, IncidentMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<ProcessInstanceMapper> processInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ProcessInstanceMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<ProcessDefinitionMapper> processDeploymentMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ProcessDefinitionMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<TenantMapper> tenantMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TenantMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<VariableMapper> variableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<ClusterVariableMapper> clusterVariableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ClusterVariableMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<JobMetricsBatchMapper> jobMetricsBatchMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, JobMetricsBatchMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<RoleMapper> roleMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, RoleMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<UserMapper> userMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UserMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<UserTaskMapper> userTaskMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UserTaskMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<FormMapper> formMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, FormMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<MappingRuleMapper> mappingMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MappingRuleMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<ExporterPositionMapper> exporterPosition(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ExporterPositionMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<PurgeMapper> purgeMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, PurgeMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<BatchOperationMapper> batchOperationMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, BatchOperationMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<JobMapper> jobMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, JobMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<SequenceFlowMapper> sequenceFlowMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, SequenceFlowMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<UsageMetricMapper> usageMetricMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UsageMetricMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<UsageMetricTUMapper> usageMetricTUMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UsageMetricTUMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<MessageSubscriptionMapper> messageSubscriptionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MessageSubscriptionMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<CorrelatedMessageSubscriptionMapper> correlatedMessageSubscriptionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<PersistentWebSessionMapper> persistentWebSessionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, PersistentWebSessionMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<GlobalListenerMapper> globalListenerMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<DeployedResourceMapper> resourceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DeployedResourceMapper.class);
-  }
-
-  private <T> MapperFactoryBean<T> createMapperFactoryBean(
-      final SqlSessionFactory sqlSessionFactory, final Class<T> clazz) {
-    final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
-    factoryBean.setSqlSessionFactory(sqlSessionFactory);
-    return factoryBean;
+    final var factory = factoryBean.getObject();
+    // The bulk of the memory usage (~50-60%) for MyBatis with high tenant count is coming from the
+    // sql fragments.
+    // The <sql> fragments are only needed to resolve <include>s while the mappers are parsed, which
+    // is done by now. Each one holds on to the whole parsed mapper DOM, which is otherwise retained
+    // for the lifetime of the tenant's factory, once per physical tenant on every node.
+    configuration.getSqlFragments().clear();
+    return factory;
   }
 }

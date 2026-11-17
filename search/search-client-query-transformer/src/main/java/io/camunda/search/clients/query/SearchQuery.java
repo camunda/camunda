@@ -82,6 +82,16 @@ public final record SearchQuery(SearchQueryOption queryOption) {
       return match(SearchQueryBuilders.match(fn));
     }
 
+    public Builder nested(final SearchNestedQuery query) {
+      queryOption = query;
+      return this;
+    }
+
+    public Builder nested(
+        final Function<SearchNestedQuery.Builder, ObjectBuilder<SearchNestedQuery>> fn) {
+      return nested(SearchQueryBuilders.nested(fn));
+    }
+
     public Builder matchAll() {
       queryOption = new SearchMatchAllQuery.Builder().build();
       return this;

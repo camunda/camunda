@@ -38,7 +38,12 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.query.job.EntityType;
+import io.camunda.optimize.dto.optimize.query.job.JobStatus;
+import io.camunda.optimize.dto.optimize.query.job.JobType;
+import io.camunda.optimize.service.db.writer.JobRegistryWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.util.ZeebeBpmnModels;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -49,6 +54,8 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
 
@@ -139,11 +146,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcess_multipleProcessesDeployed() {
     // given
-    final String firstProcessName = "firstProcess";
+    final String firstProcessName = "firstProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-    final String secondProcessName = "secondProcess";
+    final String secondProcessName = "secondProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilNumberOfDefinitionsExported(2);
+    waitUntilDefinitionWithIdExported(firstProcessName);
+    waitUntilDefinitionWithIdExported(secondProcessName);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -158,7 +166,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
     // given
-    final String firstProcessName = "firstProcess";
+    final String firstProcessName = "firstProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
 
     try {
@@ -166,7 +174,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     } catch (final IOException | InterruptedException e) {
       throw new OptimizeRuntimeException(e);
     }
-    final String secondProcessName = "secondProcess";
+    final String secondProcessName = "secondProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilDefinitionWithIdExported(firstProcessName);
     waitUntilDefinitionWithIdExported(secondProcessName);
@@ -215,11 +223,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         .setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
 
-    final String firstProcessName = "firstProcess";
+    final String firstProcessName = "firstProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-    final String secondProcessName = "secondProcess";
+    final String secondProcessName = "secondProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilNumberOfDefinitionsExported(2);
+    waitUntilDefinitionWithIdExported(firstProcessName);
+    waitUntilDefinitionWithIdExported(secondProcessName);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -364,6 +373,82 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         .extracting(ProcessDefinitionOptimizeDto::getTenantId)
         .singleElement()
         .isEqualTo(expectedTenantId);
+  }
+
+  @Test
+  public void shouldImportProcessDefinition_whenNoDeletionJobEntryExists() {
+    // given
+    final Process deployedProcess =
+        deployProcessAndStartInstance(createStartEndProcess("noDeletionJobDefinitionProcess"));
+    waitUntilNumberOfDefinitionsExported(1);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+        .singleElement()
+        .satisfies(
+            importedDef ->
+                assertThat(importedDef.getId())
+                    .isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey())));
+  }
+
+  @ParameterizedTest
+  @EnumSource(JobStatus.class)
+  public void shouldSuppressImport_whenDeletionJobEntryExistsForDefinition(
+      final JobStatus jobStatus) {
+    // given a deletion job entry for this exact process definition version, in any status --
+    // including QUEUED, simulating a batch racing a delete that hasn't been picked up yet
+    final Process deployedProcess =
+        deployProcessAndStartInstance(createStartEndProcess("suppressedDefinitionProcess"));
+    final JobRegistryWriter jobRegistryWriter =
+        embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
+    final var jobEntry =
+        jobRegistryWriter.createJobEntry(
+            JobType.DELETE,
+            EntityType.PROCESS_DEFINITION,
+            String.valueOf(deployedProcess.getProcessDefinitionKey()));
+    if (jobStatus != JobStatus.QUEUED) {
+      jobRegistryWriter.updateJobStatus(jobEntry.getId(), jobStatus, null);
+    }
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    waitUntilNumberOfDefinitionsExported(1);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).isEmpty();
+  }
+
+  @Test
+  public void shouldOnlySuppressMatchingDefinition_inMixedBatch() {
+    // given two distinct process definitions in flight, only one has a deletion job entry
+    final Process suppressedProcess =
+        deployProcessAndStartInstance(
+            createStartEndProcess("mixedBatchSuppressedDefinitionProcess"));
+    final Process keptProcess =
+        deployProcessAndStartInstance(createStartEndProcess("mixedBatchKeptDefinitionProcess"));
+    final JobRegistryWriter jobRegistryWriter =
+        embeddedOptimizeExtension.getBean(JobRegistryWriter.class);
+    jobRegistryWriter.createJobEntry(
+        JobType.DELETE,
+        EntityType.PROCESS_DEFINITION,
+        String.valueOf(suppressedProcess.getProcessDefinitionKey()));
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    waitUntilNumberOfDefinitionsExported(2);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+        .singleElement()
+        .satisfies(
+            importedDef ->
+                assertThat(importedDef.getId())
+                    .isEqualTo(String.valueOf(keptProcess.getProcessDefinitionKey())));
   }
 
   private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {

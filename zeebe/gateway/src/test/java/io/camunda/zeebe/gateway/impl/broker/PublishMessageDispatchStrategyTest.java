@@ -9,17 +9,22 @@ package io.camunda.zeebe.gateway.impl.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.gateway.api.util.TestBrokerClusterState;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
+import java.util.Map;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 final class PublishMessageDispatchStrategyTest {
@@ -34,10 +39,13 @@ final class PublishMessageDispatchStrategyTest {
     // when -- No routing state in cluster configuration
     final var topologyManager =
         new TestTopologyManager(
-            new TestBrokerClusterState(partitionCount), ClusterConfiguration.uninitialized());
+            new TestBrokerClusterState(partitionCount),
+            CurrentClusterConfiguration.uninitialized());
 
     // then - the request is dispatched based on the partition count from the topology
-    assertThat(dispatchStrategy.determinePartition(topologyManager))
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(
             SubscriptionUtil.getSubscriptionPartitionId(
                 BufferUtil.wrapString(correlationKey), partitionCount));
@@ -54,30 +62,41 @@ final class PublishMessageDispatchStrategyTest {
     // when -- Routing state is available in cluster configuration
     final var routingState =
         new RoutingState(1, new AllPartitions(3), new HashMod(messagePartitionCount));
-    final var clusterConfiguration =
-        ClusterConfiguration.builder().version(1).routingState(Optional.of(routingState)).build();
+    final var clusterConfiguration = getConfigurationWithRoutingState(routingState);
 
     final var topologyManager =
         new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
 
     // then - the request is dispatched based on the routing state
-    assertThat(dispatchStrategy.determinePartition(topologyManager))
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .isEqualTo(
             SubscriptionUtil.getSubscriptionPartitionId(
                 BufferUtil.wrapString(correlationKey), messagePartitionCount));
   }
 
+  private static CurrentClusterConfiguration getConfigurationWithRoutingState(
+      final RoutingState value) {
+    final var partitionGroup = PartitionGroupConfiguration.empty(1).setRoutingState(value);
+    return new CurrentClusterConfiguration(
+        CurrentClusterConfiguration.INITIAL_VERSION,
+        GlobalConfiguration.init(),
+        Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, partitionGroup),
+        PhasedChangeState.empty());
+  }
+
   private record TestTopologyManager(
-      BrokerClusterState topology, ClusterConfiguration clusterConfiguration)
+      BrokerClusterState topology, CurrentClusterConfiguration clusterConfiguration)
       implements BrokerTopologyManager {
 
     @Override
-    public BrokerClusterState getTopology() {
+    public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
       return topology;
     }
 
     @Override
-    public ClusterConfiguration getClusterConfiguration() {
+    public CurrentClusterConfiguration getClusterConfiguration() {
       return clusterConfiguration;
     }
 
@@ -92,7 +111,8 @@ final class PublishMessageDispatchStrategyTest {
     }
 
     @Override
-    public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    public void onClusterConfigurationUpdated(
+        final CurrentClusterConfiguration clusterConfiguration) {
       throw new UnsupportedOperationException();
     }
   }

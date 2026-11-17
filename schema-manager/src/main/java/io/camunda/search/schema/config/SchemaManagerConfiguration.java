@@ -15,6 +15,8 @@ public class SchemaManagerConfiguration {
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
+  private boolean performCleanup = false;
+  private boolean healthCheckEnabled = true;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -40,6 +42,22 @@ public class SchemaManagerConfiguration {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
   }
 
+  public boolean isPerformCleanup() {
+    return performCleanup;
+  }
+
+  public void setPerformCleanup(final boolean performCleanup) {
+    this.performCleanup = performCleanup;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
+  }
+
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {
 
     public static final Duration DEFAULT_MIN_RETRY_DELAY = Duration.ofMillis(500);
@@ -47,17 +65,17 @@ public class SchemaManagerConfiguration {
     public static final int DEFAULT_MAX_RETRIES = Integer.MAX_VALUE;
 
     @Override
-    public int defaultMaxRetries() {
+    protected int defaultMaxRetries() {
       return DEFAULT_MAX_RETRIES;
     }
 
     @Override
-    public Duration defaultMinRetryDelay() {
+    protected Duration defaultMinRetryDelay() {
       return DEFAULT_MIN_RETRY_DELAY;
     }
 
     @Override
-    public Duration defaultMaxRetryDelay() {
+    protected Duration defaultMaxRetryDelay() {
       return DEFAULT_MAX_RETRY_DELAY;
     }
   }

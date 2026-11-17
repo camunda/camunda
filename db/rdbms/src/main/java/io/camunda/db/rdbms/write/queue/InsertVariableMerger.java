@@ -12,6 +12,6 @@ import io.camunda.db.rdbms.write.domain.VariableDbModel;
 public class InsertVariableMerger extends BatchInsertMerger<VariableDbModel> {
 
   public InsertVariableMerger(final VariableDbModel variable, final int maxBatchSize) {
-    super(ContextType.VARIABLE, variable, maxBatchSize);
+    super(ContextType.VARIABLE, variable, maxBatchSize, VariableDbModel::variableKey);
   }
 }

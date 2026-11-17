@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
+import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -60,7 +62,7 @@ final class RequestRetryHandlerTest {
   void shouldSendToFixedPartitionWhenDispatchStrategyIsPresent() {
     // given - a request with a specific dispatch strategy targeting partition 2
     final int targetPartition = 2;
-    final var request = new TestBrokerRequest(Optional.of(__ -> targetPartition));
+    final var request = new TestBrokerRequest(Optional.of((__, partitionGroup) -> targetPartition));
     brokerClient.setResponse(new BrokerResponse<>("result", targetPartition, 1));
 
     // when
@@ -76,7 +78,7 @@ final class RequestRetryHandlerTest {
   void shouldNotRetryOnOtherPartitionsWhenDispatchStrategyIsPresent() {
     // given - a request with a specific dispatch strategy that fails with a retryable error
     final int targetPartition = 2;
-    final var request = new TestBrokerRequest(Optional.of(__ -> targetPartition));
+    final var request = new TestBrokerRequest(Optional.of((__, partitionGroup) -> targetPartition));
     brokerClient.setError(new ConnectException("connection refused"));
 
     // when
@@ -106,9 +108,10 @@ final class RequestRetryHandlerTest {
   void shouldRetryOnNextRoundRobinPartitionOnResourceExhausted() {
     // given - a broker client that fails with RESOURCE_EXHAUSTED on the first attempt
     final var request = new TestBrokerRequest(Optional.empty());
-    final var exhaustedError =
-        new BrokerErrorException(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
-    brokerClient.failOnPartitionThenSucceed(exhaustedError);
+    final var exhaustedResponse =
+        new BrokerErrorResponse<String>(
+            new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
+    brokerClient.respondOnPartitionThenSucceed(exhaustedResponse);
 
     // when
     final var result = new AtomicReference<String>();
@@ -122,10 +125,35 @@ final class RequestRetryHandlerTest {
   }
 
   @Test
+  void shouldKeepBrokerErrorDetailsWhenRetriesAreExhausted() {
+    // given
+    final var request = new TestBrokerRequest(Optional.empty());
+    brokerClient.setResponse(
+        new BrokerErrorResponse<>(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")));
+
+    // when
+    final var error = new AtomicReference<Throwable>();
+    retryHandler.sendRequest(request, (key, response) -> {}, error::set);
+
+    // then
+    assertThat(error.get()).isInstanceOf(RequestRetriesExhaustedException.class);
+    assertThat(error.get().getSuppressed())
+        .hasSize(PARTITION_COUNT)
+        .allSatisfy(
+            suppressed ->
+                assertThat(suppressed)
+                    .isInstanceOfSatisfying(
+                        BrokerErrorException.class,
+                        brokerError ->
+                            assertThat(brokerError.getError().getCode())
+                                .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED)));
+  }
+
+  @Test
   void shouldNotSpinWhenActivePartitionsFewerThanTopologyCount() {
     // given - topology reports 3 partitions, but the strategy always returns partition 1
     // (e.g. only one active partition in routing state)
-    final RequestDispatchStrategy fixedStrategy = ignored -> 1;
+    final RequestDispatchStrategy fixedStrategy = (ignored, partitionGroup) -> 1;
     final var handler = new RequestRetryHandler(brokerClient, topologyManager, fixedStrategy);
     final var request = new TestBrokerRequest(Optional.empty());
     brokerClient.setError(new ConnectException("connection refused"));
@@ -145,7 +173,7 @@ final class RequestRetryHandlerTest {
     final var request =
         new TestBrokerRequest(
             Optional.of(
-                __ -> {
+                (__, partitionGroup) -> {
                   throw new RuntimeException("no topology");
                 }));
 
@@ -158,12 +186,54 @@ final class RequestRetryHandlerTest {
     assertThat(brokerClient.sendCount.get()).isEqualTo(0);
   }
 
+  @Test
+  void shouldPassRequestPartitionGroupToFixedPartitionDispatchStrategy() {
+    // given - a request for a non-default group with its own dispatch strategy
+    final var groupRef = new AtomicReference<String>();
+    final var request =
+        new TestBrokerRequest(
+            Optional.of(
+                (__, partitionGroup) -> {
+                  groupRef.set(partitionGroup);
+                  return 2;
+                }));
+    request.setPartitionGroup("tenant-b");
+    brokerClient.setResponse(new BrokerResponse<>("result", 2, 1));
+
+    // when
+    retryHandler.sendRequest(request, (key, response) -> {}, error -> {});
+
+    // then - the strategy received the request's partition group
+    assertThat(groupRef).hasValue("tenant-b");
+  }
+
+  @Test
+  void shouldPassRequestPartitionGroupToRetryDispatchStrategy() {
+    // given - a request for a non-default group without its own dispatch strategy
+    final var groups = new ArrayList<String>();
+    final RequestDispatchStrategy recordingStrategy =
+        (__, partitionGroup) -> {
+          groups.add(partitionGroup);
+          return 1;
+        };
+    final var handler = new RequestRetryHandler(brokerClient, topologyManager, recordingStrategy);
+    final var request = new TestBrokerRequest(Optional.empty());
+    request.setPartitionGroup("tenant-b");
+    brokerClient.setResponse(new BrokerResponse<>("result", 1, 1));
+
+    // when
+    handler.sendRequest(request, (key, response) -> {}, error -> {});
+
+    // then - the retry strategy received the request's partition group
+    assertThat(groups).containsExactly("tenant-b");
+  }
+
   private static final class TestBrokerClient implements BrokerClient {
     final AtomicInteger sendCount = new AtomicInteger(0);
     final List<Integer> partitionsHit = new ArrayList<>();
     private BrokerResponse<String> response;
     private Throwable error;
-    private Throwable failFirstError;
+    private BrokerResponse<String> failFirstResponse;
 
     void setResponse(final BrokerResponse<String> response) {
       this.response = response;
@@ -175,8 +245,8 @@ final class RequestRetryHandlerTest {
       response = null;
     }
 
-    void failOnPartitionThenSucceed(final Throwable firstError) {
-      failFirstError = firstError;
+    void respondOnPartitionThenSucceed(final BrokerResponse<String> firstResponse) {
+      failFirstResponse = firstResponse;
       response = new BrokerResponse<>("result", 1, 1);
       error = null;
     }
@@ -197,8 +267,8 @@ final class RequestRetryHandlerTest {
       if (error != null) {
         return CompletableFuture.failedFuture(error);
       }
-      if (failFirstError != null && count == 1) {
-        return CompletableFuture.failedFuture(failFirstError);
+      if (failFirstResponse != null && count == 1) {
+        return CompletableFuture.completedFuture((BrokerResponse<T>) failFirstResponse);
       }
       return CompletableFuture.completedFuture((BrokerResponse<T>) response);
     }
@@ -244,7 +314,7 @@ final class RequestRetryHandlerTest {
 
     @Override
     public void subscribeJobAvailableNotification(
-        final String topic, final Consumer<String> handler) {}
+        final String topic, final Object subscriber, final Consumer<String> handler) {}
   }
 
   private static class TestBrokerRequest extends BrokerExecuteCommand<String> {
@@ -253,6 +323,9 @@ final class RequestRetryHandlerTest {
     TestBrokerRequest(final Optional<RequestDispatchStrategy> strategy) {
       super(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE);
       this.strategy = strategy;
+      // requests must always carry a partition group; tests that verify multi-tenant routing
+      // override this with their own tenant id
+      setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     @Override

@@ -23,7 +23,7 @@
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "allowUnreachableCode": false,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": false
   },
   "include": ["test", "*.config.ts"]
 }

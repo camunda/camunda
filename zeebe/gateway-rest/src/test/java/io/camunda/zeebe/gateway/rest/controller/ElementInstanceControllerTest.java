@@ -11,10 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
+import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateJobDetails;
+import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
@@ -38,13 +46,116 @@ import org.springframework.test.json.JsonCompareMode;
 public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
+  static final String WAIT_STATES_URL = ELEMENTS_BASE_URL + "/wait-states/search";
+
+  private static final String EXPECTED_WAIT_STATE_RESPONSE =
+      """
+      {
+        "items": [
+          {
+            "rootProcessInstanceKey": "2251799813685249",
+            "processInstanceKey": "2251799813685249",
+            "elementInstanceKey": "2251799813685251",
+            "elementId": "payment-task",
+            "elementType": "SERVICE_TASK",
+            "details": {
+              "waitStateType": "JOB",
+              "jobKey": "2251799813685252",
+              "jobType": "payment-service",
+              "jobKind": "EXECUTION_LISTENER",
+              "listenerEventType": "START"
+            }
+          },
+          {
+            "rootProcessInstanceKey": "2251799813685249",
+            "processInstanceKey": "2251799813685249",
+            "elementInstanceKey": "2251799813685253",
+            "elementId": "order-received",
+            "elementType": "INTERMEDIATE_CATCH_EVENT",
+            "details": {
+              "waitStateType": "MESSAGE",
+              "messageName": "order-confirmed",
+              "correlationKey": "order-42"
+            }
+          },
+          {
+            "rootProcessInstanceKey": "2251799813685249",
+            "processInstanceKey": "2251799813685249",
+            "elementInstanceKey": "2251799813685261",
+            "elementId": "notify-task",
+            "elementType": "SERVICE_TASK",
+            "details": {
+              "waitStateType": "JOB",
+              "jobKey": "2251799813685260",
+              "jobType": "notification-service",
+              "jobKind": "BPMN_ELEMENT"
+            }
+          }
+        ]
+      }
+      """;
+
+  private static final SearchQueryResult<WaitStateEntity> DUMMY_WAIT_STATE_ITEMS =
+      SearchQueryResult.of(
+          new WaitStateEntity.Builder()
+              .waitStateKey(2251799813685251L)
+              .bpmnProcessId("order-process")
+              .processInstanceKey(2251799813685249L)
+              .elementInstanceKey(2251799813685251L)
+              .elementId("payment-task")
+              .elementType(FlowNodeType.SERVICE_TASK)
+              .rootProcessInstanceKey(2251799813685249L)
+              .tenantId("<default>")
+              .details(
+                  new WaitStateJobDetails.Builder()
+                      .jobKey(2251799813685252L)
+                      .jobType("payment-service")
+                      .jobKind(JobKind.EXECUTION_LISTENER)
+                      .listenerEventType(ListenerEventType.START)
+                      .build())
+              .build(),
+          new WaitStateEntity.Builder()
+              .waitStateKey(2251799813685253L)
+              .bpmnProcessId("order-process")
+              .processInstanceKey(2251799813685249L)
+              .elementInstanceKey(2251799813685253L)
+              .elementId("order-received")
+              .elementType(FlowNodeType.INTERMEDIATE_CATCH_EVENT)
+              .rootProcessInstanceKey(2251799813685249L)
+              .tenantId("<default>")
+              .details(
+                  new WaitStateMessageDetails.Builder()
+                      .messageName("order-confirmed")
+                      .correlationKey("order-42")
+                      .build())
+              .build(),
+          new WaitStateEntity.Builder()
+              .waitStateKey(2251799813685261L)
+              .bpmnProcessId("order-process")
+              .processInstanceKey(2251799813685249L)
+              .elementInstanceKey(2251799813685261L)
+              .elementId("notify-task")
+              .elementType(FlowNodeType.SERVICE_TASK)
+              .rootProcessInstanceKey(2251799813685249L)
+              .tenantId("<default>")
+              .details(
+                  new WaitStateJobDetails.Builder()
+                      .jobKey(2251799813685260L)
+                      .jobType("notification-service")
+                      .jobKind(JobKind.BPMN_ELEMENT)
+                      .build())
+              .build());
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @Captor ArgumentCaptor<SetVariablesRequest> requestCaptor;
 
   @BeforeEach
   void setup() {
+    Mockito.lenient()
+        .when(serviceRegistry.elementInstanceServices(any()))
+        .thenReturn(elementInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -227,5 +338,49 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
         .jsonPath("$.status")
         .isEqualTo(504);
+  }
+
+  @Test
+  void shouldSearchWaitStatesWithEmptyBody() {
+    // given
+    when(elementInstanceServices.searchWaitStates(any(), any())).thenReturn(DUMMY_WAIT_STATE_ITEMS);
+
+    // when / then
+    webClient
+        .post()
+        .uri(WAIT_STATES_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_WAIT_STATE_RESPONSE, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldSearchWaitStatesWithFilterByProcessInstanceKey() {
+    // given
+    when(elementInstanceServices.searchWaitStates(any(), any())).thenReturn(DUMMY_WAIT_STATE_ITEMS);
+
+    final var request =
+        """
+        {
+          "filter": {
+            "processInstanceKey": "2251799813685249"
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(WAIT_STATES_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_WAIT_STATE_RESPONSE, JsonCompareMode.LENIENT);
   }
 }

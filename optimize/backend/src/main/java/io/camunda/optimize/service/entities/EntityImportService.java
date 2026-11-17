@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -68,6 +67,8 @@ public class EntityImportService {
       final String collectionId, final Set<OptimizeEntityExportDto> entitiesToImport) {
     validateCompletenessOrFail(entitiesToImport);
     validateNoInstantPreviewEntities(entitiesToImport);
+    validateNoAgenticControlEntities(entitiesToImport);
+    validateNoBusinessValueEntities(entitiesToImport);
     return importValidatedEntities(collectionId, entitiesToImport);
   }
 
@@ -79,13 +80,14 @@ public class EntityImportService {
 
   private List<EntityIdResponseDto> importValidatedEntities(
       final String collectionId, final Set<OptimizeEntityExportDto> entitiesToImport) {
+    final CollectionDefinitionDto collection =
+        getAndValidateCollectionExistsAndIsAccessibleOrFail(null, collectionId);
+
     final List<ReportDefinitionExportDto> reportsToImport =
         retrieveAllReportsToImport(entitiesToImport);
     final List<DashboardDefinitionExportDto> dashboardsToImport =
         retrieveAllDashboardsToImport(entitiesToImport);
 
-    final CollectionDefinitionDto collection =
-        getAndValidateCollectionExistsAndIsAccessibleOrFail(null, collectionId);
     reportImportService.validateAllReportsOrFail(collection, reportsToImport);
     dashboardImportService.validateAllDashboardsOrFail(dashboardsToImport);
 
@@ -112,7 +114,7 @@ public class EntityImportService {
         retrieveAllDashboardsToImport(entitiesToImport);
 
     reportImportService.validateAllReportsOrFail(userId, collection, reportsToImport);
-    dashboardImportService.validateAllDashboardsOrFail(userId, dashboardsToImport);
+    dashboardImportService.validateAllDashboardsOrFail(dashboardsToImport);
 
     final Map<String, EntityIdResponseDto> originalIdToNewIdMap = new HashMap<>();
     reportImportService.importReportsIntoCollection(
@@ -190,17 +192,14 @@ public class EntityImportService {
 
   private CollectionDefinitionDto getAndValidateCollectionExistsAndIsAccessibleOrFail(
       final String userId, final String collectionId) {
-    return Optional.ofNullable(collectionId)
-        .map(
-            collId ->
-                Optional.ofNullable(userId)
-                    .map(
-                        user ->
-                            authorizedCollectionService
-                                .getAuthorizedCollectionDefinitionOrFail(user, collId)
-                                .getDefinitionDto())
-                    .orElse(collectionService.getCollectionDefinition(collId)))
-        .orElse(null);
+    if (collectionId == null) {
+      return null;
+    }
+    return userId != null
+        ? authorizedCollectionService
+            .getAuthorizedCollectionDefinitionOrFail(userId, collectionId)
+            .getDefinitionDto()
+        : collectionService.getCollectionDefinition(collectionId);
   }
 
   private void validateCompletenessOrFail(final Set<OptimizeEntityExportDto> entitiesToImport) {
@@ -241,6 +240,28 @@ public class EntityImportService {
                             .isInstantPreviewReport()))) {
       throw new OptimizeValidationException(
           "Cannot import Instant preview dashboards and reports.");
+    }
+  }
+
+  private void validateNoAgenticControlEntities(
+      final Set<OptimizeEntityExportDto> entitiesToImport) {
+    if (entitiesToImport.stream()
+        .anyMatch(
+            exportDto ->
+                (DASHBOARD.equals(exportDto.getExportEntityType())
+                    && ((DashboardDefinitionExportDto) exportDto).isAgenticControlDashboard()))) {
+      throw new OptimizeValidationException("Cannot import agentic control dashboards.");
+    }
+  }
+
+  private void validateNoBusinessValueEntities(
+      final Set<OptimizeEntityExportDto> entitiesToImport) {
+    if (entitiesToImport.stream()
+        .anyMatch(
+            exportDto ->
+                (DASHBOARD.equals(exportDto.getExportEntityType())
+                    && ((DashboardDefinitionExportDto) exportDto).isBusinessValueDashboard()))) {
+      throw new OptimizeValidationException("Cannot import business value dashboards.");
     }
   }
 }

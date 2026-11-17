@@ -12,7 +12,6 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.transport.stream.impl.RemoteStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamTransport;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamerImpl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.List;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdGenerator;
@@ -41,22 +39,16 @@ public final class TransportFactory {
   public ServerTransport createServerTransport(
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
-      final List<TopicSupplier> topicSuppliers) {
+      final boolean receiveOnLegacySubject) {
 
     final var atomixServerTransport =
-        new AtomixServerTransport(messagingService, requestIdGenerator, topicSuppliers);
+        new AtomixServerTransport(messagingService, requestIdGenerator, receiveOnLegacySubject);
     actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }
 
   public ClientTransport createClientTransport(final MessagingService messagingService) {
-    return createClientTransport(messagingService, TopicSupplier.withLegacyTopicName());
-  }
-
-  public ClientTransport createClientTransport(
-      final MessagingService messagingService, final TopicSupplier topicSupplier) {
-    final var atomixClientTransportAdapter =
-        new AtomixClientTransportAdapter(messagingService, topicSupplier);
+    final var atomixClientTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     actorSchedulingService.submitActor(atomixClientTransportAdapter);
     return atomixClientTransportAdapter;
   }
@@ -65,18 +57,21 @@ public final class TransportFactory {
       final ClusterCommunicationService clusterCommunicationService,
       final Function<DirectBuffer, M> metadataFactory,
       final RemoteStreamErrorHandler<P> errorHandler,
-      final RemoteStreamMetrics metrics) {
+      final RemoteStreamMetrics metrics,
+      final String physicalTenantId) {
     final RemoteStreamRegistry<M> registry = new RemoteStreamRegistry<>(metrics);
     return new RemoteStreamServiceImpl<>(
         new RemoteStreamerImpl<>(clusterCommunicationService, registry, errorHandler, metrics),
         new RemoteStreamTransport<>(
-            clusterCommunicationService, new RemoteStreamApiHandler<>(registry, metadataFactory)),
+            clusterCommunicationService,
+            new RemoteStreamApiHandler<>(registry, metadataFactory),
+            physicalTenantId),
         registry);
   }
 
   public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(
       final ClusterCommunicationService clusterCommunicationService,
-      final ClientStreamMetrics metrics) {
-    return new ClientStreamServiceImpl<>(clusterCommunicationService, metrics);
+      final Function<String, ClientStreamMetrics> metricsFactory) {
+    return new ClientStreamServiceImpl<>(clusterCommunicationService, metricsFactory);
   }
 }

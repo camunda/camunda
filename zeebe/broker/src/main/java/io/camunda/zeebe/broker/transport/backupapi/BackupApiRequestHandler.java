@@ -7,22 +7,18 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
-import io.camunda.zeebe.backup.api.BackupDescriptor;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupManager;
-import io.camunda.zeebe.backup.api.BackupRangeStatus;
-import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
-import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointInfo;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
@@ -36,29 +32,29 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
-import java.time.Instant;
-import java.util.Collection;
+import java.util.Optional;
 
 /**
- * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
+ * Request handler to handle commands and queries related to the backup ({@link
+ * RequestType#BACKUP}). Extends the read-only {@link ReadOnlyBackupApiRequestHandler} to support
+ * mutating request types (take, delete, query/sync/clear state)
  */
-public final class BackupApiRequestHandler
-    extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
+public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandler
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
   private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
-  private final AtomixServerTransport transport;
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
-  private final int partitionId;
-  private final boolean backupFeatureEnabled;
+  private final CheckpointSnapshotReserver snapshotReserver;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -67,27 +63,18 @@ public final class BackupApiRequestHandler
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
-      final int partitionId,
+      final PersistedSnapshotStore snapshotStore,
+      final SnapshotTrigger snapshotTrigger,
+      final PartitionId partition,
       final boolean backupFeatureEnabled) {
-    super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
+    super("BackupApi", backupManager, partition, transport, backupFeatureEnabled);
     this.logStreamWriter = logStreamWriter;
-    this.transport = transport;
     this.backupManager = backupManager;
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
-    this.partitionId = partitionId;
-    this.backupFeatureEnabled = backupFeatureEnabled;
-    transport.unsubscribe(partitionId, RequestType.BACKUP);
-    transport.subscribe(partitionId, RequestType.BACKUP, this);
-  }
-
-  @Override
-  public void close() {
-    transport.unsubscribe(partitionId, RequestType.BACKUP);
-    // The broker is not the leader any more.
-    transport.subscribe(partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler());
-    super.close();
+    snapshotReserver =
+        new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
   }
 
   @Override
@@ -104,9 +91,8 @@ public final class BackupApiRequestHandler
 
     return switch (requestReader.type()) {
       case TAKE_BACKUP ->
-          CompletableActorFuture.completed(
-              handleTakeBackupRequest(
-                  requestStreamId, requestId, requestReader, responseWriter, errorWriter));
+          handleTakeBackupRequest(
+              requestStreamId, requestId, requestReader, responseWriter, errorWriter);
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
@@ -119,16 +105,48 @@ public final class BackupApiRequestHandler
     };
   }
 
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleTakeBackupRequest(
       final int requestStreamId,
       final long requestId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
     if (!isDiskSpaceAvailable) {
-      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+      return CompletableActorFuture.completed(
+          Either.left(errorWriter.outOfDiskSpace(partitionId.number())));
     }
 
+    final var checkpointId = requestReader.backupId();
+    final var checkpointType = requestReader.checkpointType();
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        actor.createFuture();
+
+    snapshotReserver
+        .reserveFor(checkpointId, checkpointType)
+        .onComplete(
+            (snapshotId, ignored) -> {
+              final var written =
+                  writeCheckpoint(
+                      requestStreamId, requestId, checkpointId, checkpointType, snapshotId);
+              if (written.isRight()) {
+                result.complete(Either.right(responseWriter.noResponse()));
+              } else {
+                snapshotReserver.release(checkpointId, snapshotId);
+                result.complete(
+                    Either.left(
+                        errorWriter.mapWriteError(partitionId.number(), written.getLeft())));
+              }
+            },
+            actor);
+    return result;
+  }
+
+  private Either<WriteFailure, Long> writeCheckpoint(
+      final int requestStreamId,
+      final long requestId,
+      final long checkpointId,
+      final CheckpointType checkpointType,
+      final Optional<String> snapshotId) {
     final RecordMetadata metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -138,67 +156,11 @@ public final class BackupApiRequestHandler
             .requestStreamId(requestStreamId);
     final var checkpointRecord =
         new CheckpointRecord()
-            .setCheckpointId(requestReader.backupId())
-            .setCheckpointType(requestReader.checkpointType());
-    final var written =
-        logStreamWriter.tryWrite(
-            WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
-
-    if (written.isRight()) {
-      // Response will be sent by the processor
-      return Either.right(responseWriter.noResponse());
-    } else {
-      return Either.left(errorWriter.mapWriteError(partitionId, written.getLeft()));
-    }
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
-      handleQueryStatusRequest(
-          final BackupApiRequestReader requestReader,
-          final BackupApiResponseWriter responseWriter,
-          final ErrorResponseWriter errorWriter) {
-    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
-        new CompletableActorFuture<>();
-    final var backupId = requestReader.backupId();
-    backupManager
-        .getBackupStatus(backupId)
-        .onComplete(
-            (status, error) -> {
-              if (error == null) {
-                final BackupStatusResponse response = buildResponse(status);
-                result.complete(Either.right(responseWriter.withStatus(response)));
-              } else {
-                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
-                result.complete(Either.left(errorWriter));
-              }
-            });
-    return result;
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupRequest(
-      final BackupApiRequestReader requestReader,
-      final BackupApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
-    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
-        new CompletableActorFuture<>();
-    final var pattern = requestReader.pattern();
-
-    backupManager
-        .listBackups(pattern)
-        .onComplete(
-            (backups, error) -> {
-              if (error == null) {
-                result.complete(
-                    Either.right(responseWriter.withBackupList(buildBackupListResponse(backups))));
-              } else {
-                result.complete(
-                    Either.left(
-                        errorWriter
-                            .errorCode(ErrorCode.INTERNAL_ERROR)
-                            .errorMessage(error.getMessage())));
-              }
-            });
-    return result;
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(checkpointType)
+            .setSnapshotId(snapshotId.orElse(""));
+    return logStreamWriter.tryWrite(
+        WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
@@ -237,7 +199,7 @@ public final class BackupApiRequestHandler
     if (checkpointState.getLatestBackupId() != CheckpointState.NO_CHECKPOINT) {
       final PartitionCheckpointState backupState =
           new PartitionCheckpointState(
-              partitionId,
+              partitionId.number(),
               checkpointState.getLatestBackupId(),
               checkpointState.getLatestBackupType(),
               checkpointState.getLatestBackupTimestamp(),
@@ -248,7 +210,7 @@ public final class BackupApiRequestHandler
     if (checkpointState.getLatestCheckpointId() != CheckpointState.NO_CHECKPOINT) {
       final PartitionCheckpointState cpState =
           new PartitionCheckpointState(
-              partitionId,
+              partitionId.number(),
               checkpointState.getLatestCheckpointId(),
               checkpointState.getLatestCheckpointType(),
               checkpointState.getLatestCheckpointTimestamp(),
@@ -257,49 +219,6 @@ public final class BackupApiRequestHandler
     }
     result.complete(Either.right(responseWriter.withCheckpointState(response)));
     return result;
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
-      handleQueryRangesRequest(
-          final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
-    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
-        new CompletableActorFuture<>();
-    final var response = new BackupRangesResponse();
-
-    backupManager
-        .getBackupRangeStatus()
-        .onComplete(
-            (ranges, error) -> {
-              if (error != null) {
-                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
-                result.complete(Either.left(errorWriter));
-                return;
-              }
-              response.setRanges(
-                  ranges.stream()
-                      .map(
-                          r ->
-                              new PartitionBackupRange(
-                                  partitionId,
-                                  fromCheckpointInfo(r.first()),
-                                  fromCheckpointInfo(r.last())))
-                      .toList());
-              result.complete(Either.right(responseWriter.withBackupRanges(response)));
-            });
-
-    return result;
-  }
-
-  private CheckpointInfo fromCheckpointInfo(final BackupRangeStatus.CheckpointInfo info) {
-    if (info == null) {
-      return null;
-    }
-    return new CheckpointInfo(
-        info.checkpointId(),
-        info.firstLogPosition(),
-        info.checkpointPosition(),
-        info.checkpointType(),
-        Instant.ofEpochMilli(info.checkpointTimestamp()));
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
@@ -320,7 +239,7 @@ public final class BackupApiRequestHandler
                         .map(
                             r ->
                                 new PartitionBackupRange(
-                                    partitionId,
+                                    partitionId.number(),
                                     fromCheckpointInfo(r.first()),
                                     fromCheckpointInfo(r.last())))
                         .toList());
@@ -345,7 +264,7 @@ public final class BackupApiRequestHandler
                 final BackupStatusResponse response =
                     new BackupStatusResponse()
                         .setStatus(BackupStatusCode.DOES_NOT_EXIST)
-                        .setPartitionId(partitionId);
+                        .setPartitionId(partitionId.number());
                 result.complete(Either.right(responseWriter.withStatus(response)));
               } else {
                 errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
@@ -355,58 +274,9 @@ public final class BackupApiRequestHandler
     return result;
   }
 
-  private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {
-    final var statuses =
-        backups.stream()
-            .map(
-                backup ->
-                    new BackupListResponse.BackupStatus(
-                        backup.id().checkpointId(),
-                        backup.id().partitionId(),
-                        encodeStatusCode(backup.statusCode()),
-                        backup.failureReason().orElse(""),
-                        backup.descriptor().map(BackupDescriptor::brokerVersion).orElse(""),
-                        backup.created().map(Instant::toString).orElse("")))
-            .toList();
-    return new BackupListResponse(statuses);
-  }
-
-  private BackupStatusResponse buildResponse(final BackupStatus status) {
-    final var response =
-        new BackupStatusResponse()
-            .setBackupId(status.id().checkpointId())
-            .setBrokerId(status.id().nodeId())
-            .setPartitionId(status.id().partitionId())
-            .setStatus(encodeStatusCode(status.statusCode()));
-    status
-        .descriptor()
-        .ifPresent(
-            backupDescriptor -> {
-              response
-                  .setCheckpointPosition(backupDescriptor.checkpointPosition())
-                  .setSnapshotId(backupDescriptor.snapshotId().orElse(""))
-                  .setNumberOfPartitions(backupDescriptor.numberOfPartitions())
-                  .setBrokerVersion(backupDescriptor.brokerVersion());
-              backupDescriptor.firstLogPosition().ifPresent(response::setFirstLogPosition);
-            });
-    status.failureReason().ifPresent(response::setFailureReason);
-    status.created().ifPresent(instant -> response.setCreatedAt(instant.toString()));
-    status.lastModified().ifPresent(instant -> response.setLastUpdated(instant.toString()));
-    return response;
-  }
-
   private Either<ErrorResponseWriter, BackupApiResponseWriter> unknownRequest(
       final ErrorResponseWriter errorWriter, final BackupRequestType type) {
     errorWriter.unsupportedMessage(type, AdminRequestType.values());
-    return Either.left(errorWriter);
-  }
-
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> backupFeatureDisabledError(
-      final ErrorResponseWriter errorWriter) {
-    errorWriter
-        .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
-        .errorMessage(
-            "Cannot process backup requests. No backup store is configured. To use this feature, configure backup in broker configuration.");
     return Either.left(errorWriter);
   }
 
@@ -418,16 +288,5 @@ public final class BackupApiRequestHandler
   @Override
   public void onDiskSpaceAvailable() {
     actor.submit(() -> isDiskSpaceAvailable = true);
-  }
-
-  private BackupStatusCode encodeStatusCode(
-      final io.camunda.zeebe.backup.api.BackupStatusCode statusCode) {
-    return switch (statusCode) {
-      case DOES_NOT_EXIST -> BackupStatusCode.DOES_NOT_EXIST;
-      case IN_PROGRESS -> BackupStatusCode.IN_PROGRESS;
-      case COMPLETED -> BackupStatusCode.COMPLETED;
-      case FAILED -> BackupStatusCode.FAILED;
-      case DELETED -> BackupStatusCode.DELETED;
-    };
   }
 }

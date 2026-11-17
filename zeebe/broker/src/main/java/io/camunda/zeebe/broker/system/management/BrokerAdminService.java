@@ -17,13 +17,25 @@ public interface BrokerAdminService {
   /** Request a partition to resume its StreamProcessor */
   void resumeStreamProcessing();
 
-  /** Request a partition to pause exporting */
+  /**
+   * @deprecated exporting is controlled exclusively through dynamic cluster configuration; this
+   *     method always throws {@link UnsupportedOperationException}. Use the {@code
+   *     /actuator/exporting} endpoint, or the {@code /v2/exporting} / {@code /cluster/v2/exporting}
+   *     REST endpoints, instead.
+   */
+  @Deprecated
   void pauseExporting();
 
-  /** Request a partition to soft pause exporting */
+  /**
+   * @deprecated see {@link #pauseExporting()}.
+   */
+  @Deprecated
   void softPauseExporting();
 
-  /** Request a partition to resume exporting */
+  /**
+   * @deprecated see {@link #pauseExporting()}.
+   */
+  @Deprecated
   void resumeExporting();
 
   /**
@@ -31,13 +43,6 @@ public interface BrokerAdminService {
    * snapshot interval.
    */
   void takeSnapshot();
-
-  /**
-   * Prepares for upgrade by pausing stream processors and triggering snapshots. It is not normally
-   * required to call this before every upgrade. However, this is useful as an upgrade procedure to
-   * mitigate the effects of some known bugs.
-   */
-  void prepareForUpgrade();
 
   /**
    * Returns {@link PartitionStatus} of all partitions running on this broker.

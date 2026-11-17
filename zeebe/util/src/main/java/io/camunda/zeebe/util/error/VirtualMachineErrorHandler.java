@@ -15,6 +15,10 @@ import org.slf4j.Logger;
  * like {@link ClassCircularityError}. It can also be used as a {@link UncaughtExceptionHandler
  * uncaught exception handler}, for example as the {@link Thread#setDefaultUncaughtExceptionHandler
  * default uncaught exception handler}
+ *
+ * <p>A {@link StackOverflowError} thrown while processing a command never reaches this handler:
+ * {@code ProcessingStateMachine} catches it and rejects the command, because the command caused it
+ * and would cause it again on every retry.
  */
 public final class VirtualMachineErrorHandler
     implements FatalErrorHandler, UncaughtExceptionHandler {
@@ -57,7 +61,7 @@ public final class VirtualMachineErrorHandler
 
   private void tryLoggingThenExit(final Throwable cause) {
     tryLogging(cause);
-    System.exit(EXIT_CODE);
+    Runtime.getRuntime().halt(EXIT_CODE);
   }
 
   private void tryLogging(final Throwable e) {

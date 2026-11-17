@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -29,7 +29,6 @@ import java.time.Duration;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
-  public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
 
@@ -59,9 +58,9 @@ public final class RaftPartitionFactory {
   public static Path getPartitionDirectory(
       final PartitionId partitionId, final String dataDirectory) {
     return Paths.get(dataDirectory)
-        .resolve(GROUP_NAME)
+        .resolve(partitionId.group())
         .resolve("partitions")
-        .resolve(partitionId.id().toString());
+        .resolve(String.valueOf(partitionId.number()));
   }
 
   public RaftPartition createRaftPartition(
@@ -107,15 +106,23 @@ public final class RaftPartitionFactory {
         (int) brokerCfg.getExperimental().getRaft().getSnapshotChunkSize().toBytes());
     partitionConfig.setConfigurationChangeTimeout(
         brokerCfg.getExperimental().getRaft().getConfigurationChangeTimeout());
+    partitionConfig.setJoinCatchUpTimeout(
+        brokerCfg.getExperimental().getRaft().getJoinCatchUpTimeout());
+    partitionConfig.setPromotionLagThreshold(
+        brokerCfg.getExperimental().getRaft().getPromotionLagThreshold().toBytes());
     partitionConfig.setMaxQuorumResponseTimeout(
         brokerCfg.getExperimental().getRaft().getMaxQuorumResponseTimeout());
     partitionConfig.setMinStepDownFailureCount(
         brokerCfg.getExperimental().getRaft().getMinStepDownFailureCount());
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
+    partitionConfig.setRebalanceReplicationLagThreshold(
+        brokerCfg.getCluster().getRaft().getRebalanceReplicationLagThreshold().toBytes());
+    partitionConfig.setRebalanceReplicationTimeout(
+        brokerCfg.getCluster().getRaft().getRebalanceReplicationTimeout());
+    partitionConfig.setRebalanceMaxTransferAttempts(
+        brokerCfg.getCluster().getRaft().getRebalanceMaxTransferAttempts());
 
-    partitionConfig.setEngineName(brokerCfg.getExperimental().getDefaultEngineName());
-    partitionConfig.setSendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject());
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());
 

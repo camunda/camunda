@@ -108,7 +108,10 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                               s ->
                                   s.lang(ScriptLanguage.Painless)
                                       .source(
-                                          ProcessOverviewScriptFactory.createUpdateOverviewScript())
+                                          src ->
+                                              src.scriptString(
+                                                  ProcessOverviewScriptFactory
+                                                      .createUpdateOverviewScript()))
                                       .params(paramMap)))
                       .upsert(overviewDto)
                       .refresh(Refresh.True)
@@ -136,8 +139,10 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                               s ->
                                   s.lang(ScriptLanguage.Painless)
                                       .source(
-                                          ProcessOverviewScriptFactory
-                                              .createUpdateProcessDigestScript())
+                                          src ->
+                                              src.scriptString(
+                                                  ProcessOverviewScriptFactory
+                                                      .createUpdateProcessDigestScript()))
                                       .params(
                                           Map.of(
                                               "kpiReportResults",

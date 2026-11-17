@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
@@ -31,6 +32,7 @@ import io.camunda.optimize.util.SuppressionConstants;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -103,31 +105,40 @@ public class ReportRestMapper {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final String locale,
       final LocalizationService localizationService) {
-    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
+    if (isSystemGeneratedReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-          .getData()
-          .isManagementReport()) {
-        Optional.ofNullable(
-                localizationService.getLocalizationForManagementReportCode(
-                    validLocale, reportDefinitionDto.getName()))
-            .ifPresent(reportDefinitionDto::setName);
-        Optional.ofNullable(
-                localizationService.getLocalizationForManagementReportCode(
-                    validLocale, reportDefinitionDto.getDescription()))
-            .ifPresent(reportDefinitionDto::setDescription);
-      } else {
-        Optional.ofNullable(
-                localizationService.getLocalizationForInstantPreviewReportCode(
-                    validLocale, reportDefinitionDto.getName()))
-            .ifPresent(reportDefinitionDto::setName);
-        Optional.ofNullable(
-                localizationService.getLocalizationForInstantPreviewReportCode(
-                    validLocale, reportDefinitionDto.getDescription()))
-            .ifPresent(reportDefinitionDto::setDescription);
-      }
+      final var data = ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
+      final BiFunction<String, String, String> localizer =
+          resolveSystemReportLocalizer(data, localizationService);
+      Optional.ofNullable(localizer.apply(validLocale, reportDefinitionDto.getName()))
+          .ifPresent(reportDefinitionDto::setName);
+      Optional.ofNullable(localizer.apply(validLocale, reportDefinitionDto.getDescription()))
+          .ifPresent(reportDefinitionDto::setDescription);
+      localizeConfigurationSubtitle(data, localizer, validLocale);
       localizeChartLabels(reportDefinitionDto, localizationService, validLocale);
     }
+  }
+
+  private static BiFunction<String, String, String> resolveSystemReportLocalizer(
+      final ProcessReportDataDto data, final LocalizationService localizationService) {
+    if (data.isManagementReport()) {
+      return localizationService::getLocalizationForManagementReportCode;
+    } else if (data.isAgenticControlReport()) {
+      return localizationService::getLocalizationForAgenticControlReportCode;
+    } else {
+      return localizationService::getLocalizationForInstantPreviewReportCode;
+    }
+  }
+
+  private static void localizeConfigurationSubtitle(
+      final ProcessReportDataDto data,
+      final BiFunction<String, String, String> localizer,
+      final String validLocale) {
+    Optional.ofNullable(data.getConfiguration())
+        .map(SingleReportConfigurationDto::getSubtitle)
+        .filter(subtitle -> !subtitle.isBlank())
+        .map(subtitle -> localizer.apply(validLocale, subtitle))
+        .ifPresent(localized -> data.getConfiguration().setSubtitle(localized));
   }
 
   private static void localizeChartLabels(
@@ -214,15 +225,13 @@ public class ReportRestMapper {
         .ifPresent(reportDefinitionDto::setLastModifier);
   }
 
-  private static boolean isManagementOrInstantPreviewReport(
-      final ReportDefinitionDto<?> reportDefinitionDto) {
-    return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
-        && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isManagementReport()
-            || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isInstantPreviewReport());
+  private static boolean isSystemGeneratedReport(final ReportDefinitionDto<?> reportDefinitionDto) {
+    if (!(reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto)) {
+      return false;
+    }
+    return ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+        .getData()
+        .isSystemGeneratedReport();
   }
 
   private void localizeReportData(

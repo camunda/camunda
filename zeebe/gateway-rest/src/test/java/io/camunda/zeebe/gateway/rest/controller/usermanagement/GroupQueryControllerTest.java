@@ -20,6 +20,8 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
@@ -27,14 +29,15 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GroupSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -82,7 +85,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
       """;
   private static final String GROUP_BASE_URL = "/v2/groups";
   private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   private static final List<GroupMemberEntity> GROUP_USER_ENTITIES =
       List.of(
@@ -236,13 +240,17 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @MockitoBean private MappingRuleServices mappingServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private SecurityConfiguration securityConfiguration;
+  @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+    when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingServices);
+    when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -395,6 +403,135 @@ public class GroupQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(groupServices).search(eq(new GroupQuery.Builder().build()), any());
+  }
+
+  @Test
+  void shouldSearchGroupsWithOrOperator() {
+    // given
+    when(groupServices.search(any(GroupQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new GroupEntity(111L, "group-top", "Group Top", "description 1")))
+                .build());
+
+    final var orFilters =
+        List.of(
+            new GroupFilter.Builder().groupIdOperations(Operation.eq("group-a")).build(),
+            new GroupFilter.Builder()
+                .groupIdOperations(Operation.eq("group-b"))
+                .name("group-b-name")
+                .build());
+
+    final var expectedFilter = new GroupFilter.Builder().name("group-top");
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "name": "group-top",
+                "$or": [
+                  { "groupId": "group-a" },
+                  { "groupId": "group-b", "name": "group-b-name" }
+                ]
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "groupId": "group-top",
+                 "name": "Group Top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(groupServices)
+        .search(eq(new GroupQuery.Builder().filter(expectedFilter.build()).build()), any());
+  }
+
+  @Test
+  void shouldSearchGroupsWithNameLikeFilter() {
+    // given
+    when(groupServices.search(any(GroupQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(new GroupEntity(111L, "group-top", "Group Top", "description 1")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "name": { "$like": "Group*" }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "groupId": "group-top",
+                 "name": "Group Top",
+                 "description": "description 1"
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "startCursor": "f",
+               "endCursor": "v",
+               "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
+
+    verify(groupServices)
+        .search(
+            eq(
+                new GroupQuery.Builder()
+                    .filter(
+                        new GroupFilter.Builder().nameOperations(Operation.like("Group*")).build())
+                    .build()),
+            any());
   }
 
   @Test

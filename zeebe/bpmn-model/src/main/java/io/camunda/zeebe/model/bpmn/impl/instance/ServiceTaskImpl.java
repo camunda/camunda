@@ -20,9 +20,11 @@ import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IMPLEMENTATION;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_OPERATION_REF;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.ZEEBE_NS;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.Operation;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.Task;
@@ -42,6 +44,7 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
 
   protected static Attribute<String> implementationAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
+  protected static Attribute<String> modelerTemplateAttribute;
 
   public ServiceTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
@@ -73,6 +76,12 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
             .qNameAttributeReference(Operation.class)
             .build();
 
+    modelerTemplateAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_MODELER_TEMPLATE)
+            .namespace(ZEEBE_NS)
+            .build();
+
     typeBuilder.build();
   }
 
@@ -99,5 +108,15 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
   @Override
   public void setOperation(final Operation operation) {
     operationRefAttribute.setReferenceTargetElement(this, operation);
+  }
+
+  @Override
+  public String getModelerTemplate() {
+    return modelerTemplateAttribute.getValue(this);
+  }
+
+  @Override
+  public void setModelerTemplate(final String modelerTemplate) {
+    modelerTemplateAttribute.setValue(this, modelerTemplate);
   }
 }

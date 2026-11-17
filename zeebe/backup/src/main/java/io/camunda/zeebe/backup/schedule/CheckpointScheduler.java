@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -19,19 +20,27 @@ import io.camunda.zeebe.util.ExponentialBackoff;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Triggers marker checkpoints and scheduled backups for a single physical tenant, on that tenant's
+ * own schedules. All requests are targeted at the tenant's partitions only, so tenants with
+ * different backup configurations never interfere with each other.
+ */
 public class CheckpointScheduler extends Actor implements AutoCloseable {
   private static final long BACKOFF_INITIAL_DELAY_MS = 1000;
   private static final long BACKOFF_MAX_DELAY_MS = 10_000;
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointScheduler.class);
+  private final String physicalTenantId;
   private final Schedule checkpointSchedule;
   private final Schedule backupSchedule;
   private final BackupRequestHandler backupRequestHandler;
+  private final BrokerTopologyManager topologyManager;
   private final SchedulerMetrics metrics;
 
   private long markerErrorDelayMs;
@@ -40,14 +49,19 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final ExponentialBackoff backupErrorStrategy;
 
   public CheckpointScheduler(
+      final String physicalTenantId,
       final Schedule checkpointSchedule,
       final Schedule backupSchedule,
       final BackupRequestHandler backupRequestHandler,
+      final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
+    super("CheckpointScheduler", null, Map.of(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId));
+    this.physicalTenantId = physicalTenantId;
     this.checkpointSchedule = checkpointSchedule;
     this.backupSchedule = backupSchedule;
     metrics = new SchedulerMetrics(meterRegistry);
     this.backupRequestHandler = backupRequestHandler;
+    this.topologyManager = topologyManager;
     markerErrorStrategy =
         new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
     backupErrorStrategy =
@@ -59,9 +73,11 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     LOG.debug("Checkpoint scheduler started");
     metrics.register();
     if (checkpointSchedule != null) {
+      LOG.info("Checkpoint scheduler initialized with interval {}", checkpointSchedule);
       actor.run(this::markerSchedulingTask);
     }
     if (backupSchedule != null) {
+      LOG.info("Backup scheduler initialized with interval {}", backupSchedule);
       actor.run(this::backupSchedulingTask);
     }
   }
@@ -73,6 +89,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private void markerSchedulingTask() {
+    if (rescheduledRecoveringTenant(CheckpointType.MARKER)) {
+      return;
+    }
     acquirePartitionStates(CheckpointStateResponse::getCheckpointStates)
         .thenApply(this::determineNextCheckpoint, this)
         .andThen(this::markerCheckpoint, this)
@@ -80,12 +99,47 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   private void backupSchedulingTask() {
+    if (rescheduledRecoveringTenant(CheckpointType.SCHEDULED_BACKUP)) {
+      return;
+    }
     acquirePartitionStates(CheckpointStateResponse::getBackupStates)
         .thenApply(this::determineNextBackup, this)
         .andThen(this::backupCheckpoint, this)
         .onComplete(
             (res, err) -> handleExecutionCompletion(res, err, CheckpointType.SCHEDULED_BACKUP),
             this);
+  }
+
+  /**
+   * Skips this tick's requests while the physical tenant is recovering, rescheduling the loop on
+   * its normal schedule instead.
+   *
+   * <p>A recovering tenant is having its partitions restored, so a checkpoint taken now would
+   * capture a half-restored state; a tenant whose mode this broker cannot see yet is treated the
+   * same way. The loop keeps ticking rather than stopping, so it picks the schedule back up on its
+   * own as soon as the tenant returns to processing mode — no restart of the actor is needed.
+   *
+   * @return {@code true} if the tick was skipped, in which case the loop is already rescheduled
+   */
+  private boolean rescheduledRecoveringTenant(final CheckpointType type) {
+    if (!topologyManager.isRecovering(physicalTenantId)) {
+      return false;
+    }
+
+    final var tickSchedule = type == CheckpointType.MARKER ? checkpointSchedule : backupSchedule;
+    final var next = nextExecution(tickSchedule, ActorClock.currentInstant());
+    metrics.recordNextExecution(next, type);
+    LOG.debug(
+        "Skipping {} checkpoint, physical tenant {} is in recovery mode. Next attempt at {}",
+        type,
+        physicalTenantId,
+        next);
+
+    final Runnable task =
+        type == CheckpointType.MARKER ? this::markerSchedulingTask : this::backupSchedulingTask;
+    final long delay = Math.max(0, next.toEpochMilli() - ActorClock.currentTimeMillis());
+    schedule(Duration.ofMillis(delay), task);
+    return true;
   }
 
   /**
@@ -104,7 +158,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       final Function<CheckpointStateResponse, Set<PartitionCheckpointState>> stateFilter) {
     final ActorFuture<Set<PartitionCheckpointState>> future = createFuture();
     backupRequestHandler
-        .getCheckpointState()
+        .getCheckpointState(physicalTenantId)
         .thenApplyAsync(stateFilter, this)
         .whenCompleteAsync(future, this);
     return future;
@@ -154,7 +208,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     final CompletableActorFuture<ExecutionResult> future = new CompletableActorFuture<>();
     if (nextExecution.isBefore(now) || nextExecution.equals(now)) {
       backupRequestHandler
-          .checkpoint(type)
+          .checkpoint(physicalTenantId, type)
           .toCompletableFuture()
           .thenApplyAsync(
               id -> {

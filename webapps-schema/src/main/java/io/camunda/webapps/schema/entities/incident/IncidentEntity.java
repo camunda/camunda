@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
@@ -41,6 +42,10 @@ public class IncidentEntity
   /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer storageOrdinal;
 
   @Deprecated @JsonIgnore private boolean pending = true;
 
@@ -221,6 +226,15 @@ public class IncidentEntity
     return this;
   }
 
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public IncidentEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -240,7 +254,8 @@ public class IncidentEntity
         bpmnProcessId,
         treePath,
         tenantId,
-        position);
+        position,
+        storageOrdinal);
   }
 
   @Override
@@ -270,7 +285,8 @@ public class IncidentEntity
         && Objects.equals(treePath, incident.treePath)
         && Objects.equals(tenantId, incident.tenantId)
         && Objects.equals(position, incident.position)
-        && Objects.equals(rootProcessInstanceKey, incident.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, incident.rootProcessInstanceKey)
+        && Objects.equals(storageOrdinal, incident.storageOrdinal);
   }
 
   @Override
@@ -306,6 +322,8 @@ public class IncidentEntity
         + pending
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", storageOrdinal="
+        + storageOrdinal
         + '}';
   }
 }

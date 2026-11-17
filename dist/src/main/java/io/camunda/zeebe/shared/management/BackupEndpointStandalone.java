@@ -8,6 +8,7 @@
 package io.camunda.zeebe.shared.management;
 
 import io.camunda.zeebe.shared.profiles.ProfileStandaloneBrokerOrGateway;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -17,19 +18,25 @@ import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.stereotype.Component;
 
+/**
+ * The deprecated {@code backups} alias of {@link BackupEndpoint}, exposed on standalone brokers and
+ * gateways. It mirrors that endpoint's operation signatures verbatim, including the parameterless
+ * {@code POST} overloads, so both ids answer the same requests the same way.
+ */
 @Component
 @WebEndpoint(id = "backups")
 @ProfileStandaloneBrokerOrGateway
 public final class BackupEndpointStandalone {
   private final BackupEndpoint backupEndpoint;
 
-  private BackupEndpointStandalone(final BackupEndpoint backupEndpoint) {
+  BackupEndpointStandalone(final BackupEndpoint backupEndpoint) {
     this.backupEndpoint = backupEndpoint;
   }
 
   @WriteOperation
-  public WebEndpointResponse<?> take(final long backupId) {
-    return backupEndpoint.take(backupId);
+  public WebEndpointResponse<?> take(
+      final @Nullable Long backupId, final @Nullable String physicalTenant) {
+    return backupEndpoint.take(backupId, physicalTenant);
   }
 
   @WriteOperation
@@ -38,22 +45,31 @@ public final class BackupEndpointStandalone {
   }
 
   @WriteOperation
+  public WebEndpointResponse<?> write(
+      @Selector(match = Match.ALL_REMAINING) final String[] path,
+      final @Nullable String physicalTenant) {
+    return backupEndpoint.write(path, physicalTenant);
+  }
+
+  @WriteOperation
   public WebEndpointResponse<?> write(@Selector(match = Match.ALL_REMAINING) final String[] path) {
     return backupEndpoint.write(path);
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> listAll() {
-    return backupEndpoint.listAll();
+  public WebEndpointResponse<?> listAll(final @Nullable String physicalTenant) {
+    return backupEndpoint.listAll(physicalTenant);
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
-    return backupEndpoint.query(prefixOrId);
+  public WebEndpointResponse<?> query(
+      @Selector final String prefixOrId, final @Nullable String physicalTenant) {
+    return backupEndpoint.query(prefixOrId, physicalTenant);
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector final String id) {
-    return backupEndpoint.delete(id);
+  public WebEndpointResponse<?> delete(
+      @Selector final String id, final @Nullable String physicalTenant) {
+    return backupEndpoint.delete(id, physicalTenant);
   }
 }

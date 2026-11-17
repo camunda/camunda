@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
@@ -77,12 +78,13 @@ public class RoleDeletedHandlerTest {
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
     final RoleEntity inputEntity = new RoleEntity().setId("111");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
+    verify(mockRequest, times(1)).delete(index, inputEntity.getId());
   }
 }

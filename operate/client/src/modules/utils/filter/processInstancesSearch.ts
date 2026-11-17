@@ -14,6 +14,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from './index';
+import {advancedStringFilterCodec} from './advancedStringFilter';
 
 /**
  * ProcessInstancesFilter represents the URL search params.
@@ -27,11 +28,15 @@ const ProcessInstancesFilterSchema = z
     processInstanceKey: z.string().optional(),
     parentProcessInstanceKey: z.string().optional(),
     active: z.coerce.boolean().optional(),
+    suspended: z
+      .string()
+      .transform((value) => value === 'true')
+      .optional(),
     incidents: z.coerce.boolean().optional(),
     completed: z.coerce.boolean().optional(),
     canceled: z.coerce.boolean().optional(),
     elementId: z.string().optional(),
-    batchOperationId: z.string().optional(),
+    batchOperationKey: z.string().optional(),
     errorMessage: z.string().optional(),
     hasRetriesLeft: z.coerce.boolean().optional(),
     hasElementInstanceIncident: z.coerce.boolean().optional(),
@@ -42,6 +47,7 @@ const ProcessInstancesFilterSchema = z
     endDateTo: z.string().optional(),
     variableName: z.string().optional(),
     variableValues: z.string().optional(),
+    businessId: z.string().optional(),
   })
   .catch({});
 
@@ -50,25 +56,190 @@ type ProcessInstancesSearchFilter = NonNullable<
   QueryProcessInstancesRequestBody['filter']
 >;
 
+type ParseProcessInstancesSearchFilterOptions = {
+  searchParams: URLSearchParams;
+  includeSuspended?: boolean;
+};
+
 const parseProcessInstancesFilter = (
   search: URLSearchParams,
 ): ProcessInstancesFilter => {
   return ProcessInstancesFilterSchema.parse(Object.fromEntries(search));
 };
 
-const parseProcessInstancesSearchFilter = (
-  search: URLSearchParams,
-): ProcessInstancesSearchFilter | undefined => {
-  const filter = parseProcessInstancesFilter(search);
+const buildStateCriterion = (
+  states: ProcessInstanceState[],
+): ProcessInstancesSearchFilter['state'] => {
+  const [state] = states;
+  return state && states.length === 1 ? {$eq: state} : {$in: states};
+};
+
+const getSelectedStates = (
+  filter: ProcessInstancesFilter,
+): ProcessInstanceState[] =>
+  [
+    filter.active ? 'ACTIVE' : undefined,
+    filter.completed ? 'COMPLETED' : undefined,
+    filter.canceled ? 'TERMINATED' : undefined,
+  ].filter((state): state is ProcessInstanceState => state !== undefined);
+
+const compactFilters = (
+  filters: Array<ProcessInstancesSearchFilter | false | undefined>,
+): ProcessInstancesSearchFilter[] =>
+  filters.filter(
+    (filter): filter is ProcessInstancesSearchFilter =>
+      filter !== false && filter !== undefined,
+  );
+
+const combineFilters = (
+  filters: ProcessInstancesSearchFilter[],
+): ProcessInstancesSearchFilter => {
+  if (filters.length === 0) {
+    return {};
+  }
+
+  if (filters.length === 1) {
+    return filters[0] ?? {};
+  }
+
+  return {$or: filters};
+};
+
+const buildStateFilter = (
+  filter: ProcessInstancesFilter,
+  hasSuspendedFilter: boolean,
+): ProcessInstancesSearchFilter => {
+  const states = getSelectedStates(filter);
+
+  if (hasSuspendedFilter) {
+    return combineFilters(
+      compactFilters([
+        states.length > 0 && {
+          state: buildStateCriterion(states),
+          hasIncident: false,
+        },
+        {state: {$eq: 'SUSPENDED'}},
+        filter.incidents && {
+          hasIncident: true,
+          state: {$neq: 'SUSPENDED'},
+        },
+      ]),
+    );
+  }
+
+  if (filter.incidents && states.length > 0) {
+    return {$or: [{state: {$in: states}}, {hasIncident: true}]};
+  }
+
+  if (filter.incidents) {
+    return {hasIncident: true};
+  }
+
+  if (states.length > 0) {
+    return {
+      state: buildStateCriterion(states),
+      hasIncident: false,
+    };
+  }
+
+  return {};
+};
+
+const buildElementFilter = (
+  elementId: string,
+  matchActiveElement: boolean,
+): ProcessInstancesSearchFilter => ({
+  elementId: {$eq: elementId},
+  ...(matchActiveElement && {
+    elementInstanceState: {$eq: 'ACTIVE'},
+  }),
+});
+
+const buildMixedStateElementFilter = (
+  filter: ProcessInstancesFilter,
+  elementId: string,
+  hasSuspendedFilter: boolean,
+): ProcessInstancesSearchFilter => {
+  const activeElementFilter = buildElementFilter(elementId, true);
+  const executedElementFilter = buildElementFilter(elementId, false);
+  const finishedStates = getSelectedStates(filter).filter(
+    (state) => state !== 'ACTIVE',
+  );
+
+  return {
+    $or: compactFilters([
+      filter.active && {
+        ...activeElementFilter,
+        state: {$eq: 'ACTIVE'},
+        hasIncident: false,
+      },
+      finishedStates.length > 0 && {
+        ...executedElementFilter,
+        state: buildStateCriterion(finishedStates),
+        hasIncident: false,
+      },
+      hasSuspendedFilter && {
+        ...activeElementFilter,
+        state: {$eq: 'SUSPENDED'},
+      },
+      filter.incidents && {
+        ...activeElementFilter,
+        hasIncident: true,
+        ...(hasSuspendedFilter && {state: {$neq: 'SUSPENDED'}}),
+      },
+    ]),
+  };
+};
+
+const buildStateAndElementFilter = (
+  filter: ProcessInstancesFilter,
+  hasSuspendedFilter: boolean,
+): ProcessInstancesSearchFilter => {
+  const stateFilter = buildStateFilter(filter, hasSuspendedFilter);
+
+  if (!filter.elementId) {
+    return stateFilter;
+  }
+
+  const hasFinishedStateFilter = Boolean(filter.completed || filter.canceled);
+  const hasActiveElementStateFilter = Boolean(
+    filter.active || hasSuspendedFilter || filter.incidents,
+  );
+
+  if (hasFinishedStateFilter && hasActiveElementStateFilter) {
+    return buildMixedStateElementFilter(
+      filter,
+      filter.elementId,
+      hasSuspendedFilter,
+    );
+  }
+
+  return {
+    ...stateFilter,
+    ...buildElementFilter(filter.elementId, !hasFinishedStateFilter),
+  };
+};
+
+const parseProcessInstancesSearchFilter = ({
+  searchParams,
+  includeSuspended = false,
+}: ParseProcessInstancesSearchFilterOptions):
+  ProcessInstancesSearchFilter | undefined => {
+  const filter = parseProcessInstancesFilter(searchParams);
+  const hasSuspendedFilter = Boolean(includeSuspended && filter.suspended);
 
   const hasStateFilters =
-    filter.active || filter.completed || filter.canceled || filter.incidents;
+    filter.active ||
+    hasSuspendedFilter ||
+    filter.completed ||
+    filter.canceled ||
+    filter.incidents;
 
-  if (!hasStateFilters && !filter.batchOperationId) {
+  if (!hasStateFilters && !filter.batchOperationKey && !filter.elementId) {
     return undefined;
   }
 
-  const apiFilter: ProcessInstancesSearchFilter = {};
+  const apiFilter = buildStateAndElementFilter(filter, hasSuspendedFilter);
 
   if (filter.processDefinitionId) {
     apiFilter.processDefinitionId = {$eq: filter.processDefinitionId};
@@ -101,35 +272,8 @@ const parseProcessInstancesSearchFilter = (
     };
   }
 
-  const states: ProcessInstanceState[] = [];
-  if (filter.active) {
-    states.push('ACTIVE');
-  }
-  if (filter.completed) {
-    states.push('COMPLETED');
-  }
-  if (filter.canceled) {
-    states.push('TERMINATED');
-  }
-
-  if (filter.incidents) {
-    if (states.length > 0) {
-      apiFilter.$or = [{state: {$in: states}}, {hasIncident: true}];
-    } else {
-      apiFilter.hasIncident = true;
-    }
-  } else if (states.length > 0) {
-    apiFilter.state = states.length === 1 ? {$eq: states[0]} : {$in: states};
-    apiFilter.hasIncident = false;
-  }
-
-  if (filter.elementId) {
-    apiFilter.elementId = {$eq: filter.elementId};
-    apiFilter.elementInstanceState = {$eq: 'ACTIVE'};
-  }
-
-  if (filter.batchOperationId) {
-    apiFilter.batchOperationId = {$eq: filter.batchOperationId};
+  if (filter.batchOperationKey) {
+    apiFilter.batchOperationKey = {$eq: filter.batchOperationKey};
   }
 
   if (filter.errorMessage) {
@@ -166,6 +310,15 @@ const parseProcessInstancesSearchFilter = (
     };
   }
 
+  if (filter.businessId) {
+    const advancedFilter = advancedStringFilterCodec.safeDecode(
+      filter.businessId,
+    );
+    if (advancedFilter.success) {
+      apiFilter.businessId = advancedFilter.data;
+    }
+  }
+
   return apiFilter;
 };
 
@@ -194,6 +347,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS = Object.values(
   ProcessInstancesFilterSchema.unwrap()
     .pick({
       active: true,
+      suspended: true,
       incidents: true,
       completed: true,
       canceled: true,

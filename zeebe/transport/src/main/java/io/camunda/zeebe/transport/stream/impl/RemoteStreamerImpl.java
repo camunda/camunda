@@ -91,7 +91,7 @@ public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
 
   private CompletableFuture<byte[]> send(final PushStreamRequest request, final MemberId receiver) {
     return transport.send(
-        StreamTopics.PUSH.topic(),
+        StreamTopics.PUSH.legacyTopic(),
         request,
         BufferUtil::bufferAsArray,
         Function.identity(),

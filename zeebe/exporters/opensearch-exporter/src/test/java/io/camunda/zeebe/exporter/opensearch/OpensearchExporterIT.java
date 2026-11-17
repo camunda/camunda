@@ -76,10 +76,16 @@ final class OpensearchExporterIT {
   private static TestClient testClient;
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
-  // omit authorizations and agent since they are removed from the records during serialization
+  // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
+  // the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
-          .registerRandomizer(field -> "agent".equals(field.getName()), random -> null);
+          .registerRandomizer(
+              field ->
+                  "agent".equals(field.getName())
+                      || "requestChannelType".equals(field.getName())
+                      || "requestToolName".equals(field.getName()),
+              random -> null);
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
@@ -398,7 +404,9 @@ final class OpensearchExporterIT {
         || valueType == ValueType.INCIDENT
         || valueType == ValueType.USER_TASK
         || valueType == ValueType.DEPLOYMENT
-        || valueType == ValueType.JOB) {
+        || valueType == ValueType.JOB
+        || valueType == ValueType.AGENT_INSTANCE
+        || valueType == ValueType.AGENT_DEFINITION) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
           .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
@@ -535,6 +543,45 @@ final class OpensearchExporterIT {
               () -> {
                 final var index1PolicyNew = testClient.explainIndex(index1);
                 assertHasNoISMPolicy(index1PolicyNew);
+              });
+    }
+
+    @Test
+    void shouldPreserveExistingISMPolicyWhenManagePolicyIsDisabled() {
+      // given retention is enabled and a record exists with the policy applied
+      configureExporter(true);
+      final var record1 = generateRecord(ValueType.JOB);
+      export(record1);
+
+      final var index1 = indexRouter.indexFor(record1);
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var indexPolicy1 = testClient.explainIndex(index1);
+                assertHasISMPolicy(indexPolicy1);
+              });
+
+      // when retention is disabled but the exporter is told not to manage policies
+      configureExporter(
+          config -> {
+            config.retention.setEnabled(false);
+            config.retention.setManagePolicy(false);
+          });
+      final var record2 = generateRecord(ValueType.JOB);
+      export(record2);
+
+      // then the pre-existing policy must remain on existing indices
+      final var index2 = indexRouter.indexFor(record2);
+      await()
+          .during(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var indexPolicy1 = testClient.explainIndex(index1);
+                assertHasISMPolicy(indexPolicy1);
+                final var indexPolicy2 = testClient.explainIndex(index2);
+                assertHasISMPolicy(indexPolicy2);
               });
     }
 

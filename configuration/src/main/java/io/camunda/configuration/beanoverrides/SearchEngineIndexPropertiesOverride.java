@@ -7,13 +7,14 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -46,9 +47,12 @@ public class SearchEngineIndexPropertiesOverride {
   public SearchEngineIndexProperties searchEngineIndexProperties() {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
     BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
+    applyTo(unifiedConfiguration.getCamunda(), override);
+    return override;
+  }
 
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+  public static void applyTo(final Camunda camunda, final SearchEngineIndexProperties override) {
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
         (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
@@ -64,13 +68,12 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
       override.setReplicasByIndexName(database.getNumberOfReplicasPerIndex());
     }
-    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
-      override.setShardsByIndexName(database.getNumberOfShardsPerIndex());
+    final var shardsByIndexName = database.getNumberOfShardsPerIndex().toIndexNameMap();
+    if (!shardsByIndexName.isEmpty()) {
+      override.setShardsByIndexName(shardsByIndexName);
     }
     if (!database.getRefreshIntervalByIndexName().isEmpty()) {
       override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
     }
-
-    return override;
   }
 }

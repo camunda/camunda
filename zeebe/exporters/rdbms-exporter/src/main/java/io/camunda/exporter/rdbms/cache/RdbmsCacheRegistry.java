@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,7 +53,7 @@ public final class RdbmsCacheRegistry {
         createCache(
             config.getProcessCache().getMaxSize(),
             "process",
-            processLoader(rdbmsService),
+            processLoader(rdbmsService, config.getExtensionProperties()),
             meterRegistry);
     decisionRequirementsCache =
         createCache(
@@ -94,7 +96,8 @@ public final class RdbmsCacheRegistry {
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedProcessEntity> processLoader(
-      final RdbmsService rdbmsService) {
+      final RdbmsService rdbmsService,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
     return new RdbmsEntityCacheLoader<>(
         "Process",
@@ -106,7 +109,7 @@ public final class RdbmsCacheRegistry {
                         .resultConfig(c -> c.includeXml(true))),
         query -> reader.search(query).items(),
         ProcessDefinitionEntity::processDefinitionKey,
-        RdbmsCacheRegistry::toCachedProcessEntity);
+        entity -> toCachedProcessEntity(entity, extensionPropertiesConfiguration));
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedDecisionRequirementsEntity>
@@ -131,21 +134,20 @@ public final class RdbmsCacheRegistry {
     return new RdbmsEntityCacheLoader<>(
         "BatchOperation",
         reader::findOne,
-        entity -> entity.batchOperationKey(),
+        BatchOperationEntity::batchOperationKey,
         entity ->
             new CachedBatchOperationEntity(entity.batchOperationKey(), entity.operationType()));
   }
 
   private static CachedProcessEntity toCachedProcessEntity(
-      final ProcessDefinitionEntity processDefinitionEntity) {
-    final var processDiagramData =
-        ProcessCacheUtil.extractProcessDiagramData(processDefinitionEntity);
-    return new CachedProcessEntity(
+      final ProcessDefinitionEntity processDefinitionEntity,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
+    return ProcessCacheUtil.createCachedProcessEntity(
         processDefinitionEntity.name(),
         processDefinitionEntity.version(),
         processDefinitionEntity.versionTag(),
-        processDiagramData.callActivityIds(),
-        processDiagramData.flowNodesMap(),
-        processDiagramData.hasUserTasks());
+        processDefinitionEntity.bpmnXml(),
+        processDefinitionEntity.processDefinitionId(),
+        extensionPropertiesConfiguration);
   }
 }

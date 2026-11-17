@@ -15,6 +15,7 @@ import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
 import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
+import io.camunda.gateway.protocol.model.AdvancedMetadataValueFilter;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.search.filter.Operation;
@@ -87,10 +88,22 @@ class AdvancedSearchFilterUtilTest {
           List.of(Operation.gt(5), Operation.lt(10)),
           List.of(Operation.gte(5), Operation.lte(10)));
 
+  @SuppressWarnings("unchecked")
+  private static <F> F createFilterInstance(final Class<F> fClass) throws Exception {
+    // build() is invoked via the IBuild interface class (accessible) rather than the Impl class
+    // (package-private) to avoid IllegalAccessException.
+    final var builderClass = Class.forName(fClass.getName() + "$Builder");
+    final var iBuildClass = Class.forName(fClass.getName() + "$Builder$IBuild");
+    final var builderMethod = builderClass.getDeclaredMethod("create");
+    final var iBuild = builderMethod.invoke(null);
+    final var buildMethod = iBuildClass.getMethod("build");
+    return fClass.cast(buildMethod.invoke(iBuild));
+  }
+
   private <F, T> F constructFilter(
       final Class<F> fClass, final Class<T> pClass, final List<Operation<T>> operations)
       throws Exception {
-    final var filter = fClass.getDeclaredConstructor().newInstance();
+    final var filter = createFilterInstance(fClass);
     for (final Operation<T> op : operations) {
       final var operator = op.operator();
       final var methodName = "set$%s".formatted(StringUtils.capitalize(operator.getValue()));
@@ -237,7 +250,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldMapToStringOperationsFromInteger() {
     // given
-    final var filter = new AdvancedIntegerFilter();
+    final var filter = AdvancedIntegerFilter.Builder.create().build();
     filter.set$Eq(10);
 
     // when
@@ -251,7 +264,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldMapToStringOperationsWithConverter() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$Eq("ACTIVE");
     final var errors = new ArrayList<String>();
 
@@ -269,7 +282,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorForInvalidKeyValue() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$Eq("abc");
     final var errors = new ArrayList<String>();
 
@@ -286,7 +299,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorForInvalidDateValue() {
     // given
-    final var filter = new AdvancedDateTimeFilter();
+    final var filter = AdvancedDateTimeFilter.Builder.create().build();
     filter.set$Eq("not-a-date");
     final var errors = new ArrayList<String>();
 
@@ -303,9 +316,9 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectMultipleErrors() {
     // given
-    final var filter1 = new BasicStringFilter();
+    final var filter1 = BasicStringFilter.Builder.create().build();
     filter1.set$Eq("abc");
-    final var filter2 = new AdvancedDateTimeFilter();
+    final var filter2 = AdvancedDateTimeFilter.Builder.create().build();
     filter2.set$Eq("not-a-date");
     final var errors = new ArrayList<String>();
 
@@ -324,7 +337,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleExistsOperationInTypedMethods() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$Exists(true);
     final var errors = new ArrayList<String>();
 
@@ -339,7 +352,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorForNonIntegerValue() {
     // given — BasicStringFilter has String fields, simulating a type mismatch
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$Eq("notAnInteger");
     final var errors = new ArrayList<String>();
 
@@ -356,7 +369,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorWhenConverterThrows() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$Eq("badValue");
     final var errors = new ArrayList<String>();
     final CustomConverter<String> failingConverter =
@@ -386,7 +399,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldSkipInvalidValuesInListForKeyOperations() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$In(List.of("abc", "def"));
     final var errors = new ArrayList<String>();
 
@@ -401,7 +414,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleNullElementInListForStringOperations() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$In(nullableList("a", null, "b"));
 
     // when
@@ -414,7 +427,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleNullElementInListForKeyOperations() {
     // given
-    final var filter = new BasicStringFilter();
+    final var filter = BasicStringFilter.Builder.create().build();
     filter.set$In(nullableList("123", null));
     final var errors = new ArrayList<String>();
 
@@ -428,7 +441,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleNullElementInListForIntegerOperations() {
     // given
-    final var filter = new AdvancedIntegerFilter();
+    final var filter = AdvancedIntegerFilter.Builder.create().build();
     filter.set$In(nullableList(1, null, 2));
     final var errors = new ArrayList<String>();
 
@@ -438,6 +451,58 @@ class AdvancedSearchFilterUtilTest {
 
     // then — null element causes the whole operation to be dropped
     assertThat(actual).isEmpty();
+  }
+
+  @Test
+  void shouldPreserveStringValuesInUntypedOperations() {
+    // given
+    final var filter = AdvancedMetadataValueFilter.Builder.create().build();
+    filter.set$Eq("this");
+    filter.set$In(List.of("a", "b"));
+
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(filter);
+
+    // then — string values are preserved as String, not coerced
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new Operation<>(Operator.EQUALS, List.of("this")),
+            new Operation<>(Operator.IN, List.of("a", "b")));
+  }
+
+  @Test
+  void shouldPreserveNumericValuesInUntypedOperations() {
+    // given
+    final var filter = AdvancedMetadataValueFilter.Builder.create().build();
+    filter.set$Eq(5);
+    filter.set$In(List.of(1, 2));
+
+    // when
+    final var actual = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(filter);
+
+    // then — numeric values keep their runtime type (Number), not stringified
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new Operation<>(Operator.EQUALS, List.of(5)),
+            new Operation<>(Operator.IN, List.of(1, 2)));
+    assertThat(actual).allSatisfy(op -> assertThat(op.values()).allMatch(v -> v instanceof Number));
+  }
+
+  @Test
+  void shouldMapBooleanToExistsInUntypedOperations() {
+    // given
+    final var existsFilter = AdvancedMetadataValueFilter.Builder.create().build();
+    existsFilter.set$Exists(true);
+    final var notExistsFilter = AdvancedMetadataValueFilter.Builder.create().build();
+    notExistsFilter.set$Exists(false);
+
+    // when
+    final var exists = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(existsFilter);
+    final var notExists = AdvancedSearchFilterUtil.mapToUntypedOperations().apply(notExistsFilter);
+
+    // then
+    assertThat(exists).containsExactly(Operation.exists(true));
+    assertThat(notExists).containsExactly(Operation.exists(false));
   }
 
   /** Creates an ArrayList that allows null elements (unlike List.of). */

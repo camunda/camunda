@@ -16,6 +16,10 @@ import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.gateway.protocol.model.AgentDefinitionTypeFilterProperty;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusFilterProperty;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleFilterProperty;
+import io.camunda.gateway.protocol.model.AgentInstanceStatusFilterProperty;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeFilterProperty;
 import io.camunda.gateway.protocol.model.AuditLogResultFilterProperty;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
@@ -24,6 +28,7 @@ import io.camunda.gateway.protocol.model.BatchOperationItemStateFilterProperty;
 import io.camunda.gateway.protocol.model.BatchOperationStateFilterProperty;
 import io.camunda.gateway.protocol.model.BatchOperationTypeFilterProperty;
 import io.camunda.gateway.protocol.model.CategoryFilterProperty;
+import io.camunda.gateway.protocol.model.ClusterVariableKindFilterProperty;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeFilterProperty;
 import io.camunda.gateway.protocol.model.DateTimeFilterProperty;
 import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
@@ -45,6 +50,12 @@ import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterProperty;
 import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
+import io.camunda.gateway.protocol.model.WaitStateElementTypeFilterProperty;
+import io.camunda.gateway.protocol.model.WaitStateTypeFilterProperty;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentDefinitionTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryCommitStatusFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryRoleFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceStatusFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogActorTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogCategoryFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogEntityTypeFilterPropertyDeserializer;
@@ -55,6 +66,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeser
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.ClusterVariableKindFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ClusterVariableScopeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DecisionEvaluationInstructionDeserializer;
@@ -74,6 +86,8 @@ import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterProp
 import io.camunda.zeebe.gateway.rest.deserializer.SearchQueryPageRequestDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.WaitStateElementTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.WaitStateTypeFilterPropertyDeserializer;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -104,6 +118,9 @@ public class JacksonConfig {
     module.addDeserializer(
         ClusterVariableScopeFilterProperty.class,
         new ClusterVariableScopeFilterPropertyDeserializer());
+    module.addDeserializer(
+        ClusterVariableKindFilterProperty.class,
+        new ClusterVariableKindFilterPropertyDeserializer());
     module.addDeserializer(
         BatchOperationItemStateFilterProperty.class,
         new BatchOperatioItemStateFilterPropertyDeserializer());
@@ -147,6 +164,23 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceModificationTerminateInstruction.class,
         new ProcessInstanceModificationTerminateInstructionDeserializer());
+    module.addDeserializer(
+        AgentDefinitionTypeFilterProperty.class,
+        new AgentDefinitionTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        AgentInstanceStatusFilterProperty.class,
+        new AgentInstanceStatusFilterPropertyDeserializer());
+    module.addDeserializer(
+        AgentInstanceHistoryRoleFilterProperty.class,
+        new AgentInstanceHistoryRoleFilterPropertyDeserializer());
+    module.addDeserializer(
+        AgentInstanceHistoryCommitStatusFilterProperty.class,
+        new AgentInstanceHistoryCommitStatusFilterPropertyDeserializer());
+    module.addDeserializer(
+        WaitStateElementTypeFilterProperty.class,
+        new WaitStateElementTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        WaitStateTypeFilterProperty.class, new WaitStateTypeFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

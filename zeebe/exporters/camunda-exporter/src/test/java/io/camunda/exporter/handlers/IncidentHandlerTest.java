@@ -8,11 +8,17 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -77,8 +83,11 @@ public class IncidentHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long expectedId = 123;
     final IncidentRecordValue incidentRecordValue =
         ImmutableIncidentRecordValue.builder()
@@ -93,11 +102,9 @@ public class IncidentHandlerTest {
                     .withValue(incidentRecordValue)
                     .withKey(expectedId));
 
-    // when
-    final var idList = underTest.generateIds(incidentRecord);
-
-    // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, incidentRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(expectedId), index));
   }
 
   @Test
@@ -133,15 +140,16 @@ public class IncidentHandlerTest {
     final IncidentEntity incidentEntity = new IncidentEntity();
     underTest.updateEntity(incidentRecord, incidentEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(incidentEntity, mockRequest);
+    underTest.flush(index, incidentEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsert(
-            indexName,
+            index,
             String.valueOf(recordKey),
             incidentEntity,
             Map.of(
@@ -185,6 +193,43 @@ public class IncidentHandlerTest {
 
     // then
     assertEntityFields(incidentEntity, recordKey, incidentRecord, incidentRecordValue);
+  }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withStorageOrdinal(42)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getStorageOrdinal())
+        .isEqualTo(incidentRecordValue.getStorageOrdinal());
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalFromRecordWhenDefault() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -317,12 +362,18 @@ public class IncidentHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1"), false));
+            null,
+            1,
+            null,
+            List.of("0", "1", "2", callActivityId1),
+            Map.of("FI1", "FN1"),
+            false,
+            Map.of()));
 
     processCache.put(
         processDefinitionKey2,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", callActivityId2), Map.of("FI1", "FN1"), false));
+            null, 1, null, List.of("0", callActivityId2), Map.of("FI1", "FN1"), false, Map.of()));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();
@@ -332,6 +383,52 @@ public class IncidentHandlerTest {
     assertThat(incidentEntity.getTreePath())
         .isEqualTo(
             "PI_111/FN_callActivity1/FNI_123/PI_222/FN_callActivity2/FNI_234/PI_333/FN_userTask/FNI_345");
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
+  @Test
+  void shouldUpdateTreePathWhenCallActivityIsNestedInAnotherFlowScope() {
+    // given
+    final long parentProcessDefinitionKey = 999L;
+    final Long parentPiKey = 111L;
+    final long parentSubprocessFnInstanceKey = 122L;
+    final long callActivityFnInstanceKey = 123L;
+    final Integer callActivityIndex = 0;
+    final String callActivityId = "callActivity";
+    final Long childPiKey = 222L;
+    final long leafFnInstanceKey = 234L;
+    final long childProcessDefinitionKey = 888L;
+
+    final ImmutableIncidentRecordValue.Builder valueBuilder =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class));
+    addCallStackInfo(
+        valueBuilder,
+        List.of(
+            List.of(parentPiKey, parentSubprocessFnInstanceKey, callActivityFnInstanceKey),
+            List.of(childPiKey, leafFnInstanceKey)),
+        List.of(callActivityIndex),
+        List.of(parentProcessDefinitionKey, childProcessDefinitionKey),
+        "userTask");
+    final IncidentRecordValue incidentRecordValue = valueBuilder.build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    processCache.put(
+        parentProcessDefinitionKey,
+        new CachedProcessEntity(
+            null, 1, null, List.of(callActivityId), Map.of("FI1", "FN1"), false, Map.of()));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getTreePath())
+        .isEqualTo("PI_111/FN_callActivity/FNI_123/PI_222/FN_userTask/FNI_234");
   }
 
   @Test

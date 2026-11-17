@@ -50,6 +50,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessVisualization visualization;
   protected boolean managementReport = false;
   protected boolean instantPreviewReport = false;
+  protected boolean agenticControlReport = false;
+  protected boolean businessValueReport = false;
 
   public ProcessReportDataDto(
       @Valid final List<ProcessFilterDto<?>> filter,
@@ -94,6 +96,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       instantPreviewReport = b.instantPreviewReportValue;
     } else {
       instantPreviewReport = defaultInstantPreviewReport();
+    }
+    if (b.agenticControlReportSet) {
+      agenticControlReport = b.agenticControlReportValue;
+    } else {
+      agenticControlReport = defaultAgenticControlReport();
+    }
+    if (b.businessValueReportSet) {
+      businessValueReport = b.businessValueReportValue;
+    } else {
+      businessValueReport = defaultBusinessValueReport();
     }
   }
 
@@ -350,6 +362,27 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.instantPreviewReport = instantPreviewReport;
   }
 
+  public boolean isAgenticControlReport() {
+    return agenticControlReport;
+  }
+
+  public void setAgenticControlReport(final boolean agenticControlReport) {
+    this.agenticControlReport = agenticControlReport;
+  }
+
+  public boolean isBusinessValueReport() {
+    return businessValueReport;
+  }
+
+  public void setBusinessValueReport(final boolean businessValueReport) {
+    this.businessValueReport = businessValueReport;
+  }
+
+  @JsonIgnore
+  public boolean isSystemGeneratedReport() {
+    return managementReport || instantPreviewReport || agenticControlReport || businessValueReport;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessReportDataDto;
   }
@@ -362,6 +395,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     final ProcessReportDataDto that = (ProcessReportDataDto) o;
     return managementReport == that.managementReport
         && instantPreviewReport == that.instantPreviewReport
+        && agenticControlReport == that.agenticControlReport
+        && businessValueReport == that.businessValueReport
         && Objects.equals(filter, that.filter)
         && Objects.equals(view, that.view)
         && Objects.equals(groupBy, that.groupBy)
@@ -378,7 +413,9 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         distributedBy,
         visualization,
         managementReport,
-        instantPreviewReport);
+        instantPreviewReport,
+        agenticControlReport,
+        businessValueReport);
   }
 
   @Override
@@ -397,6 +434,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         + isManagementReport()
         + ", instantPreviewReport="
         + isInstantPreviewReport()
+        + ", agenticControlReport="
+        + isAgenticControlReport()
+        + ", businessValueReport="
+        + isBusinessValueReport()
         + ")";
   }
 
@@ -417,6 +458,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return false;
   }
 
+  private static boolean defaultAgenticControlReport() {
+    return false;
+  }
+
+  private static boolean defaultBusinessValueReport() {
+    return false;
+  }
+
   public static ProcessReportDataDtoBuilder<?, ?> builder() {
     return new ProcessReportDataDtoBuilderImpl();
   }
@@ -431,6 +480,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     public static final String visualization = "visualization";
     public static final String managementReport = "managementReport";
     public static final String instantPreviewReport = "instantPreviewReport";
+    public static final String agenticControlReport = "agenticControlReport";
+    public static final String businessValueReport = "businessValueReport";
   }
 
   public abstract static class ProcessReportDataDtoBuilder<
@@ -448,6 +499,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     private boolean managementReportSet;
     private boolean instantPreviewReportValue;
     private boolean instantPreviewReportSet;
+    private boolean agenticControlReportValue;
+    private boolean agenticControlReportSet;
+    private boolean businessValueReportValue;
+    private boolean businessValueReportSet;
 
     public B filter(@Valid final List<ProcessFilterDto<?>> filter) {
       filterValue = filter;
@@ -488,6 +543,18 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return self();
     }
 
+    public B agenticControlReport(final boolean agenticControlReport) {
+      agenticControlReportValue = agenticControlReport;
+      agenticControlReportSet = true;
+      return self();
+    }
+
+    public B businessValueReport(final boolean businessValueReport) {
+      businessValueReportValue = businessValueReport;
+      businessValueReportSet = true;
+      return self();
+    }
+
     @Override
     protected abstract B self();
 
@@ -512,6 +579,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
           + managementReportValue
           + ", instantPreviewReportValue="
           + instantPreviewReportValue
+          + ", agenticControlReportValue="
+          + agenticControlReportValue
+          + ", businessValueReportValue="
+          + businessValueReportValue
           + ")";
     }
   }

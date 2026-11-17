@@ -126,209 +126,41 @@ describe('Validations', () => {
     expect(screen.queryByText(ERRORS.parentInstanceId)).not.toBeInTheDocument();
   });
 
-  it('should validate variable name', async () => {
+  it('should validate batch operation key', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
+    await user.click(screen.getByText('Batch Operation Key'));
 
-    await user.type(screen.getByLabelText(/^value$/i), '"someValidValue"');
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.nameUnfilled),
-    ).toBeInTheDocument();
-
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.clear(screen.getByLabelText(/^value$/i));
-    await user.type(screen.getByLabelText(/^value$/i), 'somethingInvalid');
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'g');
 
     act(() => {
       vi.runOnlyPendingTimers();
     });
 
     expect(
-      await screen.findByText(ERRORS.variables.nameUnfilled),
-    ).toBeInTheDocument();
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.valueInvalid),
-    ).toBeInTheDocument();
-
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-  });
-
-  it('should validate variable value', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-
-    await user.type(
-      screen.getByTestId('optional-filter-variable-name'),
-      'aRandomVariable',
-    );
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.valueUnfilled),
+      await screen.findByText(ERRORS.batchOperationKey),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.clear(screen.getByTestId('optional-filter-variable-name'));
+    await user.clear(screen.getByLabelText(/^batch operation key$/i));
 
     expect(
-      screen.queryByText(ERRORS.variables.valueUnfilled),
+      screen.queryByTitle(ERRORS.batchOperationKey),
     ).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/^value$/i), 'invalidValue');
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'a');
 
     act(() => {
       vi.runOnlyPendingTimers();
     });
 
     expect(
-      await screen.findByText(ERRORS.variables.valueInvalid),
+      await screen.findByText(ERRORS.batchOperationKey),
     ).toBeInTheDocument();
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.nameUnfilled),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.type(
-      screen.getByTestId('optional-filter-variable-name'),
-      'aRandomVariable',
-    );
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.valueInvalid),
-    ).toBeInTheDocument();
-
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-  });
-
-  it('should validate multiple variable values', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByLabelText('Multiple'));
-
-    await user.type(
-      screen.getByTestId('optional-filter-variable-name'),
-      'aRandomVariable',
-    );
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.valueUnfilled),
-    ).toBeInTheDocument();
-
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.clear(screen.getByTestId('optional-filter-variable-name'));
-
-    expect(
-      screen.queryByText(ERRORS.variables.valueUnfilled),
-    ).not.toBeInTheDocument();
-
-    await user.type(screen.getByLabelText(/^values$/i), 'invalidValue');
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.multipleValueInvalid),
-    ).toBeInTheDocument();
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.nameUnfilled),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.type(
-      screen.getByTestId('optional-filter-variable-name'),
-      'aRandomVariable',
-    );
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(
-      await screen.findByText(ERRORS.variables.multipleValueInvalid),
-    ).toBeInTheDocument();
-
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-  });
-
-  it('should validate operation id', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
-
-    await user.type(screen.getByLabelText(/^operation id$/i), 'g');
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
-
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-    await user.clear(screen.getByLabelText(/^operation id$/i));
-
-    expect(screen.queryByTitle(ERRORS.operationId)).not.toBeInTheDocument();
-
-    await user.type(screen.getByLabelText(/^operation id$/i), 'a');
-
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
   });
 });

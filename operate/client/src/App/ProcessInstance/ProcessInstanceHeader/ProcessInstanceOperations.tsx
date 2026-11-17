@@ -15,6 +15,8 @@ import {
 import {Button, MenuButton, MenuItem} from '@carbon/react';
 import {
   Error,
+  Pause,
+  Play,
   Tools,
   RetryFailed,
   MigrateAlt,
@@ -23,12 +25,17 @@ import {
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {notificationsStore} from 'modules/stores/notifications';
-import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
+import {
+  handleOperationError as handleOperationErrorUtil,
+  handleProcessInstanceStateChangeError,
+} from 'modules/utils/notifications';
 import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {tracking} from 'modules/tracking';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
+import {useResumeProcessInstance} from 'modules/mutations/processInstance/useResumeProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
+import {useSuspendProcessInstance} from 'modules/mutations/processInstance/useSuspendProcessInstance';
 import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
 import {CancelConfirmationModal} from 'modules/components/Operations/CancelConfirmationModal';
 import {DeleteConfirmationModal} from 'modules/components/Operations/DeleteConfirmationModal';
@@ -105,6 +112,22 @@ const ProcessInstanceOperations: React.FC<Props> = ({
     onSuccess: () => handleOperationSuccess('RESOLVE_INCIDENT'),
     onError: ({status}) => handleOperationErrorUtil(status),
   });
+  const {
+    mutate: suspendProcessInstance,
+    reset: resetSuspend,
+    status: suspendStatus,
+  } = useSuspendProcessInstance(processInstanceKey, {
+    onSuccess: () => handleOperationSuccess('SUSPEND_PROCESS_INSTANCE'),
+    onError: (error) => handleProcessInstanceStateChangeError(error, 'suspend'),
+  });
+  const {
+    mutate: resumeProcessInstance,
+    reset: resetResume,
+    status: resumeStatus,
+  } = useResumeProcessInstance(processInstanceKey, {
+    onSuccess: () => handleOperationSuccess('RESUME_PROCESS_INSTANCE'),
+    onError: (error) => handleProcessInstanceStateChangeError(error, 'resume'),
+  });
 
   const handleOpenModificationHelper = () => {
     if (getStateLocally()?.hideModificationHelperModal) {
@@ -133,6 +156,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({
 
   const enterMigrationMode = () => {
     processInstanceMigrationStore.setSourceProcessDefinition({
+      state: 'ACTIVE',
       processDefinitionKey: processInstance.processDefinitionKey,
       processDefinitionId: processInstance.processDefinitionId,
       version: processInstance.processDefinitionVersion,
@@ -152,6 +176,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({
     navigate(
       Locations.processes({
         active: true,
+        suspended: true,
         incidents: true,
         processDefinitionId: processInstance.processDefinitionId,
         processDefinitionVersion:
@@ -163,6 +188,46 @@ const ProcessInstanceOperations: React.FC<Props> = ({
 
   if (modificationsStore.isModificationModeEnabled) {
     return null;
+  }
+
+  if (processInstance.state === 'SUSPENDED') {
+    return (
+      <>
+        <CollapsibleOperationsToolbar isCollapsed={isCollapsed}>
+          <CollapsibleOperationTrigger
+            isCollapsed={isCollapsed}
+            status={resumeStatus}
+            label="Resume"
+            pendingLabel="Resuming..."
+            icon={Play}
+            title={`Resume Instance ${processInstanceKey}`}
+            onClick={() => resumeProcessInstance()}
+            onReset={resetResume}
+          />
+          <CollapsibleOperationTrigger
+            isCollapsed={isCollapsed}
+            status={cancelStatus}
+            label="Cancel"
+            pendingLabel="Canceling..."
+            icon={Error}
+            title={`Cancel Instance ${processInstanceKey}`}
+            onClick={() => setCancelConfirmationOpen(true)}
+            onReset={resetCancel}
+          />
+        </CollapsibleOperationsToolbar>
+        {isCancelConfirmationOpen && (
+          <CancelConfirmationModal
+            processInstanceKey={processInstanceKey}
+            open={isCancelConfirmationOpen}
+            onCancel={() => setCancelConfirmationOpen(false)}
+            onConfirm={() => {
+              setCancelConfirmationOpen(false);
+              cancelProcessInstance();
+            }}
+          />
+        )}
+      </>
+    );
   }
 
   if (processInstance.state !== 'ACTIVE') {
@@ -205,6 +270,16 @@ const ProcessInstanceOperations: React.FC<Props> = ({
             onReset={resetResolve}
           />
         )}
+        <CollapsibleOperationTrigger
+          isCollapsed={isCollapsed}
+          status={suspendStatus}
+          label="Suspend"
+          pendingLabel="Suspending..."
+          icon={Pause}
+          title={`Suspend Instance ${processInstanceKey}`}
+          onClick={() => suspendProcessInstance()}
+          onReset={resetSuspend}
+        />
         <CollapsibleOperationTrigger
           isCollapsed={isCollapsed}
           status={cancelStatus}

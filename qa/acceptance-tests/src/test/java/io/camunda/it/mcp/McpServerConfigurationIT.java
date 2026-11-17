@@ -9,6 +9,7 @@ package io.camunda.it.mcp;
 
 import static io.camunda.it.mcp.McpServerTest.DEFAULT_REQUEST_CUSTOMIZER;
 import static io.camunda.it.mcp.McpServerTest.createMcpClient;
+import static io.camunda.it.mcp.McpServerTest.createPhysicalTenantMcpClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -16,8 +17,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.McpSyncClient;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,37 +41,47 @@ public class McpServerConfigurationIT {
         assertThat(initializeResult).isNotNull();
       }
     }
+
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#physicalTenantMcpServersToTest")
+    public void physicalTenantMcpInitializeRequestReturnsInitializationResponse(
+        final String mcpServer) {
+      try (final McpSyncClient mcpClient =
+          createPhysicalTenantMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final var initializeResult = mcpClient.initialize();
+        assertThat(initializeResult).isNotNull();
+      }
+    }
   }
 
   @Nested
   @MultiDbTest
   class McpServerEnabledWithRestGatewayDisabledIT {
 
-    @MultiDbTestApplication(managedLifecycle = false)
+    @MultiDbTestApplication
     static final TestCamundaApplication TEST_INSTANCE =
         new TestCamundaApplication()
             .withProperty("camunda.mcp.enabled", true)
             .withProperty("camunda.rest.enabled", false);
-
-    @BeforeEach
-    void setUp() {
-      if (!TEST_INSTANCE.isStarted()) {
-        TEST_INSTANCE.start();
-        final var grpcClient = TEST_INSTANCE.newClientBuilder().preferRestOverGrpc(false).build();
-        TEST_INSTANCE.awaitCompleteTopology(TEST_INSTANCE.unifiedConfig(), grpcClient);
-      }
-    }
-
-    @AfterEach
-    void tearDown() {
-      TEST_INSTANCE.stop();
-    }
 
     @ParameterizedTest
     @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
     public void mcpInitializeRequestReturnsInitializationResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
           createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final var initializeResult = mcpClient.initialize();
+        assertThat(initializeResult).isNotNull();
+      }
+    }
+
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#physicalTenantMcpServersToTest")
+    public void physicalTenantMcpInitializeRequestReturnsInitializationResponse(
+        final String mcpServer) {
+      try (final McpSyncClient mcpClient =
+          createPhysicalTenantMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final var initializeResult = mcpClient.initialize();
         assertThat(initializeResult).isNotNull();
@@ -92,6 +101,19 @@ public class McpServerConfigurationIT {
     public void mcpInitializeRequestReturnsNotFoundResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
           createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final Throwable throwable = catchThrowable(mcpClient::initialize);
+        assertThat(throwable.getCause())
+            .hasMessageContaining("Server Not Found")
+            .hasMessageContaining("404");
+      }
+    }
+
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#physicalTenantMcpServersToTest")
+    public void physicalTenantMcpInitializeRequestReturnsNotFoundResponse(final String mcpServer) {
+      try (final McpSyncClient mcpClient =
+          createPhysicalTenantMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final Throwable throwable = catchThrowable(mcpClient::initialize);
         assertThat(throwable.getCause())

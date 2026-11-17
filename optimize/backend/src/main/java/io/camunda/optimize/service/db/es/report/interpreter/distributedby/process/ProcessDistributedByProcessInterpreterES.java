@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.AGGREGATION_FIELD_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_PROCESS;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -72,7 +73,7 @@ public class ProcessDistributedByProcessInterpreterES
                             configurationService
                                 .getElasticSearchConfiguration()
                                 .getAggregationBucketLimit())
-                        .order(NamedValue.of("_key", SortOrder.Asc))
+                        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
                         .missing(MISSING_TENANT_KEY)
                         .field(tenantField(context)));
 
@@ -90,7 +91,7 @@ public class ProcessDistributedByProcessInterpreterES
                             configurationService
                                 .getElasticSearchConfiguration()
                                 .getAggregationBucketLimit())
-                        .order(NamedValue.of("_key", SortOrder.Asc))
+                        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
                         .field(definitionKeyField(context)))
             .aggregations(
                 PROC_DEF_VERSION_AGG,
@@ -102,7 +103,7 @@ public class ProcessDistributedByProcessInterpreterES
                                             configurationService
                                                 .getElasticSearchConfiguration()
                                                 .getAggregationBucketLimit())
-                                        .order(NamedValue.of("_key", SortOrder.Asc))
+                                        .order(NamedValue.of(AGGREGATION_FIELD_KEY, SortOrder.Asc))
                                         .field(definitionVersionField(context)))
                             .aggregations(TENANT_AGG, builder.build()))));
   }

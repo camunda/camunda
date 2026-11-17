@@ -7,7 +7,10 @@
  */
 
 import type {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  AgentInstance,
+  ProcessDefinitionStatistic,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type ElementState = keyof Omit<ProcessDefinitionStatistic, 'elementId'>;
 
@@ -27,6 +30,20 @@ type StatisticsPayload = {
 type ModificationBadgePayload = {
   newTokenCount?: number;
   cancelledTokenCount?: number;
+};
+
+type WaitingStatePayload = {
+  label: string;
+};
+
+type AgentStatusPayload = {
+  status: AgentInstance['status'];
+  agentInstanceKey: string;
+  additionalActiveCount: number;
+};
+
+type AgentShinePayload = {
+  agentInstanceKey: string;
 };
 
 const isStatisticsPayload = (
@@ -50,5 +67,46 @@ const isModificationBadgePayload = (
   );
 };
 
-export {isStatisticsPayload, isModificationBadgePayload};
-export type {ElementState, OverlayData};
+const isWaitingStatePayload = (
+  payload: unknown,
+): payload is WaitingStatePayload => {
+  return typeof payload === 'object' && payload !== null && 'label' in payload;
+};
+
+const isAgentStatusPayload = (
+  payload: unknown,
+): payload is AgentStatusPayload => {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'status' in payload &&
+    'agentInstanceKey' in payload &&
+    'additionalActiveCount' in payload
+  );
+};
+
+const isAgentShinePayload = (
+  payload: unknown,
+): payload is AgentShinePayload => {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'agentInstanceKey' in payload &&
+    !('status' in payload)
+  );
+};
+
+export {
+  isStatisticsPayload,
+  isModificationBadgePayload,
+  isWaitingStatePayload,
+  isAgentStatusPayload,
+  isAgentShinePayload,
+};
+export type {
+  ElementState,
+  OverlayData,
+  WaitingStatePayload,
+  AgentStatusPayload,
+  AgentShinePayload,
+};

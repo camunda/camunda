@@ -21,15 +21,18 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import io.camunda.process.test.api.testCases.instructions.AssertDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertElementInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertElementInstancesInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.BroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobUserTaskListenerInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.ConditionalBehaviorInstruction;
 import io.camunda.process.test.api.testCases.instructions.CorrelateMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.EvaluateConditionalStartEventInstruction;
@@ -62,6 +65,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
       value = AssertElementInstancesInstruction.class,
       name = TestCaseInstructionType.ASSERT_ELEMENT_INSTANCES),
   @JsonSubTypes.Type(
+      value = AssertIncidentInstruction.class,
+      name = TestCaseInstructionType.ASSERT_INCIDENT),
+  @JsonSubTypes.Type(
       value = AssertProcessInstanceInstruction.class,
       name = TestCaseInstructionType.ASSERT_PROCESS_INSTANCE),
   @JsonSubTypes.Type(
@@ -70,6 +76,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = AssertUserTaskInstruction.class,
       name = TestCaseInstructionType.ASSERT_USER_TASK),
+  @JsonSubTypes.Type(
+      value = AssertVariableInstruction.class,
+      name = TestCaseInstructionType.ASSERT_VARIABLE),
   @JsonSubTypes.Type(
       value = AssertVariablesInstruction.class,
       name = TestCaseInstructionType.ASSERT_VARIABLES),
@@ -88,6 +97,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = CompleteUserTaskInstruction.class,
       name = TestCaseInstructionType.COMPLETE_USER_TASK),
+  @JsonSubTypes.Type(
+      value = ConditionalBehaviorInstruction.class,
+      name = TestCaseInstructionType.CONDITIONAL_BEHAVIOR),
   @JsonSubTypes.Type(
       value = CreateProcessInstanceInstruction.class,
       name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE),

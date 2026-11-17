@@ -14,16 +14,18 @@ import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueTypes;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandApiRequestReader implements RequestReader {
 
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final AuthInfo authInfo = new AuthInfo();
+  private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
       new ExecuteCommandRequestDecoder();
@@ -54,6 +56,11 @@ public class CommandApiRequestReader implements RequestReader {
 
     metadata.protocolVersion(messageHeaderDecoder.version());
     final var valueType = commandRequestDecoder.valueType();
+    final var requestChannelType = commandRequestDecoder.channelType();
+    if (requestChannelType != ChannelType.NULL_VAL
+        && requestChannelType != ChannelType.SBE_UNKNOWN) {
+      metadata.requestChannelType(requestChannelType);
+    }
     if (ValueTypes.isUserCommand(valueType)) {
       final var record = UnifiedRecordValue.fromValueType(valueType);
       if (record != null) {
@@ -69,8 +76,14 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
-      metadata.authorization(authInfo);
+      metadata.authorization(
+          AuthInfo.decode(buffer, authOffset, commandRequestDecoder.authorizationLength()));
+      commandRequestDecoder.skipAuthorization();
+    }
+
+    if (commandRequestDecoder.limit() < buffer.capacity()) {
+      commandRequestDecoder.wrapToolName(toolName);
+      metadata.requestToolName(toolName);
     }
   }
 

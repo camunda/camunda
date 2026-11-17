@@ -37,6 +37,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ final class SegmentWriter {
   private final long firstIndex;
   private final long firstAsqn;
   private long lastAsqn;
-  private JournalRecord lastEntry;
+  private @Nullable JournalRecord lastEntry;
   private int lastEntryPosition;
   private final JournalRecordReaderUtil recordUtil;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
@@ -100,6 +101,10 @@ final class SegmentWriter {
     return lastEntryPosition;
   }
 
+  int getAppendedBytes() {
+    return buffer.position() - descriptorLength;
+  }
+
   long getNextIndex() {
     if (lastEntry != null) {
       return lastEntry.index() + 1;
@@ -116,7 +121,7 @@ final class SegmentWriter {
   Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
     final var entryIndex = record.index();
     final var asqn = record.asqn();
-    final var recordDataWriter = new DirectBufferWriter().wrap(record.data());
+    final var recordDataWriter = new DirectBufferWriter(record.data());
     final var expectedChecksum = record.checksum();
 
     verifyAsqnIsIncreasing(asqn);
@@ -143,7 +148,7 @@ final class SegmentWriter {
       final Long entryIndex,
       final long asqn,
       final BufferWriter recordDataWriter,
-      final Long expectedChecksum) {
+      final @Nullable Long expectedChecksum) {
 
     verifyAsqnIsIncreasing(asqn);
 
@@ -174,8 +179,9 @@ final class SegmentWriter {
     // write serialized RecordData
     writeBuffer.putBytes(startPosition + frameLength + metadataLength, serializedRecord);
 
-    finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-    return Either.right(lastEntry);
+    final var record =
+        finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+    return Either.right(record);
   }
 
   private void verifyAsqnIsIncreasing(final long asqn) {
@@ -198,18 +204,16 @@ final class SegmentWriter {
   }
 
   private Either<SegmentFull, JournalRecord> tryFinalizeAppend(
-      final Long expectedChecksum,
+      final @Nullable Long expectedChecksum,
       final int startPosition,
       final int frameLength,
       final int metadataLength,
       final Either<SegmentFull, Integer> writeResult) {
     return writeResult
         .map(
-            recordLength -> {
-              finalizeAppend(
-                  expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-              return lastEntry;
-            })
+            recordLength ->
+                finalizeAppend(
+                    expectedChecksum, startPosition, frameLength, metadataLength, recordLength))
         .mapLeft(
             segmentFull -> {
               buffer.position(startPosition);
@@ -217,9 +221,13 @@ final class SegmentWriter {
             });
   }
 
-  /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */
-  private void finalizeAppend(
-      final Long expectedChecksum,
+  /**
+   * Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex
+   *
+   * @return the written entry (equal to lastEntry) but guaranteed to be non-null
+   */
+  private JournalRecord finalizeAppend(
+      final @Nullable Long expectedChecksum,
       final int startPosition,
       final int frameLength,
       final int metadataLength,
@@ -241,15 +249,17 @@ final class SegmentWriter {
     final int nextEntryOffset = startPosition + frameLength + metadataLength + recordLength;
     invalidateNextEntry(nextEntryOffset);
 
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    final var record =
+        updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     final int appendedBytes = frameLength + metadataLength + recordLength;
     buffer.position(startPosition + appendedBytes);
     metrics.observeAppend(appendedBytes);
+    return record;
   }
 
-  private void updateLastWrittenEntry(
+  private JournalRecord updateLastWrittenEntry(
       final int startPosition,
       final int frameLength,
       final int metadataLength,
@@ -263,10 +273,12 @@ final class SegmentWriter {
             metadata,
             data,
             new UnsafeBuffer(
-                writeBuffer, startPosition + frameLength + metadataLength, recordLength));
+                writeBuffer, startPosition + frameLength + metadataLength, recordLength),
+            frameLength + metadataLength + recordLength);
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
     lastEntryPosition = startPosition;
+    return lastEntry;
   }
 
   private void updateLastAsqn(final long asqn) {
@@ -299,6 +311,19 @@ final class SegmentWriter {
     }
 
     FrameUtil.markAsIgnored(buffer, position);
+  }
+
+  /**
+   * Flushes the invalidated frame that marks where this segment's records end, so that a restart
+   * cannot read whatever follows it. Only needed when the segment stops being written before it is
+   * full, as the records after the invalidated frame are otherwise overwritten anyway.
+   *
+   * <p>Expects the position to be at that frame, which is where truncating leaves it. A caller that
+   * flushes a segment whose records end at its capacity fails here, rather than silently skipping a
+   * marker that recovery relies on.
+   */
+  void flushEndOfRecords() {
+    buffer.force(buffer.position(), FrameUtil.getLength());
   }
 
   private void jumpToLastEntry(final int lastPosition, final long lastIndex) {
@@ -339,7 +364,7 @@ final class SegmentWriter {
   private void advanceToNextEntry(final long nextIndex) {
     final int position = buffer.position();
     FrameUtil.readVersion(buffer);
-    lastEntry = recordUtil.read(buffer, nextIndex);
+    lastEntry = recordUtil.read(buffer, nextIndex, FrameUtil.getLength());
     updateLastAsqn(lastEntry.asqn());
     lastEntryPosition = position;
     index.index(lastEntry, position);

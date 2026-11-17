@@ -7,9 +7,9 @@
  */
 package io.camunda.search.clients.auth;
 
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessController;
 import java.util.function.Function;
 
 public class AnonymousResourceAccessController implements ResourceAccessController {

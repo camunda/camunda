@@ -13,12 +13,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.Strings;
@@ -64,7 +66,9 @@ public class GroupEntityAddedHandlerTest {
     assertThat(idList)
         .containsExactly(
             GroupIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getGroupId(), value.getEntityId(), value.getEntityType()));
+                value.getGroupId(),
+                value.getEntityId(),
+                AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Test
@@ -84,13 +88,14 @@ public class GroupEntityAddedHandlerTest {
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild("111");
     final var inputEntity =
         new GroupMemberEntity().setId("111").setMemberId(memberId).setJoin(joinRelation);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
-        .addWithRouting(indexName, inputEntity, String.valueOf(joinRelation.parent()));
+        .addWithRouting(index, inputEntity, String.valueOf(joinRelation.parent()));
   }
 }

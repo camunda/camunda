@@ -7,13 +7,13 @@
  */
 package io.camunda.search.clients.reader;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
+import static io.camunda.security.api.model.authz.EntityType.GROUP;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class GroupDocumentReader extends DocumentBasedReader implements GroupReader {

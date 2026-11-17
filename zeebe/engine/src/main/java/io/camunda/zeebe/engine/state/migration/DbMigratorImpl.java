@@ -201,19 +201,20 @@ public class DbMigratorImpl implements DbMigrator {
             .collect(Collectors.joining(", ")));
   }
 
-  private void logSummary(final List<MigrationTask> migrationTasks) {
-    final var executedTasks = migrationTasks.size() - skippedMigrations;
+  private void logSummary(final List<MigrationTask> executedMigrations) {
+    final var executedTasks = executedMigrations.size();
+    final var totalTasks = executedTasks + skippedMigrations;
 
     LOGGER.info(
         "Completed processing of {}/{} migration tasks (use LogLevel.DEBUG for more details) ... ",
         executedTasks,
-        migrationTasks.size());
+        totalTasks);
     LOGGER.debug(
         "Executed {} migration tasks ({} skipped out of {}): {}",
         executedTasks,
         skippedMigrations,
-        migrationTasks.size(),
-        migrationTasks.stream()
+        totalTasks,
+        executedMigrations.stream()
             .map(MigrationTask::getIdentifier)
             .collect(Collectors.joining(", ")));
     skippedMigrations = 0;

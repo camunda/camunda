@@ -49,9 +49,28 @@ kubectl create namespace $namespace
 # Label namespace with registry (required to inject image pull secrets)
 kubectl label namespace "$namespace" registry=harbor --overwrite
 
-cp -rv cloud-default/ $namespace
+# Label namespace with author and purpose
+git_author=$(compute_git_author)
+kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
+kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
+
+cp -rv saas-default/ $namespace
+# Derive the SaaS realistic-benchmark values from the single shared source.
+# The SaaS setup installs the camunda-load-tests chart standalone, so it needs
+# the values at the top level; strip the `load-tester` wrapper that the
+# self-managed umbrella (load-test-setup) chart requires around the subchart.
+yq '.load-tester' scenarios/load-tester-values-realistic-benchmark.yaml > "$namespace/load-test-values-realistic-benchmark.yaml"
 cd $namespace
 
 
 # Update Makefile to use the namespace
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
+
+# Inject the author as a real Helm value. The Makefile passes this via -f alongside
+# load-test-values.yaml, so it deep-merges into global.commonLabels rather than
+# being baked into a committed file.
+cat <<EOF > load-test-values-generated.yaml
+global:
+  commonLabels:
+    camunda.io/created-by: "$git_author"
+EOF

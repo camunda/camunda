@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
+import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
@@ -44,6 +46,13 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(ZeebeInput::getSource, ExpressionVerification::isOptional)
             .hasValidPath(ZeebeInput::getTarget)
             .build(expressionLanguage),
+        // reject secret references used as a string literal in an input mapping (outbound) or a
+        // property value (inbound), so both forms are handled uniformly
+        SecretReferenceLiteralValidator.forInput(expressionLanguage),
+        SecretReferenceLiteralValidator.forProperty(expressionLanguage),
+        // reject a secret reference Camunda could never fill in, because it sits inside a list
+        // or inside a context built by an 'if' branch
+        new SecretReferenceLeafPrecisionValidator(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
             .hasValidExpression(
@@ -86,6 +95,17 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
             .hasValidExpression(
                 ZeebeCalledElement::getProcessId, ExpressionVerification::isMandatory)
+            .hasValidExpression(
+                ZeebeCalledElement::getBusinessId,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            staticExpression ->
+                                BusinessIdValidator.validate(staticExpression.getExpression())
+                                    .isRight(),
+                            "be no longer than %d characters"
+                                .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH)))
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(TimerEventDefinition.class)
@@ -158,6 +178,12 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledDecision.class)
             .hasValidExpression(
                 ZeebeCalledDecision::getDecisionId, ExpressionVerification::isMandatory)
+            .hasValidExpression(
+                calledDecision ->
+                    calledDecision.getBindingType() == ZeebeBindingType.versionTag
+                        ? calledDecision.getVersionTag()
+                        : null,
+                ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // ----------------------------------------
         new ZeebeTaskHeadersValidator(),

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
 import io.camunda.search.entities.AuthorizationEntity;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.security.api.model.authz.PermissionType;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 

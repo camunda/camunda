@@ -20,6 +20,11 @@ public class IncidentResolutionAuditLogTransformer
   }
 
   @Override
+  public Class<IncidentRecordValue> getRecordValueType() {
+    return IncidentRecordValue.class;
+  }
+
+  @Override
   public void transform(final Record<IncidentRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setJobKey(value.getJobKey());

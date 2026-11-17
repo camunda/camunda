@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
@@ -29,13 +29,30 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-openapi</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-impl</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -82,6 +99,14 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-grpc</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -101,6 +126,21 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Needed for PhysicalTenantExporterConfigIT: references ElasticsearchExporter.class to
+         exercise the ExporterConfigMerger deep-merge path with a real bundled exporter -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-elasticsearch-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Needed on the classpath for runtime classloading in AnalyticsExporterIT -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-exporter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -148,6 +188,27 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <!-- module uses spring-boot-starter-log4j2; excluding the default starter-logging
+             keeps log4j-core as the sole Log4jProvider and prevents log4j-to-slf4j from
+             returning SLF4JLoggerContext (breaks IdentitySetupOnStartupTest's LoggerContext cast) -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
       <scope>test</scope>
     </dependency>
@@ -155,6 +216,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -171,14 +237,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container-engine</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -299,8 +359,20 @@
     </dependency>
 
     <dependency>
+      <groupId>com.adobe.testing</groupId>
+      <artifactId>s3mock-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-toxiproxy</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>eu.rekawek.toxiproxy</groupId>
+      <artifactId>toxiproxy-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -337,12 +409,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-restore</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -403,6 +469,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-health</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-micrometer-metrics</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -480,6 +552,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk18on</artifactId>
       <scope>test</scope>
@@ -514,6 +592,16 @@
       <artifactId>google-cloud-storage</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.auth</groupId>
+      <artifactId>google-auth-library-credentials</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -524,6 +612,18 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-store-azure</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-blob</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-store</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -560,6 +660,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-env</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -613,6 +719,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -641,6 +754,12 @@
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -649,12 +768,17 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <systemProperties>
-            <property>
-              <name>identity.docker.image.version</name>
-              <value>${version.identity}</value>
-            </property>
-          </systemProperties>
+          <systemPropertyVariables>
+            <identity.docker.image.version>${version.identity}</identity.docker.image.version>
+          </systemPropertyVariables>
+          <!-- read by the environment-variable secret stores of PhysicalTenantEnvSecretIsolationIT
+               and EnvSecretStoreProcessIT -->
+          <environmentVariables>
+            <PT_ENV_SECRET_IT_TENANTA_API_KEY>value-of-tenant-a</PT_ENV_SECRET_IT_TENANTA_API_KEY>
+            <PT_ENV_SECRET_IT_TENANTB_API_KEY>value-of-tenant-b</PT_ENV_SECRET_IT_TENANTB_API_KEY>
+            <PT_ENV_SECRET_IT_TENANTB_ONLY_B>only-tenant-b</PT_ENV_SECRET_IT_TENANTB_ONLY_B>
+            <ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME>stored-value-that-must-not-leak</ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME>
+          </environmentVariables>
         </configuration>
       </plugin>
       <plugin>
@@ -663,6 +787,7 @@
         <configuration>
           <usedDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>io.camunda:analytics-exporter</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

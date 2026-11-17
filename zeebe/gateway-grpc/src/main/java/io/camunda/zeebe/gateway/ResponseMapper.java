@@ -12,12 +12,14 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRespons
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
@@ -56,6 +59,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
@@ -173,6 +177,11 @@ public final class ResponseMapper {
   public static UpdateJobTimeoutResponse toUpdateJobTimeoutResponse(
       final long key, final JobRecord brokerResponse) {
     return UpdateJobTimeoutResponse.getDefaultInstance();
+  }
+
+  public static UpdateJobPriorityResponse toUpdateJobPriorityResponse(
+      final long key, final JobRecord brokerResponse) {
+    return UpdateJobPriorityResponse.getDefaultInstance();
   }
 
   public static FailJobResponse toFailJobResponse(final long key, final JobRecord brokerResponse) {
@@ -341,7 +350,8 @@ public final class ResponseMapper {
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
+      final ActivatedJob activatedJob =
+          toActivatedJob(jobKey.getValue(), job, activationResponse.physicalTenantId());
 
       final int activatedJobSize = activatedJob.getSerializedSize();
       if (currentResponseSize + activatedJobSize <= activationResponse.maxResponseSize()) {
@@ -370,13 +380,20 @@ public final class ResponseMapper {
 
   public static ActivatedJob toActivatedJob(
       final io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob brokerResponse) {
+    return toActivatedJob(brokerResponse, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  public static ActivatedJob toActivatedJob(
+      final io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob brokerResponse,
+      final String physicalTenantId) {
     final long jobKey = brokerResponse.jobKey();
     final JobRecord job = brokerResponse.jobRecord();
 
-    return toActivatedJob(jobKey, job);
+    return toActivatedJob(jobKey, job, physicalTenantId);
   }
 
-  private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
+  private static ActivatedJob toActivatedJob(
+      final long jobKey, final JobRecord job, final String physicalTenantId) {
     final var builder =
         ActivatedJob.newBuilder()
             .setKey(jobKey)
@@ -390,18 +407,25 @@ public final class ResponseMapper {
             .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
             .setWorker(bufferAsString(job.getWorkerBuffer()))
             .setRetries(job.getRetries())
+            .setPriority(job.getPriority())
             .setDeadline(job.getDeadline())
             .setVariables(bufferAsJson(job.getVariablesBuffer()))
             .setTenantId(job.getTenantId())
+            .setPhysicalTenantId(physicalTenantId)
             .setKind(EnumUtil.convert(job.getJobKind(), ActivatedJob.JobKind.class))
             .setListenerEventType(
                 EnumUtil.convert(
                     job.getJobListenerEventType(), ActivatedJob.ListenerEventType.class))
-            .addAllTags(job.getTags());
+            .addAllTags(job.getTags())
+            .setBusinessId(job.getBusinessId());
 
     if (job.getJobKind().equals(io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER)
         && !job.getCustomHeaders().isEmpty()) {
       builder.setUserTask(toUserTaskProperties(job.getCustomHeaders()));
+    }
+
+    if (!job.getJobLeaseToken().isEmpty()) {
+      builder.setJobLeaseToken(job.getJobLeaseToken());
     }
 
     return builder.build();
@@ -502,6 +526,11 @@ public final class ResponseMapper {
     return MigrateProcessInstanceResponse.getDefaultInstance();
   }
 
+  public static AssignProcessInstanceBusinessIdResponse toAssignProcessInstanceBusinessIdResponse(
+      final long key, final ProcessInstanceBusinessIdRecord brokerResponse) {
+    return AssignProcessInstanceBusinessIdResponse.getDefaultInstance();
+  }
+
   public static DeleteResourceResponse toDeleteResourceResponse(
       final long key, final ResourceDeletionRecord brokerResponse) {
     final DeleteResourceResponse.Builder responseBuilder =
@@ -572,7 +601,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobsList().stream()
-          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .map(j -> new ActivatedJob(j.getKey(), j.getRetries(), j.getJobLeaseToken()))
           .toList();
     }
 
@@ -584,7 +613,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobsToDefer() {
       return sizeExceedingJobs.stream()
-          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .map(j -> new ActivatedJob(j.getKey(), j.getRetries(), j.getJobLeaseToken()))
           .toList();
     }
   }

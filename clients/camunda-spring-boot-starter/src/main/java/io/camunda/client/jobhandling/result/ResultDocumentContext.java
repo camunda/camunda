@@ -85,6 +85,7 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
     return this;
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   public DocumentReferenceBatchResponse processDocumentBuilders(final CamundaClient camundaClient) {
     if (response != null) {
       LOG.debug("Result document context has already been processed, returning previous response");

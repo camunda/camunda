@@ -13,6 +13,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -20,14 +22,17 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -45,8 +50,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
@@ -90,18 +97,20 @@ public final class MessageStreamProcessorTest {
                 PARTITION_ID,
                 routingInfo,
                 mockInterpartitionCommandSender,
-                mock(DistributionMetrics.class)));
+                mock(DistributionMetrics.class),
+                mock(ControllableStreamClock.class)));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
-          final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
-          when(mockAuthCheckBehavior.isAuthorizedOrInternalCommand(any(AuthorizationRequest.class)))
-              .thenReturn(Either.right(null));
+          final var mockBpmnBehaviors = mock(BpmnBehaviors.class);
+          final var mockVariableBehavior = mock(VariableBehavior.class);
+          when(mockVariableBehavior.validateVariables(any())).thenReturn(Either.right(null));
+          when(mockBpmnBehaviors.variableBehavior()).thenReturn(mockVariableBehavior);
           MessageEventProcessors.addMessageProcessors(
               PARTITION_ID,
-              mock(BpmnBehaviors.class),
+              mockBpmnBehaviors,
               typedRecordProcessors,
               processingState,
               scheduledTaskState,
@@ -111,8 +120,11 @@ public final class MessageStreamProcessorTest {
               FeatureFlags.createDefault(),
               spyCommandDistributionBehavior,
               InstantSource.system(),
-              mockAuthCheckBehavior,
-              routingInfo);
+              routingInfo,
+              mock(AuthorizationCheckPort.class),
+              mock(LazyTokenClaimsConverter.class),
+              mock(EngineSecurityConfig.class),
+              new MessageCorrelationMetrics(new SimpleMeterRegistry()));
           return typedRecordProcessors;
         });
   }
@@ -142,7 +154,10 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getProcessDefinitionKey()),
             any(),
             anyBoolean(),
-            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            any(),
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -275,7 +290,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getProcessDefinitionKey()),
             any(DirectBuffer.class),
-            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            anyInt());
   }
 
   @Test
@@ -305,7 +321,9 @@ public final class MessageStreamProcessorTest {
             eq(messageKey),
             any(),
             any(),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -351,7 +369,9 @@ public final class MessageStreamProcessorTest {
             eq(firstMessage.getKey()),
             any(),
             any(),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -363,7 +383,9 @@ public final class MessageStreamProcessorTest {
             eq(lastMessageKey),
             any(),
             any(),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -466,7 +488,9 @@ public final class MessageStreamProcessorTest {
             eq(messageKey),
             any(DirectBuffer.class),
             eq(firstSubscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -478,7 +502,9 @@ public final class MessageStreamProcessorTest {
             eq(messageKey),
             any(DirectBuffer.class),
             eq(secondSubscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
   }
 
   private void assertAllMessagesReceived(final MessageSubscriptionRecord subscription) {
@@ -506,7 +532,9 @@ public final class MessageStreamProcessorTest {
             eq(firstMessageKey),
             any(),
             eq(subscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -518,7 +546,9 @@ public final class MessageStreamProcessorTest {
             eq(lastMessageKey),
             any(),
             eq(subscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            anyLong(),
+            anyInt());
   }
 
   private MessageSubscriptionRecord messageSubscription() {

@@ -1,5 +1,5 @@
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 # Description:
 # This GitHub Actions workflow creates Docker images for urgent hotfixes.
@@ -111,6 +111,22 @@ jobs:
                 exit 1
               fi
 
+              # Standalone Tasklist images only exist through stable 8.8.
+              if [[ "$COMP" == "tasklist" && ! "$VER" =~ ^8\.[6-8]\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+                echo "❌ Invalid version for $COMP: '$VER'."
+                echo "   Separate Tasklist hotfix images are only supported for versions 8.6 through 8.8."
+                exit 1
+              fi
+
+              # Validate separate Operate and Zeebe versions are prior to 8.9.X.
+              if [[ "$COMP" == "operate" || "$COMP" == "zeebe" ]]; then
+                if [[ ! "$VER" =~ ^8\.[0-8]\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+                  echo "❌ Invalid version for $COMP: '$VER'."
+                  echo "   Separate zeebe/operate hotfix images are only supported for versions < 8.9. For 8.9+, use component 'camunda' instead."
+                  exit 1
+                fi
+              fi
+
               VALID_COMPONENTS+=("$ITEM")
             else
               echo "❌ Invalid format: $ITEM (expected format: component:version)"; exit 1
@@ -137,15 +153,18 @@ jobs:
         include: ${{ fromJson(needs.validate-inputs.outputs.components-matrix) }}
     steps:
       - name: Checkout workflow repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Checkout and resolve ref
         id: resolve
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ github.token }}
           ref: ${{ needs.validate-inputs.outputs.commit || needs.validate-inputs.outputs.branch }}
           path: build-repo
+          persist-credentials: false
 
       - name: Get resolved SHA
         id: get-sha
@@ -175,7 +194,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           maven-mirrors: '[{"id": "camunda-nexus", "name": "Camunda Nexus", "url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "mirrorOf": "*"}]'
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Set project version
         id: set-version
@@ -299,13 +318,14 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ./build-repo
           file: ./build-repo/${{ matrix.component == 'zeebe' && 'Dockerfile' || format('{0}.Dockerfile', matrix.component) }}
           platforms: ${{ env.PLATFORMS }}
-          push: true
+          push: false
           provenance: false
+          outputs: type=image,oci-mediatypes=false,push=true
           build-args: ${{ steps.build-args.outputs.args }}
           tags: |
             ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ steps.set-version.outputs.hotfix-version }}
@@ -327,7 +347,9 @@ jobs:
     if: always()
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Generate summary
         run: |

@@ -14,14 +14,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class AdHocSubProcessActivityServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final long AD_HOC_SUB_PROCESS_INSTANCE_KEY = 123456L;
   private static final String ELEMENT_ID = "activity1";
 
@@ -73,6 +75,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(Map.of(USER_TOKEN_CLAIMS, tokenClaims));
     services =
         new AdHocSubProcessActivityServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             executorProvider,
@@ -123,8 +126,9 @@ public class AdHocSubProcessActivityServicesTest {
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
-    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
+    assertThat(requestCaptor.getValue().getAuthorization().toClaimsMap())
         .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("claim", "value")));
+    assertThat(requestCaptor.getValue().getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
   }
 
   @ParameterizedTest
@@ -187,5 +191,25 @@ public class AdHocSubProcessActivityServicesTest {
               assertThat(element.getElementId()).isEqualTo(ELEMENT_ID);
               assertThat(element.getVariables()).isEmpty();
             });
+  }
+
+  @Test
+  public void shouldSendActivationToPartitionOfAdHocSubProcessInstance() {
+    // given
+    final int partitionId = 3;
+    final AdHocSubProcessActivateActivitiesRequest request =
+        new AdHocSubProcessActivateActivitiesRequest(
+            Protocol.encodePartitionId(partitionId, AD_HOC_SUB_PROCESS_INSTANCE_KEY),
+            List.of(new AdHocSubProcessActivateActivityReference(ELEMENT_ID, Map.of())),
+            false);
+
+    when(brokerClient.sendRequest(requestCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
+
+    // when
+    services.activateActivities(request, authentication).join();
+
+    // then
+    assertThat(requestCaptor.getValue().getPartitionId()).isEqualTo(partitionId);
   }
 }

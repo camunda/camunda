@@ -8,6 +8,9 @@
 package io.camunda.search.clients.reader;
 
 public record SearchClientReaders(
+    AgentDefinitionReader agentDefinitionReader,
+    AgentInstanceReader agentInstanceReader,
+    AgentHistoryReader agentHistoryReader,
     AuthorizationReader authorizationReader,
     BatchOperationReader batchOperationReader,
     BatchOperationItemReader batchOperationItemReader,
@@ -45,8 +48,11 @@ public record SearchClientReaders(
     UserTaskReader userTaskReader,
     VariableReader variableReader,
     ClusterVariableReader clusterVariableReader,
+    VariableHistoryReader variableHistoryReader,
     AuditLogReader auditLogReader,
     IncidentProcessInstanceStatisticsByErrorReader incidentProcessInstanceStatisticsByErrorReader,
     IncidentProcessInstanceStatisticsByDefinitionReader
         incidentProcessInstanceStatisticsByDefinitionReader,
-    GlobalListenerReader globalListenerReader) {}
+    GlobalListenerReader globalListenerReader,
+    WaitStateReader waitStateReader,
+    WaitStateStatisticsReader waitStateStatisticsReader) {}

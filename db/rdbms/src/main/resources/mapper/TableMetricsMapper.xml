@@ -10,50 +10,59 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.TableMetricsMapper">
 
-  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
-    databaseId="postgresql">
-    SELECT COALESCE(c.reltuples::BIGINT, -1) AS estimate
+  <resultMap id="tableRowCountResultMap" type="io.camunda.db.rdbms.sql.TableMetricsMapper$TableRowCount">
+    <constructor>
+      <idArg column="TABLE_NAME" javaType="java.lang.String" name="tableName"/>
+      <arg column="ROW_COUNT" javaType="java.lang.Long" name="rowCount"/>
+    </constructor>
+  </resultMap>
+
+  <select id="countTableRows" resultMap="tableRowCountResultMap" databaseId="postgresql">
+    SELECT c.relname AS TABLE_NAME, COALESCE(c.reltuples::BIGINT, -1) AS ROW_COUNT
     FROM pg_class c
            JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE LOWER(c.relname) = LOWER('${prefix}${tableName}')
-      AND n.nspname = 'public'
+    WHERE n.nspname = CURRENT_SCHEMA()
+      AND c.relkind = 'r'
+      AND c.relname IN
+      <foreach item="t" collection="tableNames" open="(" separator="," close=")">#{t}</foreach>
   </select>
 
-  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
-    databaseId="oracle">
-    SELECT NVL(num_rows, -1)
+  <select id="countTableRows" resultMap="tableRowCountResultMap" databaseId="oracle">
+    SELECT table_name AS TABLE_NAME, NVL(num_rows, -1) AS ROW_COUNT
     FROM user_tables
-    WHERE UPPER(table_name) = UPPER('${prefix}${tableName}')
+    WHERE table_name IN
+    <foreach item="t" collection="tableNames" open="(" separator="," close=")">#{t}</foreach>
   </select>
 
-  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
-    databaseId="mariadb">
-    SELECT IFNULL(table_rows, -1)
+  <select id="countTableRows" resultMap="tableRowCountResultMap" databaseId="mariadb">
+    SELECT UPPER(table_name) AS TABLE_NAME, IFNULL(table_rows, -1) AS ROW_COUNT
     FROM information_schema.tables
     WHERE table_schema = DATABASE()
-      AND LOWER(table_name) = LOWER('${prefix}${tableName}')
+      AND table_name IN
+      <foreach item="t" collection="tableNames" open="(" separator="," close=")">#{t}</foreach>
   </select>
 
-  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
-    databaseId="mysql">
-    SELECT IFNULL(table_rows, -1)
+  <select id="countTableRows" resultMap="tableRowCountResultMap" databaseId="mysql">
+    SELECT UPPER(table_name) AS TABLE_NAME, IFNULL(table_rows, -1) AS ROW_COUNT
     FROM information_schema.tables
     WHERE table_schema = DATABASE()
-      AND LOWER(table_name) = LOWER('${prefix}${tableName}')
+      AND table_name IN
+      <foreach item="t" collection="tableNames" open="(" separator="," close=")">#{t}</foreach>
   </select>
 
-  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
-    databaseId="mssql">
-    SELECT ISNULL(SUM(p.rows), -1) AS estimate
+  <select id="countTableRows" resultMap="tableRowCountResultMap" databaseId="mssql">
+    SELECT t.name AS TABLE_NAME, ISNULL(SUM(p.rows), -1) AS ROW_COUNT
     FROM sys.tables t
            INNER JOIN sys.partitions p ON t.object_id = p.object_id
-    WHERE t.name = '${prefix}${tableName}'
+    WHERE t.schema_id = SCHEMA_ID()
       AND p.index_id IN (0, 1)
-    GROUP BY t.object_id
+      AND t.name IN
+      <foreach item="t" collection="tableNames" open="(" separator="," close=")">#{t}</foreach>
+    GROUP BY t.object_id, t.name
   </select>
-
-  <select id="countTableRows" parameterType="java.lang.String" resultType="long">
-    SELECT COUNT(*) FROM ${prefix}${tableName}
+  
+  <select id="countSingleTableRows" resultType="long">
+    SELECT COUNT(*) FROM ${tableName}
   </select>
 
 </mapper>

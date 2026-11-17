@@ -32,7 +32,7 @@ public class DatabaseBackup {
 
   @Override
   public int hashCode() {
-    return Objects.hash(snapshotRepositoryName);
+    return Objects.hashCode(snapshotRepositoryName);
   }
 
   @Override

@@ -16,7 +16,8 @@ const IconText = styled.div`
 `;
 
 const FirstColumn = styled(StructuredListCell)`
-  min-width: 200px;
+  width: 50%;
+  white-space: nowrap;
 `;
 
 const SecondColumn = styled(StructuredListCell)`

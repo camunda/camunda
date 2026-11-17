@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -28,36 +30,73 @@ public class JobCommandPreconditionValidator {
   private final JobState jobState;
   private final String intent;
   private final List<JobCommandCheck> customChecks;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final CslTenantCheck tenantCheck;
+  private final BannedInstanceCommandCheck bannedInstanceCheck;
+  private boolean skipTenantFilterForInternalCommands;
 
   public JobCommandPreconditionValidator(
       final JobState jobState,
+      final BannedInstanceState bannedInstanceState,
       final String intent,
       final List<State> validStates,
-      final AuthorizationCheckBehavior authorizationCheckBehavior) {
-    this(jobState, intent, validStates, List.of(), authorizationCheckBehavior);
+      final CslTenantCheck tenantCheck) {
+    this(jobState, bannedInstanceState, intent, validStates, List.of(), tenantCheck);
   }
 
   public JobCommandPreconditionValidator(
       final JobState jobState,
+      final BannedInstanceState bannedInstanceState,
       final String intent,
       final List<State> validStates,
       final List<JobCommandCheck> customChecks,
-      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+      final CslTenantCheck tenantCheck) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
     this.customChecks = customChecks;
-    this.authorizationCheckBehavior = authorizationCheckBehavior;
+    this.tenantCheck = tenantCheck;
+    bannedInstanceCheck = new BannedInstanceCommandCheck(bannedInstanceState);
   }
 
-  protected Either<Rejection, JobRecord> check(
-      final State state, final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
-    final var storedJob = jobState.getJob(jobKey, authorizedTenantIds);
+  /**
+   * Looks the job up without a tenant filter when the command is internal. The broker writes such
+   * commands (e.g. YIELD after a failed job push) without authorization claims. With multi-tenancy
+   * checks enabled, {@link CslTenantCheck#resolveAuthorizedTenants(TypedRecord)} already grants
+   * such commands every tenant. With the checks disabled, it grants only the default tenant, so
+   * this flag still removes that filter.
+   */
+  JobCommandPreconditionValidator skipTenantFilterForInternalCommands() {
+    skipTenantFilterForInternalCommands = true;
+    return this;
+  }
 
-    if (state == State.NOT_FOUND || storedJob == null) {
+  public Either<Rejection, JobRecord> check(final TypedRecord<JobRecord> command) {
+
+    // resolve the job record and check the job state
+    final Either<Rejection, JobRecord> result =
+        checkJobState(command).flatMap(this::checkJobExists).flatMap(bannedInstanceCheck::check);
+
+    if (result.isLeft()) {
+      return result;
+    }
+    // Evaluate custom checks on the job `command` and the `job` retrieved from `jobState`.
+    // Return the first `failure` encountered, or if all checks pass, return the `job` from
+    // `jobState` for further processing.
+    final var storedJob = result.get();
+    return customChecks.stream()
+        .map(check -> check.check(command, storedJob))
+        .filter(Either::isLeft)
+        .findFirst()
+        .orElse(Either.right(storedJob));
+  }
+
+  private Either<Rejection, TypedRecord<JobRecord>> checkJobState(
+      final TypedRecord<JobRecord> command) {
+
+    final long jobKey = command.getKey();
+    final JobState.State state = jobState.getState(jobKey);
+
+    if (state == State.NOT_FOUND) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(intent, jobKey)));
     }
@@ -69,13 +108,23 @@ public class JobCommandPreconditionValidator {
               INVALID_JOB_STATE_MESSAGE.formatted(intent, jobKey, state)));
     }
 
-    // Evaluate custom checks on the job `command` and the `job` retrieved from `jobState`.
-    // Return the first `failure` encountered, or if all checks pass, return the `job` from
-    // `jobState` for further processing.
-    return customChecks.stream()
-        .map(check -> check.check(command, storedJob))
-        .filter(Either::isLeft)
-        .findFirst()
-        .orElse(Either.right(storedJob));
+    return Either.right(command);
+  }
+
+  private Either<Rejection, JobRecord> checkJobExists(final TypedRecord<JobRecord> command) {
+    final long jobKey = command.getKey();
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
+    final var storedJob =
+        (skipTenantFilterForInternalCommands && command.isInternalCommand())
+                || authorizedTenants.wildcard()
+            ? jobState.getJob(jobKey)
+            : jobState.getJob(jobKey, authorizedTenants);
+
+    if (storedJob == null) {
+      return Either.left(
+          new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(intent, jobKey)));
+    }
+
+    return Either.right(storedJob);
   }
 }

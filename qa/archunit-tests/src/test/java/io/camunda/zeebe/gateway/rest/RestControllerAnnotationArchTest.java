@@ -7,17 +7,21 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
+import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 
+// DoNotIncludeTestsOrTestJars (not the built-in DoNotIncludeTests) because
+// qa/archunit-tests pulls in zeebe-gateway-rest as a test-jar; without filtering
+// test-jar entries, @RestController classes declared inside controller tests would
+// be analyzed as production code.
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.gateway.rest",
-    importOptions = ImportOption.DoNotIncludeTests.class)
+    importOptions = DoNotIncludeTestsOrTestJars.class)
 public class RestControllerAnnotationArchTest {
 
   /**

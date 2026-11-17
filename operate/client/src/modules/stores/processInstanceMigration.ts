@@ -20,10 +20,12 @@ const STEPS = {
   },
 };
 
+import type {VariableCondition} from 'modules/stores/variableFilter';
+
 type BatchOperationQuery = {
   ids?: string[];
   excludeIds?: string[];
-  variable?: {name: string; values: string[]};
+  conditions?: VariableCondition[];
 };
 
 type State = {
@@ -32,6 +34,7 @@ type State = {
   selectedSourceElementId?: string;
   selectedTargetElementId?: string;
   selectedInstancesCount: number;
+  isSelectedInstancesCountTruncated: boolean;
   batchOperationQuery: BatchOperationQuery | null;
   sourceProcessDefinition: ProcessDefinition | null;
   targetProcessDefinition: ProcessDefinition | null;
@@ -44,6 +47,7 @@ const DEFAULT_STATE: State = {
   selectedSourceElementId: undefined,
   selectedTargetElementId: undefined,
   selectedInstancesCount: 0,
+  isSelectedInstancesCountTruncated: false,
   batchOperationQuery: null,
   sourceProcessDefinition: null,
   targetProcessDefinition: null,
@@ -149,8 +153,13 @@ class ProcessInstanceMigration {
     return Object.keys(this.state.elementMapping).length > 0;
   }
 
-  setSelectedInstancesCount = (selectedInstancesCount: number) => {
+  setSelectedInstancesCount = (
+    selectedInstancesCount: number,
+    isSelectedInstancesCountTruncated = false,
+  ) => {
     this.state.selectedInstancesCount = selectedInstancesCount;
+    this.state.isSelectedInstancesCountTruncated =
+      isSelectedInstancesCountTruncated;
   };
 
   setBatchOperationQuery = (query: BatchOperationQuery) => {

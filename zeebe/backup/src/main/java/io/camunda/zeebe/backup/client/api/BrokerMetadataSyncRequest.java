@@ -17,6 +17,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class BrokerMetadataSyncRequest extends BrokerRequest<BackupRangesResponse> {
 
@@ -49,7 +50,7 @@ public final class BrokerMetadataSyncRequest extends BrokerRequest<BackupRangesR
   }
 
   @Override
-  public BufferWriter getRequestWriter() {
+  public @Nullable BufferWriter getRequestWriter() {
     return null;
   }
 

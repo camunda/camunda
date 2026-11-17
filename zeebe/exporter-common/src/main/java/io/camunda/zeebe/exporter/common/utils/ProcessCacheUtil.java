@@ -7,16 +7,15 @@
  */
 package io.camunda.zeebe.exporter.common.utils;
 
-import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
-import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,52 +85,56 @@ public final class ProcessCacheUtil {
         .toList();
   }
 
-  /**
-   * Returns relevant data from process diagram
-   *
-   * @param processDefinitionEntity
-   * @return ProcessDiagramData
-   */
-  public static ProcessDiagramData extractProcessDiagramData(
-      final ProcessDefinitionEntity processDefinitionEntity) {
-    return extractProcessDiagramData(
-        processDefinitionEntity.bpmnXml(), processDefinitionEntity.processDefinitionId());
+  public static CachedProcessEntity createCachedProcessEntity(
+      final String name,
+      final int version,
+      final String versionTag,
+      final String bpmnXml,
+      final String bpmnProcessId,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
+    final var reader =
+        StringUtils.isBlank(bpmnXml)
+            ? null
+            : ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId)
+                .orElse(null);
+    return createCachedProcessEntity(
+        name, version, versionTag, reader, extensionPropertiesConfiguration);
   }
 
-  /**
-   * Returns relevant data from process diagram
-   *
-   * @param bpmnXml
-   * @param bpmnProcessId
-   * @return ProcessDiagramData
-   */
-  public static ProcessDiagramData extractProcessDiagramData(String bpmnXml, String bpmnProcessId) {
-
-    final ProcessModelReader reader =
-        ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
-
+  public static CachedProcessEntity createCachedProcessEntity(
+      final String name,
+      final int version,
+      final String versionTag,
+      final ProcessModelReader reader,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     if (reader != null) {
-      final List<String> callActivityIds = sortedCallActivityIds(reader.extractCallActivities());
-      final Collection<FlowNode> flowNodes = reader.extractFlowNodes();
-      final Map<String, String> flowNodesMap = getFlowNodesMap(flowNodes);
-      final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      return new ProcessDiagramData(callActivityIds, flowNodesMap, hasUserTasks);
+      final var callActivityIds = sortedCallActivityIds(reader.extractCallActivities());
+      final var flowNodes = reader.extractFlowNodes();
+      final var flowNodesMap = getFlowNodesMap(flowNodes);
+      final var hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
+      final var extensionProperties =
+          ProcessModelReader.extractExtensionProperties(
+              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
+      final var adHocActivityIds = reader.extractAdHocActivityIds();
+      return new CachedProcessEntity(
+          name,
+          version,
+          versionTag,
+          callActivityIds,
+          flowNodesMap,
+          hasUserTasks,
+          extensionProperties,
+          adHocActivityIds);
     }
-
-    return new ProcessDiagramData(List.of(), Map.of(), true);
+    return new CachedProcessEntity(name, version, versionTag, List.of(), Map.of(), true, Map.of());
   }
 
-  public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
-    return callActivities.stream().map(BaseElement::getId).sorted().toList();
+  private static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
+    return callActivities.stream().map(CallActivity::getId).sorted().toList();
   }
 
   /**
-   * Returns flowNodeName from process cache by flowNodeId
-   *
-   * @param processCache
-   * @param processDefinitionKey
-   * @param flowNodeId
-   * @return flowNodeName
+   * @return flowNodeName from process cache by flowNodeId
    */
   public static Optional<String> getFlowNodeName(
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
@@ -148,7 +151,7 @@ public final class ProcessCacheUtil {
         .map(map -> map.get(flowNodeId));
   }
 
-  public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
+  private static Map<String, String> getFlowNodesMap(final Collection<FlowNode> flowNodes) {
     return flowNodes.stream()
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
   }

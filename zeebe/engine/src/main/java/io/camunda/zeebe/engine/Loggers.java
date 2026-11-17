@@ -20,6 +20,9 @@ public final class Loggers {
   public static final Logger ENGINE_PROCESSING_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.engine.processing");
 
+  public static final Logger ENGINE_IDENTITY_LOGGER =
+      LoggerFactory.getLogger("io.camunda.zeebe.engine.identity");
+
   public static Logger getExporterLogger(final String exporterId) {
     final String loggerName = String.format("io.camunda.zeebe.broker.exporter.%s", exporterId);
     return LoggerFactory.getLogger(loggerName);

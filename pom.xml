@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -24,8 +24,8 @@
     <module>build-tools</module>
     <module>zeebe</module>
     <module>operate</module>
-    <module>tasklist</module>
     <module>identity</module>
+    <module>webapp</module>
     <module>webapps-common</module>
     <module>webapps-schema</module>
     <module>webapps-backup</module>
@@ -39,6 +39,7 @@
     <module>gateways/gateway-mcp</module>
     <module>spring-utils</module>
     <module>clients/java</module>
+    <module>clients/spring-boot-protobuf-compatibility</module>
     <module>clients/camunda-spring-boot-starter</module>
     <module>clients/camunda-spring-boot-3-starter</module>
     <module>clients/camunda-spring-boot-4-starter</module>
@@ -46,6 +47,8 @@
     <module>testing</module>
     <module>document</module>
     <module>security</module>
+    <module>secret-store</module>
+    <module>cluster</module>
     <module>configuration</module>
     <module>load-tests/load-tester</module>
     <module>debug-cli</module>
@@ -76,7 +79,6 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
-              <exclude>tasklist/client/**/*</exclude>
               <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
               <exclude>webapp/client/**/*</exclude>
@@ -85,12 +87,33 @@
               YamlFrontMatter flexmark extension
               -->
               <exclude>.github/instructions/**/*.md</exclude>
-              <exclude>.github/skills/**/*.md</exclude>
+              <exclude>.claude/agents/**/*.md</exclude>
+              <exclude>.claude/skills/**/*.md</exclude>
+              <exclude>.agents/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
+              <exclude>.github/workflows/**/*.md</exclude>
+              <exclude>load-tests/skills/**/*.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>
+          <!-- Keep in sync with the kotlin block in gradle/build-logic (buildlogic.root-conventions).
+          Gradle reads the ktfmt version from the same parent pom property, otherwise the two
+          formatters rewrite each other's output. -->
+          <kotlin>
+            <includes>
+              <include>**/*.kt</include>
+            </includes>
+            <excludes>
+              <exclude>**/target/**</exclude>
+              <exclude>**/node_modules/**</exclude>
+              <exclude>**/build/**</exclude>
+            </excludes>
+            <ktfmt>
+              <version>${plugin.version.ktfmt}</version>
+              <style>GOOGLE</style>
+            </ktfmt>
+          </kotlin>
         </configuration>
       </plugin>
     </plugins>

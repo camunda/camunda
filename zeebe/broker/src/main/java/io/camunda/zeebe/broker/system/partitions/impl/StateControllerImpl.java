@@ -129,24 +129,28 @@ public class StateControllerImpl implements StateController {
       future.completeExceptionally(
           new RuntimeException(
               "Failed to delete runtime folder. Cannot recover from snapshot.", e));
+      return;
     }
 
-    constructableSnapshotStore
-        .getLatestSnapshot()
-        .ifPresent(snapshot -> recoverFromSnapshot(future, snapshot));
+    final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
+    if (latestSnapshot.isPresent() && !recoverFromSnapshot(future, latestSnapshot.get())) {
+      return;
+    }
     openDb(future);
   }
 
-  private void recoverFromSnapshot(
+  private boolean recoverFromSnapshot(
       final ActorFuture<ZeebeDb> future, final PersistedSnapshot snapshot) {
     LOG.debug("Recovering state from available snapshot: {}", snapshot);
 
     try (final var db = zeebeDbFactory.openSnapshotOnlyDb(snapshot.getPath().toFile())) {
       db.createSnapshot(runtimeDirectory.toFile());
+      return true;
     } catch (final Exception e) {
       future.completeExceptionally(
           new ZeebeDbException(
               String.format("Failed to recover from snapshot %s", snapshot.getId()), e));
+      return false;
     }
   }
 

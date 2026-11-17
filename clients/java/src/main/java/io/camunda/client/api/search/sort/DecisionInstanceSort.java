@@ -40,6 +40,9 @@ public interface DecisionInstanceSort extends SearchRequestSort<DecisionInstance
   /** Sort by processInstanceKey */
   DecisionInstanceSort processInstanceKey();
 
+  /** Sort by businessId */
+  DecisionInstanceSort businessId();
+
   /** Sort by elementInstanceKey */
   DecisionInstanceSort elementInstanceKey();
 

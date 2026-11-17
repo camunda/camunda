@@ -7,3 +7,4 @@
  */
 
 export {default as EntityList} from './EntityList';
+export type {Action} from './EntityList';

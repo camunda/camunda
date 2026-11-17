@@ -20,10 +20,10 @@ import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -42,6 +42,9 @@ public class AuditLogAgentIT {
           .withAuthenticatedAccess();
 
   private static final String AGENT_ELEMENT_ID = "test_agent_ahsp";
+  private static final String AGENT_JOB_TYPE = "agent-job";
+  private static final String EXTERNAL_AGENT_ELEMENT_ID = "external_agent_service_task";
+  private static final String EXTERNAL_AGENT_JOB_TYPE = "external-agent-job";
   private static CamundaClient adminClient;
 
   @BeforeAll
@@ -51,7 +54,8 @@ public class AuditLogAgentIT {
         Bpmn.createExecutableProcess("AGENT_PROCESS")
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("A1"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .zeebeJobType(AGENT_JOB_TYPE)
+            .zeebeAiAgentSubProcessDefinition()
             .endEvent("error")
             .moveToActivity(AGENT_ELEMENT_ID)
             .endEvent("end")
@@ -68,9 +72,30 @@ public class AuditLogAgentIT {
         .send()
         .join();
 
+    // Deploy a process with an external agent service task, whose job type does not carry the
+    // legacy agentic job type prefix, and complete its job
+    final var externalAgentProcessModel =
+        Bpmn.createExecutableProcess("EXTERNAL_AGENT_PROCESS")
+            .startEvent()
+            .serviceTask(
+                EXTERNAL_AGENT_ELEMENT_ID,
+                t -> t.zeebeJobType(EXTERNAL_AGENT_JOB_TYPE).zeebeExternalAgentDefinition())
+            .endEvent()
+            .done();
+    final var externalAgentProcess =
+        deployProcessAndWaitForIt(client, externalAgentProcessModel, "external_agent_process.bpmn");
+    final var externalAgentProcessInstance =
+        startProcessInstance(client, externalAgentProcess.getBpmnProcessId());
+    waitForProcessInstancesToStart(client, 2);
+
+    final var externalAgentJobs =
+        waitForJobs(client, List.of(externalAgentProcessInstance.getProcessInstanceKey()));
+    client.newCompleteCommand(externalAgentJobs.getFirst().getJobKey()).send().join();
+
     // Wait for audit logs to be available
     Awaitility.await("job to be completed")
         .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var result =
@@ -83,7 +108,7 @@ public class AuditLogAgentIT {
                       .send()
                       .join();
 
-              assertThat(result.items()).hasSize(1);
+              assertThat(result.items()).hasSize(2);
             });
   }
 
@@ -105,8 +130,7 @@ public class AuditLogAgentIT {
             auditLog -> {
               assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
               assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
-              assertThat(auditLog.getEntityDescription())
-                  .isEqualTo(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
+              assertThat(auditLog.getEntityDescription()).isEqualTo(AGENT_JOB_TYPE);
               assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
             });
   }
@@ -149,5 +173,44 @@ public class AuditLogAgentIT {
             auditLog -> {
               assertThat(auditLog.getAgentElementId()).startsWith("test_agent");
             });
+  }
+
+  @Test
+  void shouldAttributeExternalAgentJobInAuditLog(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - search for the external agent job's audit log entry
+    final var result =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.entityType(AuditLogEntityTypeEnum.JOB))
+            .send()
+            .join();
+
+    // then - the entry for the external agent job carries the agent element id
+    assertThat(result.items())
+        .filteredOn(auditLog -> auditLog.getEntityDescription().equals(EXTERNAL_AGENT_JOB_TYPE))
+        .describedAs("audit log entry for the external agent job")
+        .hasSize(1)
+        .allSatisfy(
+            auditLog ->
+                assertThat(auditLog.getAgentElementId())
+                    .describedAs("agent element id of the external agent job's audit log entry")
+                    .isEqualTo(EXTERNAL_AGENT_ELEMENT_ID));
+
+    // when - filter audit logs by the external agent's element id
+    final var filteredResult =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.agentElementId(EXTERNAL_AGENT_ELEMENT_ID))
+            .send()
+            .join();
+
+    // then - the filter finds the external agent's audit log entry
+    assertThat(filteredResult.items())
+        .describedAs("audit logs filtered by the external agent's element id")
+        .isNotEmpty()
+        .allSatisfy(
+            auditLog ->
+                assertThat(auditLog.getAgentElementId()).isEqualTo(EXTERNAL_AGENT_ELEMENT_ID));
   }
 }

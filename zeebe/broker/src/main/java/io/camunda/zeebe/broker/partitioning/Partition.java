@@ -8,11 +8,13 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PARTITION_ID;
+import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PHYSICAL_TENANT;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
+import io.camunda.zeebe.broker.partitioning.startup.steps.CommandApiServicePartitionStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.MetricsStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionDirectoryStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionRegistrationStep;
@@ -69,13 +71,18 @@ final class Partition {
     return new Partition(
         context,
         new StartupProcess<>(
-            Map.of(ACTOR_PROP_PARTITION_ID, context.partitionId().toString()),
+            Map.of(
+                ACTOR_PROP_PARTITION_ID,
+                context.partitionId().toString(),
+                ACTOR_PROP_PHYSICAL_TENANT,
+                context.partitionMetadata().id().group()),
             LOGGER,
             List.of(
                 new MetricsStep(context.partitionId()),
                 new PartitionDirectoryStep(context.partitionId()),
                 new SnapshotStoreStep(context.partitionId()),
                 new RaftBootstrapStep(context.partitionId()),
+                new CommandApiServicePartitionStep(context.partitionId()),
                 new ZeebePartitionStep(context.partitionId()),
                 new PartitionRegistrationStep(context.partitionId()))));
   }
@@ -84,13 +91,18 @@ final class Partition {
     return new Partition(
         context,
         new StartupProcess<>(
-            Map.of(ACTOR_PROP_PARTITION_ID, context.partitionId().toString()),
+            Map.of(
+                ACTOR_PROP_PARTITION_ID,
+                context.partitionId().toString(),
+                ACTOR_PROP_PHYSICAL_TENANT,
+                context.partitionMetadata().id().group()),
             LOGGER,
             List.of(
                 new MetricsStep(context.partitionId()),
                 new PartitionDirectoryStep(context.partitionId()),
                 new SnapshotStoreStep(context.partitionId()),
                 new RaftJoinStep(context.partitionId()),
+                new CommandApiServicePartitionStep(context.partitionId()),
                 new ZeebePartitionStep(context.partitionId()),
                 new PartitionRegistrationStep(context.partitionId()))));
   }
@@ -182,6 +194,66 @@ final class Partition {
         });
   }
 
+  /**
+   * Promotes the local member to a voting member of the replication group - the second phase of a
+   * two-phase join for a member that joined as a learner. Fails while the member is not caught up
+   * yet; the caller is expected to retry.
+   */
+  ActorFuture<Void> promoteMember() {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(errorPartitionNotAvailable("promote member of"));
+            return;
+          }
+          raftPartition
+              .promoteMember()
+              .whenComplete(
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+
+    return result;
+  }
+
+  /**
+   * Demotes the local member to a non-voting member of the replication group - the first phase of a
+   * two-phase leave, so that the subsequent {@link #leave()} commits without this member's
+   * participation.
+   */
+  ActorFuture<Void> demoteMember() {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(errorPartitionNotAvailable("demote member of"));
+            return;
+          }
+          raftPartition
+              .demoteMember()
+              .whenComplete(
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+
+    return result;
+  }
+
   ActorFuture<Void> reconfigurePriority(final int newPriority) {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Void>createFuture();
@@ -242,7 +314,7 @@ final class Partition {
     return new IllegalStateException(
         String.format(
             "Expected to %s partition %s, but raft partition is not available",
-            operation, context.partitionMetadata().id().id()));
+            operation, context.partitionMetadata().id().number()));
   }
 
   ZeebePartition zeebePartition() {
@@ -251,9 +323,5 @@ final class Partition {
 
   RaftPartition raftPartition() {
     return context.raftPartition();
-  }
-
-  int id() {
-    return context.partitionMetadata().id().id();
   }
 }

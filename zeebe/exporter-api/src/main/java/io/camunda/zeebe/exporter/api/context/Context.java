@@ -58,6 +58,30 @@ public interface Context {
   int getPartitionId();
 
   /**
+   * Returns the physical-tenant id this exporter instance serves. In the multi-physical-tenant
+   * broker, one exporter instance is started per physical-tenant per partition.
+   *
+   * @return the physical-tenant id.
+   */
+  String getPhysicalTenantId();
+
+  /**
+   * Returns the cluster ID of the broker this exporter runs on. Falls back to the {@code
+   * ZEEBE_BROKER_CLUSTER_CLUSTERID} environment variable for older brokers that don't provide it
+   * natively.
+   *
+   * @return the cluster ID, or an empty string if not configured.
+   */
+  String getClusterId();
+
+  /**
+   * Returns the Camunda license key, or {@code null} if not configured.
+   *
+   * @return the license key, or {@code null} if not available.
+   */
+  String getLicenseKey();
+
+  /**
    * Apply the given filter to limit the records which are exported.
    *
    * @param filter the filter to apply.

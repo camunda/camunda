@@ -26,6 +26,7 @@ function useMatchMedia(mediaQuery: string, defaultState = false): boolean {
     };
     const mediaQueryList = window.matchMedia(mediaQuery);
     mediaQueryList.addEventListener('change', listener, {passive: true});
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMatches(mediaQueryList.matches);
 
     return () => {

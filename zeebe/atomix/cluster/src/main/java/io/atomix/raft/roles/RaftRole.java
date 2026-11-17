@@ -28,6 +28,8 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -35,6 +37,8 @@ import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
@@ -96,6 +100,26 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<TransferResponse> onTransfer(TransferRequest request);
+
+  /**
+   * Handles a timeout-now request: instructs this node to start an election immediately, bypassing
+   * its election timeout. Only a follower (the intended successor) accepts it; all other roles
+   * reject it.
+   *
+   * @param request The request to handle.
+   * @return A completable future to be completed with the request response.
+   */
+  CompletableFuture<TimeoutNowResponse> onTimeoutNow(TimeoutNowRequest request);
+
+  /**
+   * Handles a coordinated-leadership-transfer initiate request. Only the leader drives the
+   * transfer; every other role rejects it as misrouted.
+   *
+   * @param request The request to handle.
+   * @return A completable future to be completed with the acknowledgement.
+   */
+  CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      LeadershipTransferInitiateRequest request);
 
   /**
    * Handles an append request.

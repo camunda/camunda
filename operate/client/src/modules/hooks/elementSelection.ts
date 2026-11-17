@@ -147,13 +147,18 @@ const useNewTokenCountForSelectedNode = () => {
 };
 
 const useIsPlaceholderSelected = () => {
-  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  const {isSelectedInstancePlaceholder} = useProcessInstanceElementSelection();
+  const {
+    isSelectedInstancePlaceholder,
+    selectedElementInstanceKey,
+    selectedInstancesCount,
+  } = useProcessInstanceElementSelection();
 
   return (
     isSelectedInstancePlaceholder ||
-    (!hasRunningOrFinishedTokens && newTokenCountForSelectedNode === 1)
+    (selectedElementInstanceKey === null &&
+      selectedInstancesCount === 0 &&
+      newTokenCountForSelectedNode === 1)
   );
 };
 

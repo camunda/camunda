@@ -15,6 +15,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,20 +85,25 @@ public final class SnapshotInitializationUtil {
     }
   }
 
-  /** Fetches the latest snapshot from the leader and restores it if available. */
+  /** Fetches the latest snapshot from the leader and restores it; fails if there is none. */
   private static ActorFuture<Void> fetchAndRestoreSnapshot(
       final SnapshotTransfer snapshotTransfer,
       final FileBasedSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
 
-    final ActorFuture<PersistedSnapshot> fetchFuture =
+    final ActorFuture<@Nullable PersistedSnapshot> fetchFuture =
         snapshotTransfer.getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
 
     return fetchFuture.andThen(
         snapshot -> {
           if (snapshot == null) {
-            LOG.info("Received no snapshot from leader, skipping restore from snapshot");
-            return CompletableActorFuture.completed();
+            // Starting without it would leave this partition without the global state of
+            // partition 1 (deployments, identity, routing). Fail so the bootstrap is retried.
+            return CompletableActorFuture.completedExceptionally(
+                new IllegalStateException(
+                    "Expected to receive a bootstrap snapshot from the leader of partition "
+                        + Protocol.DEPLOYMENT_PARTITION
+                        + ", but received no snapshot"));
           } else {
             LOG.info("Received snapshot {} from leader, restoring from snapshot", snapshot.getId());
             return snapshotStore.restore(snapshot);

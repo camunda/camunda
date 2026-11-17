@@ -7,13 +7,15 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.it.util.TestHelper.createTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.it.util.TestHelper;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
@@ -62,13 +64,17 @@ public class ClusterVariableSearchIT {
   private static String largeVarValue;
   private static final int LARGE_VALUE_SIZE = 10000; // Create a large value to trigger truncation
 
+  @TenantDefinition
+  private static final TestTenant TENANT_1 = new TestTenant("tenant_1").setName("Tenant 1");
+
+  @TenantDefinition
+  private static final TestTenant TENANT_2 = new TestTenant("tenant_2").setName("Tenant 2");
+
+  @TenantDefinition
+  private static final TestTenant TENANT_3 = new TestTenant("tenant_3").setName("Tenant 3");
+
   @BeforeAll
   static void setupClusterVariables() {
-    // Create tenants needed for tests
-    createTenant(camundaClient, "tenant_1", "Tenant 1");
-    createTenant(camundaClient, "tenant_2", "Tenant 2");
-    createTenant(camundaClient, "tenant_3", "Tenant 3");
-
     // Setup global scoped variables
     globalVarName1 = "globalVarSearch1_" + UUID.randomUUID();
     globalVarValue1 = "testValue1_" + UUID.randomUUID();
@@ -187,6 +193,7 @@ public class ClusterVariableSearchIT {
     assertThat(result.getTenantId()).isNull();
     assertThat(result.getScope()).isEqualTo(ClusterVariableScope.GLOBAL);
     assertThat(result.isTruncated()).isFalse();
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKind.JSON);
   }
 
   @Test
@@ -205,6 +212,7 @@ public class ClusterVariableSearchIT {
     assertThat(result.getTenantId()).isEqualTo(tenantId);
     assertThat(result.getScope()).isEqualTo(ClusterVariableScope.TENANT);
     assertThat(result.isTruncated()).isFalse();
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKind.JSON);
   }
 
   // ============ SEARCH TESTS ============
@@ -961,5 +969,36 @@ public class ClusterVariableSearchIT {
 
     // Verify the full value contains the original repeated characters
     assertThat(fullVar.getValue()).contains("xxx");
+  }
+
+  @Test
+  void shouldSearchReturnKindInResults() {
+    // when
+    final var results =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.name(globalVarName1))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getKind()).isEqualTo(ClusterVariableKind.JSON);
+  }
+
+  @Test
+  void shouldSearchFilterByKind() {
+    // when — all test variables are JSON kind
+    final var results =
+        camundaClient
+            .newClusterVariableSearchRequest()
+            .filter(f -> f.kind(ClusterVariableKind.JSON).scope(ClusterVariableScope.GLOBAL))
+            .send()
+            .join();
+
+    // then — global JSON variables should be returned
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items())
+        .allSatisfy(v -> assertThat(v.getKind()).isEqualTo(ClusterVariableKind.JSON));
   }
 }

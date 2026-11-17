@@ -1,0 +1,3 @@
+response-media-type-name-specialized err
+response-optional-property-removed err
+response-property-enum-value-added warn

@@ -11,9 +11,14 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,12 +27,19 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SpringBrokerBridge {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SpringBrokerBridge.class);
+
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
-  private Supplier<JobStreamService> jobStreamServiceSupplier;
+  private Function<String, BrokerAdminService> adminServiceByTenantLookup;
+  private Supplier<Set<String>> adminServiceTenantIdsSupplier;
+  private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
+  private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
+  private Function<String, Runnable> tenantSchemaInitializer;
 
-  private Consumer<Integer> shutdownHelper;
+  private BiConsumer<Integer, String> shutdownHelper;
 
   public void registerBrokerHealthCheckServiceSupplier(
       final Supplier<BrokerHealthCheckService> healthCheckServiceSupplier) {
@@ -47,6 +59,36 @@ public class SpringBrokerBridge {
     return Optional.ofNullable(adminServiceSupplier).map(Supplier::get);
   }
 
+  /**
+   * Registers a lookup function resolving the {@link BrokerAdminService} responsible for a given
+   * physical tenant's partitions.
+   */
+  public void registerBrokerAdminServiceByTenantLookup(
+      final Function<String, BrokerAdminService> adminServiceByTenantLookup) {
+    this.adminServiceByTenantLookup = adminServiceByTenantLookup;
+  }
+
+  /** Returns the {@link BrokerAdminService} for the given physical tenant, if any. */
+  public Optional<BrokerAdminService> getAdminService(final String physicalTenantId) {
+    return Optional.ofNullable(adminServiceByTenantLookup)
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /**
+   * Registers a supplier of every physical tenant ID that has a {@link BrokerAdminService}
+   * registered, so that node-level operations without an explicit {@code physicalTenant} can be
+   * applied across the whole node (all physical tenants) rather than defaulting to a single one.
+   */
+  public void registerBrokerAdminServiceTenantIdsSupplier(
+      final Supplier<Set<String>> adminServiceTenantIdsSupplier) {
+    this.adminServiceTenantIdsSupplier = adminServiceTenantIdsSupplier;
+  }
+
+  /** Returns every physical tenant ID that has a {@link BrokerAdminService} registered. */
+  public Set<String> getBrokerAdminServiceTenantIds() {
+    return Optional.ofNullable(adminServiceTenantIdsSupplier).map(Supplier::get).orElse(Set.of());
+  }
+
   public void registerJobStreamClientSupplier(
       final Supplier<JobStreamClient> jobStreamClientSupplier) {
     this.jobStreamClientSupplier = jobStreamClientSupplier;
@@ -56,28 +98,50 @@ public class SpringBrokerBridge {
     return Optional.ofNullable(jobStreamClientSupplier).map(Supplier::get);
   }
 
-  public void registerJobStreamServiceSupplier(
-      final Supplier<JobStreamService> jobStreamServiceSupplier) {
-    this.jobStreamServiceSupplier = jobStreamServiceSupplier;
+  public void registerJobStreamServicesSupplier(
+      final Supplier<Collection<JobStreamService>> jobStreamServicesSupplier) {
+    this.jobStreamServicesSupplier = jobStreamServicesSupplier;
   }
 
-  public Optional<JobStreamService> getJobStreamService() {
-    return Optional.ofNullable(jobStreamServiceSupplier).map(Supplier::get);
+  public Optional<Collection<JobStreamService>> getJobStreamServices() {
+    return Optional.ofNullable(jobStreamServicesSupplier).map(Supplier::get);
+  }
+
+  /** Registers a lookup function resolving the {@link JobStreamService} for a given tenant. */
+  public void registerJobStreamServiceByTenantLookup(
+      final Function<String, JobStreamService> jobStreamServiceByTenantLookup) {
+    this.jobStreamServiceByTenantLookup = jobStreamServiceByTenantLookup;
+  }
+
+  /** Returns the {@link JobStreamService} for the given physical tenant, if any. */
+  public Optional<JobStreamService> getJobStreamService(final String physicalTenantId) {
+    return Optional.ofNullable(jobStreamServiceByTenantLookup)
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  public void registerSchemaInitializerLookup(final Function<String, Runnable> lookup) {
+    tenantSchemaInitializer = lookup;
+  }
+
+  public Optional<Runnable> getSchemaInitializer(final String physicalTenantId) {
+    return Optional.ofNullable(tenantSchemaInitializer)
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
   }
 
   /**
    * Registers a shutdown helper that can initiate a graceful shutdown of the broker. This will be
    * used when any exceptional cases may need to be handled by shutting down the broker.
    *
-   * @param shutdownHelper the shutdown helper
+   * @param shutdownHelper the shutdown helper accepting an error code and a reason string
    */
-  public void registerShutdownHelper(final Consumer<Integer> shutdownHelper) {
+  public void registerShutdownHelper(final BiConsumer<Integer, String> shutdownHelper) {
     this.shutdownHelper = shutdownHelper;
   }
 
-  public void initiateShutdown(final int errorCode) {
+  public void initiateShutdown(final int errorCode, final String reason) {
+    LOG.warn("Initiating broker shutdown with error code {}: {}", errorCode, reason);
     if (shutdownHelper != null) {
-      shutdownHelper.accept(errorCode);
+      shutdownHelper.accept(errorCode, reason);
     } else {
       System.exit(errorCode);
     }

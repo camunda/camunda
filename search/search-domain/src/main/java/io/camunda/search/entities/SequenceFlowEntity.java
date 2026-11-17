@@ -10,28 +10,38 @@ package io.camunda.search.entities;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.security.core.authz.TenantOwnedEntity;
 import io.camunda.util.ObjectBuilder;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SequenceFlowEntity(
     String sequenceFlowId,
     String flowNodeId,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long processDefinitionKey,
-    String processDefinitionId,
+    @Nullable Long rootProcessInstanceKey,
+    // absent on documents imported by Operate 8.1 and earlier.
+    @Nullable Long processDefinitionKey,
+    @Nullable String processDefinitionId,
     String tenantId)
     implements TenantOwnedEntity {
 
+  public SequenceFlowEntity {
+    requireNonNull(sequenceFlowId, "sequenceFlowId");
+    requireNonNull(flowNodeId, "flowNodeId");
+    requireNonNull(processInstanceKey, "processInstanceKey");
+    requireNonNull(tenantId, "tenantId");
+  }
+
   public static class Builder implements ObjectBuilder<SequenceFlowEntity> {
 
-    private String sequenceFlowId;
-    private String flowNodeId;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long processDefinitionKey;
-    private String processDefinitionId;
-    private String tenantId;
+    private @Nullable String sequenceFlowId;
+    private @Nullable String flowNodeId;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable String processDefinitionId;
+    private @Nullable String tenantId;
 
     public Builder sequenceFlowId(final String sequenceFlowId) {
       this.sequenceFlowId = sequenceFlowId;
@@ -68,17 +78,17 @@ public record SequenceFlowEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public SequenceFlowEntity build() {
       return new SequenceFlowEntity(
-          requireNonNull(sequenceFlowId, "Expected non-null field for sequenceFlowId"),
-          requireNonNull(flowNodeId, "Expected non-null field for flowNodeId"),
-          requireNonNull(processInstanceKey, "Expected non-null field for processInstanceKey"),
-          requireNonNull(
-              rootProcessInstanceKey, "Expected non-null field for rootProcessInstanceKey"),
-          requireNonNull(processDefinitionKey, "Expected non-null field for processDefinitionKey"),
-          requireNonNull(processDefinitionId, "Expected non-null field for processDefinitionId"),
-          requireNonNull(tenantId, "Expected non-null field for tenantId"));
+          sequenceFlowId,
+          flowNodeId,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          processDefinitionKey,
+          processDefinitionId,
+          tenantId);
     }
   }
 }

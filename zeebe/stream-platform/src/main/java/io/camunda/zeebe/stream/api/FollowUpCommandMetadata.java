@@ -9,7 +9,6 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public record FollowUpCommandMetadata(
@@ -28,7 +27,7 @@ public record FollowUpCommandMetadata(
   public static class Builder {
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
-    private final AuthInfo authInfo = new AuthInfo();
+    private AuthInfo authInfo = AuthInfo.EMPTY;
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
@@ -41,12 +40,7 @@ public record FollowUpCommandMetadata(
     }
 
     public Builder authInfo(final AuthInfo authInfo) {
-      this.authInfo.copyFrom(authInfo);
-      return this;
-    }
-
-    public Builder claims(final Map<String, Object> claims) {
-      authInfo.setClaims(claims);
+      this.authInfo = authInfo;
       return this;
     }
 

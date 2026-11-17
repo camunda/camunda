@@ -33,11 +33,11 @@ public class ClusterAwarenessHealthIndicatorAutoConfiguration {
      *
      * <p>The first supplier created here and passed into the constructor of the health indicator is
      * created first. This happens very early in the application's life cycle. At this point in
-     * time, the cluster status supplier inside gateway bridge is not yet registered.
+     * time, the cluster states supplier inside gateway bridge is not yet registered.
      *
-     * <p>Later, the actual cluster status supplier will be registered at gatewayBridge. The
+     * <p>Later, the actual cluster states supplier will be registered at gatewayBridge. The
      * chaining allows us to delegate over two hops.
      */
-    return new ClusterAwarenessHealthIndicator(gatewayBridge::getClusterState);
+    return new ClusterAwarenessHealthIndicator(gatewayBridge::getClusterStates);
   }
 }

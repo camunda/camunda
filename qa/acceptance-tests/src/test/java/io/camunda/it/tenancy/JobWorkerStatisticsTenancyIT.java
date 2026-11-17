@@ -9,7 +9,6 @@ package io.camunda.it.tenancy;
 
 import static io.camunda.it.util.TestHelper.activateAndCompleteJobsForTenant;
 import static io.camunda.it.util.TestHelper.activateAndFailJobsForTenant;
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
 import static io.camunda.it.util.TestHelper.waitForJobWorkerStatistics;
@@ -19,6 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -75,13 +76,17 @@ public class JobWorkerStatisticsTenancyIT {
   private static final TestUser USER_NO_TENANT_USER =
       new TestUser(USER_NO_TENANT, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, USER_TENANT_A);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN, USER_TENANT_B);
+
   @BeforeAll
   static void setup(@Authenticated(ADMIN) final CamundaClient adminClient)
       throws InterruptedException {
-    // Create tenants and assign users
-    createTenant(adminClient, TENANT_A, TENANT_A, ADMIN, USER_TENANT_A);
-    createTenant(adminClient, TENANT_B, TENANT_B, ADMIN, USER_TENANT_B);
-
     // Deploy processes for each tenant
     deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);

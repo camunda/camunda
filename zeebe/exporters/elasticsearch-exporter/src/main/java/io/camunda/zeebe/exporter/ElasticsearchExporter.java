@@ -14,7 +14,9 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
+import io.camunda.zeebe.exporter.support.IndexPrefixValidation;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -57,6 +59,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchExporterSchemaManager schemaManager;
 
   private long lastPosition = -1;
+  private ScheduledTask scheduledFlushTask;
 
   @Override
   public void configure(final Context context) {
@@ -105,6 +108,11 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+    if (scheduledFlushTask != null) {
+      scheduledFlushTask.cancel();
+      scheduledFlushTask = null;
+    }
+
     // the client is only created in some lifecycles, so during others (e.g. validation) it may not
     // exist, in which case there's no point flushing or doing anything
     if (client != null) {
@@ -156,13 +164,10 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private void validate(final ElasticsearchExporterConfiguration configuration) {
-    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
-      throw new ExporterException(
-          String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
-              configuration.index.prefix));
-    }
+    final String prefix = configuration.index.prefix;
+    IndexPrefixValidation.validateIndexPrefix("Elasticsearch prefix", prefix, true);
 
     if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {
       log.warn(
@@ -230,8 +235,9 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
+    scheduledFlushTask =
+        controller.scheduleCancellableTask(
+            Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
   }
 
   private void flush() {

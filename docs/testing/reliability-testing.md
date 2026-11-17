@@ -14,7 +14,7 @@ The last points are especially interesting, as they allow for identifying issues
 
 Reliability testing consists of several sub-testing practices (depending on the context/area, company, this might vary).
 
-While several resources ([1], [2]) cover feature or regression testing as one part of reliability testing, we see this as part of our automated acceptance testing done by Engineers and/or QA. See also related documentation about this [here](https://github.com/camunda/camunda/blob/main/docs/testing/acceptance.md).
+**Reliability testing is non-functional testing:** it validates *how well* the system behaves (reliability, performance) rather than *whether* it behaves correctly, and therefore runs after functional correctness has already been established elsewhere. While several resources ([1], [2]) cover feature or regression testing as one part of reliability testing, we treat that as a separate, prior practice: our automated acceptance testing done by Engineers and/or QA. See also related documentation about this [here](https://github.com/camunda/camunda/blob/main/docs/testing/acceptance.md).
 
 We focus as part of the reliability testing on topics like load testing (stress and endurance testing), and recovery testing (done by chaos experiments)
 
@@ -42,71 +42,92 @@ With our load test, we pursue the following goals
 
 There exist various variations of load tests in the wild to answer different questions. The approaches to achieve them are pretty similar and can be covered under the category of load tests, which is to answer the question “What is the load we can handle? And how does the system behave?”.
 
-* Normal [Load test](https://en.wikipedia.org/wiki/Load_testing)
-  * _Question: How does the system behave under normal workload?_
-  * This is to understand, in general, how the system behaves, providing a base for comparison.
-  * Resources:
-    * [Wiki: Load testing](https://en.wikipedia.org/wiki/Load_testing)
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-* [Stress test](https://en.wikipedia.org/wiki/Stress_testing)
-  * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?_
-  * Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.
-  * These tests are commonly not long-running.
-  * Resources:
-    * [Wiki: Stress testing](https://en.wikipedia.org/wiki/Stress_testing)
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-* Spike test
-  * _Question: How does the system handle spikes? Can it recover? What is max etc._
-  * Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.
-  * These tests are commonly not long-running.
-  * Resources:
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-* [Endurance or soak test](https://en.wikipedia.org/wiki/Soak_testing)
-  * _Question: Can it handle high load (not maximum) over a long time? Reliable?_
-  * Discovery of memory or thread leaks and performance and stability issues over time
-  * Resources:
-    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
-    * [Geeks4Geeks:  Endurance testing](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/)
+The table below gives a quick overview; each variant is described in more detail afterward, along
+with whether it is implemented as a scenario in [`load-tests/`](../../load-tests):
 
-Our load tests can also be viewed as **endurance or soak tests**, as they typically share the same goals.
+|                Test type                |                           Question answered                            |                                                         Status                                                         |
+|-----------------------------------------|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [Average load test](#average-load-test) | How does the system behave under normal/average workload?              | Implemented (`typical`, `realistic`); weekly endurance rotation runs the `realistic` variants                          |
+| [Stress test](#stress-test)             | How does the system perform under stress, up to the maximum load?      | Implemented (`max`), run as a bounded ~45-minute test (15 min warmup, 30 min measured window) via the daily load tests |
+| [Endurance test](#endurance-test)       | Can the system sustain load reliably over a long time?                 | Implemented by the average-load scenarios (see above)                                                                  |
+| [Spike test](#spike-test)               | How does the system handle a sudden, short burst, and does it recover? | Defined below; not run as a dedicated scenario                                                                         |
+| [Smoke test](#smoke-test)               | Does the workload behave correctly at minimal, negligible load?        | Covered continuously via completion-rate SLOs/alerting on every scenario (see note below)                              |
+| [Breakpoint test](#breakpoint-test)     | Where exactly does the system's capacity limit lie?                    | Defined below; not run as a dedicated scenario                                                                         |
 
-### Setup
+#### Average load test
 
-![setup-load-test](assets/setup-load-test.jpg)
+* [Definition](https://en.wikipedia.org/wiki/Load_testing)
+* _Question: How does the system behave under normal/average workload?_
+* This is to understand, in general, how the system behaves, providing a base for comparison.
+* Resources:
+  * [Wiki: Load testing](https://en.wikipedia.org/wiki/Load_testing)
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [k6: Load testing (average-load)](https://grafana.com/docs/k6/latest/testing-guides/test-types/load-testing/)
 
-The setup for all of our load tests is equal for better comparability, and consist of two main ingredients.
+#### Stress test
 
-1. The official [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), taking care of the general set up of our Camunda 8 Platform.
-2. A custom Helm chart ([camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm)) to set up our load test applications.
+* [Definition](https://en.wikipedia.org/wiki/Stress_testing)
+* _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?_
+* Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.
+* These tests are commonly not long-running.
+* Resources:
+  * [Wiki: Stress testing](https://en.wikipedia.org/wiki/Stress_testing)
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [k6: Stress testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/stress-testing/)
 
-By default, the full Camunda Platform is deployed, including Orchestation Cluster (OC), Optimize (with history cleanup), Connectors (with OIDC authentication), and Identity with Keycloak as identity provider. This ensures load tests validate the system in a production-like configuration. Optimize can be disabled via the `enable-optimize` workflow input or the `newLoadTest.sh` script parameter. We always ran load tests with a three-node OC cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8).
+#### Spike test
 
-An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
+* _Question: How does the system handle spikes? Can it recover? What is max etc._
+* Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.
+* These tests are commonly not long-running.
+* We do not run this as a dedicated scenario; our `max` scenario applies sustained high load rather than a short burst-and-recover shape.
+* Resources:
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [k6: Spike testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/spike-testing/)
 
-Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
+#### Smoke test
 
-Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [camunda-load-test](https://github.com/camunda/camunda-load-tests-helm) Helm chart, and their [values files](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml).
+* _Question: Does the workload behave correctly at minimal, negligible load?_
+* A quick run of the workload at very low load, meant to catch functional issues before scaling up to a full load test.
+* **We fold this into every load test rather than running it separately:** every scenario we run
+  continuously tracks process and flow-node completion rates (PI/s, FNI/s) against SLO targets
+  (see [docs/metrics.md](../../load-tests/docs/metrics.md)), surfaced on Grafana dashboards (e.g.
+  the [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m)),
+  the PR metrics-comparison comment's per-metric verdicts, and Slack notifications on scheduled
+  runs (`#reliability-testing-alerts`). A workload that stops making progress or fails to meet
+  its throughput SLO is caught during the run itself, not just at start-up. Combined with
+  functional correctness already being validated elsewhere (acceptance testing) before a load
+  test starts, this covers what a dedicated, separate minimal-load smoke pass would check, so we
+  do not run one.
+* **Naming note:** we already use "smoke test" for a different, unrelated concept: our
+  [`camunda-load-test-smoke.yml`](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-smoke.yml)
+  CI workflow and the [scheduled smoke tests](../../load-tests/README.md#scheduled-smoke-tests)
+  validate that the load-test *infrastructure* installs/upgrades correctly (pods become ready,
+  the gateway is reachable), regardless of which scenario is deployed, not workload correctness.
+* Resources:
+  * [k6: Smoke testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/smoke-testing/)
 
-All of this is deployed in an Infra-team-maintained Google Kubernetes Engine (GKE) cluster (`camunda-benchmark-prod`). Access is managed via [Teleport](https://camunda.teleport.sh). Container images are stored in `registry.camunda.cloud/team-zeebe`. Details about the benchmark cluster infrastructure can be found in the [infra-core repository](https://github.com/camunda/infra-core/), and specifically in the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
+#### Breakpoint test
 
-For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Brokers and Zeebe Gateways were deployed standalone.
+* _Question: Where exactly does the system's capacity limit lie?_
+* Incrementally increases load until the system fails or an SLO is breached, to discover the ceiling rather than assume one. Our `max` scenario instead targets a fixed, pre-determined load (300 PI/s).
+* We do not run this as a dedicated scenario.
+* Resources:
+  * [k6: Breakpoint testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/breakpoint-testing/)
 
-![setup](assets/setup.png)
+#### Endurance test
 
-#### Secondary Storage Options
+* [Definition](https://en.wikipedia.org/wiki/Soak_testing)
+* _Question: Can it handle high load (not maximum) over a long time? Reliable?_
+* Discovery of memory or thread leaks and performance and stability issues over time
+* Resources:
+  * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+  * [Geeks4Geeks:  Endurance testing](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/)
+  * [k6: Soak testing](https://grafana.com/docs/k6/latest/testing-guides/test-types/soak-testing/)
 
-Load tests can be configured with different secondary storage backends to validate Camunda's performance and reliability across various deployment scenarios:
+### How do we implement these tests?
 
-* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster. This is the standard configuration used to validate exporter performance and archiving throughput.
-* **OpenSearch**: Deploys an OpenSearch cluster as an alternative to Elasticsearch.
-* **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
-* **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
-* **MariaDB**: Deploys a MariaDB database for RDBMS-based secondary storage testing.
-* **MSSQL**: Deploys an MSSQL database for RDBMS-based secondary storage testing.
-* **Oracle**: Deploys an Oracle database for RDBMS-based secondary storage testing.
-* **None**: Runs load tests without any secondary storage. This is useful for testing the core orchestration engine performance in isolation, without the overhead of exporting data to a secondary database. In this mode, Camunda exporters are disabled.
-
-The secondary storage type can be specified when creating a load test via the `newLoadTest.sh` script or the GitHub workflow inputs.
+Our average-load scenarios (`typical`, `realistic`) run as endurance tests: the [weekly load tests](../../load-tests/README.md#weekly-load-tests) keep them running for up to four weeks. Our stress/max scenario runs as a bounded stress test: the [daily load tests](../../load-tests/README.md#daily-load-tests) deploy it for a ~45-minute measured run (15 min warmup, 30 min measured window), profile it, and then tear it down.
 
 ### Endurance test variants
 
@@ -149,7 +170,7 @@ The test is based on [a blueprint we provide in our Marketplace](https://marketp
 
 ### Max / Stress load test
 
-A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
+A load test where we run some artificial load, ensuring that the system behaves reliably under stress. It serves two purposes: a regression test at the SLO load, and a maximum test at a load above the capacity (see below).
 
 ![normal](assets/normal.png)
 
@@ -162,10 +183,30 @@ Reducing the used feature set to a small amount allows easy comparison between t
 
 **The expected load is:**
 
-* 300 process instances per second (PI/s) completed.
-* 300 task instances per second (TI/s) completed
+* With secondary storage:
+  * 300 process instances per second (PI/s) completed.
+  * 300 task instances per second (TI/s) completed
+* Without secondary storage (`none`):
+  * 650 process instances per second (PI/s) completed.
+  * 650 task instances per second (TI/s) completed
 
-_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
+_SLO: the system sustains this load and performs reliably. Without secondary storage the load is deliberately a little below the capacity of the setup, so that the result is stable (see below)._
+
+#### Regression test vs maximum test
+
+The stress workload serves two different questions, and they need a different load:
+
+|          |                 Regression test                 |                        Maximum test                        |
+|----------|-------------------------------------------------|------------------------------------------------------------|
+| Question | Did we get slower?                              | How much can the setup sustain, did a change improve it?   |
+| Load     | The SLO load above, a little below the capacity | Well above the capacity                                    |
+| Result   | Completed PI/s hold the load, no backpressure   | Completed PI/s equal the capacity, the surplus is rejected |
+| Shows    | A regression larger than the headroom           | Regressions and improvements                               |
+| Runs     | Daily and on PRs                                | From time to time, or to judge a specific change           |
+
+**Why the regression test runs below the maximum:** the test runs a little below the capacity of the setup, with a headroom of roughly 7%. A test at the limit is unstable, because the result then depends on small differences between clusters (identical clusters differ by about 5% around the median). The rate is below the lowest capacity measured on identical clusters, so each of them sustains it. The result is stable, and a regression larger than the headroom shows as lower PI/s or as backpressure. We prioritize detecting such regressions over finding the actual maximum, so a faster build is not a finding and this test cannot show an improvement. The current rates per setup are listed in the [load-tests README](../../load-tests/README.md).
+
+**Finding the maximum:** run a test with a rate well above the capacity. Run several clusters, because identical clusters differ, and compare medians. Repeat this now and then, and raise the regression rate if the limit moved up.
 
 ### Latency load test
 
@@ -173,235 +214,7 @@ Similar to the stress test from above, we ran the artificial (normal) process mo
 
 *As of now, there is no clear SLO/SLA defined for such.*
 
-### Observability
-
-Observability plays a vital role in running such kind of tests. Since the beginning of our load testing practices, the Zeebe team, spent significant efforts in adding metrics into the system and building Grafana dashboards to support them.
-
-The metrics exported by our applications are stored in a [Prometheus instance](https://monitor.benchmark.camunda.cloud/) and can be observed with the [Grafana instance](https://dashboard.benchmark.camunda.cloud/?orgId=1). These applications sit behind a vouch-enabled proxy, so only Okta login is required to access them.
-
-A general Grafana dashboard, covering all sorts of metrics, is the [Zeebe Dashboard](https://github.com/camunda/camunda/blob/main/monitor/grafana/zeebe.json). There are more tailored dashboards that exist in the corresponding monitoring folder.
-
-With the help of such dashboards, we can observe the running load tests and validate certain criteria and assumptions.
-
-More details about observability can also be read [here](../observability.md).
-
-### Test Scenarios
-
-We have different scenarios targeting different use cases and versions.
-
-#### Release load tests
-
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
-
-**Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
-
-**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
-
-##### Architecture
-
-The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
-
-```mermaid
-graph TD
-    subgraph "Callers"
-        BPMN["Release Process<br/>(BPMN)"]
-        SCHEDULE["Scheduled Smoke Tests<br/>(daily 04:00 UTC)"]
-    end
-
-    subgraph "Abstraction Layer — camunda-release-load-test.yaml"
-        direction TB
-        API["Public API<br/>inputs: name, tag<br/>optional: optimize-tag, identity-tag, connectors-tag"]
-        SANITIZE["Sanitize inputs"]
-        API --> SANITIZE
-    end
-
-    subgraph "Implementation — camunda-load-test.yml"
-        LOAD["Create load test cluster<br/>• orchestration-tag: &lt;tag&gt;<br/>• scenario: realistic<br/>• ttl: 60 days"]
-    end
-
-    BPMN -->|"workflow_dispatch<br/>name + tag"| API
-    SCHEDULE -->|"workflow_call @stable/8.x<br/>name + tag"| API
-    SANITIZE --> LOAD
-
-    subgraph "Verification — camunda-verify-and-cleanup-load-test.yml"
-        VERIFY["await-load-test action<br/>• pod readiness<br/>• gateway connectivity"]
-        CLEANUP["Delete namespace"]
-        VERIFY --> CLEANUP
-    end
-
-    SCHEDULE -->|"after load test"| VERIFY
-```
-
-This decoupling provides several benefits:
-
-* **Clear API**: The release process only needs to provide a test name and tag (with optional per-component image tags) — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
-* **Independent evolution**: Changes to load test infrastructure (helm values, Makefiles, scripts) don't require changes to the release process BPMN
-* **Per-branch workflows**: Each stable branch has its own copy of the release load test workflow (via backports), ensuring the correct infrastructure files are used for each version
-* **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) validates daily that release load tests can be created for all active stable branches
-
-##### Setup and integration
-
-The release load tests are created as part of the [release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn#L7-L18).
-
-There exists a separate process (called a sub-process) to set up the load test, called "Setup benchmark".
-
-![setup-benchmark](assets/setup_benchmark.png)
-
-The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-release-load-test.yaml/dispatches`) to trigger the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml) on a specific git reference (_The reference can be a branch or tag name._).
-
-> [!Important]
->
-> This event will only trigger a workflow run if the workflow file exists on the default branch.
-> https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch
-
-An example payload looks like this:
-
-```json
-{
-    "ref": workflow_ref_name,
-    "inputs": {
-      "name": benchmark_name,
-      "tag": release_tag,
-      "optimize-tag": "optional, Docker Hub tag for Optimize",
-      "identity-tag": "optional, Docker Hub tag for Identity",
-      "connectors-tag": "optional, Docker Hub tag for Connectors"
-    }
-}
-```
-
-When we look at an example release process instance from the past, we can find the following example values:
-
-|      Variable       |  Example Value  |             Description             |
-|---------------------|-----------------|-------------------------------------|
-| `workflow_ref_name` | `stable/8.7`    | The stable branch to trigger on     |
-| `release_tag`       | `8.7.17`        | The release tag to use for the test |
-| `benchmark_name`    | `release-8-7-x` | The name of the load test           |
-
-##### Scheduled smoke tests
-
-The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
-
-After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
-
-1. Waits for all pods to be ready
-2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
-3. Deletes the namespace (regardless of verification outcome)
-
-Results are posted to the `#reliability-testing-alerts` Slack channel.
-
-> [!Note]
->
-> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
-
-#### Weekly load tests
-
-In addition to our release tests, we ran weekly load tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
-
-The weekly tests cover two [realistic load](#realistic-load) variants (one with Elasticsearch secondary storage and one with PostgreSQL secondary storage) plus the [latency test](#latency-load-test).
-
-**Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
-
-**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
-
-As an example, we have the following tests running:
-
-* medic-y-2025-cw-22-a60d64da-test-latency
-* medic-y-2025-cw-22-a60d64da-test-realistic
-* medic-y-2025-cw-22-a60d64da-test-rdbms-realistic
-* medic-y-2025-cw-23-a799b041-test-latency
-* medic-y-2025-cw-23-a799b041-test-realistic
-* medic-y-2025-cw-23-a799b041-test-rdbms-realistic
-* medic-y-2025-cw-24-0c3f2664-test-latency
-* medic-y-2025-cw-24-0c3f2664-test-realistic
-* medic-y-2025-cw-24-0c3f2664-test-rdbms-realistic
-* medic-y-2025-cw-25-59a095c4-test-latency
-* medic-y-2025-cw-25-59a095c4-test-realistic
-* medic-y-2025-cw-25-59a095c4-test-rdbms-realistic
-
-**Expectations:**
-
-* In case an issue prevents a test from working properly, **and** no workaround is currently available, the test can be deleted to save resources.
-
-#### Daily load tests
-
-In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
-
-**Goal:** Validating the reliability of our current main (putting it under stress), and detecting earlier issues, allowing us to detect newly introduced instabilities.
-
-**Benefits:**
-
-* We have a better overview of how the system performs over time - detect trends in performance
-* Detect regressions earlier - shorter feedback loop when we break something in our application or configuration
-* Faster integration with our Helm charts - sanity check every day that load tests work with charts and the application
-
-**Validation:** TBD - explicit dashboard with KPI's and showing last week's tests needs to be created. Part of [#42274](https://github.com/camunda/camunda/issues/42274).
-
-#### Ad-Hoc load tests
-
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
-
-**Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
-
-**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1), should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-benchmarks/camunda-performance?orgId=1) Dashboard.
-
-**Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
-
-##### Labeling a PR
-
-It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
-
-This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
-
-##### Trigger Camunda load test GitHub Workflow
-
-The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support to set up load tests for different Camunda/Zeebe versions, by selecting the specific workflow revision as part of the workflow dispatch form (UI).
-
-It allows high customization:
-
-* Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) - will make sure to use the right Camunda Platform Helm Chart version and values file.
-* Specification of the branch to test against (default: main) - will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
-* Specification of the time to live (TTL) for the load test - making sure that the load test is automatically cleaned up after the specified time.
-* Specification of an existing Docker image to use - making it possible to reuse existing images.
-* Specification of arbitrary Helm arguments - making it possible to customize the load test set up.
-
-![load-test-gha](assets/load-test-gha.png)
-
-###### Creating load test for old versions
-
-With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
-
-![1-main](assets/1-main.png)
-
-As part of the workflow dispatch form (UI), select the respective workflow revision for the desired version.
-
-![2-choosing](assets/2-choosing.png)
-
-This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
-
-We can reference tags, branches or commit SHAs, as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
-
-![3-branch](assets/3-branch.png)
-
-One not optional parameter is the name of the load test. Please make sure to use an identifiable prefix (for example your initials), to make sure we can identify who created the load test, in case we need to reach out.
-
-![4-name](assets/4-name.png)
-
-After submitting the form you can observe the progress of the load test creation in the Actions tab of the mono repository.
-
-![5-build](assets/5-build.png)
-
-##### Creating manually
-
-As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
-For further details on this topic, follow the [README](../../load-tests/setup/README.md) in our `load-tests/setup` directory.
-
-##### SaaS Test
-
-One use case for manually creating load tests is running them against an SaaS cluster.
-
-As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
-
-For further details on this topic, follow the [README](../../load-tests/setup/README.md#load-testing-camunda-saas) in our `load-tests/setup` directory.
+For how to run load tests and monitor them, see the [load-tests README](../../load-tests/README.md).
 
 ## Chaos engineering
 

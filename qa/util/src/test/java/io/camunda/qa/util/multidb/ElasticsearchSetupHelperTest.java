@@ -35,7 +35,7 @@ public class ElasticsearchSetupHelperTest {
 
   @BeforeAll
   public static void setUpEs() {
-    elasticsearchContainer = TestSearchContainers.createDefeaultElasticsearchContainer();
+    elasticsearchContainer = TestSearchContainers.createDefaultElasticsearchContainer();
     elasticsearchContainer.start();
     elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
   }

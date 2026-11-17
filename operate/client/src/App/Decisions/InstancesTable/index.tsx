@@ -63,6 +63,7 @@ const InstancesTable: React.FC = observer(() => {
   useEffect(() => {
     decisionInstancesSelectionStore.setRuntime({
       totalCount: data?.totalCount ?? 0,
+      hasMoreTotalItems: data?.hasMoreTotalItems ?? false,
       visibleIds: (data?.decisionInstances ?? []).map(
         (instance) => instance.decisionEvaluationInstanceKey,
       ),
@@ -100,6 +101,8 @@ const InstancesTable: React.FC = observer(() => {
     clientConfig.multiTenancyEnabled &&
     (filter?.tenantId === undefined || filter?.tenantId === 'all');
 
+  const hasBusinessIds = decisionInstances.some(({businessId}) => !!businessId);
+
   return (
     <Container>
       <PanelHeader
@@ -107,7 +110,12 @@ const InstancesTable: React.FC = observer(() => {
         count={filteredDecisionInstancesCount}
         hasMoreTotalItems={hasMoreTotalItems}
       />
-      <Toolbar selectedCount={decisionInstancesSelectionStore.selectedCount} />
+      <Toolbar
+        selectedCount={decisionInstancesSelectionStore.selectedCount}
+        isSelectedCountTruncated={
+          decisionInstancesSelectionStore.isSelectedCountTruncated
+        }
+      />
       <PaginatedSortableTable
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}
@@ -131,6 +139,7 @@ const InstancesTable: React.FC = observer(() => {
             tenantId,
             evaluationDate,
             processInstanceKey,
+            businessId,
           }) => {
             return {
               id: decisionEvaluationInstanceKey,
@@ -160,6 +169,7 @@ const InstancesTable: React.FC = observer(() => {
                 </Link>
               ),
               decisionDefinitionVersion,
+              businessId: businessId ?? '--',
               tenantId: isTenantColumnVisible ? tenantId : undefined,
               evaluationDate: formatDate(evaluationDate),
               processInstanceKey: processInstanceKey ? (
@@ -195,6 +205,15 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'decisionDefinitionVersion',
           },
+          ...(hasBusinessIds
+            ? [
+                {
+                  header: 'Business ID',
+                  key: 'businessId',
+                  sortKey: 'businessId',
+                },
+              ]
+            : []),
           ...(isTenantColumnVisible
             ? [
                 {

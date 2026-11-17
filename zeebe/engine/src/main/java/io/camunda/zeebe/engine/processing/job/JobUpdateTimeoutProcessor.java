@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -18,7 +19,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobUpdateTimeoutProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final TypedRejectionWriter rejectionWriter;
@@ -37,7 +39,7 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
   public void processRecord(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
     jobUpdateBehaviour
-        .getJob(jobKey, command)
+        .checkJobCommand(command)
         .flatMap(job -> jobUpdateBehaviour.isAuthorized(command, job))
         .ifRightOrLeft(
             job ->
@@ -47,16 +49,26 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
                         errorMessage -> {
                           rejectionWriter.appendRejection(
                               command, RejectionType.INVALID_STATE, errorMessage);
-                          responseWriter.writeRejectionOnCommand(
+                          responseWriter.writeRejectedResponseOnCommand(
                               command, RejectionType.INVALID_STATE, errorMessage);
                         },
-                        () -> {
-                          responseWriter.writeEventOnCommand(
-                              jobKey, JobIntent.TIMEOUT_UPDATED, job, command);
-                        }),
+                        () ->
+                            responseWriter.writeAcceptedResponseOnCommand(
+                                jobKey, JobIntent.TIMEOUT_UPDATED, job, command)),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

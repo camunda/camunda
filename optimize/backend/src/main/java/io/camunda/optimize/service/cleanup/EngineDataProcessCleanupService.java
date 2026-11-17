@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.service.cleanup;
 
-import static java.util.stream.Collectors.toSet;
-
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -19,8 +17,10 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import java.time.OffsetDateTime;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.SequencedSet;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -34,18 +34,21 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private final ProcessInstanceReader processInstanceReader;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessVariableWriter processVariableWriter;
+  private final EmptyProcessInstanceIndexReaper emptyProcessInstanceIndexReaper;
 
   public EngineDataProcessCleanupService(
       final ConfigurationService configurationService,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
       final ProcessInstanceWriter processInstanceWriter,
-      final ProcessVariableWriter processVariableWriter) {
+      final ProcessVariableWriter processVariableWriter,
+      final EmptyProcessInstanceIndexReaper emptyProcessInstanceIndexReaper) {
     this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
     this.processInstanceWriter = processInstanceWriter;
     this.processVariableWriter = processVariableWriter;
+    this.emptyProcessInstanceIndexReaper = emptyProcessInstanceIndexReaper;
   }
 
   @Override
@@ -55,18 +58,33 @@ public class EngineDataProcessCleanupService extends CleanupService {
 
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
-    final Set<String> allOptimizeProcessDefinitionKeys = getAllCamundaEngineProcessDefinitionKeys();
+    final Iterator<ProcessDefinitionOptimizeDto> processDefinitions =
+        processDefinitionReader.getAllProcessDefinitions();
 
-    verifyConfiguredKeysAreKnownDefinitionKeys(
-        allOptimizeProcessDefinitionKeys,
+    final var specificDefinitionConfigKeys =
         getCleanupConfiguration()
             .getProcessDataCleanupConfiguration()
-            .getAllProcessSpecificConfigurationKeys());
+            .getAllProcessSpecificConfigurationKeys();
+
+    final var seen = new RecentlySeen();
     int i = 1;
-    for (final String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
-      LOG.info("Process History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
+    while (processDefinitions.hasNext()) {
+      final ProcessDefinitionOptimizeDto processDefinition = processDefinitions.next();
+      final String currentProcessDefinitionKey = processDefinition.getKey();
+      if (seen.recentlySeen(currentProcessDefinitionKey)) {
+        continue;
+      }
+      specificDefinitionConfigKeys.remove(currentProcessDefinitionKey);
+      LOG.info("Process History Cleanup step {}", i);
       performCleanupForProcessKey(startTime, currentProcessDefinitionKey);
       i++;
+    }
+
+    if (!specificDefinitionConfigKeys.isEmpty()) {
+      LOG.warn(
+          "History Cleanup Configuration contains definition keys for which there is no "
+              + "definition imported yet. The keys without a match in the database are: "
+              + specificDefinitionConfigKeys);
     }
   }
 
@@ -93,6 +111,9 @@ public class EngineDataProcessCleanupService extends CleanupService {
       default:
         throw new IllegalStateException(
             "Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
+    }
+    if (getCleanupConfiguration().getProcessDataCleanupConfiguration().isDeleteEmptyIndices()) {
+      emptyProcessInstanceIndexReaper.deleteIfEmpty(currentProcessDefinitionKey);
     }
 
     LOG.info(
@@ -132,17 +153,29 @@ public class EngineDataProcessCleanupService extends CleanupService {
     }
   }
 
-  private Set<String> getAllCamundaEngineProcessDefinitionKeys() {
-    return processDefinitionReader.getAllProcessDefinitions().stream()
-        .map(ProcessDefinitionOptimizeDto::getKey)
-        .collect(toSet());
-  }
-
   private CleanupConfiguration getCleanupConfiguration() {
     return configurationService.getCleanupServiceConfiguration();
   }
 
   private int getBatchSize() {
     return getCleanupConfiguration().getProcessDataCleanupConfiguration().getBatchSize();
+  }
+
+  // relying on the fact we're getting keys in sorted sequence, so we don't need to
+  // record everything (in case we have a large number of process definitions)
+  static class RecentlySeen {
+    private static final int MAX_SIZE = 1000;
+    private final SequencedSet<String> seen = new LinkedHashSet<>(MAX_SIZE);
+
+    boolean recentlySeen(final String key) {
+      if (seen.contains(key)) {
+        return true;
+      }
+      seen.add(key);
+      if (seen.size() > MAX_SIZE) {
+        seen.removeFirst();
+      }
+      return false;
+    }
   }
 }

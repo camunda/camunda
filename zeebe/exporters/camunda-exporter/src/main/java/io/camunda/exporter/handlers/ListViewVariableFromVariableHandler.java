@@ -12,8 +12,10 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSI
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_NAME;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -25,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ListViewVariableFromVariableHandler
-    implements ExportHandler<VariableForListViewEntity, VariableRecordValue> {
+    implements OrdinalIndexExportHandler<VariableForListViewEntity, VariableRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewVariableFromVariableHandler.class);
@@ -86,7 +88,8 @@ public class ListViewVariableFromVariableHandler
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setVarName(recordValue.getName())
         .setVarValue(truncatedValue)
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     // set parent
     final long processInstanceKey = recordValue.getProcessInstanceKey();
@@ -99,7 +102,10 @@ public class ListViewVariableFromVariableHandler
   }
 
   @Override
-  public void flush(final VariableForListViewEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index,
+      final VariableForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug("Variable for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
@@ -110,7 +116,7 @@ public class ListViewVariableFromVariableHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override

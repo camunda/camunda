@@ -13,18 +13,57 @@ const EmptyMessageContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex: 1;
 `;
 
-const Container = styled.div`
+const Container = styled.div.attrs({
+  role: 'region',
+  'aria-label': 'Details',
+})<{$isEmpty?: boolean}>`
   display: flex;
   flex-direction: column;
-  gap: var(--cds-spacing-05);
-  padding-inline: var(--cds-spacing-05);
+  height: 100%;
+  min-height: 0;
+  gap: ${({$isEmpty}) => ($isEmpty ? 0 : 'var(--cds-spacing-05)')};
+  padding-inline: ${({$isEmpty}) => ($isEmpty ? 0 : 'var(--cds-spacing-05)')};
+  padding-block-end: ${({$isEmpty}) =>
+    $isEmpty ? 0 : 'var(--cds-spacing-05)'};
+  overflow-y: auto;
+
+  & > * {
+    flex-shrink: 0;
+  }
 `;
 
 const Callout = styled(BaseCallout)`
   min-width: 100%;
 `;
 
-export {EmptyMessageContainer, Container, Callout};
+const SectionContainer = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-03);
+`;
+
+const SectionHeading = styled.h5`
+  font-size: var(--cds-heading-compact-01-font-size);
+  font-weight: var(--cds-heading-compact-01-font-weight);
+  line-height: var(--cds-heading-compact-01-line-height);
+  margin: 0;
+`;
+
+const ElementInstanceHint = styled.span`
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
+  color: var(--cds-text-secondary);
+`;
+
+export {
+  EmptyMessageContainer,
+  Container,
+  Callout,
+  SectionContainer,
+  SectionHeading,
+  ElementInstanceHint,
+};

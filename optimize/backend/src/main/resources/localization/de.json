@@ -1,6 +1,39 @@
 {
   "appName": "Optimize",
   "appFullName": "Camunda Optimize",
+  "agenticControlPlane": {
+    "title": "Agentic control plane",
+    "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
+    "dateRange": "Zeitraum",
+    "tokenUsage": "Token-Nutzung",
+    "reliabilityAndToolCalls": "Zuverlässigkeit & Tool-Aufrufe",
+    "duration": "Dauer",
+    "topNNotice": "Top {shown} von {total}.",
+    "presets": {
+      "last7Days": "Letzte 7 Tage",
+      "last30Days": "Letzte 30 Tage",
+      "last3Months": "Letzte 3 Monate",
+      "last6Months": "Letzte 6 Monate",
+      "last12Months": "Letzte 12 Monate"
+    },
+    "comparison": {
+      "wow": "WoW",
+      "mom": "MoM",
+      "qoq": "QoQ",
+      "hoh": "HoH",
+      "yoy": "YoY"
+    },
+    "processFilter": {
+      "label": "Prozess",
+      "placeholder": "Alle Prozesse"
+    },
+    "versionFilter": {
+      "label": "Version",
+      "all": "Alle Versionen",
+      "latest": "Neueste Version",
+      "version": "Version {version}"
+    }
+  },
   "navigation": {
     "analysis": "Analyse",
     "logout": "Abmelden",
@@ -13,6 +46,7 @@
     "appSwitcher": "App Switcher",
     "dashboards": "Dashboards",
     "collections": "Sammlungen",
+    "agenticControlPlane": "Agentic Control Plane",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",
@@ -25,7 +59,17 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support"
+    "feedback": "Feedback und Support",
+    "slackCommunityChannel": "Slack-Community-Kanal",
+    "info": "Info",
+    "settings": "Einstellungen",
+    "notifications": "Benachrichtigungen",
+    "notificationsDismissAll": "Alle verwerfen",
+    "notificationsEmptyTitle": "Keine Benachrichtigungen",
+    "notificationsEmptyDescription": "Neue Updates zu Ihren Prozessen, Clustern und mehr erscheinen hier.",
+    "mainNavigation": "Hauptnavigation",
+    "breadcrumb": "Camunda-Kontext",
+    "version": "Version {version}"
   },
   "login": {
     "label": "Einloggen",
@@ -195,6 +239,10 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "outlierBand": {
+      "percentile": "P{value}",
+      "yAxis": "Token pro Ausführung"
+    },
     "textTile": "Textkachel",
     "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
@@ -282,7 +330,12 @@
       "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
-      "process": "Prozessansicht"
+      "process": "Prozessansicht",
+      "agentInstance": "Agenteninstanz",
+      "totalTokens": "Tokens insgesamt",
+      "inputTokens": "Eingabe-Tokens",
+      "outputTokens": "Ausgabe-Tokens",
+      "toolCalls": "Tool-Aufrufe"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -918,6 +971,12 @@
     "instanceIds": "Instanz IDs",
     "processInstanceIds": "Prozessinstanz IDs",
     "seeDocs": "Siehe Dokumentation",
+    "exportFilterHint": {
+      "iconLabel": "Informationen zur Export-Filterung",
+      "variableText": "Die hier verfügbaren Variablen und Ergebnisse hängen von der Exporter-Konfiguration Ihres Clusters ab. Die Filterung des Variablen-Exports kann beeinflussen, welche Variablen und Prozessdaten angezeigt werden.",
+      "reportSetupLabel": "Ein Prozess oder eine Variable wird nicht angezeigt?",
+      "reportSetupText": "Die hier verfügbaren Prozesse und Variablen hängen von der Exporter-Konfiguration Ihres Clusters ab. Die Filterung des Prozess- oder Variablen-Exports kann beeinflussen, welche Prozesse und Variablen angezeigt werden."
+    },
     "undefined": "nicht definiert",
     "null": "null",
     "nullOrUndefined": "Null oder nicht definiert",
@@ -1465,6 +1524,7 @@
     "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
     "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden.",
     "importDescriptionInvalid": "Importierung ist fehlgeschlagen weil die gegebene Beschreibung fehlerhaft ist. Die Beschreibung muss entweder null oder nicht größer als 400 Charaktere sein.",
+    "importNameInvalid": "Importierung ist fehlgeschlagen weil der gegebene Name fehlerhaft ist. Der Name muss entweder null sein oder darf die konfigurierte maximale Namenslänge nicht überschreiten.",
     "invalidAlertEmailAddresses": "Benutzer mit den folgenden Email-Addressen können keine Alarme empfange: {invalidAlertEmails}",
     "payloadTooLarge": "Die Anforderungslast ist zu groß.",
     "reportNotSupportedForOpenSearch": "Dieser Berichtstyp wird derzeit nicht für OpenSearch unterstützt."
@@ -1520,6 +1580,43 @@
         "altTextLabel": "Text anzeigen (optional)",
         "altTextPlaceholder": "Link zu example.com"
       }
+    }
+  },
+  "agenticControl": {
+    "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
+    "report": {
+      "agenticKpiExecutionCompletedName": "Abgeschlossene Ausführungen",
+      "agenticKpiExecutionCompletedDescription": "Gesamtanzahl der abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiExecutionAvgDurationName": "Durchschnittliche Ausführungsdauer",
+      "agenticKpiExecutionAvgDurationDescription": "Durchschnittliche Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiExecutionIncidentRateName": "Vorfallsrate",
+      "agenticKpiExecutionIncidentRateDescription": "Anzahl der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall im gewählten Zeitraum.",
+      "agenticKpiExecutionAvgTokensName": "Durchschnittliche Tokens pro Ausführung",
+      "agenticKpiExecutionAvgTokensDescription": "Kombinierte Eingabe- und Ausgabe-Tokens pro Ausführung. Wachstum bei stabilem Volumen deutet auf eine Ausweitung von Prompt oder Antwort hin.",
+      "agenticKpiExecutionMedianTokensName": "Mediane Tokens pro Ausführung",
+      "agenticKpiExecutionMedianTokensDescription": "Mittlerer Token-Verbrauch über alle Ausführungen. Eine große Abweichung gegenüber dem Durchschnitt deutet auf Ausreißer hin, die die Kosten verzerren.",
+      "agenticDurationStabilityName": "Ausführungsdauer-Stabilität (P50 / P95)",
+      "agenticDurationStabilityDescription": "P50- und P95-Ausführungsdauer abgeschlossener agentischer Prozessinstanzen über die Zeit im gewählten Zeitraum.",
+      "agenticKpiTokenTrendName": "Token-Trend",
+      "agenticKpiTokenTrendFootnote": "Wenn die Token-Nutzung ohne mehr Ausführungen steigt, wachsen möglicherweise die Prompts oder das Modell erzeugt längere Ausgaben. Engineering informieren.",
+      "agenticKpiTokenOutlierBandsName": "Token-Ausreißerbänder (P5 / P50 / P95)",
+      "agenticKpiTokenOutlierBandsDescription": "P5, P50 und P95 der insgesamt verbrauchten Token pro abgeschlossener agentischer Prozessinstanz im ausgewählten Zeitraum.",
+      "agenticKpiTokenOutlierBandsFootnote": "Eine größer werdende Lücke zwischen P5 und P95 bedeutet, dass sich Ausführungen inkonsistent verhalten. Achten Sie auf Prompt-Variabilität oder Nicht-Determinismus.",
+      "agenticKpiTokenConsumersName": "Top-Token-Verbraucher nach Prozess",
+      "agenticKpiTokenConsumersFootnote": "Die Reduzierung des größten Verbrauchers hat die größte Auswirkung auf die gesamten Token-Kosten.",
+      "agenticKpiDurationP50Name": "P50-Ausführungsdauer",
+      "agenticKpiDurationP50Description": "Median (P50) der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiDurationP95Name": "P95-Ausführungsdauer",
+      "agenticKpiDurationP95Description": "95. Perzentil der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticFailureRateByVersionName": "Vorfallsrate nach Prozessversion",
+      "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion.",
+      "agenticKpiToolCallsName": "Tool-Aufrufe gesamt",
+      "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiToolCallsFootnote": "Ein anhaltender Anstieg der Tool-Aufrufe ohne entsprechenden Anstieg der Ausführungen kann auf Schleifen oder ineffiziente Tool-Nutzung hindeuten. Untersuchen Sie die Prozesse und Prozessknoten, die den Anstieg verursachen.",
+      "agenticToolCallsHeatmapName": "Tool-Aufrufe je Prozessknoten",
+      "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
+      "agenticDurationHeatmapName": "Dauer je Prozessknoten",
+      "agenticDurationHeatmapDescription": "Durchschnittliche Dauer je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt."
     }
   },
   "managementDashboard": {

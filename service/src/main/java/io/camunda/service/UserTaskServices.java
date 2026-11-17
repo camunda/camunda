@@ -25,11 +25,11 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.condition.AuthorizationCondition;
-import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.auth.condition.AuthorizationCondition;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.search.core.SearchQueryService;
@@ -38,8 +38,10 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskLookupRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.ArrayList;
@@ -59,7 +61,7 @@ public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
   private static final Predicate<UserTaskEntity> NEEDS_CACHE_ENRICHMENT =
-      u -> !u.hasName() || !u.hasProcessName();
+      u -> !u.hasName() || !u.hasProcessName() || u.processDefinitionVersion() == null;
 
   private static final AuthorizationCondition USER_TASK_AUTHORIZATIONS =
       AuthorizationConditions.anyOf(
@@ -78,6 +80,7 @@ public final class UserTaskServices
   private final int maxVariableNameLength;
 
   public UserTaskServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
@@ -89,6 +92,7 @@ public final class UserTaskServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
@@ -103,6 +107,7 @@ public final class UserTaskServices
   }
 
   public UserTaskServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
@@ -115,6 +120,7 @@ public final class UserTaskServices
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -178,6 +184,9 @@ public final class UserTaskServices
     if (!item.hasProcessName()) {
       item = item.withProcessName(cachedItem.getProcessName());
     }
+    if (item.processDefinitionVersion() == null) {
+      item = item.withProcessDefinitionVersion(cachedItem.getProcessDefinitionVersion());
+    }
 
     return item;
   }
@@ -228,6 +237,14 @@ public final class UserTaskServices
       final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action), authentication);
+  }
+
+  public CompletableFuture<UserTaskLookupRecord> lookupUserTask(
+      final long userTaskKey,
+      final List<String> fetchVariables,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerUserTaskLookupRequest(userTaskKey, fetchVariables), authentication);
   }
 
   public UserTaskEntity getByKey(

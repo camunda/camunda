@@ -13,19 +13,30 @@ on:
         description: "Branch to test (e.g. stable/8.8, main)"
         required: true
         type: string
+      camunda_mode:
+        description: "Camunda deployment mode: 'profiles' (default Spring profiles) or 'all-in-one'"
+        required: false
+        type: string
+        default: profiles
 
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
 jobs:
   nightly-api-tests:
-    name: API Tests (${{ inputs.branch }})
+    name: API Tests (${{ inputs.branch }} - Mode ${{ inputs.camunda_mode }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
+          # Nothing later in this job needs the short-lived GITHUB_TOKEN left
+          # in .git/config (zizmor: artipacked).
+          persist-credentials: false
 
       - name: Set CAMUNDA_DOCKER_IMAGE
         run: |
@@ -40,13 +51,42 @@ jobs:
       - name: Start Camunda
         shell: bash
         run: |
-          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for stable/8.7"
-            DATABASE=elasticsearch docker compose up -d operate tasklist
-          else
-            echo "Using standalone camunda container"
-            DATABASE=elasticsearch docker compose up -d camunda
-          fi
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
+          # deadline exceeded"). docker compose up -d is idempotent, so a retry
+          # simply resumes the pull and starts the container.
+          start_camunda() {
+            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+              echo "Using single services for stable/8.7"
+              DATABASE=elasticsearch docker compose up -d operate tasklist
+            else
+              echo "Using standalone camunda container"
+              if [[ "${{ inputs.camunda_mode }}" == "all-in-one" ]]; then
+                export CAMUNDA_MODE="all-in-one"
+                echo "Starting with CAMUNDA_MODE=all-in-one"
+              else
+                unset CAMUNDA_MODE
+                echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+              fi
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
@@ -59,8 +99,48 @@ jobs:
         shell: bash
         run: |
           echo "Checking if services are up..."
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
           ready=false
+          declare -A non_running
           for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name: stable/8.7 sets container_name to
+            # operate-${DATABASE}, so `docker inspect operate` matches nothing
+            # there. --all is required or compose omits an already-exited
+            # container. Test Running rather than a status allowlist so a crash
+            # loop is caught too (8.7 sets restart: always, which surfaces as
+            # `restarting`, never `exited`) along with a container that was never
+            # created at all. Two consecutive observations keep a single
+            # legitimate restart from failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
             if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
@@ -102,19 +182,23 @@ jobs:
       - name: Print Docker logs before failing
         shell: bash
         if: failure()
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -135,20 +219,12 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        if: always()
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.x"
 
       - name: Run API tests
         shell: bash
@@ -177,26 +253,31 @@ jobs:
           npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Publish test results to TestRail
+      # Capture the container logs (incl. camunda.log = the exporter log) and
+      # Elasticsearch state after the tests run, regardless of outcome. These
+      # are not otherwise available in the step log or artifacts, so exporter-
+      # side failures — e.g. a handler throwing during bulk flush, which halts
+      # indexing and makes v2 search/get return empty/404 — can be diagnosed
+      # from the exporter log + ES index doc counts rather than test symptoms.
+      - name: Capture container and Elasticsearch logs
         if: always()
         shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-          BRANCH_NAME: ${{ inputs.branch }}
         run: |
-          pip install trcli==1.14.1
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
+          mkdir -p container-logs
+          for c in $(docker ps --format '{{.Names}}' 2>/dev/null || true); do
+            docker logs --timestamps "$c" > "container-logs/${c}.log" 2>&1 || true
+          done
+          docker ps -a > container-logs/docker-ps.txt 2>&1 || true
+          {
+            echo "### _cluster/health"
+            curl -s 'http://localhost:9200/_cluster/health?pretty' || true
+            echo "### _cat/indices"
+            curl -s 'http://localhost:9200/_cat/indices?v&s=index' || true
+          } > container-logs/elasticsearch-state.txt 2>&1 || true
+          curl -s 'http://localhost:9600/actuator/prometheus' 2>/dev/null \
+            | grep -iE 'export|backpressure|flush|zeebe_stream_processor' \
+            > container-logs/camunda-exporter-metrics.txt 2>&1 || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Sanitize branch name for artifact names
         id: sanitize
@@ -207,20 +288,53 @@ jobs:
           safe_branch="${branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
+      # actions/upload-artifact's FinalizeArtifact call can be rejected with a
+      # non-retryable 403 from GitHub's own artifact-storage intermediary
+      # (INC-7913); that leaves an otherwise-green nightly run marked failed.
+      # upload-artifact-with-retry absorbs that blip instead of failing the job.
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: ./.github/actions/upload-artifact-with-retry
         with:
-          name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}
+          name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
-          retention-days: 60
+          retention-days: "60"
+
+      # test-results/ holds the per-test Playwright trace.zip (retain-on-failure).
+      # The trace captures the request/response body, which json-report omits;
+      # nightly triage needs it to tell a request-shape/test bug from a product bug.
+      - name: Upload HTML report to GitHub Actions Artifacts
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: html-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
+          retention-days: "60"
+
+      - name: Upload Playwright traces to GitHub Actions Artifacts
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
+          if-no-files-found: ignore
+          retention-days: "5"
+
+      - name: Upload container logs to GitHub Actions Artifacts
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: container-logs-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/config/container-logs/**
+          if-no-files-found: warn
+          retention-days: "5"
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/${{ inputs.branch }}"
+          job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/${{ inputs.branch }} (Mode ${{ inputs.camunda_mode }})"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

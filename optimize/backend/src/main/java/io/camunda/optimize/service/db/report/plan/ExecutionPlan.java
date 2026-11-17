@@ -11,4 +11,10 @@ public interface ExecutionPlan {
   String getCommandKey();
 
   boolean isRawDataReport();
+
+  // Whether this plan supports server-side top-N limiting via a limit-only report pagination.
+  // Defaults to false so pagination stays rejected for every plan unless it explicitly opts in.
+  default boolean supportsGroupByLimit() {
+    return false;
+  }
 }

@@ -96,6 +96,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = MessageStartEventSubscriptionIntent.CORRELATED;
     final var recordValue =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()
@@ -107,6 +108,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
             .withProcessInstanceKey(processInstanceKey)
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
+            .withBusinessId(businessId)
             .build();
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -141,6 +143,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     assertThat(entity.subscriptionKey()).isEqualTo(recordKey);
     assertThat(entity.subscriptionType()).isEqualTo(MessageSubscriptionType.START_EVENT);
     assertThat(entity.tenantId()).isEqualTo(tenantId);
+    assertThat(entity.businessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -167,5 +170,32 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     verify(correlatedMessageSubscriptionWriter).create(itemCaptor.capture());
     final CorrelatedMessageSubscriptionDbModel entity = itemCaptor.getValue();
     assertThat(entity.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final long recordKey = 789;
+    final long messageKey = 555;
+    final Intent intent = MessageStartEventSubscriptionIntent.CORRELATED;
+
+    final var recordValue =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder()
+            .withMessageKey(messageKey)
+            .withBusinessId("")
+            .build();
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r -> r.withIntent(intent).withKey(recordKey).withValue(recordValue));
+
+    // when
+    underTest.export(record);
+
+    // then
+    final var itemCaptor = ArgumentCaptor.forClass(CorrelatedMessageSubscriptionDbModel.class);
+    verify(correlatedMessageSubscriptionWriter).create(itemCaptor.capture());
+    final CorrelatedMessageSubscriptionDbModel entity = itemCaptor.getValue();
+    assertThat(entity.businessId()).isNull();
   }
 }

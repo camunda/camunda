@@ -16,6 +16,7 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -89,6 +90,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .jobKey(mapIfGreaterZero(value.getJobKey()))
         .treePath(buildTreePath(record))
         .tenantId(value.getTenantId())
+        .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value))
         .build();
   }
 
@@ -148,7 +150,9 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
               record.getKey());
           treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
         }
-        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
+        // the call activity FNI is the last entry, not index 1: intermediate flow scopes
+        // (e.g. a subprocess wrapping the call activity) sit between the PI root and it
+        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
       }
     }
 

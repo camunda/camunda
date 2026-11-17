@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.historydeletion;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -17,35 +18,41 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import org.jspecify.annotations.Nullable;
 
 public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<HistoryDeletionRecord> {
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS =
       "Expected to delete history for process instance with key '%d', but it is still active.";
+  private static final String NOT_FOUND_FOR_TENANT_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public HistoryDeletionDeleteProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -64,22 +71,31 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   private void deleteProcessInstance(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
 
+    // read once before any check so every rejection of a still active instance carries the
+    // ordinal stored for it, not the one the caller knew
+    final var processInstance = elementInstanceState.getInstance(recordValue.getResourceKey());
+    if (processInstance != null) {
+      recordValue.setResourceStorageOrdinal(processInstance.getValue().getStorageOrdinal());
+    }
+
     validateAuthorization(
             command,
             AuthorizationResourceType.PROCESS_DEFINITION,
             PermissionType.DELETE_PROCESS_INSTANCE,
             recordValue.getProcessId())
-        .flatMap(this::validateProcessInstanceDoesNotExist)
+        .flatMap(record -> validateProcessInstanceDoesNotExist(record, processInstance))
         .ifRightOrLeft(
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
   private void deleteProcessDefinition(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
+    recordValue.setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     writeHistoryDeletionEvent(recordValue, command);
   }
 
@@ -95,7 +111,8 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -111,32 +128,35 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       return Either.right(command.getValue());
     }
 
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(resourceType)
-            .permissionType(permissionType)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(resourceId)
-            .build();
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(request)
-        .map(ignored -> command.getValue());
+    final var tenantId = command.getValue().getTenantId();
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(AuthzModelMapper.fromProtocol(resourceType))
+                    .permissionType(AuthzModelMapper.fromProtocol(permissionType))
+                    .resourceId(resourceId)),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType),
+        tenantId,
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            NOT_FOUND_FOR_TENANT_MESSAGE.formatted(permissionType, resourceType, tenantId)));
   }
 
   private void deleteDecisionRequirements(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
+    recordValue.setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     writeHistoryDeletionEvent(recordValue, command);
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(
-      final HistoryDeletionRecord record) {
-    final var processInstanceKey = record.getResourceKey();
-    if (elementInstanceState.getInstance(processInstanceKey) != null) {
+      final HistoryDeletionRecord record, final @Nullable ElementInstance processInstance) {
+    if (processInstance != null) {
       final var rejection =
           new Rejection(
               RejectionType.INVALID_STATE,
-              String.format(ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS, processInstanceKey));
+              String.format(ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS, record.getResourceKey()));
       return Either.left(rejection);
     }
     return Either.right(record);
@@ -146,7 +166,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       final HistoryDeletionRecord recordValue, final TypedRecord<HistoryDeletionRecord> command) {
     stateWriter.appendFollowUpEvent(
         recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue, command);
   }
 }

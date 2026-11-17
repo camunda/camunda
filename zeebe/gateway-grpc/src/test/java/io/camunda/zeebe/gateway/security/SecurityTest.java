@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -29,7 +30,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -185,8 +185,7 @@ final class SecurityTest {
             atomix.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry),
-            TopicSupplier.withLegacyTopicName());
+            new BrokerClientRequestMetrics(meterRegistry));
     jobStreamClient =
         new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService(), meterRegistry);
     jobStreamClient.start().join();
@@ -196,9 +195,9 @@ final class SecurityTest {
     brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
-    return new Gateway(
+    return GatewayTestFactory.create(
         gatewayCfg,
-        new SecurityConfiguration(),
+        EngineSecurityConfigurations.defaultConfig(),
         brokerClient,
         actorScheduler,
         jobStreamClient.streamer(),

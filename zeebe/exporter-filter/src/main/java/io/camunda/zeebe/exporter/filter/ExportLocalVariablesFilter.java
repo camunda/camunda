@@ -43,8 +43,8 @@ public final class ExportLocalVariablesFilter implements ExporterRecordFilter, R
       return true;
     }
     final boolean isLocal = VariableScope.isLocal(variableRecordValue);
-    if (isLocal && LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (isLocal && LOG.isTraceEnabled()) {
+      LOG.trace(
           "ExportLocalVariablesFilter rejected record {}: variable '{}' is local (scopeKey={} != processInstanceKey={})",
           record.getKey(),
           variableRecordValue.getName(),

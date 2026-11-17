@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.GlobalListenerUtil;
 import io.camunda.webapps.schema.entities.globallistener.GlobalListenerEntity;
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 public class GlobalListenerCreatedUpdatedHandler
-    implements ExportHandler<GlobalListenerEntity, GlobalListenerRecordValue> {
+    implements MainIndexExporterHandler<GlobalListenerEntity, GlobalListenerRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(GlobalListenerIntent.CREATED, GlobalListenerIntent.UPDATED);
@@ -77,9 +78,10 @@ public class GlobalListenerCreatedUpdatedHandler
   }
 
   @Override
-  public void flush(final GlobalListenerEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final GlobalListenerEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

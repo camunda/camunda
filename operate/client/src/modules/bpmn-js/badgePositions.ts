@@ -39,6 +39,28 @@ const SUBPROCESS_WITH_INCIDENTS = {
   right: -12,
 };
 
+const WAITING_BADGE = {
+  top: -36,
+  left: 0,
+};
+
+// Anchored at the horizontal center of a narrow (~36px) element; the label is
+// then centered via a CSS translateX(-50%), so any label width stays centered.
+const WAITING_BADGE_NARROW = {
+  top: -36,
+  left: 18,
+};
+
+const AGENT_STATUS_TAG = {
+  top: -32,
+  left: 0,
+};
+
+const AGENT_SHINE = {
+  top: 0,
+  left: 0,
+};
+
 export {
   MODIFICATIONS,
   DECISION_STATE,
@@ -48,4 +70,8 @@ export {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
+  WAITING_BADGE,
+  WAITING_BADGE_NARROW,
+  AGENT_STATUS_TAG,
+  AGENT_SHINE,
 };

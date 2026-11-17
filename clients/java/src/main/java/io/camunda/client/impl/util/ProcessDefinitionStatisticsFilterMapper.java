@@ -36,6 +36,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
     target.setEndDate(filter.getEndDate());
     target.setState(filter.getState());
     target.setHasIncident(filter.getHasIncident());
+    target.setSuspendedDate(filter.getSuspendedDate());
     target.setTenantId(filter.getTenantId());
     target.setVariables(filter.getVariables());
     target.setProcessInstanceKey(filter.getProcessInstanceKey());
@@ -49,6 +50,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
     target.setElementId(filter.getElementId());
     target.setHasElementInstanceIncident(filter.getHasElementInstanceIncident());
     target.setIncidentErrorHashCode(filter.getIncidentErrorHashCode());
+    target.setBusinessId(filter.getBusinessId());
 
     return target;
   }

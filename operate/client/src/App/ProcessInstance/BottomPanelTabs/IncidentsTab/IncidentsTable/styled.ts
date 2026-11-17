@@ -26,9 +26,14 @@ const FieldLabel = styled.span`
 `;
 
 const ErrorMessageCell = styled.div`
-  max-width: 404px;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  word-break: break-word;
+`;
+
+const TruncatedText = styled.span`
+  display: block;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 `;
 
@@ -51,6 +56,7 @@ export {
   ExpandedField,
   FieldLabel,
   ErrorMessageCell,
+  TruncatedText,
   FlexContainer,
   ChildIncidentContainer,
 };

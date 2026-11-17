@@ -14,6 +14,8 @@ import {
   NameContainer,
   InstanceName,
   IncidentCount,
+  NameSubtitle,
+  SubtitleRow,
   AdditionalContent,
 } from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
@@ -31,6 +33,7 @@ type Props = {
   state: React.ComponentProps<typeof StateIcon>['state'];
   instanceName: string;
   incidentsCount?: number;
+  nameSubtitle?: React.ReactNode;
   headerColumns: string[];
   bodyColumns: Column[];
   additionalContent?: React.ReactNode;
@@ -43,22 +46,30 @@ const InstanceHeader: React.FC<Props> = ({
   bodyColumns,
   instanceName,
   incidentsCount = 0,
+  nameSubtitle,
   additionalContent,
   hideBottomBorder = false,
 }) => {
   return (
     <Container
       data-testid="instance-header"
+      role="group"
+      aria-label="Instance header"
       $hideBottomBorder={hideBottomBorder}
     >
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
       <NameContainer title={instanceName}>
         <InstanceName>{instanceName}</InstanceName>
-        {incidentsCount > 0 && (
-          <IncidentCount>
-            {pluralSuffix(incidentsCount, 'incident')}
-          </IncidentCount>
+        {(incidentsCount > 0 || nameSubtitle) && (
+          <SubtitleRow>
+            {incidentsCount > 0 && (
+              <IncidentCount>
+                {pluralSuffix(incidentsCount, 'incident')}
+              </IncidentCount>
+            )}
+            {nameSubtitle && <NameSubtitle>{nameSubtitle}</NameSubtitle>}
+          </SubtitleRow>
         )}
       </NameContainer>
       <Table>

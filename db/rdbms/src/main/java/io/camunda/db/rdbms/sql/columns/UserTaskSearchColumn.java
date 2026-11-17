@@ -20,6 +20,7 @@ public enum UserTaskSearchColumn implements SearchColumn<UserTaskEntity> {
   ELEMENT_INSTANCE_KEY("elementInstanceKey"),
   TENANT_ID("tenantId"),
   ASSIGNEE("assignee"),
+  BUSINESS_ID("businessId"),
   FORM_KEY("formKey"),
   PROCESS_DEFINITION_ID("processDefinitionId"),
   PROCESS_DEFINITION_KEY("processDefinitionKey"),

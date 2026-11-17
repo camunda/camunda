@@ -35,11 +35,10 @@ public class RecordingJobStreamer implements JobStreamer {
   @Override
   public Optional<JobStream> streamFor(
       final DirectBuffer jobType, final Predicate<JobActivationProperties> predicate) {
-    return Optional.ofNullable(
-        jobStreams.getOrDefault(jobType, new ArrayList<>()).stream()
-            .filter(jobStream -> predicate.test(jobStream.getProperties()))
-            .findAny()
-            .get());
+    return jobStreams.getOrDefault(jobType, new ArrayList<>()).stream()
+        .filter(jobStream -> predicate.test(jobStream.getProperties()))
+        .findAny()
+        .map(JobStream.class::cast);
   }
 
   public int notificationsForJob(final String jobType) {
@@ -48,6 +47,13 @@ public class RecordingJobStreamer implements JobStreamer {
 
   public void clearStreams() {
     jobStreams.clear();
+  }
+
+  /**
+   * Drops the recorded notification counts, so a streamer shared by a class starts each test at 0.
+   */
+  public void clearNotifications() {
+    jobNotifications.clear();
   }
 
   public RecordingJobStream addJobStream(

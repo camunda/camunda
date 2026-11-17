@@ -11,4 +11,5 @@ import io.camunda.search.entities.DecisionDefinitionEntity;
 import java.util.List;
 
 public record DecisionDefinitionLatestVersionAggregationResult(
-    List<DecisionDefinitionEntity> items, String endCursor) implements AggregationResultBase {}
+    List<DecisionDefinitionEntity> items, int totalItems, String endCursor)
+    implements AggregationResultBase, HasTotalItems {}

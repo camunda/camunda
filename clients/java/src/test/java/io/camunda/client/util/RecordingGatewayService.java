@@ -21,6 +21,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
@@ -69,6 +71,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
@@ -119,6 +123,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(
         UpdateJobTimeoutRequest.class, r -> UpdateJobTimeoutResponse.getDefaultInstance());
+    addRequestHandler(
+        UpdateJobPriorityRequest.class, r -> UpdateJobPriorityResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
     addRequestHandler(ThrowErrorRequest.class, r -> ThrowErrorResponse.getDefaultInstance());
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
@@ -131,6 +137,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         MigrateProcessInstanceRequest.class,
         r -> MigrateProcessInstanceResponse.getDefaultInstance());
+    addRequestHandler(
+        AssignProcessInstanceBusinessIdRequest.class,
+        r -> AssignProcessInstanceBusinessIdResponse.getDefaultInstance());
     addRequestHandler(
         EvaluateDecisionRequest.class, r -> EvaluateDecisionResponse.getDefaultInstance());
     addRequestHandler(
@@ -160,6 +169,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .setHost(host)
         .setPort(port)
         .setVersion(version)
+        .setBrokerId(String.valueOf(nodeId))
         .addAllPartitions(Arrays.asList(partitions))
         .build();
   }
@@ -427,9 +437,23 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
+  public void assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final StreamObserver<AssignProcessInstanceBusinessIdResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
   public void updateJobTimeout(
       final UpdateJobTimeoutRequest request,
       final StreamObserver<UpdateJobTimeoutResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void updateJobPriority(
+      final UpdateJobPriorityRequest request,
+      final StreamObserver<UpdateJobPriorityResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

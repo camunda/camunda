@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -27,18 +29,18 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
 public class AdHocSubProcessInstructionActivateProcessor
-    implements TypedRecordProcessor<AdHocSubProcessInstructionRecord> {
+    implements TypedRecordProcessor<AdHocSubProcessInstructionRecord>,
+        SuspensionAware<AdHocSubProcessInstructionRecord> {
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
-  private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE =
-      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
 
@@ -47,20 +49,20 @@ public class AdHocSubProcessInstructionActivateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final BpmnAdHocSubProcessBehavior bpmnAdHocSubProcessBehavior;
 
   public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     bpmnAdHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
   }
 
@@ -84,7 +86,7 @@ public class AdHocSubProcessInstructionActivateProcessor
           command,
           RejectionType.INVALID_STATE,
           String.format(
-              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE,
+              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
@@ -103,16 +105,8 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
-    if (!adHocSubProcessElementInstance.isActive()) {
-      writeRejectionError(
-          command,
-          RejectionType.INVALID_STATE,
-          String.format(
-              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
-              command.getValue().getAdHocSubProcessInstanceKey()));
-
-      return;
-    }
+    final int storageOrdinal = adHocSubProcessElementInstance.getValue().getStorageOrdinal();
+    command.getValue().setStorageOrdinal(storageOrdinal);
 
     final var activateElements =
         command.getValue().activateElements().stream()
@@ -173,8 +167,20 @@ public class AdHocSubProcessInstructionActivateProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue());
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue(), command);
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+    // external commands are rejected, not buffered: buffering intercepts before authorize() runs,
+    // so a queued external command would replay as internal on drain and skip authorization
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<AdHocSubProcessInstructionRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 
   private void writeRejectionError(
@@ -182,20 +188,28 @@ public class AdHocSubProcessInstructionActivateProcessor
       final RejectionType rejectionType,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, errorMessage);
   }
 
-  private Either<Rejection, Void> authorize(
+  private Either<Rejection, AdHocSubProcessInstructionRecord> authorize(
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(adHocSubProcessElementInstance.getValue().getTenantId())
-            .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION))
+                    .permissionType(
+                        AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                    .resourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId())),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.UPDATE_PROCESS_INSTANCE, AuthorizationResourceType.PROCESS_DEFINITION),
+        adHocSubProcessElementInstance.getValue().getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
+                command.getValue().getAdHocSubProcessInstanceKey())));
   }
 }

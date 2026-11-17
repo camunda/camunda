@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import java.util.Map;
 
 /** Context for components/actors managed directly by the Broker */
 public interface BrokerContext {
@@ -29,6 +30,14 @@ public interface BrokerContext {
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
   PartitionManager getPartitionManager();
+
+  /**
+   * Returns the partition manager of every physical tenant running on this broker, keyed by
+   * physical-tenant ID (including the {@code default} tenant). {@link #getPartitionManager()} only
+   * ever exposes the default tenant's manager; this accessor exists mainly for test / introspection
+   * access to non-default tenants' partitions.
+   */
+  Map<String, PartitionManager> getPartitionManagers();
 
   BrokerAdminService getBrokerAdminService();
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -70,7 +72,7 @@ public class RemoteStreamServiceImpl<M, P extends BufferWriter>
           if (error != null) {
             closed.completeExceptionally(error);
           } else {
-            closed.complete(null);
+            closed.complete(unit());
           }
         });
     return closed;

@@ -20,12 +20,12 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,7 +107,7 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
   private Set<String> searchProcessDefinitionIds(final McpSyncClient client) {
     final CallToolResult result =
         client.callTool(
-            CallToolRequest.builder().name("searchProcessDefinitions").arguments(Map.of()).build());
+            CallToolRequest.builder("searchProcessDefinitions").arguments(Map.of()).build());
     assertThat(result.isError())
         .withFailMessage(
             "Expected successful searchProcessDefinitions response, but got error result: %s",
@@ -133,7 +133,7 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
                 processDefinitionId + ".bpmn"));
 
     await("should make deployed processes searchable")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var visibleProcessDefinitionIds =

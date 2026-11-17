@@ -1,8 +1,0 @@
-{
-  "description": "Set formId null for 'process' index",
-  "@type": "processorStep",
-  "indexName": "process",
-  "version": "8.4.0",
-  "order": 2,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.formId = null;\"}}"
-}

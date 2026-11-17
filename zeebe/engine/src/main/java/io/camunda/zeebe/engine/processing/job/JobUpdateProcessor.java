@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -19,11 +20,10 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 
-public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobUpdateProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final TypedRejectionWriter rejectionWriter;
@@ -41,52 +41,63 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
   public void processRecord(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
     jobUpdateBehaviour
-        .getJob(jobKey, command)
+        .checkJobCommand(command)
         .flatMap(job -> jobUpdateBehaviour.isAuthorized(command, job))
         .ifRightOrLeft(
             job -> {
-              final List<String> errors = new ArrayList<>();
               final Set<String> changeset = command.getValue().getChangedAttributes();
-              jobChange(
-                  changeset,
-                  JobRecord.RETRIES,
-                  command.getValue().getRetries(),
-                  (retries) -> jobUpdateBehaviour.updateJobRetries(jobKey, retries, job),
-                  errors);
-              jobChange(
-                  changeset,
-                  JobRecord.TIMEOUT,
-                  command.getValue().getTimeout(),
-                  (timeout) -> jobUpdateBehaviour.updateJobTimeout(jobKey, timeout, job),
-                  errors);
-              if (errors.isEmpty()) {
-                stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);
-                responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, job, command);
-              } else {
-                handleRejection(errors, command);
+
+              // Pass 1: validate all requested fields — no events written yet
+              final List<String> errors = new ArrayList<>();
+              if (changeset.contains(JobRecord.RETRIES)) {
+                jobUpdateBehaviour
+                    .validateJobRetries(jobKey, command.getValue().getRetries())
+                    .ifPresent(errors::add);
               }
+              if (changeset.contains(JobRecord.TIMEOUT)) {
+                jobUpdateBehaviour.validateJobTimeout(jobKey, job).ifPresent(errors::add);
+              }
+              if (!errors.isEmpty()) {
+                handleRejection(errors, command);
+                return;
+              }
+
+              // Pass 2: all validations passed — apply and emit events
+              if (changeset.contains(JobRecord.RETRIES)) {
+                jobUpdateBehaviour.applyJobRetries(jobKey, command.getValue().getRetries(), job);
+              }
+              if (changeset.contains(JobRecord.TIMEOUT)) {
+                jobUpdateBehaviour.applyJobTimeout(jobKey, command.getValue().getTimeout(), job);
+              }
+              if (changeset.contains(JobRecord.PRIORITY)) {
+                jobUpdateBehaviour.applyJobPriority(jobKey, command.getValue().getPriority(), job);
+              }
+
+              stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);
+              responseWriter.writeAcceptedResponseOnCommand(
+                  jobKey, JobIntent.UPDATED, job, command);
             },
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
-  private <T extends Number> void jobChange(
-      final Set<String> changeset,
-      final String key,
-      final T value,
-      final Function<T, Optional<String>> updateFunction,
-      final List<String> errors) {
-    if (changeset.contains(key)) {
-      updateFunction.apply(value).ifPresent(errors::add);
-    }
-  }
-
-  // Helper method to handle rejections
   private void handleRejection(final List<String> errors, final TypedRecord<JobRecord> command) {
     final String errorMessage = String.join(", ", errors);
     rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(
+        command, RejectionType.INVALID_ARGUMENT, errorMessage);
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

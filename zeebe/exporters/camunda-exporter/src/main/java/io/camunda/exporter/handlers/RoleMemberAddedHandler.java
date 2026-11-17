@@ -8,16 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
-public class RoleMemberAddedHandler implements ExportHandler<RoleMemberEntity, RoleRecordValue> {
+public class RoleMemberAddedHandler
+    implements MainIndexExporterHandler<RoleMemberEntity, RoleRecordValue> {
 
   private final String indexName;
 
@@ -46,7 +49,9 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleMemberEntity, R
     final RoleRecordValue value = record.getValue();
     return List.of(
         RoleIndex.JOIN_RELATION_FACTORY.createChildId(
-            value.getRoleId(), value.getEntityId(), value.getEntityType()));
+            value.getRoleId(),
+            value.getEntityId(),
+            AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Override
@@ -59,14 +64,15 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleMemberEntity, R
     final RoleRecordValue value = record.getValue();
     entity
         .setMemberId(value.getEntityId())
-        .setMemberType(value.getEntityType())
+        .setMemberType(AuthzModelMapper.fromProtocol(value.getEntityType()))
         .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(value.getRoleId()));
   }
 
   @Override
-  public void flush(final RoleMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final RoleMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
+    batchRequest.addWithRouting(index, entity, entity.getJoin().parent());
   }
 
   @Override

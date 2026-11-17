@@ -207,8 +207,8 @@ public class ProcessEngineMetricsTest {
     // terminate process instance
     engine.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // Wait for process completion
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.TERMINATE_ELEMENT)
+    // Wait for process termination
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
         .await();

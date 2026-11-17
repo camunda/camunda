@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing;
 
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -21,13 +22,28 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   protected final DatabaseClient databaseClient;
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
+  private final BackoffCalculator backoffCalculator = new BackoffCalculator(30L, 1000L);
   private final Runnable importCompleteCallback;
+  private final String recordType;
+  private final String partitionId;
 
   protected DatabaseImportJob(
       final Runnable importCompleteCallback, final DatabaseClient databaseClient) {
     this.importCompleteCallback = importCompleteCallback;
     this.databaseClient = databaseClient;
+    recordType = "none";
+    partitionId = "none";
+  }
+
+  protected DatabaseImportJob(
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient,
+      final String recordType,
+      final int partitionId) {
+    this.importCompleteCallback = importCompleteCallback;
+    this.databaseClient = databaseClient;
+    this.recordType = recordType;
+    this.partitionId = String.valueOf(partitionId);
   }
 
   /** Run the import job */
@@ -57,11 +73,14 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
           success = true;
         } catch (final Exception e) {
           logger.error("Error while executing import to database", e);
+          OptimizeMetrics.recordDbWriteFailure(recordType, partitionId, e);
           final long sleepTime = backoffCalculator.calculateSleepTime();
           try {
             Thread.sleep(sleepTime);
           } catch (final InterruptedException exception) {
             Thread.currentThread().interrupt();
+            logger.info("Import job interrupted, aborting import to database");
+            return;
           }
         }
       } while (!success);

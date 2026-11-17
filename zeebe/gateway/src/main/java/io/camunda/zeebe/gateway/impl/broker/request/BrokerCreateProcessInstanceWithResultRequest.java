@@ -72,6 +72,11 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setVersionTag(final String versionTag) {
+    requestDto.setVersionTag(versionTag != null ? versionTag : "");
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setVariables(final DirectBuffer variables) {
     VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
     requestDto.setVariables(variables);

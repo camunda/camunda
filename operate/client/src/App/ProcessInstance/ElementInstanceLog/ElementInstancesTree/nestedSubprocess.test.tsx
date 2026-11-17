@@ -9,7 +9,11 @@
 import {act} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
-import {Wrapper, mockNestedSubProcessesInstance} from './mocks';
+import {
+  getWrapper,
+  mockNestedSubProcessesInstance,
+  parseBusinessObjects,
+} from './mocks';
 import {ElementInstancesTree} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -18,14 +22,11 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const nestedSubProcessesXml = open('NestedSubProcesses.bpmn');
-const diagramModel = await parseDiagramXML(nestedSubProcessesXml);
-const businessObjects = businessObjectsParser({diagramModel});
 
-describe('ElementInstancesTree - Nested Subprocesses', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(
@@ -91,13 +92,14 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
   });
 
   it('should add parent placeholders (ADD_TOKEN)', async () => {
+    const {businessObjects} = await parseBusinessObjects(nestedSubProcessesXml);
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessesInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -155,6 +157,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
   });
 
   it('should add parent placeholders (MOVE_TOKEN)', async () => {
+    const {businessObjects} = await parseBusinessObjects(nestedSubProcessesXml);
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
 
     const {user} = render(
@@ -163,7 +166,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

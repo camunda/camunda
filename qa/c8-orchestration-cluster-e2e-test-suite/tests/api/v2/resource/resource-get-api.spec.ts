@@ -19,7 +19,14 @@ import {
   validateResponse,
   validateResponseShape,
 } from '../../../../json-body-assertions';
-import {deployResourceAndGetMetadata, ResourceMetadata} from '@requestHelpers';
+import {
+  deployInlineResource,
+  deployResourceAndGetMetadata,
+  getResource,
+  RESOURCE_ENDPOINT,
+  ResourceMetadata,
+  uniqueResourceName,
+} from '@requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 function validateResourceResponse(
@@ -28,7 +35,7 @@ function validateResourceResponse(
 ): void {
   validateResponseShape(
     {
-      path: '/resources/{resourceKey}',
+      path: RESOURCE_ENDPOINT,
       method: 'GET',
       status: '200',
     },
@@ -55,19 +62,12 @@ test.describe.parallel('Resource Get API', () => {
     );
 
     await expect(async () => {
-      const res = await request.get(
-        buildUrl('/resources/{resourceKey}', {
-          resourceKey: metadata.resourceKey,
-        }),
-        {
-          headers: jsonHeaders(),
-        },
-      );
+      const res = await getResource(request, metadata.resourceKey);
 
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-          path: '/resources/{resourceKey}',
+          path: RESOURCE_ENDPOINT,
           method: 'GET',
           status: '200',
         },
@@ -77,18 +77,65 @@ test.describe.parallel('Resource Get API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Get Resource - Generic Resource Success 200', async ({request}) => {
+    const resourceName = uniqueResourceName('system-prompt', 'md');
+    const metadata = await deployInlineResource(
+      request,
+      resourceName,
+      '# System prompt',
+    );
+
+    await expect(async () => {
+      const res = await getResource(request, metadata.resourceKey);
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: RESOURCE_ENDPOINT,
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
+      validateResourceResponse(await res.json(), metadata);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get Resource - Not Found 404 For A Process Definition Key', async ({
+    request,
+  }) => {
+    const processDefinition = await deployResourceAndGetMetadata(
+      request,
+      'Zeebe_User_Task_Process.bpmn',
+      0,
+    );
+
+    // Both endpoints read secondary storage. Waiting for the process definition
+    // to be projected is what makes the 404 below meaningful — asserted earlier
+    // it would pass simply because nothing has been indexed yet.
+    await expect(async () => {
+      const definitionRes = await request.get(
+        buildUrl('/process-definitions/{processDefinitionKey}', {
+          processDefinitionKey: processDefinition.resourceKey,
+        }),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(definitionRes, 200);
+    }).toPass(defaultAssertionOptions);
+
+    const res = await getResource(request, processDefinition.resourceKey);
+
+    await assertNotFoundRequest(
+      res,
+      `Resource with key '${processDefinition.resourceKey}' not found`,
+    );
+  });
+
   // eslint-disable-next-line playwright/expect-expect
   test('Get Resource - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}', {
-        resourceKey: nonExistentResourceKey,
-      }),
-      {
-        headers: jsonHeaders(),
-      },
-    );
+    const res = await getResource(request, nonExistentResourceKey);
 
     await assertNotFoundRequest(
       res,
@@ -98,12 +145,7 @@ test.describe.parallel('Resource Get API', () => {
 
   // eslint-disable-next-line playwright/expect-expect
   test('Get Resource - Unauthorized 401', async ({request}) => {
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}', {resourceKey: 'someKey'}),
-      {
-        headers: {},
-      },
-    );
+    const res = await getResource(request, 'someKey', {headers: {}});
 
     await assertUnauthorizedRequest(res);
   });

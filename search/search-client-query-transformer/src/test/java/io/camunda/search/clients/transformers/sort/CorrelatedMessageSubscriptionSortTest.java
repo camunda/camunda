@@ -24,6 +24,7 @@ public class CorrelatedMessageSubscriptionSortTest extends AbstractSortTransform
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
+        new TestArguments("businessId", SortOrder.ASC, s -> s.businessId().asc()),
         new TestArguments("correlationKey", SortOrder.ASC, s -> s.correlationKey().asc()),
         new TestArguments("correlationTime", SortOrder.ASC, s -> s.correlationTime().asc()),
         new TestArguments("flowNodeId", SortOrder.ASC, s -> s.flowNodeId().asc()),

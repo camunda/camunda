@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -21,18 +22,23 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.Activ
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFoundException;
 import io.camunda.zeebe.engine.processing.common.UnsupportedMultiInstanceBodyActivationException;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -42,8 +48,11 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -73,7 +82,8 @@ import org.agrona.Strings;
 import org.slf4j.Logger;
 
 public final class ProcessInstanceModificationModifyProcessor
-    implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
+    implements TypedRecordProcessor<ProcessInstanceModificationRecord>,
+        SuspensionAware<ProcessInstanceModificationRecord> {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
@@ -188,9 +198,11 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AsyncRequestState asyncRequestState;
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final TypedRejectionWriter rejectionWriter;
@@ -198,26 +210,29 @@ public final class ProcessInstanceModificationModifyProcessor
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public ProcessInstanceModificationModifyProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
+      final AsyncRequestState asyncRequestState,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.asyncRequestState = asyncRequestState;
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -233,32 +248,35 @@ public final class ProcessInstanceModificationModifyProcessor
 
     if (processInstance == null) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.MODIFY_PROCESS_INSTANCE)
-            .tenantId(processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "modify a process instance",
-                  processInstance.getValue().getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.MODIFY_PROCESS_INSTANCE))
+                        .resourceId(processInstance.getValue().getBpmnProcessId())),
+            processInstance,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.MODIFY_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            processInstance.getValue().getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(eventKey)));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -276,7 +294,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (commandValidationResult.isLeft()) {
       final var rejection = commandValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -298,7 +316,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (moveByKeyValidationResult.isLeft()) {
       final var rejection = moveByKeyValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -327,7 +345,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (instructionsValidationResult.isLeft()) {
       final var rejection = instructionsValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -337,6 +355,7 @@ public final class ProcessInstanceModificationModifyProcessor
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setStorageOrdinal(processInstanceRecord.getStorageOrdinal())
         .setTenantId(processInstanceRecord.getTenantId())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
 
@@ -383,13 +402,13 @@ public final class ProcessInstanceModificationModifyProcessor
           final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
           terminateElement(elementInstance);
-          terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
+          terminateFlowScopes(flowScopeKey, requiredKeysForActivation, process);
         });
 
     stateWriter.appendFollowUpEvent(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord);
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
   }
 
@@ -400,7 +419,7 @@ public final class ProcessInstanceModificationModifyProcessor
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -411,7 +430,7 @@ public final class ProcessInstanceModificationModifyProcessor
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
       return ProcessingError.EXPECTED_ERROR;
 
@@ -420,14 +439,15 @@ public final class ProcessInstanceModificationModifyProcessor
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey());
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final TerminatedChildProcessException exception) {
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -437,7 +457,8 @@ public final class ProcessInstanceModificationModifyProcessor
               exception.getBpmnProcessId(), exception.getMultiInstanceId());
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
     }
 
@@ -871,7 +892,9 @@ public final class ProcessInstanceModificationModifyProcessor
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
-        .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
+        .flatMap(
+            valid ->
+                validateElementInstanceExists(process, terminateInstructions, processInstanceKey))
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .flatMap(valid -> validateAncestorKeys(process, activateInstructions, processInstanceKey))
@@ -1170,13 +1193,19 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private Either<Rejection, ?> validateElementInstanceExists(
       final DeployedProcess process,
-      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions,
+      final long processInstanceKey) {
 
     final List<Long> unknownElementInstanceKeys =
         terminateInstructions.stream()
             .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
             .distinct()
-            .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
+            .filter(
+                instanceKey -> {
+                  final var instance = elementInstanceState.getInstance(instanceKey);
+                  return instance == null
+                      || instance.getValue().getProcessInstanceKey() != processInstanceKey;
+                })
             .toList();
 
     if (unknownElementInstanceKeys.isEmpty()) {
@@ -1356,15 +1385,24 @@ public final class ProcessInstanceModificationModifyProcessor
                           instruction.getClass().getName()));
             })
         .forEach(
-            variableDocument ->
+            variableDocument -> {
+              try {
                 variableBehavior.mergeLocalDocument(
                     scopeKey,
                     process.getKey(),
                     processInstance.getKey(),
                     processInstance.getValue().getRootProcessInstanceKey(),
+                    processInstance.getValue().getStorageOrdinal(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
-                    variableDocument));
+                    variableDocument);
+              } catch (final ValidationException e) {
+                throw new IllegalArgumentException(
+                    "Variable validation failed for element '%s' in process instance '%d': %s"
+                        .formatted(elementId, processInstance.getKey(), e.getMessage()),
+                    e);
+              }
+            });
   }
 
   private void terminateElement(final ElementInstance elementInstance) {
@@ -1384,8 +1422,10 @@ public final class ProcessInstanceModificationModifyProcessor
       final var elementInstanceRecord = currentElement.getValue();
       final BpmnElementType elementType = currentElement.getValue().getBpmnElementType();
 
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      if (!currentElement.isTerminating()) {
+        stateWriter.appendFollowUpEvent(
+            elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      }
       elementInstancesToTerminate.push(currentElement);
 
       jobBehavior.cancelJob(currentElement);
@@ -1406,30 +1446,70 @@ public final class ProcessInstanceModificationModifyProcessor
     final var childInstances = new ArrayList<ElementInstance>();
     if (elementType.isContainerElement()) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
-          .filter(ElementInstance::canTerminate)
+          .filter(ProcessInstanceModificationModifyProcessor::shouldTerminateWithParent)
           .forEach(childInstances::add);
     } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
       final var calledActivityElementInstance =
           elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
-      if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
+      if (calledActivityElementInstance != null
+          && shouldTerminateWithParent(calledActivityElementInstance)) {
         childInstances.add(calledActivityElementInstance);
       }
     }
     return childInstances;
   }
 
+  /**
+   * A terminating child can be blocked, for example by a canceling task listener job without
+   * retries. It is terminated together with its parent, otherwise it would be left behind.
+   */
+  private static boolean shouldTerminateWithParent(final ElementInstance child) {
+    return child.canTerminate() || child.isTerminating();
+  }
+
   private void terminateElements(final Stack<ElementInstance> elementsTerminating) {
     while (!elementsTerminating.isEmpty()) {
       final var currentElement = elementsTerminating.pop();
-      stateWriter.appendFollowUpEvent(
-          currentElement.getKey(),
-          ProcessInstanceIntent.ELEMENT_TERMINATED,
-          currentElement.getValue());
+      final long elementInstanceKey = currentElement.getKey();
+      final var elementInstanceRecord = currentElement.getValue();
+      findCancelRequest(currentElement)
+          .ifPresentOrElse(
+              cancelRequest -> {
+                stateWriter.appendFollowUpEvent(
+                    elementInstanceKey,
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    elementInstanceRecord,
+                    metadata ->
+                        metadata
+                            .operationReference(cancelRequest.operationReference())
+                            .batchOperationReference(cancelRequest.batchOperationReference()));
+                stateWriter.appendFollowUpEvent(
+                    cancelRequest.key(), AsyncRequestIntent.PROCESSED, cancelRequest.record());
+              },
+              () ->
+                  stateWriter.appendFollowUpEvent(
+                      elementInstanceKey,
+                      ProcessInstanceIntent.ELEMENT_TERMINATED,
+                      elementInstanceRecord));
     }
   }
 
+  /**
+   * A canceled process instance has a pending cancel request until it is terminated. The request is
+   * completed with the termination, as the regular termination of the process does.
+   */
+  private Optional<AsyncRequest> findCancelRequest(final ElementInstance elementInstance) {
+    if (elementInstance.getValue().getBpmnElementType() != BpmnElementType.PROCESS) {
+      return Optional.empty();
+    }
+    return asyncRequestState.findRequest(
+        elementInstance.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
+  }
+
   private void terminateFlowScopes(
-      final long elementInstanceKey, final Set<Long> requiredKeysForActivation) {
+      final long elementInstanceKey,
+      final Set<Long> requiredKeysForActivation,
+      final DeployedProcess process) {
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
@@ -1442,6 +1522,19 @@ public final class ProcessInstanceModificationModifyProcessor
         throw new TerminatedChildProcessException(
             ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED.formatted(
                 currentElementInstanceRecord.getBpmnProcessId()));
+      }
+
+      // Delegate process-level termination to the BPMN stream processor only when the process
+      // declares at least one cancel execution listener, so that the cancel listener chain runs
+      // before the process reaches ELEMENT_TERMINATED. Otherwise the process is terminated
+      // directly to keep the record stream byte-identical to previous broker versions.
+      if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS
+          && process.getProcess().hasCancelExecutionListeners()) {
+        commandWriter.appendFollowUpCommand(
+            currentElementInstance.getKey(),
+            ProcessInstanceIntent.TERMINATE_ELEMENT,
+            currentElementInstanceRecord);
+        return;
       }
 
       final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
@@ -1472,6 +1565,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private void enrichRejectionCommand(
@@ -1485,6 +1579,16 @@ public final class ProcessInstanceModificationModifyProcessor
           "Cannot enrich rejection command for process instance modification with key {} because the process instance was not found",
           processInstanceKey);
     }
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceModificationRecord> record) {
+    return SuspensionAware.bufferInternalOnly(record);
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<ProcessInstanceModificationRecord> record) {
+    return SuspensionAware.processInternalOnly(record);
   }
 
   /**

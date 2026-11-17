@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -58,12 +60,28 @@ public class ResourceCreatedHandlerTest {
     assertThat(underTest.handlesRecord(record)).isTrue();
   }
 
+  @Test
+  void shouldHandleReexportedRecord() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceName("my-script.rpa")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.REEXPORTED).withValue(value));
+
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isTrue();
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = ResourceIntent.class,
-      names = {"CREATED"},
+      names = {"CREATED", "REEXPORTED"},
       mode = Mode.EXCLUDE)
-  void shouldNotHandleRecordForNonCreatedIntent(final ResourceIntent intent) {
+  void shouldNotHandleRecordForUnsupportedIntent(final ResourceIntent intent) {
     // given
     final Resource value =
         ImmutableResource.builder()
@@ -106,17 +124,19 @@ public class ResourceCreatedHandlerTest {
             .setResourceKey(42L)
             .setResourceId("resource-id")
             .setResourceName("my-script.rpa")
+            .setResourceType("rpa")
             .setVersion(1)
             .setVersionTag("v1")
             .setDeploymentKey(100L)
             .setTenantId("<default>");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, entity);
+    verify(mockRequest, times(1)).add(index, entity);
   }
 
   @Test
@@ -148,10 +168,41 @@ public class ResourceCreatedHandlerTest {
     assertThat(entity.getResourceKey()).isEqualTo(42L);
     assertThat(entity.getResourceId()).isEqualTo("resource-id");
     assertThat(entity.getResourceName()).isEqualTo("my-script.rpa");
+    assertThat(entity.getResourceType()).isEqualTo("rpa");
     assertThat(entity.getVersion()).isEqualTo(2);
     assertThat(entity.getVersionTag()).isEqualTo("v2");
     assertThat(entity.getDeploymentKey()).isEqualTo(100L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getResourceContent()).isEqualTo("rpa-content");
+    assertThat(entity.getResourceContent())
+        .isEqualTo("rpa-content".getBytes(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  void shouldExtractFileTypeFromFilenameWithMultipleDots() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceKey(43L)
+            .withResourceId("resource-id")
+            .withResourceName("user.1/my.script.rpa")
+            .withVersion(1)
+            .withVersionTag("v1")
+            .withDeploymentKey(100L)
+            .withTenantId("tenant-1")
+            .withResourceProp("rpa-content")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
+
+    final DeployedResourceEntity entity = underTest.createNewEntity("43");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getResourceName()).isEqualTo("user.1/my.script.rpa");
+    assertThat(entity.getResourceType()).isEqualTo("rpa");
   }
 }

@@ -8,6 +8,14 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.data.AuditLog;
+import io.camunda.configuration.data.Export;
+import io.camunda.configuration.data.Exporter;
+import io.camunda.configuration.data.ExtensionProperties;
+import io.camunda.configuration.data.HistoryDeletion;
+import io.camunda.configuration.data.PrimaryStorage;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.WaitStates;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +33,9 @@ public class Data {
   /** This section allows to configure the audit log setup. */
   @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
 
+  /** This section allows to configure the wait-states tracking setup. */
+  @NestedConfigurationProperty private WaitStates waitStates = new WaitStates();
+
   /** This section allows to configure the history deletion setup. */
   @NestedConfigurationProperty private HistoryDeletion historyDeletion = new HistoryDeletion();
 
@@ -40,12 +51,24 @@ public class Data {
   /** This section allows configuring exporters */
   private Map<String, Exporter> exporters = new HashMap<>();
 
+  /** This section allows configuring extension property mapping. */
+  @NestedConfigurationProperty
+  private ExtensionProperties extensionProperties = new ExtensionProperties();
+
   public AuditLog getAuditLog() {
     return auditLog;
   }
 
   public void setAuditLog(final AuditLog auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public WaitStates getWaitStates() {
+    return waitStates;
+  }
+
+  public void setWaitStates(final WaitStates waitStates) {
+    this.waitStates = waitStates;
   }
 
   public HistoryDeletion getHistoryDeletion() {
@@ -57,7 +80,7 @@ public class Data {
   }
 
   public Duration getSnapshotPeriod() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".snapshot-period",
         snapshotPeriod,
         Duration.class,
@@ -99,5 +122,13 @@ public class Data {
 
   public void setExporters(final Map<String, Exporter> exporters) {
     this.exporters = exporters;
+  }
+
+  public ExtensionProperties getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public void setExtensionProperties(final ExtensionProperties extensionProperties) {
+    this.extensionProperties = extensionProperties;
   }
 }

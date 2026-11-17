@@ -9,6 +9,7 @@ package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
@@ -17,10 +18,14 @@ import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.importing.job.ProcessInstanceDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import org.slf4j.Logger;
 
-public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
+public abstract class ZeebeProcessInstanceSubEntityImportService<T extends ZeebeRecordDto<?, ?>>
+    implements ImportService<T> {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceSubEntityImportService.class);
@@ -58,7 +63,10 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
       final List<ProcessInstanceDto> newOptimizeEntities =
           filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
       final DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
-          createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+          createDatabaseImportJob(
+              newOptimizeEntities,
+              importCompleteCallback,
+              zeebeRecords.get(0).getValueType().name());
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
@@ -68,11 +76,34 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     return databaseImportJobExecutor;
   }
 
+  /**
+   * Creates a skeleton {@link ProcessInstanceDto} from Zeebe identifiers, translating them into
+   * Optimize's C7-based field naming convention.
+   *
+   * <p><b>Terminology note:</b> Optimize uses C7 naming throughout its data model and ES/OS
+   * indices, which is the <em>inverse</em> of C8 conventions.
+   *
+   * <p>This mapping is intentional. Do not rename the DTO fields. See {@code
+   * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+   *
+   * @param processDefinitionKey the Zeebe {@code bpmnProcessId} — the non-unique BPMN process ID
+   *     string (e.g. {@code "invoice-process"})
+   * @param processInstanceId the Zeebe {@code processInstanceKey} — the unique {@code Long} key for
+   *     this process instance
+   * @param processDefinitionId the Zeebe {@code processDefinitionKey} — the unique {@code Long} key
+   *     for the process definition version
+   * @param tenantId the tenant identifier
+   */
   protected ProcessInstanceDto createSkeletonProcessInstance(
       final String processDefinitionKey,
       final Long processInstanceId,
       final Long processDefinitionId,
       final String tenantId) {
+    if (processDefinitionKey == null || processDefinitionKey.isBlank()) {
+      throw new IllegalArgumentException(
+          "Expected Zeebe record for process instance [%s], process definition [%s], tenant [%s] to contain a bpmnProcessId, but it was missing."
+              .formatted(processInstanceId, processDefinitionId, tenantId));
+    }
     final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
     processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
     processInstanceDto.setProcessInstanceId(String.valueOf(processInstanceId));
@@ -89,15 +120,30 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
   }
 
   private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
-      final List<ProcessInstanceDto> processInstanceDtos, final Runnable importCompleteCallback) {
+      final List<ProcessInstanceDto> processInstanceDtos,
+      final Runnable importCompleteCallback,
+      final String recordType) {
     final ProcessInstanceDatabaseImportJob processInstanceImportJob =
         new ProcessInstanceDatabaseImportJob(
             processInstanceWriter,
             configurationService,
             importCompleteCallback,
             sourceExportIndex,
-            databaseClient);
+            databaseClient,
+            recordType,
+            partitionId);
     processInstanceImportJob.setEntitiesToImport(processInstanceDtos);
     return processInstanceImportJob;
+  }
+
+  /**
+   * Converts a Zeebe record timestamp (epoch milliseconds) to an {@link OffsetDateTime} in the
+   * system default time zone.
+   *
+   * @param timestamp the Zeebe record timestamp in milliseconds since epoch
+   * @return the corresponding {@link OffsetDateTime}
+   */
+  protected OffsetDateTime dateForTimestamp(final long timestamp) {
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
   }
 }

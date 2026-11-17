@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INBOUND_CONNECTOR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_CUSTOM_HEADERS;
@@ -25,25 +26,38 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.METADATA;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_PROPERTIES;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class AbstractEventHandler<R extends RecordValue>
-    implements ExportHandler<MessageSubscriptionEntity, R> {
+public abstract class AbstractEventHandler<R extends RecordValue & StorageOrdinalRelated>
+    implements OrdinalIndexExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
+  protected final ExtensionPropertyConfiguration extensionPropertyConfig;
 
-  public AbstractEventHandler(final String indexName) {
+  public AbstractEventHandler(
+      final String indexName, final ExtensionPropertyConfiguration extensionPropertyConfig) {
     this.indexName = indexName;
+    this.extensionPropertyConfig = extensionPropertyConfig;
   }
 
   @Override
@@ -75,6 +89,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
   }
 
   protected void persistEvent(
+      final TargetIndex index,
       final MessageSubscriptionEntity entity,
       final String positionFieldName,
       final long positionFieldValue,
@@ -89,6 +104,11 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     jsonMap.put(PROCESS_KEY, entity.getProcessDefinitionKey());
     jsonMap.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
     jsonMap.put(FLOW_NODE_ID, entity.getFlowNodeId());
+    jsonMap.put(PROCESS_DEFINITION_NAME, entity.getProcessDefinitionName());
+    jsonMap.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    jsonMap.put(TOOL_PROPERTIES, entity.getToolProperties());
+    jsonMap.put(TOOL_NAME, entity.getToolName());
+    jsonMap.put(INBOUND_CONNECTOR_TYPE, entity.getInboundConnectorType());
     jsonMap.put(positionFieldName, positionFieldValue);
     if (entity.getMetadata() != null) {
       final Map<String, Object> metadataMap = new HashMap<>();
@@ -115,6 +135,32 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     }
 
     // write event
-    batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
+    batchRequest.upsert(index, entity.getId(), entity, jsonMap);
+  }
+
+  protected void extractDefinitionData(
+      final MessageSubscriptionEntity entity,
+      final String elementId,
+      final long processDefinitionKey,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+    if (processDefinitionKey > 0) {
+      entity.setProcessDefinitionKey(processDefinitionKey);
+      final var cached = processCache.get(processDefinitionKey);
+      entity.setProcessDefinitionName(
+          cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null));
+      entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
+      final Map<String, String> ext =
+          cached
+              .map(CachedProcessEntity::elementExtensionProperties)
+              .map(p -> p.get(elementId))
+              .orElse(Map.of());
+      entity
+          .setToolName(ext.get(extensionPropertyConfig.getToolNameProperty()))
+          .setInboundConnectorType(
+              ext.get(extensionPropertyConfig.getInboundConnectorTypeProperty()))
+          .setToolProperties(
+              ProcessModelReader.extractExtensionProperties(
+                  ext, extensionPropertyConfig.getToolPropertiesPrefix()));
+    }
   }
 }

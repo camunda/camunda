@@ -16,7 +16,7 @@ import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 public class JobServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private JobServices<SearchQueryResult<JobEntity>> services;
   private JobSearchClient client;
   private CamundaAuthentication authentication;
@@ -35,6 +36,7 @@ public class JobServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new JobServices<>(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             null,

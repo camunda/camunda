@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
@@ -18,7 +19,8 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 
-public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
+public class VariableHandler
+    implements OrdinalIndexExportHandler<VariableEntity, VariableRecordValue> {
 
   private final int variableSizeThreshold;
   private final String indexName;
@@ -88,8 +90,9 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   }
 
   @Override
-  public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final TargetIndex index, final VariableEntity entity, final BatchRequest batchRequest) {
+    batchRequest.add(index, entity);
   }
 
   @Override

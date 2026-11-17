@@ -1,0 +1,50 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
+import {OperationItem} from '#/operate/shared/OperationItem/OperationItem';
+import {CancelConfirmationModal} from './CancelConfirmationModal';
+
+type Props = {
+	processInstanceKey: ProcessInstance['processInstanceKey'];
+	onExecute: () => void;
+	disabled?: boolean;
+	title?: string;
+};
+
+const Cancel: React.FC<Props> = ({processInstanceKey, onExecute, disabled = false, title}) => {
+	const {t} = useTranslation();
+	const [isCancellationModalVisible, setIsCancellationModalVisible] = useState(false);
+
+	return (
+		<>
+			<OperationItem
+				type="CANCEL_PROCESS_INSTANCE"
+				onClick={() => setIsCancellationModalVisible(true)}
+				title={title ?? t('operate.shared.operations.cancelInstance')}
+				disabled={disabled}
+				size="sm"
+			/>
+			{isCancellationModalVisible && (
+				<CancelConfirmationModal
+					processInstanceKey={processInstanceKey}
+					open={isCancellationModalVisible}
+					onConfirm={() => {
+						setIsCancellationModalVisible(false);
+						onExecute();
+					}}
+					onCancel={() => setIsCancellationModalVisible(false)}
+				/>
+			)}
+		</>
+	);
+};
+
+export {Cancel};

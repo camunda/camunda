@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignGroupMember } from "src/utility/api/membership";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveGroupMemberModalProps = UseEntityModalCustomProps<
@@ -34,22 +34,25 @@ const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMember, { loading }] = useApiCall(unassignGroupMember);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    membershipMutations.unassignGroupMember(qc),
+  );
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (groupId && user) {
-      const { success } = await callUnassignMember({
-        groupId,
-        username: user.username,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("groupMemberRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { groupId, username: user.username },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("groupMemberRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

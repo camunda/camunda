@@ -17,12 +17,13 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
 import java.util.Set;
 import org.immutables.value.Value;
 
 /**
- * A record value that represents the execution of a batch operation. It contains a set of item keys
- * that are being or were processed as part of the batch operation.
+ * A record value that represents the execution of a batch operation. It contains the items that are
+ * being or were processed as part of the batch operation.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationExecutionRecordValue.Builder.class)
@@ -32,4 +33,20 @@ public interface BatchOperationExecutionRecordValue extends BatchOperationRelate
    * @return subset of entity keys for the batch operation which are being or were processed
    */
   Set<Long> getItemKeys();
+
+  /**
+   * @return the items which are being or were processed, the keys of {@link #getItemKeys()} each
+   *     with the storage ordinal its entity lives under
+   */
+  List<BatchOperationExecutionItemValue> getItems();
+
+  /**
+   * One item of the execution. Each item carries its own {@link #getStorageOrdinal() storage
+   * ordinal} because they may live under different ordinals.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableBatchOperationExecutionItemValue.Builder.class)
+  interface BatchOperationExecutionItemValue extends StorageOrdinalRelated {
+    long getItemKey();
+  }
 }

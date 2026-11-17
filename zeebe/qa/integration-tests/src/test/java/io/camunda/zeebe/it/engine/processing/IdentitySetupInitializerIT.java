@@ -9,10 +9,10 @@ package io.camunda.zeebe.it.engine.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClient;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.engine.processing.identity.initialize.PlatformDefaultEntities;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -30,6 +30,8 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -165,20 +167,15 @@ final class IdentitySetupInitializerIT {
     assertThat(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword())).isTrue();
   }
 
-  @Test
-  void shouldInitializeWithMappingRulesAndRoleMemberships() {
+  // Each key form is exercised in its own broker: config is flattened to camunda.* properties and
+  // re-bound by Spring, which collapses case-variant map keys into a single canonical key. Putting
+  // several variants in one default-roles map would therefore drop all but one, so we verify the
+  // forms independently — matching how a real user supplies a single form via YAML/env.
+  @ParameterizedTest
+  @ValueSource(strings = {"mappingRules", "mappingrules", "mapping-rules"})
+  void shouldInitializeWithMappingRulesAndRoleMemberships(final String mappingRulesKey) {
     // given a broker with authorization enabled
-    final var mappingRules1 =
-        new ConfiguredMappingRule(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString());
-    final var mappingRules2 =
-        new ConfiguredMappingRule(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString());
-    final var mappingRules3 =
+    final var mappingRule =
         new ConfiguredMappingRule(
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
@@ -187,19 +184,11 @@ final class IdentitySetupInitializerIT {
         true,
         1,
         cfg -> {
-          cfg.getInitialization()
-              .setMappingRules(List.of(mappingRules1, mappingRules2, mappingRules3));
-          cfg.getInitialization()
-              .getDefaultRoles()
-              .put(
-                  "admin",
-                  Map.of(
-                      "mappingRules",
-                      List.of(mappingRules1.getMappingRuleId()),
-                      "mappingrules",
-                      List.of(mappingRules2.getMappingRuleId()),
-                      "mapping-rules",
-                      List.of(mappingRules3.getMappingRuleId())));
+          cfg.getInitialization().setMappingRules(List.of(mappingRule));
+          final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+          defaultRoles.put(
+              "admin", Map.of(mappingRulesKey, List.of(mappingRule.getMappingRuleId())));
+          cfg.getInitialization().setDefaultRoles(defaultRoles);
         });
 
     // then identity should be initialized
@@ -211,41 +200,23 @@ final class IdentitySetupInitializerIT {
     final var firstMappingRule = record.getMappingRules().getFirst();
     Assertions.assertThat(firstMappingRule)
         .isNotNull()
-        .hasMappingRuleId(mappingRules1.getMappingRuleId())
-        .hasClaimName(mappingRules1.getClaimName())
-        .hasClaimValue(mappingRules1.getClaimValue());
-
-    final var secondMappingRule = record.getMappingRules().get(1);
-    Assertions.assertThat(secondMappingRule)
-        .isNotNull()
-        .hasMappingRuleId(mappingRules2.getMappingRuleId())
-        .hasClaimName(mappingRules2.getClaimName())
-        .hasClaimValue(mappingRules2.getClaimValue());
-
-    final var thirdMappingRule = record.getMappingRules().get(2);
-    Assertions.assertThat(thirdMappingRule)
-        .isNotNull()
-        .hasMappingRuleId(mappingRules3.getMappingRuleId())
-        .hasClaimName(mappingRules3.getClaimName())
-        .hasClaimValue(mappingRules3.getClaimValue());
+        .hasMappingRuleId(mappingRule.getMappingRuleId())
+        .hasClaimName(mappingRule.getClaimName())
+        .hasClaimValue(mappingRule.getClaimValue());
 
     final var members = record.getRoleMembers().stream().map(RoleRecordValue::getEntityId).toList();
-    assertThat(members)
-        .containsExactlyInAnyOrder(
-            mappingRules1.getMappingRuleId(),
-            mappingRules2.getMappingRuleId(),
-            mappingRules3.getMappingRuleId());
+    assertThat(members).containsExactly(mappingRule.getMappingRuleId());
   }
 
   private void createBroker(
       final boolean authorizationsEnabled,
       final int partitionCount,
       final Path tempDir,
-      final Consumer<CamundaSecurityProperties> securityCfg) {
+      final Consumer<CamundaSecurityLibraryProperties> securityCfg) {
     broker =
         new TestStandaloneBroker()
-            .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
-            .withSecurityConfig(securityCfg)
+            .withSecurityConfig(
+                securityCfg.andThen(sc -> sc.getAuthorizations().setEnabled(authorizationsEnabled)))
             .withClusterConfig(cluster -> cluster.setPartitionCount(partitionCount))
             .withRecordingExporter(true);
 
@@ -263,7 +234,9 @@ final class IdentitySetupInitializerIT {
         partitionCount,
         cfg -> {
           final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
-          cfg.getInitialization().getUsers().add(user);
+          final var users = new ArrayList<>(cfg.getInitialization().getUsers());
+          users.add(user);
+          cfg.getInitialization().setUsers(users);
         });
   }
 
@@ -275,7 +248,7 @@ final class IdentitySetupInitializerIT {
   private void createBroker(
       final boolean authorizationsEnabled,
       final int partitionCount,
-      final Consumer<CamundaSecurityProperties> securityCfg) {
+      final Consumer<CamundaSecurityLibraryProperties> securityCfg) {
     createBroker(authorizationsEnabled, partitionCount, null, securityCfg);
   }
 }

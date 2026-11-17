@@ -36,7 +36,7 @@ public class PercentileAggregationOS extends AggregationStrategyOS {
   }
 
   @Override
-  public Double getValueForAggregation(
+  protected Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs) {
     final String aggregationName =
         createAggregationName(

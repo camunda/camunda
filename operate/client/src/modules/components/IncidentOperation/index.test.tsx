@@ -45,6 +45,14 @@ describe('IncidentOperation', () => {
     mockGetIncident().withSuccess(createIncident({state: 'RESOLVED'}));
   });
 
+  it('should disable retry when disabled is true', () => {
+    render(<IncidentOperation incidentKey="123" jobKey={null} disabled />, {
+      wrapper: Wrapper,
+    });
+
+    expect(retryButton()).toBeDisabled();
+  });
+
   it('should display an notification when retrying an incident fails', async () => {
     mockResolveIncident().withServerError(500);
     const {user} = render(
@@ -59,7 +67,7 @@ describe('IncidentOperation', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: "Couldn't create operation",
       isDismissable: true,
     });
   });

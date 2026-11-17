@@ -13,7 +13,7 @@ import static io.camunda.zeebe.engine.processing.identity.authorization.property
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,13 +56,14 @@ public class UserTaskClaimAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
@@ -81,7 +83,7 @@ public class UserTaskClaimAuthorizationTest {
     engine
         .userTask()
         .ofInstance(processInstanceKey)
-        .withAssignee("assignee")
+        .withAssignee(DEFAULT_USER.getUsername())
         .claim(DEFAULT_USER.getUsername());
 
     // then
@@ -491,6 +493,39 @@ public class UserTaskClaimAuthorizationTest {
   }
 
   @Test
+  public void shouldRejectClaimWhenAssigneeDoesNotMatchCaller() {
+    // given
+    final var processInstanceKey = createProcessInstance(process());
+    final var caller = createUser();
+    final var otherUser = createUser();
+    authorizationHelper.addPermissionsToUser(
+        caller.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CLAIM_USER_TASK,
+        AuthorizationScope.WILDCARD);
+
+    // when
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee(otherUser.getUsername())
+            .expectRejection()
+            .claim(caller.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Expected to claim user task with key '%d', but the assignee '%s' does not match the calling user '%s'"
+                .formatted(
+                    getUserTaskKey(processInstanceKey),
+                    otherUser.getUsername(),
+                    caller.getUsername()));
+  }
+
+  @Test
   public void shouldBeUnauthorizedToClaimUserTaskIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance(process());
@@ -515,6 +550,40 @@ public class UserTaskClaimAuthorizationTest {
                 and Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
                 and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]'; \
                 and Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]'"""
+                .formatted(PROCESS_ID, PROCESS_ID, userTaskKey, userTaskKey));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToClaimUserTaskWhenCandidateUserButNoStoredPropertyGrant() {
+    // given - the user is a candidate user of the task, but holds NO stored USER_TASK
+    // property-scoped grant. Matching the candidate value alone must not authorize: property
+    // authorization requires both a stored property-scoped grant AND an evaluator match
+    // (deny-by-default). A value-only evaluation would wrongly allow this.
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(
+            process(
+                t -> t.zeebeCandidateUsers("faramir, %s, boromir".formatted(user.getUsername()))));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+
+    // when
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee(user.getUsername())
+            .expectRejection()
+            .claim(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            """
+                Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' or resource must match property constraints '[candidateUsers]'; \
+                and Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' or resource must match property constraints '[candidateUsers]'"""
                 .formatted(PROCESS_ID, PROCESS_ID, userTaskKey, userTaskKey));
   }
 

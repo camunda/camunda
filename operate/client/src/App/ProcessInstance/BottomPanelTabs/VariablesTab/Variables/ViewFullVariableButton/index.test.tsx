@@ -24,7 +24,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-const createWrapper = () => {
+const createWrapper = (initialValues?: Record<string, unknown>) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <ProcessDefinitionKeyContext.Provider value="123">
       <QueryClientProvider client={getMockQueryClient()}>
@@ -32,7 +32,11 @@ const createWrapper = () => {
           <Routes>
             <Route
               path={Paths.processInstance()}
-              element={<Form onSubmit={() => {}}>{() => children}</Form>}
+              element={
+                <Form onSubmit={() => {}} initialValues={initialValues}>
+                  {() => children}
+                </Form>
+              }
             />
           </Routes>
         </MemoryRouter>
@@ -187,6 +191,83 @@ describe('<ViewFullVariableButton />', () => {
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
+  });
+
+  it('should copy the variable as a key-value JSON object in show mode', async () => {
+    const mockVariableName = 'foo-variable';
+    const mockVariableKey = 'variable-key-123';
+    const mockVariableValue = '{"foo": "bar", "test": 123}';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    mockGetVariable().withSuccess(
+      createVariable({
+        variableKey: mockVariableKey,
+        name: mockVariableName,
+        value: mockVariableValue,
+      }),
+    );
+
+    const {user} = render(
+      <ViewFullVariableButton
+        mode="show"
+        variableName={mockVariableName}
+        variableKey={mockVariableKey}
+        variableValue={mockVariableValue}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Open'}));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variable-operation-spinner'),
+    );
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith(
+      `{"${mockVariableName}":${JSON.stringify(JSON.parse(mockVariableValue))}}`,
+    );
+  });
+
+  it('should copy the variable as a key-value JSON object in edit mode', async () => {
+    const mockVariableName = 'foo-variable';
+    const mockVariableKey = 'variable-key-123';
+    const mockVariableValue = '{"foo": "bar", "test": 123}';
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: mockWriteText},
+      writable: true,
+    });
+
+    mockGetVariable().withSuccess(
+      createVariable({
+        variableKey: mockVariableKey,
+        name: mockVariableName,
+        value: mockVariableValue,
+      }),
+    );
+
+    const {user} = render(
+      <ViewFullVariableButton
+        mode="edit"
+        variableName={mockVariableName}
+        variableKey={mockVariableKey}
+        variableValue={mockVariableValue}
+      />,
+      {wrapper: createWrapper({value: mockVariableValue})},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Open'}));
+
+    await user.click(screen.getByRole('button', {name: /^copy$/i}));
+
+    expect(mockWriteText).toHaveBeenCalledWith(
+      `{"${mockVariableName}":${JSON.stringify(JSON.parse(mockVariableValue))}}`,
+    );
   });
 
   it('should open JSON editor modal for mode edit', async () => {

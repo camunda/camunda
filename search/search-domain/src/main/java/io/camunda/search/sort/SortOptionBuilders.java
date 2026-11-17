@@ -14,6 +14,34 @@ public final class SortOptionBuilders {
 
   private SortOptionBuilders() {}
 
+  public static AgentDefinitionSort.Builder agentDefinition() {
+    return new AgentDefinitionSort.Builder();
+  }
+
+  public static AgentDefinitionSort agentDefinition(
+      final Function<AgentDefinitionSort.Builder, ObjectBuilder<AgentDefinitionSort>> fn) {
+    return fn.apply(agentDefinition()).build();
+  }
+
+  public static AgentInstanceSort.Builder agentInstance() {
+    return new AgentInstanceSort.Builder();
+  }
+
+  public static AgentInstanceSort agentInstance(
+      final Function<AgentInstanceSort.Builder, ObjectBuilder<AgentInstanceSort>> fn) {
+    return fn.apply(agentInstance()).build();
+  }
+
+  public static AgentInstanceHistorySort.Builder agentInstanceHistory() {
+    return new AgentInstanceHistorySort.Builder();
+  }
+
+  public static AgentInstanceHistorySort agentInstanceHistory(
+      final Function<AgentInstanceHistorySort.Builder, ObjectBuilder<AgentInstanceHistorySort>>
+          fn) {
+    return fn.apply(agentInstanceHistory()).build();
+  }
+
   public static UsageMetricsSort.Builder usageMetrics() {
     return new UsageMetricsSort.Builder();
   }
@@ -38,6 +66,15 @@ public final class SortOptionBuilders {
 
   public static UserTaskSort.Builder userTask() {
     return new UserTaskSort.Builder();
+  }
+
+  public static VariableHistoryItemSort.Builder variableHistoryItem() {
+    return new VariableHistoryItemSort.Builder();
+  }
+
+  public static VariableHistoryItemSort variableHistoryItem(
+      final Function<VariableHistoryItemSort.Builder, ObjectBuilder<VariableHistoryItemSort>> fn) {
+    return fn.apply(variableHistoryItem()).build();
   }
 
   public static VariableSort.Builder variable() {
@@ -370,5 +407,23 @@ public final class SortOptionBuilders {
   public static JobErrorStatisticsSort jobErrorStatistics(
       final Function<JobErrorStatisticsSort.Builder, ObjectBuilder<JobErrorStatisticsSort>> fn) {
     return fn.apply(jobErrorStatistics()).build();
+  }
+
+  public static DeployedResourceSort.Builder deployedResource() {
+    return new DeployedResourceSort.Builder();
+  }
+
+  public static DeployedResourceSort deployedResource(
+      final Function<DeployedResourceSort.Builder, ObjectBuilder<DeployedResourceSort>> fn) {
+    return fn.apply(deployedResource()).build();
+  }
+
+  public static WaitStateSort.Builder waitState() {
+    return new WaitStateSort.Builder();
+  }
+
+  public static WaitStateSort waitState(
+      final Function<WaitStateSort.Builder, ObjectBuilder<WaitStateSort>> fn) {
+    return fn.apply(waitState()).build();
   }
 }

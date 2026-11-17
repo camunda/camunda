@@ -41,8 +41,7 @@ let dockerProcess;
 let backendVersion;
 let elasticSearchVersion;
 let opensearchVersion;
-let zeebeVersion;
-let identityVersion;
+let camundaVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
@@ -52,25 +51,38 @@ const commonEnv = {
 const cloudEnv = {
   SPRING_PROFILES_ACTIVE: 'cloud',
   ZEEBE_IMPORT_ENABLED: 'true',
-  CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN: 'camunda-excitingdev.eu.auth0.com',
-  CAMUNDA_OPTIMIZE_AUTH0_CLIENTID: '4ySAuc47zUsrQVHzQGTTPSDCiecSoqnp',
-  CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET: process.env.AUTH0_CLIENTSECRET,
-  CAMUNDA_OPTIMIZE_AUTH0_DOMAIN: 'weblogin.cloud.dev.ultrawombat.com',
-  CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
+
+  // Not auth config. The M2M Accounts client needs the token url and audience.
   CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL: 'https://login.cloud.dev.ultrawombat.com/oauth/token',
-  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
-    'https://camunda-excitingdev.eu.auth0.com/.well-known/jwks.json',
-  CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE: 'optimize.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL: 'https://accounts.cloud.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE: 'cloud.dev.ultrawombat.com',
+
+  CAMUNDA_SECURITY_AUTHENTICATION_METHOD: 'OIDC',
+  CAMUNDA_SECURITY_SAAS_CLUSTERID: 'optimize-e2e-cloud',
+  CAMUNDA_SECURITY_SAAS_ORGANIZATIONID: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTID: '4ySAuc47zUsrQVHzQGTTPSDCiecSoqnp',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTSECRET: process.env.AUTH0_CLIENTSECRET,
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUERURI: 'https://weblogin.cloud.dev.ultrawombat.com/',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_JWKSETURI:
+    'https://camunda-excitingdev.eu.auth0.com/.well-known/jwks.json',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ORGANIZATIONID: 'f4e522a8-f642-4293-b5cb-1d14e1730534',
+  // Placeholder form on purpose, this is byte for byte what the bridge derives today.
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECTURI:
+    '{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=optimize-e2e-cloud',
+  // Login id_token carries the client id as its only aud, bearer tokens carry the resource one.
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_AUDIENCES:
+    'optimize.dev.ultrawombat.com,4ySAuc47zUsrQVHzQGTTPSDCiecSoqnp',
+  CAMUNDA_SECURITY_AUTHENTICATION_OIDC_AUTHORIZEREQUEST_ADDITIONALPARAMETERS_AUDIENCE:
+    'cloud.dev.ultrawombat.com',
+
   CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN: 'true',
   CAMUNDA_OPTIMIZE_NOTIFICATIONS_URL: 'https://notifications.cloud.dev.ultrawombat.com',
 };
 
 const selfManagedEnv = {
   SPRING_PROFILES_ACTIVE: 'ccsm',
-  ZEEBE_IMPORT_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: 'true',
+  CAMUNDA_OPTIMIZE_ZEEBE_REST_ADDRESS: 'http://localhost:8080',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: 'http://localhost:18080/auth/realms/camunda-platform',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:
     'http://localhost:18080/auth/realms/camunda-platform',
@@ -87,7 +99,8 @@ const selfManagedEnv = {
   OPTIMIZE_OPENSEARCH_HOST: 'localhost',
   OPTIMIZE_OPENSEARCH_HTTP_PORT: '9200',
   CAMUNDA_OPTIMIZE_API_AUDIENCE: 'optimize',
-  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
+  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: 'true',
+  OPTIMIZE_LOG_LEVEL: 'DEBUG',
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
     'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
   MANAGEMENT_SERVER_PORT: '19600',
@@ -95,7 +108,16 @@ const selfManagedEnv = {
 
 const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
 
-setVersionInfo().then(setupEnvironment).then(startBackend);
+setVersionInfo()
+  .then(setupEnvironment)
+  .then(startBackend)
+  .catch((err) => {
+    // surface the fail-fast message from setVersionInfo as a clear line, not an unhandled rejection.
+    // startBackend/setupEnvironment reject with a bare exit code rather than an Error, so fall back
+    // to the raw value when there is no message.
+    console.error(err.message ?? err);
+    process.exit(1);
+  });
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -105,7 +127,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `mvn -f optimize/backend/pom.xml spring-boot:run -Dspring-boot.run.additionalClasspathElements=optimize/client/demo-data`,
+      `./mvnw -f optimize/backend/pom.xml spring-boot:run -Dspring-boot.run.additionalClasspathElements=optimize/client/demo-data`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -151,7 +173,7 @@ async function setupEnvironment() {
   await Promise.all([
     startDocker(),
     buildBackend().catch(() => {
-      console.err('Optimize build interrupted');
+      console.error('Optimize build interrupted');
     }),
   ]);
 }
@@ -159,7 +181,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
+      './mvnw -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -167,7 +189,10 @@ function buildBackend() {
     );
 
     buildBackendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
-    buildBackendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
+    buildBackendProcess.stderr.on('data', (data) => {
+      console.error(`backend build stderr: ${data}`);
+      server.addLog(data, 'backend', true);
+    });
     buildBackendProcess.on('close', (code) => {
       buildBackendProcess = null;
       if (code === 0) {
@@ -180,6 +205,7 @@ function buildBackend() {
 }
 
 function startDocker() {
+  console.log(`Starting docker with profile ${mode}:${database}...`);
   if (dockerProcess) {
     return Promise.resolve();
   }
@@ -192,10 +218,8 @@ function startDocker() {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
         OS_VERSION: opensearchVersion,
-        ZEEBE_VERSION: zeebeVersion,
-        IDENTITY_VERSION: identityVersion,
         // we assume that the version of operate is the same as zeebe
-        OPERATE_VERSION: zeebeVersion,
+        CAMUNDA_VERSION: camundaVersion,
         // to start only the opensearch services, we create profiles for mode + database
         // so we can better control which services are started
         COMPOSE_PROFILES: [`${mode}:${database}`].join(','),
@@ -203,34 +227,112 @@ function startDocker() {
     });
 
     dockerProcess.stdout.on('data', (data) => server.addLog(data, 'docker'));
-    dockerProcess.stderr.on('data', (data) => server.addLog(data, 'docker', true));
+    dockerProcess.stderr.on('data', (data) => {
+      process.stderr.write(`docker stderr: ${data}`);
+      server.addLog(data, 'docker', true);
+    });
 
     process.on('SIGINT', stopDocker);
     process.on('SIGTERM', stopDocker);
 
-    // wait for the zeebe rest endpoint to be up before resolving the promise
-    serverCheck('http://localhost:9600/ready', resolve);
+    waitForDockerDependencies().then(resolve);
   });
 }
 
-function setVersionInfo() {
-  return new Promise((resolve) => {
-    readFile(_resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (_err, data) => {
-      parseString(data, {explicitArray: false}, (err, data) => {
-        if (err) {
-          return console.error(err);
-        }
+function waitForDockerDependencies() {
+  const dependencies = [
+    {url: 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'},
+  ];
 
-        backendVersion = data.project.version;
-        const properties = data.project.properties;
-        elasticSearchVersion = properties['elasticsearch.test.version'];
-        opensearchVersion = properties['opensearch.test.version'];
-        zeebeVersion = properties['zeebe.version'];
-        identityVersion = properties['identity.version'];
-        resolve();
+  if (mode === 'self-managed') {
+    dependencies.push(
+      {url: 'http://localhost:18080/auth'},
+      {url: 'http://localhost:9600/ready'},
+      // The C8 REST API requires authentication, so a 401/403 still means the gateway on port 8080
+      // is up and serving requests. A 5xx (e.g. a gateway that is still starting) is not accepted,
+      // so the readiness gate stays meaningful.
+      {url: 'http://localhost:8080/v2/topology', acceptStatuses: [401, 403]}
+    );
+  }
+
+  return Promise.all(
+    dependencies.map(({url, acceptStatuses}) => waitForServerCheck(url, acceptStatuses))
+  );
+}
+
+function waitForServerCheck(url, acceptStatuses) {
+  return new Promise((resolve) => serverCheck(url, resolve, acceptStatuses));
+}
+
+function parsePomProperties(pomPath) {
+  return new Promise((resolve) => {
+    readFile(pomPath, 'utf8', (readErr, data) => {
+      if (readErr) {
+        console.error(`Failed to read ${pomPath}:`, readErr);
+        return resolve({properties: {}, version: undefined});
+      }
+      parseString(data, {explicitArray: false}, (parseErr, parsed) => {
+        if (parseErr) {
+          console.error(parseErr);
+          return resolve({properties: {}, version: undefined});
+        }
+        resolve({
+          properties: parsed?.project?.properties ?? {},
+          version: parsed?.project?.version,
+        });
       });
     });
   });
+}
+
+// Resolves Maven ${...} property placeholders using the given properties map.
+function resolvePlaceholders(value, properties) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  let resolved = value;
+  for (let i = 0; i < 10 && resolved.includes('${'); i++) {
+    resolved = resolved.replace(/\$\{([^}]+)\}/g, (match, key) =>
+      properties[key] !== undefined ? properties[key] : match
+    );
+  }
+  return resolved;
+}
+
+async function setVersionInfo() {
+  const optimizePom = await parsePomProperties(_resolve(__dirname, '..', '..', 'pom.xml'));
+  // Some version properties in optimize/pom.xml reference properties defined in the
+  // parent pom (e.g. ${version.elasticsearch.container}), so we resolve against both.
+  const parentPom = await parsePomProperties(
+    _resolve(__dirname, '..', '..', '..', 'parent', 'pom.xml')
+  );
+  const properties = {...parentPom.properties, ...optimizePom.properties};
+
+  backendVersion = optimizePom.version;
+  elasticSearchVersion = resolvePlaceholders(properties['elasticsearch.test.version'], properties);
+  opensearchVersion = resolvePlaceholders(properties['opensearch.test.version'], properties);
+  camundaVersion = resolvePlaceholders(properties['camunda.docker.version'], properties);
+
+  // Fail fast with a clear message rather than letting an undefined/unresolved version reach
+  // docker-compose, where it surfaces as an opaque image-pull failure.
+  const unresolved = Object.entries({
+    'optimize/pom.xml <version>': backendVersion,
+    'elasticsearch.test.version': elasticSearchVersion,
+    'opensearch.test.version': opensearchVersion,
+    'camunda.docker.version': camundaVersion,
+  })
+    .filter(([, value]) => !value || String(value).includes('${'))
+    .map(([name]) => name);
+  if (unresolved.length > 0) {
+    throw new Error(
+      `Could not resolve version(s) from pom.xml: ${unresolved.join(', ')}. ` +
+        'Ensure optimize/pom.xml and parent/pom.xml are readable and define these properties.'
+    );
+  }
+
+  console.log(
+    `Backend version: ${backendVersion}, Elasticsearch version: ${elasticSearchVersion}, Opensearch version: ${opensearchVersion}, Camunda/Identity version: ${camundaVersion}`
+  );
 }
 
 function stopDocker() {
@@ -249,15 +351,15 @@ function stopDocker() {
   });
 }
 
-function serverCheck(url, onComplete) {
+function serverCheck(url, onComplete, acceptStatuses = []) {
   setTimeout(async () => {
     try {
       const response = await fetch(url);
-      if (!response.ok) {
-        return serverCheck(url, onComplete);
+      if (!response.ok && !acceptStatuses.includes(response.status)) {
+        return serverCheck(url, onComplete, acceptStatuses);
       }
     } catch (_e) {
-      return serverCheck(url, onComplete);
+      return serverCheck(url, onComplete, acceptStatuses);
     }
     onComplete();
   }, 1000);

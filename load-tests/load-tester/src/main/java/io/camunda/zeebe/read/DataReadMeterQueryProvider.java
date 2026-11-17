@@ -74,6 +74,11 @@ public final class DataReadMeterQueryProvider {
                         context.benchmarkProcessDefinitionKey())
                     .filter(f -> f.state(s -> s.in(List.of(ProcessInstanceState.ACTIVE))))),
         new ReadQuery(
+            "process_instance_element_statistics",
+            Duration.ofSeconds(30),
+            (client, context) ->
+                client.newProcessInstanceElementStatisticsRequest(context.processInstanceKey())),
+        new ReadQuery(
             "incident_by_error_statistics",
             Duration.ofSeconds(30),
             (client, context) ->

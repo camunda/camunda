@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_coexistence"
+  targetNamespace="http://bpmn.io/schema/bpmn"
+  exporter="Camunda Modeler"
+  exporterVersion="5.x"
+  modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.10.0">
+
+  <!--
+    E2E-10 — beforeAll + start/end EL co-existence (parallel MI)
+    ──────────────────────────────────────────────────────────────
+    Purpose : Verify that introducing beforeAll does NOT change the semantics
+              of existing start/end ELs on the same MI element — they must
+              still fire once PER INNER INSTANCE ("before each" / "after each"),
+              not once globally.
+
+    Expected firing counts for items=["alpha","beta","gamma"] (3 elements):
+      mi-coexist-before-all   → 1  (beforeAll: once, before any instance is created)
+      mi-coexist-before-each  → 3  (start EL:  once per inner instance)
+      mi-coexist-inner-worker → 3  (task job:  once per inner instance)
+      mi-coexist-after-each   → 3  (end EL:    once per inner instance)
+
+    Per-instance ordering guarantee (parallel MI):
+      beforeAll ──► [before-each ──► task ──► after-each] × 3 (concurrently)
+
+    Workers required
+      mi-coexist-before-all   – beforeAll; sets items=["alpha","beta","gamma"]
+      mi-coexist-before-each  – start EL per inner instance
+      mi-coexist-inner-worker – task job per inner instance
+      mi-coexist-after-each   – end EL per inner instance
+  -->
+
+  <bpmn:process id="mi-el-coexistence"
+                name="MI EL — beforeAll + start/end Co-existence"
+                isExecutable="true">
+
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_start_to_mi</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!--
+      Execution listener ordering on this element:
+        1. beforeAll  → "mi-coexist-before-all"   (once, on MI body)
+        2. start      → "mi-coexist-before-each"  (per inner instance)
+        3. [task]     → "mi-coexist-inner-worker" (per inner instance)
+        4. end        → "mi-coexist-after-each"   (per inner instance)
+    -->
+    <bpmn:serviceTask id="miTask"
+                      name="MI Task (beforeAll + start EL + end EL)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="mi-coexist-inner-worker" retries="3" />
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="beforeAll" type="mi-coexist-before-all"  retries="3" />
+          <zeebe:executionListener eventType="start"     type="mi-coexist-before-each" retries="3" />
+          <zeebe:executionListener eventType="end"       type="mi-coexist-after-each"  retries="3" />
+        </zeebe:executionListeners>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_to_mi</bpmn:incoming>
+      <bpmn:outgoing>Flow_mi_to_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="= items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_mi_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_start_to_mi"
+      sourceRef="StartEvent_1" targetRef="miTask" />
+    <bpmn:sequenceFlow id="Flow_mi_to_end"
+      sourceRef="miTask"       targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+  <!-- ── Diagram layout (minimal) ─────────────────────────────────────────── -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mi-el-coexistence">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="158" y="125" width="24" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="miTask_di" bpmnElement="miTask" isMarkerVisible="true">
+        <dc:Bounds x="240" y="60" width="220" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="512" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="520" y="125" width="20" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_to_mi_di" bpmnElement="Flow_start_to_mi">
+        <di:waypoint x="188" y="100" /><di:waypoint x="240" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_mi_to_end_di" bpmnElement="Flow_mi_to_end">
+        <di:waypoint x="460" y="100" /><di:waypoint x="512" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

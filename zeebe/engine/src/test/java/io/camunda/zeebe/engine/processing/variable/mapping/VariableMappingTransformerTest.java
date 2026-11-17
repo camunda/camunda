@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.variable.mapping;
 
-import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
@@ -32,110 +29,74 @@ public final class VariableMappingTransformerTest {
   @Test
   public void shouldCreateValidExpression() {
     // when
-    final var expression =
+    final var inputMappings =
         transformer.transformInputMappings(
-            List.of(mapping("x", "a"), mapping("_x", "b")), expressionLanguage);
+            List.of(mapping("x", "a"), mapping("_x", "b.c")), expressionLanguage);
 
     // then
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+    assertThat(inputMappings.mappings()).hasSize(2);
+
+    final var first = inputMappings.mappings().get(0);
+    assertThat(first.source().isValid())
+        .describedAs("Expected valid expression: %s", first.source().getFailureMessage())
         .isTrue();
+    assertThat(first.targetPath()).containsExactly("a");
+
+    final var second = inputMappings.mappings().get(1);
+    assertThat(second.source().isValid())
+        .describedAs("Expected valid expression: %s", second.source().getFailureMessage())
+        .isTrue();
+    assertThat(second.targetPath()).containsExactly("b", "c");
   }
 
   @Test
-  public void shouldEvaluateToObject() {
-    // given
-    final var expression =
-        transformer.transformInputMappings(List.of(mapping("x", "a")), expressionLanguage);
-
-    // when
-    final var result =
-        expressionLanguage.evaluateExpression(expression, name -> Either.left(asMsgPack("1")));
-
-    // then
-    assertThat(result.isFailure())
-        .describedAs("Expected valid result: %s", expression.getFailureMessage())
-        .isFalse();
-    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
-  }
-
-  @Test
-  public void failToTransformWithInvalidSourceExpression() {
-    // when
-    final var mappings = List.of(mapping("=x?", "a"));
-
-    // when
-    assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
-        .hasMessageStartingWith(
-            "Failed to build variable mapping expression: failed to parse expression '{a:x?}'");
-  }
-
-  @Test
-  public void failToTransformWithInvalidTargetExpression() {
-    // given
-    final var mappings = List.of(mapping("=x", "a,"));
-
-    // when
-    assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
-        .hasMessageStartingWith(
-            "Failed to build variable mapping expression: failed to parse expression '{a,:x}'");
-  }
-
-  @Test
-  public void shouldEvaluateWithNotExistingVariable() {
-    // given
-    final var mappings = List.of(mapping("=x", "a"));
-    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
-
-    // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
-
-    // then
-    assertThat(result.isFailure())
-        .describedAs("Expected valid result: %s", expression.getFailureMessage())
-        .isFalse();
-
-    assertThat(result.getType())
-        .describedAs("Expected to replace a non-existing variable with `null`")
-        .isEqualTo(ResultType.OBJECT);
-  }
-
-  @Test
-  public void shouldNotEscapeCharactersInStaticExpression() {
-    // when
-    final var expression =
+  public void shouldPreserveStaticSourceValueAsString() {
+    // given static sources containing special characters, quotes, or number/boolean/null shapes
+    final var rawSources =
+        List.of(
+            "Hello\tWorld",
+            "Hello\nWorld",
+            "Hello\rWorld",
+            "\"My Name is \"Zeebe\", nice to meet you\"",
+            "My Name is &#34;Zeebe&#34;, nice to meet you");
+    final var inputMappings =
         transformer.transformInputMappings(
             List.of(
-                mapping("Hello\tWorld", "tab"),
-                mapping("Hello\nWorld", "newline"),
-                mapping("Hello\rWorld", "carriageReturn"),
-                mapping("\"My Name is \"Zeebe\", nice to meet you\"", "doubleQoutes"),
-                mapping("My Name is &#34;Zeebe&#34;, nice to meet you", "encodedQuotes")),
+                mapping(rawSources.get(0), "tab"),
+                mapping(rawSources.get(1), "newline"),
+                mapping(rawSources.get(2), "carriageReturn"),
+                mapping(rawSources.get(3), "doubleQuotes"),
+                mapping(rawSources.get(4), "encodedQuotes")),
             expressionLanguage);
 
-    // then
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
-        .isTrue();
-    assertThat(expression.getExpression())
-        .isEqualTo(
-            "{tab:\"Hello\tWorld\",newline:\"Hello\nWorld\",carriageReturn:\"Hello\rWorld\",doubleQoutes:\"\\\"My Name is \\\"Zeebe\\\", nice to meet you\\\"\",encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\"}");
+    // then each static input source is treated as a string, preserving its characters unescaped
+    assertThat(inputMappings.mappings()).hasSize(5);
+    for (int i = 0; i < rawSources.size(); i++) {
+      final var result =
+          expressionLanguage.evaluateExpression(
+              inputMappings.mappings().get(i).source(), name -> Either.left(null));
+      assertThat(result.getString())
+          .describedAs("static source should evaluate to the raw string, unescaped")
+          .isEqualTo(rawSources.get(i));
+    }
   }
 
   @Test
   public void shouldHandleNullSource() {
     // given
     final var mappings = List.of(mapping(null, "a"));
-    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
+    final var inputMappings = transformer.transformInputMappings(mappings, expressionLanguage);
 
     // then
-    assertThat(expression.isValid())
-        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+    assertThat(inputMappings.mappings()).hasSize(1);
+    final var mapping = inputMappings.mappings().get(0);
+    assertThat(mapping.source().isValid())
+        .describedAs("Expected valid expression: %s", mapping.source().getFailureMessage())
         .isTrue();
-    assertThat(result.getExpression()).isEqualTo("{a:null}");
+    assertThat(mapping.targetPath()).containsExactly("a");
+    assertThat(mapping.source().getExpression()).isEqualTo("null");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {

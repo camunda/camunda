@@ -7,8 +7,19 @@
  */
 package io.camunda.configuration;
 
+import org.jspecify.annotations.NullMarked;
+
+@NullMarked
 public class UnifiedConfigurationException extends RuntimeException {
-  public UnifiedConfigurationException(String message) {
+  public UnifiedConfigurationException(final Exception cause) {
+    super(cause.getMessage(), cause);
+  }
+
+  public UnifiedConfigurationException(final String message) {
     super(message);
+  }
+
+  public UnifiedConfigurationException(final String message, final Exception cause) {
+    super(message, cause);
   }
 }

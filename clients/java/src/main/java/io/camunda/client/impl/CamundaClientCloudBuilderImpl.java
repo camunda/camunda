@@ -29,6 +29,7 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.ExperimentalApi;
@@ -59,6 +60,7 @@ public class CamundaClientCloudBuilderImpl
   private static final String DEFAULT_DOMAIN = "camunda.io";
   private static final String DEFAULT_REGION = "bru-2";
   private static final String ZEEBE_DOMAIN_COMPONENT = "zeebe";
+  private static final String API_DOMAIN_COMPONENT = "api";
 
   private final CamundaClientBuilderImpl innerBuilder = new CamundaClientBuilderImpl();
 
@@ -119,11 +121,16 @@ public class CamundaClientCloudBuilderImpl
         ClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
+    resetMultiTenancy();
+    return this;
+  }
 
-    // todo(#14106): allow default tenant id setting for cloud client
-    innerBuilder.defaultTenantId("");
-    innerBuilder.defaultJobWorkerTenantIds(Collections.emptyList());
-
+  @Override
+  public CamundaClientBuilder withConfiguration(final CamundaClientConfiguration configuration) {
+    // no need to invoke the cloud builders withProperties here as the applied properties cannot be
+    // derived from the configuration anyway
+    innerBuilder.withConfiguration(configuration);
+    resetMultiTenancy();
     return this;
   }
 
@@ -151,6 +158,18 @@ public class CamundaClientCloudBuilderImpl
   public CamundaClientBuilder defaultTenantId(final String tenantId) {
     Loggers.LOGGER.debug(
         "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder physicalTenantId(final String physicalTenantId) {
+    innerBuilder.physicalTenantId(physicalTenantId);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder prefixPhysicalTenantPath(final boolean prefixPhysicalTenantPath) {
+    innerBuilder.prefixPhysicalTenantPath(prefixPhysicalTenantPath);
     return this;
   }
 
@@ -240,6 +259,52 @@ public class CamundaClientCloudBuilderImpl
   @Override
   public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     innerBuilder.caCertificatePath(certificatePath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificate(
+      final String certificateChainPath, final String privateKeyPath) {
+    innerBuilder.clientCertificate(certificateChainPath, privateKeyPath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateContent(
+      final String certificateChainPem, final String privateKeyPem) {
+    innerBuilder.clientCertificateContent(certificateChainPem, privateKeyPem);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientKeyPassphrase(final String keyPassphrase) {
+    innerBuilder.clientKeyPassphrase(keyPassphrase);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsCaCertificatePath(final String caPath) {
+    innerBuilder.mtlsCaCertificatePath(caPath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsCaCertificateContent(final String caPem) {
+    innerBuilder.mtlsCaCertificateContent(caPem);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientKeystore(
+      final String keystorePath, final String keystorePassword, final String keyPassword) {
+    innerBuilder.clientKeystore(keystorePath, keystorePassword, keyPassword);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsTruststore(
+      final String truststorePath, final String truststorePassword) {
+    innerBuilder.mtlsTruststore(truststorePath, truststorePassword);
     return this;
   }
 
@@ -336,12 +401,20 @@ public class CamundaClientCloudBuilderImpl
     return innerBuilder.build();
   }
 
+  private void resetMultiTenancy() {
+    // todo(#14106): allow default tenant id setting for cloud client
+    innerBuilder.defaultTenantId("");
+    innerBuilder.defaultJobWorkerTenantIds(Collections.emptyList());
+  }
+
   private URI determineRestAddress() {
     if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
+      // Since 8.8 SaaS exposes the REST API under the 'api' subdomain. The legacy 'zeebe'
+      // subdomain is removed with 8.10 (see the SaaS orchestration architecture migration guide),
+      // so the default REST address must target 'api' to stay compatible with 8.10+ clusters.
       final String cloudRestAddress =
-          String.format(
-              "https://%s.%s.%s:443/%s", region, ZEEBE_DOMAIN_COMPONENT, domain, clusterId);
+          String.format("https://%s.%s.%s:443/%s", region, API_DOMAIN_COMPONENT, domain, clusterId);
       return getURIFromString(cloudRestAddress);
     } else {
       Loggers.LOGGER.debug(

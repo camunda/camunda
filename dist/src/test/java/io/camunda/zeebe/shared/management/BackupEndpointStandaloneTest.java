@@ -27,10 +27,10 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallTakeWhenIsStandalone() {
     // when
-    backupEndpointStandalone.take(11L);
+    backupEndpointStandalone.take(11L, null);
 
     // then
-    verify(backupEndpoint).take(11L);
+    verify(backupEndpoint).take(11L, null);
   }
 
   @Test
@@ -45,36 +45,36 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallListWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query(null);
+    backupEndpointStandalone.query(null, null);
 
     // then
-    verify(backupEndpoint).query(null);
+    verify(backupEndpoint).query(null, null);
   }
 
   @Test
   public void shouldCallGetWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query("11");
+    backupEndpointStandalone.query("11", null);
 
     // then
-    verify(backupEndpoint).query("11");
+    verify(backupEndpoint).query("11", null);
   }
 
   @Test
   public void shouldCallDeleteWhenIsStandalone() {
     // when
-    backupEndpointStandalone.delete("11");
+    backupEndpointStandalone.delete("11", null);
 
     // then
-    verify(backupEndpoint).delete("11");
+    verify(backupEndpoint).delete("11", null);
   }
 
   @Test
   public void shouldCallQueryWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query(BackupApi.STATE);
+    backupEndpointStandalone.query(BackupApi.STATE, null);
 
     // then
-    verify(backupEndpoint).query(BackupApi.STATE);
+    verify(backupEndpoint).query(BackupApi.STATE, null);
   }
 }

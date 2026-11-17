@@ -1,0 +1,254 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.rdbms.db.asyncreplication;
+
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.google.common.collect.Iterables;
+import io.camunda.client.CamundaClient;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
+import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
+import io.micrometer.core.instrument.Measurement;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.util.Objects;
+import org.agrona.CloseHelper;
+import org.assertj.core.data.Offset;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Tag("async-repl")
+@TestInstance(Lifecycle.PER_CLASS)
+abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
+
+  protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncReplicationIT.class);
+
+  /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
+  protected R cluster;
+
+  protected TestCamundaApplication testInstance;
+  protected CamundaClient camundaClient;
+  protected MeterRegistry meterRegistry;
+
+  /**
+   * Creates the database replication cluster for this test. Called once before any test runs.
+   * Subclasses return a concrete cluster implementation for the database under test.
+   */
+  protected abstract R createCluster();
+
+  protected Duration getMaxLag() {
+    return DEFAULT_MAX_LAG;
+  }
+
+  protected Duration getExporterAcknowledgementTimeout() {
+    return Duration.ofMinutes(1);
+  }
+
+  /**
+   * How often the RDBMS writer flushes on its own schedule, independent of per-record exports.
+   * Defaults to a realistic non-zero interval; override to {@code Duration.ZERO} for scenarios that
+   * need every export to flush inline via {@code RdbmsExporter.export(Record)} instead of the
+   * periodic {@code flushAndReschedule()} background task - the latter does not escalate {@code
+   * ExporterPositionMismatchException} to a reopen the way the inline path does.
+   */
+  protected Duration getFlushInterval() {
+    return Duration.ofMillis(500);
+  }
+
+  /**
+   * The JDBC URL used to wire {@link TestCamundaApplication} to the cluster. Defaults to the
+   * primary's URL; overridden by failover scenarios that need a URL covering multiple hosts.
+   */
+  protected String jdbcUrl(final R cluster) {
+    return cluster.getJdbcUrl();
+  }
+
+  /**
+   * The async-replication mechanism under test. Defaults to LSN-based tracking; override to
+   * exercise {@code TimeMonitoringReplicationSignalStrategy} (lag-based) against the same cluster
+   * and test scenarios instead.
+   */
+  protected ReplicationType getReplicationType() {
+    return ReplicationType.LOG_SEQ;
+  }
+
+  @BeforeAll
+  void beforeAll() {
+    cluster = createCluster();
+    cluster.start();
+
+    testInstance =
+        new TestCamundaApplication()
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(jdbcUrl(cluster));
+                  cfg.getData().getSecondaryStorage().getRdbms().setUsername(cluster.getUsername());
+                  cfg.getData().getSecondaryStorage().getRdbms().setPassword(cluster.getPassword());
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .setFlushInterval(getFlushInterval());
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setEnabled(true);
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setType(getReplicationType());
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setPollingInterval(Duration.ofSeconds(1));
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setMaxLag(getMaxLag());
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setPauseOnMaxLagExceeded(true);
+                  if (getReplicationType() == ReplicationType.DELAY) {
+                    cfg.getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getAsyncReplication()
+                        .setDelay(Duration.ofSeconds(30));
+                  }
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setQueueDebounceTime(Duration.ZERO);
+                })
+            .withBasicAuth();
+
+    testInstance.start();
+    // Build the client before the topology check so the gRPC channel is already in READY state
+    // when deployResource is called. Creating a temporary client for the topology check and then
+    // closing it would force camundaClient to re-negotiate a new TCP connection at a potentially
+    // busy moment (e.g. during MSSQL AG seeding), causing CONNECTING-state failures.
+    camundaClient = testInstance.newClientBuilder().build();
+    meterRegistry = testInstance.bean(MeterRegistry.class);
+
+    Objects.requireNonNull(meterRegistry);
+    Objects.requireNonNull(camundaClient);
+
+    deployResource(camundaClient, "process/service_tasks_v1.bpmn");
+    waitForProcessesToBeDeployed(camundaClient, 1);
+
+    exporterAcknowledgedAll();
+  }
+
+  @AfterAll
+  void afterAll() {
+    // preserve order, first shutdown Camunda, then the database
+    CloseHelper.closeAll(camundaClient, testInstance, cluster);
+  }
+
+  protected void startProcessInstances(final int count) {
+    for (int i = 0; i < count; i++) {
+      startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}");
+    }
+  }
+
+  protected void awaitExporterPositionAdvances(final long baseline) {
+    Awaitility.await()
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(() -> assertThat(getCurrentExporterPosition()).isGreaterThan(baseline));
+  }
+
+  protected void awaitAcknowledgedPositionAdvances(final long baseline) {
+    Awaitility.await()
+        .atMost(Duration.ofMinutes(2))
+        .untilAsserted(
+            () -> assertThat(getCurrentAcknowledgedExporterPosition()).isGreaterThan(baseline));
+  }
+
+  protected void awaitExporterPositionStable(final Duration stability, final Duration atMost) {
+    Awaitility.await()
+        .atMost(atMost)
+        .during(stability)
+        .until(this::getCurrentExporterPosition, hasStableValue());
+  }
+
+  protected void assertAcknowledgedPositionNotAdvancedBeyond(final long position) {
+    // allow a small tolerance for in-flight confirmations at the moment of replica removal
+    assertThat(getCurrentAcknowledgedExporterPosition()).isLessThanOrEqualTo(position + 5L);
+  }
+
+  protected void exporterAcknowledgedAll() {
+    LOG.info("Waiting for exporter acknowledgement");
+    Awaitility.await()
+        .pollInterval(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .atMost(getExporterAcknowledgementTimeout())
+        .untilAsserted(
+            () -> {
+              final long exporterPosition = getCurrentExporterPosition();
+              final long acknowledgedPosition = getCurrentAcknowledgedExporterPosition();
+              LOG.info(
+                  "Exporter acknowledgement progress: exported position {}, acknowledged position {}",
+                  exporterPosition,
+                  acknowledgedPosition);
+              assertThat(exporterPosition)
+                  // not all records are processed by the exporter, so we need a closeTo here
+                  .isCloseTo(acknowledgedPosition, Offset.offset(5L));
+            });
+  }
+
+  protected long getCurrentExporterPosition() {
+    return getMeterLong(ExporterMetricsDoc.LAST_EXPORTED_POSITION.getName());
+  }
+
+  protected long getCurrentAcknowledgedExporterPosition() {
+    return getMeterLong(ExporterMetricsDoc.LAST_UPDATED_EXPORTED_POSITION.getName());
+  }
+
+  private long getMeterLong(final String name) {
+    final var meters =
+        meterRegistry.get(name).tag("exporter", "rdbms").tag("partition", "1").meter().measure();
+
+    final Measurement first = Iterables.getFirst(meters, null);
+
+    if (first == null) {
+      return 0;
+    }
+
+    return (long) first.getValue();
+  }
+
+  protected void wait(final Duration duration) {
+    try {
+      Thread.sleep(duration);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+}

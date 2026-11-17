@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import java.util.List;
 import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,8 +51,7 @@ public final class CompleteJobTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+      EngineRule.singlePartition().withAuthorizationsEnabled(true);
 
   private static final String PROCESS_ID = "process";
   private static String jobType;
@@ -147,6 +148,74 @@ public final class CompleteJobTest {
   }
 
   @Test
+  public void shouldCompleteExternalAgentJobWithFollowupMetadata() {
+    // given
+    final var externalAgentJobType = jobType;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t -> t.zeebeJobType(externalAgentJobType).zeebeExternalAgentDefinition())
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(externalAgentJobType).activate(username);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+    assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompletedRecord.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == recordValue.getProcessInstanceKey()))
+        .describedAs(
+            "a job type not matching the legacy agentic prefix must still carry the agent "
+                + "element id when its element has a resolved external agent definition")
+        .isNotEmpty()
+        .allMatch(r -> r.getAgent() != null && "task".equals(r.getAgent().getElementId()));
+  }
+
+  @Test
+  public void shouldNotCarryAgentElementIdForNonAgenticJob() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+    assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompletedRecord.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == recordValue.getProcessInstanceKey()))
+        .describedAs(
+            "a plain job with no agent definition and a job type not matching the legacy "
+                + "agentic prefix must not have an agent element id on any follow-up record")
+        .isNotEmpty()
+        .allMatch(r -> r.getAgent() == null || r.getAgent().getElementId().isEmpty());
+  }
+
+  @Test
   public void shouldRejectCompletionIfJobNotFound() {
     // given
     final int key = 123;
@@ -156,6 +225,28 @@ public final class CompleteJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectCompletionIfVariablesTooLarge() {
+    // given: no dedicated variable-size limit exists - only the overall record-size ceiling
+    // applies at job-completion time too, same as at process-instance creation
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final var largeValue = "x".repeat((int) (ByteValue.ofMegabytes(4) - ByteValue.ofKilobytes(1)));
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withVariables("{'variable':'" + largeValue + "'}")
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
   }
 
   @Test
@@ -429,5 +520,138 @@ public final class CompleteJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldCompleteLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE.job().withKey(jobKey).withJobLeaseToken(jobLeaseToken).complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRejectCompleteOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(jobKey).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("A complete command without a lease token on a leased job is rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("missing-lease rejection tells the worker a matching lease must be provided")
+        .contains("must be provided")
+        .doesNotContain(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldRejectCompleteOnLeasedJobWithWrongLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batchRecord.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withJobLeaseToken("stale-lease-token")
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("A complete command with a non-matching lease token is rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("mismatched-lease rejection tells the worker the lease does not match")
+        .contains("does not match")
+        .doesNotContain(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldCompleteNonLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> completedRecord = ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCompleteNonLeasedJobEvenWhenLeaseSupplied() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE.job().withKey(jobKey).withJobLeaseToken("some-token").complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRejectJobCompleteForBannedProcessInstance() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.job().withKey(jobKey).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
   }
 }

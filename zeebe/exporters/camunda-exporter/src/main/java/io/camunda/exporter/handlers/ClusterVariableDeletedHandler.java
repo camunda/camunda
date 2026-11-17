@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
@@ -18,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import java.util.List;
 
 public class ClusterVariableDeletedHandler
-    implements ExportHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
+    implements MainIndexExporterHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
 
   private static final ClusterVariableIntent SUPPORTED_INTENT = ClusterVariableIntent.DELETED;
   private final String indexName;
@@ -66,9 +67,10 @@ public class ClusterVariableDeletedHandler
   }
 
   @Override
-  public void flush(final ClusterVariableEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final ClusterVariableEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

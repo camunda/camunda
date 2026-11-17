@@ -40,6 +40,19 @@ public class CorrelatedMessageSubscriptionFilterImpl
   }
 
   @Override
+  public CorrelatedMessageSubscriptionFilter businessId(final String businessId) {
+    return businessId(f -> f.eq(businessId));
+  }
+
+  @Override
+  public CorrelatedMessageSubscriptionFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public CorrelatedMessageSubscriptionFilter correlationKey(final String correlationKey) {
     return correlationKey(f -> f.eq(correlationKey));
   }

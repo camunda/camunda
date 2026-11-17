@@ -1,0 +1,135 @@
+# Realistic benchmark scenario values for the load-tester subchart.
+# Mirrors https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values-realistic-benchmark.yaml
+# wrapped under the subchart alias so it is correctly scoped when passed via
+# -f to the parent load-test-setup chart.
+#
+# Update this file when the upstream values-realistic-benchmark.yaml changes.
+load-tester:
+  # Workers configuration for the to be deployed worker application
+  workers:
+    worker: null
+
+    #####
+    # Request documents from customer
+    customer-notification:
+      replicas: 1
+      capacity: 30
+      jobType: "customer_notification"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 300ms
+      message:
+        name: "dispute_process_receive_documents"
+        correlationVariable: "correlationKey"
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Store information and get customer info
+    extract-data-from-document:
+      replicas: 1
+      capacity: 30
+      jobType: "extract_data_from_document"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 300ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Request proof from vendor
+    dispute-process-request-proof-from-vendor:
+      replicas: 1
+      capacity: 60
+      threads: 30
+      jobType: "dispute_process_request_proof_from_vendor"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 300ms
+      message:
+        name: "dispute_process_refund_approved"
+        correlationVariable: "correlationKey"
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    ######
+    # Get vendor info
+    dispute-process-request-get-vendor-info:
+      replicas: 1
+      capacity: 30
+      jobType: "dispute_process_request_get_vendor_info"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 10ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Refund payment
+    refunding:
+      replicas: 1
+      capacity: 30
+      threads: 30
+      jobType: "refunding"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 300ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    #####
+    # Inform customer about successful claim
+    inform-about-successful-claim:
+      replicas: 1
+      capacity: 30
+      jobType: "inform_about_successful_claim"
+      payloadPath: "bpmn/emptyPayload.json"
+      completionDelay: 300ms
+      logLevel: "INFO"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+  # Starter configuration for the to be deployed starter application
+  starter:
+    replicas: 1
+    rate: 1
+    logLevel: "INFO"
+    processId: "bankDisputeHandling"
+    payloadPath: "bpmn/realistic/realisticPayload.json"
+    bpmnXmlPath: "bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn"
+    extraResources:
+      [
+        "bpmn/realistic/refundingProcess.bpmn",
+        "bpmn/realistic/determineFraudRatingConfidence.dmn",
+      ]
+    businessKey: "customerId"

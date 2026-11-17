@@ -174,6 +174,24 @@ public class HistoryDeletionIT {
   }
 
   @TestTemplate
+  public void shouldNotFailOnDuplicateInsert() {
+    // given
+    final var model =
+        new HistoryDeletionDbModel(
+            RESOURCE_KEY, PROCESS_INSTANCE, BATCH_OPERATION_KEY, PARTITION_ID);
+    historyDeletionWriter.create(model);
+    rdbmsWriters.flush();
+
+    // when - insert the same model again (duplicate)
+    historyDeletionWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then - no exception and only one record exists
+    final var actual = historyDeletionReader.getNextBatch(PARTITION_ID, 10);
+    assertThat(actual.historyDeletionModels()).containsExactly(model);
+  }
+
+  @TestTemplate
   public void shouldDeleteHistoryDeletion() {
     // given
     final var model =

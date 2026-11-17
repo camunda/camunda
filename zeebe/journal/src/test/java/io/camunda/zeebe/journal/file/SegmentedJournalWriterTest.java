@@ -74,11 +74,30 @@ final class SegmentedJournalWriterTest {
     writer.flush();
 
     // when
-    writer.deleteAfter(2);
+    writer.deleteAfter(2, false);
 
     // then
     assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldNotClaimUnflushedEntriesAsFlushedOnDeleteAfter() throws FlushException {
+    // given - 1-3 are flushed (segment 1: 1-2, segment 2: 3); 4-6 are not (segment 2: 4,
+    // segment 3: 5-6)
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.append(3, journalFactory.entry());
+    writer.flush();
+    writer.append(4, journalFactory.entry());
+    writer.append(5, journalFactory.entry());
+    writer.append(6, journalFactory.entry());
+
+    // when - truncating into segment 3 keeps the unflushed entries 4 and 5
+    writer.deleteAfter(5, false);
+
+    // then - they are not claimed as flushed, so the next flush still covers segment 2
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(3L);
   }
 
   @Test
@@ -127,7 +146,7 @@ final class SegmentedJournalWriterTest {
     final var corruptedDescriptor =
         descriptor.withUpdatedIndices(
             descriptor.lastIndex(), firstSegment.descriptor().lastPosition() + 1);
-    final var segmentFile = firstSegment.file().file().toPath();
+    final var segmentFile = firstSegment.file().file();
     try (final FileChannel channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       final MappedByteBuffer buffer =
@@ -147,7 +166,7 @@ final class SegmentedJournalWriterTest {
   void shouldInvalidateNextEntryAfterAppend() {
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(
-            journalFactory.journal(segments), new JournalMetrics(meterRegistry))) {
+            journalFactory.journal(segments), new JournalMetrics(meterRegistry), false)) {
       // when
       writer.append(-1, journalFactory.entry());
 
@@ -172,7 +191,9 @@ final class SegmentedJournalWriterTest {
 
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(
-            followerJournalFactory.journal(followerSegments), new JournalMetrics(meterRegistry))) {
+            followerJournalFactory.journal(followerSegments),
+            new JournalMetrics(meterRegistry),
+            false)) {
       // when
       final byte[] serializedRecord = BufferUtil.bufferAsArray(writtenRecord.serializedRecord());
       followerWriter.append(writtenRecord.checksum(), serializedRecord);

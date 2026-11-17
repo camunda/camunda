@@ -9,18 +9,25 @@
 import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Variable'
+  | 'Variables'
   | 'Process Instance Key(s)'
   | 'Parent Process Instance Key'
-  | 'Operation Id'
+  | 'Batch Operation Key'
   | 'Error Message'
+  | 'Business ID'
   | 'Start Date Range'
   | 'End Date Range'
   | 'Failed job but retries left';
 
+// The Business ID advanced string filter only renders the operators
+// configured via `selectableOperators` in OptionalFiltersFormGroup.tsx
+// ($eq / $like / $in) — keep this type in sync with that configuration.
+export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
+
 export class OperateFiltersPanelPage {
   private page: Page;
   readonly activeInstancesCheckbox: Locator;
+  readonly suspendedInstancesCheckbox: Locator;
   readonly incidentsInstancesCheckbox: Locator;
   readonly runningInstancesCheckbox: Locator;
   readonly completedInstancesCheckbox: Locator;
@@ -34,31 +41,34 @@ export class OperateFiltersPanelPage {
   readonly parentProcessInstanceKeyFilter: Locator;
   readonly processInstanceKey: Locator;
   readonly flowNodeFilter: Locator;
-  readonly batchOperationIdFilter: Locator;
+  readonly batchOperationKeyFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
+  readonly businessIdFilter: Locator;
+  readonly businessIdFilterType: Locator;
   readonly startDateFilter: Locator;
-  readonly variableNameFilter: Locator;
-  readonly variableValueFilter: Locator;
-  readonly multipleVariablesSwitch: Locator;
+  readonly openVariableFilterModalButton: Locator;
+  readonly variableFilterDialog: Locator;
+  readonly singleConditionNameInput: Locator;
+  readonly singleConditionValueInput: Locator;
   readonly moreFiltersButton: Locator;
   readonly dateFilterDialog: Locator;
   readonly fromTimeInput: Locator;
   readonly toTimeInput: Locator;
   readonly fromDateInput: Locator;
   readonly applyButton: Locator;
-  readonly jsonEditorModalButton: Locator;
-  readonly variableEditorDialog: Locator;
-  readonly dialogEditVariableValueText: Locator;
-  readonly dialogEditMultipleVariableValueText: Locator;
-  readonly dialogCancelButton: Locator;
   readonly getOptionByName: (name: string, exact?: boolean) => Locator;
+  readonly getConditionRowNameInput: (index: number) => Locator;
+  readonly getConditionRowValueInput: (index: number) => Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.activeInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Active'});
+    this.suspendedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Suspended'});
     this.completedInstancesCheckbox = page
       .locator('label')
       .filter({hasText: 'Completed'});
@@ -100,8 +110,8 @@ export class OperateFiltersPanelPage {
     this.flowNodeFilter = this.page.getByRole('combobox', {
       name: 'element',
     });
-    this.batchOperationIdFilter = this.page.getByRole('textbox', {
-      name: 'operation id',
+    this.batchOperationKeyFilter = this.page.getByRole('textbox', {
+      name: 'batch operation key',
     });
     this.resetFiltersButton = this.page.getByRole('button', {
       name: 'reset filters',
@@ -109,36 +119,56 @@ export class OperateFiltersPanelPage {
     this.errorMessageFilter = this.page.getByRole('textbox', {
       name: 'error message',
     });
+    this.businessIdFilter = this.page.getByRole('textbox', {
+      name: 'Business ID',
+      exact: true,
+    });
+    this.businessIdFilterType = this.page.getByRole('combobox', {
+      name: 'Business ID filter type',
+    });
     this.startDateFilter = this.page.getByRole('textbox', {
       name: 'start date range',
     });
-    this.variableNameFilter = this.page.getByTestId(
-      'optional-filter-variable-name',
-    );
-    this.variableValueFilter = this.page.getByTestId(
-      'optional-filter-variable-value',
-    );
-    this.multipleVariablesSwitch = this.page.getByText('multiple');
+    const filterRegion = page.getByRole('region', {
+      name: 'Filter',
+      exact: true,
+    });
+    this.openVariableFilterModalButton = filterRegion.getByRole('button', {
+      name: /^(add condition|edit conditions)$/i,
+    });
+    this.variableFilterDialog = page.getByRole('dialog', {
+      name: 'Filter by variable',
+    });
+    this.singleConditionNameInput = filterRegion.getByRole('textbox', {
+      name: 'Name',
+      exact: true,
+    });
+    this.singleConditionValueInput = filterRegion.getByRole('textbox', {
+      name: 'Value',
+      exact: true,
+    });
+    this.getConditionRowNameInput = (index: number) =>
+      this.variableFilterDialog
+        .getByRole('textbox', {name: 'Name', exact: true})
+        .nth(index);
+    this.getConditionRowValueInput = (index: number) =>
+      this.getConditionRowNameInput(index)
+        .locator("xpath=ancestor::*[.//*[@role='combobox']][1]")
+        .getByRole('textbox', {name: 'Value', exact: true});
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
     this.dateFilterDialog = this.page.getByRole('dialog');
-    this.fromTimeInput = page.getByTestId('fromTime');
-    this.toTimeInput = page.getByTestId('toTime');
+    this.fromTimeInput = this.dateFilterDialog.getByRole('textbox', {
+      name: 'From time',
+      exact: true,
+    });
+    this.toTimeInput = this.dateFilterDialog.getByRole('textbox', {
+      name: 'To time',
+      exact: true,
+    });
     this.fromDateInput = this.page.getByText('From date');
     this.applyButton = this.page.getByText('Apply');
-    this.jsonEditorModalButton = this.page.getByRole('button', {
-      name: /open (json )?editor/i,
-    });
-    this.variableEditorDialog = this.page.getByRole('dialog');
-    this.dialogEditVariableValueText = this.variableEditorDialog.getByText(
-      'edit variable value',
-    );
-    this.dialogEditMultipleVariableValueText =
-      this.variableEditorDialog.getByText('edit multiple variable values');
-    this.dialogCancelButton = this.variableEditorDialog.getByRole('button', {
-      name: 'cancel',
-    });
     this.getOptionByName = (name: string, exact = true) =>
       this.page.getByRole('option', {name, exact});
   }
@@ -160,12 +190,20 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
-    await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
+    const menuItem = this.page.getByRole('menuitem', {
+      name: filterName,
+    });
+    // The item exists only while the menu is open, so retry opening it rather
+    // than waiting longer. Checked before each click: clicking the trigger on
+    // an open menu closes it again.
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5000});
+    }).toPass({timeout: 30000});
+    await menuItem.click();
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
@@ -182,7 +220,7 @@ export class OperateFiltersPanelPage {
   async selectProcess(option: string) {
     if (await this.processNameClearButton.isVisible()) {
       await this.processNameClearButton.click();
-      await expect(this.processVersionFilter).toBeDisabled();
+      await expect(this.processVersionFilter).toBeDisabled({timeout: 30000});
       await expect
         .poll(() => this.page.url())
         .not.toContain('processDefinitionId');
@@ -195,39 +233,128 @@ export class OperateFiltersPanelPage {
     await expect(this.processVersionFilter).toBeEnabled({timeout: 3000});
   }
 
+  async assertProcessNameOptionVisible(option: string) {
+    await this.processNameFilter.click();
+    await this.processNameFilter.fill(option);
+    await expect(this.getOptionByName(option)).toBeVisible({timeout: 10_000});
+    await this.page.keyboard.press('Escape');
+  }
+
   async selectVersion(option: string) {
     await expect(this.processNameFilter).toBeVisible();
     await expect(this.processVersionFilter).toBeEnabled();
-    await this.processVersionFilter.click();
-    await expect(this.getOptionByName(option)).toBeVisible();
+    // The version dropdown can fail to open, or render before its options have
+    // loaded; retry opening it until the target option is present.
+    await expect(async () => {
+      await this.processVersionFilter.click();
+      await expect(this.getOptionByName(option)).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
     await this.getOptionByName(option).click({timeout: 30000});
   }
 
   async selectFlowNode(option: string) {
-    await this.flowNodeFilter.click();
-    await this.getOptionByName(option, false).click();
+    // The flow-node dropdown can fail to open, or render before its options
+    // have loaded; retry opening it until the target option is present (same
+    // approach as selectVersion). Changing the version reloads the diagram,
+    // which rebuilds this option list -- so the option can detach (and the menu
+    // collapse) between resolving it and clicking, making a click outside the
+    // retry burn its whole timeout on a stale element. Open AND click inside
+    // the retry so a detach just re-opens and re-clicks.
+    await expect(async () => {
+      await this.flowNodeFilter.click();
+      const optionLocator = this.getOptionByName(option, false);
+      await expect(optionLocator).toBeVisible({timeout: 5_000});
+      await optionLocator.click({timeout: 5_000});
+    }).toPass({timeout: 30_000});
   }
 
-  async fillVariableNameFilter(name: string) {
-    await expect(this.variableNameFilter).toBeVisible();
-    await expect(this.variableNameFilter).toBeEnabled();
-    await this.variableNameFilter.fill(name);
+  async fillBusinessIdFilter(value: string) {
+    await expect(this.businessIdFilter).toBeVisible();
+    await expect(this.businessIdFilter).toBeEnabled();
+    await this.businessIdFilter.click();
+    await this.businessIdFilter.fill('');
+    await this.businessIdFilter.pressSequentially(value);
+    await expect(this.businessIdFilter).toHaveValue(value, {timeout: 30000});
   }
 
-  async fillVariableValueFilter(value: string) {
-    await expect(this.variableValueFilter).toBeVisible();
-    await expect(this.variableValueFilter).toBeEnabled();
-    await this.variableValueFilter.fill(value);
-    await expect(this.variableValueFilter).toHaveValue(value);
+  async selectBusinessIdFilterType(operator: AdvancedStringFilterOperator) {
+    await this.businessIdFilterType.click();
+    await this.page.getByRole('option', {name: operator, exact: true}).click();
+  }
+
+  async openVariableFilterModal() {
+    // The modal can fail to open on the first click under load; retry the
+    // click until the dialog is present, but do not click again once it is
+    // already up (a second click would toggle the dialog closed).
+    await expect(async () => {
+      if (!(await this.variableFilterDialog.isVisible())) {
+        await this.openVariableFilterModalButton.click();
+      }
+      await expect(this.variableFilterDialog).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
+  }
+
+  async fillSingleConditionInline(name: string, value: string) {
+    await this.singleConditionNameInput.fill(name);
+    await this.singleConditionValueInput.fill(value);
+    await this.page.waitForTimeout(900);
+  }
+
+  async fillConditionRow(index: number, name: string, value: string) {
+    await this.getConditionRowNameInput(index).fill(name);
+    await this.getConditionRowValueInput(index).fill(value);
+  }
+
+  async addCondition() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Add condition'})
+      .click();
+  }
+
+  async applyVariableFilter() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Apply'})
+      .click();
+  }
+
+  async selectOperator(index: number, operatorLabel: string) {
+    await this.variableFilterDialog
+      .getByRole('combobox', {name: 'Operator', exact: true})
+      .nth(index)
+      .click();
+    await this.page.getByRole('option', {name: operatorLabel}).click();
+  }
+
+  async openJsonEditorForRow(index: number) {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Open JSON editor'})
+      .nth(index)
+      .click();
+  }
+
+  async cancelVariableFilterModal() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Cancel'})
+      .click();
   }
 
   async fillProcessInstanceKeyFilter(processInstanceKey: string) {
     await expect(this.processInstanceKeysFilter).toBeVisible();
     await expect(this.processInstanceKeysFilter).toBeEnabled();
-    await this.processInstanceKeysFilter.fill(processInstanceKey);
-    await expect(this.processInstanceKeysFilter).toHaveValue(
-      processInstanceKey,
-    );
+    await this.processInstanceKeysFilter.click();
+    // Clear before each attempt: pressSequentially appends, so retyping over a
+    // partial value would double it. The retry is for the first keystroke,
+    // which the controlled input can drop before it has settled.
+    await expect(async () => {
+      await this.processInstanceKeysFilter.fill('');
+      await this.processInstanceKeysFilter.pressSequentially(
+        processInstanceKey,
+      );
+      await expect(this.processInstanceKeysFilter).toHaveValue(
+        processInstanceKey,
+        {timeout: 10000},
+      );
+    }).toPass({timeout: 60000});
   }
 
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
@@ -294,23 +421,11 @@ export class OperateFiltersPanelPage {
     await expect(this.errorMessageFilter).toHaveValue(errorMessage);
   }
 
-  async fillBatchOperationIdFilter(operationId: string) {
-    await expect(this.batchOperationIdFilter).toBeVisible();
-    await expect(this.batchOperationIdFilter).toBeEnabled();
-    await this.batchOperationIdFilter.fill(operationId);
-    await expect(this.batchOperationIdFilter).toHaveValue(operationId);
-  }
-
-  async clickJsonEditorModal() {
-    await this.jsonEditorModalButton.click();
-  }
-
-  async closeModalWithCancel() {
-    await this.dialogCancelButton.click();
-  }
-
-  async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
+  async fillBatchOperationKeyFilter(batchOperationKey: string) {
+    await expect(this.batchOperationKeyFilter).toBeVisible();
+    await expect(this.batchOperationKeyFilter).toBeEnabled();
+    await this.batchOperationKeyFilter.fill(batchOperationKey);
+    await expect(this.batchOperationKeyFilter).toHaveValue(batchOperationKey);
   }
 
   async clickRunningInstancesCheckbox(): Promise<void> {
@@ -319,6 +434,25 @@ export class OperateFiltersPanelPage {
 
   async clickActiveInstancesCheckbox(): Promise<void> {
     await this.activeInstancesCheckbox.click();
+  }
+
+  /** Reads the URL rather than clicking blindly: a click on an already-checked
+   * box turns the filter off. */
+  async applySuspendedFilter(): Promise<void> {
+    // Retried until the URL carries it: a click issued while the Processes
+    // tab is still navigating is undone when that navigation lands.
+    await expect(async () => {
+      if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+        await this.clickSuspendedInstancesCheckbox();
+      }
+      expect(new URL(this.page.url()).searchParams.get('suspended')).toBe(
+        'true',
+      );
+    }).toPass({timeout: 30000});
+  }
+
+  async clickSuspendedInstancesCheckbox(): Promise<void> {
+    await this.suspendedInstancesCheckbox.click({timeout: 60000});
   }
 
   async clickIncidentsInstancesCheckbox(): Promise<void> {

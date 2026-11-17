@@ -7,17 +7,17 @@
  */
 package io.camunda.it.rdbms.db.util;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +32,8 @@ public final class CamundaRdbmsTestApplication
 
   private GenericContainer<?> databaseContainer;
 
-  private final Camunda unifiedConfig;
-
   public CamundaRdbmsTestApplication(final Class<?>... springConfigurations) {
     super(springConfigurations);
-
-    unifiedConfig = new Camunda();
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class);
   }
 
   public CamundaRdbmsTestApplication withDatabaseContainer(
@@ -56,9 +50,13 @@ public final class CamundaRdbmsTestApplication
   }
 
   public CamundaRdbmsTestApplication withH2() {
+    return withH2("testdb");
+  }
+
+  public CamundaRdbmsTestApplication withH2(final String databaseName) {
     setSecondaryStorageToRdbms();
     final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
-    rdbms.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    rdbms.setUrl("jdbc:h2:mem:" + databaseName + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     rdbms.setUsername("sa");
     rdbms.setPassword("");
     return this;
@@ -73,14 +71,23 @@ public final class CamundaRdbmsTestApplication
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
         final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
         rdbms.setUrl(jdbcDatabaseContainer.getJdbcUrl());
-        // In order to ensure that a test runs against the intended database, we also need to set
-        // Spring’s datasource properties. Otherwise, Spring might default to an embedded database
-        // (H2). See also property substitution in dist/application.properties for further details.
         withAdditionalProperties(
             Map.of(
-                "spring.datasource.url", rdbms.getUrl(),
-                "spring.datasource.username", rdbms.getUsername(),
-                "spring.datasource.password", rdbms.getPassword(),
+                "camunda.data.secondary-storage.rdbms.url", rdbms.getUrl(),
+                "camunda.data.secondary-storage.rdbms.username", rdbms.getUsername(),
+                "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
+                "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
+      } else if (databaseContainer
+          instanceof final ReplicationClusterContainer replicationCluster) {
+        final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
+        rdbms.setUrl(replicationCluster.getJdbcUrl());
+        rdbms.setUsername(replicationCluster.getUsername());
+        rdbms.setPassword(replicationCluster.getPassword());
+        withAdditionalProperties(
+            Map.of(
+                "camunda.data.secondary-storage.rdbms.url", rdbms.getUrl(),
+                "camunda.data.secondary-storage.rdbms.username", rdbms.getUsername(),
+                "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
                 "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
       }
     }
@@ -104,10 +111,13 @@ public final class CamundaRdbmsTestApplication
   @Override
   public void close() {
     LOGGER.info("Resource closed - Stop spring application ...");
-    super.stop();
-    if (databaseContainer != null) {
-      LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
-      databaseContainer.close();
+    try {
+      super.stop();
+    } finally {
+      if (databaseContainer != null) {
+        LOGGER.info("Stop database container '{}'...", databaseContainer.getContainerInfo());
+        databaseContainer.close();
+      }
     }
   }
 
@@ -131,29 +141,17 @@ public final class CamundaRdbmsTestApplication
     return false;
   }
 
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public CamundaRdbmsTestApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
-  }
-
   public RdbmsService getRdbmsService() {
     if (!isStarted()) {
       throw new IllegalStateException("Application is not started");
     }
-    return super.bean(RdbmsService.class);
+    return super.bean(RdbmsServiceFactory.class)
+        .createRdbmsService(DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
   }
 
   private void setSecondaryStorageToRdbms() {
-    // set environment variable camunda.data.secondary-storage.type to ensure that
-    // ConditionalOnSecondaryStorageType behaves as expected
-    super.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
+    // The unified-config type is emitted as camunda.data.secondary-storage.type when the unified
+    // config is flattened at startup, which ConditionalOnSecondaryStorageType reads.
     unifiedConfig.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
     unifiedConfig
         .getData()

@@ -8,5 +8,7 @@
 package io.camunda.search.schema;
 
 public interface SchemaManagerContainer {
+  boolean isInitialized(final String physicalTenantId);
+
   boolean isInitialized();
 }

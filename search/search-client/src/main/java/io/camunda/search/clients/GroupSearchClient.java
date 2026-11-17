@@ -12,7 +12,7 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface GroupSearchClient {
 

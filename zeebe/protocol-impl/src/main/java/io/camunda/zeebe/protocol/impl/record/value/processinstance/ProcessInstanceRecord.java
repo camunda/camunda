@@ -58,7 +58,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
       new StringValue("rootProcessInstanceKey");
+  public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
+  public static final StringValue RESUME_FROM_USER_TASK_KEY_KEY =
+      new StringValue("resumeFromUserTaskKey");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -97,10 +101,17 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY, -1L);
 
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
+  private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
+
+  private final LongProperty resumeFromUserTaskKeyProp =
+      new LongProperty(RESUME_FROM_USER_TASK_KEY_KEY, -1L);
+
   public ProcessInstanceRecord() {
-    super(17);
+    super(20);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -117,7 +128,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(callingElementPathProp)
         .declareProperty(tagsProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(storageOrdinalProp)
+        .declareProperty(businessIdProp)
+        .declareProperty(resumeFromJobKeyProp)
+        .declareProperty(resumeFromUserTaskKeyProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -133,7 +147,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
     businessIdProp.setValue(record.getBusinessId());
+    resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
+    resumeFromUserTaskKeyProp.setValue(record.getResumeFromUserTaskKey());
   }
 
   @JsonIgnore
@@ -302,6 +319,26 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public long getResumeFromJobKey() {
+    return resumeFromJobKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setResumeFromJobKey(final long resumeFromJobKey) {
+    resumeFromJobKeyProp.setValue(resumeFromJobKey);
+    return this;
+  }
+
+  @Override
+  public long getResumeFromUserTaskKey() {
+    return resumeFromUserTaskKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setResumeFromUserTaskKey(final long resumeFromUserTaskKey) {
+    resumeFromUserTaskKeyProp.setValue(resumeFromUserTaskKey);
+    return this;
+  }
+
   public ProcessInstanceRecord setParentProcessInstanceKey(final long parentProcessInstanceKey) {
     parentProcessInstanceKeyProp.setValue(parentProcessInstanceKey);
     return this;
@@ -348,6 +385,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public ProcessInstanceRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

@@ -74,6 +74,25 @@ test.describe('audit log page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('details modal', async ({page, operationsLogPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({auditLogs: mockAuditLogs}),
+    );
+
+    await operationsLogPage.gotoOperationsLogPage();
+
+    await expect(operationsLogPage.operationsLogTable).toBeVisible();
+    await expect(operationsLogPage.tableLoader).not.toBeVisible();
+
+    await operationsLogPage.openRowDetails(2);
+
+    await expect(operationsLogPage.detailsModal).toBeVisible();
+    await expect(page.getByText('Inbound channel:')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('filtered by process instance key', async ({
     page,
     operationsLogPage,

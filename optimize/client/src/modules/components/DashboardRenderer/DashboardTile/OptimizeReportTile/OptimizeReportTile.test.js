@@ -13,6 +13,8 @@ import {useHistory} from 'react-router-dom';
 import {ReportRenderer} from 'components';
 import {useErrorHandling} from 'hooks';
 
+jest.mock('./KpiDeltaBadge', () => () => null);
+
 import OptimizeReportTile from './OptimizeReportTile';
 
 jest.mock('react-router-dom', () => ({
@@ -226,6 +228,125 @@ it('should not navigate to the report when clicking on an href element', async (
   node.find('.OptimizeReportTile').simulate('click', {target: document.createElement('a')});
 
   expect(redirectSpy).not.toHaveBeenCalledWith('report/a/');
+});
+
+describe('KpiDeltaBadge visibility', () => {
+  const numberTileWithComparison = {
+    type: 'optimize_report',
+    id: 'a',
+    configuration: {comparisonPeriod: true, deltaGoodDirection: 'up'},
+  };
+
+  // A rolling end-date filter is required for a baseline (prior) window to exist;
+  // without one the comparison has nothing to compare against and is skipped.
+  const rollingFilter = [
+    {
+      type: 'instanceEndDate',
+      filterLevel: 'instance',
+      data: {type: 'rolling', start: {value: 30, unit: 'days'}, end: null},
+    },
+  ];
+
+  const makeReport = (visualization, measureData) => ({
+    id: 'a',
+    data: {visualization, view: {properties: ['frequency']}},
+    result: {measures: [{data: measureData, property: 'frequency'}]},
+  });
+
+  it('should pass badge to ReportRenderer when number tile has a value and prior data', async () => {
+    loadTile
+      .mockReturnValueOnce(makeReport('number', 10))
+      .mockReturnValueOnce(makeReport('number', 5));
+
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
+    runAllEffects();
+    await flushPromises();
+
+    const badge = node.find(ReportRenderer).prop('overlay');
+    expect(badge).not.toBeNull();
+    expect(badge.props).toMatchObject({currentValue: 10, priorValue: 5});
+  });
+
+  it('should pass badge with null priorValue when prior period has no data', async () => {
+    loadTile
+      .mockReturnValueOnce(makeReport('number', 8))
+      .mockReturnValueOnce(makeReport('number', null));
+
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
+    runAllEffects();
+    await flushPromises();
+
+    const badge = node.find(ReportRenderer).prop('overlay');
+    expect(badge).not.toBeNull();
+    expect(badge.props).toMatchObject({currentValue: 8, priorValue: null});
+  });
+
+  it('should not pass badge when current value is null (-- state)', async () => {
+    loadTile
+      .mockReturnValueOnce(makeReport('number', null))
+      .mockReturnValueOnce(makeReport('number', 5));
+
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
+    runAllEffects();
+    await flushPromises();
+
+    expect(node.find(ReportRenderer).prop('overlay')).toBeNull();
+  });
+
+  it('should not pass badge for non-number visualizations', async () => {
+    loadTile.mockReturnValueOnce(makeReport('bar', 10)).mockReturnValueOnce(makeReport('bar', 5));
+
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
+    runAllEffects();
+    await flushPromises();
+
+    expect(node.find(ReportRenderer).prop('overlay')).toBeNull();
+  });
+
+  it('should not pass badge when comparisonPeriod is not enabled', async () => {
+    loadTile
+      .mockReturnValueOnce(makeReport('number', 10))
+      .mockReturnValueOnce(makeReport('number', 5));
+
+    const node = shallow(<OptimizeReportTile {...props} />);
+    runAllEffects();
+    await flushPromises();
+
+    expect(node.find(ReportRenderer).prop('overlay')).toBeNull();
+  });
+
+  it('should call loadTile with new filter and prior period filter after filter change', async () => {
+    // Each state update (setData, setPriorData, setLoading) re-queues effects in the
+    // mock useEffect queue. To test filter-change reload in isolation, verify loadTile
+    // call args rather than rendered badge props.
+    loadTile.mockReturnValue(makeReport('number', 10));
+
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
+    runAllEffects();
+    await flushPromises();
+
+    loadTile.mockClear();
+    node.setProps({filter: [{type: 'suspendedInstancesOnly', data: null}]});
+    runAllEffects();
+    await flushPromises();
+
+    // loadTile called at least once with the new filter (current period)
+    expect(loadTile).toHaveBeenCalledWith(
+      numberTileWithComparison.id,
+      [{type: 'suspendedInstancesOnly', data: null}],
+      {}
+    );
+  });
 });
 
 it('should not navigate to the report when clicking on table visualization', async () => {

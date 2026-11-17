@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-it-tests</artifactId>
 
@@ -27,13 +27,6 @@
       <artifactId>camunda-zeebe</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>webapps-schema</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
@@ -60,16 +53,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-health</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-micrometer-metrics-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
       <scope>test</scope>
@@ -80,11 +63,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-schema</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -92,16 +70,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -117,11 +85,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -183,24 +146,23 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.5.5</version>
         <configuration>
           <skipITs>false</skipITs>
           <includes>
             <include>${includeITNames}</include>
           </includes>
           <excludes>
+            <!-- Overriding <excludes> drops Failsafe's default, which keeps nested classes from being scheduled on their own -->
+            <exclude>**/*$*</exclude>
             <exclude>${excludeITNames}</exclude>
           </excludes>
           <forkCount>1</forkCount>
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
           <environmentVariables>
-            <CAMUNDA_TASKLIST_DATABASE>${itDatabase}</CAMUNDA_TASKLIST_DATABASE>
             <CAMUNDA_OPERATE_DATABASE>${itDatabase}</CAMUNDA_OPERATE_DATABASE>
             <CAMUNDA_DATABASE_TYPE>${itDatabase}</CAMUNDA_DATABASE_TYPE>
             <CAMUNDA_DATA_SECONDARYSTORAGE_TYPE>${itDatabase}</CAMUNDA_DATA_SECONDARYSTORAGE_TYPE>

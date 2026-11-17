@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -42,7 +43,8 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRecordValue> {
+public class UserTaskJobBasedHandler
+    implements OrdinalIndexExportHandler<TaskEntity, JobRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskJobBasedHandler.class);
   private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
@@ -85,9 +87,18 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
 
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
-    return SUPPORTED_INTENTS.contains(record.getIntent())
-        && record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE)
-        && !record.getValue().isJobToUserTaskMigration();
+    if (!(record.getIntent() instanceof final JobIntent intent)
+        || !SUPPORTED_INTENTS.contains(intent)) {
+      return false;
+    }
+    if (!record.getValue().getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
+      return false;
+    }
+    if (!record.getValue().isJobToUserTaskMigration()) {
+      return true;
+    }
+    return record.getIntent().equals(JobIntent.CANCELED)
+        && refersToPreviousVersionRecord(record.getKey());
   }
 
   @Override
@@ -112,14 +123,22 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     entity.setKey(record.getKey());
     switch (record.getIntent()) {
       case JobIntent.CREATED -> createTaskEntity(entity, record);
-      case JobIntent.COMPLETED, JobIntent.CANCELED ->
+      case JobIntent.COMPLETED ->
           entity
-              .setState(
-                  record.getIntent().equals(JobIntent.COMPLETED)
-                      ? TaskState.COMPLETED
-                      : TaskState.CANCELED)
+              .setState(TaskState.COMPLETED)
               .setCompletionTime(
                   ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case JobIntent.CANCELED -> {
+        if (record.getValue().isJobToUserTaskMigration()) {
+          // stale legacy job-worker task doc; flush() will delete it instead of upserting
+          entity.setMarkedForDeletion(true);
+        } else {
+          entity
+              .setState(TaskState.CANCELED)
+              .setCompletionTime(
+                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+        }
+      }
       case JobIntent.MIGRATED ->
           entity
               .setFlowNodeBpmnId(record.getValue().getElementId())
@@ -155,15 +174,22 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   }
 
   @Override
-  public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final TaskEntity entity, final BatchRequest batchRequest) {
+    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
+
+    if (entity.isMarkedForDeletion() && previousVersionRecord) {
+      final var jobKey = String.valueOf(entity.getKey());
+      batchRequest.deleteWithRouting(index, jobKey, jobKey);
+      return;
+    }
+
     final var updateFields = getUpdatedFields(entity);
     final var taskEntityId = entity.getId();
     final var processInstanceKey = entity.getProcessInstanceId();
 
-    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
-
     batchRequest.upsertWithRouting(
-        indexName,
+        index,
         previousVersionRecord ? String.valueOf(entity.getKey()) : taskEntityId,
         entity,
         updateFields,

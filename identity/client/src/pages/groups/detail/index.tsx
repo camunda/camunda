@@ -9,16 +9,15 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing01, spacing02, spacing03 } from "@carbon/elements";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api";
+import { groupQueries } from "src/utility/api/groups/queries";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
-import { getGroupDetails } from "src/utility/api/groups";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
@@ -27,9 +26,13 @@ import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import MappingRules from "src/pages/groups/detail/mapping-rules";
 import Clients from "src/pages/groups/detail/clients";
-import { isOIDC } from "src/configuration";
+import { canManageMappingRules } from "src/configuration";
 
-const Details: FC = () => {
+type DetailsProps = {
+  isOIDC: boolean;
+};
+
+const Details: FC<DetailsProps> = ({ isOIDC }) => {
   const navigate = useNavigate();
   const { t } = useTranslate("groups");
   const { id = "", tab = "details" } = useParams<{
@@ -37,12 +40,8 @@ const Details: FC = () => {
     tab: string;
   }>();
 
-  const {
-    data: group,
-    loading,
-    reload,
-  } = useApi(getGroupDetails, { groupId: id });
-  const [editGroup, editModal] = useEntityModal(EditModal, reload);
+  const { data: group, isLoading: loading } = useQuery(groupQueries.detail(id));
+  const [editGroup, editModal] = useEntityModal(EditModal, () => {});
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
@@ -52,15 +51,15 @@ const Details: FC = () => {
   return (
     <StackPage>
       <>
-        <Stack gap={spacing02}>
+        <Stack gap="2">
           <Breadcrumbs items={[{ href: "/groups", title: t("groups") }]} />
           {loading && !group ? (
             <DetailPageHeaderFallback hasOverflowMenu={false} />
           ) : (
             <Flex>
               {group && (
-                <Stack gap={spacing03}>
-                  <Stack orientation="horizontal" gap={spacing01}>
+                <Stack gap="3">
+                  <Stack orientation="horizontal" gap="1">
                     <PageHeadline>{group.name}</PageHeadline>
                     <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
                       <OverflowMenuItem
@@ -98,7 +97,7 @@ const Details: FC = () => {
                 {
                   key: "users",
                   label: t("users"),
-                  content: <Members groupId={group.groupId} />,
+                  content: <Members groupId={group.groupId} isOIDC={isOIDC} />,
                 },
                 {
                   key: "roles",
@@ -107,11 +106,15 @@ const Details: FC = () => {
                 },
                 ...(isOIDC
                   ? [
-                      {
-                        key: "mapping-rules",
-                        label: t("mappingRules"),
-                        content: <MappingRules groupId={group.groupId} />,
-                      },
+                      ...(canManageMappingRules
+                        ? [
+                            {
+                              key: "mapping-rules",
+                              label: t("mappingRules"),
+                              content: <MappingRules groupId={group.groupId} />,
+                            },
+                          ]
+                        : []),
                       {
                         key: "clients",
                         label: t("clients"),

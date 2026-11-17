@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
@@ -17,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 
 public class SequenceFlowHandler
-    implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
+    implements OrdinalIndexExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
   private final String indexName;
@@ -70,8 +71,9 @@ public class SequenceFlowHandler
   }
 
   @Override
-  public void flush(final SequenceFlowEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final TargetIndex index, final SequenceFlowEntity entity, final BatchRequest batchRequest) {
+    batchRequest.add(index, entity);
   }
 
   @Override

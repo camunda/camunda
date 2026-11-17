@@ -7,13 +7,13 @@
  */
 
 import {OperationItems} from 'modules/components/OperationItems';
-import {InlineLoading} from '@carbon/react';
-import {OperationsContainer} from './styled';
+import {InlineLoading, Stack} from '@carbon/react';
+import {LoadingSlot} from './styled';
 import {OperationRenderer} from './OperationRenderer';
-import type {OperationConfig} from './types';
+import type {OperationSlot} from './types';
 
 type Props = {
-  operations: OperationConfig[];
+  operations: OperationSlot[];
   processInstanceKey: string;
   isLoading?: boolean;
   loadingMessage?: string;
@@ -26,26 +26,27 @@ const Operations: React.FC<Props> = ({
   loadingMessage,
 }) => {
   return (
-    <OperationsContainer orientation="horizontal">
-      {isLoading ? (
-        <InlineLoading
-          data-testid="operation-spinner"
-          title={
-            loadingMessage ||
-            `Instance ${processInstanceKey} has scheduled Operations`
-          }
-        />
-      ) : null}
+    <Stack orientation="horizontal">
       <OperationItems>
-        {operations.map((operation) => (
+        <LoadingSlot aria-hidden={isLoading ? undefined : true}>
+          {isLoading ? (
+            <InlineLoading
+              iconDescription={
+                loadingMessage ||
+                `Instance ${processInstanceKey} has scheduled Operations`
+              }
+            />
+          ) : null}
+        </LoadingSlot>
+        {operations.map((operation, index) => (
           <OperationRenderer
-            key={operation.type}
+            key={index}
             operation={operation}
             processInstanceKey={processInstanceKey}
           />
         ))}
       </OperationItems>
-    </OperationsContainer>
+    </Stack>
   );
 };
 

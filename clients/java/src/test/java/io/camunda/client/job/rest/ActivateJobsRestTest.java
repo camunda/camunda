@@ -74,7 +74,10 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .tenantId("test-tenant-1")
             .kind(JobKindEnum.BPMN_ELEMENT)
             .listenerEventType(JobListenerEventTypeEnum.START)
-            .rootProcessInstanceKey("321");
+            .rootProcessInstanceKey("321")
+            .businessId("business-1")
+            .jobLeaseToken("lease-token-1")
+            .priority(15);
 
     final ActivatedJobResult activatedJob2 =
         new ActivatedJobResult()
@@ -94,7 +97,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .tenantId("test-tenant-2")
             .kind(JobKindEnum.BPMN_ELEMENT)
             .listenerEventType(JobListenerEventTypeEnum.END)
-            .rootProcessInstanceKey("444");
+            .rootProcessInstanceKey("444")
+            .businessId("business-2")
+            .priority(-3);
 
     gatewayService.onActivateJobsRequest(
         new JobActivationResult().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
@@ -129,9 +134,12 @@ public final class ActivateJobsRestTest extends ClientRestTest {
         .isEqualTo(activatedJob1.getProcessInstanceKey());
     assertThat(String.valueOf(job.getRootProcessInstanceKey()))
         .isEqualTo(activatedJob1.getRootProcessInstanceKey());
+    assertThat(job.getBusinessId()).isEqualTo(activatedJob1.getBusinessId());
+    assertThat(job.getJobLeaseToken()).isEqualTo(activatedJob1.getJobLeaseToken());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob1.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
+    assertThat(job.getPriority()).isEqualTo(activatedJob1.getPriority());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariablesAsMap()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
@@ -153,11 +161,14 @@ public final class ActivateJobsRestTest extends ClientRestTest {
         .isEqualTo(activatedJob2.getProcessDefinitionKey());
     assertThat(String.valueOf(job.getRootProcessInstanceKey()))
         .isEqualTo(activatedJob2.getRootProcessInstanceKey());
+    assertThat(job.getBusinessId()).isEqualTo(activatedJob2.getBusinessId());
+    assertThat(job.getJobLeaseToken()).isNull();
     assertThat(String.valueOf(job.getProcessInstanceKey()))
         .isEqualTo(activatedJob2.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob2.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
+    assertThat(job.getPriority()).isEqualTo(activatedJob2.getPriority());
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariablesAsMap()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getUserTask()).isNull();
@@ -287,6 +298,39 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetWithLease() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  void shouldNotSendWithLeaseByDefault() {
+    // given - a request that never touches withLease
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    // then - the field is genuinely absent on the wire, not an explicit false, so older gateways
+    // that don't know this field yet don't reject the request
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getWithLease()).isNull();
+  }
+
+  @Test
   void shouldSetFetchVariablesAsVargs() {
     // given
     final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
@@ -356,6 +400,18 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     // then
     assertThat(request.getRequestTimeout()).isEqualTo(requestTimeout.toMillis());
+  }
+
+  @Test
+  void shouldReturnZeroPriorityWhenNotSet() {
+    // given
+    final ActivatedJobResult activatedJob = new ActivatedJobResult();
+
+    // when
+    final ActivatedJobImpl job = new ActivatedJobImpl(new CamundaObjectMapper(), activatedJob);
+
+    // then
+    assertThat(job.getPriority()).isEqualTo(0);
   }
 
   @Test

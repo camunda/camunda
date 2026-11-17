@@ -24,6 +24,7 @@ import {
   getRelativeValue,
   frequency as frequencyFormatter,
   percentage as percentageFormatter,
+  compact as compactFormatter,
 } from './formatters';
 import {UNAUTHORIZED_TENANT_ID} from './tenantService';
 
@@ -561,5 +562,31 @@ describe('formatLabel', () => {
     const numberWithString = '02132' + new Array(55).join('a');
 
     expect(formatLabel(numberWithString, true)).toBe(numberWithString);
+  });
+});
+
+describe('compactFormatter', () => {
+  it('should return -- for null', () => {
+    expect(compactFormatter(null)).toBe('--');
+  });
+
+  it('should return -- for undefined', () => {
+    expect(compactFormatter(undefined)).toBe('--');
+  });
+
+  it('should return -- for NaN string', () => {
+    expect(compactFormatter('not-a-number')).toBe('--');
+  });
+
+  it('should format large numbers with compact notation', () => {
+    expect(compactFormatter(1500000)).toMatch(/1\.5M|1,5M/);
+  });
+
+  it('should format small numbers without suffix', () => {
+    expect(compactFormatter(42)).toBe('42');
+  });
+
+  it('should format zero', () => {
+    expect(compactFormatter(0)).toBe('0');
   });
 });

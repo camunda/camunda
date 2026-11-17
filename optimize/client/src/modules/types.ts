@@ -156,7 +156,15 @@ interface DistributedBy {
   value: GroupByValue | null;
 }
 
-type ProcessReportVisualization = 'number' | 'table' | 'bar' | 'barLine' | 'line' | 'pie' | 'heat';
+type ProcessReportVisualization =
+  | 'number'
+  | 'table'
+  | 'bar'
+  | 'barLine'
+  | 'line'
+  | 'pie'
+  | 'heat'
+  | 'outlierBand';
 
 type AggregationTypeType = 'avg' | 'min' | 'max' | 'sum' | 'percentile';
 
@@ -289,6 +297,7 @@ export interface SingleReportConfiguration {
   logScale: boolean;
   yLabel: string;
   xLabel: string;
+  subtitle?: string;
 }
 
 interface SingleReportData {
@@ -304,6 +313,7 @@ export interface SingleProcessReportData extends SingleReportData {
   visualization: ProcessReportVisualization | null;
   managementReport: boolean;
   instantPreviewReport: boolean;
+  agenticControlReport: boolean;
   userTaskReport: boolean;
 }
 
@@ -313,8 +323,10 @@ export interface SingleProcessReportResultData {
   value: string | number;
 }
 
-export interface Report<Data extends object = SingleProcessReportData, Result = unknown | undefined>
-  extends GenericEntity<Data> {
+export interface Report<
+  Data extends object = SingleProcessReportData,
+  Result = unknown | undefined,
+> extends GenericEntity<Data> {
   id: string;
   collectionId?: string | null;
   description: string | null;

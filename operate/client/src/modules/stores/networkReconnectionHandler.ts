@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {action, makeObservable} from 'mobx';
+import {actionBound, makeObservable} from 'mobx';
 
 class NetworkReconnectionHandler {
   boundCallback?: (() => void) | (() => Promise<void>);
   constructor() {
-    makeObservable(this, {reset: action.bound});
+    makeObservable(this, {reset: actionBound});
   }
   handleReconnection = () => {
     this.boundCallback?.();
@@ -29,6 +29,7 @@ class NetworkReconnectionHandler {
   }
   reset() {
     window.removeEventListener('online', this.handleReconnection);
+    this.boundCallback = undefined;
   }
 }
 export {NetworkReconnectionHandler};

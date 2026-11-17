@@ -21,6 +21,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,6 +29,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@Category(RandomizedTestCategory.class)
 public class ProcessExecutionRandomizedPropertyTest {
 
   /*

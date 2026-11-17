@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import java.util.Optional;
@@ -44,12 +45,17 @@ public final class HashBasedDispatchStrategy implements RequestDispatchStrategy 
   }
 
   @Override
-  public int determinePartition(final BrokerTopologyManager topologyManager) {
-    return topologyManager
-        .getClusterConfiguration()
-        .routingState()
+  public int determinePartition(
+      final BrokerTopologyManager topologyManager, final String partitionGroup) {
+    final var partitionGroupConfiguration =
+        topologyManager.getClusterConfiguration().partitionGroup(partitionGroup);
+    return Optional.ofNullable(partitionGroupConfiguration)
+        .flatMap(PartitionGroupConfiguration::routingState)
         .map(this::fromRoutingState)
-        .or(() -> Optional.ofNullable(topologyManager.getTopology()).map(this::fromTopology))
+        .or(
+            () ->
+                Optional.ofNullable(topologyManager.getTopology(partitionGroup))
+                    .map(this::fromTopology))
         .orElseThrow(
             () ->
                 new NoTopologyAvailableException(

@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.MgetResponse;
 import co.elastic.clients.elasticsearch.core.ScrollRequest;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
@@ -23,6 +24,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -44,21 +46,6 @@ public final class ElasticsearchReaderUtil {
         initialScrollResponse,
         itemClass,
         objectMapper,
-        esClient,
-        scrollingTimeoutInSeconds,
-        Integer.MAX_VALUE);
-  }
-
-  public static <T> List<T> retrieveAllScrollResults(
-      final SearchResponse<?> initialScrollResponse,
-      final Class<T> itemClass,
-      final Function<Hit<?>, T> mappingFunction,
-      final OptimizeElasticsearchClient esClient,
-      final Integer scrollingTimeoutInSeconds) {
-    return retrieveScrollResultsTillLimit(
-        initialScrollResponse,
-        itemClass,
-        mappingFunction,
         esClient,
         scrollingTimeoutInSeconds,
         Integer.MAX_VALUE);
@@ -221,6 +208,18 @@ public final class ElasticsearchReaderUtil {
               itemClass.getSimpleName());
       LOG.error(reason);
     }
+  }
+
+  /*
+   Returns an iterator to extract all results from a given search (using search_after instead of scrolls).
+
+   This is done in a lazy fashion so we do not read everything into memory at once.
+  */
+  public static <T> Iterator<List<T>> searchIterator(
+      final OptimizeElasticsearchClient esClient,
+      final SearchRequest searchRequest,
+      final Class<T> itemClass) {
+    return new SearchAfterIterator<>(esClient, searchRequest, itemClass);
   }
 
   public static <T> List<T> mapHits(

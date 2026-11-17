@@ -14,6 +14,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -40,7 +42,9 @@ import org.junit.Test;
 
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
-  final CommandApiRequestHandler handler = new CommandApiRequestHandler();
+  final CommandApiRequestHandler handler =
+      new CommandApiRequestHandler(
+          new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 0));
   private LogStreamWriter logStreamWriter;
 
   @Before
@@ -143,36 +147,6 @@ public class CommandApiRequestHandlerTest {
 
     // then
     verify(logWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
-  }
-
-  @Test
-  public void shouldReturnNormalErrorMessageIfProcessingPausedOnDifferentPartition() {
-    // given
-    final var logWriter = mock(LogStreamWriter.class);
-    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
-    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
-        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
-    handler.addPartition(0, logWriter);
-    handler.onRecovered(0);
-    handler.onPaused(1);
-    scheduler.workUntilDone();
-
-    final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
-    request.serializeValue();
-
-    // when
-    final var responseFuture = handleRequest(request);
-
-    // then
-    assertThat(responseFuture)
-        .succeedsWithin(Duration.ofSeconds(5))
-        .matches(Either::isLeft)
-        .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorData)
-        .extracting(errorData -> BufferUtil.bufferAsString(errorData))
-        .isEqualTo(
-            "Failed to write client request to partition '0', because the write limit is exhausted.");
   }
 
   @Test

@@ -27,12 +27,14 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.api.mock.MockChildProcessBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /** The injected context for a process test. */
 public interface CamundaProcessTestContext {
@@ -81,7 +83,9 @@ public interface CamundaProcessTestContext {
    * waiting until a due date is reached, for example, of a BPMN timer event.
    *
    * @param timeToAdd the duration to add to the current time
-   * @throws ArithmeticException if numeric overflow occurs
+   * @throws ArithmeticException if the duration doesn't fit into a long number of milliseconds
+   * @throws RuntimeException if the runtime rejects the new time, for example, because it would be
+   *     too large
    */
   void increaseTime(final Duration timeToAdd);
 
@@ -91,7 +95,10 @@ public interface CamundaProcessTestContext {
    * date.
    *
    * @param timeToSet the time to set
-   * @throws ArithmeticException if numeric overflow occurs
+   * @throws ArithmeticException if the difference to the current time doesn't fit into a long
+   *     number of milliseconds
+   * @throws RuntimeException if the runtime rejects the new time, for example, because it is before
+   *     1970-01-01T00:00:00Z
    */
   void setTime(final Instant timeToSet);
 
@@ -107,7 +114,32 @@ public interface CamundaProcessTestContext {
   JobWorkerMockBuilder mockJobWorker(final String jobType);
 
   /**
-   * Mocks a child process with the specified ID.
+   * Returns a builder for constructing a mock child process. Use {@link
+   * MockChildProcessBuilder#withProcessId(String)} to set the child process ID, optionally {@link
+   * MockChildProcessBuilder#withVersionTag(String)} for version-tag binding, and one of the {@code
+   * thenComplete} methods to deploy the stub.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   // Simple mock without version tag
+   *   processTestContext.mockChildProcess().withProcessId("my-child-process").thenComplete();
+   *
+   *   // Mock with a version tag (for call activities using bindingType="versionTag")
+   *   processTestContext
+   *       .mockChildProcess()
+   *       .withProcessId("my-child-process")
+   *       .withVersionTag("1.7.1")
+   *       .thenComplete();
+   * </pre>
+   *
+   * @return a builder for configuring and deploying the mock
+   */
+  MockChildProcessBuilder mockChildProcess();
+
+  /**
+   * Mocks a child process with the specified ID. Deploys a stub process that completes immediately
+   * without setting any output variables.
    *
    * @param childProcessId the ID of the child process to mock
    */
@@ -182,6 +214,28 @@ public interface CamundaProcessTestContext {
    * @param jobSelector the selector to identify the job to complete
    */
   void completeJobWithExampleData(final JobSelector jobSelector);
+
+  /**
+   * Completes a job of the specified type. The given mapper receives the job's input variables and
+   * returns the output variables used to complete the job.
+   *
+   * @param jobType the type of the job to complete, matching the {@code zeebeJobType} in the BPMN
+   *     model
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeJob(final String jobType, final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
+   * Completes a job matching the specified selector. The given mapper receives the job's input
+   * variables and returns the output variables used to complete the job.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeJob(
+      final JobSelector jobSelector, final UnaryOperator<Map<String, Object>> variableMapper);
 
   /**
    * Throws a BPMN error from a job of the specified type.
@@ -303,6 +357,29 @@ public interface CamundaProcessTestContext {
   void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector);
 
   /**
+   * Completes the user task with the given BPMN element ID. The given mapper receives the user
+   * task's input variables and returns the output variables used to complete the user task.
+   *
+   * @param elementId the BPMN element ID of the user task to complete
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeUserTask(
+      final String elementId, final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
+   * Completes the user task matching the specified selector. The given mapper receives the user
+   * task's input variables and returns the output variables used to complete the user task.
+   *
+   * @param userTaskSelector the selector to identify the user task to complete
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeUserTask(
+      final UserTaskSelector userTaskSelector,
+      final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
    * Mocks a DMN decision with the specified decision ID and sets the provided variables.
    *
    * @param decisionId the ID of the DMN decision to mock
@@ -357,6 +434,19 @@ public interface CamundaProcessTestContext {
    * @param variables a map of variables to update
    */
   void updateLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables);
+
+  /**
+   * Creates local variables for a specific element within a process instance. Variables are created
+   * in the element's local scope and are not propagated to parent scopes.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param elementSelector the selector to identify the element
+   * @param variables a map of variables to create in local scope
+   */
+  void createLocalVariables(
       final ProcessInstanceSelector processInstanceSelector,
       final ElementSelector elementSelector,
       final Map<String, Object> variables);

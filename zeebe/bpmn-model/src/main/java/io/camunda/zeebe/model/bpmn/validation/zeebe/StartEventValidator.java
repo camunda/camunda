@@ -21,11 +21,17 @@ import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.Collection;
+import java.util.Objects;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class StartEventValidator implements ModelElementValidator<StartEvent> {
+
+  private static final String PUBLIC_ACCESS_PROPERTY_NAME = "publicAccess";
+
   @Override
   public Class<StartEvent> getElementType() {
     return StartEvent.class;
@@ -38,6 +44,12 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
     if (eventDefinitions.size() > 1) {
       validationResultCollector.addError(0, "Start event can't have more than one type");
+    }
+
+    if (hasPublicAccessEnabledForm(element)) {
+      validationResultCollector.addError(
+          0,
+          "Start event forms with public access enabled are not supported. Please remove the 'publicAccess' property or set it to 'false'");
     }
 
     validateExecutionListenersDefinitionForElement(
@@ -53,5 +65,20 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
                 0, "Execution listeners of type 'start' are not supported by start events");
           }
         });
+  }
+
+  private boolean hasPublicAccessEnabledForm(final StartEvent element) {
+    return element.getExtensionElements() != null
+        && element
+            .getExtensionElements()
+            .getElementsQuery()
+            .filterByType(ZeebeProperties.class)
+            .list()
+            .stream()
+            .flatMap(properties -> properties.getProperties().stream())
+            .filter(property -> PUBLIC_ACCESS_PROPERTY_NAME.equals(property.getName()))
+            .map(ZeebeProperty::getValue)
+            .filter(Objects::nonNull)
+            .anyMatch(Boolean::parseBoolean);
   }
 }

@@ -31,10 +31,16 @@ final class FaultToleranceIT {
 
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
-  // omit authorizations and agent since they are removed from the records during serialization
+  // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
+  // the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
-          .registerRandomizer(field -> "agent".equals(field.getName()), random -> null);
+          .registerRandomizer(
+              field ->
+                  "agent".equals(field.getName())
+                      || "requestChannelType".equals(field.getName())
+                      || "requestToolName".equals(field.getName()),
+              random -> null);
   private final ExporterTestController controller = new ExporterTestController();
   private final ElasticsearchExporter exporter = new ElasticsearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
@@ -56,7 +62,7 @@ final class FaultToleranceIT {
                 .withNetwork(network)
                 .withNetworkAliases("proxy")) {
       try (final ElasticsearchContainer container =
-          TestSearchContainers.createDefeaultElasticsearchContainer()
+          TestSearchContainers.createDefaultElasticsearchContainer()
               .withNetwork(network)
               .withNetworkAliases("elastic")) {
         // fix the ports beforehand - since we don't know the container port until it starts, and we

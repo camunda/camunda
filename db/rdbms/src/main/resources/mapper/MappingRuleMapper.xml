@@ -14,15 +14,19 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingRuleEntity">
     <constructor>
-      <idArg column="MAPPING_RULE_ID" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="MAPPING_RULE_KEY" javaType="long"/>
-      <arg column="CLAIM_NAME" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="CLAIM_VALUE" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="NAME" javaType="string"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <idArg column="MAPPING_RULE_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="mappingRuleId"/>
+      <arg column="MAPPING_RULE_KEY" javaType="java.lang.Long" name="mappingRuleKey"/>
+      <arg column="CLAIM_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="claimName"/>
+      <arg column="CLAIM_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="claimValue"/>
+      <arg column="NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="name"/>
     </constructor>
   </resultMap>
 
@@ -50,7 +54,7 @@
     SELECT COUNT(*) FROM (
       SELECT 1 as col
       FROM ${prefix}MAPPING_RULES m
-      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchAndAuthFilter"/>
       ${count.limit}
     ) t
   </select>
@@ -65,14 +69,14 @@
     CLAIM_VALUE,
     NAME
     FROM ${prefix}MAPPING_RULES m
-      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchAndAuthFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
-  <sql id="searchFilter">
+  <sql id="searchAndAuthFilter">
     <where>
       <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
         AND MAPPING_RULE_ID IN
@@ -81,47 +85,65 @@
           #{resourceId}
         </foreach>
       </if>
-      <if test="filter.mappingRuleId != null">
-        AND MAPPING_RULE_ID = #{filter.mappingRuleId}
-      </if>
-      <if test="filter.mappingRuleKey != null">
-        AND MAPPING_RULE_KEY = #{filter.mappingRuleKey}
-      </if>
-      <if test="filter.claimName != null">
-        AND CLAIM_NAME = #{filter.claimName}
-      </if>
-      <if test="filter.claimValue">
-        AND CLAIM_VALUE = #{filter.claimValue}
-      </if>
-      <if test="filter.claimNames != null and !filter.claimNames.isEmpty()">
-        AND CLAIM_NAME IN
-        <foreach collection="filter.claimNames" item="claimName" open="(" separator=","
-          close=")">
-          #{claimName}
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        AND (
+        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <trim prefixOverrides="AND">
+              <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+            </trim>
+          </trim>
         </foreach>
-      </if>
-      <if test="filter.claims != null and !filter.claims.isEmpty()">
-        AND
-        <foreach collection="filter.claims" item="claim" separator="OR">
-          (CLAIM_NAME = #{claim.name} AND CLAIM_VALUE = #{claim.value})
-        </foreach>
-      </if>
-      <if test="filter.name != null">
-        AND NAME = #{filter.name}
-      </if>
-      <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
-        ${prefix}GROUP_MEMBER
-        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND GROUP_ID = #{filter.groupId})
-      </if>
-      <if test="filter.roleId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
-        ${prefix}ROLE_MEMBER
-        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND ROLE_ID = #{filter.roleId})
-      </if>
-      <if test="filter.tenantId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
-        ${prefix}TENANT_MEMBER
-        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND TENANT_ID = #{filter.tenantId})
+        )
       </if>
     </where>
+  </sql>
+
+  <sql id="searchFilter">
+    <if test="filter.mappingRuleIdOperations != null and !filter.mappingRuleIdOperations.isEmpty()">
+      <foreach collection="filter.mappingRuleIdOperations" item="operation">
+        AND MAPPING_RULE_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.claimName != null">
+      AND CLAIM_NAME = #{filter.claimName}
+    </if>
+    <if test="filter.claimValue">
+      AND CLAIM_VALUE = #{filter.claimValue}
+    </if>
+    <if test="filter.claimNames != null and !filter.claimNames.isEmpty()">
+      AND CLAIM_NAME IN
+      <foreach collection="filter.claimNames" item="claimName" open="(" separator=","
+        close=")">
+        #{claimName}
+      </foreach>
+    </if>
+    <if test="filter.claims != null and !filter.claims.isEmpty()">
+      AND
+      <foreach collection="filter.claims" item="claim" separator="OR">
+        (CLAIM_NAME = #{claim.name} AND CLAIM_VALUE = #{claim.value})
+      </foreach>
+    </if>
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+      ${prefix}GROUP_MEMBER
+      WHERE ENTITY_TYPE = 'MAPPING_RULE' AND GROUP_ID = #{filter.groupId})
+    </if>
+    <if test="filter.roleId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+      ${prefix}ROLE_MEMBER
+      WHERE ENTITY_TYPE = 'MAPPING_RULE' AND ROLE_ID = #{filter.roleId})
+    </if>
+    <if test="filter.tenantId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+      ${prefix}TENANT_MEMBER
+      WHERE ENTITY_TYPE = 'MAPPING_RULE' AND TENANT_ID = #{filter.tenantId})
+    </if>
   </sql>
 
 </mapper>

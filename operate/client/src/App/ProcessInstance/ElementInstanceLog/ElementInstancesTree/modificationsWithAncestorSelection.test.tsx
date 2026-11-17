@@ -13,7 +13,8 @@ import {ElementInstancesTree} from './index';
 import {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockNestedSubProcessInstance,
-  Wrapper,
+  getWrapper,
+  parseBusinessObjects,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -22,11 +23,6 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
-
-const diagramModel = await parseDiagramXML(mockNestedSubprocess);
-const businessObjects = businessObjectsParser({diagramModel});
 
 // must be unskipped with #20862
 describe.todo(
@@ -53,13 +49,15 @@ describe.todo(
     });
 
     it('should create placeholder as a child of selected ancestor (direct parent) if there are multiple running scopes', async () => {
+      const {businessObjects} =
+        await parseBusinessObjects(mockNestedSubprocess);
       const {user} = render(
         <ElementInstancesTree
           processInstance={mockNestedSubProcessInstance}
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -149,13 +147,15 @@ describe.todo(
     });
 
     it('should create placeholders as a child of selected ancestor (upper level parent) if there are multiple running scopes', async () => {
+      const {businessObjects} =
+        await parseBusinessObjects(mockNestedSubprocess);
       const {user} = render(
         <ElementInstancesTree
           processInstance={mockNestedSubProcessInstance}
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -317,13 +317,15 @@ describe.todo(
     });
 
     it('should create placeholders as a child of selected ancestor (process instance key) if there are multiple running scopes', async () => {
+      const {businessObjects} =
+        await parseBusinessObjects(mockNestedSubprocess);
       const {user} = render(
         <ElementInstancesTree
           processInstance={mockNestedSubProcessInstance}
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -499,13 +501,15 @@ describe.todo(
     });
 
     it('should visualize placeholders correctly after adding tokens on elements that requires and does not require ancestor selection', async () => {
+      const {businessObjects} =
+        await parseBusinessObjects(mockNestedSubprocess);
       render(
         <ElementInstancesTree
           processInstance={mockNestedSubProcessInstance}
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 

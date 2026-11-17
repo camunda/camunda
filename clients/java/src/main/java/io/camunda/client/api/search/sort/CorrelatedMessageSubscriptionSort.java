@@ -20,6 +20,8 @@ import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSo
 public interface CorrelatedMessageSubscriptionSort
     extends SearchRequestSort<CorrelatedMessageSubscriptionSort> {
 
+  CorrelatedMessageSubscriptionSort businessId();
+
   CorrelatedMessageSubscriptionSort correlationKey();
 
   CorrelatedMessageSubscriptionSort correlationTime();

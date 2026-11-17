@@ -27,10 +27,10 @@ const variableSchema = z.object({
 
 type Variable = z.infer<typeof variableSchema>;
 
-const getVariable: Endpoint<Pick<Variable, 'variableKey'>> = {
+const getVariable = {
 	method: 'GET',
-	getUrl: ({variableKey}) => `/${API_VERSION}/variables/${variableKey}`,
-};
+	getUrl: ({variableKey}) => `/${API_VERSION}/variables/${variableKey}` as const,
+} as const satisfies Endpoint<Pick<Variable, 'variableKey'>>;
 
 const queryVariablesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'value', 'fullValue', 'tenantId', 'variableKey', 'scopeKey', 'processInstanceKey'] as const,
@@ -53,11 +53,11 @@ type QueryVariablesRequestBody = z.infer<typeof queryVariablesRequestBodySchema>
 const queryVariablesResponseBodySchema = getQueryResponseBodySchema(variableSchema);
 type QueryVariablesResponseBody = z.infer<typeof queryVariablesResponseBodySchema>;
 
-const queryVariables: Endpoint<{truncateValues?: boolean}> = {
+const queryVariables = {
 	method: 'POST',
 	getUrl: ({truncateValues} = {}) =>
-		`/${API_VERSION}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
-};
+		`/${API_VERSION}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}` as const,
+} as const satisfies Endpoint<{truncateValues?: boolean}>;
 
 export {getVariable, queryVariables, variableSchema, queryVariablesRequestBodySchema, queryVariablesResponseBodySchema};
 export type {Variable, QueryVariablesRequestBody, QueryVariablesResponseBody};

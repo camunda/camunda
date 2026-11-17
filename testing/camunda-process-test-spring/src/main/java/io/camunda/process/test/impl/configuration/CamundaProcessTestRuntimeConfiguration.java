@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,7 @@ public class CamundaProcessTestRuntimeConfiguration {
   private String camundaDockerImageVersion =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION;
   private Map<String, String> camundaEnvVars = Collections.emptyMap();
+  private Map<String, String> clusterSecrets = Collections.emptyMap();
   private List<Integer> camundaExposedPorts = Collections.emptyList();
 
   private boolean connectorsEnabled = false;
@@ -52,8 +54,15 @@ public class CamundaProcessTestRuntimeConfiguration {
       CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
 
   private boolean multiTenancyEnabled = false;
+  private boolean clockResetEnabled = true;
+
+  /** Cleanup mode after each test. */
+  private DataDeletionMode dataDeletionMode = DataDeletionMode.CLUSTER_PURGE;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
+
+  /** The maximum number of results to return per paged query. */
+  private int queryPageLimit = CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
@@ -178,6 +187,14 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.connectorsEnvVars = connectorsEnvVars;
   }
 
+  public Map<String, String> getClusterSecrets() {
+    return clusterSecrets;
+  }
+
+  public void setClusterSecrets(final Map<String, String> clusterSecrets) {
+    this.clusterSecrets = clusterSecrets;
+  }
+
   public Map<String, String> getConnectorsSecrets() {
     return connectorsSecrets;
   }
@@ -234,6 +251,27 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.multiTenancyEnabled = multiTenancyEnabled;
   }
 
+  public boolean isClockResetEnabled() {
+    return clockResetEnabled;
+  }
+
+  public void setClockResetEnabled(final boolean clockResetEnabled) {
+    this.clockResetEnabled = clockResetEnabled;
+  }
+
+  public DataDeletionMode getDataDeletionMode() {
+    return dataDeletionMode;
+  }
+
+  /**
+   * Sets the data deletion mode for cleanup between tests.
+   *
+   * @param dataDeletionMode the cleanup mode to apply after each test
+   */
+  public void setDataDeletionMode(final DataDeletionMode dataDeletionMode) {
+    this.dataDeletionMode = dataDeletionMode;
+  }
+
   public CoverageReportConfiguration getCoverage() {
     return coverage;
   }
@@ -256,6 +294,14 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setAssertion(final AssertionConfiguration assertion) {
     this.assertion = assertion;
+  }
+
+  public int getQueryPageLimit() {
+    return queryPageLimit;
+  }
+
+  public void setQueryPageLimit(final int queryPageLimit) {
+    this.queryPageLimit = queryPageLimit;
   }
 
   public SemanticSimilarityConfiguration getSimilarity() {

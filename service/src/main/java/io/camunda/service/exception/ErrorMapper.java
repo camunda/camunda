@@ -8,7 +8,7 @@
 package io.camunda.service.exception;
 
 import static io.camunda.service.exception.ServiceException.Status.*;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
@@ -20,24 +20,28 @@ import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.msgpack.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,48 +67,72 @@ public class ErrorMapper {
     return new ServiceException(mapDocumentErrorToServiceError(documentError));
   }
 
+  /**
+   * Maps a search failure onto the API-facing {@link ServiceException}, keeping the original as the
+   * cause. Several reasons collapse onto the same {@link ServiceException.Status}, so the cause is
+   * the only remaining way to recover the precise reason — internal callers such as the
+   * authentication layer rely on it to tell a retryable outage from a permanent error.
+   */
   public static ServiceException mapSearchError(final CamundaSearchException cse) {
     final String errorMessage = cse.getMessage();
     return switch (cse.getReason()) {
-      case INVALID_ARGUMENT -> new ServiceException(errorMessage, INVALID_ARGUMENT);
-      case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND);
-      case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS);
-      case FORBIDDEN -> new ServiceException(errorMessage, FORBIDDEN);
+      case INVALID_ARGUMENT -> new ServiceException(errorMessage, INVALID_ARGUMENT, cse);
+      case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND, cse);
+      case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS, cse);
+      case FORBIDDEN -> new ServiceException(errorMessage, FORBIDDEN, cse);
       case CONNECTION_FAILED -> {
         final String detail = "The search client could not connect to the search server";
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, UNAVAILABLE);
+        yield new ServiceException(detail, UNAVAILABLE, cse);
       }
       case SECONDARY_STORAGE_NOT_SET -> {
         final String detail =
-            "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the '"
-                + PROPERTY_CAMUNDA_DATABASE_TYPE
-                + "' property";
+            "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the '%s' property"
+                .formatted(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, FORBIDDEN);
+        yield new ServiceException(detail, FORBIDDEN, cse);
       }
       case SEARCH_SERVER_FAILED -> {
         final String detail = "The search server was unable to process the request";
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, INTERNAL);
+        yield new ServiceException(detail, INTERNAL, cse);
       }
       case SEARCH_CLIENT_FAILED -> {
         final String detail = "The search client was unable to process the request";
         LOGGER.debug(detail, cse);
-        yield new ServiceException(detail, INTERNAL);
+        yield new ServiceException(detail, INTERNAL, cse);
       }
       default -> {
         LOGGER.debug(errorMessage, cse);
-        yield new ServiceException(errorMessage, INTERNAL);
+        yield new ServiceException(errorMessage, INTERNAL, cse);
       }
     };
   }
 
-  public static ServiceException createForbiddenException(final Authorization authorization) {
+  public static ServiceException createForbiddenException(
+      final RequiredAuthorization<?> authorization) {
     return new ServiceException(
         "Unauthorized to perform operation '%s' on resource '%s'"
             .formatted(authorization.permissionType(), authorization.resourceType()),
         FORBIDDEN);
+  }
+
+  public static ServiceException createForbiddenException(
+      final List<? extends RequiredAuthorization<?>> authorizations) {
+    if (authorizations.size() == 1) {
+      return createForbiddenException(authorizations.getFirst());
+    }
+
+    final var operations =
+        authorizations.stream()
+            .map(
+                authorization ->
+                    "'%s' on '%s'"
+                        .formatted(authorization.permissionType(), authorization.resourceType()))
+            .distinct()
+            .collect(Collectors.joining(" or "));
+    return new ServiceException(
+        "Unauthorized to perform any of the operations: %s".formatted(operations), FORBIDDEN);
   }
 
   private static ServiceError mapErrorToServiceError(final Throwable error) {
@@ -180,11 +208,31 @@ public class ErrorMapper {
         LOGGER.trace(message, rootError);
         yield new ServiceError(message, UNAVAILABLE);
       }
+      case final PartitionInRecoveryException e -> {
+        LOGGER.trace(e.getMessage(), rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
+      }
       case final NoTopologyAvailableException ignored -> {
         final var message =
             "Expected to handle request, but the gateway does not know any partitions yet";
         LOGGER.trace(message, rootError);
         yield new ServiceError(message, UNAVAILABLE);
+      }
+      case final IncompleteTopologyException e -> {
+        LOGGER.debug(
+            "Expected to handle request, but the gateway does not have a complete view of the cluster topology",
+            rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
+      }
+      case final io.camunda.zeebe.backup.client.api.IncompleteTopologyException e -> {
+        LOGGER.debug(
+            "Expected to handle request, but the broker client does not have a complete view of the cluster topology",
+            rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
+      }
+      case final io.camunda.zeebe.backup.client.api.BackupAlreadyExistException e -> {
+        LOGGER.debug(e.getMessage(), rootError);
+        yield new ServiceError(e.getMessage(), ALREADY_EXISTS);
       }
       case final ConnectTimeoutException ignored -> {
         final var message =

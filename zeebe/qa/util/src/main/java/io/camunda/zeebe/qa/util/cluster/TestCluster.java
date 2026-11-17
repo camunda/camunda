@@ -11,14 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
@@ -84,6 +85,7 @@ public final class TestCluster implements CloseableSilently {
 
   private final String name;
   private final Map<MemberId, TestStandaloneGateway> gateways;
+  private final List<Zone> multiZoneConfig;
   private final Map<MemberId, TestStandaloneBroker> brokers;
   private final int replicationFactor;
   private final int partitionsCount;
@@ -102,12 +104,14 @@ public final class TestCluster implements CloseableSilently {
       final int replicationFactor,
       final int partitionsCount,
       final Map<MemberId, TestStandaloneBroker> brokers,
-      final Map<MemberId, TestStandaloneGateway> gateways) {
+      final Map<MemberId, TestStandaloneGateway> gateways,
+      final List<Zone> multiZoneConfig) {
     this.name = name;
     this.replicationFactor = replicationFactor;
     this.partitionsCount = partitionsCount;
     this.brokers = Collections.unmodifiableMap(brokers);
     this.gateways = Collections.unmodifiableMap(gateways);
+    this.multiZoneConfig = multiZoneConfig;
   }
 
   /** Returns a new cluster builder */
@@ -140,7 +144,14 @@ public final class TestCluster implements CloseableSilently {
         nodes().values().stream()
             .map(node -> CompletableFuture.runAsync(node::start))
             .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(started).join();
+    try {
+      CompletableFuture.allOf(started).get(2, TimeUnit.MINUTES);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while starting cluster " + name, e);
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to start cluster " + name, e);
+    }
     return this;
   }
 
@@ -254,21 +265,17 @@ public final class TestCluster implements CloseableSilently {
   }
 
   /**
-   * Builds a new client builder by picking a random gateway started gateway for it and disabling
-   * transport security.
+   * Builds a new client builder by picking a random started gateway for it.
    *
-   * <p>NOTE: this will properly automatically configure the security level, but will not configure
-   * authentication.
+   * <p>The gateway configures transport security and, when enabled, authentication with the default
+   * admin user.
    *
-   * @return a new client builder with the gateway and transport security pre-configured
+   * @return a new client builder with the gateway configuration
    * @throws NoSuchElementException if there are no started gateways
    */
   @SuppressWarnings("resource")
   public CamundaClientBuilder newClientBuilder() {
-    return CamundaClient.newClientBuilder()
-        .preferRestOverGrpc(false)
-        .restAddress(availableGateway().restAddress())
-        .grpcAddress(availableGateway().grpcAddress());
+    return availableGateway().newClientBuilder();
   }
 
   /**
@@ -313,6 +320,7 @@ public final class TestCluster implements CloseableSilently {
       final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
+        .ignoreExceptions()
         .untilAsserted(
             () ->
                 assertThat(allGateways())
@@ -331,7 +339,9 @@ public final class TestCluster implements CloseableSilently {
   public TestCluster awaitHealthyTopology(final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
-        .untilAsserted(() -> assertThat(allGateways()).allSatisfy(this::assertHealthyTopology));
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> assertThat(allGateways()).allSatisfy(TestCluster::assertHealthyTopology));
     return this;
   }
 
@@ -391,6 +401,11 @@ public final class TestCluster implements CloseableSilently {
     shutdown();
   }
 
+  /** Makes the ports of all nodes available to other applications again. */
+  public void releasePorts() {
+    nodes().values().forEach(TestApplication::releasePorts);
+  }
+
   private boolean isReady(final TestApplication<?> node) {
     if (!node.isStarted()) {
       return false;
@@ -420,7 +435,7 @@ public final class TestCluster implements CloseableSilently {
     }
   }
 
-  private void assertHealthyTopology(final TestGateway<?> node) {
+  public static void assertHealthyTopology(final TestGateway<?> node) {
     assertThatCode(() -> node.probe(TestHealthProbe.READY))
         .as("gateway '%s' is ready", node.nodeId())
         .doesNotThrowAnyException();
@@ -438,5 +453,9 @@ public final class TestCluster implements CloseableSilently {
         .filter(TestApplication::isGateway)
         .filter(TestGateway.class::isInstance)
         .map(node -> (TestGateway<?>) node);
+  }
+
+  public List<Zone> getMultiZoneConfig() {
+    return multiZoneConfig;
   }
 }

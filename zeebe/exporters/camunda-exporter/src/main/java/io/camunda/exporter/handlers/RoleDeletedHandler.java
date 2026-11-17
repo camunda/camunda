@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
@@ -19,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 import java.util.Set;
 
-public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
+public class RoleDeletedHandler implements MainIndexExporterHandler<RoleEntity, RoleRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS = Set.of(RoleIntent.DELETED);
   private final String indexName;
 
@@ -64,9 +65,10 @@ public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordV
   }
 
   @Override
-  public void flush(final RoleEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

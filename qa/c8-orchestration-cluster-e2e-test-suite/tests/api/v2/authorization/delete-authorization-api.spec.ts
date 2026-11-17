@@ -78,7 +78,9 @@ test.describe.parallel('Delete Authorization API', () => {
 
     await test.step('Delete authorization', async () => {
       const deleteRes = await request.delete(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -144,7 +146,9 @@ test.describe.parallel('Delete Authorization API', () => {
 
     await test.step('Delete authorization', async () => {
       const deleteRes = await request.delete(
-        buildUrl(`/authorizations/${roleAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: roleAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -209,7 +213,9 @@ test.describe.parallel('Delete Authorization API', () => {
 
     await test.step('Delete authorization', async () => {
       const deleteRes = await request.delete(
-        buildUrl(`/authorizations/${mappingRuleAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: mappingRuleAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -263,7 +269,9 @@ test.describe.parallel('Delete Authorization API', () => {
 
     await test.step('Delete authorization', async () => {
       const deleteRes = await request.delete(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -277,7 +285,9 @@ test.describe.parallel('Delete Authorization API', () => {
 
     await test.step('Attempt to delete already deleted authorization', async () => {
       const deleteRes = await request.delete(
-        buildUrl(`/authorizations/${userAuthorizationKey}`),
+        buildUrl('/authorizations/{authorizationKey}', {
+          authorizationKey: userAuthorizationKey,
+        }),
         {
           headers: jsonHeaders(),
         },
@@ -293,7 +303,9 @@ test.describe.parallel('Delete Authorization API', () => {
     request,
   }) => {
     const deleteRes = await request.delete(
-      buildUrl(`/authorizations/anyAuthorizationKey`),
+      buildUrl('/authorizations/{authorizationKey}', {
+        authorizationKey: 'anyAuthorizationKey',
+      }),
       {
         headers: {
           'Content-Type': 'application/json',
@@ -308,7 +320,9 @@ test.describe.parallel('Delete Authorization API', () => {
   }) => {
     const invalidAuthorizationKey = 'meow';
     const deleteRes = await request.delete(
-      buildUrl(`/authorizations/${invalidAuthorizationKey}`),
+      buildUrl('/authorizations/{authorizationKey}', {
+        authorizationKey: invalidAuthorizationKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -378,7 +392,9 @@ test.describe.parallel('Delete Authorization API', () => {
 
       await expect(async () => {
         const deleteRes = await request.delete(
-          buildUrl(`/authorizations/${userAuthorizationKey}`),
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: userAuthorizationKey,
+          }),
           {
             headers: jsonHeaders(token), // overrides default demo:demo
           },

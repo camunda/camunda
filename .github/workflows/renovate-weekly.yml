@@ -1,6 +1,6 @@
 # description: Runs a weekly check to see if Renovate configuration migration is needed and posts it to Slack
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 ---
 name: Renovate Weekly
@@ -14,20 +14,34 @@ on:
   workflow_dispatch: {}
 
 env:
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
   config-migration-needed:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 8 min accommodates the 3-attempt retry below (~6.5 min worst case).
+    timeout-minutes: 8
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 24
-      - run: |
-          npx --yes --package "renovate@latest" -c "renovate-config-validator --strict"
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      # Retry to absorb transient npm-registry resolution failures when npx resolves
+      # renovate@latest and its transitive deps on a fresh run (see INC-6869).
+      - name: Validate Renovate config
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          # 2 min/attempt keeps all 3 attempts (~6.5 min worst case) within the
+          # job timeout; validation normally completes in well under a minute.
+          timeout_minutes: 2
+          command: npx --yes --package "renovate@latest" -- renovate-config-validator --no-global --strict .github/renovate.json* .github/renovate/*
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -46,11 +60,13 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -61,7 +77,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -80,7 +96,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run> for details, verify that the version of Hosted Renovate we're using actually supports the new config and create a ticket."
+                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run> for details, verify that the version of Hosted Renovate we're using actually supports the new config and create a ticket."
                   }
                 }
               ]

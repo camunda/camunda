@@ -18,13 +18,20 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
+import io.camunda.process.test.api.judge.ResolvedDocument;
+import java.util.List;
 import java.util.function.UnaryOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reusable component that provides LLM judge evaluation capabilities. Intended to be composed into
  * assertion classes that need judge-based evaluation.
  */
 class JudgeAssertj {
+
+  private static final Logger LOG = LoggerFactory.getLogger(JudgeAssertj.class);
 
   private JudgeConfig judgeConfig;
 
@@ -51,6 +58,26 @@ class JudgeAssertj {
   }
 
   /**
+   * Returns {@code true} when document attachment is enabled and the configured adapter can consume
+   * it; logs a one-line warning when the toggle is on but the adapter is not multimodal so the
+   * misconfiguration is visible.
+   */
+  boolean isDocumentAttachmentEnabled() {
+    if (judgeConfig == null || !judgeConfig.isAttachDocuments()) {
+      return false;
+    }
+    if (!(judgeConfig.getChatModel() instanceof MultimodalChatModelAdapter)) {
+      LOG.warn(
+          "Judge document attachment is enabled but the configured ChatModelAdapter does not "
+              + "implement MultimodalChatModelAdapter. Skipping document attachment. Implement "
+              + "MultimodalChatModelAdapter or use one of the built-in LangChain4j providers to "
+              + "enable multimodal evaluation.");
+      return false;
+    }
+    return true;
+  }
+
+  /**
    * Validates that the judge config has all required settings for evaluation.
    *
    * @throws IllegalStateException if judgeConfig or its chatModel is null
@@ -68,21 +95,21 @@ class JudgeAssertj {
   }
 
   /**
-   * Evaluates the actual value against the expectation using the configured LLM judge.
-   *
-   * @param expectation the natural-language expectation
-   * @param actualValue the value to evaluate
-   * @param context additional context appended to error messages (e.g. {@code " for variable
-   *     'myVar'"}), or empty string for no context
+   * Evaluates the actual value against the expectation using the configured LLM judge. {@code
+   * context} is appended to failure messages (e.g. {@code " for variable 'myVar'"}); pass an empty
+   * string for none. Pass an empty list when no documents have been resolved.
    */
   void evaluateExpectation(
-      final String expectation, final String actualValue, final String context) {
+      final String expectation,
+      final String actualValue,
+      final String context,
+      final List<ResolvedDocument> documents) {
 
     final JudgeEvaluation evaluation =
         new JudgeEvaluation(judgeConfig.getChatModel(), expectation, judgeConfig.getCustomPrompt());
 
     try {
-      final JudgeEvaluation.Result result = evaluation.evaluate(actualValue);
+      final JudgeEvaluation.Result result = evaluation.evaluate(actualValue, documents);
       final double threshold = judgeConfig.getThreshold();
 
       if (!result.passed(threshold)) {

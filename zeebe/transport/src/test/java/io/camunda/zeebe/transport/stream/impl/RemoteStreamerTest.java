@@ -115,7 +115,7 @@ final class RemoteStreamerTest {
     // then
     Mockito.verify(communicationService, Mockito.timeout(5_000).times(1))
         .send(
-            Mockito.eq(StreamTopics.PUSH.topic()),
+            Mockito.eq(StreamTopics.PUSH.legacyTopic()),
             Mockito.eq(new PushStreamRequest().streamId(streamId.streamId()).payload(payload)),
             Mockito.any(),
             Mockito.any(),

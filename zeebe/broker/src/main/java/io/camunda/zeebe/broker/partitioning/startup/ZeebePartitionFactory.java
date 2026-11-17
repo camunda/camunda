@@ -7,19 +7,22 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
-import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.probe.RemoteProbeNotifier;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -53,16 +56,16 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTrans
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -74,9 +77,11 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -93,8 +98,7 @@ public final class ZeebePartitionFactory {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
-  private final CommandApiService commandApiService;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private final BrokerClient brokerClient;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -104,19 +108,21 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
-  private final SharedRocksDbResources sharedRocksDbResources;
   private final ClusterConfigurationService clusterConfigurationService;
-  private final MeterRegistry brokerMeterRegistry;
+  private final RocksDbResources rocksDbResources;
+
+  // The tenant's secret store registry, shared across its partitions: the caches are read on job
+  // activation to inject resolved secrets and populated by the background secret-resolution flow.
+  private final SecretStoreRegistry secretStoreRegistry;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final CommandApiService commandApiService,
-      final SnapshotApiRequestHandler snapshotApiRequestHandler,
+      final BrokerClient brokerClient,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -126,17 +132,16 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final SharedRocksDbResources sharedRocksDbResources,
       final ClusterConfigurationService clusterConfigurationService,
-      final MeterRegistry brokerMeterRegistry) {
+      final RocksDbResources rocksDbResources,
+      final SecretStoreRegistry secretStoreRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
-    this.commandApiService = commandApiService;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.brokerClient = brokerClient;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
@@ -149,9 +154,9 @@ public final class ZeebePartitionFactory {
     this.securityConfig = securityConfig;
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
-    this.sharedRocksDbResources = sharedRocksDbResources;
     this.clusterConfigurationService = clusterConfigurationService;
-    this.brokerMeterRegistry = brokerMeterRegistry;
+    this.rocksDbResources = rocksDbResources;
+    this.secretStoreRegistry = secretStoreRegistry;
   }
 
   public ZeebePartition constructPartition(
@@ -159,33 +164,36 @@ public final class ZeebePartitionFactory {
       final FileBasedSnapshotStore snapshotStore,
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
-      final MeterRegistry partitionMeterRegistry) {
-    initializeSharedRocksDbResources();
+      final MeterRegistry partitionMeterRegistry,
+      final CommandApiService commandApiService) {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
+    final var probeNotifier =
+        new RemoteProbeNotifier(clusterServices.getEventService(), raftPartition.id().group());
+    final var typedRecordProcessorsFactory =
+        createFactory(localBroker, featureFlags, probeNotifier);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
-    final var partitionId = raftPartition.id().id();
+    final var partitionId = raftPartition.id();
+    final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
+
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
-            databaseCfg.createRocksDbConfiguration(),
+            rocksDbConfiguration,
             consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
+            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
-            sharedRocksDbResources,
-            getPartitionsPerBroker(
-                clusterConfigurationService, membershipService.getLocalMember().id(), brokerCfg));
+            rocksDbResources);
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
         new PartitionStartupAndTransitionContextImpl(
-            localBroker.getNodeId(),
-            localBroker.getPartitionsCount(),
+            BrokerMemberId.from(localBroker.getZone(), localBroker.getNodeId()),
+            brokerCfg.getCluster().getPartitionsCount(),
             communicationService,
             raftPartition,
             partitionListeners,
@@ -197,7 +205,7 @@ public final class ZeebePartitionFactory {
             commandApiService,
             snapshotStore,
             snapshotCopy,
-            snapshotApiRequestHandler,
+            brokerClient,
             stateController,
             typedRecordProcessorsFactory,
             exporterRepository,
@@ -215,66 +223,6 @@ public final class ZeebePartitionFactory {
         new PartitionTransitionImpl(generateTransitionSteps());
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
-  }
-
-  /**
-   * Lazily initializes the shared RocksDB resources on the first partition construction. This
-   * ensures the cluster configuration service is initialized and partition distribution is
-   * available.
-   */
-  private synchronized void initializeSharedRocksDbResources() {
-    if (sharedRocksDbResources.isInitialized()) {
-      return;
-    }
-
-    final var localMemberId = clusterServices.getMembershipService().getLocalMember().id();
-    final int partitionsPerBroker =
-        getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg);
-    sharedRocksDbResources.allocate(
-        RocksDbSharedCache.getSharedCacheSize(brokerCfg, brokerMeterRegistry, partitionsPerBroker));
-  }
-
-  /**
-   * Determines the number of partitions this broker is responsible for. Attempts to get the actual
-   * partition count from the cluster topology, with a static-config estimate as last resort.
-   */
-  static int getPartitionsPerBroker(
-      final ClusterConfigurationService clusterConfigurationService,
-      final MemberId localMemberId,
-      final BrokerCfg brokerCfg) {
-    final long partitionCount =
-        clusterConfigurationService.getMemberPartitions(localMemberId).size();
-    if (partitionCount > 0) {
-      return (int) partitionCount;
-    }
-
-    // Fall back to counting JOINING partitions — this happens during scale-up when a broker is
-    // being asked to join a partition for the first time, and the partition distribution does not
-    // include the partitions that are in JOINING state yet.
-    final int joiningPartitionCount =
-        clusterConfigurationService.getJoiningMemberPartitionCount(localMemberId);
-    if (joiningPartitionCount > 0) {
-      return joiningPartitionCount;
-    }
-
-    // Last-resort fallback: the cluster configuration hasn't been updated yet (e.g. join called
-    // before the dynamic config reflects the JOINING state). Estimate the per-broker partition
-    // count
-    // from the static cluster config so the RocksDB cache is sized appropriately.
-    final var clusterCfg = brokerCfg.getCluster();
-    final int estimate =
-        (int)
-            Math.ceil(
-                (double) clusterCfg.getPartitionsCount()
-                    * clusterCfg.getReplicationFactor()
-                    / clusterCfg.getClusterSize());
-    LOGGER.warn(
-        "Could not determine partition count for broker {} from topology; "
-            + "falling back to static config estimate of {} partition(s) for RocksDB cache sizing. "
-            + "This is expected when joining a partition before the cluster configuration is updated.",
-        localMemberId,
-        estimate);
-    return estimate;
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
@@ -303,20 +251,8 @@ public final class ZeebePartitionFactory {
       final ZeebeDbFactory<ZbColumnFamilies> zeebeRocksDbFactory,
       final ConstructableSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
-    final Path runtimeDirectory;
-    final var partitionId = raftPartition.id().id();
-    if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
-      final Path rootRuntimeDirectory = Paths.get(brokerCfg.getData().getRuntimeDirectory());
-      try {
-        FileUtil.ensureDirectoryExists(rootRuntimeDirectory);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(
-            "Runtime directory %s does not exist".formatted(rootRuntimeDirectory), e);
-      }
-      runtimeDirectory = rootRuntimeDirectory.resolve(String.valueOf(partitionId));
-    } else {
-      runtimeDirectory = raftPartition.dataDirectory().toPath().resolve(DEFAULT_RUNTIME_DIRECTORY);
-    }
+    final Path runtimeDirectory =
+        resolveRuntimeDirectory(brokerCfg, raftPartition.id(), raftPartition.dataDirectory());
 
     final var continuousBackup = brokerCfg.getData().getBackup().isContinuous();
     return new StateControllerImpl(
@@ -328,8 +264,35 @@ public final class ZeebePartitionFactory {
         concurrencyControl);
   }
 
+  /**
+   * Resolves the runtime directory for one partition. When {@code
+   * data.primary-storage.runtime-directory} is not overridden per physical tenant, every tenant's
+   * {@code BrokerCfg} resolves to the same root runtime directory, and partition numbers restart at
+   * 1 per partition group — so the partition-group name must be part of the path, or two tenants'
+   * same-numbered partitions collide on the same on-disk runtime directory.
+   */
+  @VisibleForTesting
+  static Path resolveRuntimeDirectory(
+      final BrokerCfg brokerCfg, final PartitionId partitionId, final File partitionDataDirectory) {
+    if (!brokerCfg.getData().useSeparateRuntimeDirectory()) {
+      return partitionDataDirectory.toPath().resolve(DEFAULT_RUNTIME_DIRECTORY);
+    }
+
+    final Path rootRuntimeDirectory =
+        Paths.get(brokerCfg.getData().getRuntimeDirectory()).resolve(partitionId.group());
+    try {
+      FileUtil.ensureDirectoryExists(rootRuntimeDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          "Runtime directory %s does not exist".formatted(rootRuntimeDirectory), e);
+    }
+    return rootRuntimeDirectory.resolve(String.valueOf(partitionId.number()));
+  }
+
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker, final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker,
+      final FeatureFlags featureFlags,
+      final ProbeNotifier probeNotifier) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -339,13 +302,15 @@ public final class ZeebePartitionFactory {
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
-          localBroker.getPartitionsCount(),
+          brokerCfg.getCluster().getPartitionsCount(),
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
           jobStreamer,
+          probeNotifier,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          secretStoreRegistry);
     };
   }
 }

@@ -7,19 +7,29 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+
+import com.azure.core.http.HttpClient;
 import com.azure.core.util.BinaryData;
+import com.azure.core.util.HttpClientOptions;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchClientBuilder;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
+import com.azure.storage.common.policy.RequestRetryOptions;
+import com.azure.storage.common.policy.RetryPolicyType;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerDoesNotExist;
 import io.camunda.zeebe.backup.common.BackupImpl;
@@ -27,8 +37,10 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -49,49 +61,95 @@ import org.slf4j.LoggerFactory;
  */
 public final class AzureBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
-      "Expected to restore from backup with id '%s', but does not exist.";
-  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
-      "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
-  public static final String METADATA_OBJECT_NAME = "metadata.json";
-  static final int MAX_CONCURRENT_SAVES = 128;
+      "Expected to find backup with id '%s', but does not exist.";
+  public static final String ERROR_MSG_BACKUP_NOT_COMPLETED =
+      "Expected to find completed backup with id '%s', but was in state '%s'";
+  static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
+
+  /**
+   * Retention hands the leader a batch of up to a thousand deletions at once, only waiting for the
+   * commands to be processed, not for the backups to be gone, so every deletion starts right away.
+   * Each one makes several requests, so without a bound a large batch opens far more connections
+   * than the client can sustain. Bounded to the same width GCS uses for the same reason.
+   */
+  static final int DELETE_PARALLELISM = 16;
+
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
-  private final Semaphore saveSemaphore = new Semaphore(MAX_CONCURRENT_SAVES);
+  private final ExecutorService credentialExecutor;
+  private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final BlobContainerClient blobContainerClient;
-  private final AzureBackupConfig config;
   private volatile boolean containerCreated;
 
   AzureBackupStore(final AzureBackupConfig config) {
-    this(config, buildClient(config));
+    this(config, newCredentialExecutor());
+  }
+
+  private AzureBackupStore(
+      final AzureBackupConfig config, final ExecutorService credentialExecutor) {
+    this(config, buildClient(config, credentialExecutor), credentialExecutor);
   }
 
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
-    this.config = config;
-    executor = Executors.newVirtualThreadPerTaskExecutor();
+    this(config, client, null);
+  }
+
+  AzureBackupStore(
+      final AzureBackupConfig config,
+      final BlobServiceClient client,
+      final ExecutorService credentialExecutor) {
+    this.credentialExecutor = credentialExecutor;
+    executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-backup-azure-", 0).factory());
     blobContainerClient = getContainerClient(client, config);
     final boolean createContainer = isCreateContainer(config);
     containerCreated = !createContainer;
 
-    fileSetManager = new FileSetManager(blobContainerClient, createContainer);
-    manifestManager = new ManifestManager(blobContainerClient, createContainer);
+    final var blobBatchClient = new BlobBatchClientBuilder(client).buildClient();
+    fileSetManager =
+        new FileSetManager(
+            blobContainerClient,
+            blobBatchClient,
+            createContainer,
+            executor,
+            MAX_CONCURRENT_FILE_OPERATIONS);
+    manifestManager = new ManifestManager(blobContainerClient, createContainer, executor);
   }
 
-  public static BlobServiceClient buildClient(final AzureBackupConfig config) {
+  /**
+   * Retry options bounding the attempts of a failing request, or empty to leave the SDK defaults in
+   * place. The SDK default of 4 attempts with exponential backoff delays reporting an unreachable
+   * endpoint.
+   */
+  static Optional<RequestRetryOptions> retryOptions(final AzureBackupConfig config) {
+    return config
+        .retry()
+        .maxAttempts()
+        .map(
+            maxAttempts ->
+                new RequestRetryOptions(
+                    RetryPolicyType.EXPONENTIAL, maxAttempts, (Integer) null, null, null, null));
+  }
+
+  public static BlobServiceClient buildClient(
+      final AzureBackupConfig config, final ExecutorService credentialExecutor) {
+    final var builder = new BlobServiceClientBuilder();
+
+    httpClientOptions(config).map(HttpClient::createDefault).ifPresent(builder::httpClient);
+    retryOptions(config).ifPresent(builder::retryOptions);
+
     // BlobServiceClientBuilder has their own validations, for building the client
     if (config.sasTokenConfig() != null) {
-      return new BlobServiceClientBuilder()
+      return builder
           .sasToken(config.sasTokenConfig().value())
           .endpoint(config.endpoint())
           .buildClient();
     } else if (config.connectionString() != null) {
-      return new BlobServiceClientBuilder()
-          .connectionString(config.connectionString())
-          .buildClient();
+      return builder.connectionString(config.connectionString()).buildClient();
     } else if (config.accountName() != null || config.accountKey() != null) {
       final var credential =
           new StorageSharedKeyCredential(
@@ -101,18 +159,25 @@ public final class AzureBackupStore implements BackupStore {
               Objects.requireNonNull(
                   config.accountKey(),
                   "Account name is specified but no account key was provided."));
-      return new BlobServiceClientBuilder()
-          .endpoint(config.endpoint())
-          .credential(credential)
-          .buildClient();
+      return builder.endpoint(config.endpoint()).credential(credential).buildClient();
     } else {
       LOG.info(
           "No connection string, sas token or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
-      return new BlobServiceClientBuilder()
+      return builder
           .endpoint(config.endpoint())
-          .credential(new DefaultAzureCredentialBuilder().build())
+          .credential(
+              new DefaultAzureCredentialBuilder().executorService(credentialExecutor).build())
           .buildClient();
     }
+  }
+
+  // The SDK shared pool runs token tasks on virtual threads, which can deadlock when all carriers
+  // are pinned: https://github.com/Azure/azure-sdk-for-java/issues/46231
+  // The pool creates threads on demand and reaps them after 60s idle. The store owns the result
+  // and shuts it down in closeAsync.
+  static ExecutorService newCredentialExecutor() {
+    return Executors.newCachedThreadPool(
+        Thread.ofPlatform().daemon().name("zeebe-backup-azure-credential-", 0).factory());
   }
 
   BlobContainerClient getContainerClient(
@@ -142,17 +207,8 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return CompletableFuture.runAsync(
-            () -> {
-              try {
-                saveSemaphore.acquire();
-              } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting to save backup", e);
-              }
-            },
-            executor)
-        .thenApplyAsync(ignored -> manifestManager.createInitialManifest(backup), executor)
+    return CompletableFuture.supplyAsync(
+            () -> manifestManager.createInitialManifest(backup), executor)
         .thenComposeAsync(
             persistedManifest -> {
               final var snapshotFuture =
@@ -189,8 +245,7 @@ public final class AzureBackupStore implements BackupStore {
                 throw e;
               }
             },
-            executor)
-        .whenComplete((ignored, error) -> saveSemaphore.release());
+            executor);
   }
 
   @Override
@@ -207,29 +262,38 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard, options).stream()
+                .map(Manifest::toStatus)
+                .toList(),
         executor);
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    return CompletableFuture.runAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
-            return;
+            return null;
           } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
                 "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
-          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+          final var snapshotUrls = fileSetManager.collectBlobUrls(id, SNAPSHOT_FILESET_NAME);
+          final var segmentUrls = fileSetManager.collectBlobUrls(id, SEGMENTS_FILESET_NAME);
+          final List<String> allUrls = new ArrayList<>(snapshotUrls);
+          allUrls.addAll(segmentUrls);
+          fileSetManager.deleteBlobs(allUrls);
           manifestManager.deleteManifest(manifest);
+          return null;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -243,7 +307,7 @@ public final class AzureBackupStore implements BackupStore {
           return switch (manifest.statusCode()) {
             case FAILED, IN_PROGRESS, DELETED ->
                 throw new UnexpectedManifestState(
-                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+                    ERROR_MSG_BACKUP_NOT_COMPLETED.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -272,13 +336,17 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
-    return CompletableFuture.supplyAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
           manifestManager.markAsDeleted(manifest);
           return BackupStatusCode.DELETED;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -322,11 +390,30 @@ public final class AzureBackupStore implements BackupStore {
           } catch (final Exception e) {
             LOG.error("Failed to shutdown of Azure Store Executor.");
             throw new RuntimeException(e);
+          } finally {
+            if (credentialExecutor != null) {
+              shutdownCredentialExecutor();
+            }
           }
         });
   }
 
+  private void shutdownCredentialExecutor() {
+    try {
+      credentialExecutor.shutdown();
+      final var closed = credentialExecutor.awaitTermination(1, TimeUnit.MINUTES);
+      if (!closed) {
+        LOG.warn("Failed to orderly shutdown Azure Credential Executor within one minute.");
+        credentialExecutor.shutdownNow();
+      }
+    } catch (final Exception e) {
+      LOG.warn("Failed to shutdown Azure Credential Executor.", e);
+      credentialExecutor.shutdownNow();
+    }
+  }
+
   @Override
+  @SuppressWarnings("ReturnValueIgnored")
   public CompletableFuture<Void> verifyConnection() {
     return CompletableFuture.runAsync(
             () -> {
@@ -354,7 +441,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   private String backupMetadataPath(final int partitionId) {
-    return "metadata/%d/%s".formatted(partitionId, METADATA_OBJECT_NAME);
+    return metadataPath(partitionId);
   }
 
   private void assureContainerCreated() {
@@ -419,6 +506,19 @@ public final class AzureBackupStore implements BackupStore {
       }
     }
     return false;
+  }
+
+  static Optional<HttpClientOptions> httpClientOptions(final AzureBackupConfig config) {
+    if (config.readTimeout().isEmpty() && config.writeTimeout().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final var options = new HttpClientOptions();
+    config
+        .readTimeout()
+        .ifPresent(timeout -> options.setResponseTimeout(timeout).setReadTimeout(timeout));
+    config.writeTimeout().ifPresent(options::setWriteTimeout);
+    return Optional.of(options);
   }
 
   public static BackupStore of(final AzureBackupConfig storeConfig) {

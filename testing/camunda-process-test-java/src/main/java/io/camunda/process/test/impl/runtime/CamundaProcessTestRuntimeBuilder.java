@@ -20,6 +20,8 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
+import io.camunda.process.test.impl.cleanup.DefaultCleanupStrategyFactory;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -40,6 +42,8 @@ public class CamundaProcessTestRuntimeBuilder {
       LoggerFactory.getLogger(CamundaProcessTestRuntimeBuilder.class);
 
   private ContainerFactory containerFactory = new ContainerFactory();
+
+  private CleanupStrategyFactory cleanupStrategyFactory = new DefaultCleanupStrategyFactory();
 
   private String camundaDockerImageName =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
@@ -77,6 +81,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private final Map<String, String> connectorsSecrets =
       new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_SECRETS);
 
+  private final Map<String, String> clusterSecrets =
+      new HashMap<>(CamundaProcessTestRuntimeDefaults.CLUSTER_SECRETS);
+
   private final List<CamundaProcessTestContainerProvider> containerProviders = new ArrayList<>();
   private boolean containerProvidersServiceLoaderEnabled = true;
 
@@ -99,6 +106,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private List<String> coverageExcludedProcesses =
       CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_PROCESSES;
 
+  private List<String> coverageExcludedDecisions =
+      CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_DECISIONS;
+
   private CamundaClientBuilderFactory camundaClientBuilderFactory =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
   private Consumer<CamundaClientBuilder> camundaClientOverrides = cb -> {};
@@ -110,8 +120,15 @@ public class CamundaProcessTestRuntimeBuilder {
 
   // ============ For testing =================
 
-  CamundaProcessTestRuntimeBuilder withContainerFactory(final ContainerFactory containerFactory) {
+  public CamundaProcessTestRuntimeBuilder withContainerFactory(
+      final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCleanupStrategyFactory(
+      final CleanupStrategyFactory cleanupStrategyFactory) {
+    this.cleanupStrategyFactory = cleanupStrategyFactory;
     return this;
   }
 
@@ -229,6 +246,16 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withClusterSecret(final String name, final String value) {
+    clusterSecrets.put(name, value);
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withClusterSecrets(final Map<String, String> secrets) {
+    clusterSecrets.putAll(secrets);
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withRuntimeMode(
       final CamundaProcessTestRuntimeMode runtimeMode) {
     this.runtimeMode = runtimeMode;
@@ -279,6 +306,12 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaProcessTestRuntimeBuilder withCoverageExcludedProcesses(
       final List<String> coverageExcludedProcesses) {
     this.coverageExcludedProcesses = coverageExcludedProcesses;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCoverageExcludedDecisions(
+      final List<String> coverageExcludedDecisions) {
+    this.coverageExcludedDecisions = coverageExcludedDecisions;
     return this;
   }
 
@@ -408,6 +441,10 @@ public class CamundaProcessTestRuntimeBuilder {
     return isMultiTenancyEnabled;
   }
 
+  public Map<String, String> getClusterSecrets() {
+    return clusterSecrets;
+  }
+
   public Map<String, String> getConnectorsSecrets() {
     return connectorsSecrets;
   }
@@ -434,6 +471,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public List<String> getCoverageExcludedProcesses() {
     return coverageExcludedProcesses;
+  }
+
+  public List<String> getCoverageExcludedDecisions() {
+    return coverageExcludedDecisions;
   }
 
   public CamundaClientBuilderFactory getConfiguredCamundaClientBuilderFactory() {
@@ -467,5 +508,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public Optional<Duration> getAssertionInterval() {
     return assertionInterval;
+  }
+
+  public CleanupStrategyFactory getCleanupStrategyFactory() {
+    return cleanupStrategyFactory;
   }
 }

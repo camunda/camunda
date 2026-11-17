@@ -40,6 +40,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue TENANT_IDS_KEY = new StringValue("tenantIds");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
+  private static final StringValue WITH_LEASE_KEY = new StringValue("withLease");
   private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY);
@@ -55,11 +56,12 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>(VARIABLES_KEY, StringValue::new);
   private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
+  private final BooleanProperty withLeaseProp = new BooleanProperty(WITH_LEASE_KEY, false);
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
 
   public JobBatchRecord() {
-    super(10);
+    super(11);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
@@ -68,6 +70,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(jobsProp)
         .declareProperty(variablesProp)
         .declareProperty(truncatedProp)
+        .declareProperty(withLeaseProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(tenantFilterProp);
   }
@@ -148,6 +151,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   }
 
   @Override
+  public boolean isWithLease() {
+    return withLeaseProp.getValue();
+  }
+
+  @Override
   public List<String> getTenantIds() {
     return StreamSupport.stream(tenantIdsProp.spliterator(), false)
         .map(StringValue::getValue)
@@ -173,6 +181,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
 
   public JobBatchRecord setTruncated(final boolean truncated) {
     truncatedProp.setValue(truncated);
+    return this;
+  }
+
+  public JobBatchRecord setWithLease(final boolean withLease) {
+    withLeaseProp.setValue(withLease);
     return this;
   }
 

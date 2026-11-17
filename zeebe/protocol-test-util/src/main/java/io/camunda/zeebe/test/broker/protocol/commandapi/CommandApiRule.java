@@ -44,8 +44,10 @@ public final class CommandApiRule extends ExternalResource {
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
+  private final int partitionCount;
 
-  public CommandApiRule(final Supplier<AtomixCluster> atomixSupplier) {
+  public CommandApiRule(final int partitionCount, final Supplier<AtomixCluster> atomixSupplier) {
+    this.partitionCount = partitionCount;
     nodeId = 0;
     this.atomixSupplier = atomixSupplier;
   }
@@ -122,11 +124,7 @@ public final class CommandApiRule extends ExternalResource {
       final long lockDuration,
       final int maxJobsToActivate) {
     // to make sure that job already exist
-    partitionClient(partitionId)
-        .receiveJobs()
-        .withIntent(JobIntent.CREATED)
-        .withType(type)
-        .getFirst();
+    partitionClient(partitionId).receiveJobs().withIntent(JobIntent.CREATED).withType(type).await();
 
     return createCmdRequest(partitionId)
         .type(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE)
@@ -146,15 +144,9 @@ public final class CommandApiRule extends ExternalResource {
   }
 
   public List<Integer> getPartitionIds() {
-    return getBrokerInfoStream()
-        .findFirst()
-        .map(
-            brokerInfo ->
-                IntStream.range(
-                        START_PARTITION_ID, START_PARTITION_ID + brokerInfo.getPartitionsCount())
-                    .boxed()
-                    .collect(Collectors.toList()))
-        .orElse(Collections.emptyList());
+    return IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
+        .boxed()
+        .collect(Collectors.toList());
   }
 
   private Stream<BrokerInfo> getBrokerInfoStream() {

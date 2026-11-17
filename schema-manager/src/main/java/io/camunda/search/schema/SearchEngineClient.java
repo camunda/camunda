@@ -12,8 +12,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface SearchEngineClient extends CloseableSilently {
   void createIndex(final IndexDescriptor indexDescriptor, final IndexConfiguration settings);
@@ -38,8 +38,34 @@ public interface SearchEngineClient extends CloseableSilently {
   Map<String, IndexMapping> getMappings(
       final String namePattern, final MappingSource mappingSource);
 
+  /**
+   * Retrieve all aliases for the given indexes
+   *
+   * @param indexNames the exact index names to look up aliases for
+   * @return a map of index name to the set of alias names pointing to it
+   */
+  Map<String, Set<String>> getAliases(Collection<String> indexNames);
+
   void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
+
+  /**
+   * Reads the primary shard count of already-created indices. Shards are immutable after creation,
+   * so this is the only way to tell whether the configured count is actually in effect.
+   *
+   * @param indexNames the exact index names to look up
+   * @return index name to primary shard count; names that do not exist are absent from the result
+   */
+  Map<String, Integer> getNumberOfShards(Collection<String> indexNames);
+
+  /**
+   * Reads the replica count of already-created indices, so a caller can tell whether the configured
+   * value is already in effect before writing it.
+   *
+   * @param indexNames the index names, aliases, or wildcard expressions to look up
+   * @return index name to replica count; names that do not exist are absent from the result
+   */
+  Map<String, Integer> getNumberOfReplicas(Collection<String> indexNames);
 
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 
@@ -51,9 +77,28 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void deleteIndex(final String indexName);
 
+  /**
+   * Deletes the index with the given name if it exists, using a single request rather than a
+   * separate existence check followed by deletion. This avoids any potential race condition between
+   * checking and deleting.
+   *
+   * @param indexName the name of the index to delete
+   * @return {@code true} if the index was deleted, {@code false} if it did not exist
+   */
+  boolean deleteIndexIfExists(final String indexName);
+
   void truncateIndex(final String indexName);
 
   boolean isHealthy();
+
+  /**
+   * Blocks until every primary shard of the given indices is active.
+   *
+   * @param indexNames index names
+   * @throws io.camunda.search.schema.exceptions.SearchEngineException if the shards are not active
+   *     within the implementation-defined timeout
+   */
+  void awaitActivePrimaries(final Collection<String> indexNames);
 
   /**
    * Check if an index exists
@@ -81,4 +126,17 @@ public interface SearchEngineClient extends CloseableSilently {
    */
   void upsertDocument(
       final String indexName, final String documentId, final Map<String, Object> document);
+
+  /**
+   * Retrieve all index names matching a given pattern
+   *
+   * @param pattern the pattern to match index names against (supports wildcards, e.g. *foo*)
+   * @return a set of matching index names
+   */
+  Set<String> getIndexNames(final String pattern);
+
+  /**
+   * @return the name of the engine.
+   */
+  String getEngineName();
 }

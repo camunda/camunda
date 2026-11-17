@@ -64,6 +64,18 @@ public interface CreateProcessInstanceCommandStep1
      * @return the builder for this command
      */
     CreateProcessInstanceCommandStep3 latestVersion();
+
+    /**
+     * Use the latest deployed version of the process that carries the given version tag to create
+     * an instance of. The version tag is set on the process definition at deployment time.
+     *
+     * <p>Requires Camunda 8.11 or later. Older versions do not support it: the request may be
+     * rejected, or the version tag may be ignored and the latest version started instead.
+     *
+     * @param versionTag the version tag of the process
+     * @return the builder for this command
+     */
+    CreateProcessInstanceCommandStep3 versionTag(String versionTag);
   }
 
   interface CreateProcessInstanceCommandStep3
@@ -120,6 +132,31 @@ public interface CreateProcessInstanceCommandStep1
      */
     @Override
     CreateProcessInstanceCommandStep3 variable(String key, Object value);
+
+    /**
+     * Add a single initial variable to the process instance. Unlike {@link #variable(String,
+     * Object)}, this method accumulates variables across multiple invocations, allowing you to
+     * build the variable map entry by entry.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    CreateProcessInstanceCommandStep3 addVariable(String key, Object value);
+
+    /**
+     * Add multiple initial variables to the process instance. Unlike {@link #variables(Map)}, this
+     * method accumulates variables across multiple invocations, allowing you to build the variable
+     * map incrementally.
+     *
+     * @param variables the variables to add as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    CreateProcessInstanceCommandStep3 addVariables(Map<String, Object> variables);
 
     /**
      * Overrides the default start position of the process. Calling this method will make the

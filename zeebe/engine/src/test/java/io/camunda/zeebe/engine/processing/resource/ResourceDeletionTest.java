@@ -24,8 +24,10 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -51,6 +53,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.NestedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
@@ -260,6 +263,7 @@ public class ResourceDeletionTest {
             ProcessIntent.CREATED,
             DeploymentIntent.CREATED,
             ResourceDeletionIntent.DELETING,
+            ProcessIntent.DRAINING,
             ProcessIntent.DELETING,
             ProcessIntent.DELETED,
             ResourceDeletionIntent.DELETED);
@@ -277,6 +281,192 @@ public class ResourceDeletionTest {
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
     verifyResourceDeletionRecords(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldWriteDeletedEventForAgentDefinitionWhenDeletingProcess() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcessWithAgentDefinition(processId, "agent-task");
+    final var agentDefinitionCreatedRecord =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    final var agentDefinitionDeletedRecord =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(agentDefinitionDeletedRecord)
+        .describedAs(
+            "Expect the deleted agent definition to match the created agent definition"
+                + " field-for-field")
+        .hasAgentDefinitionKey(agentDefinitionCreatedRecord.getAgentDefinitionKey())
+        .hasAgentType(agentDefinitionCreatedRecord.getAgentType())
+        .hasName(agentDefinitionCreatedRecord.getName())
+        .hasElementId(agentDefinitionCreatedRecord.getElementId())
+        .hasBpmnProcessId(agentDefinitionCreatedRecord.getBpmnProcessId())
+        .hasProcessDefinitionKey(agentDefinitionCreatedRecord.getProcessDefinitionKey())
+        .hasProcessDefinitionVersion(agentDefinitionCreatedRecord.getProcessDefinitionVersion())
+        .hasProcessDefinitionVersionTag(
+            agentDefinitionCreatedRecord.getProcessDefinitionVersionTag())
+        .hasTenantId(agentDefinitionCreatedRecord.getTenantId());
+  }
+
+  @Test
+  public void shouldWriteAgentDefinitionDeletedBeforeProcessDeleted() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcessWithAgentDefinition(processId, "agent-task");
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    // filter before limiting, so the limit counts only the two DELETED events we care about,
+    // rather than also matching the earlier AgentDefinition:CREATED/Process:CREATED events
+    final var agentDefinitionAndProcessRecords =
+        RecordingExporter.records()
+            .onlyEvents()
+            .filter(
+                r ->
+                    r.getIntent() == AgentDefinitionIntent.DELETED
+                        || r.getIntent() == ProcessIntent.DELETED)
+            .limit(2)
+            .asList();
+
+    assertThat(agentDefinitionAndProcessRecords)
+        .describedAs(
+            "Should emit AgentDefinition:DELETED before ProcessIntent.DELETED (children before"
+                + " parent), so a consumer never observes an agent definition referencing an"
+                + " already-deleted process")
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsExactly(
+            tuple(ValueType.AGENT_DEFINITION, AgentDefinitionIntent.DELETED),
+            tuple(ValueType.PROCESS, ProcessIntent.DELETED));
+  }
+
+  @Test
+  public void shouldNotWriteAgentDefinitionDeletedEventWhenProcessHasNoAgentElements() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcess(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentDefinitionRecords()
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .exists()))
+        .describedAs("Should not emit AgentDefinition:DELETED for a process with no agent elements")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldOnlyDeleteAgentDefinitionsOwnedByTheDeletedProcess() {
+    // given — two independent processes, each with their own agent-marked element sharing the
+    // same elementId, to pin down that the deletion is scoped to the deleted processDefinitionKey
+    // and not the elementId alone
+    final var deletedProcessId = helper.getBpmnProcessId();
+    final var untouchedProcessId = helper.getBpmnProcessId();
+    final var deletedProcessDefinitionKey =
+        deployProcessWithAgentDefinition(deletedProcessId, "agent-task");
+    final var untouchedProcessDefinitionKey =
+        deployProcessWithAgentDefinition(untouchedProcessId, "agent-task");
+
+    // when
+    engine.resourceDeletion().withResourceKey(deletedProcessDefinitionKey).delete();
+
+    // then
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                .withProcessDefinitionKey(deletedProcessDefinitionKey)
+                .exists())
+        .describedAs("Should delete the agent definition owned by the deleted process")
+        .isTrue();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                        .withProcessDefinitionKey(untouchedProcessDefinitionKey)
+                        .exists()))
+        .describedAs(
+            "Should leave the other process' agent definition untouched, even though it shares"
+                + " the same elementId")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldOnlyDeleteAgentDefinitionsOwnedByTheDeletedProcessVersion() {
+    // given — two versions of the same BPMN process ID, each with their own agent-marked element
+    // sharing the same elementId, to pin down that the deletion is scoped to the deleted
+    // processDefinitionKey (a specific version) and not the bpmnProcessId alone
+    final var processId = helper.getBpmnProcessId();
+    final var firstVersionProcessDefinitionKey =
+        deployProcessWithAgentDefinition(processId, "agent-task");
+    final var secondVersionProcessDefinitionKey =
+        deployProcessWithAgentDefinition(processId, "agent-task");
+
+    // when
+    engine.resourceDeletion().withResourceKey(firstVersionProcessDefinitionKey).delete();
+
+    // then
+    assertThat(
+            RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                .withProcessDefinitionKey(firstVersionProcessDefinitionKey)
+                .exists())
+        .describedAs("Should delete the agent definition owned by the deleted process version")
+        .isTrue();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+                        .withProcessDefinitionKey(secondVersionProcessDefinitionKey)
+                        .exists()))
+        .describedAs(
+            "Should leave the other version's agent definition untouched, even though it shares"
+                + " both the bpmnProcessId and the elementId")
+        .isFalse();
+  }
+
+  @Test
+  public void shouldDeleteAllAgentDefinitionsOwnedByTheDeletedProcess() {
+    // given — a single process with two distinct agent-marked elements, so the
+    // forEachAgentDefinitionKey prefix scan (in ResourceDeletionDeleteProcessor
+    // #deleteAgentDefinitions) is exercised while deleting more than one entry from the same
+    // column family it is iterating
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        deployProcessWithAgentDefinitions(processId, "agent-task-1", "agent-task-2");
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    final var deletedElementIds =
+        RecordingExporter.agentDefinitionRecords(AgentDefinitionIntent.DELETED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .limit(2)
+            .map(record -> record.getValue().getElementId())
+            .toList();
+
+    assertThat(deletedElementIds)
+        .describedAs(
+            "Should emit AgentDefinition:DELETED for every agent definition owned by the deleted"
+                + " process, not just the first one found by the prefix scan")
+        .containsExactlyInAnyOrder("agent-task-1", "agent-task-2");
   }
 
   @Test
@@ -577,6 +767,40 @@ public class ResourceDeletionTest {
     verifyMessageStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 4);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
     verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
+  }
+
+  @Test
+  public void shouldSkipDrainingVersionWhenResubscribingStartEvents() {
+    // given - three versions of the same process, each with a message start event
+    final var processId = helper.getBpmnProcessId();
+    final var versionOneKey = deployProcessWithMessageStartEventAndUserTask(processId);
+    final var versionTwoKey = deployProcessWithMessageStartEventAndUserTask(processId);
+
+    // and - version two has a running instance, so deleting it leaves it DRAINING rather than
+    // physically deleted (its start subscription is inactive because version three is deployed
+    // next)
+    engine.message().withCorrelationKey("key").withName("message").publish();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessDefinitionKey(versionTwoKey)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+    final var versionThreeKey = deployProcessWithMessageStartEventAndUserTask(processId);
+
+    engine.resourceDeletion().withResourceKey(versionTwoKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(versionTwoKey)
+        .await();
+
+    // when - the latest version is deleted, its start subscription must be handed back down
+    engine.resourceDeletion().withResourceKey(versionThreeKey).delete();
+
+    // then - resubscription skips the DRAINING version two and lands on the ACTIVE version one:
+    // version one is subscribed once on its own deployment, then again by the resubscription. Since
+    // there is exactly one resubscription and it targets version one, the draining version two is
+    // never resubscribed to.
+    verifyMessageStartEventSubscriptionIsDeleted(versionThreeKey);
+    verifyMessageStartEventSubscriptionIsCreated(versionOneKey, 2);
   }
 
   @Test
@@ -1123,6 +1347,45 @@ public class ResourceDeletionTest {
         .getProcessDefinitionKey();
   }
 
+  private long deployProcessWithAgentDefinition(final String processId, final String elementId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    elementId, t -> t.zeebeJobType(elementId + "-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private long deployProcessWithAgentDefinitions(
+      final String processId, final String firstElementId, final String secondElementId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    firstElementId,
+                    t -> t.zeebeJobType(firstElementId + "-job").zeebeAiAgentTaskDefinition())
+                .serviceTask(
+                    secondElementId,
+                    t -> t.zeebeJobType(secondElementId + "-job").zeebeAiAgentTaskDefinition())
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
   private long deployProcessWithTimerStartEvent(final String processId) {
     return engine
         .deployment()
@@ -1146,6 +1409,23 @@ public class ResourceDeletionTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .message("message")
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private long deployProcessWithMessageStartEventAndUserTask(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .message("message")
+                .userTask("wait")
                 .endEvent()
                 .done())
         .deploy()
@@ -1547,28 +1827,39 @@ public class ResourceDeletionTest {
       final long processInstanceKey, final long processDefinitionKey) {
     return new ProcessInstanceEntity(
         processInstanceKey,
-        null,
-        null,
-        null,
-        -1,
-        null,
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
         processDefinitionKey,
-        -1L,
-        -1L,
-        null,
-        null,
-        null,
-        false,
-        null,
-        null,
-        Set.of(),
-        null);
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        java.time.OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        null, // treePath
+        Set.of(), // tags
+        null, // businessId
+        null, // suspendedDate
+        null); // storageOrdinal
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
     return new DecisionInstanceEntity.Builder()
+        .decisionInstanceId(decisionInstanceKey + "-1")
         .decisionInstanceKey(decisionInstanceKey)
+        .state(DecisionInstanceEntity.DecisionInstanceState.EVALUATED)
+        .evaluationDate(java.time.OffsetDateTime.now())
         .processInstanceKey(decisionInstanceKey)
+        .decisionDefinitionId("fake-decision-def-id")
+        .decisionDefinitionKey(-1L)
+        .decisionDefinitionName("Fake Decision")
+        .decisionDefinitionType(DecisionInstanceEntity.DecisionDefinitionType.DECISION_TABLE)
+        .result("{}")
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }
 

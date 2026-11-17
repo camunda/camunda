@@ -48,7 +48,40 @@ const config = {
         highlightResult: true,
         disableVersioning: true,
       }
-    ]
+    ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'architecture',
+        path: '../docs/architecture',
+        routeBasePath: '/architecture',
+        sidebarPath: require.resolve('./sidebars-architecture.js'),
+        editUrl: ({docPath}) =>
+          `https://github.com/camunda/camunda/edit/main/docs/architecture/${docPath}`,
+      },
+    ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'adr',
+        path: '../docs/adr',
+        routeBasePath: '/adr',
+        sidebarPath: require.resolve('./sidebars-adr.js'),
+        editUrl: ({docPath}) =>
+          `https://github.com/camunda/camunda/edit/main/docs/adr/${docPath}`,
+      },
+    ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'identity',
+        path: '../identity/docs',
+        routeBasePath: '/identity',
+        sidebarPath: require.resolve('./sidebars-identity.js'),
+        editUrl: ({docPath}) =>
+          `https://github.com/camunda/camunda/edit/main/identity/docs/${docPath}`,
+      },
+    ],
   ],
 
   presets: [
@@ -62,8 +95,8 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/',
+          editUrl: (/** @type {{docPath: string}} */ {docPath}) =>
+            `https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/${docPath}`,
         },
         blog: false,
         theme: {
@@ -110,6 +143,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+        additionalLanguages: ['java', 'sql', 'markup'],
       },
       codeblock: {
         showGithubLink: true,

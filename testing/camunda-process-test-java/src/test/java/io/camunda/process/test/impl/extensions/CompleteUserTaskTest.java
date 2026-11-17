@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -30,18 +31,24 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,7 +67,7 @@ public class CompleteUserTaskTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
-  @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
 
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
@@ -93,14 +100,17 @@ public class CompleteUserTaskTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
-              camundaManagementClient,
+              clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
 
       when(camundaClient
               .newUserTaskSearchRequest()
               .filter(userTaskFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -168,6 +178,8 @@ public class CompleteUserTaskTest {
       when(camundaClient
               .newUserTaskSearchRequest()
               .filter(userTaskFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -213,10 +225,11 @@ public class CompleteUserTaskTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
-              camundaManagementClient,
+              clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
     }
 
     @Test
@@ -225,6 +238,8 @@ public class CompleteUserTaskTest {
       when(camundaClient
               .newUserTaskSearchRequest()
               .filter(userTaskFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -236,6 +251,326 @@ public class CompleteUserTaskTest {
           .hasMessageContaining(
               "Expected to complete user task [elementId: %s] but no user task is available.",
               USER_TASK_ELEMENT_ID);
+    }
+  }
+
+  @Nested
+  @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+  class CompleteUserTaskWithVariableMapper {
+
+    private static final long PROCESS_INSTANCE_KEY = 200L;
+    private static final long ELEMENT_INSTANCE_KEY = 300L;
+
+    @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private VariableFilter variableFilter;
+
+    @BeforeEach
+    void setup() {
+      camundaProcessTestContext =
+          new CamundaProcessTestContextImpl(
+              camundaProcessTestRuntime,
+              clientCreationCallback,
+              clockClient,
+              DevAwaitBehavior::expectSuccess,
+              jsonMapper,
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
+
+      when(camundaClient
+              .newUserTaskSearchRequest()
+              .filter(userTaskFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(userTask));
+
+      when(userTask.getUserTaskKey()).thenReturn(USER_TASK_KEY);
+      when(userTask.getElementId()).thenReturn(USER_TASK_ELEMENT_ID);
+      when(userTask.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(userTask.getElementInstanceKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+
+      when(camundaClient
+              .newVariableSearchRequest()
+              .filter(variableFilterCaptor.capture())
+              .withFullValues()
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList());
+
+      when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(jsonMapper);
+    }
+
+    private Variable variable(final String name, final String value) {
+      final Variable variable = mock(Variable.class);
+      when(variable.getName()).thenReturn(name);
+      when(variable.getValue()).thenReturn(value);
+      return variable;
+    }
+
+    @Test
+    void shouldCompleteUserTaskWithVariableMapper() {
+      // given
+      final Variable idVariable = variable("id", "1");
+      final Variable localVariable = variable("local", "\"hello\"");
+      when(camundaClient
+              .newVariableSearchRequest()
+              .filter(variableFilterCaptor.capture())
+              .withFullValues()
+              .send()
+              .join()
+              .items())
+          .thenReturn(Arrays.asList(idVariable, localVariable));
+      when(jsonMapper.fromJson("1", Object.class)).thenReturn(1);
+      when(jsonMapper.fromJson("\"hello\"", Object.class)).thenReturn("hello");
+
+      final Map<String, Object> capturedInput = new HashMap<>();
+      final Map<String, Object> outputVariables = Collections.singletonMap("user", "Alice");
+
+      // when
+      camundaProcessTestContext.completeUserTask(
+          USER_TASK_ELEMENT_ID,
+          inputVars -> {
+            capturedInput.putAll(inputVars);
+            return outputVariables;
+          });
+
+      // then
+      org.assertj.core.api.Assertions.assertThat(capturedInput)
+          .containsEntry("id", 1)
+          .containsEntry("local", "hello");
+      verify(camundaClient.newCompleteUserTaskCommand(USER_TASK_KEY).variables(outputVariables))
+          .send();
+    }
+
+    @Test
+    void shouldCompleteUserTaskWithVariableMapperBySelector() {
+      // given
+      final Map<String, Object> outputVariables = Collections.singletonMap("user", "Bob");
+
+      // when
+      camundaProcessTestContext.completeUserTask(
+          UserTaskSelectors.byElementId(USER_TASK_ELEMENT_ID), inputVars -> outputVariables);
+
+      // then
+      verify(camundaClient.newCompleteUserTaskCommand(USER_TASK_KEY).variables(outputVariables))
+          .send();
+    }
+
+    @Test
+    void shouldCompleteUserTaskWithEmptyInputVariables() {
+      // given - the default mock returns an empty list of variables
+      final Map<String, Object> capturedInput = new HashMap<>();
+      capturedInput.put("sentinel", "untouched");
+
+      // when
+      camundaProcessTestContext.completeUserTask(
+          USER_TASK_ELEMENT_ID,
+          inputVars -> {
+            capturedInput.clear();
+            capturedInput.putAll(inputVars);
+            return Collections.emptyMap();
+          });
+
+      // then
+      org.assertj.core.api.Assertions.assertThat(capturedInput).isEmpty();
+      verify(
+              camundaClient
+                  .newCompleteUserTaskCommand(USER_TASK_KEY)
+                  .variables(Collections.emptyMap()))
+          .send();
+    }
+
+    @Test
+    void shouldPreferLocalOverGlobalVariable() {
+      // given - same name 'id' at both scopes; local must win
+      final Variable globalId = variable("id", "1");
+      final Variable localId = variable("id", "2");
+      // first call fetches global-scope variables, second call fetches element-local variables
+      when(camundaClient
+              .newVariableSearchRequest()
+              .filter(variableFilterCaptor.capture())
+              .withFullValues()
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(globalId))
+          .thenReturn(Collections.singletonList(localId));
+      when(jsonMapper.fromJson("1", Object.class)).thenReturn(1);
+      when(jsonMapper.fromJson("2", Object.class)).thenReturn(2);
+
+      final Map<String, Object> capturedInput = new HashMap<>();
+
+      // when
+      camundaProcessTestContext.completeUserTask(
+          USER_TASK_ELEMENT_ID,
+          inputVars -> {
+            capturedInput.putAll(inputVars);
+            return Collections.emptyMap();
+          });
+
+      // then
+      org.assertj.core.api.Assertions.assertThat(capturedInput).containsEntry("id", 2);
+    }
+
+    @Test
+    void shouldFilterVariablesByProcessInstanceKey() {
+      // when
+      camundaProcessTestContext.completeUserTask(
+          USER_TASK_ELEMENT_ID, inputVars -> Collections.emptyMap());
+
+      // then
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfVariableMapperIsNull() {
+      // given
+      clearInvocations(camundaClient);
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  camundaProcessTestContext.completeUserTask(
+                      USER_TASK_ELEMENT_ID, (UnaryOperator<Map<String, Object>>) null))
+          .isInstanceOf(NullPointerException.class)
+          .hasMessageContaining("variableMapper");
+
+      // and: no search/completion took place
+      verify(camundaClient, org.mockito.Mockito.never()).newUserTaskSearchRequest();
+    }
+  }
+
+  @Nested
+  @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+  class CompleteUserTaskWithVariableMapperFailureCases {
+
+    private static final long PROCESS_INSTANCE_KEY = 200L;
+    private static final long ELEMENT_INSTANCE_KEY = 300L;
+
+    @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
+
+    @BeforeEach
+    void setup() {
+      camundaProcessTestContext =
+          new CamundaProcessTestContextImpl(
+              camundaProcessTestRuntime,
+              clientCreationCallback,
+              clockClient,
+              DevAwaitBehavior::expectFailure,
+              jsonMapper,
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
+    }
+
+    private void mockUserTaskFound() {
+      when(camundaClient
+              .newUserTaskSearchRequest()
+              .filter(userTaskFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(userTask));
+      when(userTask.getUserTaskKey()).thenReturn(USER_TASK_KEY);
+      when(userTask.getElementId()).thenReturn(USER_TASK_ELEMENT_ID);
+      when(userTask.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(userTask.getElementInstanceKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfNoUserTaskIsPresentForVariableMapper() {
+      // given
+      when(camundaClient
+              .newUserTaskSearchRequest()
+              .filter(userTaskFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList());
+
+      final java.util.concurrent.atomic.AtomicInteger mapperInvocations =
+          new java.util.concurrent.atomic.AtomicInteger();
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  camundaProcessTestContext.completeUserTask(
+                      USER_TASK_ELEMENT_ID,
+                      inputVars -> {
+                        mapperInvocations.incrementAndGet();
+                        return Collections.emptyMap();
+                      }))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining(
+              "Expected to complete user task [elementId: %s] but no user task is available.",
+              USER_TASK_ELEMENT_ID);
+
+      // and: mapper was never invoked
+      org.assertj.core.api.Assertions.assertThat(mapperInvocations.get()).isZero();
+    }
+
+    @Test
+    void shouldFailIfVariableMapperReturnsNull() {
+      // given
+      mockUserTaskFound();
+      when(camundaClient
+              .newVariableSearchRequest()
+              .filter(variableFilterCaptor.capture())
+              .withFullValues()
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList());
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  camundaProcessTestContext.completeUserTask(
+                      USER_TASK_ELEMENT_ID, inputVars -> null))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining(
+              "Expected to complete user task [elementId: %s] but the variableMapper returned null.",
+              USER_TASK_ELEMENT_ID);
+
+      // and: completion command was never sent
+      verify(camundaClient, org.mockito.Mockito.never()).newCompleteUserTaskCommand(USER_TASK_KEY);
+    }
+
+    @Test
+    void shouldPropagateExceptionFromVariableMapper() {
+      // given
+      mockUserTaskFound();
+      when(camundaClient
+              .newVariableSearchRequest()
+              .filter(variableFilterCaptor.capture())
+              .withFullValues()
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList());
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  camundaProcessTestContext.completeUserTask(
+                      USER_TASK_ELEMENT_ID,
+                      inputVars -> {
+                        throw new IllegalStateException("boom");
+                      }))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("boom");
+
+      // and: completion command was never sent
+      verify(camundaClient, org.mockito.Mockito.never()).newCompleteUserTaskCommand(USER_TASK_KEY);
     }
   }
 }

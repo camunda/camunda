@@ -30,6 +30,7 @@ const useFieldError = (name: string) => {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setComputedError(error ?? submitError);
   }, [
     formValidating,

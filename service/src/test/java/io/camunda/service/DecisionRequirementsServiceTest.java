@@ -20,7 +20,7 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 public final class DecisionRequirementsServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private CamundaAuthentication authentication;
   private DecisionRequirementsServices services;
   private DecisionRequirementSearchClient client;
@@ -42,6 +43,7 @@ public final class DecisionRequirementsServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new DecisionRequirementsServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

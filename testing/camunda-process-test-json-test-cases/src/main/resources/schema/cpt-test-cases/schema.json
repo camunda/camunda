@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "$id": "https://camunda.com/json-schema/cpt-test-cases/8.11/schema.json",
   "title": "CPT JSON test cases",
   "description": "A collection of test cases to validate the business process in a JSON format compatible with Camunda Process Test (CPT).",
   "type": "object",
@@ -57,6 +57,9 @@
           "$ref": "#/definitions/AssertElementInstancesInstruction"
         },
         {
+          "$ref": "#/definitions/AssertIncidentInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
@@ -64,6 +67,9 @@
         },
         {
           "$ref": "#/definitions/AssertUserTaskInstruction"
+        },
+        {
+          "$ref": "#/definitions/AssertVariableInstruction"
         },
         {
           "$ref": "#/definitions/AssertVariablesInstruction"
@@ -82,6 +88,9 @@
         },
         {
           "$ref": "#/definitions/CompleteUserTaskInstruction"
+        },
+        {
+          "$ref": "#/definitions/ConditionalBehaviorInstruction"
         },
         {
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
@@ -524,6 +533,87 @@
         "processInstanceSelector",
         "elementSelectors",
         "state"
+      ],
+      "additionalProperties": false
+    },
+    "AssertIncidentInstruction": {
+      "description": "An instruction to assert an incident.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_INCIDENT"
+        },
+        "incidentSelector": {
+          "description": "The selector to identify the incident.",
+          "$ref": "#/definitions/IncidentSelector"
+        },
+        "state": {
+          "description": "The expected state of the incident. Optional.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_RESOLVED"
+          ]
+        },
+        "errorType": {
+          "description": "The expected error type of the incident. Optional.",
+          "type": "string",
+          "enum": [
+            "UNSPECIFIED",
+            "UNKNOWN",
+            "IO_MAPPING_ERROR",
+            "JOB_NO_RETRIES",
+            "EXECUTION_LISTENER_NO_RETRIES",
+            "TASK_LISTENER_NO_RETRIES",
+            "AD_HOC_SUB_PROCESS_NO_RETRIES",
+            "CONDITION_ERROR",
+            "EXTRACT_VALUE_ERROR",
+            "CALLED_ELEMENT_ERROR",
+            "UNHANDLED_ERROR_EVENT",
+            "MESSAGE_SIZE_EXCEEDED",
+            "CALLED_DECISION_ERROR",
+            "DECISION_EVALUATION_ERROR",
+            "FORM_NOT_FOUND",
+            "RESOURCE_NOT_FOUND",
+            "SECRET_RESOLUTION_ERROR",
+            "UNKNOWN_ENUM_VALUE"
+          ]
+        },
+        "errorMessage": {
+          "description": "The expected error message of the incident. Optional.",
+          "type": "string"
+        },
+        "elementId": {
+          "description": "The expected BPMN element ID of the incident. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "incidentSelector"
+      ],
+      "additionalProperties": false
+    },
+    "VariablesTableRow": {
+      "description": "A row in a variables table used to derive job worker output variables from the job's own variables.",
+      "type": "object",
+      "properties": {
+        "when": {
+          "description": "The variables to match against the job's variables. Every entry must be present in the job's variables with an equal value for this row to match. An empty map matches every job.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "variables": {
+          "description": "The variables to complete the job with when this row matches.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "when",
+        "variables"
       ],
       "additionalProperties": false
     },
@@ -987,9 +1077,12 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to set as the decision output. Optional.",
+          "description": "The variables to set as the decision output. Optional. Deprecated, use decisionOutput.",
           "type": "object",
           "additionalProperties": true
+        },
+        "decisionOutput": {
+          "description": "The decision output to mock. Can be any JSON type. Optional."
         }
       },
       "required": [
@@ -1009,6 +1102,10 @@
         },
         "processDefinitionId": {
           "description": "The ID of the child process to mock.",
+          "type": "string"
+        },
+        "versionTag": {
+          "description": "The version tag to assign to the deployed stub process. Optional. Required when the call activity uses bindingType=\"versionTag\".",
           "type": "string"
         },
         "variables": {
@@ -1037,12 +1134,23 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to complete the job with. Optional.",
+          "description": "The variables to complete the job with. Optional. Mutually exclusive with variablesExpression and a non-empty variablesTable. The variables are ignored if useExampleData is true.",
           "type": "object",
           "additionalProperties": true
         },
+        "variablesExpression": {
+          "description": "A FEEL expression evaluated with the job's variables as context. Must evaluate to a JSON object; its entries become the job's output variables. A leading '=' is optional. Mutually exclusive with variables, variablesTable and useExampleData.",
+          "type": "string"
+        },
+        "variablesTable": {
+          "description": "A list of when/variables rows. Rows are evaluated in order; the first row whose when map is a subset match of the job's variables (equal values after normalization, no numeric widening) supplies the output variables. An empty when matches every job, so it can be used as a catch-all last row. If no row matches, the job completes without variables. Mutually exclusive with variables, variablesExpression and useExampleData.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VariablesTableRow"
+          }
+        },
         "useExampleData": {
-          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored. Defaults to false.",
+          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored. Defaults to false. Mutually exclusive with variablesExpression and a non-empty variablesTable.",
           "type": "boolean",
           "default": false
         }
@@ -1050,6 +1158,47 @@
       "required": [
         "type",
         "jobType"
+      ],
+      "additionalProperties": false
+    },
+    "AssertVariableInstruction": {
+      "description": "An instruction to assert a process variable.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_VARIABLE"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variables. Optional.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "variableName": {
+          "description": "The name of the variable to evaluate.",
+          "type": "string"
+        },
+        "satisfiesJudge": {
+          "description": "A judge-based assertion that evaluates the variable against a semantic expectation.",
+          "$ref": "#/definitions/JudgeAssertion"
+        },
+        "satisfiesExpression": {
+          "description": "The FEEL expression assertion to evaluate on the variable. The expression is evaluated with a context containing the variable value under its name and must return true to be satisfied. Optional.",
+          "type": "string"
+        },
+        "similarTo": {
+          "description": "A semantic similarity assertion that checks the variable value against an expected value using text embeddings. Optional.",
+          "$ref": "#/definitions/SemanticSimilarityAssertion"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "variableName"
       ],
       "additionalProperties": false
     },
@@ -1086,6 +1235,26 @@
       "required": [
         "type",
         "processInstanceSelector"
+      ],
+      "additionalProperties": false
+    },
+    "SemanticSimilarityAssertion": {
+      "description": "A semantic similarity assertion that checks a variable value against an expected value using text embeddings.",
+      "type": "object",
+      "properties": {
+        "expectedValue": {
+          "description": "The expected value the variable should be semantically similar to.",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "The minimum similarity score (0.0–1.0) for the assertion to pass. Optional — when absent the configured default threshold is used.",
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "required": [
+        "expectedValue"
       ],
       "additionalProperties": false
     },
@@ -1262,12 +1431,100 @@
         "elementSelector": {
           "description": "The selector to identify the element for local variables. Optional.",
           "$ref": "#/definitions/ElementSelector"
+        },
+        "createLocalVariables": {
+          "description": "Whether to create variables locally in the scope of the element (requires elementSelector). When true, variables are created in the element's local scope and are not propagated to parent scopes. Optional, defaults to false.",
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
         "type",
         "processInstanceSelector",
         "variables"
+      ],
+      "additionalProperties": false
+    },
+    "JudgeAssertion": {
+      "description": "A judge-based assertion that evaluates a value against a semantic expectation using an LLM judge.",
+      "type": "object",
+      "properties": {
+        "expectation": {
+          "description": "The semantic expectation for the value.",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "customPrompt": {
+          "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
+          "type": "string"
+        },
+        "attachDocuments": {
+          "description": "Whether to download and attach Camunda document references found in the variable to the judge call as structured content blocks. Overrides the preconfigured attach-documents toggle. Optional; defaults to the preconfigured value when omitted.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "expectation"
+      ],
+      "additionalProperties": false
+    },
+    "ConditionalBehaviorInstruction": {
+      "description": "An instruction to register a conditional behavior that reacts to process state changes. The behavior watches the given conditions on a background scheduler; the conditions form a conjunction so the behavior fires only when every assertion succeeds. Actions are consumed in order: the first match fires the first action, the second match fires the second, and the last action repeats indefinitely.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "CONDITIONAL_BEHAVIOR"
+        },
+        "name": {
+          "description": "A descriptive name for diagnostics. Optional.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "The conditions to watch. Must contain at least one ASSERT_* instruction. The conditions form a conjunction; the behavior fires only when every assertion succeeds.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/TestCaseInstruction"
+              },
+              {
+                "not": {
+                  "$ref": "#/definitions/ConditionalBehaviorInstruction"
+                }
+              }
+            ]
+          }
+        },
+        "actions": {
+          "description": "The actions to execute when the condition is met. Must contain at least one action. Actions are consumed in order: the first match fires the first action, the second match fires the second, and the last action repeats indefinitely.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/TestCaseInstruction"
+              },
+              {
+                "not": {
+                  "$ref": "#/definitions/ConditionalBehaviorInstruction"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "conditions",
+        "actions"
       ],
       "additionalProperties": false
     }

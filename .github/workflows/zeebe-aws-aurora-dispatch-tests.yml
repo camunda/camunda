@@ -13,6 +13,7 @@ on:
     - cron: "0 4 * * Mon-Fri"
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 defaults:
@@ -24,16 +25,16 @@ defaults:
 jobs:
   integration-tests:
     name: "[IT] Camunda QA Integration Module. Aurora"
-    timeout-minutes: 30
+    timeout-minutes: 70
     permissions:
       contents: read
       actions: write
     runs-on: aws-core-8-default
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Import secrets from Vault
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -55,13 +56,11 @@ jobs:
             echo "AURORA_USERNAME=${{steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME}}"
             echo "AURORA_PASSWORD=${{steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD}}"
           } >> "$GITHUB_ENV"
-      - name: Install required packages
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Set up database
         run: ./.github/actions/rdbms/create-aurora-database.sh
         env:
           PGDATABASE: ${{env.AURORA_DATABASE}}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGHOST: camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
@@ -82,11 +81,12 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=2
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
+          -D failsafe.timeout=3900
+          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
           -D test.integration.aurora.aws.username=zeebe-irsa
           -D test.integration.camunda.database.type=rdbms_aurora
           -P parallel-tests,extract-flaky-tests,multi-db-test
@@ -98,7 +98,7 @@ jobs:
         run: ./.github/actions/rdbms/drop-aurora-database.sh
         env:
           PGDATABASE: ${{env.AURORA_DATABASE}}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGHOST: camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
@@ -121,7 +121,6 @@ jobs:
           job_name: "integration-tests/camunda-qa-acceptance-tests"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: General
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -134,11 +133,26 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: write
+      actions: read
     steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        sparse-checkout: .github
+        persist-credentials: false
+    # Stay quiet when rerun-failed-jobs is about to retry this run, otherwise a runner shutdown
+    # that the retry goes on to fix leaves a false alarm behind. A genuine failure, or one on the
+    # last permitted attempt, still alerts.
+    - name: Decide whether this run will be retried
+      id: detect-if-retry
+      uses: ./.github/actions/detect-runner-shutdown
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+    # !cancelled() replaces the implicit success(), so a failing detector still lets the alert out.
     - name: Import secrets from Vault
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -147,7 +161,8 @@ jobs:
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification
-      uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+      if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
+      uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
       with:
         webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
         webhook-type: webhook-trigger
@@ -169,3 +184,15 @@ jobs:
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Auto-retry when integration-tests failed because its self-hosted runner was terminated
+  # mid-job rather than by a real test failure. Those runs end with "The runner has received a
+  # shutdown signal" partway through Maven Test Build, which says nothing about the code under
+  # test. See rerun-failed-jobs-reusable.yml.
+  rerun-failed-jobs:
+    needs: integration-tests
+    if: failure() && fromJSON(github.run_attempt) < 3
+    uses: ./.github/workflows/rerun-failed-jobs-reusable.yml
+    with:
+      test_owner: '@camunda/core-features'
+    secrets: inherit

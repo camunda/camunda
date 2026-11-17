@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.JobEntity;
 
 public enum JobSearchColumn implements SearchColumn<JobEntity> {
+  CREATION_TIME("creationTime"),
   DEADLINE("deadline"),
   DENIED_REASON("deniedReason"),
   ELEMENT_ID("elementId"),
@@ -22,6 +23,7 @@ public enum JobSearchColumn implements SearchColumn<JobEntity> {
   JOB_KEY("jobKey"),
   KIND("kind"),
   LISTENER_EVENT_TYPE("listenerEventType"),
+  PRIORITY("priority"),
   PROCESS_DEFINITION_ID("processDefinitionId"),
   PROCESS_DEFINITION_KEY("processDefinitionKey"),
   PROCESS_INSTANCE_KEY("processInstanceKey"),

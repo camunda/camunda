@@ -61,6 +61,11 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return this;
   }
 
+  public BrokerActivateJobsRequest setWithLease(final boolean withLease) {
+    requestDto.setWithLease(withLease);
+    return this;
+  }
+
   @Override
   public JobBatchRecord getRequestWriter() {
     return requestDto;

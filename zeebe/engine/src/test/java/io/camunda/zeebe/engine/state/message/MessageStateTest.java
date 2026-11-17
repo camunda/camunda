@@ -10,37 +10,46 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.metrics.MessageCorrelationMetricsDoc;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class MessageStateTest {
 
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
+  private static final String LOCKS_GAUGE =
+      MessageCorrelationMetricsDoc.CROSS_PARTITION_LOCKS.getName();
+  private static final String BUFFERED_BID_GAUGE =
+      MessageCorrelationMetricsDoc.CROSS_PARTITION_BUFFERED_MESSAGES.getName();
 
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableMessageState messageState;
   private MutableProcessingState processingState;
 
-  @Before
-  public void setUp() {
-    processingState = stateRule.getProcessingState();
+  @BeforeEach
+  void setUp() {
     messageState = processingState.getMessageState();
   }
 
   @Test
-  public void shouldNotExistIfNameDoesntMatch() {
+  void shouldNotExistIfNameDoesntMatch() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id");
     messageState.put(1L, message);
@@ -58,7 +67,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotExistIfCorrelationKeyDoesntMatch() {
+  void shouldNotExistIfCorrelationKeyDoesntMatch() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id");
     messageState.put(1L, message);
@@ -76,7 +85,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotExistIfMessageIdDoesntMatch() {
+  void shouldNotExistIfMessageIdDoesntMatch() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id");
     messageState.put(1L, message);
@@ -94,7 +103,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldExist() {
+  void shouldExist() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id");
     messageState.put(1L, message);
@@ -112,7 +121,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessages() {
+  void shouldVisitMessages() {
     // given
     final var message = createMessage("name", "correlationKey");
     messageState.put(1L, message);
@@ -134,7 +143,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesInOrder() {
+  void shouldVisitMessagesInOrder() {
     // given
     final var message = createMessage("name", "correlationKey");
     messageState.put(1L, message);
@@ -155,7 +164,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesUntilStop() {
+  void shouldVisitMessagesUntilStop() {
     // given
     final var message = createMessage("name", "correlationKey");
     messageState.put(1L, message);
@@ -179,7 +188,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotVisitMessagesIfNameDoesntMatch() {
+  void shouldNotVisitMessagesIfNameDoesntMatch() {
     // given
     final var message = createMessage("name", "correlationKey");
     messageState.put(1L, message);
@@ -197,7 +206,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotVisitMessageIfCorrelationKeyDoesntMatch() {
+  void shouldNotVisitMessageIfCorrelationKeyDoesntMatch() {
     // given
     final var message = createMessage("name", "correlationKey");
     messageState.put(1L, message);
@@ -215,7 +224,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesUntilVisitorReturnsFalse() {
+  void shouldVisitMessagesUntilVisitorReturnsFalse() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
     final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
@@ -241,7 +250,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesWhileVisitorReturnsTrue() {
+  void shouldVisitMessagesWhileVisitorReturnsTrue() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
     final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
@@ -268,7 +277,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotVisitMessagesBeforeTime() {
+  void shouldNotVisitMessagesBeforeTime() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
     final var message2 = createMessage("name", "correlationKey", "{}", "nr2", 4567);
@@ -285,7 +294,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesBeforeTime() {
+  void shouldVisitMessagesBeforeTime() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
     final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
@@ -303,7 +312,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesBeforeTimeInOrder() {
+  void shouldVisitMessagesBeforeTimeInOrder() {
     // given
     final long now = InstantSource.system().millis();
 
@@ -326,7 +335,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldVisitMessagesBeforeTimeStartingAtIndex() {
+  void shouldVisitMessagesBeforeTimeStartingAtIndex() {
     // given four messages
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
     final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
@@ -359,7 +368,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldRemoveMessage() {
+  void shouldRemoveMessage() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id", 1234);
     messageState.put(1L, message);
@@ -402,7 +411,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldRemoveMessageWithoutId() {
+  void shouldRemoveMessageWithoutId() {
     // given
     final var message = createMessage("name", "correlationKey");
 
@@ -430,7 +439,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotFailOnRemoveMessageTwice() {
+  void shouldNotFailOnRemoveMessageTwice() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id", 1234);
 
@@ -468,7 +477,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldNotRemoveDifferentMessage() {
+  void shouldNotRemoveDifferentMessage() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
     final var message2 = createMessage("name", "correlationKey", "{}", "id2", 4567);
@@ -514,7 +523,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldExistCorrelatedMessage() {
+  void shouldExistCorrelatedMessage() {
     // when
     final var messageKey = 1L;
     final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
@@ -529,7 +538,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldRemoveMessageCorrelation() {
+  void shouldRemoveMessageCorrelation() {
     // given
     final long messageKey = 6L;
     final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
@@ -545,7 +554,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldExistActiveProcessInstance() {
+  void shouldExistActiveProcessInstance() {
     // when
     messageState.putActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
 
@@ -566,7 +575,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldRemoveActiveProcessInstance() {
+  void shouldRemoveActiveProcessInstance() {
     // given
     messageState.putActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
     messageState.putActiveProcessInstance(wrapString("wf-2"), wrapString("key-1"));
@@ -591,7 +600,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldGetProcessInstanceCorrelationKey() {
+  void shouldGetProcessInstanceCorrelationKey() {
     // when
     messageState.putProcessInstanceCorrelationKey(1L, wrapString("key-1"));
 
@@ -602,7 +611,7 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldRemoveProcessInstanceCorrelationKey() {
+  void shouldRemoveProcessInstanceCorrelationKey() {
     // given
     messageState.putProcessInstanceCorrelationKey(1L, wrapString("key-1"));
     messageState.putProcessInstanceCorrelationKey(2L, wrapString("key-2"));
@@ -613,6 +622,250 @@ public final class MessageStateTest {
     // then
     assertThat(messageState.getProcessInstanceCorrelationKey(1L)).isNull();
     assertThat(messageState.getProcessInstanceCorrelationKey(2L)).isEqualTo(wrapString("key-2"));
+  }
+
+  @Test
+  void shouldGetCrossPartitionStartHolderOrigin() {
+    // when
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // then
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process-1"));
+    assertThat(origin.getCorrelationKeyBuffer()).isEqualTo(wrapString("key-1"));
+    assertThat(origin.getTenantIdBuffer()).isEqualTo(wrapString("tenant-1"));
+    assertThat(origin.getMessageKey()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldReturnNullForAbsentCrossPartitionStartHolderOrigin() {
+    // given
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), DEFAULT_TENANT, 42L);
+
+    // then
+    assertThat(messageState.getCrossPartitionStartHolderOrigin(2L)).isNull();
+  }
+
+  @Test
+  void shouldRemoveCrossPartitionStartHolderOrigin() {
+    // given
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+    messageState.putCrossPartitionStartHolderOrigin(
+        2L, wrapString("process-2"), wrapString("key-2"), "tenant-2", 43L);
+
+    // when
+    messageState.removeCrossPartitionStartHolderOrigin(1L);
+
+    // then
+    assertThat(messageState.getCrossPartitionStartHolderOrigin(1L)).isNull();
+    final var remaining = messageState.getCrossPartitionStartHolderOrigin(2L);
+    assertThat(remaining).isNotNull();
+    assertThat(remaining.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process-2"));
+    assertThat(remaining.getMessageKey()).isEqualTo(43L);
+  }
+
+  @Test
+  void shouldNotThrowWhenRemovingAbsentCrossPartitionStartHolderOrigin() {
+    // when - then (no exception)
+    messageState.removeCrossPartitionStartHolderOrigin(99L);
+    assertThat(messageState.getCrossPartitionStartHolderOrigin(99L)).isNull();
+  }
+
+  @Test
+  void shouldOverwriteCrossPartitionStartHolderOrigin() {
+    // given
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // when - re-applied STARTED reply writes the same holder again
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // then
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getMessageKey()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldPersistStorageOrdinalOnCrossPartitionStartHolderOrigin() {
+    // when
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L, 1234);
+
+    // then
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(1L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getStorageOrdinal()).isEqualTo(1234);
+  }
+
+  @Test
+  void shouldWriteMainIndexOrdinalOnHolderOriginWithoutStorageOrdinalEvenAfterPriorOrdinal() {
+    // given an entry previously written with a non-zero ordinal (the value object is reused)
+    messageState.putCrossPartitionStartHolderOrigin(
+        1L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L, 1234);
+
+    // when the shorter overload (used by the released v1 applier) writes another entry
+    messageState.putCrossPartitionStartHolderOrigin(
+        2L, wrapString("process-1"), wrapString("key-1"), "tenant-1", 42L);
+
+    // then it carries the main index ordinal rather than the previous write's ordinal
+    final var origin = messageState.getCrossPartitionStartHolderOrigin(2L);
+    assertThat(origin).isNotNull();
+    assertThat(origin.getStorageOrdinal()).isEqualTo(StorageOrdinalRelated.MAIN_INDEX);
+  }
+
+  @Test
+  void shouldPersistStorageOrdinalOnCrossPartitionStartLock() {
+    // when
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT, 1234);
+
+    // then the visitor receives the ordinal
+    final var ordinals = new ArrayList<Integer>();
+    messageState.visitCrossPartitionStartLocks(
+        (bpmnProcessId, correlationKey, holder, tenantId, storageOrdinal) ->
+            ordinals.add(storageOrdinal));
+    assertThat(ordinals).containsExactly(1234);
+  }
+
+  @Test
+  void shouldWriteMainIndexOrdinalOnLockWithoutStorageOrdinalEvenAfterPriorOrdinal() {
+    // given a lock previously written with a non-zero ordinal (the value object is reused)
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT, 1234);
+
+    // when the shorter overload (used by the released v1 applier) writes another lock
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-2"), 43L, DEFAULT_TENANT);
+
+    // then the new lock carries the main index ordinal
+    final var ordinalsByHolder = new HashMap<Long, Integer>();
+    messageState.visitCrossPartitionStartLocks(
+        (bpmnProcessId, correlationKey, holder, tenantId, storageOrdinal) ->
+            ordinalsByHolder.put(holder, storageOrdinal));
+    assertThat(ordinalsByHolder)
+        .containsEntry(42L, 1234)
+        .containsEntry(43L, StorageOrdinalRelated.MAIN_INDEX);
+  }
+
+  @Test
+  void shouldTrackCrossPartitionLocksGaugeAcrossPutAndRemove() {
+    // when two distinct correlation-key locks are held
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-2"), 43L, DEFAULT_TENANT);
+
+    // then the lock gauge reflects both
+    assertThat(locksGauge()).isEqualTo(2.0);
+
+    // when one is released
+    messageState.removeCrossPartitionStartLock(wrapString("process-1"), wrapString("key-1"));
+
+    // then the gauge drops to one
+    assertThat(locksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDoubleCountCrossPartitionLocksGaugeOnReAppliedReply() {
+    // given a held lock
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+
+    // when a retried STARTED reply writes the same holder again (put upserts)
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+
+    // then the gauge counts the lock only once
+    assertThat(locksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotDecrementCrossPartitionLocksGaugeWhenRemovingAbsentLock() {
+    // given one held lock
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+
+    // when removing a lock that was never held
+    messageState.removeCrossPartitionStartLock(wrapString("process-1"), wrapString("absent"));
+
+    // then the gauge is unaffected
+    assertThat(locksGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldReseedCrossPartitionLocksGaugeFromStateOnRecovery() {
+    // given two persisted locks
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-1"), 42L, DEFAULT_TENANT);
+    messageState.putCrossPartitionStartLock(
+        wrapString("process-1"), wrapString("key-2"), 43L, DEFAULT_TENANT);
+
+    // when the partition recovers
+    ((DbMessageState) messageState).onRecovered(null);
+
+    // then the gauge is authoritatively seeded from the persisted count
+    assertThat(locksGauge()).isEqualTo(2.0);
+  }
+
+  private double locksGauge() {
+    return zeebeDb.getMeterRegistry().get(LOCKS_GAUGE).gauge().value();
+  }
+
+  @Test
+  void shouldTrackBufferedBusinessIdMessagesGaugeAcrossPutAndRemove() {
+    // when two buffered messages carrying a business id are stored
+    messageState.put(1L, createMessageWithBusinessId("name", "correlationKey", "bid-1"));
+    messageState.put(2L, createMessageWithBusinessId("name", "correlationKey", "bid-2"));
+
+    // then the business-id buffer gauge reflects both
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(2.0);
+
+    // when one message is removed
+    messageState.remove(1L);
+
+    // then the gauge drops to one
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotCountBufferedMessagesWithoutBusinessId() {
+    // when a buffered message without a business id is stored
+    messageState.put(1L, createMessage("name", "correlationKey"));
+
+    // then the business-id buffer gauge stays at zero
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(0.0);
+
+    // and removing it does not drive the gauge negative
+    messageState.remove(1L);
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(0.0);
+  }
+
+  @Test
+  void shouldReseedBufferedBusinessIdMessagesGaugeFromStateOnRecovery() {
+    // given two persisted messages carrying a business id
+    messageState.put(1L, createMessageWithBusinessId("name", "correlationKey", "bid-1"));
+    messageState.put(2L, createMessageWithBusinessId("name", "correlationKey", "bid-2"));
+
+    // when the partition recovers
+    ((DbMessageState) messageState).onRecovered(null);
+
+    // then the gauge is authoritatively seeded from the persisted count
+    assertThat(bufferedBusinessIdMessagesGauge()).isEqualTo(2.0);
+  }
+
+  private double bufferedBusinessIdMessagesGauge() {
+    return zeebeDb.getMeterRegistry().get(BUFFERED_BID_GAUGE).gauge().value();
+  }
+
+  private MessageRecord createMessageWithBusinessId(
+      final String name, final String correlationKey, final String businessId) {
+    return createMessage(name, correlationKey).setBusinessId(businessId);
   }
 
   private MessageRecord createMessage(final String name, final String correlationKey) {

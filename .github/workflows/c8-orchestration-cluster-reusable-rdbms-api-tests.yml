@@ -15,9 +15,22 @@ on:
         description: "Branch to test (e.g. stable/8.9, main)"
         required: true
         type: string
+      camunda_mode:
+        description: "Camunda deployment mode: 'profiles' (default Spring profiles) or 'all-in-one'"
+        required: false
+        type: string
+        default: profiles
+      playwright_workers:
+        description: "Playwright worker count for the API tests. The 16-core runner has headroom beyond the suite's default of 4."
+        required: false
+        type: number
+        default: 4
 
 permissions:
   contents: read
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
 
 jobs:
   nightly-build-rdbms-dist:
@@ -28,7 +41,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
 
@@ -61,14 +74,14 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
           retention-days: 1
 
   nightly-api-tests-rdbms:
-    name: API Tests (RDBMS) (${{ inputs.branch }} / ${{ matrix.database.database-name }})
+    name: API Tests (RDBMS) (${{ inputs.branch }} / ${{ matrix.database.database-name }} - Mode ${{ inputs.camunda_mode }})
     needs: nightly-build-rdbms-dist
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
@@ -77,13 +90,8 @@ jobs:
       fail-fast: false
       matrix:
         database:
-          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
-          - database-name: "Postgres 14"
-            database-type: "postgres"
-            database-image-version: "14-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
+          # Supported versions: see .ci/db-versions.yml
+          # PostgreSQL
           - database-name: "Postgres 15"
             database-type: "postgres"
             database-image-version: "15-alpine"
@@ -108,39 +116,45 @@ jobs:
             jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          # MySQL - Supported version: 8.4
+          # MySQL
           - database-name: "MySQL 8.4"
             database-type: "mysql"
             database-image-version: "8.4"
             jdbc-url: "jdbc:mysql://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          # MariaDB - Supported versions: 10.11, 11.4, 11.8
+          - database-name: "MySQL 9.7"
+            database-type: "mysql"
+            database-image-version: "9.7"
+            jdbc-url: "jdbc:mysql://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          # MariaDB
           - database-name: "MariaDB 10.11"
             database-type: "mariadb"
             database-image-version: "10.11"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "MariaDB 11.4"
             database-type: "mariadb"
             database-image-version: "11.4"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "MariaDB 11.8"
             database-type: "mariadb"
             database-image-version: "11.8"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
-          - database-name: "MSSQL 2019"
-            database-type: "mssql"
-            database-image-version: "2019-latest"
-            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
-            jdbc-username: "sa"
-            jdbc-password: "Camunda#8_demo"
+          - database-name: "MariaDB 12.3"
+            database-type: "mariadb"
+            database-image-version: "12.3"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
+          # Microsoft SQL Server
           - database-name: "MSSQL 2022"
             database-type: "mssql"
             database-image-version: "2022-latest"
@@ -153,10 +167,10 @@ jobs:
             jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
-          # Oracle - Supported versions: 21c, 23ai
-          - database-name: "Oracle 23ai"
+          # Oracle
+          - database-name: "Oracle 26ai"
             database-type: "oracle"
-            database-image-version: "23-slim-faststart"
+            database-image-version: "23.26.2-slim-faststart"
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
@@ -173,7 +187,7 @@ jobs:
         run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
 
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
 
@@ -187,21 +201,13 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Setup Java
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '21'
-
-      - name: Python setup
-        if: always()
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.x"
 
       - name: Sanitize branch name
         id: sanitize
@@ -211,7 +217,7 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Download distribution artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
@@ -222,6 +228,23 @@ jobs:
       # ── Database ────────────────────────────────────────────────────────────
       - name: Start database service
         run: |
+          # Pulling the matrix database image occasionally fails mid-download
+          # with a transient registry reset ("connection reset by peer"), which
+          # killed the whole matrix leg before any test could run. Retry the
+          # pull with backoff so a single registry blip no longer fails the run,
+          # then start the already-cached image.
+          for attempt in 1 2 3; do
+            if docker compose -f db/docker-compose.yml pull ${{ env.DATABASE_CONTAINER }}; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Database image pull failed after 3 attempts"
+              exit 1
+            fi
+            echo "Image pull attempt $attempt failed; retrying in $((attempt * 15))s..."
+            sleep "$((attempt * 15))"
+          done
+
           docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
             docker compose -f db/docker-compose.yml logs
             exit 1
@@ -257,12 +280,12 @@ jobs:
             mysql)
               echo "Installing MySQL driver"
               curl -L -o dev-dist/lib/mysql-connector.jar \
-                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar
               ;;
             mariadb)
               echo "Installing MariaDB driver"
               curl -L -o dev-dist/lib/mariadb.jar \
-                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.4.1/mariadb-java-client-3.4.1.jar
+                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.5.8/mariadb-java-client-3.5.8.jar
               ;;
             mssql)
               echo "Installing SQL Server driver"
@@ -282,7 +305,14 @@ jobs:
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
       - name: Start Camunda with ${{ inputs.branch }} / ${{ matrix.database.database-name }}
         run: |
-          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
+          if [[ "${{ inputs.camunda_mode }}" == "all-in-one" ]]; then
+            export CAMUNDA_MODE="all-in-one"
+            echo "Starting with CAMUNDA_MODE=all-in-one"
+          else
+            unset CAMUNDA_MODE
+            export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
+            echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+          fi
           export ZEEBE_CLOCK_CONTROLLED="true"
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
@@ -339,20 +369,48 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
       - name: Clean install dependencies
         run: |
-          rm -rf node_modules package-lock.json
-          npm install
+          # Retry to absorb transient npm registry network errors (e.g. ECONNRESET
+          # while fetching a package) that otherwise fail a single matrix leg.
+          # Each attempt starts from a clean tree: a timed-out install can leave
+          # node_modules half-extracted and a partially written generated lockfile,
+          # which makes the next attempt fail deterministically (e.g. ENOTEMPTY).
+          for attempt in 1 2 3; do
+            rm -rf node_modules package-lock.json
+            timeout 300 npm install && exit 0
+            if [ "$attempt" -lt 3 ]; then
+              echo "npm install failed (attempt ${attempt}/3); retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "npm install failed after 3 attempts"
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          # `--with-deps` fetches browser OS packages from the Ubuntu apt
+          # mirrors, which intermittently refuse connections and fail the whole
+          # nightly run. Retry with backoff so a transient mirror/CDN blip no
+          # longer aborts the job.
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Playwright browser install failed (attempt ${attempt}/3); retrying after backoff..."
+              sleep "$((attempt * 30))"
+            fi
+          done
+          echo "Playwright browser install failed after 3 attempts" >&2
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Run API tests
@@ -369,7 +427,7 @@ jobs:
           DB_NAME: ${{ matrix.database.database-name }}
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
-        run: DATABASE=RDBMS npm run test -- --project=api-tests
+        run: DATABASE=RDBMS npm run test -- --project=api-tests --workers=${{ inputs.playwright_workers }}
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Stop Camunda
@@ -379,42 +437,40 @@ jobs:
             kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
           fi
 
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-          BRANCH_NAME: ${{ inputs.branch }}
-          DATABASE_NAME: ${{ matrix.database.database-name }}
-        run: |
-          pip install trcli==1.14.1
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
-            parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $DATABASE_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
-
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}
+          name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
+
+      # test-results/ holds the per-test Playwright trace.zip (retain-on-failure).
+      # The trace captures the request/response body, which json-report omits;
+      # nightly triage needs it to tell a request-shape/test bug from a product bug.
+      - name: Upload HTML report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: html-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
+          retention-days: 60
+
+      - name: Upload Playwright traces to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
+          if-no-files-found: ignore
+          retention-days: 5
 
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-api-rdbms-tests/(${{ inputs.branch }} / ${{ matrix.database.database-name }})"
+          job_name: "c8-orchestration-cluster-e2e-nightly-api-rdbms-tests/(${{ inputs.branch }} / ${{ matrix.database.database-name }} / ${{ inputs.camunda_mode }})"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

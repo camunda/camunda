@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -33,7 +34,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecordValue> {
+public class UserTaskHandler implements OrdinalIndexExportHandler<TaskEntity, UserTaskRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
@@ -53,7 +54,9 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.UPDATED,
           UserTaskIntent.ASSIGNMENT_DENIED,
           UserTaskIntent.UPDATE_DENIED,
-          UserTaskIntent.COMPLETION_DENIED);
+          UserTaskIntent.COMPLETION_DENIED,
+          UserTaskIntent.SUSPENDED,
+          UserTaskIntent.RESUMED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
   private final String indexName;
@@ -99,11 +102,17 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   @Override
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    final var intent = (UserTaskIntent) record.getIntent();
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
-    entity.setAction(record.getValue().getAction());
+    // SUSPENDED and RESUMED don't transition the user task, they pause and continue its lifecycle.
+    // They're written from the stored user task, whose action may already be reset, so exporting it
+    // could overwrite the action of the transition the task continues with after resuming.
+    if (intent != UserTaskIntent.SUSPENDED && intent != UserTaskIntent.RESUMED) {
+      entity.setAction(record.getValue().getAction());
+    }
     entity.setKey(record.getKey());
 
-    switch ((UserTaskIntent) record.getIntent()) {
+    switch (intent) {
       case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
         entity.setCompletionTime(null);
@@ -119,6 +128,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       case UserTaskIntent.CANCELING -> entity.setState(TaskState.CANCELING);
       case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
           entity.setState(TaskState.CREATED);
+      case UserTaskIntent.SUSPENDED -> entity.setIsSuspended(true);
+      case UserTaskIntent.RESUMED -> entity.setIsSuspended(false);
       default -> {}
     }
 
@@ -129,14 +140,15 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   @Override
-  public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final TaskEntity entity, final BatchRequest batchRequest) {
 
     final Map<String, Object> updateFields = getUpdatedFields(entity);
 
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.upsertWithRouting(
-        indexName,
+        index,
         previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getId(),
         entity,
         updateFields,
@@ -178,6 +190,9 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
     if (entity.getState() != null) {
       updateFields.put(TaskTemplate.STATE, entity.getState());
+    }
+    if (entity.getIsSuspended() != null) {
+      updateFields.put(TaskTemplate.IS_SUSPENDED, entity.getIsSuspended());
     }
     if (entity.getFlowNodeBpmnId() != null) {
       updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
@@ -262,7 +277,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity
         .setState(TaskState.CANCELED)
         .setCompletionTime(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .setIsSuspended(false);
     updateChangedAttributes(record, entity);
   }
 

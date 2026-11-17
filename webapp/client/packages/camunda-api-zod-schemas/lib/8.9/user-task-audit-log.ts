@@ -43,10 +43,10 @@ type QueryUserTaskAuditLogsRequestBody = z.infer<typeof queryUserTaskAuditLogsRe
 const queryUserTaskAuditLogsResponseBodySchema = queryAuditLogsResponseBodySchema;
 type QueryUserTaskAuditLogsResponseBody = z.infer<typeof queryUserTaskAuditLogsResponseBodySchema>;
 
-const queryUserTaskAuditLogs: Endpoint<{userTaskKey: string}> = {
+const queryUserTaskAuditLogs = {
 	method: 'POST',
-	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/audit-logs/search`,
-};
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/audit-logs/search` as const,
+} as const satisfies Endpoint<{userTaskKey: string}>;
 
 export {
 	userTaskAuditLogFilterSchema,

@@ -18,6 +18,7 @@ import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.BP
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.IS_PREVIEW;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VALUE;
@@ -27,7 +28,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
     queries.addAll(getVariablesQuery(filter.valueOperations()));
     queries.addAll(getScopeKeyQuery(filter.scopeKeyOperations()));
     queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
+    queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
     queries.addAll(getVariableKeyQuery(filter.variableKeyOperations()));
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
@@ -52,7 +54,8 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 
@@ -67,6 +70,11 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
   private List<SearchQuery> getProcessInstanceKeyQuery(
       final List<Operation<Long>> processInstanceKey) {
     return longOperations(PROCESS_INSTANCE_KEY, processInstanceKey);
+  }
+
+  private List<SearchQuery> getProcessDefinitionKeyQuery(
+      final List<Operation<Long>> processDefinitionKey) {
+    return longOperations(PROCESS_DEFINITION_KEY, processDefinitionKey);
   }
 
   private List<SearchQuery> getVariableKeyQuery(final List<Operation<Long>> variableKeys) {

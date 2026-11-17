@@ -34,13 +34,43 @@ public record JobFilter(
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Integer>> retriesOperations,
+    List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
     List<Operation<String>> tenantIdOperations,
     List<Operation<String>> typeOperations,
     List<Operation<String>> workerOperations,
     List<Operation<OffsetDateTime>> creationTimeOperations,
-    List<Operation<OffsetDateTime>> lastUpdateTimeOperations)
+    List<Operation<OffsetDateTime>> lastUpdateTimeOperations,
+    Integer partitionId)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .deadlineOperations(deadlineOperations)
+        .deniedReasonOperations(deniedReasonOperations)
+        .elementInstanceKeyOperations(elementInstanceKeyOperations)
+        .elementIdOperations(elementIdOperations)
+        .endTimeOperations(endTimeOperations)
+        .errorCodeOperations(errorCodeOperations)
+        .errorMessageOperations(errorMessageOperations)
+        .hasFailedWithRetriesLeft(hasFailedWithRetriesLeft)
+        .isDenied(isDenied)
+        .jobKeyOperations(jobKeyOperations)
+        .kindOperations(kindOperations)
+        .listenerEventTypeOperations(listenerEventTypeOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .retriesOperations(retriesOperations)
+        .priorityOperations(priorityOperations)
+        .stateOperations(stateOperations)
+        .tenantIdOperations(tenantIdOperations)
+        .typeOperations(typeOperations)
+        .workerOperations(workerOperations)
+        .creationTimeOperations(creationTimeOperations)
+        .lastUpdateTimeOperations(lastUpdateTimeOperations)
+        .partitionId(partitionId);
+  }
 
   public static final class Builder implements ObjectBuilder<JobFilter> {
     private List<Operation<OffsetDateTime>> deadlineOperations;
@@ -51,6 +81,7 @@ public record JobFilter(
     private Boolean hasFailedWithRetriesLeft;
     private Boolean isDenied;
     private List<Operation<Integer>> retriesOperations;
+    private List<Operation<Integer>> priorityOperations;
     private List<Operation<Long>> jobKeyOperations;
     private List<Operation<String>> kindOperations;
     private List<Operation<String>> listenerEventTypeOperations;
@@ -65,6 +96,7 @@ public record JobFilter(
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<OffsetDateTime>> creationTimeOperations;
     private List<Operation<OffsetDateTime>> lastUpdateTimeOperations;
+    private Integer partitionId;
 
     public Builder deadlineOperations(final List<Operation<OffsetDateTime>> operations) {
       deadlineOperations = addValuesToList(deadlineOperations, operations);
@@ -164,6 +196,21 @@ public record JobFilter(
 
     public Builder retries(final Integer value, final Integer... values) {
       return retriesOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder priorityOperations(final List<Operation<Integer>> operations) {
+      priorityOperations = addValuesToList(priorityOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder priorityOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return priorityOperations(collectValues(operation, operations));
+    }
+
+    public Builder priority(final Integer value, final Integer... values) {
+      return priorityOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder jobKeyOperations(final List<Operation<Long>> operations) {
@@ -376,6 +423,11 @@ public record JobFilter(
       return lastUpdateTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
+    public Builder partitionId(final Integer value) {
+      partitionId = value;
+      return this;
+    }
+
     @Override
     public JobFilter build() {
       return new JobFilter(
@@ -395,12 +447,14 @@ public record JobFilter(
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(retriesOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(typeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(workerOperations, Collections.emptyList()),
           Objects.requireNonNullElse(creationTimeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(lastUpdateTimeOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(lastUpdateTimeOperations, Collections.emptyList()),
+          partitionId);
     }
   }
 }

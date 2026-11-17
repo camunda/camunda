@@ -15,11 +15,11 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
-import io.zeebe.containers.ZeebeNode;
 
 public interface BanningActuator {
-  static BanningActuator of(final ZeebeNode<?> node) {
+  static BanningActuator of(final BrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/banning", node.getExternalMonitoringAddress());
     return of(endpoint);
@@ -44,4 +44,13 @@ public interface BanningActuator {
   @RequestLine("POST /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void ban(@Param final long id);
+
+  /**
+   * Bans the given process instance key on the given physical tenant's partition group.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /{id}?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void ban(@Param final long id, @Param final String physicalTenant);
 }

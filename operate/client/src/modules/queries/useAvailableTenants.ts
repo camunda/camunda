@@ -12,6 +12,7 @@ import {useCurrentUser} from './useCurrentUser';
 const useAvailableTenants = () => {
   const {data: currentUser} = useCurrentUser();
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   return useMemo<Record<string, string>>(() => {
     if (!currentUser?.tenants) {
       return {};

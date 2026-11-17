@@ -16,16 +16,24 @@
 package io.camunda.client.spring.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.spring.CamundaClientPropertiesTestConfig;
 import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.unit.DataSize;
 
@@ -108,6 +116,138 @@ public class CamundaClientPropertiesPostProcessorTest {
     }
   }
 
+  @SpringBootTest(
+      properties = {
+        "camunda.client.cluster-variables.global.propVar1=propValue1",
+        "camunda.client.cluster-variables.global.propVar2=propValue2",
+        "camunda.client.cluster-variables.tenant.my-tenant.tenantVar=tenantValue"
+      })
+  @Nested
+  class ClusterVariablesMappingTest {
+    @Autowired CamundaClientProperties camundaClientProperties;
+
+    @Test
+    void shouldMapGlobalVariables() {
+      assertThat(camundaClientProperties.getClusterVariables().getVariables())
+          .filteredOn(v -> v.getTenantId() == null)
+          .extracting("name", "value")
+          .containsExactlyInAnyOrder(
+              tuple("propVar1", "propValue1"), tuple("propVar2", "propValue2"));
+    }
+
+    @Test
+    void shouldMapTenantScopedVariables() {
+      assertThat(camundaClientProperties.getClusterVariables().getVariables())
+          .filteredOn(v -> "my-tenant".equals(v.getTenantId()))
+          .extracting("name", "value")
+          .containsExactly(tuple("tenantVar", "tenantValue"));
+    }
+  }
+
+  @SpringBootTest(
+      properties = {
+        "camunda.client.cluster-variables.variables[0].name=fromList",
+        "camunda.client.cluster-variables.variables[0].value=listValue",
+        "camunda.client.cluster-variables.global.fromGlobal=globalValue"
+      })
+  @Nested
+  class ClusterVariablesMappingPrecedenceTest {
+    @Autowired CamundaClientProperties camundaClientProperties;
+
+    @Test
+    void shouldIgnoreDeprecatedPropertiesWhenVariablesConfigured() {
+      assertThat(camundaClientProperties.getClusterVariables().getVariables())
+          .extracting("name", "value")
+          .containsExactly(tuple("fromList", "listValue"));
+    }
+  }
+
+  @Nested
+  class ClusterVariablesValidationTest {
+
+    @Test
+    void shouldRejectNonMapTenantValue() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of("camunda.client.cluster-variables.tenant.my-tenant", "not-a-map")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null))
+          .withMessageContaining("camunda.client.cluster-variables.tenant");
+    }
+
+    @Test
+    void shouldRejectBlankTenantId() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of("camunda.client.cluster-variables.tenant[ ].tenantVar", "tenantValue")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null))
+          .withMessageContaining("tenant ID must not be null or blank");
+    }
+
+    @Test
+    void shouldBeIdempotentAcrossRepeatedPostProcessing() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of("camunda.client.cluster-variables.global.propVar1", "propValue1")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when
+      postProcessor.postProcessEnvironment(environment, null);
+      postProcessor.postProcessEnvironment(environment, null);
+
+      // then
+      assertThat(environment.getProperty("camunda.client.cluster-variables.variables[0].name"))
+          .isEqualTo("propVar1");
+      assertThat(environment.getProperty("camunda.client.cluster-variables.variables[1].name"))
+          .isNull();
+    }
+
+    @Test
+    void shouldSkipLegacyMappingWhenDisabled() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test",
+                  Map.of(
+                      "camunda.client.cluster-variables.enabled", "false",
+                      "camunda.client.cluster-variables.tenant.my-tenant", "not-a-map")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when / then
+      assertThatNoException()
+          .isThrownBy(() -> postProcessor.postProcessEnvironment(environment, null));
+    }
+  }
+
   @Nested
   class CompatibilityTest {
     @Nested
@@ -137,7 +277,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
-              .isEqualTo(URI.create("https://bru-2.zeebe.camunda.io:443/xxx1"));
+              .isEqualTo(URI.create("https://bru-2.api.camunda.io:443/xxx1"));
         }
 
         @Test
@@ -246,7 +386,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
-              .isEqualTo(URI.create("https://bru-2.zeebe.camundatest.io:1443/123"));
+              .isEqualTo(URI.create("https://bru-2.api.camundatest.io:1443/123"));
         }
 
         @Test
@@ -424,7 +564,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
-              .isEqualTo(URI.create("https://abc-2.zeebe.camunda.io:443/12345"));
+              .isEqualTo(URI.create("https://abc-2.api.camunda.io:443/12345"));
         }
 
         @Test
@@ -793,8 +933,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         void shouldReadClientRestAddress() {
           assertThat(camundaClientProperties.getRestAddress())
               .isEqualTo(
-                  URI.create(
-                      "https://your-cluster-region-id.zeebe.camunda.io:443/your-cluster-id"));
+                  URI.create("https://your-cluster-region-id.api.camunda.io:443/your-cluster-id"));
         }
 
         @Test
@@ -962,6 +1101,19 @@ public class CamundaClientPropertiesPostProcessorTest {
         void shouldReadCredentialsCachePath() {
           assertThat(camundaClientProperties.getAuth().getCredentialsCachePath())
               .isEqualTo("/tmp/credentials");
+        }
+      }
+
+      @Nested
+      @SpringBootTest
+      class DefaultCredentialsCachePath {
+        @Autowired CamundaClientProperties camundaClientProperties;
+
+        @Test
+        void shouldDefaultCredentialsCachePathToNull() {
+          // Opt-in file cache: without a path, the provider uses in-memory caching only
+          // so it does not write to the filesystem (see issue #13124).
+          assertThat(camundaClientProperties.getAuth().getCredentialsCachePath()).isNull();
         }
       }
 
@@ -1289,6 +1441,72 @@ public class CamundaClientPropertiesPostProcessorTest {
               .isEqualTo("https://api.example.com");
         }
       }
+    }
+  }
+
+  @Nested
+  class CrossSdkMtlsEnvironmentVariablesTest {
+
+    @Test
+    void shouldBindCrossSdkMtlsEnvironmentVariables() {
+      // given - the cross-SDK CAMUNDA_MTLS_* environment names (no 'client' segment), exposed
+      // through a system-environment property source exactly as the OS would
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new SystemEnvironmentPropertySource(
+                  "test-env",
+                  Map.of(
+                      "CAMUNDA_MTLS_CERT_PATH", "/certs/client.crt",
+                      "CAMUNDA_MTLS_KEY_PATH", "/certs/client.key",
+                      "CAMUNDA_MTLS_KEY_PASSPHRASE", "key-secret",
+                      "CAMUNDA_MTLS_CA_PATH", "/certs/ca.crt",
+                      "CAMUNDA_MTLS_KEYSTORE_PASSWORD", "store-secret",
+                      "CAMUNDA_MTLS_TRUSTSTORE_PASSWORD", "trust-secret")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when
+      postProcessor.postProcessEnvironment(environment, null);
+
+      // then
+      assertThat(environment.getProperty("camunda.client.mtls.cert-path"))
+          .isEqualTo("/certs/client.crt");
+      assertThat(environment.getProperty("camunda.client.mtls.key-path"))
+          .isEqualTo("/certs/client.key");
+      assertThat(environment.getProperty("camunda.client.mtls.key-passphrase"))
+          .isEqualTo("key-secret");
+      assertThat(environment.getProperty("camunda.client.mtls.ca-path")).isEqualTo("/certs/ca.crt");
+      assertThat(environment.getProperty("camunda.client.mtls.keystore-password"))
+          .isEqualTo("store-secret");
+      assertThat(environment.getProperty("camunda.client.mtls.truststore-password"))
+          .isEqualTo("trust-secret");
+    }
+
+    @Test
+    void shouldPreferExplicitSpringPropertyOverCrossSdkAlias() {
+      // given
+      final StandardEnvironment environment = new StandardEnvironment();
+      environment
+          .getPropertySources()
+          .addFirst(
+              new SystemEnvironmentPropertySource(
+                  "test-env", Map.of("CAMUNDA_MTLS_CERT_PATH", "/certs/aliased.crt")));
+      environment
+          .getPropertySources()
+          .addFirst(
+              new MapPropertySource(
+                  "test-props", Map.of("camunda.client.mtls.cert-path", "/certs/explicit.crt")));
+      final CamundaClientPropertiesPostProcessor postProcessor =
+          new CamundaClientPropertiesPostProcessor(Supplier::get);
+
+      // when
+      postProcessor.postProcessEnvironment(environment, null);
+
+      // then
+      assertThat(environment.getProperty("camunda.client.mtls.cert-path"))
+          .isEqualTo("/certs/explicit.crt");
     }
   }
 }

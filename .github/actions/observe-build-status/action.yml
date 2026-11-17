@@ -7,7 +7,7 @@
 ---
 name: Observe Build Status
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Records the build status remotely for analytic purposes
 
@@ -19,10 +19,13 @@ inputs:
     description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
     required: false
   user_description:
-    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
+    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status. When empty, falls back to the TEST_OWNER environment variable.'
     required: false
   job_name:
     description: 'Optional string, the job whose status is being observed; defaults to $GITHUB_JOB when omitted'
+    required: false
+  job_id:
+    description: 'Optional numeric GHA job ID of the observed job, for observer jobs reporting another job; that job exposes it as a job output from job.check_run_id. Defaults to the running job when omitted'
     required: false
   detailed_junit_tests:
     description: 'Optional boolean, if true search for TEST-*.xml files and submit their details to dedicated analytics endpoint'
@@ -43,7 +46,7 @@ runs:
   steps:
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       if: |
         inputs.secret_vault_address != ''
         && inputs.secret_vault_roleId != ''
@@ -76,14 +79,14 @@ runs:
         else
           echo "result=" >> $GITHUB_OUTPUT
         fi
-    ######################## Report test result #############################  
+    ######################## Report test result #############################
     - name: Get detailed info on JUnit tests
       id: get-detailed-junit-tests
       if: ${{ inputs.detailed_junit_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
       shell: bash
       run: |
         TEST_RESULTS_FILE=$(mktemp --suffix=.jsonl)
-        echo "test_results_file=${TEST_RESULTS_FILE}" >> $GITHUB_OUTPUT        
+        echo "test_results_file=${TEST_RESULTS_FILE}" >> $GITHUB_OUTPUT
         find . -iname 'TEST-*.xml' | python3 .ci/scripts/ci/observe-build-status/junit-test-results-to-jsonl.py > "${TEST_RESULTS_FILE}"
         echo "Generated $(wc -l < "${TEST_RESULTS_FILE}") test results"
 
@@ -93,14 +96,40 @@ runs:
       with:
         test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
         job_name_override: "${{ inputs.job_name }}"
-        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"   
+        job_id_override: "${{ inputs.job_id }}"
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+    ############ Resolve code owner of the failing tests (attribution) ############
+    # Only for failed jobs, only when no explicit owner was passed, and only when we
+    # are actually going to submit (secrets present). This keeps the overhead off the
+    # green path entirely.
+    - name: Setup codeowners-cli
+      # Attribution is best-effort: a download/cache failure here must never fail the
+      # action, otherwise it could drop the CI Analytics submission for the failing job.
+      continue-on-error: true
+      if: ${{ inputs.build_status == 'failure' && inputs.user_description == '' && steps.secrets.outputs.gcloud_sa_key != '' }}
+      uses: ./.github/actions/codeowners-setup-cli
+
+    - name: Resolve code owner of failing tests
+      id: resolve-owner
+      if: ${{ inputs.build_status == 'failure' && inputs.user_description == '' && steps.secrets.outputs.gcloud_sa_key != '' }}
+      shell: bash
+      run: |
+        # Never fail the build over analytics attribution; on any hiccup fall back to TEST_OWNER.
+        resolved_owner="$(bash .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.sh || true)"
+        if [[ -n "${resolved_owner}" ]]; then
+          echo "Resolved failing-test code owner: ${resolved_owner}"
+        else
+          echo "No single code owner resolved for the failing tests; falling back to the job owner (TEST_OWNER)."
+        fi
+        echo "resolved_owner=${resolved_owner}" >> "$GITHUB_OUTPUT"
    ######################## Report build result #############################
     - uses: camunda/infra-global-github-actions/submit-build-status@main
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
+        job_id_override: "${{ inputs.job_id }}"
         build_status: "${{ inputs.build_status }}"
         build_duration_millis: "${{ steps.get-build-duration-millis.outputs.result }}"
         user_reason: "${{ inputs.user_reason }}"
-        user_description: "${{ inputs.user_description }}"
+        user_description: "${{ inputs.user_description != '' && inputs.user_description || (steps.resolve-owner.outputs.resolved_owner != '' && steps.resolve-owner.outputs.resolved_owner || env.TEST_OWNER) }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"

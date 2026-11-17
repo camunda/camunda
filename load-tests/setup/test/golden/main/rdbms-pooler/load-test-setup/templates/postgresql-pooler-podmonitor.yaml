@@ -1,0 +1,19 @@
+---
+# Source: load-test-setup/templates/postgresql-pooler-podmonitor.yaml
+# Scrape the CNPG Pooler's (PgBouncer) own pool metrics, exposed as
+# cnpg_pgbouncer_pools_* (cl_active/cl_waiting on the client side,
+# sv_active/sv_idle/sv_used on the server side), labeled by database/user.
+#
+# Reference: https://cloudnative-pg.io/docs/current/connection_pooling
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: postgresql-pooler
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/poolerName: postgresql-pooler
+  podMetricsEndpoints:
+    - port: metrics

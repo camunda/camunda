@@ -7,9 +7,10 @@
  */
 package io.camunda.webapps.schema.entities.usertask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
-import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -19,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TaskEntity
-    implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
+public class TaskEntity extends AbstractExporterEntity<TaskEntity>
+    implements PartitionedEntity<TaskEntity>, TenantOwned {
 
   @BeforeVersion880 private String id;
 
@@ -147,18 +148,19 @@ public class TaskEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long rootProcessInstanceKey;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String businessId;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Boolean isSuspended;
+
+  // transient flag: signals flush() to issue a delete instead of an upsert; never written to index
+  @JsonIgnore private boolean markedForDeletion;
+
   public TaskEntity() {}
-
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public TaskEntity setId(final String id) {
-    this.id = id;
-    return this;
-  }
 
   public long getKey() {
     return key;
@@ -456,6 +458,33 @@ public class TaskEntity
 
   public TaskEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public TaskEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
+  public Boolean getIsSuspended() {
+    return isSuspended;
+  }
+
+  public TaskEntity setIsSuspended(final Boolean isSuspended) {
+    this.isSuspended = isSuspended;
+    return this;
+  }
+
+  public boolean isMarkedForDeletion() {
+    return markedForDeletion;
+  }
+
+  public TaskEntity setMarkedForDeletion(final boolean markedForDeletion) {
+    this.markedForDeletion = markedForDeletion;
     return this;
   }
 

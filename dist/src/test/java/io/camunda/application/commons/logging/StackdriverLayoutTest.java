@@ -9,6 +9,7 @@ package io.camunda.application.commons.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -31,6 +32,12 @@ final class StackdriverLayoutTest {
   private static final StackTraceElement DUMMY_LOCATION =
       new StackTraceElement("Foo", "Bar", "Foo.java", 1);
   private static final String LOG_MESSAGE = "Hello World!";
+
+  // The layout reports the build's commit id as the service version, read from the git.properties
+  // that the git-commit-id Maven plugin writes onto the classpath. It differs per build, so it is
+  // resolved here rather than hard-coded.
+  private static final String EXPECTED_SERVICE_VERSION =
+      ResourceBundle.getBundle("git").getString("git.commit.id.abbrev");
 
   private Logger logger;
   private ListAppender appender;
@@ -167,14 +174,15 @@ final class StackdriverLayoutTest {
         "function":"Foo.Bar"},%s\
         "threadContext":{"id":%d,"name":"%s","priority":%d},\
         "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest",\
-        "serviceContext":{"service":"","version":""}}""",
+        "serviceContext":{"service":"","version":"%s"}}""",
             message.getInstant().getEpochSecond(),
             message.getInstant().getNanoOfSecond(),
             expectedSeverity,
             expectedContext == null ? "" : expectedContext + ",",
             message.getThreadId(),
             message.getThreadName(),
-            message.getThreadPriority());
+            message.getThreadPriority(),
+            EXPECTED_SERVICE_VERSION);
   }
 
   private void assertMessageMatchesWithReportLocation() {
@@ -190,14 +198,15 @@ final class StackdriverLayoutTest {
         "function":"Foo.Bar"},\
         "threadContext":{"id":%d,"name":"%s","priority":%d},\
         "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest",\
-        "serviceContext":{"service":"","version":""},\
+        "serviceContext":{"service":"","version":"%s"},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "reportLocation":{"filePath":"Foo.java","functionName":"Bar","lineNumber":1}}""",
             message.getInstant().getEpochSecond(),
             message.getInstant().getNanoOfSecond(),
             message.getThreadId(),
             message.getThreadName(),
-            message.getThreadPriority());
+            message.getThreadPriority(),
+            EXPECTED_SERVICE_VERSION);
   }
 
   private void assertMessageMatchesWithException(final RuntimeException exception) {
@@ -216,7 +225,7 @@ final class StackdriverLayoutTest {
         "function":"Foo.Bar"},\
         "threadContext":{"id":%d,"name":"%s","priority":%d},\
         "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest",\
-        "serviceContext":{"service":"","version":""},\
+        "serviceContext":{"service":"","version":"%s"},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "exception":"""
                         .formatted(
@@ -224,7 +233,8 @@ final class StackdriverLayoutTest {
                             message.getInstant().getNanoOfSecond(),
                             message.getThreadId(),
                             message.getThreadName(),
-                            message.getThreadPriority()))
+                            message.getThreadPriority(),
+                            EXPECTED_SERVICE_VERSION))
                 + ".+\"}")
         .contains(exception.getMessage());
   }

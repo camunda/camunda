@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize.service.importing;
 
+import static io.camunda.optimize.MetricEnum.IMPORTED_UNTIL_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_CYCLE_DURATION_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_MEDIATOR_ERROR_METRIC;
 import static io.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -16,6 +19,8 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -35,12 +40,27 @@ public abstract class PositionBasedImportMediator<
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
-  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
 
   @Override
   public CompletableFuture<Void> runImport() {
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
-    final boolean pageIsPresent = importNextPageWithRetries(importCompleted);
+    final Timer.Sample cycleSample = Timer.start(Metrics.globalRegistry);
+    importCompleted.whenComplete(
+        (result, throwable) ->
+            cycleSample.stop(
+                OptimizeMetrics.getTimer(
+                    IMPORT_CYCLE_DURATION_METRIC, getRecordType(), getPartitionId())));
+    final Counter recordReaderErrors =
+        OptimizeMetrics.getCounter(IMPORT_MEDIATOR_ERROR_METRIC, getRecordType(), getPartitionId());
+    boolean pageIsPresent;
+    try {
+      pageIsPresent = importNextPage(() -> importCompleted.complete(null));
+    } catch (final Exception e) {
+      recordReaderErrors.increment();
+      logger.error("Was not able to import next page, skipping this round.", e);
+      importCompleted.complete(null);
+      pageIsPresent = false;
+    }
     if (pageIsPresent) {
       idleBackoffCalculator.resetBackoff();
     } else {
@@ -82,33 +102,6 @@ public abstract class PositionBasedImportMediator<
 
   protected abstract boolean importNextPage(Runnable importCompleteCallback);
 
-  private boolean importNextPageWithRetries(final CompletableFuture<Void> importCompleteCallback) {
-    Boolean result = null;
-    while (result == null) {
-      try {
-        result = importNextPage(() -> importCompleteCallback.complete(null));
-      } catch (final Exception e) {
-        if (errorBackoffCalculator.isMaximumBackoffReached()) {
-          // if max back-off is reached abort retrying and return true to indicate there is new data
-          logger.error(
-              "Was not able to import next page and reached max backoff, aborting this run.", e);
-          importCompleteCallback.complete(null);
-          result = true;
-        } else {
-          final long timeToSleep = errorBackoffCalculator.calculateSleepTime();
-          logger.error(
-              "Was not able to import next page, retrying after sleeping for {}ms.",
-              timeToSleep,
-              e);
-          sleep(timeToSleep);
-        }
-      }
-    }
-    errorBackoffCalculator.resetBackoff();
-
-    return result;
-  }
-
   protected boolean importNextPagePositionBased(
       final List<DTO> entitiesNextPage, final Runnable importCompleteCallback) {
     importIndexHandler.updateLastImportExecutionTimestamp(LocalDateUtil.getCurrentDateTime());
@@ -140,11 +133,13 @@ public abstract class PositionBasedImportMediator<
                     Instant.ofEpochMilli(lastImportedEntity.getTimestamp()),
                     ZoneId.systemDefault()));
             OptimizeMetrics.recordOverallEntitiesImportTime(entitiesNextPage);
+            reportImportedUntil(Instant.ofEpochMilli(lastImportedEntity.getTimestamp()));
             importCompleteCallback.run();
           });
       importIndexHandler.updatePendingLastEntityPositionAndSequence(
           currentPageLastEntityPosition, currentPageLastEntitySequence);
     } else {
+      reportImportedUntil(LocalDateUtil.getCurrentDateTime().toInstant());
       importCompleteCallback.run();
     }
 
@@ -160,6 +155,11 @@ public abstract class PositionBasedImportMediator<
 
   protected abstract Integer getPartitionId();
 
+  private void reportImportedUntil(final Instant importedUntil) {
+    OptimizeMetrics.setGauge(
+        IMPORTED_UNTIL_METRIC, getRecordType(), getPartitionId(), importedUntil.getEpochSecond());
+  }
+
   private void calculateNewDateUntilIsBlocked() {
     if (idleBackoffCalculator.isMaximumBackoffReached()) {
       logger.debug(
@@ -168,14 +168,5 @@ public abstract class PositionBasedImportMediator<
     }
     final long sleepTime = idleBackoffCalculator.calculateSleepTime();
     logger.debug("Was not able to produce a new job, sleeping for [{}] ms", sleepTime);
-  }
-
-  private void sleep(final long timeToSleep) {
-    try {
-      Thread.sleep(timeToSleep);
-    } catch (final InterruptedException e) {
-      logger.error("Was interrupted from sleep.", e);
-      Thread.currentThread().interrupt();
-    }
   }
 }

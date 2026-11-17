@@ -8,11 +8,17 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
@@ -107,16 +113,18 @@ public class UserTaskCompletionVariableHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long elementInstanceKey = 123L;
     final Record<UserTaskRecordValue> variableRecord =
         generateRecordWithVariables(elementInstanceKey, Map.of("var1", "val1", "var2", 2));
-    // when
-    final var idList = underTest.generateIds(variableRecord);
 
-    // then
-    assertThat(idList).containsExactlyInAnyOrder(String.valueOf(elementInstanceKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, variableRecord))
+        .containsExactly(new IdAndIndex(String.valueOf(elementInstanceKey), index));
   }
 
   @Test
@@ -134,10 +142,11 @@ public class UserTaskCompletionVariableHandlerTest {
     // given
     final SnapshotTaskVariableEntity inputEntity =
         new SnapshotTaskVariableEntity().setId("111").setValue("value").setIsPreview(false);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(new SnapshotTaskVariableBatch("123", List.of(inputEntity)), mockRequest);
+    underTest.flush(index, new SnapshotTaskVariableBatch("123", List.of(inputEntity)), mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
@@ -145,8 +154,7 @@ public class UserTaskCompletionVariableHandlerTest {
     updateFieldsMap.put(SnapshotTaskVariableTemplate.FULL_VALUE, inputEntity.getFullValue());
     updateFieldsMap.put(SnapshotTaskVariableTemplate.IS_PREVIEW, inputEntity.getIsPreview());
 
-    verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, updateFieldsMap);
+    verify(mockRequest, times(1)).upsert(index, inputEntity.getId(), inputEntity, updateFieldsMap);
   }
 
   @Test

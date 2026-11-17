@@ -72,6 +72,11 @@ public class ProcessInstanceSortImpl extends SearchRequestSortBase<ProcessInstan
   }
 
   @Override
+  public ProcessInstanceSort suspendedDate() {
+    return field("suspendedDate");
+  }
+
+  @Override
   public ProcessInstanceSort state() {
     return field("state");
   }

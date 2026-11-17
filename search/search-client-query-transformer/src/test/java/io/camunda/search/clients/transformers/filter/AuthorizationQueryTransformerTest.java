@@ -17,13 +17,13 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.AuthorizationFilter.Builder;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -87,7 +87,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -109,10 +109,54 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             });
   }
 
+  /**
+   * camunda/camunda#39235: a user granted the AUTHORIZATION resource with an ID that is not an
+   * authorization key, such as a resource type name, got a 500 (NumberFormatException). Such an ID
+   * grants nothing, so the search matches nothing.
+   */
+  @Test
+  public void shouldMatchNothingWhenNoResourceIdIsAnAuthorizationKey() {
+    // given
+    final var authorization =
+        RequiredAuthorization.of(
+            a -> a.authorization().read().resourceIds(List.of("GROUP", "COMPONENT")));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.authorization(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery.queryOption()).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldKeepTheAuthorizationKeysAmongOtherResourceIds() {
+    // given
+    final var authorization =
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("GROUP", "42")));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.authorization(b -> b), resourceAccessChecks);
+
+    // then - a single key gives a single term query
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo(AuthorizationIndex.ID);
+              assertThat(t.value().longValue()).isEqualTo(42L);
+            });
+  }
+
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.authorization().read());
+    final var authorization = RequiredAuthorization.of(a -> a.authorization().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -160,7 +204,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);

@@ -18,16 +18,15 @@ import {
   Stack,
 } from "@carbon/react";
 import { ArrowRight, InformationFilled } from "@carbon/react/icons";
-import { spacing06 } from "@carbon/elements";
 import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal, { FormModal, UseModalProps } from "src/components/modal";
-import { docsUrl, isOIDC } from "src/configuration";
-import { useApiCall } from "src/utility/api";
-import { createTenant } from "src/utility/api/tenants";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
 import { InfoHint, RightAlignedButtonSet } from "src/pages/tenants/styled.ts";
+import { useDocsUrl } from "../../../components/documentation/DocsUrlContext";
 
 type FormData = {
   name: string;
@@ -54,20 +53,32 @@ const OIDC_ASSIGN_ENTITY_ITEMS = [
   "assignClients",
 ] as const;
 
-const ASSIGN_ENTITY_ITEMS = isOIDC
-  ? ([...BASE_ASSIGN_ENTITY_ITEMS, ...OIDC_ASSIGN_ENTITY_ITEMS] as const)
-  : BASE_ASSIGN_ENTITY_ITEMS;
+type AddTenantModalProps = UseModalProps & {
+  isOIDC: boolean;
+};
 
-const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
+const AddTenantModal: FC<AddTenantModalProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  isOIDC,
+}) => {
+  const ASSIGN_ENTITY_ITEMS = isOIDC
+    ? ([...BASE_ASSIGN_ENTITY_ITEMS, ...OIDC_ASSIGN_ENTITY_ITEMS] as const)
+    : BASE_ASSIGN_ENTITY_ITEMS;
   const { t, Translate } = useTranslate("tenants");
   const navigate = useNavigate();
+  const docsUrl = useDocsUrl();
   const [createdTenant, setCreatedTenant] = useState<{
     name: string;
     tenantId: string;
   } | null>(null);
-  const [callAddTenant, { loading, error }] = useApiCall(createTenant, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(tenantMutations.create(qc));
 
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {
@@ -78,16 +89,19 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callAddTenant({
-      name: data.name,
-      tenantId: data.tenantId,
-      description: data.description,
-    });
-
-    if (success) {
-      setCreatedTenant({ name: data.name, tenantId: data.tenantId });
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.name,
+        tenantId: data.tenantId,
+        description: data.description,
+      },
+      {
+        onSuccess: () => {
+          setCreatedTenant({ name: data.name, tenantId: data.tenantId });
+        },
+      },
+    );
   };
 
   if (createdTenant) {
@@ -172,7 +186,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onClose={onClose}
       onSubmit={handleSubmit(onSubmit)}
     >
-      <Stack orientation="vertical" gap={spacing06}>
+      <Stack orientation="vertical" gap="6">
         <Controller
           name="tenantId"
           control={control}

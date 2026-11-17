@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
@@ -82,9 +84,60 @@ public final class CancelProcessInstanceBatchExecutorTest extends AbstractBatchO
   }
 
   @Test
+  public void shouldCancelSuspendedProcessInstance() {
+    // given
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.CANCEL_PROCESS_INSTANCE);
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask(
+                    "failingTask", t -> t.zeebeJobType(JOB_TYPE).zeebeInputExpression("foo", "foo"))
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withVariables(Maps.of(entry("foo", "bar")))
+            .create();
+
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    final var batchOperationKey =
+        createNewCancelProcessInstanceBatchOperation(Set.of(processInstanceKey), claims);
+
+    // then we have completed event
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.COMPLETED);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(ProcessInstanceIntent.CANCEL, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(processInstanceKey)
+                .limit(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED
+                            && r.getValue().getBpmnElementType() == BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(ProcessInstanceIntent.CANCEL, ProcessInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  @Test
   public void shouldRejectNonExistingProcessInstance() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, "user", USER_GROUPS_CLAIMS, List.of("group"));
 
     // some random keys
     final var processInstanceKey = 42L;

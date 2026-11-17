@@ -22,10 +22,17 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeValidationTest extends AbstractZeebeValidationTest {
+
+  private static final String DUPLICATE_MESSAGE_ERROR =
+      "Multiple message event definitions with the same name 'message' are not allowed.";
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] parameters() {
@@ -70,6 +77,43 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
                 "Multiple message event definitions with the same name 'message' are not allowed."))
       },
       {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task1", b -> b.zeebeJobType("type"))
+            .boundaryEvent("msg1")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"))
+            .endEvent()
+            .moveToActivity("task1")
+            .serviceTask("task2", b -> b.zeebeJobType("type"))
+            .boundaryEvent("msg2")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"))
+            .endEvent()
+            .moveToActivity("task2")
+            .boundaryEvent("msg3")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("orderId"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                "task2",
+                "Multiple message event definitions with the same name 'message' are not allowed."))
+      },
+      {
+        duplicatedBoundaryEventsInProcessAndSubprocess(),
+        Arrays.asList(
+            expect("task", DUPLICATE_MESSAGE_ERROR), expect("innerTask", DUPLICATE_MESSAGE_ERROR))
+      },
+      {
+        duplicatedBoundaryEventsNextToPlainTask(),
+        singletonList(expect("task", DUPLICATE_MESSAGE_ERROR))
+      },
+      {
+        duplicatedBoundaryEventsWithOrphanBoundaryEvent(),
+        Arrays.asList(
+            expect("orphan", "Must be attached to an activity"),
+            expect("task", DUPLICATE_MESSAGE_ERROR))
+      },
+      {
         eventSubprocWithNoneStart(),
         singletonList(
             expect(
@@ -78,6 +122,53 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
       },
       {eventSubprocWithSignalStart(), valid()}
     };
+  }
+
+  private static BpmnModelInstance duplicatedBoundaryEventsInProcessAndSubprocess() {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent()
+        .subProcess("sub")
+        .embeddedSubProcess()
+        .startEvent()
+        .serviceTask("innerTask", b -> addDuplicateMessageBoundaryEvents(b.zeebeJobType("type")))
+        .endEvent()
+        .subProcessDone()
+        .serviceTask("task", b -> addDuplicateMessageBoundaryEvents(b.zeebeJobType("type")))
+        .endEvent()
+        .done();
+  }
+
+  private static BpmnModelInstance duplicatedBoundaryEventsNextToPlainTask() {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent()
+        .serviceTask("plain", b -> b.zeebeJobType("type"))
+        .serviceTask("task", b -> addDuplicateMessageBoundaryEvents(b.zeebeJobType("type")))
+        .endEvent()
+        .done();
+  }
+
+  private static BpmnModelInstance duplicatedBoundaryEventsWithOrphanBoundaryEvent() {
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", b -> addDuplicateMessageBoundaryEvents(b.zeebeJobType("type")))
+            .endEvent()
+            .done();
+    final ServiceTask task = model.getModelElementById("task");
+    task.builder().boundaryEvent("orphan").timerWithDuration("PT1S");
+
+    final BoundaryEvent orphan = model.getModelElementById("orphan");
+    orphan.setAttributeValue("attachedToRef", "no_such_activity", false);
+
+    return model;
+  }
+
+  private static void addDuplicateMessageBoundaryEvents(final ServiceTaskBuilder task) {
+    final String id = task.getElement().getId();
+    task.boundaryEvent(id + "Msg1")
+        .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"));
+    task.boundaryEvent(id + "Msg2")
+        .message(m -> m.name("message").zeebeCorrelationKeyExpression("orderId"));
   }
 
   private static BpmnModelInstance eventSubprocWithNoneStart() {

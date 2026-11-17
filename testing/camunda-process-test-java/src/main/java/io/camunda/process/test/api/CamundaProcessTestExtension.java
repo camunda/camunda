@@ -24,10 +24,15 @@ import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
+import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
+import io.camunda.process.test.impl.client.CamundaClockClient;
+import io.camunda.process.test.impl.client.CamundaClockClientImpl;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
-import io.camunda.process.test.impl.coverage.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -53,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -113,8 +119,7 @@ public class CamundaProcessTestExtension
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
-  private final ProcessCoverageBuilder processCoverageBuilder;
-  private ProcessCoverage processCoverage;
+  private final CoverageCollector coverageCollector;
 
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
@@ -125,6 +130,11 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+  private CamundaClockClient camundaClockClient;
+  private CamundaDataSource dataSource;
+  private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
+  private DataDeletionMode dataDeletionMode = CamundaProcessTestRuntimeDefaults.DATA_DELETION_MODE;
+  private Instant testCaseStartTime;
 
   private CamundaProcessTestContext camundaProcessTestContext;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -132,10 +142,16 @@ public class CamundaProcessTestExtension
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
-      final ProcessCoverageBuilder processCoverageBuilder,
+      final CoverageCollectorBuilder coverageCollectorBuilder,
       final Consumer<String> testResultPrintStream) {
     runtimeBuilder = containerRuntimeBuilder;
-    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
+    coverageCollector =
+        coverageCollectorBuilder
+            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
+            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
+            .printStream(testResultPrintStream)
+            .build();
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -155,7 +171,8 @@ public class CamundaProcessTestExtension
    * </pre>
    */
   public CamundaProcessTestExtension() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
+    this(
+        CamundaProcessTestContainerRuntime.newBuilder(), CoverageCollector.newBuilder(), LOG::info);
   }
 
   @Override
@@ -170,25 +187,18 @@ public class CamundaProcessTestExtension
     runtime = runtimeBuilder.build();
     runtime.start();
 
-    camundaManagementClient = createManagementClient(runtimeBuilder);
+    camundaManagementClient = createManagementClient();
+    camundaClockClient = new CamundaClockClientImpl(runtime.getCamundaClientBuilderFactory());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
-            camundaManagementClient,
+            camundaClockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            conditionalBehaviorEngine);
-
-    // create process coverage
-    processCoverage =
-        processCoverageBuilder
-            .testClass(context.getRequiredTestClass())
-            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
-            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
-            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
-            .build();
+            conditionalBehaviorEngine,
+            () -> dataSource);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -202,17 +212,8 @@ public class CamundaProcessTestExtension
     initializeSemanticSimilarityConfig();
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    if (runtimeBuilder.isMultiTenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultiTenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
+  private CamundaManagementClient createManagementClient() {
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
@@ -240,9 +241,11 @@ public class CamundaProcessTestExtension
         .map(
             adapter ->
                 JudgeConfig.of(
-                    adapter,
-                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
-                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
+                        adapter,
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt())
+                    .withAttachDocuments(
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.isAttachDocuments()))
         .ifPresent(CamundaAssert::setJudgeConfig);
   }
 
@@ -306,6 +309,11 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
+    // forget the previous test case, so that afterEach doesn't use it if this method fails
+    testCaseStartTime = null;
+    dataSource = null;
+    processTestResultCollector = null;
+
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -320,9 +328,17 @@ public class CamundaProcessTestExtension
       throw e;
     }
 
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout.
+    // Reading the time below needs a ready cluster.
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
+
     // initialize assertions
-    final CamundaDataSource dataSource =
-        new CamundaDataSource(camundaProcessTestContext.createClient());
+    testCaseStartTime = readCurrentRuntimeTime();
+    dataSource =
+        new CamundaDataSource(
+            camundaProcessTestContext.createClient(),
+            testCaseStartTime,
+            CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -382,35 +398,55 @@ public class CamundaProcessTestExtension
     // stop conditional behavior engine before cleanup
     conditionalBehaviorEngine.stop();
 
-    try {
-      processCoverage.collectTestRunCoverage(getCoverageTestName(context));
-    } catch (final Throwable t) {
-      LOG.warn("Failed to collect test process coverage, skipping.", t);
-    }
+    // no data source means that beforeEach failed before the test case could start
+    if (dataSource != null) {
+      try {
+        final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
+        coverageCollector.collectTestRunCoverage(
+            context.getRequiredTestClass(),
+            getCoverageTestName(context),
+            getDisplayName(context),
+            coverageData);
+      } catch (final Throwable t) {
+        LOG.warn("Failed to collect test process coverage, skipping.", t);
+      }
 
-    if (isTestFailed(context)) {
-      printTestResults();
+      if (isTestFailed(context)) {
+        printTestResults();
+      }
     }
     CamundaAssert.reset();
     closeCreatedClients();
     // final steps: reset the time and delete data
-    // It's important that the runtime clock is reset before the purge is started, as doing it
+    // It's important that the runtime clock is reset before the cleanup is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
-    resetRuntimeClock();
+    if (clockResetEnabled) {
+      resetRuntimeClock();
+    } else {
+      LOG.info("Runtime clock reset is disabled. Skipping.");
+    }
     deleteRuntimeData();
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
-    final StringBuilder prefix = new StringBuilder();
-
-    ExtensionContext parentContext = context.getParent().orElse(null);
-
-    while (parentContext != null && !hasProcessTestExtension(parentContext)) {
-      prefix.insert(0, parentContext.getDisplayName() + "#");
-      parentContext = parentContext.getParent().orElse(null);
+    final String testMethodName = context.getRequiredTestMethod().getName();
+    final Class<?> testClass = context.getRequiredTestClass();
+    if (testClass.getEnclosingClass() != null) {
+      return testClass.getSimpleName() + "#" + testMethodName;
     }
+    return testMethodName;
+  }
 
-    return prefix + context.getDisplayName();
+  /**
+   * Returns the {@code @DisplayName} annotation value for the test method, or {@code null} if no
+   * explicit display name is set.
+   */
+  private static String getDisplayName(final ExtensionContext context) {
+    return context
+        .getTestMethod()
+        .flatMap(m -> AnnotationUtils.findAnnotation(m, DisplayName.class))
+        .map(DisplayName::value)
+        .orElse(null);
   }
 
   private void printTestResults() {
@@ -425,14 +461,15 @@ public class CamundaProcessTestExtension
   }
 
   private void deleteRuntimeData() {
-    try {
-      LOG.debug("Deleting the runtime data");
-      final Instant startTime = Instant.now();
+    final CleanupStrategyFactory cleanupStrategyFactory =
+        runtimeBuilder.getCleanupStrategyFactory();
+    final CleanupStrategy cleanupStrategy = cleanupStrategyFactory.create(dataDeletionMode);
 
-      camundaManagementClient.purgeCluster();
-      final Instant endTime = Instant.now();
-      final Duration duration = Duration.between(startTime, endTime);
-      LOG.debug("Runtime data deleted in {}", duration);
+    try {
+      cleanupStrategy.cleanup(
+          camundaManagementClient,
+          () -> runtime.getCamundaClientBuilderFactory().get().build(),
+          testCaseStartTime);
 
     } catch (final Throwable t) {
       LOG.warn(
@@ -445,13 +482,25 @@ public class CamundaProcessTestExtension
   private void resetRuntimeClock() {
     try {
       LOG.debug("Resetting the time");
-      camundaManagementClient.resetTime();
+      camundaClockClient.resetTime();
       LOG.debug("Time reset");
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  private Instant readCurrentRuntimeTime() {
+    try {
+      return camundaClockClient.getCurrentTime();
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to read the current runtime time. Test case isolation by start time will be "
+              + "disabled for this test case.",
+          e);
+      return null;
     }
   }
 
@@ -463,13 +512,15 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.reportCoverage();
+      coverageCollector.generateReport(context.getRequiredTestClass());
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }
 
     CamundaAssert.setJudgeConfig(null);
     CamundaAssert.setSemanticSimilarityConfig(null);
+
+    closeQuietly(camundaClockClient, "clock client");
 
     runtime.close();
   }
@@ -621,6 +672,25 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Add a secret to the cluster's secret store. The secret can be referenced in process resources
+   * as {@code =camunda.secrets.<NAME>}.
+   *
+   * <p>Only applies when the extension starts its own runtime. With a remote runtime, the secret is
+   * ignored because the remote cluster owns its secret store. With the shared runtime, the secret
+   * only takes effect if this extension is the first to start the shared runtime; later test
+   * classes reuse the already running cluster and its secrets.
+   *
+   * @param name the name of the secret
+   * @param value the value of the secret
+   * @return the extension builder
+   * @since 8.10.6
+   */
+  public CamundaProcessTestExtension withClusterSecret(final String name, final String value) {
+    runtimeBuilder.withClusterSecret(name, value);
+    return this;
+  }
+
+  /**
    * Configure the mode of the runtime (managed/remote/shared).
    *
    * @param runtimeMode the runtime mode to use
@@ -709,6 +779,18 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Configures the coverage report to exclude the given decisions.
+   *
+   * @param decisionDefinitionIds the IDs of the decision definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedDecisions(
+      final String... decisionDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedDecisions(Arrays.asList(decisionDefinitionIds));
+    return this;
+  }
+
+  /**
    * Configures the output directory for the coverage reports. By default, the directory is {@code
    * target/coverage-report/}.
    *
@@ -728,6 +810,28 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
     runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Enable or disable runtime clock reset after each test. By default, clock reset is enabled.
+   *
+   * @param enabled set {@code true} to enable runtime clock reset
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withClockResetEnabled(final boolean enabled) {
+    clockResetEnabled = enabled;
+    return this;
+  }
+
+  /**
+   * Configure runtime data deletion mode after each test.
+   *
+   * @param mode the runtime data deletion mode
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withDataDeletionMode(final DataDeletionMode mode) {
+    dataDeletionMode = mode;
     return this;
   }
 
@@ -793,12 +897,19 @@ public class CamundaProcessTestExtension
 
   private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
-      try {
-        client.close();
-      } catch (final Exception e) {
-        LOG.debug("Failed to close client, continue.", e);
-      }
+      closeQuietly(client, "client");
     }
     createdClients.clear();
+  }
+
+  private static void closeQuietly(final AutoCloseable closeable, final String name) {
+    if (closeable == null) {
+      return;
+    }
+    try {
+      closeable.close();
+    } catch (final Exception e) {
+      LOG.debug("Failed to close {}, continue.", name, e);
+    }
   }
 }

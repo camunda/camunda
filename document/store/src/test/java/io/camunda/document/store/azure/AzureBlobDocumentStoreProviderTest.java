@@ -189,4 +189,67 @@ class AzureBlobDocumentStoreProviderTest {
                   eq(connectionString), eq(containerName), eq("documents/"), any()));
     }
   }
+
+  @Test
+  void shouldResolveTheEffectiveEndpointFromAConnectionString() {
+    // given
+    final String connectionString = connectionString("acct");
+
+    // when
+    final String endpoint =
+        AzureBlobDocumentStoreProvider.effectiveEndpoint(connectionString, null);
+
+    // then
+    assertThat(endpoint).startsWith("https://").contains("acct.blob.core.windows.net");
+  }
+
+  @Test
+  void shouldPreferTheConnectionStringOverAConfiguredEndpoint() {
+    // given createDocumentStore takes the connection-string branch whenever one is set and never
+    // reads the endpoint, so a configured endpoint beside it is dead configuration
+    final String connectionString = connectionString("accta");
+
+    // when
+    final String endpoint =
+        AzureBlobDocumentStoreProvider.effectiveEndpoint(
+            connectionString, "https://acctb.blob.core.windows.net");
+
+    // then
+    assertThat(endpoint).contains("accta").doesNotContain("acctb");
+  }
+
+  @Test
+  void shouldUseTheConfiguredEndpointWhenNoConnectionStringIsSet() {
+    // given / when
+    final String endpoint =
+        AzureBlobDocumentStoreProvider.effectiveEndpoint(
+            null, "https://acct.blob.core.windows.net");
+
+    // then
+    assertThat(endpoint).isEqualTo("https://acct.blob.core.windows.net");
+  }
+
+  @Test
+  void shouldResolveNoEffectiveEndpointWhenNeitherIsSet() {
+    // given createDocumentStore rejects that configuration, so there is no endpoint to name
+    // when / then
+    assertThat(AzureBlobDocumentStoreProvider.effectiveEndpoint(null, null)).isEmpty();
+  }
+
+  @Test
+  void shouldThrowWhenTheConnectionStringNamesNoAccount() {
+    // given callers comparing configuration rely on this being a RuntimeException they can catch,
+    // rather than a silently empty endpoint that would hide a shared location
+    final String connectionString = "AccountKey=a2V5;EndpointSuffix=core.windows.net";
+
+    // when / then
+    assertThatExceptionOfType(RuntimeException.class)
+        .isThrownBy(() -> AzureBlobDocumentStoreProvider.effectiveEndpoint(connectionString, null));
+  }
+
+  private static String connectionString(final String accountName) {
+    return "DefaultEndpointsProtocol=https;AccountName="
+        + accountName
+        + ";AccountKey=a2V5;EndpointSuffix=core.windows.net";
+  }
 }

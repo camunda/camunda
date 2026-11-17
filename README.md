@@ -1,8 +1,8 @@
-# Camunda 8 orchestrates complex business processes that span people, systems, and devices
+# Camunda 8: agentic orchestration platform
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda/camunda-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda/camunda-zeebe)
 
-Camunda 8 delivers scalable, on-demand process automation as a service. Camunda 8 is combined with powerful execution engines for BPMN processes and DMN decisions, and paired with tools for collaborative modeling, operations, and analytics.
+Camunda 8 is an agentic orchestration platform. Build AI agents directly in your BPMN processes, and orchestrate them together with external agents, people, and systems. Each process combines deterministic BPMN flows and DMN decisions with dynamic steps where an AI agent decides what to do next. Built for the enterprise, Camunda 8 comes with tools for collaborative modeling, operations, and analytics.
 
 This repository contains the [Orchestration cluster](https://docs.camunda.io/docs/next/components/orchestration-cluster/) components of Camunda 8 and Optimize:
 
@@ -22,6 +22,7 @@ In addition, the Camunda 8 stack also includes:
 Using Camunda 8, you can:
 
 * Define processes visually in [BPMN 2.0](https://www.omg.org/spec/BPMN/2.0.2/)
+* [Build AI agents](https://docs.camunda.io/docs/components/agentic-orchestration/ai-agents/) as part of your processes, or orchestrate agents built with any framework
 * Choose your programming language
 * Deploy with [Docker](https://www.docker.com/) and [Kubernetes](https://kubernetes.io/)
 * Build processes that react to messages from [Kafka](https://kafka.apache.org/) and other message queues

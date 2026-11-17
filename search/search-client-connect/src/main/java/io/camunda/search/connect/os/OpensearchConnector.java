@@ -16,11 +16,12 @@ import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.apache.hc.client5.http.auth.AuthScope;
+import java.util.Optional;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
@@ -30,6 +31,8 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -47,6 +50,10 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 public final class OpensearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
+
+  private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
+  private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5_000;
+  private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
@@ -181,6 +188,7 @@ public final class OpensearchConnector {
     return new HttpHost[] {getHttpHost(osConfig)};
   }
 
+  @VisibleForTesting
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
@@ -192,9 +200,8 @@ public final class OpensearchConnector {
       httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
     }
 
-    if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
-      setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
-    }
+    setupConnectionManager(httpAsyncClientBuilder, osConfig);
+    setupKeepAlive(httpAsyncClientBuilder);
 
     final var proxyConfig = osConfig.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
@@ -205,15 +212,23 @@ public final class OpensearchConnector {
     return httpAsyncClientBuilder;
   }
 
-  private RequestConfig.Builder setTimeouts(
+  @VisibleForTesting
+  protected RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final ConnectConfiguration os) {
-    if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
-      builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
-    }
-    if (os.getConnectTimeout() != null) {
-      builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
-    }
+    // ensure we have default timeouts - as otherwise timeouts are infinite
+    final var socketTimeoutMillis =
+        Optional.ofNullable(os.getSocketTimeout()).orElse(DEFAULT_SOCKET_TIMEOUT_MILLIS);
+    builder.setResponseTimeout(Timeout.ofMilliseconds(socketTimeoutMillis));
+
+    final var connectTimeoutMillis =
+        Optional.ofNullable(os.getConnectTimeout()).orElse(DEFAULT_CONNECT_TIMEOUT_MILLIS);
+    builder.setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis));
+
+    // this already gets set, but making it more explicit, so it's more visible and we can easily
+    // tune it later
+    builder.setConnectionRequestTimeout(
+        Timeout.ofMilliseconds(DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS));
+
     return builder;
   }
 
@@ -230,7 +245,7 @@ public final class OpensearchConnector {
 
     final var credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(null, -1),
+        SecurityUtil.ANY_AUTH_SCOPE,
         new UsernamePasswordCredentials(
             configuration.getUsername(), configuration.getPassword().toCharArray()));
 
@@ -271,9 +286,53 @@ public final class OpensearchConnector {
     LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
-  private void setupSSLContext(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final SecurityConfiguration configuration) {
+  /**
+   * Builds and assigns a {@link
+   * org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager} when TLS or connection
+   * pool limits need to be configured. When neither is configured the builder is left untouched so
+   * the Apache HttpClient defaults remain in effect.
+   */
+  private void setupConnectionManager(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+    final var security = osConfig.getSecurity();
+    final boolean securityEnabled = security != null && security.isEnabled();
+    final boolean poolConfigured =
+        osConfig.getMaxConnections() != null || osConfig.getMaxConnectionsPerRoute() != null;
+
+    if (!securityEnabled && !poolConfigured) {
+      return;
+    }
+
+    final var connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create();
+
+    if (securityEnabled) {
+      final var tlsStrategy = buildTlsStrategy(security);
+      if (tlsStrategy != null) {
+        connectionManagerBuilder.setTlsStrategy(tlsStrategy);
+      }
+    }
+    if (osConfig.getMaxConnections() != null) {
+      connectionManagerBuilder.setMaxConnTotal(osConfig.getMaxConnections());
+    }
+    if (osConfig.getMaxConnectionsPerRoute() != null) {
+      connectionManagerBuilder.setMaxConnPerRoute(osConfig.getMaxConnectionsPerRoute());
+    }
+
+    httpAsyncClientBuilder.setConnectionManager(connectionManagerBuilder.build());
+  }
+
+  /**
+   * Enables TCP keepalive on the NIO sockets, which the Apache HttpAsyncClient leaves off by
+   * default. Without it, a firewall or NAT device between this client and OpenSearch drops its
+   * connection tracking entry for an idle connection without sending a RST or FIN, and the next
+   * request to reuse that pooled connection blocks until the response timeout expires.
+   */
+  private void setupKeepAlive(final HttpAsyncClientBuilder httpAsyncClientBuilder) {
+    httpAsyncClientBuilder.setIOReactorConfig(
+        IOReactorConfig.custom().setSoKeepAlive(true).build());
+  }
+
+  private TlsStrategy buildTlsStrategy(final SecurityConfiguration configuration) {
     try {
       final var tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       final var sslContext = SecurityUtil.getSSLContext(configuration, "opensearch-host");
@@ -283,14 +342,10 @@ public final class OpensearchConnector {
         tlsStrategyBuilder.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
 
-      final var tlsStrategy = tlsStrategyBuilder.build();
-      final var connectionManager =
-          PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
-
-      httpAsyncClientBuilder.setConnectionManager(connectionManager);
-
+      return tlsStrategyBuilder.build();
     } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
+      return null;
     }
   }
 }

@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,7 +84,8 @@ class IncidentToolsTest extends OperationalToolsTest {
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
-          "tenantId");
+          "tenantId",
+          null);
 
   static final SearchQueryResult<IncidentEntity> SEARCH_QUERY_RESULT =
       new Builder<IncidentEntity>()
@@ -98,6 +100,12 @@ class IncidentToolsTest extends OperationalToolsTest {
 
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.incidentServices(any())).thenReturn(incidentServices);
+    when(serviceRegistry.<JobActivationResult>jobServices(any())).thenReturn(jobServices);
+  }
 
   private void assertExampleIncident(final IncidentResult incident) {
     assertThat(incident.getIncidentKey()).isEqualTo("5");
@@ -125,10 +133,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getIncident")
-                  .arguments(Map.of("incidentKey", 5L))
-                  .build());
+              CallToolRequest.builder("getIncident").arguments(Map.of("incidentKey", 5L)).build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -152,10 +157,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getIncident")
-                  .arguments(Map.of("incidentKey", 5L))
-                  .build());
+              CallToolRequest.builder("getIncident").arguments(Map.of("incidentKey", 5L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -174,8 +176,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     void shouldFailGetIncidentByKeyOnMissingKey() {
       // when
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getIncident").arguments(Map.of()).build());
+          mcpClient.callTool(CallToolRequest.builder("getIncident").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -196,8 +197,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       final var arguments = new HashMap<String, Object>();
       arguments.put("incidentKey", null);
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getIncident").arguments(arguments).build());
+          mcpClient.callTool(CallToolRequest.builder("getIncident").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -217,10 +217,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getIncident")
-                  .arguments(Map.of("incidentKey", -3L))
-                  .build());
+              CallToolRequest.builder("getIncident").arguments(Map.of("incidentKey", -3L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -251,8 +248,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(
                       Map.of(
                           "filter",
@@ -284,8 +280,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(
                       Map.of(
                           "filter",
@@ -342,7 +337,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("searchIncidents").arguments(Map.of()).build());
+              CallToolRequest.builder("searchIncidents").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -362,8 +357,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
                   .build());
 
@@ -386,8 +380,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(Map.of("filter", Map.of("creationTime", Map.of("from", "not-a-date"))))
                   .build());
 
@@ -418,8 +411,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", 5L))
                   .build());
 
@@ -448,14 +440,13 @@ class IncidentToolsTest extends OperationalToolsTest {
               CompletableFuture.completedFuture(new IncidentRecord()));
       when(incidentEntity.jobKey()).thenReturn(4L);
       when(incidentServices.getByKey(anyLong(), any())).thenReturn(incidentEntity);
-      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any()))
+      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", 5L))
                   .build());
 
@@ -471,7 +462,8 @@ class IncidentToolsTest extends OperationalToolsTest {
 
       verify(incidentServices, times(2)).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
-      verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any());
+      verify(jobServices)
+          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), isNull(), any());
     }
 
     @Test
@@ -486,7 +478,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               CompletableFuture.completedFuture(new IncidentRecord()));
       when(incidentEntity.jobKey()).thenReturn(4L);
       when(incidentServices.getByKey(anyLong(), any())).thenReturn(incidentEntity);
-      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any()))
+      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));
@@ -494,8 +486,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", 5L))
                   .build());
 
@@ -511,7 +502,8 @@ class IncidentToolsTest extends OperationalToolsTest {
 
       verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
-      verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any());
+      verify(jobServices)
+          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), isNull(), any());
 
       assertTextContentFallback(result);
     }
@@ -521,7 +513,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("resolveIncident").arguments(Map.of()).build());
+              CallToolRequest.builder("resolveIncident").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -543,7 +535,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       arguments.put("incidentKey", null);
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("resolveIncident").arguments(arguments).build());
+              CallToolRequest.builder("resolveIncident").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -563,8 +555,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", -3L))
                   .build());
 

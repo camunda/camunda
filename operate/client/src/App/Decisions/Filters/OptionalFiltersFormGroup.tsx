@@ -30,6 +30,7 @@ import {Field, useForm} from 'react-final-form';
 import {IconButton, Stack} from '@carbon/react';
 import {TextInputField} from 'modules/components/TextInputField';
 import {TextAreaField} from 'modules/components/TextAreaField';
+import {AdvancedStringFilter} from 'modules/components/AdvancedStringFilter';
 import {
   ButtonContainer,
   FieldContainer,
@@ -39,11 +40,13 @@ import {Close} from '@carbon/react/icons';
 type OptionalFilter =
   | 'decisionEvaluationInstanceKey'
   | 'processInstanceKey'
+  | 'businessId'
   | 'evaluationDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'decisionEvaluationInstanceKey',
   'processInstanceKey',
+  'businessId',
   'evaluationDateRange',
 ];
 
@@ -79,6 +82,10 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateParentInstanceIdNotTooLong,
       validateParentInstanceIdCharacters,
     ),
+  },
+  businessId: {
+    keys: ['businessId'],
+    label: 'Business ID',
   },
   evaluationDateRange: {
     keys: ['evaluationDateFrom', 'evaluationDateTo'],
@@ -166,6 +173,12 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                   label={OPTIONAL_FILTER_FIELDS[filter].label}
                   fromDateTimeKey="evaluationDateFrom"
                   toDateTimeKey="evaluationDateTo"
+                />
+              ) : filter === 'businessId' ? (
+                <AdvancedStringFilter
+                  name={filter}
+                  label={OPTIONAL_FILTER_FIELDS[filter].label}
+                  selectableOperators={['$eq', '$like', '$in']}
                 />
               ) : (
                 <Field

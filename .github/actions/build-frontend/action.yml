@@ -1,7 +1,7 @@
 ---
 name: Build Frontend
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Builds the frontend project in a certain Yarn workspace
 
@@ -9,7 +9,7 @@ inputs:
   node-version:
     description: The Node.js version to use
     required: false
-    default: "24"
+    default: "26"
   directory:
     description: Directory of the Yarn workspace to build
     required: true
@@ -22,7 +22,7 @@ runs:
   using: composite
   steps:
     - name: Setup Node
-      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: ${{ inputs.node-version }}
 
@@ -38,15 +38,15 @@ runs:
 
     - name: Install node dependencies (yarn)
       if: ${{ inputs.package-manager == 'yarn' }}
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: yarn
+      uses: ./.github/actions/yarn-install-with-retry
+      with:
+        directory: ${{ inputs.directory }}
 
     - name: Install node dependencies (npm)
       if: ${{ inputs.package-manager == 'npm' }}
-      working-directory: ${{ inputs.directory }}
-      shell: bash
-      run: npm ci
+      uses: ./.github/actions/npm-ci-with-retry
+      with:
+        directory: ${{ inputs.directory }}
 
     - name: Build frontend (yarn)
       if: ${{ inputs.package-manager == 'yarn' }}

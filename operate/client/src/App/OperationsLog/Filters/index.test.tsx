@@ -38,6 +38,7 @@ describe('OperationsLog Filters', () => {
     mockSearchProcessDefinitions().withSuccess({
       items: [
         {
+          state: 'ACTIVE',
           processDefinitionKey: '123',
           processDefinitionId: 'process1',
           name: 'Process 1',
@@ -48,6 +49,7 @@ describe('OperationsLog Filters', () => {
           versionTag: null,
         },
         {
+          state: 'ACTIVE',
           processDefinitionKey: '456',
           processDefinitionId: 'process2',
           name: 'Process 2',
@@ -177,6 +179,7 @@ describe('OperationsLog Filters', () => {
     mockSearchProcessDefinitions().withSuccess({
       items: [
         {
+          state: 'ACTIVE',
           processDefinitionKey: '123',
           processDefinitionId: 'process1',
           name: 'Process 1',
@@ -187,6 +190,7 @@ describe('OperationsLog Filters', () => {
           versionTag: null,
         },
         {
+          state: 'ACTIVE',
           processDefinitionKey: '456',
           processDefinitionId: 'process2',
           name: 'Process 2',

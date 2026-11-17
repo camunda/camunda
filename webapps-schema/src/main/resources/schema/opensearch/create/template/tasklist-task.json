@@ -129,6 +129,12 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "businessId": {
+        "type": "keyword"
+      },
+      "isSuspended": {
+        "type": "boolean"
       }
     }
   }

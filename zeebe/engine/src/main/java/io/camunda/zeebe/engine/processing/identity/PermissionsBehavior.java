@@ -7,14 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -22,7 +25,10 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
+@NullMarked
 public class PermissionsBehavior {
 
   public static final String PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE =
@@ -34,13 +40,15 @@ public class PermissionsBehavior {
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
 
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
+
   private final AuthorizationState authorizationState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public PermissionsBehavior(
-      final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
+      final ProcessingState processingState, final CslAuthorizationCheck cslCheck) {
     authorizationState = processingState.getAuthorizationState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
@@ -50,15 +58,63 @@ public class PermissionsBehavior {
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.AUTHORIZATION)
-            .permissionType(permissionType)
-            .build();
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(authorizationRequest)
-        .map(unused -> command.getValue());
+    return isAuthorized(command, AuthorizationResourceType.AUTHORIZATION, permissionType);
+  }
+
+  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
+      final TypedRecord<R> command,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return isAuthorized(command, resourceType, permissionType, AuthorizationScope.WILDCARD_CHAR);
+  }
+
+  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
+      final TypedRecord<R> command,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String resourceId) {
+    LOG.trace(
+        "Checking {} permission on {} resource for command {}",
+        permissionType,
+        resourceType,
+        command.getIntent());
+    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType),
+        AuthorizationRejectionMapper::toBareRejection);
+  }
+
+  /**
+   * Like {@link #isAuthorized(TypedRecord, AuthorizationResourceType, PermissionType, String)} but
+   * includes the {@code required resource identifiers are one of '[*, ...]'} suffix on the denial
+   * message, matching the pre-migration engine-internal path used by process/resource domain
+   * processors (as opposed to the bare identity-processor message).
+   */
+  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorizedWithResourceIdentifiers(
+      final TypedRecord<R> command,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String resourceId) {
+    LOG.trace(
+        "Checking {} permission on {} resource for command {}",
+        permissionType,
+        resourceType,
+        command.getIntent());
+    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
   }
 
   public Either<Rejection, PersistedAuthorization> authorizationExists(
@@ -78,7 +134,7 @@ public class PermissionsBehavior {
     for (final PermissionType permission : record.getPermissionTypes()) {
       final var addedAuthorizationScope = createAuthorizationScope(record);
       final var currentAuthorizationScopes =
-          authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
+          authorizationState.getAuthorizationScopes(
               record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
       if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {

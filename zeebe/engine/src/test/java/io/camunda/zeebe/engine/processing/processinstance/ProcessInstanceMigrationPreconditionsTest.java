@@ -11,44 +11,45 @@ import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstance
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.isAdHocSubProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import java.time.InstantSource;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ProcessInstanceMigrationPreconditions} focusing on Ad-Hoc Sub-Process
- * validation
+ * validation.
+ *
+ * <p>These are pure unit tests: the BPMN model is compiled directly with a {@link BpmnTransformer},
+ * so they never start the engine or read its live ZeebeDb state.
  */
-public class ProcessInstanceMigrationPreconditionsTest {
+final class ProcessInstanceMigrationPreconditionsTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String PROCESS_ID = "process";
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
-  private ProcessState processState;
-
-  @Before
-  public void setUp() {
-    processState = ENGINE.getProcessingState().getProcessState();
-  }
+  private final ExpressionLanguage expressionLanguage =
+      ExpressionLanguageFactory.createExpressionLanguage(
+          new ZeebeFeelEngineClock(InstantSource.system()));
+  private final BpmnTransformer transformer = new BpmnTransformer(expressionLanguage);
 
   // ==================== isAdHocSubProcess Tests ====================
 
   @Test
-  public void shouldReturnTrueForAdHocSubProcessElementType() {
+  void shouldReturnTrueForAdHocSubProcessElementType() {
     // when/then
     assertThat(isAdHocSubProcess(BpmnElementType.AD_HOC_SUB_PROCESS)).isTrue();
   }
 
   @Test
-  public void shouldReturnFalseForNonAdHocSubProcessElementType() {
+  void shouldReturnFalseForNonAdHocSubProcessElementType() {
     // when/then
     assertThat(isAdHocSubProcess(BpmnElementType.SERVICE_TASK)).isFalse();
     assertThat(isAdHocSubProcess(BpmnElementType.SUB_PROCESS)).isFalse();
@@ -60,112 +61,80 @@ public class ProcessInstanceMigrationPreconditionsTest {
   // ==================== isAdHocRelatedProcess Tests ====================
 
   @Test
-  public void shouldReturnTrueForAdHocSubProcess() {
+  void shouldReturnTrueForAdHocSubProcess() {
     // given
-    final String processId = helper.getBpmnProcessId();
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .adHocSubProcess(
-                        "adHocSubProcess",
-                        ahsp -> ahsp.serviceTask("task", t -> t.zeebeJobType("task")))
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final long processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
     final DeployedProcess deployedProcess =
-        processState.getProcessByKeyAndTenant(processDefinitionKey, "<default>");
+        deployedProcessOf(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "adHocSubProcess",
+                    ahsp -> ahsp.serviceTask("task", t -> t.zeebeJobType("task")))
+                .endEvent()
+                .done());
 
     // when/then
     assertThat(isAdHocRelatedProcess(deployedProcess, "adHocSubProcess")).isTrue();
   }
 
   @Test
-  public void shouldReturnFalseForNonAdHocSubProcess() {
+  void shouldReturnFalseForNonAdHocSubProcess() {
     // given
-    final String processId = helper.getBpmnProcessId();
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask("task", t -> t.zeebeJobType("task"))
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final long processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
     final DeployedProcess deployedProcess =
-        processState.getProcessByKeyAndTenant(processDefinitionKey, "<default>");
+        deployedProcessOf(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done());
 
     // when/then
     assertThat(isAdHocRelatedProcess(deployedProcess, "task")).isFalse();
   }
 
   @Test
-  public void shouldReturnTrueForMultiInstanceAdHocSubProcess() {
+  void shouldReturnTrueForMultiInstanceAdHocSubProcess() {
     // given
-    final String processId = helper.getBpmnProcessId();
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .adHocSubProcess(
-                        "adHocSubProcess",
-                        ahsp -> ahsp.serviceTask("task", t -> t.zeebeJobType("task")))
-                    .multiInstance(
-                        mi ->
-                            mi.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("item"))
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final long processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
     final DeployedProcess deployedProcess =
-        processState.getProcessByKeyAndTenant(processDefinitionKey, "<default>");
+        deployedProcessOf(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "adHocSubProcess",
+                    ahsp -> ahsp.serviceTask("task", t -> t.zeebeJobType("task")))
+                .multiInstance(
+                    mi -> mi.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("item"))
+                .endEvent()
+                .done());
 
     // when/then - should return true for the multi-instance body wrapping ad-hoc subprocess
     assertThat(isAdHocRelatedProcess(deployedProcess, "adHocSubProcess")).isTrue();
   }
 
   @Test
-  public void shouldReturnFalseForMultiInstanceNonAdHocSubProcess() {
+  void shouldReturnFalseForMultiInstanceNonAdHocSubProcess() {
     // given
-    final String processId = helper.getBpmnProcessId();
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask("task", t -> t.zeebeJobType("task"))
-                    .multiInstance(
-                        mi ->
-                            mi.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("item"))
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final long processDefinitionKey =
-        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
-
     final DeployedProcess deployedProcess =
-        processState.getProcessByKeyAndTenant(processDefinitionKey, "<default>");
+        deployedProcessOf(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .multiInstance(
+                    mi -> mi.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("item"))
+                .endEvent()
+                .done());
 
     // when/then - should return false for the multi-instance body wrapping non ad-hoc subprocess
     assertThat(isAdHocRelatedProcess(deployedProcess, "task")).isFalse();
+  }
+
+  /**
+   * Compiles the BPMN model into an {@link ExecutableProcess} and wraps it in a {@link
+   * DeployedProcess}. {@code isAdHocRelatedProcess} only reads the executable process, so the
+   * accompanying {@link PersistedProcess} metadata is left empty.
+   */
+  private DeployedProcess deployedProcessOf(final BpmnModelInstance model) {
+    final ExecutableProcess process = transformer.transformDefinitions(model).getFirst();
+    return new DeployedProcess(process, new PersistedProcess());
   }
 }

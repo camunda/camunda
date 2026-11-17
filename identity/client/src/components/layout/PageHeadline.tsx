@@ -7,11 +7,12 @@
  */
 
 import styled from "styled-components";
-import { spacing04 } from "@carbon/elements";
 
 const PageHeadline = styled.h1`
-  display: flex;
-  gap: ${spacing04};
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export default PageHeadline;

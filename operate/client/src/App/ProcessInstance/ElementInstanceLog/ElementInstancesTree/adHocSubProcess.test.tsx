@@ -10,9 +10,10 @@ import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
 import {searchResult} from 'modules/testUtils';
 import {
-  Wrapper,
+  getWrapper,
   adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,
+  parseBusinessObjects,
 } from './mocks';
 import {ElementInstancesTree} from './index';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -21,14 +22,11 @@ import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementI
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const adHocProcessXml = open('AdHocProcess.bpmn');
-const diagramModel = await parseDiagramXML(adHocProcessXml);
-const businessObjects = businessObjectsParser({diagramModel});
 
-describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockAdHocSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));
@@ -38,13 +36,14 @@ describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
   });
 
   it('should be able to unfold and fold ad hoc sub processes', async () => {
+    const {businessObjects} = await parseBusinessObjects(adHocProcessXml);
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessesInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

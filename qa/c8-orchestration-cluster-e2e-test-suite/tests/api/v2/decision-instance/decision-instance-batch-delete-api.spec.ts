@@ -18,7 +18,10 @@ import {
   encode,
   assertForbiddenRequest,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   createMammalProcessInstanceAndDeployMammalDecision,
   createUser,
@@ -81,7 +84,7 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Delete Decision Instance', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl(`/decision-instances/deletion`),
+          buildUrl('/decision-instances/deletion'),
           {
             headers: jsonHeaders(),
             data: {
@@ -115,7 +118,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify batch operation has two operations', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/batch-operations/${createdBatchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey: createdBatchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -135,13 +140,19 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
         expect(json.batchOperationType).toBe('DELETE_DECISION_INSTANCE');
         expect(json.operationsTotalCount).toBeGreaterThanOrEqual(2);
         expect(json.operationsCompletedCount).toBe(2);
-      }).toPass(defaultAssertionOptions);
+        // The completion counters reach the read API through the
+        // secondary-storage indexer, which lags behind the engine on a loaded
+        // shared cluster: the nightly saw 0 then 1 of 2 completed inside the
+        // 30s default budget.
+      }).toPass(extendedAssertionOptions);
     });
 
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res1 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete1}`),
+          buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+            decisionEvaluationInstanceKey: decisionEvaluationKeyToDelete1,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -157,7 +168,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify Decision Instance is Deleted', async () => {
       await expect(async () => {
         const res2 = await request.get(
-          buildUrl(`/decision-instances/${decisionEvaluationKeyToDelete2}`),
+          buildUrl('/decision-instances/{decisionEvaluationInstanceKey}', {
+            decisionEvaluationInstanceKey: decisionEvaluationKeyToDelete2,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -235,7 +248,9 @@ test.describe.parallel('Delete Decision Instances Batch API Tests', () => {
     await test.step('Verify No Operations are done in Batch Operation', async () => {
       await expect(async () => {
         const res = await request.get(
-          buildUrl(`/batch-operations/${createdBatchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey: createdBatchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },

@@ -20,6 +20,7 @@ import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -32,7 +33,9 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.Map;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
@@ -59,7 +62,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -91,7 +96,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.setDiskSpaceAvailable(false);
@@ -119,7 +126,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -159,7 +168,9 @@ final class InterPartitionCommandReceiverTest {
             recordValue);
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -189,7 +200,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -215,7 +228,9 @@ final class InterPartitionCommandReceiverTest {
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final LogStreamWriter logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
@@ -232,10 +247,22 @@ final class InterPartitionCommandReceiverTest {
     final var receiverBrokerId = 1;
     final var receiverPartitionId = 7;
 
-    final var authInfo = new AuthInfo();
-    final var token = "some-jwt-token";
-    final var claims = Map.<String, Object>of("sub", "user-123", "scope", "test");
-    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT).setAuthData(token).setClaims(claims);
+    final var claims =
+        Map.<String, Object>of(
+            "authorized_anonymous_user",
+            false,
+            "authorized_username",
+            "user-123",
+            "authorized_client_id",
+            "client-123",
+            "authorized_tenants",
+            List.of("tenant-a", "tenant-b"),
+            "user_groups_claims",
+            List.of("group-a"),
+            "user_token_claims",
+            Map.of("scope", "test"));
+    final var authInfo =
+        AuthInfo.ofClaims(claims).withFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
 
     final var sentMessage =
         sendCommand(
@@ -248,7 +275,9 @@ final class InterPartitionCommandReceiverTest {
             authInfo);
 
     final var logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -258,12 +287,8 @@ final class InterPartitionCommandReceiverTest {
         .tryWrite(
             eq(WriteContext.interPartition()),
             assertArg(
-                (final LogAppendEntry logEntry) -> {
-                  final var writtenAuth = logEntry.recordMetadata().getAuthorization();
-                  assertThat(writtenAuth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
-                  assertThat(writtenAuth.getAuthData()).isEqualTo(token);
-                  assertThat(writtenAuth.getClaims()).isEqualTo(claims);
-                }));
+                (final LogAppendEntry logEntry) ->
+                    assertThat(logEntry.recordMetadata().getAuthorization()).isEqualTo(authInfo)));
   }
 
   @Test
@@ -283,7 +308,9 @@ final class InterPartitionCommandReceiverTest {
             null);
 
     final var logStreamWriter = getLogStreamWriter();
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver =
+        new InterPartitionCommandReceiverImpl(
+            logStreamWriter, mock(CheckpointSnapshotReserver.class), new TestConcurrencyControl());
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -295,7 +322,7 @@ final class InterPartitionCommandReceiverTest {
             assertArg(
                 (final LogAppendEntry logEntry) ->
                     assertThat(logEntry.recordMetadata().getAuthorization())
-                        .isEqualTo(new AuthInfo())));
+                        .isEqualTo(AuthInfo.EMPTY)));
   }
 
   private byte[] sendCommand(
@@ -331,7 +358,7 @@ final class InterPartitionCommandReceiverTest {
 
     final var sender =
         new InterPartitionCommandSenderImpl(communicationService, LEGACY_TOPIC_PREFIX);
-    sender.setCurrentLeader(receiverPartitionId, receiverBrokerId);
+    sender.setCurrentLeader(receiverPartitionId, MemberId.from(String.valueOf(receiverBrokerId)));
 
     sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue, authInfo);
 

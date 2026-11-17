@@ -19,10 +19,13 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -222,7 +225,8 @@ class ExpressionProcessorTest {
           new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(
-              processor.evaluateMessageCorrelationKeyExpression(parsedExpression, -1L, "tenant_1"))
+              processor.evaluateMessageCorrelationKeyExpression(
+                  parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE))
           .isLeft()
           .extracting(r -> r.getLeft().getMessage())
           .isEqualTo(
@@ -232,18 +236,266 @@ class ExpressionProcessorTest {
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
+  }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateAnyExpressionToBufferWithLabelTest {
 
     @Test
-    void testVariableMappingExpression() {
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given
       final var processor =
-          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
-      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
-      assertThat(processor.evaluateVariableMappingExpression(parsedExpression, -1L, "tenant_1"))
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", 5)),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo > 100)");
+      final var label = new ExpressionLabel("script expression", "script task 't'");
+
+      // when
+      final var result =
+          processor.evaluateAnyExpressionToBuffer(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
           .isLeft()
           .extracting(r -> r.getLeft().getMessage())
           .isEqualTo(
               """
-              Expected result of the expression 'x' to be 'OBJECT', but was 'NULL'. \
+              Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+              condition is not fulfilled (script expression of script task 't') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+  }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateBooleanExpressionWithLabelTest {
+
+    @Test
+    void shouldUseGenericWordingWhenLabelIsNone() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(
+              parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindAndTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the condition expression 'x' of sequence flow 's2' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindWithoutTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("condition expression", null);
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the condition expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given: assert() fails because its condition isn't met, not because of a type mismatch, so
+      // this bypasses typeCheck entirely and is handled by evaluateExpressionAsEither's own
+      // isFailure() branch
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", 5)),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo > 100)");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+              condition is not fulfilled (condition expression of sequence flow 's2') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+
+    @Test
+    void shouldUseLabelWhenEvaluationTimesOut() {
+      // given: the evaluation times out before it can even attempt typeCheck, so the label must be
+      // applied directly in evaluateExpressionAsEither's TimeoutException branch
+      final var blockingEL = new EvaluationErrorsTest.FakeBlockingExpressionLanguage();
+      final var processor =
+          new ExpressionProcessor(blockingEL, DEFAULT_CONTEXT_LOOKUP, Duration.ofMillis(1));
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("foo");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      try {
+        // when
+        final var result = processor.evaluateBooleanExpression(expression, -1L, "tenant_1", label);
+
+        // then
+        assertThat(result)
+            .isLeft()
+            .extracting(r -> r.getLeft().getMessage())
+            .isEqualTo(
+                "Expected to evaluate expression but timed out after 1 ms: 'foo' "
+                    + "(condition expression of sequence flow 's2')");
+      } finally {
+        // release the blocking EL to avoid leaking threads
+        blockingEL.release();
+      }
+    }
+  }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateStringExpressionWithLabelTest {
+
+    @Test
+    void shouldUseGenericWordingWhenNoLabelIsGiven() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateStringExpression(parsedExpression, -1L, "tenant_1");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'STRING', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindAndTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("decision id expression", "business rule task 't'");
+
+      // when
+      final var result =
+          processor.evaluateStringExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the decision id expression 'x' of business rule task 't' to be 'STRING', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", "bar")),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression =
+          EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo = \"baz\")");
+      final var label = new ExpressionLabel("decision id expression", "business rule task 't'");
+
+      // when
+      final var result =
+          processor.evaluateStringExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo = "baz")': The \
+              condition is not fulfilled (decision id expression of business rule task 't') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+
+    @Test
+    void shouldUseLabelWhenEvaluatingToDirectBuffer() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("error code expression", "event 'e'");
+
+      // when
+      final var result =
+          processor.evaluateStringExpressionAsDirectBuffer(
+              parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the error code expression 'x' of event 'e' to be 'STRING', but was 'NULL'. \
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
@@ -491,7 +743,8 @@ class ExpressionProcessorTest {
           Arguments.of(
               (ProcessorMethod)
                   (processor, expression) ->
-                      processor.evaluateMessageCorrelationKeyExpression(expression, -1L, "tenant"),
+                      processor.evaluateMessageCorrelationKeyExpression(
+                          expression, -1L, "tenant", ExpressionLabel.NONE),
               "evaluateMessageCorrelationKeyExpression"),
           Arguments.of(
               (ProcessorMethod)
@@ -501,7 +754,8 @@ class ExpressionProcessorTest {
           Arguments.of(
               (ProcessorMethod)
                   (processor, expression) ->
-                      processor.evaluateVariableMappingExpression(expression, -1L, "tenant"),
+                      processor.evaluateVariableMappingExpression(
+                          expression, -1L, "tenant", ExpressionLabel.NONE),
               "evaluateVariableMappingExpression"));
     }
 
@@ -575,6 +829,346 @@ class ExpressionProcessorTest {
     @FunctionalInterface
     private interface ProcessorMethod {
       Either<Failure, ?> evaluate(ExpressionProcessor processor, Expression expression);
+    }
+  }
+
+  @Nested
+  class EvaluateVariableMappingSourceExpressionTest {
+
+    private final ExpressionProcessor processor =
+        new ExpressionProcessor(
+            EXPRESSION_LANGUAGE,
+            new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+            DEFAULT_TIMEOUT);
+
+    @Test
+    void shouldEvaluateNonObjectResult() {
+      // given: a single mapping source may produce any result type, not just a context
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=\"abc\"");
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result).isRight();
+      MsgPackUtil.assertEquality(result.get(), "'abc'");
+    }
+
+    @Test
+    void shouldEvaluateObjectResult() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("={y: x}");
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result).isRight();
+      MsgPackUtil.assertEquality(result.get(), "{'y': 1}");
+    }
+
+    @Test
+    void shouldEvaluateNullResult() {
+      // given: an input mapping without a source is transformed to a null expression
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=null");
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result).isRight();
+      MsgPackUtil.assertEquality(result.get(), "null");
+    }
+
+    @Test
+    void shouldEvaluateUnresolvedVariableAsNull() {
+      // given: an unresolved variable reference is lenient, matching plain FEEL evaluation
+      // elsewhere in this class (see EvaluationWarningsTest) — it is not a failure on its own,
+      // only a subsequent type-check (which this method deliberately doesn't have) can turn it
+      // into one
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=unknown_var");
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result).isRight();
+      MsgPackUtil.assertEquality(result.get(), "null");
+    }
+
+    @Test
+    void shouldReturnIoMappingFailureForGenuineEvaluationFailure() {
+      // given: a real FEEL evaluation failure (not merely an unresolved variable) must still fail
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("Assertion failure on evaluate the expression");
+    }
+  }
+
+  @Nested
+  class EvaluateVariableMappingExpressionWithLabelTest {
+
+    @Test
+    void shouldNameMappingKindAndTargetVariableOnEvaluationFailure() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.inputMappingExpression(List.of("order", "id"));
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(input mapping expression of target variable 'order.id')");
+    }
+
+    @Test
+    void shouldOnlyNameMappingKindWhenNoSingleTargetIsKnown() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.outputMappingExpression(null);
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(output mapping expression)")
+          .doesNotContain("target variable");
+    }
+  }
+
+  @Nested
+  class EvaluateMessageCorrelationKeyExpressionWithLabelTest {
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", 5)),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo > 100)");
+      final var label = new ExpressionLabel("correlation key expression", "element 'c'");
+
+      // when
+      final var result =
+          processor.evaluateMessageCorrelationKeyExpression(
+              parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+              condition is not fulfilled (correlation key expression of element 'c') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+
+    @Test
+    void shouldKeepCorrelationKeyTypeMismatchMessage() {
+      // given: the type mismatch message already names the correlation key
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("correlation key expression", "element 'c'");
+
+      // when
+      final var result =
+          processor.evaluateMessageCorrelationKeyExpression(
+              parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Failed to extract the correlation key for 'x': \
+              The value must be either a string or a number, but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+  }
+
+  @Nested
+  class EvaluateIntervalAndDateTimeExpressionWithLabelTest {
+
+    private static final ExpressionLabel LABEL =
+        new ExpressionLabel("timer duration expression", "event 't'");
+
+    private final ExpressionProcessor processor =
+        new ExpressionProcessor(
+            EXPRESSION_LANGUAGE,
+            new InMemoryVariableEvaluationContext(Map.of("x", "foo")),
+            DEFAULT_TIMEOUT);
+
+    @Test
+    void shouldLabelInvalidDurationFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid duration format 'foo' for the timer duration expression 'x' of event 't'.");
+    }
+
+    @Test
+    void shouldKeepGenericInvalidDurationFormatMessageWithoutLabel() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo("Invalid duration format 'foo' for expression 'x'.");
+    }
+
+    @Test
+    void shouldLabelIntervalTypeMismatchMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=true");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith(
+              "Expected result of the timer duration expression 'true' of event 't' to be one of");
+    }
+
+    @Test
+    void shouldLabelIntervalEvaluationFailureMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x = \"bar\")");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .contains("(timer duration expression of event 't')");
+    }
+
+    @Test
+    void shouldLabelInvalidDateTimeFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("timer date expression", "event 't'");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid date-time format 'foo' for the timer date expression 'x' of event 't'.");
+    }
+
+    @Test
+    void shouldLabelInvalidNullableDateTimeFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("due date expression", "user task 'u'");
+
+      // when
+      final var result =
+          processor.evaluateDateTimeExpression(expression, -1L, "tenant", true, label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid date-time format 'foo' for the due date expression 'x' of user task 'u'.");
+    }
+
+    @Test
+    void shouldKeepGenericInvalidDateTimeFormatMessageWithoutLabel() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo("Invalid date-time format 'foo' for expression 'x'.");
+    }
+
+    @Test
+    void shouldLabelDateTimeTypeMismatchMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=true");
+      final var label = new ExpressionLabel("timer date expression", "event 't'");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith(
+              "Expected result of the timer date expression 'true' of event 't' to be one of");
     }
   }
 }

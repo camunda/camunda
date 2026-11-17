@@ -91,6 +91,32 @@ class ZeebeScriptTaskValidatorTest {
             "Must have either one 'zeebe:script' or one 'zeebe:taskDefinition' extension element"));
   }
 
+  @Test
+  void jobPriorityDefinitionNotAllowedWithScript() {
+    // given / when
+    final BpmnModelInstance process =
+        process(
+            task ->
+                task.zeebeExpression("true").zeebeResultVariable("result").zeebeJobPriority("42"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ScriptTask.class,
+            "'zeebe:jobPriorityDefinition' is only allowed in job-worker mode ('zeebe:taskDefinition')"));
+  }
+
+  @Test
+  void jobPriorityDefinitionAllowedWithTaskDefinition() {
+    // given / when
+    final BpmnModelInstance process =
+        process(task -> task.zeebeJobType("type").zeebeJobPriority("42"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
   private BpmnModelInstance process(final Consumer<ScriptTaskBuilder> taskBuilder) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()

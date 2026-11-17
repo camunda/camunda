@@ -11,10 +11,10 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -24,12 +24,13 @@ public record UserTaskFilter(
     List<Long> userTaskKeys,
     List<String> elementIds,
     List<Operation<String>> nameOperations,
-    List<String> bpmnProcessIds,
+    List<Operation<String>> processDefinitionIdOperations,
     List<Operation<String>> assigneeOperations,
+    List<Operation<String>> businessIdOperations,
     List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
-    List<Long> processInstanceKeys,
-    List<Long> processDefinitionKeys,
+    List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<String>> candidateUserOperations,
     List<Operation<String>> candidateGroupOperations,
     List<Operation<String>> tenantIdOperations,
@@ -41,7 +42,9 @@ public record UserTaskFilter(
     List<Operation<OffsetDateTime>> followUpDateOperations,
     List<Operation<OffsetDateTime>> dueDateOperations,
     Set<String> tags,
-    String type)
+    String type,
+    Boolean isSuspended,
+    List<UserTaskFilter> orFilters)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
@@ -49,12 +52,13 @@ public record UserTaskFilter(
     private List<Long> userTaskKeys;
     private List<String> elementIds;
     private List<Operation<String>> nameOperations;
-    private List<String> bpmnProcessIds;
+    private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<String>> assigneeOperations;
+    private List<Operation<String>> businessIdOperations;
     private List<Operation<Integer>> priorityOperations;
     private List<Operation<String>> stateOperations;
-    private List<Long> processInstanceKeys;
-    private List<Long> processDefinitionKeys;
+    private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<String>> candidateUserOperations;
     private List<Operation<String>> candidateGroupOperations;
     private List<Operation<String>> tenantIdOperations;
@@ -67,6 +71,8 @@ public record UserTaskFilter(
     private List<Operation<OffsetDateTime>> dueDateOperations;
     private Set<String> tags;
     private String type;
+    private Boolean isSuspended;
+    private List<UserTaskFilter> orFilters;
 
     public Builder userTaskKeys(final Long... values) {
       return userTaskKeys(collectValuesAsList(values));
@@ -101,13 +107,19 @@ public record UserTaskFilter(
       return nameOperations(collectValues(operation, operations));
     }
 
-    public Builder bpmnProcessIds(final String... values) {
-      return bpmnProcessIds(collectValuesAsList(values));
+    public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
+      processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
+      return this;
     }
 
-    public Builder bpmnProcessIds(final List<String> values) {
-      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
-      return this;
+    @SafeVarargs
+    public final Builder processDefinitionIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionIds(final String value, final String... values) {
+      return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder assigneeOperations(final List<Operation<String>> operations) {
@@ -123,6 +135,21 @@ public record UserTaskFilter(
     public final Builder assigneeOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return assigneeOperations(collectValues(operation, operations));
+    }
+
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
     }
 
     public Builder priorityOperations(final List<Operation<Integer>> operations) {
@@ -159,22 +186,34 @@ public record UserTaskFilter(
       return stateOperations(FilterUtil.mapDefaultToOperation(values));
     }
 
-    public Builder processInstanceKeys(final Long... values) {
-      return processInstanceKeys(collectValuesAsList(values));
-    }
-
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
+    public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long... values) {
-      return processDefinitionKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
-      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
+    public Builder processInstanceKeys(final Long value, final Long... values) {
+      return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      processDefinitionKeyOperations = addValuesToList(processDefinitionKeyOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processDefinitionKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionKeys(final Long value, final Long... values) {
+      return processDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder candidateUserOperations(final List<Operation<String>> operations) {
@@ -295,18 +334,37 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder isSuspended(final Boolean value) {
+      isSuspended = value;
+      return this;
+    }
+
+    public Builder addOrOperation(final UserTaskFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<UserTaskFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
           Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
           Objects.requireNonNullElse(nameOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUserOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
@@ -318,7 +376,9 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(followUpDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
           tags,
-          type);
+          type,
+          isSuspended,
+          orFilters);
     }
   }
 }

@@ -20,8 +20,8 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -43,6 +43,7 @@ import org.mockito.ArgumentCaptor;
 
 public class MappingRuleServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   ArgumentCaptor<BrokerMappingRuleDeleteRequest> mappingRuleDeleteRequestArgumentCaptor;
   ArgumentCaptor<BrokerMappingRuleUpdateRequest> mappingRuleUpdateRequestArgumentCaptor;
   private MappingRuleServices services;
@@ -70,6 +71,7 @@ public class MappingRuleServicesTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new MappingRuleServices(
+            PHYSICAL_TENANT_ID,
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -141,6 +143,7 @@ public class MappingRuleServicesTest {
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingRuleServices testMappingRuleServices =
         new MappingRuleServices(
+            PHYSICAL_TENANT_ID,
             mockBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -157,6 +160,8 @@ public class MappingRuleServicesTest {
 
     // then
     verify(mockBrokerClient).sendRequest(mappingRuleDeleteRequestArgumentCaptor.capture());
+    assertThat(mappingRuleDeleteRequestArgumentCaptor.getValue().getPartitionGroup())
+        .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = mappingRuleDeleteRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo("id");
   }
@@ -169,6 +174,7 @@ public class MappingRuleServicesTest {
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingRuleServices testMappingRuleServices =
         new MappingRuleServices(
+            PHYSICAL_TENANT_ID,
             mockBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -192,6 +198,8 @@ public class MappingRuleServicesTest {
 
     // then
     verify(mockBrokerClient).sendRequest(mappingRuleUpdateRequestArgumentCaptor.capture());
+    assertThat(mappingRuleUpdateRequestArgumentCaptor.getValue().getPartitionGroup())
+        .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = mappingRuleUpdateRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingRuleId())
         .isEqualTo(mappingRuleDTO.mappingRuleId());
@@ -214,7 +222,7 @@ public class MappingRuleServicesTest {
     final MappingRuleQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();
-    assertThat(query.filter().name()).isNull();
+    assertThat(query.filter().nameOperations()).isNull();
     assertThat(query.filter().claims()).isNull();
   }
 }

@@ -31,6 +31,7 @@ public class CorrelatedMessageSubscriptionEntityMapper {
         .subscriptionKey(dbModel.subscriptionKey())
         .subscriptionType(dbModel.subscriptionType())
         .tenantId(nullToEmpty(dbModel.tenantId()))
+        .businessId(dbModel.businessId())
         .build();
   }
 }

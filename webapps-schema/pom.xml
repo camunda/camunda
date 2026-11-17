@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <artifactId>webapps-schema</artifactId>
@@ -38,7 +38,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
+      <artifactId>camunda-security-library-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -76,4 +76,23 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>testcontainer-versions.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>testcontainer-versions.properties</include>
+        </includes>
+      </resource>
+    </resources>
+  </build>
 </project>

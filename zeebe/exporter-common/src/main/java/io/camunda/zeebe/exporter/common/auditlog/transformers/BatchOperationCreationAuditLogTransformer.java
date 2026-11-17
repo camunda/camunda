@@ -20,6 +20,11 @@ public class BatchOperationCreationAuditLogTransformer
   }
 
   @Override
+  public Class<BatchOperationCreationRecordValue> getRecordValueType() {
+    return BatchOperationCreationRecordValue.class;
+  }
+
+  @Override
   public void transform(
       final Record<BatchOperationCreationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();

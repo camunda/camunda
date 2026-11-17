@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
@@ -18,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class FormHandler implements ExportHandler<FormEntity, Form> {
+public class FormHandler implements MainIndexExporterHandler<FormEntity, Form> {
 
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
@@ -78,8 +79,9 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
   }
 
   @Override
-  public void flush(final FormEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final TargetIndex index, final FormEntity entity, final BatchRequest batchRequest) {
+    batchRequest.add(index, entity);
   }
 
   @Override

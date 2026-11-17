@@ -19,6 +19,12 @@ public class ExponentialBackoffRetryDelay implements RetryDelayStrategy {
     exponentialBackoff = new ExponentialBackoff(maxDelay.toMillis(), minDelay.toMillis());
   }
 
+  public ExponentialBackoffRetryDelay(
+      final Duration maxDelay, final Duration minDelay, final double backoffFactor) {
+    exponentialBackoff =
+        new ExponentialBackoff(maxDelay.toMillis(), minDelay.toMillis(), backoffFactor);
+  }
+
   @Override
   public Duration nextDelay() {
     currentDelay = exponentialBackoff.supplyRetryDelay(currentDelay);

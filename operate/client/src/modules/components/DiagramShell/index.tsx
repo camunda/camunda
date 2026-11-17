@@ -59,7 +59,7 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
           <ErrorMessage
             $position={position}
             message="Missing permissions to view the Definition"
-            additionalInfo="Please contact your organization owner or admin to give you the necessary permissions to read this definition"
+            additionalInfo="Contact your organization owner or admin to give you the necessary permissions to read this definition"
           />
         );
       }

@@ -10,77 +10,77 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader;
+import io.camunda.zeebe.exporter.common.modelreader.ProcessModelReader.StartFormLink;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader.StartFormLink;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessExportHandler.class);
-
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ProcessExportHandler(
       final ProcessDefinitionWriter processDefinitionWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.processDefinitionWriter = processDefinitionWriter;
     this.processCache = processCache;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    // do not react on ProcessEvent.DELETED to keep historic data
     return record.getValueType() == ValueType.PROCESS
-        && record.getIntent() == ProcessIntent.CREATED;
+        && (record.getIntent() == ProcessIntent.CREATED
+            || record.getIntent() == ProcessIntent.DRAINING
+            || record.getIntent() == ProcessIntent.FULLY_DELETED);
   }
 
   @Override
   public void export(final Record<Process> record) {
-    final Process value = record.getValue();
-    processDefinitionWriter.create(map(value));
-    final String resourceName = value.getResourceName();
-    final var versionTag = value.getVersionTag();
-    final var version = value.getVersion();
+    if (record.getIntent() == ProcessIntent.FULLY_DELETED) {
+      processDefinitionWriter.markDeleted(record.getValue().getProcessDefinitionKey());
+      return;
+    }
+    if (record.getIntent() == ProcessIntent.DRAINING) {
+      processDefinitionWriter.markDraining(record.getValue().getProcessDefinitionKey());
+      return;
+    }
+
+    final var value = record.getValue();
     final var processModelReader =
-        ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
-    processModelReader.ifPresent(
-        reader -> {
-          final var activities =
-              ProcessCacheUtil.sortedCallActivityIds(reader.extractCallActivities());
-          final var flowNodes = reader.extractFlowNodes();
-          final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(flowNodes);
-          final var hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-          final var cachedProcessEntity =
-              new CachedProcessEntity(
-                  resourceName, version, versionTag, activities, flowNodesMap, hasUserTasks);
-          processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
-        });
+        ProcessModelReader.of(value.getResource(), value.getBpmnProcessId()).orElse(null);
+
+    final var dbModel = map(value, processModelReader);
+    processDefinitionWriter.create(dbModel);
+
+    final var cachedProcessEntity =
+        ProcessCacheUtil.createCachedProcessEntity(
+            dbModel.name(),
+            dbModel.version(),
+            dbModel.versionTag(),
+            processModelReader,
+            extensionPropertiesConfiguration);
+    processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
-  private ProcessDefinitionDbModel map(final Process value) {
-    final Optional<ProcessModelReader> processModelReader =
-        ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
-
+  private ProcessDefinitionDbModel map(final Process value, final ProcessModelReader reader) {
     String processName = null;
     String formId = null;
-    if (processModelReader.isPresent()) {
-      final var reader = processModelReader.get();
+    if (reader != null) {
       processName = reader.extractProcessName();
       formId = reader.extractStartFormLink().map(StartFormLink::formId).orElse(null);
-    } else {
-      LOG.warn("Failed to read process model for process with key '{}'", value.getBpmnProcessId());
     }
 
     return new ProcessDefinitionDbModel(
@@ -92,6 +92,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         StringUtils.defaultIfEmpty(value.getVersionTag(), null),
         value.getVersion(),
         new String(value.getResource(), StandardCharsets.UTF_8),
-        formId);
+        formId,
+        ProcessDefinitionState.ACTIVE);
   }
 }

@@ -15,7 +15,7 @@ import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantMemberFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -39,7 +39,10 @@ public class TenantMemberFilterTransformer extends IndexFilterTransformer<Tenant
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(TENANT_ID, authorization.resourceIds());
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
+    return hasParentQuery(
+        IdentityJoinRelationshipType.TENANT.getType(),
+        stringTerms(TENANT_ID, authorization.resourceIds()));
   }
 }

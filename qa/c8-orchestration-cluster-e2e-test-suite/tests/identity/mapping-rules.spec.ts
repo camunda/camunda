@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -60,7 +60,7 @@ test.describe.serial('mapping rules CRUD', () => {
     );
     await expect(
       identityMappingRulesPage.createMappingRuleIdField,
-    ).toHaveAttribute('data-invalid', 'true');
+    ).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('creates a mapping rule', async ({page, identityMappingRulesPage}) => {
@@ -121,7 +121,7 @@ test.describe.serial('mapping rules CRUD', () => {
       clickNext: true,
       emptyStateLocator: identityMappingRulesPage.emptyStateLocator,
       onAfterReload: async () => {
-        await page.goto(relativizePath(Paths.mappingRules()));
+        await identityMappingRulesPage.navigateToMappingRules();
         await Promise.race([
           identityMappingRulesPage.mappingRulesList.waitFor({timeout: 15000}),
           identityMappingRulesPage.emptyStateLocator.waitFor({timeout: 15000}),

@@ -24,6 +24,8 @@ const mockProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 } satisfies ProcessInstance;
 
 export {mockProcessInstance};

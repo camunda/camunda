@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import org.jspecify.annotations.Nullable;
 
 public final class DbCheckpointState implements CheckpointState {
   private static final String LATEST_CHECKPOINT_KEY = "checkpoint";
@@ -47,7 +48,7 @@ public final class DbCheckpointState implements CheckpointState {
   }
 
   @Override
-  public CheckpointType getLatestCheckpointType() {
+  public @Nullable CheckpointType getLatestCheckpointType() {
     return getCheckpointType(LATEST_CHECKPOINT_KEY);
   }
 
@@ -99,7 +100,7 @@ public final class DbCheckpointState implements CheckpointState {
   }
 
   @Override
-  public CheckpointType getLatestBackupType() {
+  public @Nullable CheckpointType getLatestBackupType() {
     return getCheckpointType(LATEST_BACKUP_KEY);
   }
 
@@ -138,7 +139,7 @@ public final class DbCheckpointState implements CheckpointState {
     return info != null ? info.getTimestamp() : -1L;
   }
 
-  private CheckpointType getCheckpointType(final String key) {
+  private @Nullable CheckpointType getCheckpointType(final String key) {
     checkpointInfoKey.wrapString(key);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
     return info != null ? info.getType() : null;

@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.exporter.context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -28,19 +30,51 @@ public class ExporterContextTest {
       InstantSource.fixed(Instant.ofEpochMilli(123456789));
 
   public ExporterContext makeExporterContext(
-      final int partitionId, final String exporterId, final MeterRegistry underlying) {
+      final PartitionId partitionId, final String exporterId, final MeterRegistry underlying) {
     return new ExporterContext(
         LOG,
         new ExporterTestConfiguration<>(exporterId, Collections.emptyMap()),
         partitionId,
+        "",
+        null,
         underlying,
         FIXED_INSTANT_SOURCE);
   }
 
   @Test
+  void shouldReturnDefaultPhysicalTenantId() {
+    // given
+    final var context =
+        makeExporterContext(
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+            "TestExporter",
+            new SimpleMeterRegistry());
+
+    // when
+    final var physicalTenantId = context.getPhysicalTenantId();
+
+    // then
+    assertThat(physicalTenantId).isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldReturnExplicitPhysicalTenantId() {
+    // given
+    final var context =
+        makeExporterContext(
+            new PartitionId("tenant-a", 1), "TestExporter", new SimpleMeterRegistry());
+
+    // when
+    final var physicalTenantId = context.getPhysicalTenantId();
+
+    // then
+    assertThat(physicalTenantId).isEqualTo("tenant-a");
+  }
+
+  @Test
   void shouldAddTagsAndCleanupWhenClosed() {
     // given
-    final var partitionId = 1;
+    final var partitionId = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
     final var exporterId = "MetricTestExporter";
     final var underlyingMeterRegistry = new SimpleMeterRegistry();
     final var context = makeExporterContext(partitionId, exporterId, underlyingMeterRegistry);
@@ -55,7 +89,14 @@ public class ExporterContextTest {
     final var timer = meterRegistry.timer("test");
     timer.record(11, TimeUnit.MILLISECONDS);
 
-    final var expectedTags = Tags.of("partition", "1", "exporterId", exporterId);
+    final var expectedTags =
+        Tags.of(
+            "physicalTenant",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            "partition",
+            "1",
+            "exporterId",
+            exporterId);
 
     // then
     allRegistries.forEach(

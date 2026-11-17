@@ -1,0 +1,99 @@
+name: Read AlwaysGreen feature flag
+description: >
+  Resolves the AlwaysGreen fix-agent run mode from the ALWAYSGREEN_FIX_AGENT key at
+  secret/data/products/qa/ci/common.
+
+  Shared by alwaysgreen-triage and alwaysgreen-fix so both resolve the mode identically.
+  Every unresolvable state — key absent, Vault unreachable, value unrecognised —
+  resolves to dry-run, so a mistake withholds dispatch rather than enabling it.
+
+inputs:
+  vault-addr:
+    description: Vault address
+    required: true
+  vault-role-id:
+    description: AppRole role id
+    required: true
+  vault-secret-id:
+    description: AppRole secret id
+    required: true
+  dry-run-override:
+    description: When 'true', force dry-run regardless of the flag
+    required: false
+    default: 'false'
+
+outputs:
+  mode:
+    description: disabled | dry-run | enabled
+    value: ${{ steps.resolve.outputs.mode }}
+  active:
+    description: 'false when mode is disabled — callers must skip all remaining work'
+    value: ${{ steps.resolve.outputs.active }}
+  dispatch:
+    description: 'true only when mode is enabled and no dry-run was requested'
+    value: ${{ steps.resolve.outputs.dispatch }}
+
+runs:
+  using: composite
+  steps:
+    # continue-on-error because vault-action fails the step when the key is absent,
+    # which is the expected state before the flag is first created. An absent flag must
+    # leave the pipeline in dry-run, not break it.
+    - name: Import Secrets
+      id: secrets
+      continue-on-error: true
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ inputs.vault-addr }}
+        method: approle
+        roleId: ${{ inputs.vault-role-id }}
+        secretId: ${{ inputs.vault-secret-id }}
+        exportEnv: false
+        secrets: |
+          secret/data/products/qa/ci/common ALWAYSGREEN_FIX_AGENT ;
+
+    - name: Resolve run mode
+      id: resolve
+      shell: bash
+      env:
+        CONFIGURED: ${{ steps.secrets.outputs.ALWAYSGREEN_FIX_AGENT }}
+        IMPORT_OUTCOME: ${{ steps.secrets.outcome }}
+        DRY_RUN_OVERRIDE: ${{ inputs.dry-run-override }}
+      run: |
+        set -uo pipefail
+
+        mode="${CONFIGURED:-}"
+        if [ "${IMPORT_OUTCOME}" != "success" ]; then
+          echo "::notice::AlwaysGreen flag could not be read from Vault (ALWAYSGREEN_FIX_AGENT at secret/data/products/qa/ci/common); defaulting to dry-run."
+          mode=""
+        fi
+
+        case "$mode" in
+          disabled|dry-run|enabled) ;;
+          "")
+            echo "::notice::AlwaysGreen flag is unset; defaulting to dry-run."
+            mode="dry-run"
+            ;;
+          *)
+            echo "::warning::AlwaysGreen flag is not one of disabled|dry-run|enabled; treating as dry-run."
+            mode="dry-run"
+            ;;
+        esac
+
+        active=true
+        dispatch=false
+        [ "$mode" = "disabled" ] && active=false
+        if [ "$mode" = "enabled" ] && [ "${DRY_RUN_OVERRIDE}" != "true" ]; then
+          dispatch=true
+        fi
+
+        {
+          echo "mode=${mode}"
+          echo "active=${active}"
+          echo "dispatch=${dispatch}"
+        } >> "$GITHUB_OUTPUT"
+        # The flag value is imported as a Vault secret, so GitHub masks it in this job's
+        # logs. Deliberately avoid printing the words "enabled"/"disabled" here: with a
+        # matching flag value they would render as *** and hide the very state being
+        # reported. Booleans are unaffected.
+        echo "AlwaysGreen mode resolved: active=${active} dispatch=${dispatch}"

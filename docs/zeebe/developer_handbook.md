@@ -16,6 +16,8 @@ This document contains instructions for developers who want to contribute to thi
 
 ## How to create a new record?
 
+New records affect rolling updates, see [rolling_updates.md](rolling_updates.md#processing).
+
 Generally, you'll need to do the following things:
 1. [Expand our `protocol` with a new `RecordValue`](#expanding-our-protocol-with-a-new-recordvalue).
 2. [Implement this `RecordValue` in the `protocol-impl` module](#implement-a-new-recordvalue-in-protocol-impl).
@@ -69,7 +71,7 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 When introducing a new `RecordValue`, you must ensure it is properly supported in:
 
 - Elasticsearch and Opensearch exporters
-- Operate and Tasklist integration test setups
+- Operate and orchestration-cluster webapp integration test setups
 
 You'll always need to add support for new records in the exporters. Even if you don't yet want to export a new record,
 tests will fail if this support is missing. Note that in the exporter configuration (step 3), you can choose whether the record is exported by default.

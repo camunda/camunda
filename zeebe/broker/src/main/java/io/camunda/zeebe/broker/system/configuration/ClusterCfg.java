@@ -9,16 +9,23 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
+import static io.camunda.zeebe.util.StringUtil.sanitizeList;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class ClusterCfg implements ConfigurationEntry {
 
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
@@ -26,10 +33,23 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
-  public static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
-
-  private static final String NODE_ID_ERROR_MSG =
-      "Node id %s needs to be non negative and smaller then cluster size %s.";
+  private static final String ZONE_SCHEME_ERROR_MSG =
+      "Broker has zone '%s' configured but partitioning scheme is %s; set scheme to REGION_AWARE.";
+  private static final String ZONE_MISSING_ERROR_MSG =
+      "Partitioning scheme is REGION_AWARE but broker zone is not configured. Set cluster.zone.";
+  private static final String ZONE_NOT_FOUND_ERROR_MSG =
+      "Broker zone '%s' is not defined in the zoneAware partitioning configuration. "
+          + "Configured zones: %s.";
+  private static final String NODE_ID_ZONE_ERROR_MSG =
+      "Node id %d is out of range for zone '%s' (numberOfBrokers=%d). "
+          + "nodeId must be in [0, numberOfBrokers).";
+  private static final String BROKER_SUM_ERROR_MSG =
+      "Sum of numberOfBrokers across all zones (%d) must equal clusterSize (%d).";
+  private static final String REPLICA_SUM_ERROR_MSG =
+      "Sum of numberOfReplicas across all zones (%d) must equal replicationFactor (%d).";
+  private static final String REPLICAS_EXCEED_BROKERS_ERROR_MSG =
+      "Zone '%s' has numberOfReplicas (%d) > numberOfBrokers (%d). "
+          + "Two replicas of the same partition cannot reside on one broker.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
 
@@ -40,15 +60,22 @@ public final class ClusterCfg implements ConfigurationEntry {
           + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
           + " make sure to use an odd replication factor.";
 
+  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
+  @SuppressWarnings("NullAway.Init")
+  // initialized in the init() method with the correct partitionCount
   private List<Integer> partitionIds;
+
   private Integer nodeId = 0;
+
   // TODO add javaDoc
   private Long nodeVersion = 0L;
-  private String clusterId;
+
+  private @Nullable String clusterId;
+
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
@@ -59,6 +86,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private RaftCfg raft = new RaftCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
+  private @Nullable String zone;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -68,6 +96,7 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException("Partition count must not be smaller than 1.");
     }
 
+    validateZoneAwareConfig(globalConfig);
     if (nodeId < 0) {
       throw new IllegalArgumentException("Node id must be positive");
     }
@@ -89,12 +118,51 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(
           String.format("electionTimeout %s must be at least 1ms", electionTimeout));
     }
-    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
+    if (electionTimeout.compareTo(heartbeatInterval) <= 0) {
       throw new IllegalArgumentException(
           String.format(
               "electionTimeout %s must be greater than heartbeatInterval %s",
               electionTimeout, heartbeatInterval));
     }
+  }
+
+  private void validateZoneAwareConfig(final BrokerCfg globalConfig) {
+    final var partitioningCfg = globalConfig.getExperimental().getPartitioning();
+
+    if (zone != null && partitioningCfg.getScheme() != Scheme.ZONE_AWARE) {
+      throw new IllegalArgumentException(ZONE_SCHEME_ERROR_MSG);
+    }
+    if (partitioningCfg.getScheme() != Scheme.ZONE_AWARE) {
+      return;
+    }
+
+    if (zone == null || zone.isBlank()) {
+      throw new IllegalArgumentException(ZONE_MISSING_ERROR_MSG);
+    }
+
+    final ZoneAwareCfg zoneAwareCfg = partitioningCfg.getZoneAware();
+    final var zones = zoneAwareCfg.zones();
+
+    final var zoneNames = zones.stream().map(ZoneCfg::name).toList();
+    if (!zoneNames.contains(zone)) {
+      throw new IllegalArgumentException(String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
+    }
+
+    zones.forEach(
+        cfg -> {
+          if (cfg.numberOfReplicas() > cfg.numberOfBrokers()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    REPLICAS_EXCEED_BROKERS_ERROR_MSG,
+                    cfg.name(),
+                    cfg.numberOfReplicas(),
+                    cfg.numberOfBrokers()));
+          }
+          if (cfg.numberOfBrokers() < 1 || cfg.numberOfReplicas() < 1) {
+            throw new IllegalArgumentException(
+                String.format("Zone '%s' must have at least 1 broker and 1 replica.", cfg.name()));
+          }
+        });
   }
 
   private void initPartitionIds() {
@@ -109,7 +177,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   }
 
   public void setInitialContactPoints(final List<String> initialContactPoints) {
-    this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
+    this.initialContactPoints = sanitizeList(initialContactPoints);
   }
 
   public Integer getNodeId() {
@@ -118,6 +186,10 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setNodeId(final Integer nodeId) {
     this.nodeId = nodeId;
+  }
+
+  public MemberId getMemberId() {
+    return MemberId.from(getZone(), getNodeId());
   }
 
   public int getPartitionsCount() {
@@ -156,7 +228,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.clusterName = clusterName;
   }
 
-  public String getClusterId() {
+  public @Nullable String getClusterId() {
     return clusterId;
   }
 
@@ -212,6 +284,14 @@ public final class ClusterCfg implements ConfigurationEntry {
     configManager = configManagerCfg;
   }
 
+  public @Nullable String getZone() {
+    return zone;
+  }
+
+  public void setZone(final @Nullable String zone) {
+    this.zone = zone;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -227,11 +307,12 @@ public final class ClusterCfg implements ConfigurationEntry {
         membership,
         raft,
         messageCompression,
-        configManager);
+        configManager,
+        zone);
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(@Nullable final Object o) {
     if (this == o) {
       return true;
     }
@@ -251,7 +332,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         && Objects.equals(membership, that.membership)
         && Objects.equals(raft, that.raft)
         && messageCompression == that.messageCompression
-        && Objects.equals(configManager, that.configManager);
+        && Objects.equals(configManager, that.configManager)
+        && Objects.equals(zone, that.zone);
   }
 
   @Override
@@ -284,6 +366,9 @@ public final class ClusterCfg implements ConfigurationEntry {
         + messageCompression
         + ", configManagerCfg="
         + configManager
+        + ", zone='"
+        + zone
+        + '\''
         + '}';
   }
 

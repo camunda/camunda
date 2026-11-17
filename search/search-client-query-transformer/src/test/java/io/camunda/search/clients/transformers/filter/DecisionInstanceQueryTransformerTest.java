@@ -18,10 +18,10 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -267,6 +267,26 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByBusinessId() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.businessIds("businessId1"));
+
+    // when
+    final var searchRequest = transformQuery(decisionInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("businessId");
+              assertThat(t.value().stringValue()).isEqualTo("businessId1");
+            });
+  }
+
+  @Test
   void shouldQueryByPartitionId() {
     // given
     final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.partitionId(3));
@@ -289,7 +309,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.decisionDefinition().readDecisionInstance().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
@@ -315,7 +335,8 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.decisionDefinition().readDecisionInstance());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -387,7 +408,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.decisionDefinition().readDecisionInstance().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);

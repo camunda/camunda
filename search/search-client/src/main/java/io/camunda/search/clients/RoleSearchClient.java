@@ -12,7 +12,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface RoleSearchClient {
 

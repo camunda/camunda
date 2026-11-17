@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.unit.DataSize;
 
 public final class NetworkCfg {
@@ -20,6 +21,21 @@ public final class NetworkCfg {
   private int port = DEFAULT_PORT;
   private Duration minKeepAliveInterval = Duration.ofSeconds(30);
   private DataSize maxMessageSize = DataSize.ofMegabytes(4);
+
+  /**
+   * Maximum age of a gRPC connection before the server proactively closes it (via GOAWAY), forcing
+   * the client to reconnect. Defaults to 5 minutes. Set to {@code null} to disable, i.e. keep
+   * grpc-java's own default of unbounded connection age.
+   */
+  private @Nullable Duration maxConnectionAge = Duration.ofMinutes(5);
+
+  /**
+   * Grace period, after {@link #maxConnectionAge} elapses, during which existing calls on the
+   * connection may finish before it is forcibly terminated. Only takes effect when {@link
+   * #maxConnectionAge} is set. Defaults to 1 minute. Set to {@code null} to disable, i.e. keep
+   * grpc-java's own default of an infinite grace period.
+   */
+  private @Nullable Duration maxConnectionAgeGrace = Duration.ofMinutes(1);
 
   public void init(final String defaultHost) {
     if (host == null) {
@@ -63,13 +79,32 @@ public final class NetworkCfg {
     return this;
   }
 
+  public @Nullable Duration getMaxConnectionAge() {
+    return maxConnectionAge;
+  }
+
+  public NetworkCfg setMaxConnectionAge(final @Nullable Duration maxConnectionAge) {
+    this.maxConnectionAge = maxConnectionAge;
+    return this;
+  }
+
+  public @Nullable Duration getMaxConnectionAgeGrace() {
+    return maxConnectionAgeGrace;
+  }
+
+  public NetworkCfg setMaxConnectionAgeGrace(final @Nullable Duration maxConnectionAgeGrace) {
+    this.maxConnectionAgeGrace = maxConnectionAgeGrace;
+    return this;
+  }
+
   public InetSocketAddress toSocketAddress() {
     return new InetSocketAddress(host, port);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, port, minKeepAliveInterval, maxMessageSize);
+    return Objects.hash(
+        host, port, minKeepAliveInterval, maxMessageSize, maxConnectionAge, maxConnectionAgeGrace);
   }
 
   @Override
@@ -84,7 +119,9 @@ public final class NetworkCfg {
     return port == that.port
         && Objects.equals(host, that.host)
         && Objects.equals(minKeepAliveInterval, that.minKeepAliveInterval)
-        && Objects.equals(maxMessageSize, that.maxMessageSize);
+        && Objects.equals(maxMessageSize, that.maxMessageSize)
+        && Objects.equals(maxConnectionAge, that.maxConnectionAge)
+        && Objects.equals(maxConnectionAgeGrace, that.maxConnectionAgeGrace);
   }
 
   @Override

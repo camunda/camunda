@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import java.util.Objects;
+
 public enum StreamTopics {
   ADD("stream-add"),
   PUSH("stream-push"),
@@ -20,7 +22,14 @@ public enum StreamTopics {
     this.topic = topic;
   }
 
-  public String topic() {
+  /** The physicalTenantId-scoped topic name, used for every physical tenant, including default. */
+  public String topic(final String physicalTenantId) {
+    Objects.requireNonNull(physicalTenantId, "physicalTenantId must not be null");
+    return physicalTenantId + "-" + topic;
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  public String legacyTopic() {
     return topic;
   }
 }

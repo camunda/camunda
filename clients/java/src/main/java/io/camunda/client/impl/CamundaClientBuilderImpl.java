@@ -26,8 +26,22 @@ import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
 import static io.camunda.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
+import static io.camunda.client.ClientProperties.MTLS_CA;
+import static io.camunda.client.ClientProperties.MTLS_CA_PATH;
+import static io.camunda.client.ClientProperties.MTLS_CERT;
+import static io.camunda.client.ClientProperties.MTLS_CERT_PATH;
+import static io.camunda.client.ClientProperties.MTLS_KEY;
+import static io.camunda.client.ClientProperties.MTLS_KEYSTORE_KEY_PASSWORD;
+import static io.camunda.client.ClientProperties.MTLS_KEYSTORE_PASSWORD;
+import static io.camunda.client.ClientProperties.MTLS_KEYSTORE_PATH;
+import static io.camunda.client.ClientProperties.MTLS_KEY_PASSPHRASE;
+import static io.camunda.client.ClientProperties.MTLS_KEY_PATH;
+import static io.camunda.client.ClientProperties.MTLS_TRUSTSTORE_PASSWORD;
+import static io.camunda.client.ClientProperties.MTLS_TRUSTSTORE_PATH;
 import static io.camunda.client.ClientProperties.OVERRIDE_AUTHORITY;
+import static io.camunda.client.ClientProperties.PHYSICAL_TENANT_ID;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
+import static io.camunda.client.ClientProperties.PREFIX_PHYSICAL_TENANT_PATH;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING;
@@ -43,10 +57,24 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_T
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CA_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CA_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CERT_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_CERT_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEYSTORE_KEY_PASSWORD_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEYSTORE_PASSWORD_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEYSTORE_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEY_PASSPHRASE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEY_PATH_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_KEY_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_TRUSTSTORE_PASSWORD_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MTLS_TRUSTSTORE_PATH_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PHYSICAL_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFIX_PHYSICAL_TENANT_PATH_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
@@ -89,6 +117,7 @@ public final class CamundaClientBuilderImpl
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
   public static final boolean DEFAULT_PREFER_REST_OVER_GRPC = true;
+  public static final boolean DEFAULT_PREFIX_PHYSICAL_TENANT_PATH = true;
   public static final int DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS = 1;
   public static final int DEFAULT_MAX_MESSAGE_SIZE = 5 * ONE_MB;
   public static final int DEFAULT_MAX_METADATA_SIZE = 16 * ONE_KB;
@@ -115,6 +144,8 @@ public final class CamundaClientBuilderImpl
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+  private String physicalTenantId;
+  private boolean prefixPhysicalTenantPath = DEFAULT_PREFIX_PHYSICAL_TENANT_PATH;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   private TenantFilter defaultJobWorkerTenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
@@ -127,6 +158,18 @@ public final class CamundaClientBuilderImpl
   private Duration defaultRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration defaultRequestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
   private String certificatePath;
+  private String mtlsCertPath;
+  private String mtlsCert;
+  private String mtlsKeyPath;
+  private String mtlsKey;
+  private String mtlsKeyPassphrase;
+  private String mtlsCaPath;
+  private String mtlsCa;
+  private String mtlsKeystorePath;
+  private String mtlsKeystorePassword;
+  private String mtlsKeystoreKeyPassword;
+  private String mtlsTruststorePath;
+  private String mtlsTruststorePassword;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
   private JsonMapper jsonMapper = new CamundaObjectMapper();
@@ -156,6 +199,16 @@ public final class CamundaClientBuilderImpl
   @Override
   public String getDefaultTenantId() {
     return defaultTenantId;
+  }
+
+  @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  @Override
+  public boolean prefixPhysicalTenantPath() {
+    return prefixPhysicalTenantPath;
   }
 
   @Override
@@ -211,6 +264,66 @@ public final class CamundaClientBuilderImpl
   @Override
   public String getCaCertificatePath() {
     return certificatePath;
+  }
+
+  @Override
+  public String getMtlsCertPath() {
+    return mtlsCertPath;
+  }
+
+  @Override
+  public String getMtlsCert() {
+    return mtlsCert;
+  }
+
+  @Override
+  public String getMtlsKeyPath() {
+    return mtlsKeyPath;
+  }
+
+  @Override
+  public String getMtlsKey() {
+    return mtlsKey;
+  }
+
+  @Override
+  public String getMtlsKeyPassphrase() {
+    return mtlsKeyPassphrase;
+  }
+
+  @Override
+  public String getMtlsCaPath() {
+    return mtlsCaPath;
+  }
+
+  @Override
+  public String getMtlsCa() {
+    return mtlsCa;
+  }
+
+  @Override
+  public String getMtlsKeystorePath() {
+    return mtlsKeystorePath;
+  }
+
+  @Override
+  public String getMtlsKeystorePassword() {
+    return mtlsKeystorePassword;
+  }
+
+  @Override
+  public String getMtlsKeystoreKeyPassword() {
+    return mtlsKeystoreKeyPassword;
+  }
+
+  @Override
+  public String getMtlsTruststorePath() {
+    return mtlsTruststorePath;
+  }
+
+  @Override
+  public String getMtlsTruststorePassword() {
+    return mtlsTruststorePassword;
   }
 
   @Override
@@ -337,10 +450,21 @@ public final class CamundaClientBuilderImpl
         ClientProperties.MAX_HTTP_CONNECTIONS);
 
     BuilderUtils.applyPropertyValueIfNotNull(properties, this::defaultTenantId, DEFAULT_TENANT_ID);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::physicalTenantId, PHYSICAL_TENANT_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
+        value -> prefixPhysicalTenantPath(Boolean.parseBoolean(value)),
+        PREFIX_PHYSICAL_TENANT_PATH);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value ->
+            defaultJobWorkerTenantIds(
+                value.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -389,6 +513,27 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.applyPropertyValueIfNotNull(
         properties, this::caCertificatePath, CA_CERTIFICATE_PATH);
 
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsCertPath = value, MTLS_CERT_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, value -> mtlsCert = value, MTLS_CERT);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsKeyPath = value, MTLS_KEY_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, value -> mtlsKey = value, MTLS_KEY);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsKeyPassphrase = value, MTLS_KEY_PASSPHRASE);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, value -> mtlsCaPath = value, MTLS_CA_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, value -> mtlsCa = value, MTLS_CA);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsKeystorePath = value, MTLS_KEYSTORE_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsKeystorePassword = value, MTLS_KEYSTORE_PASSWORD);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsKeystoreKeyPassword = value, MTLS_KEYSTORE_KEY_PASSWORD);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsTruststorePath = value, MTLS_TRUSTSTORE_PATH);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, value -> mtlsTruststorePassword = value, MTLS_TRUSTSTORE_PASSWORD);
+
     BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -419,6 +564,40 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilderImpl withConfiguration(
+      final CamundaClientConfiguration configuration) {
+    final Properties properties = toProperties(configuration);
+    withProperties(properties);
+
+    // Properties not representable as string key-value pairs
+    if (configuration.getCredentialsProvider() != null) {
+      credentialsProvider(configuration.getCredentialsProvider());
+    }
+    if (configuration.getJsonMapper() != null) {
+      withJsonMapper(configuration.getJsonMapper());
+    }
+    if (configuration.getInterceptors() != null) {
+      configuration.getInterceptors().forEach(this::withInterceptors);
+    }
+    if (configuration.getChainHandlers() != null) {
+      configuration.getChainHandlers().forEach(this::withChainHandlers);
+    }
+    if (configuration.jobWorkerSchedulingExecutor() != null) {
+      jobWorkerSchedulingExecutor(
+          configuration.jobWorkerSchedulingExecutor(),
+          configuration.ownsJobWorkerSchedulingExecutor());
+    }
+    if (configuration.jobHandlingExecutor() != null) {
+      jobHandlingExecutor(
+          configuration.jobHandlingExecutor(), configuration.ownsJobHandlingExecutor());
+    }
+    if (configuration.getDefaultJobWorkerExceptionHandler() != null) {
+      defaultJobWorkerExceptionHandler(configuration.getDefaultJobWorkerExceptionHandler());
+    }
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides) {
     this.applyEnvironmentVariableOverrides = applyEnvironmentVariableOverrides;
@@ -442,6 +621,18 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder defaultTenantId(final String tenantId) {
     defaultTenantId = tenantId;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder physicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder prefixPhysicalTenantPath(final boolean prefixPhysicalTenantPath) {
+    this.prefixPhysicalTenantPath = prefixPhysicalTenantPath;
     return this;
   }
 
@@ -532,6 +723,57 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificate(
+      final String certificateChainPath, final String privateKeyPath) {
+    mtlsCertPath = certificateChainPath;
+    mtlsKeyPath = privateKeyPath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateContent(
+      final String certificateChainPem, final String privateKeyPem) {
+    mtlsCert = certificateChainPem;
+    mtlsKey = privateKeyPem;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientKeyPassphrase(final String keyPassphrase) {
+    mtlsKeyPassphrase = keyPassphrase;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsCaCertificatePath(final String caPath) {
+    mtlsCaPath = caPath;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsCaCertificateContent(final String caPem) {
+    mtlsCa = caPem;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientKeystore(
+      final String keystorePath, final String keystorePassword, final String keyPassword) {
+    mtlsKeystorePath = keystorePath;
+    mtlsKeystorePassword = keystorePassword;
+    mtlsKeystoreKeyPassword = keyPassword;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsTruststore(
+      final String truststorePath, final String truststorePassword) {
+    mtlsTruststorePath = truststorePath;
+    mtlsTruststorePassword = truststorePassword;
     return this;
   }
 
@@ -638,6 +880,21 @@ public final class CamundaClientBuilderImpl
 
   private void applyOverrides() {
     applyEnvironmentValueIfNotNull(this::caCertificatePath, CA_CERTIFICATE_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsCertPath = value, MTLS_CERT_PATH_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsCert = value, MTLS_CERT_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsKeyPath = value, MTLS_KEY_PATH_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsKey = value, MTLS_KEY_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsKeyPassphrase = value, MTLS_KEY_PASSPHRASE_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsCaPath = value, MTLS_CA_PATH_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsCa = value, MTLS_CA_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsKeystorePath = value, MTLS_KEYSTORE_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> mtlsKeystorePassword = value, MTLS_KEYSTORE_PASSWORD_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> mtlsKeystoreKeyPassword = value, MTLS_KEYSTORE_KEY_PASSWORD_VAR);
+    applyEnvironmentValueIfNotNull(value -> mtlsTruststorePath = value, MTLS_TRUSTSTORE_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> mtlsTruststorePassword = value, MTLS_TRUSTSTORE_PASSWORD_VAR);
     applyEnvironmentValueIfNotNull(this::keepAlive, KEEP_ALIVE_VAR);
     applyEnvironmentValueIfNotNull(this::overrideAuthority, OVERRIDE_AUTHORITY_VAR);
     if (shouldUseOAuthCredentialsProvider()) {
@@ -653,8 +910,16 @@ public final class CamundaClientBuilderImpl
     applyEnvironmentValueIfNotNull(
         value -> maxHttpConnections(Integer.parseInt(value)), MAX_HTTP_CONNECTIONS);
     applyEnvironmentValueIfNotNull(this::defaultTenantId, DEFAULT_TENANT_ID_VAR);
+    applyEnvironmentValueIfNotNull(this::physicalTenantId, PHYSICAL_TENANT_ID_VAR);
     applyEnvironmentValueIfNotNull(
-        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
+        value -> prefixPhysicalTenantPath(Boolean.parseBoolean(value)),
+        PREFIX_PHYSICAL_TENANT_PATH_VAR);
+    applyEnvironmentValueIfNotNull(
+        value ->
+            defaultJobWorkerTenantIds(
+                value.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
     applyEnvironmentValueIfNotNull(
         value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),
@@ -676,6 +941,8 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "grpcAddress", grpcAddress);
     BuilderUtils.appendProperty(sb, "restAddress", restAddress);
     BuilderUtils.appendProperty(sb, "defaultTenantId", defaultTenantId);
+    BuilderUtils.appendProperty(sb, "physicalTenantId", physicalTenantId);
+    BuilderUtils.appendProperty(sb, "prefixPhysicalTenantPath", prefixPhysicalTenantPath);
     BuilderUtils.appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     BuilderUtils.appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     BuilderUtils.appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
@@ -720,6 +987,90 @@ public final class CamundaClientBuilderImpl
     final BasicAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newBasicAuthCredentialsProviderBuilder();
     return builder.build();
+  }
+
+  private static Properties toProperties(final CamundaClientConfiguration configuration) {
+    final Properties properties = new Properties();
+    setIfNotNull(properties, GRPC_ADDRESS, configuration.getGrpcAddress());
+    setIfNotNull(properties, REST_ADDRESS, configuration.getRestAddress());
+    setIfNotNull(properties, DEFAULT_TENANT_ID, configuration.getDefaultTenantId());
+    setIfNotNull(properties, PHYSICAL_TENANT_ID, configuration.getPhysicalTenantId());
+    properties.setProperty(
+        PREFIX_PHYSICAL_TENANT_PATH, String.valueOf(configuration.prefixPhysicalTenantPath()));
+    if (configuration.getDefaultJobWorkerTenantIds() != null) {
+      properties.setProperty(
+          ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
+          String.join(TENANT_ID_LIST_SEPARATOR, configuration.getDefaultJobWorkerTenantIds()));
+    }
+    if (configuration.getDefaultJobWorkerTenantFilter() != null) {
+      properties.setProperty(
+          ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE,
+          configuration.getDefaultJobWorkerTenantFilter().name());
+    }
+    setIfNotNull(
+        properties, JOB_WORKER_EXECUTION_THREADS, configuration.getNumJobWorkerExecutionThreads());
+    setIfNotNull(
+        properties, JOB_WORKER_MAX_JOBS_ACTIVE, configuration.getDefaultJobWorkerMaxJobsActive());
+    setIfNotNull(properties, DEFAULT_JOB_WORKER_NAME, configuration.getDefaultJobWorkerName());
+    setDurationMillis(
+        properties, ClientProperties.DEFAULT_JOB_TIMEOUT, configuration.getDefaultJobTimeout());
+    setDurationMillis(
+        properties,
+        ClientProperties.DEFAULT_JOB_POLL_INTERVAL,
+        configuration.getDefaultJobPollInterval());
+    setDurationMillis(
+        properties, DEFAULT_MESSAGE_TIME_TO_LIVE, configuration.getDefaultMessageTimeToLive());
+    setDurationMillis(
+        properties,
+        ClientProperties.DEFAULT_REQUEST_TIMEOUT,
+        configuration.getDefaultRequestTimeout());
+    setDurationMillis(
+        properties,
+        ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET,
+        configuration.getDefaultRequestTimeoutOffset());
+    setIfNotNull(properties, CA_CERTIFICATE_PATH, configuration.getCaCertificatePath());
+    setIfNotNull(properties, MTLS_CERT_PATH, configuration.getMtlsCertPath());
+    setIfNotNull(properties, MTLS_CERT, configuration.getMtlsCert());
+    setIfNotNull(properties, MTLS_KEY_PATH, configuration.getMtlsKeyPath());
+    setIfNotNull(properties, MTLS_KEY, configuration.getMtlsKey());
+    setIfNotNull(properties, MTLS_KEY_PASSPHRASE, configuration.getMtlsKeyPassphrase());
+    setIfNotNull(properties, MTLS_CA_PATH, configuration.getMtlsCaPath());
+    setIfNotNull(properties, MTLS_CA, configuration.getMtlsCa());
+    setIfNotNull(properties, MTLS_KEYSTORE_PATH, configuration.getMtlsKeystorePath());
+    setIfNotNull(properties, MTLS_KEYSTORE_PASSWORD, configuration.getMtlsKeystorePassword());
+    setIfNotNull(
+        properties, MTLS_KEYSTORE_KEY_PASSWORD, configuration.getMtlsKeystoreKeyPassword());
+    setIfNotNull(properties, MTLS_TRUSTSTORE_PATH, configuration.getMtlsTruststorePath());
+    setIfNotNull(properties, MTLS_TRUSTSTORE_PASSWORD, configuration.getMtlsTruststorePassword());
+    setDurationMillis(properties, KEEP_ALIVE, configuration.getKeepAlive());
+    setIfNotNull(properties, OVERRIDE_AUTHORITY, configuration.getOverrideAuthority());
+    setIfNotNull(properties, MAX_MESSAGE_SIZE, configuration.getMaxMessageSize());
+    setIfNotNull(properties, MAX_METADATA_SIZE, configuration.getMaxMetadataSize());
+    setIfNotNull(
+        properties, ClientProperties.MAX_HTTP_CONNECTIONS, configuration.getMaxHttpConnections());
+    properties.setProperty(
+        PREFER_REST_OVER_GRPC, String.valueOf(configuration.preferRestOverGrpc()));
+    properties.setProperty(
+        STREAM_ENABLED, String.valueOf(configuration.getDefaultJobWorkerStreamEnabled()));
+    properties.setProperty(
+        USE_DEFAULT_RETRY_POLICY, String.valueOf(configuration.useDefaultRetryPolicy()));
+    properties.setProperty(
+        USE_CLIENT_SIDE_LOAD_BALANCING, String.valueOf(configuration.useClientSideLoadBalancing()));
+    return properties;
+  }
+
+  private static void setIfNotNull(
+      final Properties properties, final String key, final Object value) {
+    if (value != null) {
+      properties.setProperty(key, String.valueOf(value));
+    }
+  }
+
+  private static void setDurationMillis(
+      final Properties properties, final String key, final Duration value) {
+    if (value != null) {
+      properties.setProperty(key, String.valueOf(value.toMillis()));
+    }
   }
 
   private static URI getURIFromString(final String uri) {

@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,6 +95,121 @@ class ClockTest {
 
     // then
     assertClockResetted(c -> assertThat(c).hasTime(0L));
+  }
+
+  @Test
+  void shouldGetPinnedClockTime() {
+    // given
+    client.newPinClockCommand().time(FUTURE_FIXED_INSTANT).send().join();
+
+    // when
+    final var response = client.newClockGetRequest().send().join();
+
+    // then
+    assertThat(response.getTimestamp().toInstant()).isEqualTo(FUTURE_FIXED_INSTANT);
+  }
+
+  @Test
+  void shouldGetCurrentClockTimeAfterReset() {
+    // given
+    client.newPinClockCommand().time(PAST_FIXED_INSTANT).send().join();
+    client.newResetClockCommand().send().join();
+
+    // when
+    final var response = client.newClockGetRequest().send().join();
+
+    // then
+    assertTimestampCloseToNow(
+        response.getTimestamp().toInstant().toEpochMilli(),
+        "Clock should return the current time after reset");
+  }
+
+  @Test
+  void shouldAddTimeToClockAndKeepItRunning() {
+    // given
+    final Duration offset = Duration.ofDays(1);
+    final Instant before = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    // when
+    final var response = client.newAddClockCommand().offset(offset).send().join();
+
+    // then
+    final Instant newTime = response.getTimestamp().toInstant();
+    assertThat(newTime).isBetween(before.plus(offset), Instant.now().plus(offset));
+    Awaitility.await("Clock should keep running after time is added")
+        .untilAsserted(
+            () ->
+                assertThat(client.newClockGetRequest().send().join().getTimestamp().toInstant())
+                    .isAfter(newTime));
+  }
+
+  @Test
+  void shouldMovePinnedClockWhenAddingTime() {
+    // given
+    client.newPinClockCommand().time(PAST_FIXED_INSTANT).send().join();
+
+    // when
+    final var response = client.newAddClockCommand().offset(Duration.ofHours(1)).send().join();
+
+    // then
+    final Instant expectedTime = PAST_FIXED_INSTANT.plus(Duration.ofHours(1));
+    assertThat(response.getTimestamp().toInstant()).isEqualTo(expectedTime);
+    assertThat(client.newClockGetRequest().send().join().getTimestamp().toInstant())
+        .as("Clock should stay pinned at the new time")
+        .isEqualTo(expectedTime);
+  }
+
+  @Test
+  void shouldRejectAddingTimeIfClockWouldBeNegative() {
+    // given
+    client.newPinClockCommand().time(Instant.EPOCH).send().join();
+
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAddClockCommand().offset(Duration.ofMillis(-1)).send().join())
+        .isInstanceOf(ProblemException.class)
+        .extracting(e -> (ProblemException) e)
+        .satisfies(
+            e -> {
+              assertThat(e.getMessage()).startsWith("Failed with code 400: 'Bad Request'");
+              assertThat(e.details().getTitle()).isEqualTo("INVALID_ARGUMENT");
+              assertThat(e.details().getDetail())
+                  .isEqualTo(
+                      "Command 'ADD' rejected with code 'INVALID_ARGUMENT': Expected the new"
+                          + " clock time to be not negative, but adding -1 ms to the current"
+                          + " time 0 makes it -1");
+            });
+  }
+
+  @Test
+  void shouldTriggerTimerWhenAddingTime() {
+    // given
+    final Duration timerDuration = Duration.ofDays(1);
+    final long processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess("process_with_timer_after_one_day")
+                .startEvent()
+                .intermediateCatchEvent("timerEvent")
+                .timerWithDuration(timerDuration)
+                .endEvent()
+                .done());
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    assertElementRecordInState(
+        processInstanceKey, "timerEvent", ProcessInstanceIntent.ELEMENT_ACTIVATED, r -> {});
+
+    // when
+    final Instant newTime =
+        client.newAddClockCommand().offset(timerDuration).send().join().getTimestamp().toInstant();
+
+    // then
+    assertElementRecordInState(
+        processInstanceKey,
+        "timerEvent",
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        r ->
+            assertThat(Instant.ofEpochMilli(r.getTimestamp()))
+                .as("Timer event should complete on the moved clock")
+                .isAfterOrEqualTo(newTime));
   }
 
   static Stream<Instant> validInstances() {

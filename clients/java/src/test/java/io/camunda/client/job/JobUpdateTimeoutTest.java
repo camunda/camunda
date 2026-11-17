@@ -99,6 +99,69 @@ public class JobUpdateTimeoutTest extends ClientTest {
   }
 
   @Test
+  public void shouldUpdateTimeoutWithJobLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String jobLeaseToken = "lease-token";
+
+    // when
+    client
+        .newUpdateTimeoutCommand(jobKey)
+        .timeout(100)
+        .withJobLeaseToken(jobLeaseToken)
+        .send()
+        .join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldCarryJobLeaseTokenFromActivatedJob() {
+    // given
+    final String jobLeaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(jobLeaseToken);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEqualTo(jobLeaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryJobLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getJobLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryJobLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobLeaseToken()).isEmpty();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

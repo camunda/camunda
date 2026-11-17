@@ -90,7 +90,7 @@ public final class RocksdbCfgTest {
 
     // then
     assertThat(rocksDbConfiguration.getColumnFamilyOptions())
-        .containsEntry("compaction_pri", "kOldestSmallestSeqFirst")
+        .containsEntry("compaction_pri", "kOldestLargestSeqFirst")
         .containsEntry("write_buffer_size", "67108864");
     assertThat(rocksDbConfiguration.isStatisticsEnabled()).isTrue();
     assertThat(rocksDbConfiguration.getMemoryLimit()).isEqualTo(DataSize.ofMegabytes(32).toBytes());
@@ -106,7 +106,7 @@ public final class RocksdbCfgTest {
     // then
     final var columnFamilyOptions = rocksdb.getColumnFamilyOptions();
     assertThat(columnFamilyOptions)
-        .containsEntry("compaction_pri", "kOldestSmallestSeqFirst")
+        .containsEntry("compaction_pri", "kOldestLargestSeqFirst")
         .containsEntry("write_buffer_size", "67108864");
   }
 

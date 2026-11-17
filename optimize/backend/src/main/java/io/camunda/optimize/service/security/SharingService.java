@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.security;
 
+import static io.camunda.optimize.service.dashboard.DashboardService.SYSTEM_GENERATED_DASHBOARDS_LABEL;
+
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -160,10 +162,9 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     try {
       final DashboardDefinitionRestDto dashboardDefinition =
           dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
-      if (dashboardDefinition.isManagementDashboard()
-          || dashboardDefinition.isInstantPreviewDashboard()) {
+      if (dashboardDefinition.isSystemGeneratedDashboard()) {
         throw new OptimizeValidationException(
-            "Management Dashboards or Instant preview dashboards cannot be shared");
+            SYSTEM_GENERATED_DASHBOARDS_LABEL + " cannot be shared");
       }
 
       final Set<String> authorizedReportIdsOnDashboard =

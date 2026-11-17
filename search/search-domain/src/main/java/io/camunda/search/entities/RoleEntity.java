@@ -9,7 +9,16 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(Long roleKey, String roleId, String name, String description)
-    implements Serializable {}
+public record RoleEntity(Long roleKey, String roleId, String name, @Nullable String description)
+    implements Serializable {
+
+  public RoleEntity {
+    Objects.requireNonNull(roleKey, "roleKey");
+    Objects.requireNonNull(roleId, "roleId");
+    Objects.requireNonNull(name, "name");
+  }
+}

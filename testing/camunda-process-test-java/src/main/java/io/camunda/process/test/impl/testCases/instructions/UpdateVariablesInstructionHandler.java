@@ -41,8 +41,13 @@ public class UpdateVariablesInstructionHandler
       // Local variables: update using element selector
       final ElementSelector elementSelector =
           InstructionSelectorFactory.buildElementSelector(instruction.getElementSelector().get());
-      context.updateLocalVariables(
-          processInstanceSelector, elementSelector, instruction.getVariables());
+      if (instruction.getCreateLocalVariables()) {
+        context.createLocalVariables(
+            processInstanceSelector, elementSelector, instruction.getVariables());
+      } else {
+        context.updateLocalVariables(
+            processInstanceSelector, elementSelector, instruction.getVariables());
+      }
     } else {
       // Global variables: update at process instance level
       context.updateVariables(processInstanceSelector, instruction.getVariables());

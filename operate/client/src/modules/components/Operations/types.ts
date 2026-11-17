@@ -10,6 +10,8 @@ type OperationType =
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_PROCESS_INSTANCE'
   | 'DELETE_PROCESS_INSTANCE'
+  | 'SUSPEND_PROCESS_INSTANCE'
+  | 'RESUME_PROCESS_INSTANCE'
   | 'ENTER_MODIFICATION_MODE';
 
 type OperationConfig = {
@@ -19,4 +21,6 @@ type OperationConfig = {
   label?: string;
 };
 
-export type {OperationConfig};
+type OperationSlot = OperationConfig | null;
+
+export type {OperationConfig, OperationSlot, OperationType};

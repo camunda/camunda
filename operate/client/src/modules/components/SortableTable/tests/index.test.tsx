@@ -65,4 +65,62 @@ describe('SortableTable', () => {
       secondRow!.id,
     );
   });
+
+  it('should not render expanded content while a row is collapsed', async () => {
+    const [firstRow] = mockProps.rows;
+
+    const {user} = render(
+      <SortableTable
+        {...mockProps}
+        state="content"
+        isExpandable
+        expandedContent={{
+          [firstRow!.id]: <button>expanded action</button>,
+        }}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    // then a collapsed row keeps its expanded content out of the accessibility
+    // tree, because Carbon only collapses that row to zero height, which would
+    // otherwise leave the content invisible but still focusable
+    expect(
+      screen.queryByRole('button', {name: 'expanded action'}),
+    ).not.toBeInTheDocument();
+
+    // when the row is expanded
+    await user.click(
+      screen.getAllByRole('button', {name: /expand current row/i})[0]!,
+    );
+
+    // then its content becomes available
+    expect(
+      screen.getByRole('button', {name: 'expanded action'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should not announce a non sortable column as a sort control', () => {
+    render(
+      <SortableTable
+        {...mockProps}
+        state="content"
+        headerColumns={[
+          {header: 'Sortable Column', key: 'columnHeader1'},
+          {header: 'Fixed Column', key: 'columnHeader2', isDisabled: true},
+        ]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Sort by Sortable Column'}),
+    ).toBeInTheDocument();
+
+    // then the disabled column is named by its own label rather than offering a
+    // sort it cannot perform
+    expect(
+      screen.getByRole('columnheader', {name: 'Fixed Column'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByTitle('Sort by Fixed Column')).not.toBeInTheDocument();
+  });
 });

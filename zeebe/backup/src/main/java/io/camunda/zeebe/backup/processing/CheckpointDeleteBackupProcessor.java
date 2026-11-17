@@ -74,16 +74,8 @@ public final class CheckpointDeleteBackupProcessor {
             .intent(CheckpointIntent.DELETED_BACKUP));
     final var checkpoints = checkpointMetadataState.getAllCheckpoints();
     final var ranges = backupRangeState.getAllRanges();
-    resultBuilder.appendPostCommitTask(
-        () -> {
-          backupManager.syncMetadata(checkpoints, ranges);
-          return true;
-        });
-    resultBuilder.appendPostCommitTask(
-        () -> {
-          backupManager.deleteBackup(checkpointId);
-          return true;
-        });
+    resultBuilder.appendPostCommitTask(() -> backupManager.syncMetadata(checkpoints, ranges));
+    resultBuilder.appendPostCommitTask(() -> backupManager.deleteBackup(checkpointId));
 
     return resultBuilder.build();
   }

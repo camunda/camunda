@@ -124,4 +124,9 @@ public final class ConditionalSubscriptionRecordStream
   public ConditionalSubscriptionRecordStream withTenantId(final String tenantId) {
     return valueFilter(v -> tenantId.equals(v.getTenantId()));
   }
+
+  public ConditionalSubscriptionRecordStream withRootProcessInstanceKey(
+      final long rootProcessInstanceKey) {
+    return valueFilter(v -> v.getRootProcessInstanceKey() == rootProcessInstanceKey);
+  }
 }

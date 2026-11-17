@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.engine.ProcessInstanceCreationCfg;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +40,52 @@ public class ProcessInstanceCreationTest {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
           .returns(false, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
     }
+
+    @Test
+    void shouldSetDefaultMessageStartDedupExpirationSweepInterval() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(
+              Duration.ofSeconds(30),
+              ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepInterval);
+    }
+
+    @Test
+    void shouldSetDefaultMessageStartDedupExpirationSweepBatchLimit() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(100, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit);
+    }
+
+    @Test
+    void shouldSetDefaultMessageStartAskRetryInterval() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(
+              Duration.ofSeconds(10), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval);
+    }
+
+    @Test
+    void shouldSetDefaultMessageStartLockReleasePollInterval() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(
+              Duration.ofSeconds(30),
+              ProcessInstanceCreationCfg::getMessageStartLockReleasePollInterval);
+    }
+
+    @Test
+    void shouldSetDefaultMessageStartLockReleasePollBatchLimit() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(64, ProcessInstanceCreationCfg::getMessageStartLockReleasePollBatchLimit);
+    }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.process-instance-creation.business-id-uniqueness-enabled=true",
+        "camunda.process-instance-creation.message-start-dedup-expiration-sweep-interval=1m",
+        "camunda.process-instance-creation.message-start-dedup-expiration-sweep-batch-limit=250",
+        "camunda.process-instance-creation.message-start-ask-retry-interval=5s",
+        "camunda.process-instance-creation.message-start-lock-release-poll-interval=2s",
+        "camunda.process-instance-creation.message-start-lock-release-poll-batch-limit=128",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -56,48 +97,17 @@ public class ProcessInstanceCreationTest {
     @Test
     void shouldSetProcessInstanceCreation() {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
-    }
-  }
-
-  @Nested
-  @TestPropertySource(
-      properties = {
-        "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled=true",
-      })
-  class WithOnlyLegacySet {
-    final BrokerBasedProperties brokerCfg;
-
-    WithOnlyLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
-      this.brokerCfg = brokerCfg;
-    }
-
-    @Test
-    void shouldSetProcessInstanceCreationFromLegacy() {
-      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
-    }
-  }
-
-  @Nested
-  @TestPropertySource(
-      properties = {
-        // new
-        "camunda.process-instance-creation.business-id-uniqueness-enabled=true",
-        // legacy
-        "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled=false",
-      })
-  class WithNewAndLegacySet {
-    final BrokerBasedProperties brokerCfg;
-
-    WithNewAndLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
-      this.brokerCfg = brokerCfg;
-    }
-
-    @Test
-    void shouldSetProcessInstanceCreationFromNew() {
-      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
+          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled)
+          .returns(
+              Duration.ofMinutes(1),
+              ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepInterval)
+          .returns(250, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit)
+          .returns(
+              Duration.ofSeconds(5), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval)
+          .returns(
+              Duration.ofSeconds(2),
+              ProcessInstanceCreationCfg::getMessageStartLockReleasePollInterval)
+          .returns(128, ProcessInstanceCreationCfg::getMessageStartLockReleasePollBatchLimit);
     }
   }
 }

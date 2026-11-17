@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -45,44 +46,6 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
-  CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName, final Map<String, List<String>> keysByField);
-
-  CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters);
-
-  CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField);
-
-  CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters);
-
-  default CompletableFuture<Void> moveDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Executor executor) {
-    return moveDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of(), executor);
-  }
-
-  default CompletableFuture<Void> moveDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> filters,
-      final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, filters)
-        .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField, filters), executor);
-  }
-
   CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -101,10 +64,12 @@ public interface ArchiverRepository extends AutoCloseable {
   }
 
   default String buildHistoricalIndicesPattern(final IndexTemplateDescriptor indexTemplate) {
-    return "%s,-%s,-%s"
+    return "%s,-%s,-%s,-%s%s*"
         .formatted(
             indexTemplate.getIndexPattern(),
             indexTemplate.getFullQualifiedName(),
-            indexTemplate.getAlias());
+            indexTemplate.getAlias(),
+            indexTemplate.getFullQualifiedName(),
+            TargetIndex.ORDINAL_SUFFIX_START);
   }
 }

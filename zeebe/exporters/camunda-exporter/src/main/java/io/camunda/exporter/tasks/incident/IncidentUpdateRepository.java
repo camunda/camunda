@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
 /**
@@ -24,6 +24,8 @@ import java.util.stream.Stream;
  * it to work with various databases.
  */
 public interface IncidentUpdateRepository extends AutoCloseable {
+
+  CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition);
 
   /**
    * Returns the next batch of sorted pending incident updates.
@@ -42,9 +44,9 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * documents may not be visible yet.
    *
    * @param incidentIds the IDs to filter on
-   * @return a map of {@link IncidentDocument} indexed by ID
+   * @return a collection of {@link IncidentDocument}
    */
-  CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds);
 
   /**
@@ -91,13 +93,21 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys);
 
   /**
-   * Executes the given bulk update against the underlying document store, waiting until the
-   * affected indices are refreshed. This ensures you will later read your own writes.
+   * Executes the given incident bulk update against the underlying document store, waiting until
+   * the affected indices are refreshed. This ensures you will later read your own writes.
    *
    * @param update the bulk update to execute
-   * @return the number of documents updated
+   * @return the ids of the documents updated
    */
   CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update);
+
+  /**
+   * Executes the given non-incident bulk update against the underlying document store.
+   *
+   * @param update the bulk update to execute
+   * @return the ids of the documents updated
+   */
+  CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate update);
 
   /**
    * Returns the tree path as tokenized by an analyze request to the underlying document store.
@@ -144,34 +154,51 @@ public interface IncidentUpdateRepository extends AutoCloseable {
   record ActiveIncident(String id, String treePath) {}
 
   /**
-   * A search store agnostic representation of a bulk update for this task. It allows us to collect
-   * all the update queries into one, and pass it down to the store specific implementation to
-   * execute.
+   * Gather the updates for documents that are not incidents, such as flow node instances and list
+   * view documents. This allows us to collect all the update queries into one, and pass it down to
+   * the store specific implementation
    */
-  record IncidentBulkUpdate(
-      Map<String, DocumentUpdate> listViewRequests,
-      Map<String, DocumentUpdate> flowNodeInstanceRequests,
-      Map<String, DocumentUpdate> incidentRequests) {
-    public IncidentBulkUpdate() {
-      this(new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
+  record NonIncidentBulkUpdate(
+      Collection<ListViewInstanceUpdate> listViewRequests,
+      Collection<FlowNodeInstanceUpdate> flowNodeInstanceRequests) {
+    public NonIncidentBulkUpdate() {
+      this(new ConcurrentLinkedQueue<>(), new ConcurrentLinkedQueue<>());
     }
 
-    public Stream<DocumentUpdate> stream() {
-      return Stream.concat(
-          Stream.concat(
-              listViewRequests.values().stream(), flowNodeInstanceRequests.values().stream()),
-          incidentRequests.values().stream());
+    Stream<? extends IncidentTaskUpdate> stream() {
+      return Stream.concat(listViewRequests.stream(), flowNodeInstanceRequests.stream()).distinct();
     }
   }
 
   /**
-   * Represents a specific document store agnostic update to execute.
-   *
-   * <p>All fields are expected to be non-null, except routing.
+   * A search store agnostic representation of a bulk update for this task. It allows us to collect
+   * all the update queries into one, and pass it down to the store specific implementation to
+   * execute.
    */
-  record DocumentUpdate(String id, String index, Map<String, Object> doc, String routing) {}
+  record IncidentBulkUpdate(Collection<IncidentUpdate> incidentRequests) {
+    public IncidentBulkUpdate() {
+      this(new ConcurrentLinkedQueue<>());
+    }
+
+    Stream<IncidentUpdate> stream() {
+      return incidentRequests.stream().distinct();
+    }
+  }
+
+  /**
+   * A batch of pending incident updates fetched from the post importer queue. The {@code
+   * highestPosition} returns the greatest position of the updates fetched, and the states are keyed
+   * by incident key.
+   */
+  record PendingIncidentUpdateBatch(
+      long highestPosition, Map<Long, IncidentState> newIncidentStates) {}
 
   class NoopIncidentUpdateRepository implements IncidentUpdateRepository {
+
+    @Override
+    public CompletionStage<Integer> getCountOfPendingIncidentUpdates(final long fromPosition) {
+      return CompletableFuture.completedFuture(0);
+    }
 
     @Override
     public CompletionStage<PendingIncidentUpdateBatch> getPendingIncidentsBatch(
@@ -181,9 +208,9 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+    public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
         final List<String> incidentIds) {
-      return CompletableFuture.completedFuture(Map.of());
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override
@@ -215,6 +242,11 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
+    public CompletionStage<List<String>> bulkUpdate(final NonIncidentBulkUpdate update) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
     public CompletionStage<List<String>> analyzeTreePath(final String treePath) {
       return CompletableFuture.completedFuture(List.of());
     }
@@ -228,12 +260,4 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     @Override
     public void close() throws Exception {}
   }
-
-  /**
-   * A batch of pending incident updates fetched from the post importer queue. The {@code
-   * highestPosition} returns the greatest position of the updates fetched, and the states are keyed
-   * by incident key.
-   */
-  record PendingIncidentUpdateBatch(
-      long highestPosition, Map<Long, IncidentState> newIncidentStates) {}
 }

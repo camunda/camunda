@@ -66,7 +66,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withEnv("action.destructive_requires_name", "false");
 
   private static ElasticsearchExporterConfiguration config;
@@ -76,10 +76,16 @@ final class ElasticsearchExporterIT {
   private static TestClient testClient;
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
-  // omit authorizations and agent since they are removed from the records during serialization
+  // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
+  // the records during serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
-          .registerRandomizer(field -> "agent".equals(field.getName()), random -> null);
+          .registerRandomizer(
+              field ->
+                  "agent".equals(field.getName())
+                      || "requestChannelType".equals(field.getName())
+                      || "requestToolName".equals(field.getName()),
+              random -> null);
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
@@ -303,7 +309,9 @@ final class ElasticsearchExporterIT {
         || valueType == ValueType.INCIDENT
         || valueType == ValueType.USER_TASK
         || valueType == ValueType.DEPLOYMENT
-        || valueType == ValueType.JOB) {
+        || valueType == ValueType.JOB
+        || valueType == ValueType.AGENT_INSTANCE
+        || valueType == ValueType.AGENT_DEFINITION) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
           .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
@@ -403,6 +411,31 @@ final class ElasticsearchExporterIT {
 
       response1 = testClient.getIndexSettings(index1);
       assertIndexSettingsHasNoLifecyclePolicy(response1);
+    }
+
+    @Test
+    void shouldPreserveExistingLifecyclePolicyWhenManagePolicyIsDisabled() {
+      // given retention is enabled and a record is exported so the policy is set
+      configureExporter(true);
+      final var record1 = generateRecord(ValueType.JOB);
+      export(record1);
+
+      final var index1 = indexRouter.indexFor(record1);
+      var response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasLifecyclePolicy(response1);
+
+      // when retention is disabled but the exporter is told not to manage policies
+      configureExporter(
+          config -> {
+            config.retention.setEnabled(false);
+            config.retention.setManagePolicy(false);
+          });
+      final var record2 = generateRecord(ValueType.JOB);
+      export(record2);
+
+      // then the pre-existing policy must remain on the existing index
+      response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasLifecyclePolicy(response1);
     }
 
     /**
@@ -562,7 +595,7 @@ final class ElasticsearchExporterIT {
               .getEsClient()
               .indices()
               .get(r -> r.index(firstRecordIndexName))
-              .result()
+              .indices()
               .get(firstRecordIndexName)
               .aliases();
       assertThat(firstRecordIndexAliases.size()).isEqualTo(1);
@@ -574,7 +607,7 @@ final class ElasticsearchExporterIT {
               .getEsClient()
               .indices()
               .get(r -> r.index(secondRecordIndexName))
-              .result()
+              .indices()
               .get(secondRecordIndexName)
               .aliases();
       assertThat(secondRecordIndexAliases.size()).isEqualTo(1);

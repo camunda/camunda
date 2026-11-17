@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_DEFINITION;
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_HISTORY;
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CHUNK;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
@@ -14,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_EXECUTI
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_INITIALIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
@@ -26,25 +30,29 @@ import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB_METRICS_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_BUSINESS_ID;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
+import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
-import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
@@ -61,6 +69,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -82,6 +91,7 @@ public class CamundaExporter implements Exporter {
   private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
+  private final TargetIndexLocator indexLocator;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private CamundaBackgroundTaskManager taskManager;
@@ -92,19 +102,25 @@ public class CamundaExporter implements Exporter {
   private long lastFlushTimestamp = 0L;
 
   private long flushDelayMs;
+  private ScheduledTask scheduledFlushTask;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
-    this(new DefaultExporterResourceProvider(), null);
+    this(new TargetIndexLocator(), new DefaultExporterResourceProvider(), null);
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider) {
-    this(provider, null);
+  public CamundaExporter(
+      final TargetIndexLocator indexLocator, final ExporterResourceProvider provider) {
+    this(indexLocator, provider, null);
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
+  public CamundaExporter(
+      final TargetIndexLocator indexLocator,
+      final ExporterResourceProvider provider,
+      final ExporterMetadata metadata) {
+    this.indexLocator = indexLocator;
     this.provider = provider;
     this.metadata = metadata;
   }
@@ -138,6 +154,7 @@ public class CamundaExporter implements Exporter {
 
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
+      metadata.setLastFlushedPosition(controller.getLastExportedRecordPosition());
       taskManager.start();
       final long now = context.clock().millis();
       lastFlushTimestamp = now;
@@ -153,6 +170,10 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
+    if (scheduledFlushTask != null) {
+      scheduledFlushTask.cancel();
+      scheduledFlushTask = null;
+    }
 
     if (writer != null) {
       try {
@@ -319,7 +340,7 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter createBatchWriter() {
     final var builder =
-        ExporterBatchWriter.Builder.begin(metrics)
+        ExporterBatchWriter.Builder.begin(indexLocator, metrics)
             .withCustomErrorHandlers(provider.getCustomErrorHandlers());
     provider.getExportHandlers().forEach(builder::withHandler);
     return builder.build();
@@ -331,7 +352,9 @@ public class CamundaExporter implements Exporter {
       nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
     }
 
-    controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
+    scheduledFlushTask =
+        controller.scheduleCancellableTask(
+            Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
@@ -351,7 +374,9 @@ public class CamundaExporter implements Exporter {
     if (writer.getBatchSize() > 0) {
       try (final var ignored = metrics.measureFlushDuration()) {
         metrics.recordBulkSize(writer.getBatchSize());
-        final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
+        final long maxBulkBytes = configuration.getBulk().getMemoryLimit() * 1024L * 1024L;
+        final BatchRequest batchRequest =
+            clientAdapter.createBatchRequest().withMetrics(metrics).withMaxBytes(maxBulkBytes);
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
@@ -365,6 +390,7 @@ public class CamundaExporter implements Exporter {
     // If the synchronous flush fails then the exporter will be invoked with the same record again.
     lastFlushTimestamp = context.clock().millis();
     updateLastExportedPosition(lastPosition);
+    metadata.setLastFlushedPosition(Math.max(metadata.getLastFlushedPosition(), lastPosition));
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
@@ -383,13 +409,14 @@ public class CamundaExporter implements Exporter {
             DECISION,
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
+            PROCESS_INSTANCE_BUSINESS_ID,
             PROCESS_INSTANCE_CREATION,
             PROCESS_INSTANCE_MIGRATION,
             PROCESS_INSTANCE_MODIFICATION,
             ROLE,
             VARIABLE,
-            VARIABLE_DOCUMENT,
             PROCESS_MESSAGE_SUBSCRIPTION,
+            MESSAGE_SUBSCRIPTION,
             MESSAGE_START_EVENT_SUBSCRIPTION,
             JOB,
             INCIDENT,
@@ -407,7 +434,13 @@ public class CamundaExporter implements Exporter {
             CLUSTER_VARIABLE,
             HISTORY_DELETION,
             JOB_METRICS_BATCH,
-            GLOBAL_LISTENER);
+            GLOBAL_LISTENER,
+            AGENT_INSTANCE,
+            AGENT_HISTORY,
+            AGENT_DEFINITION,
+            TIMER,
+            SIGNAL_SUBSCRIPTION,
+            CONDITIONAL_SUBSCRIPTION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

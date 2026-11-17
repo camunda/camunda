@@ -52,6 +52,12 @@ public interface ProcessInstance {
 
   OffsetDateTime getEndDate();
 
+  /**
+   * @return the time this process instance most recently entered the {@code SUSPENDED} state, or
+   *     {@code null} if it is not currently suspended
+   */
+  OffsetDateTime getSuspendedDate();
+
   ProcessInstanceState getState();
 
   Boolean getHasIncident();
@@ -61,4 +67,14 @@ public interface ProcessInstance {
   Set<String> getTags();
 
   String getBusinessId();
+
+  /**
+   * Returns the storage ordinal this process instance's data belongs to.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} unless the data was exported with
+   * archiverless mode enabled (version 8.11 or later).
+   *
+   * @return the storage ordinal, or {@code null}
+   */
+  Integer getStorageOrdinal();
 }

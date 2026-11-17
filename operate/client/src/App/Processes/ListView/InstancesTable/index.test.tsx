@@ -18,6 +18,7 @@ import {processInstancesSelectionStore} from 'modules/stores/instancesSelection'
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import * as clientConfig from 'modules/utils/getClientConfig';
+import {createProcessInstance} from 'modules/testUtils';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/hooks/useCallbackPrompt', () => {
@@ -47,6 +48,8 @@ const mockProcessInstances: ProcessInstance[] = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
+    suspendedDate: null,
   },
 ];
 
@@ -162,6 +165,45 @@ describe('<InstancesTable />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should display the suspended state for an instance with an incident', () => {
+    const suspendedInstance = createProcessInstance({
+      processInstanceKey: 'suspended-instance',
+      state: 'SUSPENDED',
+      hasIncident: true,
+    });
+
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={[suspendedInstance]}
+        totalCount={1}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByRole('img', {name: 'suspended state'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', {name: 'incident state'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should offer batch selection while suspended instances are filtered', () => {
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalCount={1}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper(`${Paths.processes()}?suspended=true`)},
+    );
+
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+  });
+
   it('should render batch modification footer', async () => {
     const {user} = render(
       <InstancesTable
@@ -211,5 +253,48 @@ describe('<InstancesTable />', () => {
     expect(
       screen.getByText('There are no Instances matching this filter set'),
     ).toBeInTheDocument();
+  });
+
+  it('should show Business ID column when at least one instance has a businessId', async () => {
+    const instancesWithBusinessId: ProcessInstance[] = [
+      {
+        ...mockProcessInstances[0]!,
+        businessId: 'order-12345',
+      },
+    ];
+
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={instancesWithBusinessId}
+        totalCount={instancesWithBusinessId.length}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /Business ID/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Sort by Business ID/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('order-12345')).toBeInTheDocument();
+  });
+
+  it('should hide Business ID column when no instance has a businessId', async () => {
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalCount={mockProcessInstances.length}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.queryByRole('columnheader', {name: /Business ID/i}),
+    ).not.toBeInTheDocument();
   });
 });

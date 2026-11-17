@@ -11,6 +11,10 @@ node --test spectral-tests/*.test.js
 
 Requires [Spectral CLI](https://docs.stoplight.io/docs/spectral/b8391e051b7d8-installation) (globally installed or via `npx`).
 
+CI runs the same suite in the `Lint / C8 REST OpenAPI` job (see
+`.github/workflows/ci.yml`), gated on the `openapi-change` path filter, so a
+broken rule or fixture fails the build.
+
 ## Structure
 
 ```
@@ -19,15 +23,30 @@ spectral-tests/
 ├── *.test.js           # Test files (one per custom function)
 └── fixtures/
     └── <rule-name>/    # Multi-part YAML spec fixtures per rule
-        ├── rest-api.yaml       # Entry point (mirrors real spec structure)
-        ├── things.yaml         # Domain schemas with valid + invalid cases
-        └── search-models.yaml  # Shared models (allOf composition targets)
+        ├── rest-api.yaml         # Entry point (mirrors real spec structure)
+        ├── things.yaml           # Domain schemas with valid + invalid cases
+        ├── search-models.yaml    # Shared models (allOf composition targets)
+        ├── semantic-kinds.json   # Optional: fixture-local semantic-kinds
+        │                         # registry (auto-loaded via the
+        │                         # SPECTRAL_SEMANTIC_KINDS_REGISTRY env
+        │                         # var by helpers.js when present).
+        └── nullable-request-allowlist.json
+                                  # Optional: fixture-local allowlist for
+                                  # no-nullable-request-properties (auto-loaded
+                                  # via the SPECTRAL_NULLABLE_REQUEST_ALLOWLIST
+                                  # env var by helpers.js when present).
 ```
 
 ## Adding tests for a new rule
 
 1. Create a fixture directory under `fixtures/<rule-name>/` with a multi-part
    YAML spec that exercises both valid and invalid cases.
-2. Create `<ruleName>.test.js` using the helpers from `helpers.js`.
-3. Run `node --test spectral-tests/<ruleName>.test.js` to verify.
+2. Create `<ruleName>.test.js` using the helpers from `helpers.js`, or add a
+   new `describe` block to an existing test file when the rule is closely
+   related (e.g. `properties-added-in-version-shape` lives in
+   `verifyAddedInVersion.test.js`).
+3. Run the test file you touched to verify — either the new
+   `node --test spectral-tests/<ruleName>.test.js`, or the existing one you
+   added the `describe` block to (e.g.
+   `node --test spectral-tests/verifyAddedInVersion.test.js`).
 

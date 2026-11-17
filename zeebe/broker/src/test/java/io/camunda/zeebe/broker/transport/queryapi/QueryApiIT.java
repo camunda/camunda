@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -44,7 +45,7 @@ public final class QueryApiIT {
   public final ActorSchedulerRule actor = new ActorSchedulerRule();
   public final EmbeddedBrokerRule broker =
       new EmbeddedBrokerRule(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true));
-  public final CommandApiRule command = new CommandApiRule(broker::getAtomixCluster);
+  public final CommandApiRule command = new CommandApiRule(1, broker::getAtomixCluster);
 
   @Rule
   public final RuleChain ruleChain = RuleChain.outerRule(broker).around(command).around(actor);
@@ -218,6 +219,11 @@ public final class QueryApiIT {
     @Override
     public RequestType getRequestType() {
       return RequestType.QUERY;
+    }
+
+    @Override
+    public String getPartitionGroup() {
+      return DEFAULT_PHYSICAL_TENANT_ID;
     }
 
     @Override

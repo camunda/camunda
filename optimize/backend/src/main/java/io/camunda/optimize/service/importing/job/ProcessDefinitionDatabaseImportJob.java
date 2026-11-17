@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
+import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.List;
 
 public class ProcessDefinitionDatabaseImportJob
@@ -21,8 +22,9 @@ public class ProcessDefinitionDatabaseImportJob
   public ProcessDefinitionDatabaseImportJob(
       final ProcessDefinitionWriter processDefinitionWriter,
       final Runnable importCompleteCallback,
-      final DatabaseClient databaseClient) {
-    super(importCompleteCallback, databaseClient);
+      final DatabaseClient databaseClient,
+      final int partitionId) {
+    super(importCompleteCallback, databaseClient, ValueType.PROCESS.name(), partitionId);
     this.processDefinitionWriter = processDefinitionWriter;
   }
 

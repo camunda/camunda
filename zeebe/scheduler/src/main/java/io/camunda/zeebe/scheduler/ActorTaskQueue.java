@@ -8,19 +8,47 @@
 package io.camunda.zeebe.scheduler;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.agrona.UnsafeApi;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.util.function.Consumer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
-@SuppressWarnings("restriction")
 public final class ActorTaskQueue extends ActorTaskQueueHead {
+  // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
+  static final int MIN_STALE_NODES_TO_SKIP = 16;
+
+  private static final VarHandle HEAD;
+  private static final VarHandle TAIL;
+
+  static {
+    try {
+      final var lookup = MethodHandles.lookup();
+      HEAD = lookup.findVarHandle(ActorTaskQueueHead.class, "head", ActorTaskQueueNode.class);
+      TAIL = lookup.findVarHandle(ActorTaskQueueTail.class, "tail", ActorTaskQueueNode.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
+    }
+  }
+
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
+  /**
+   * Test-only hook, always null in production. Runs in {@link #poll()} right before the tail is
+   * reset to {@link #empty}, so tests can deterministically interleave an {@link #append} there.
+   */
+  private final Consumer<ActorTaskQueue> beforeTailReset;
+
   public ActorTaskQueue() {
+    this(null);
+  }
+
+  ActorTaskQueue(final Consumer<ActorTaskQueue> beforeTailReset) {
+    this.beforeTailReset = beforeTailReset;
     headOrdered(empty);
-    UnsafeApi.putReferenceRelease(this, TAIL_OFFSET, empty);
+    TAIL.setRelease(this, empty);
   }
 
   /** appends a task at the end (tail) of the list */
@@ -38,21 +66,65 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * Attempts to steal a task from this list. The operation does not actually remove the task.
    * Instead, it modifies the task's state.
    *
+   * <p>Nodes whose task was already claimed stay in the list until the owner pops them. A claim
+   * only ever increments the task's state count, so such a node can never be claimed again. To
+   * avoid walking long runs of them on every attempt (e.g. while the owner is blocked and the list
+   * keeps growing), such runs are unlinked from the {@code prev} chain, which is only used for
+   * stealing. Short runs are left in place, so that the common case does not write to shared nodes.
+   *
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    ActorTaskQueueNode node = tail;
+    final ActorTaskQueueNode newest = tail;
+    // A thief only ever rewrites the prev of the second-newest node: the tail may still be linked
+    // by its producer. Stale nodes walked below it are counted, and if there are enough, its prev
+    // is pointed at the node where the walk stops.
+    ActorTaskQueueNode anchor = null;
+    ActorTaskQueueNode anchorPrev = null;
+    int stale = 0;
 
+    ActorTaskQueueNode node = newest;
     while (node != null && node != empty) {
       final ActorTask task = node.task;
       if (task.claim(node.stateCount)) {
+        skipStaleNodes(anchor, anchorPrev, node, stale);
         return task;
       }
 
-      node = node.prev;
+      final ActorTaskQueueNode older = node.prev;
+      if (older == null) {
+        // still being appended, or popped after the walk read the link to it: nothing older to
+        // steal
+        skipStaleNodes(anchor, anchorPrev, node, stale);
+        return null;
+      }
+
+      if (anchor != null) {
+        stale++;
+      } else if (node != newest) {
+        anchor = node;
+        anchorPrev = older;
+      }
+      node = older;
     }
 
+    skipStaleNodes(anchor, anchorPrev, node, stale);
     return null;
+  }
+
+  /**
+   * Points {@code anchor} past {@code stale} claimed nodes to {@code next}, if that saves a long
+   * walk. Does nothing if its prev changed since the walk read it: another thief may have unlinked
+   * further in the meantime, and overwriting that would bring back the nodes it skipped.
+   */
+  static void skipStaleNodes(
+      final ActorTaskQueueNode anchor,
+      final ActorTaskQueueNode anchorPrev,
+      final ActorTaskQueueNode next,
+      final int stale) {
+    if (anchor != null && stale >= MIN_STALE_NODES_TO_SKIP && next != null) {
+      anchor.casPrev(anchorPrev, next);
+    }
   }
 
   public ActorTask pop() {
@@ -84,17 +156,25 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
       head.prevOrdered(null);
       head.nextOrdered(null);
 
-      if (null == next.next) {
-        final ActorTaskQueueNode tail = this.tail;
-        if (tail == next && casTail(tail, empty)) {
-          next = empty;
-        }
+      if (null == next.next && tryResetTail(next)) {
+        next = empty;
       }
 
       headOrdered(next);
     }
 
     return value;
+  }
+
+  /**
+   * Resets the tail to {@link #empty} if {@code last} is still the tail. Fails if a concurrent
+   * {@link #append} swapped the tail in the meantime, in which case {@code last} must stay linked.
+   */
+  private boolean tryResetTail(final ActorTaskQueueNode last) {
+    if (beforeTailReset != null) {
+      beforeTailReset.accept(this);
+    }
+    return casTail(last, empty);
   }
 
   public ActorTaskQueueNode peek() {
@@ -107,41 +187,38 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   }
 
   private void headOrdered(final ActorTaskQueueNode head) {
-    UnsafeApi.putReferenceRelease(this, HEAD_OFFSET, head);
+    HEAD.setRelease(this, head);
   }
 
   private ActorTaskQueueNode swapTail(final ActorTaskQueueNode newTail) {
-    return (ActorTaskQueueNode) UnsafeApi.getAndSetReference(this, TAIL_OFFSET, newTail);
+    return (ActorTaskQueueNode) TAIL.getAndSet(this, newTail);
   }
 
   private boolean casTail(
       final ActorTaskQueueNode expectedNode, final ActorTaskQueueNode updateNode) {
-    return UnsafeApi.compareAndSetReference(this, TAIL_OFFSET, expectedNode, updateNode);
+    return TAIL.compareAndSet(this, expectedNode, updateNode);
   }
 }
 
-@SuppressWarnings("restriction")
 class ActorTaskQueueNode {
-  protected static final long PREV_OFFSET;
-  protected static final long NEXT_OFFSET;
+  private static final VarHandle NEXT;
+  private static final VarHandle PREV;
 
   static {
     try {
-      PREV_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      final var lookup = MethodHandles.lookup();
+      NEXT = lookup.findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
+      PREV = lookup.findVarHandle(ActorTaskQueueNode.class, "prev", ActorTaskQueueNode.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
     }
   }
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UnsafeApi (see NEXT_OFFSET usage)")
+      justification = "Written using a VarHandle (see NEXT usage)")
   volatile ActorTaskQueueNode next;
 
-  @SuppressFBWarnings(
-      value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UnsafeApi (see PREV_OFFSET usage)")
   volatile ActorTaskQueueNode prev;
 
   long stateCount;
@@ -149,12 +226,16 @@ class ActorTaskQueueNode {
 
   void nextOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UnsafeApi.putReferenceRelease(this, NEXT_OFFSET, t);
+    NEXT.setRelease(this, t);
   }
 
   void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UnsafeApi.putReferenceVolatile(this, PREV_OFFSET, t);
+    prev = t;
+  }
+
+  boolean casPrev(final ActorTaskQueueNode expected, final ActorTaskQueueNode update) {
+    return PREV.compareAndSet(this, expected, update);
   }
 
   public void setTask(final ActorTask task) {
@@ -162,27 +243,7 @@ class ActorTaskQueueNode {
   }
 }
 
-@SuppressWarnings("restriction")
 class ActorTaskQueuePadding1 {
-  protected static final long HEAD_OFFSET;
-  protected static final long TAIL_OFFSET;
-  protected static final long PREV_OFFSET;
-  protected static final long NEXT_OFFSET;
-  protected static final long STATE_COUNT_OFFSET;
-
-  static {
-    try {
-      HEAD_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueHead.class.getDeclaredField("head"));
-      TAIL_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueTail.class.getDeclaredField("tail"));
-      PREV_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
-      STATE_COUNT_OFFSET =
-          UnsafeApi.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
   @SuppressWarnings("unused")
   protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }

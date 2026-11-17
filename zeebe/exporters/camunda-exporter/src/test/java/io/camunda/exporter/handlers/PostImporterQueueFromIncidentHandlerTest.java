@@ -8,10 +8,16 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
@@ -66,8 +72,12 @@ public class PostImporterQueueFromIncidentHandlerTest {
   }
 
   @Test
-  void shouldGenerateIdsForCreated() {
+  void shouldExtractIdAndIndexesForCreated() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long expectedId = 123;
     final IncidentRecordValue decisionRecordValue =
         ImmutableIncidentRecordValue.builder()
@@ -82,16 +92,18 @@ public class PostImporterQueueFromIncidentHandlerTest {
                     .withValue(decisionRecordValue)
                     .withKey(expectedId));
 
-    // when
-    final var idList = underTest.generateIds(decisionRecord);
-
-    // then
-    assertThat(idList).containsExactly(expectedId + "-" + IncidentIntent.CREATED);
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, decisionRecord))
+        .containsExactly(new IdAndIndex(expectedId + "-" + IncidentIntent.CREATED, index));
   }
 
   @Test
-  void shouldGenerateIdsForMigrated() {
+  void shouldExtractIdAndIndexesForMigrated() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long expectedId = 123;
     final IncidentRecordValue decisionRecordValue =
         ImmutableIncidentRecordValue.builder()
@@ -106,11 +118,9 @@ public class PostImporterQueueFromIncidentHandlerTest {
                     .withValue(decisionRecordValue)
                     .withKey(expectedId));
 
-    // when
-    final var idList = underTest.generateIds(decisionRecord);
-
-    // then
-    assertThat(idList).containsExactly(expectedId + "-" + IncidentIntent.CREATED);
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, decisionRecord))
+        .containsExactly(new IdAndIndex(expectedId + "-" + IncidentIntent.CREATED, index));
   }
 
   @Test
@@ -124,16 +134,19 @@ public class PostImporterQueueFromIncidentHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldAddEntityWithPartitionRoutingOnFlush() {
     // given
-    final PostImporterQueueEntity inputEntity = new PostImporterQueueEntity().setId("111");
+    final int partitionId = 3;
+    final PostImporterQueueEntity inputEntity =
+        new PostImporterQueueEntity().setId("111").setPartitionId(partitionId);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).addWithRouting(index, inputEntity, String.valueOf(partitionId));
   }
 
   @Test

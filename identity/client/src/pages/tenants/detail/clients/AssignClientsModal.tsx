@@ -7,10 +7,10 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantClient } from "src/utility/api/tenants";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -23,25 +23,16 @@ const AssignClientsModal: FC<UseEntityModalProps<Tenant["tenantId"]>> = ({
 }) => {
   const { t } = useTranslate("tenants");
   const [clientId, setClientId] = useState<string>("");
-  const [loadingAssignClient, setLoadingAssignClient] = useState(false);
-
-  const [callAssignClient] = useApiCall(assignTenantClient);
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignClient } = useMutation(
+    tenantMutations.assignClient(qc),
+  );
 
   const canSubmit = tenantId && clientId.length;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-
-    setLoadingAssignClient(true);
-    const { success } = await callAssignClient({
-      clientId,
-      tenantId,
-    });
-    setLoadingAssignClient(false);
-
-    if (success) {
-      onSuccess();
-    }
+    mutate({ clientId, tenantId }, { onSuccess });
   };
 
   useEffect(() => {

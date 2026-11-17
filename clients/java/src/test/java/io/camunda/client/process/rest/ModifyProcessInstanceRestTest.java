@@ -20,11 +20,13 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.AncestorScopeInstruction;
+import io.camunda.client.protocol.rest.DirectAncestorKeyInstruction;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.client.protocol.rest.SourceElementIdInstruction;
 import io.camunda.client.util.ClientRestTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -663,23 +665,22 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
       final boolean expectedUseParentScope,
       final int expectedVariableInstructions) {
     assertThat(moveInstruction.getSourceElementInstruction().getSourceType()).isEqualTo("byId");
-    assertThat(moveInstruction.getSourceElementInstruction().getSourceElementId())
+    assertThat(
+            ((SourceElementIdInstruction) moveInstruction.getSourceElementInstruction())
+                .getSourceElementId())
         .isEqualTo(expectedSourceElementId);
     assertThat(moveInstruction.getTargetElementId()).isEqualTo(expectedTargetElementId);
     if (expectedUseParentScope) {
       assertThat(moveInstruction.getAncestorScopeInstruction())
           .isNotNull()
-          .extracting(
-              AncestorScopeInstruction::getAncestorScopeType,
-              AncestorScopeInstruction::getAncestorElementInstanceKey)
-          .containsExactly("inferred", null);
+          .extracting(AncestorScopeInstruction::getAncestorScopeType)
+          .isEqualTo("inferred");
     } else {
-      assertThat(moveInstruction.getAncestorScopeInstruction())
-          .isNotNull()
-          .extracting(
-              AncestorScopeInstruction::getAncestorScopeType,
-              AncestorScopeInstruction::getAncestorElementInstanceKey)
-          .containsExactly("direct", ParseUtil.keyToString(expectedAncestorKey));
+      final DirectAncestorKeyInstruction ancestor =
+          (DirectAncestorKeyInstruction) moveInstruction.getAncestorScopeInstruction();
+      assertThat(ancestor.getAncestorScopeType()).isEqualTo("direct");
+      assertThat(ancestor.getAncestorElementInstanceKey())
+          .isEqualTo(ParseUtil.keyToString(expectedAncestorKey));
     }
     assertThat(moveInstruction.getVariableInstructions()).hasSize(expectedVariableInstructions);
   }

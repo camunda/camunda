@@ -52,7 +52,7 @@ public final class ReplayStateTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
+          .withOnProcessedCallback(position -> lastProcessedPosition = position)
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
   @Parameters(name = "{0}")

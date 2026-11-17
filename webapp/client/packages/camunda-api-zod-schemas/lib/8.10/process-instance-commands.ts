@@ -17,10 +17,10 @@ const deleteProcessInstanceRequestBodySchema = z
 	.optional();
 type DeleteProcessInstanceRequestBody = z.infer<typeof deleteProcessInstanceRequestBodySchema>;
 
-const deleteProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const deleteProcessInstance = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const variableInstructionSchema = z.object({
 	variables: z.record(z.string(), z.unknown()),
@@ -70,10 +70,10 @@ const modifyProcessInstanceRequestBodySchema = z
 	);
 type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
 
-const modifyProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const modifyProcessInstance = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 export {
 	deleteProcessInstanceRequestBodySchema,

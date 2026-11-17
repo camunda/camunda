@@ -31,6 +31,7 @@ import io.camunda.client.jobhandling.JobWorkerChangeSet.PollIntervalChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.RequestTimeoutChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.RetryBackoffChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamEnabledChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamInactivityTimeoutChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamTimeoutChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantFilterChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
@@ -81,6 +82,7 @@ public class JobWorkerController {
       @Nullable final Boolean forceFetchAllVariables,
       @Nullable final Boolean streamEnabled,
       @Nullable final Duration streamTimeout,
+      @Nullable final Duration streamInactivityTimeout,
       @Nullable final Integer maxRetries,
       @Nullable final Duration retryBackoff,
       @Nullable final String tenantFilter,
@@ -102,6 +104,7 @@ public class JobWorkerController {
               forceFetchAllVariables,
               streamEnabled,
               streamTimeout,
+              streamInactivityTimeout,
               maxRetries,
               retryBackoff,
               tenantFilter));
@@ -123,6 +126,7 @@ public class JobWorkerController {
       @Nullable final Boolean forceFetchAllVariables,
       @Nullable final Boolean streamEnabled,
       @Nullable final Duration streamTimeout,
+      @Nullable final Duration streamInactivityTimeout,
       @Nullable final Integer maxRetries,
       @Nullable final Duration retryBackoff,
       @Nullable final String tenantFilter,
@@ -145,6 +149,7 @@ public class JobWorkerController {
               forceFetchAllVariables,
               streamEnabled,
               streamTimeout,
+              streamInactivityTimeout,
               maxRetries,
               retryBackoff,
               tenantFilter));
@@ -164,6 +169,7 @@ public class JobWorkerController {
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
+      final Duration streamInactivityTimeout,
       final Integer maxRetries,
       final Duration retryBackoff,
       final String tenantFilter) {
@@ -207,6 +213,9 @@ public class JobWorkerController {
     if (streamTimeout != null) {
       changeSets.add(new StreamTimeoutChangeSet(streamTimeout));
     }
+    if (streamInactivityTimeout != null) {
+      changeSets.add(new StreamInactivityTimeoutChangeSet(streamInactivityTimeout));
+    }
     if (maxRetries != null) {
       changeSets.add(new MaxRetriesChangeSet(maxRetries));
     }
@@ -247,6 +256,7 @@ public class JobWorkerController {
         jobWorkerValue.getPollInterval().value(),
         jobWorkerValue.getStreamEnabled().value(),
         jobWorkerValue.getStreamTimeout().value(),
+        jobWorkerValue.getStreamInactivityTimeout().value(),
         jobWorkerValue.getMaxRetries().value(),
         jobWorkerValue.getRetryBackoff().value(),
         jobWorkerValue.getTenantFilter().value());
@@ -266,6 +276,7 @@ public class JobWorkerController {
       Duration pollInterval,
       boolean streamEnabled,
       Duration streamTimeout,
+      Duration streamInactivityTimeout,
       int maxRetries,
       Duration retryBackoff,
       TenantFilter tenantFilter) {}

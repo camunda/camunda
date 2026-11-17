@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.atomix.cluster.BrokerMemberId;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -19,9 +22,9 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public interface BackupIdentifierWildcard {
   /**
-   * @return id of the broker which took this backup.
+   * @return the broker that took this backup, or empty to match any broker
    */
-  Optional<Integer> nodeId();
+  Optional<BrokerMemberId> brokerId();
 
   /**
    * @return id of the partition of which the backup is taken
@@ -42,7 +45,7 @@ public interface BackupIdentifierWildcard {
 
   /**
    * Tries to build the longest possible prefix based on the given wildcard. The prefix is
-   * constructed as follows: {@code ${partitionId}/${checkpointId}/${nodeId}}. If a field is not
+   * constructed as follows: {@code ${partitionId}/${checkpointId}/${brokerId}}. If a field is not
    * present or is a non-exact match, all following fields are omitted. For example, if the
    * checkpoint id should match a {@link CheckpointPattern.Prefix prefix}, the returned prefix is
    * {@code ${partitionId}/${checkpointPattern.Prefix}}. If none of the fields are present, an empty
@@ -59,12 +62,18 @@ public interface BackupIdentifierWildcard {
 
     if (wildcard.checkpointPattern() instanceof Exact) {
       prefix.append("/");
-      // Checkpoint pattern is exact so we can include node id if present
-      if (wildcard.nodeId().isPresent()) {
-        prefix.append(wildcard.nodeId().get());
-      }
+      wildcard.brokerId().ifPresent(id -> prefix.append(id.id()));
     }
     return prefix.toString();
+  }
+
+  /**
+   * Returns a regex that matches the broker member path segment for the given wildcard. When
+   * brokerId is present, returns the exact encoded segment. Otherwise returns a pattern that
+   * matches the full set of possible forms (both zoned and zone-less).
+   */
+  static String memberIdRegex(final BackupIdentifierWildcard wildcard) {
+    return wildcard.brokerId().map(id -> Pattern.quote(id.id())).orElse(MemberId.regexPattern());
   }
 
   sealed interface CheckpointPattern {
@@ -118,15 +127,12 @@ public interface BackupIdentifierWildcard {
 
     record Prefix(String prefix) implements CheckpointPattern {
       public Prefix {
-        if (prefix.isEmpty()) {
+        // Digits only: the prefix is embedded verbatim in asRegex(), so a sign or any other
+        // character Long.valueOf would otherwise accept could produce an invalid or unintended
+        // regex where a store matches the pattern against a manifest path.
+        if (!prefix.matches("\\d+")) {
           throw new IllegalArgumentException(
-              "Expected prefix to be non-empty, but got empty string");
-        }
-        try {
-          Long.valueOf(prefix);
-        } catch (final NumberFormatException e) {
-          throw new IllegalArgumentException(
-              "Expected prefix to be a valid number, but got '%s'".formatted(prefix), e);
+              "Expected prefix to be one or more digits, but got '%s'".formatted(prefix));
         }
       }
 

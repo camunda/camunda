@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
@@ -18,12 +19,14 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
       new LongProperty("processInstanceKey", -1);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty("rootProcessInstanceKey", -1);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public BatchOperationItem() {
-    super(3);
+    super(4);
     declareProperty(itemKeyProperty)
         .declareProperty(processInstanceKeyProperty)
-        .declareProperty(rootProcessInstanceKeyProperty);
+        .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(storageOrdinalProperty);
   }
 
   public BatchOperationItem(
@@ -32,6 +35,15 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
     setItemKey(itemKey);
     setProcessInstanceKey(processInstanceKey);
     setRootProcessInstanceKey(rootProcessInstanceKey);
+  }
+
+  public BatchOperationItem(
+      final long itemKey,
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final int storageOrdinal) {
+    this(itemKey, processInstanceKey, rootProcessInstanceKey);
+    setStorageOrdinal(storageOrdinal);
   }
 
   @Override
@@ -64,10 +76,21 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
     return this;
   }
 
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
+  }
+
+  public BatchOperationItem setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
+    return this;
+  }
+
   public BatchOperationItem wrap(final BatchOperationItemValue value) {
     setItemKey(value.getItemKey());
     setProcessInstanceKey(value.getProcessInstanceKey());
     setRootProcessInstanceKey(value.getRootProcessInstanceKey());
+    setStorageOrdinal(value.getStorageOrdinal());
     return this;
   }
 }

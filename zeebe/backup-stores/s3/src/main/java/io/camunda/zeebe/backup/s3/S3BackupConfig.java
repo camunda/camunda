@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import io.camunda.zeebe.backup.common.BackupStorePaths;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Holds configuration for the {@link S3BackupStore S3 Backup Store}.
@@ -27,11 +29,21 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  * @param forcePathStyleAccess Forces the AWS SDK to always use paths for accessing the bucket. Off
  *     by default, which allows the AWS SDK to choose virtual-hosted-style bucket access.
  * @param compressionAlgorithm Algorithm to use (if any) for compressing backup contents.
- * @param basePath Prefix to use for all objects in this bucket. Must be non-empty and not start or
- *     end with '/'.
+ * @param basePath Prefix to use for all objects in this bucket. Leading and trailing '/' are
+ *     removed, and a blank value means no prefix.
  * @param maxConcurrentConnections Maximum number of connections allowed in a connection pool.
  * @param connectionAcquisitionTimeout Timeout for acquiring an already-established connection from
  *     a connection pool to a remote service.
+ * @param readTimeout Timeout for reading a response from an already-established connection. A
+ *     single request exceeding this timeout fails and may be retried, as long as {@code
+ *     apiCallTimeout} is not exhausted. If empty, the AWS SDK default of 30s is used.
+ * @param writeTimeout Timeout for writing a request to an already-established connection, with the
+ *     same retry semantics as {@code readTimeout}. If empty, the AWS SDK default of 30s is used.
+ * @param ssecKey Optional base64-encoded 32-byte AES-256 key. When present, all objects are written
+ *     and read using server-side encryption with a caller-provided key (SSE-C).
+ * @param defaultsMode Defaults mode of the AWS SDK client. If empty, {@link DefaultsMode#AUTO} is
+ *     used, which probes the EC2 instance metadata endpoint to detect the runtime environment and
+ *     can block for a couple of seconds when not running on AWS.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -51,7 +63,11 @@ public record S3BackupConfig(
     Optional<String> basePath,
     Integer maxConcurrentConnections,
     Duration connectionAcquisitionTimeout,
-    boolean supportLegacyMd5) {
+    boolean supportLegacyMd5,
+    Optional<String> ssecKey,
+    Optional<Duration> readTimeout,
+    Optional<Duration> writeTimeout,
+    DefaultsMode defaultsMode) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -71,30 +87,62 @@ public record S3BackupConfig(
                 .formatted(compressionAlgorithm.get(), supported));
       }
     }
-    if (basePath.isPresent()) {
-      final var prefix = basePath.get();
-      if (prefix.isEmpty()) {
-        throw new IllegalArgumentException(
-            "basePath is set but empty. It must be either unset or not empty.");
-      }
-      if (prefix.startsWith("/") || prefix.endsWith("/")) {
-        throw new IllegalArgumentException(
-            "basePath must not start or end with '/' but was: %s".formatted(prefix));
-      }
-    }
+    basePath = BackupStorePaths.sanitizeBasePath(basePath.orElse(null));
+    ssecKey.ifPresent(SseCKey::decodeAndValidate);
+  }
+
+  @Override
+  public String toString() {
+    return "S3BackupConfig{"
+        + "bucketName='"
+        + bucketName
+        + '\''
+        + ", endpoint="
+        + endpoint
+        + ", region="
+        + region
+        + ", credentials="
+        + credentials
+        + ", apiCallTimeout="
+        + apiCallTimeout
+        + ", forcePathStyleAccess="
+        + forcePathStyleAccess
+        + ", compressionAlgorithm="
+        + compressionAlgorithm
+        + ", basePath="
+        + basePath
+        + ", maxConcurrentConnections="
+        + maxConcurrentConnections
+        + ", connectionAcquisitionTimeout="
+        + connectionAcquisitionTimeout
+        + ", supportLegacyMd5="
+        + supportLegacyMd5
+        + ", ssecKey="
+        + ssecKey.map(key -> "<redacted>")
+        + ", readTimeout="
+        + readTimeout
+        + ", writeTimeout="
+        + writeTimeout
+        + ", defaultsMode="
+        + defaultsMode
+        + '}';
   }
 
   public static class Builder {
 
-    private String bucketName;
-    private String endpoint;
-    private String region;
-    private Duration apiCallTimeoutMs;
+    private @Nullable String bucketName;
+    private @Nullable String endpoint;
+    private @Nullable String region;
+    private @Nullable Duration apiCallTimeoutMs;
     private boolean forcePathStyleAccess = false;
-    private String compressionAlgorithm;
-    private Credentials credentials;
-    private String basePath;
+    private @Nullable String compressionAlgorithm;
+    private @Nullable Credentials credentials;
+    private @Nullable String basePath;
     private boolean supportLegacyMd5 = false;
+    private @Nullable String ssecKey;
+    private @Nullable Duration readTimeout;
+    private @Nullable Duration writeTimeout;
+    private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -157,7 +205,30 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withSsecKey(final String ssecKey) {
+      this.ssecKey = ssecKey;
+      return this;
+    }
+
+    public Builder withReadTimeout(final Duration readTimeout) {
+      this.readTimeout = readTimeout;
+      return this;
+    }
+
+    public Builder withWriteTimeout(final Duration writeTimeout) {
+      this.writeTimeout = writeTimeout;
+      return this;
+    }
+
+    public Builder withDefaultsMode(final DefaultsMode defaultsMode) {
+      this.defaultsMode = defaultsMode;
+      return this;
+    }
+
     public S3BackupConfig build() {
+      if (bucketName == null) {
+        throw new IllegalArgumentException("Bucket name must not be empty.");
+      }
       return new S3BackupConfig(
           bucketName,
           Optional.ofNullable(endpoint),
@@ -169,7 +240,11 @@ public record S3BackupConfig(
           Optional.ofNullable(basePath),
           maxConcurrentConnections,
           connectionAcquisitionTimeout,
-          supportLegacyMd5);
+          supportLegacyMd5,
+          Optional.ofNullable(ssecKey),
+          Optional.ofNullable(readTimeout),
+          Optional.ofNullable(writeTimeout),
+          defaultsMode);
     }
   }
 
@@ -184,6 +259,32 @@ public record S3BackupConfig(
           + "<redacted>"
           + '\''
           + '}';
+    }
+  }
+
+  /**
+   * Subset of the AWS SDK defaults modes. {@code MOBILE} is intentionally left out: it tunes the
+   * client for mobile applications, which a broker is not.
+   */
+  public enum DefaultsMode {
+    LEGACY,
+    STANDARD,
+    CROSS_REGION,
+    IN_REGION,
+    AUTO;
+
+    public static DefaultsMode defaultValue() {
+      return AUTO;
+    }
+
+    public software.amazon.awssdk.awscore.defaultsmode.DefaultsMode toSdk() {
+      return switch (this) {
+        case LEGACY -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.LEGACY;
+        case STANDARD -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.STANDARD;
+        case CROSS_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.CROSS_REGION;
+        case IN_REGION -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.IN_REGION;
+        case AUTO -> software.amazon.awssdk.awscore.defaultsmode.DefaultsMode.AUTO;
+      };
     }
   }
 }

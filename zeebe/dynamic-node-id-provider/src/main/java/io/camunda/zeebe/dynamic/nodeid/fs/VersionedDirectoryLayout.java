@@ -18,6 +18,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,8 +117,8 @@ public final class VersionedDirectoryLayout {
     }
   }
 
-  public void initializeDirectory(final Version currentVersion, final Version copiedFromVersion)
-      throws IOException {
+  public void initializeDirectory(
+      final Version currentVersion, final @Nullable Version copiedFromVersion) throws IOException {
     final var initInfo = DirectoryInitializationInfo.copiedFrom(currentVersion, copiedFromVersion);
 
     final var bytes = objectMapper.writeValueAsBytes(initInfo);

@@ -8,9 +8,20 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.group.PersistedGroup;
+import java.util.List;
 import java.util.Optional;
 
 public interface GroupState {
 
   Optional<PersistedGroup> get(String groupId);
+
+  /**
+   * Finds groups by ID or name. First attempts to resolve {@code value} as a group ID. If no group
+   * with that ID exists, all groups are searched by name.
+   *
+   * @param value the group ID or name to search for
+   * @return list of matching groups: empty if none found, a single group when matched by ID or a
+   *     unique name, or multiple groups when several groups share the same name
+   */
+  List<PersistedGroup> findByIdOrName(String value);
 }

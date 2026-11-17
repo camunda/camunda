@@ -10,11 +10,13 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
@@ -93,13 +95,24 @@ final class PartitionJoinTest {
       final var partitionManager =
           (PartitionManagerImpl) joining.getBrokerContext().getPartitionManager();
 
-      // then
+      // then — the member joins as a learner...
       Assertions.assertThat(
               partitionManager.join(
                   1,
                   Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1),
-                  DynamicPartitionConfig.init()))
+                  DynamicPartitionConfig.init(),
+                  true))
           .succeedsWithin(Duration.ofSeconds(10));
+
+      // ... and can be promoted to a voting member once the leader's catch-up gate accepts. The
+      // promotion fails fast while the leader has not observed the member's log position yet, so
+      // it is retried like the configuration change appliers retry it.
+      Awaitility.await("Member is promoted to a voting member")
+          .pollInterval(Duration.ofMillis(500))
+          .untilAsserted(
+              () ->
+                  Assertions.assertThat(partitionManager.promote(1))
+                      .succeedsWithin(Duration.ofSeconds(10)));
     }
   }
 
@@ -113,19 +126,23 @@ final class PartitionJoinTest {
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             actorScheduler,
             atomixCluster,
             brokerClient,
-            new SecurityConfiguration(),
+            new SimpleMeterRegistry(),
+            EngineSecurityConfigurations.defaultConfig(),
             null,
             null,
             null,
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            PhysicalTenantIds.DEFAULT);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

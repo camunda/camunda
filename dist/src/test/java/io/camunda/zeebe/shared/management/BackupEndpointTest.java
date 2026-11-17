@@ -7,15 +7,19 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -23,12 +27,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.BackupTenantInfo;
 import io.camunda.management.backups.BackupType;
 import io.camunda.management.backups.CheckpointState;
 import io.camunda.management.backups.Error;
+import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.PartitionBackupRange;
 import io.camunda.management.backups.PartitionBackupState;
 import io.camunda.management.backups.PartitionCheckpointState;
+import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
 import io.camunda.zeebe.backup.client.api.BackupApi;
@@ -50,6 +57,7 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.shared.management.BackupEndpoint.PhysicalTenantBackup;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -57,13 +65,16 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
@@ -75,6 +86,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 
 @Execution(ExecutionMode.CONCURRENT)
@@ -119,7 +131,7 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).takeBackup(anyLong());
+      doThrow(failure).when(api).takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final WebEndpointResponse<?> response = endpoint.take(1);
@@ -141,7 +153,9 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new BackupAlreadyExistException(2, 1);
-      doReturn(CompletableFuture.failedFuture(failure)).when(api).takeBackup(anyLong());
+      doReturn(CompletableFuture.failedFuture(failure))
+          .when(api)
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final WebEndpointResponse<?> response = endpoint.take(1);
@@ -161,7 +175,9 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).takeBackup(anyLong());
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final var response = endpoint.take(1);
@@ -285,12 +301,12 @@ final class BackupEndpointTest {
 
       doAnswer(
               invocation -> {
-                final Long backupId = invocation.getArgument(0);
+                final Long backupId = invocation.getArgument(1);
                 return CompletableFuture.completedFuture(backupId);
               })
           .when(requestHandler)
-          .takeBackup(anyLong());
-      when(requestHandler.takeBackup()).thenCallRealMethod();
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
+      when(requestHandler.takeBackup(DEFAULT_PHYSICAL_TENANT_ID)).thenCallRealMethod();
 
       // when
       final var now = Instant.now();
@@ -299,7 +315,7 @@ final class BackupEndpointTest {
       final WebEndpointResponse<?> secondBackup = endpoint.take();
 
       // then
-      verify(requestHandler, times(2)).takeBackup();
+      verify(requestHandler, times(2)).takeBackup(DEFAULT_PHYSICAL_TENANT_ID);
       assertThat(firstBackup.getStatus()).isEqualTo(202);
       final var firstBody = (TakeBackupRuntimeResponse) firstBackup.getBody();
       final var backupId1 = firstBody.getBackupId();
@@ -331,21 +347,21 @@ final class BackupEndpointTest {
       when(config.getOffset()).thenReturn(offset);
       final var endpoint = new BackupEndpoint(requestHandler, config);
 
-      when(requestHandler.takeBackup()).thenCallRealMethod();
+      when(requestHandler.takeBackup(DEFAULT_PHYSICAL_TENANT_ID)).thenCallRealMethod();
       doAnswer(
               invocation -> {
-                final var backupId = invocation.getArgument(0);
+                final var backupId = invocation.getArgument(1);
                 return CompletableFuture.completedFuture(backupId);
               })
           .when(requestHandler)
-          .takeBackup(anyLong());
+          .takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
       final var now = Instant.now();
       final WebEndpointResponse<?> response = endpoint.take();
 
       // then
-      verify(requestHandler, times(1)).takeBackup(anyLong());
+      verify(requestHandler, times(1)).takeBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
       assertThat(response.getStatus()).isEqualTo(202);
       final var body = (TakeBackupRuntimeResponse) response.getBody();
       final var backupId = body.getBackupId();
@@ -365,7 +381,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(true);
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -384,7 +401,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(false);
       when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
       when(config.getCheckpointInterval()).thenReturn(null);
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -403,7 +421,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(false);
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -422,7 +441,8 @@ final class BackupEndpointTest {
       when(config.isContinuous()).thenReturn(true);
       when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
       when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
-      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      when(api.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(1L));
       final var endpoint = new BackupEndpoint(api, config);
 
       // when
@@ -445,10 +465,10 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).getStatus(anyLong());
+      doThrow(failure).when(api).getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query("1", null);
 
       // then
       assertThat(response.getBody())
@@ -467,10 +487,12 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api, config);
       final var backupStatus =
           new BackupStatus(1, State.DOES_NOT_EXIST, Optional.empty(), List.of());
-      doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.completedFuture(backupStatus))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query("1", null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -489,10 +511,12 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final var response = endpoint.query("1");
+      final var response = endpoint.query("1", null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -513,7 +537,9 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createPartitionBackupStatus();
-      doReturn(CompletableFuture.completedFuture(status)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.completedFuture(status))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       final String expectedJson =
           """
@@ -523,6 +549,7 @@ final class BackupEndpointTest {
              "details": [
                {
                  "partitionId": 1,
+                 "physicalTenantId": "default",
                  "state": "COMPLETED",
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
@@ -534,6 +561,7 @@ final class BackupEndpointTest {
                },
                {
                  "partitionId": 2,
+                 "physicalTenantId": "default",
                  "state": "COMPLETED",
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
@@ -543,6 +571,38 @@ final class BackupEndpointTest {
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
                }
+             ],
+             "physicalTenants": [
+               {
+                 "physicalTenantId": "default",
+                 "state": "COMPLETED",
+                 "details": [
+                   {
+                     "partitionId": 1,
+                     "physicalTenantId": "default",
+                     "state": "COMPLETED",
+                     "createdAt": "2022-09-19T14:44:17.340409393Z",
+                     "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
+                     "snapshotId" : "1-1-1-1",
+                     "firstLogPosition": 5,
+                     "checkpointPosition": 1,
+                     "brokerId": 0,
+                     "brokerVersion": "8.0.6"
+                   },
+                   {
+                     "partitionId": 2,
+                     "physicalTenantId": "default",
+                     "state": "COMPLETED",
+                     "createdAt": "2022-09-19T14:44:17.340409393Z",
+                     "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
+                     "snapshotId" : "1-1-1-1",
+                     "firstLogPosition": 5,
+                     "checkpointPosition": 1,
+                     "brokerId": 0,
+                     "brokerVersion": "8.0.6"
+                   }
+                 ]
+               }
              ]
            }
           """;
@@ -551,7 +611,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query("1", null);
 
       // then
       assertThat(response.getBody())
@@ -569,7 +629,9 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createFailedBackupStatus();
-      doReturn(CompletableFuture.completedFuture(status)).when(api).getStatus(anyLong());
+      doReturn(CompletableFuture.completedFuture(status))
+          .when(api)
+          .getStatus(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       final String expectedJson =
           """
@@ -580,6 +642,7 @@ final class BackupEndpointTest {
              "details": [
                {
                  "partitionId": 1,
+                 "physicalTenantId": "default",
                  "state": "COMPLETED",
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
@@ -591,8 +654,36 @@ final class BackupEndpointTest {
                },
                {
                  "partitionId": 2,
+                 "physicalTenantId": "default",
                  "state": "FAILED",
                  "failureReason": "Failed backup"
+               }
+             ],
+             "physicalTenants": [
+               {
+                 "physicalTenantId": "default",
+                 "state": "FAILED",
+                 "failureReason": "Failed backup",
+                 "details": [
+                   {
+                     "partitionId": 1,
+                     "physicalTenantId": "default",
+                     "state": "COMPLETED",
+                     "createdAt": "2022-09-19T14:44:17.340409393Z",
+                     "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
+                     "snapshotId" : "1-1-1-1",
+                     "firstLogPosition": 5,
+                     "checkpointPosition": 1,
+                     "brokerId": 0,
+                     "brokerVersion": "8.0.6"
+                   },
+                   {
+                     "partitionId": 2,
+                     "physicalTenantId": "default",
+                     "state": "FAILED",
+                     "failureReason": "Failed backup"
+                   }
+                 ]
                }
              ]
            }
@@ -602,7 +693,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query("1");
+      final WebEndpointResponse<?> response = endpoint.query("1", null);
 
       // then
       assertThat(response.getBody())
@@ -668,10 +759,10 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).listBackups("*");
+      doThrow(failure).when(api).listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       // when
-      final WebEndpointResponse<?> response = endpoint.listAll();
+      final WebEndpointResponse<?> response = endpoint.listAll(null);
 
       // then
       assertThat(response.getBody())
@@ -689,10 +780,12 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups("*");
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       // when
-      final var response = endpoint.listAll();
+      final var response = endpoint.listAll(null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -726,7 +819,7 @@ final class BackupEndpointTest {
               List.of(createPartialPartitionStatus(BackupStatusCode.IN_PROGRESS)));
       doReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)))
           .when(api)
-          .listBackups("*");
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       final String expectedJson =
           """
@@ -737,9 +830,25 @@ final class BackupEndpointTest {
                "details": [
                  {
                    "partitionId": 1,
+                   "physicalTenantId": "default",
                    "state": "COMPLETED",
                    "createdAt": "2022-09-19T14:44:17.340409393Z",
                    "brokerVersion": "8.0.6"
+                 }
+               ],
+               "physicalTenants": [
+                 {
+                   "physicalTenantId": "default",
+                   "state": "COMPLETED",
+                   "details": [
+                     {
+                       "partitionId": 1,
+                       "physicalTenantId": "default",
+                       "state": "COMPLETED",
+                       "createdAt": "2022-09-19T14:44:17.340409393Z",
+                       "brokerVersion": "8.0.6"
+                     }
+                   ]
                  }
                ]
              },
@@ -749,9 +858,25 @@ final class BackupEndpointTest {
                "details": [
                  {
                    "partitionId": 1,
+                   "physicalTenantId": "default",
                    "state": "IN_PROGRESS",
                    "createdAt": "2022-09-19T14:44:17.340409393Z",
                    "brokerVersion": "8.0.6"
+                 }
+               ],
+               "physicalTenants": [
+                 {
+                   "physicalTenantId": "default",
+                   "state": "IN_PROGRESS",
+                   "details": [
+                     {
+                       "partitionId": 1,
+                       "physicalTenantId": "default",
+                       "state": "IN_PROGRESS",
+                       "createdAt": "2022-09-19T14:44:17.340409393Z",
+                       "brokerVersion": "8.0.6"
+                     }
+                   ]
                  }
                ]
              }
@@ -765,7 +890,7 @@ final class BackupEndpointTest {
               mapper.getTypeFactory().constructCollectionType(List.class, BackupInfo.class));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.listAll();
+      final WebEndpointResponse<?> response = endpoint.listAll(null);
 
       // then
       assertThat(response.getBody())
@@ -782,10 +907,12 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups("*");
+      doReturn(CompletableFuture.completedFuture(List.of()))
+          .when(api)
+          .listBackups(DEFAULT_PHYSICAL_TENANT_ID, "*");
 
       // when
-      final WebEndpointResponse<?> response = endpoint.listAll();
+      final WebEndpointResponse<?> response = endpoint.listAll(null);
 
       // then
       assertThat(response.getBody())
@@ -821,10 +948,10 @@ final class BackupEndpointTest {
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).deleteBackup(1);
+      doThrow(failure).when(api).deleteBackup(DEFAULT_PHYSICAL_TENANT_ID, 1);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete("1");
+      final WebEndpointResponse<?> response = endpoint.delete("1", null);
 
       // then
       assertThat(response.getBody())
@@ -842,10 +969,12 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .deleteBackup(eq(DEFAULT_PHYSICAL_TENANT_ID), anyLong());
 
       // when
-      final var response = endpoint.delete("1");
+      final var response = endpoint.delete("1", null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -865,10 +994,12 @@ final class BackupEndpointTest {
       when(config.getSchedule()).thenReturn(Schedule.none());
       when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
+      doReturn(CompletableFuture.completedFuture(null))
+          .when(api)
+          .deleteBackup(DEFAULT_PHYSICAL_TENANT_ID, 1);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete("1");
+      final WebEndpointResponse<?> response = endpoint.delete("1", null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
@@ -884,10 +1015,12 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.completedFuture(null)).when(api).deleteRuntimeState();
+      doReturn(CompletableFuture.completedFuture(null))
+          .when(api)
+          .deleteRuntimeState(DEFAULT_PHYSICAL_TENANT_ID);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete("state");
+      final WebEndpointResponse<?> response = endpoint.delete("state", null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
@@ -900,10 +1033,12 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       final var endpoint = new BackupEndpoint(api, config);
-      doReturn(CompletableFuture.failedFuture(error)).when(api).deleteRuntimeState();
+      doReturn(CompletableFuture.failedFuture(error))
+          .when(api)
+          .deleteRuntimeState(DEFAULT_PHYSICAL_TENANT_ID);
 
       // when
-      final var response = endpoint.delete("state");
+      final var response = endpoint.delete("state", null);
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -921,10 +1056,10 @@ final class BackupEndpointTest {
       final var config = mock(BackupCfg.class);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
-      doThrow(failure).when(api).deleteRuntimeState();
+      doThrow(failure).when(api).deleteRuntimeState(DEFAULT_PHYSICAL_TENANT_ID);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete("state");
+      final WebEndpointResponse<?> response = endpoint.delete("state", null);
 
       // then
       assertThat(response.getBody())
@@ -958,11 +1093,13 @@ final class BackupEndpointTest {
                   new CheckpointInfo(
                       10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, endTimestamp))));
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges()).thenReturn(CompletableFuture.completedFuture(rangesResponse));
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(rangesResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
 
       // then
       assertThat(response.getBody())
@@ -973,6 +1110,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionCheckpointState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .checkpointTimestamp(
@@ -983,8 +1121,10 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionBackupRange()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .start(
                                   new PartitionBackupState()
+                                      .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                                       .checkpointId(1L)
                                       .checkpointPosition(1L)
                                       .firstLogPosition(1L)
@@ -994,6 +1134,7 @@ final class BackupEndpointTest {
                                               startTimestamp, ZoneId.of("UTC"))))
                               .end(
                                   new PartitionBackupState()
+                                      .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                                       .checkpointId(10L)
                                       .checkpointPosition(150L)
                                       .firstLogPosition(100L)
@@ -1015,12 +1156,13 @@ final class BackupEndpointTest {
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
                   1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L, 5L)));
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
 
       // then
       assertThat(response.getBody())
@@ -1031,6 +1173,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionBackupState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .firstLogPosition(5L)
@@ -1056,12 +1199,13 @@ final class BackupEndpointTest {
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
                   1, 2L, CheckpointType.MARKER, 30L, 50L)));
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
 
       // then
       assertThat(response.getBody())
@@ -1072,6 +1216,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionBackupState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .firstLogPosition(5L)
@@ -1083,6 +1228,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionCheckpointState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(2L)
                               .checkpointPosition(50L)
                               .checkpointTimestamp(
@@ -1101,12 +1247,13 @@ final class BackupEndpointTest {
 
       final var stateResponse = new CheckpointStateResponse();
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
 
       // then
       assertThat(response.getBody())
@@ -1146,12 +1293,13 @@ final class BackupEndpointTest {
       stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
       stateResponse.setBackupStates(Set.of(p1BackupState, p2BackupState, p3BackupState));
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
 
       // then
       assertThat(response.getBody())
@@ -1162,6 +1310,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionCheckpointState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .checkpointTimestamp(
@@ -1170,6 +1319,7 @@ final class BackupEndpointTest {
                               .checkpointType(io.camunda.management.backups.CheckpointType.MARKER),
                           new PartitionCheckpointState()
                               .partitionId(2)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(20L)
                               .checkpointTimestamp(
@@ -1178,6 +1328,7 @@ final class BackupEndpointTest {
                               .checkpointType(io.camunda.management.backups.CheckpointType.MARKER),
                           new PartitionCheckpointState()
                               .partitionId(3)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(40L)
                               .checkpointTimestamp(
@@ -1188,6 +1339,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionBackupState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .firstLogPosition(5L)
@@ -1197,6 +1349,7 @@ final class BackupEndpointTest {
                               .checkpointType(BackupType.MANUAL_BACKUP),
                           new PartitionBackupState()
                               .partitionId(2)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(20L)
                               .firstLogPosition(15L)
@@ -1206,6 +1359,7 @@ final class BackupEndpointTest {
                               .checkpointType(BackupType.MANUAL_BACKUP),
                           new PartitionBackupState()
                               .partitionId(3)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(40L)
                               .firstLogPosition(25L)
@@ -1228,12 +1382,13 @@ final class BackupEndpointTest {
       stateResponse.setBackupStates(
           Set.of(new CheckpointStateResponse.PartitionCheckpointState(1, 1L, null, 20L, 10L)));
 
-      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
-      when(api.getBackupRanges())
+      when(api.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE, null);
 
       // then
       assertThat(response.getBody())
@@ -1244,6 +1399,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionCheckpointState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .checkpointTimestamp(
@@ -1254,6 +1410,7 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionBackupState()
                               .partitionId(1)
+                              .physicalTenantId(DEFAULT_PHYSICAL_TENANT_ID)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
                               .firstLogPosition(-1L)
@@ -1261,6 +1418,630 @@ final class BackupEndpointTest {
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
                               .checkpointType(null))));
+    }
+  }
+
+  /**
+   * Cluster-wide and per-tenant behavior. A cluster-wide backup is a set of independent per-tenant
+   * backups, so these cover both the fan-out itself and how disagreeing tenants are reported.
+   */
+  @Nested
+  final class PhysicalTenantTest {
+
+    private static final String TENANT_A = "tenanta";
+    private static final String TENANT_B = "tenantb";
+
+    private BackupEndpoint endpoint(final PhysicalTenantBackup... tenants) {
+      final var backups = new LinkedHashMap<String, PhysicalTenantBackup>();
+      // deliberately not in id order, so the endpoint's own ordering is what the assertions see
+      backups.put(TENANT_B, tenants[1]);
+      backups.put(TENANT_A, tenants[0]);
+      return new BackupEndpoint(backups);
+    }
+
+    private PhysicalTenantBackup explicitIds(final BackupApi api) {
+      return new PhysicalTenantBackup(api, false);
+    }
+
+    private PhysicalTenantBackup generatedIds(final BackupApi api) {
+      return new PhysicalTenantBackup(api, true);
+    }
+
+    @Test
+    void shouldTakeBackupInEveryPhysicalTenantWithoutParameter() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.takeBackup(TENANT_A, 7L)).thenReturn(CompletableFuture.completedFuture(7L));
+      when(apiB.takeBackup(TENANT_B, 7L)).thenReturn(CompletableFuture.completedFuture(7L));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.take(7L, null);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .extracting(TakeBackupRuntimeResponse::getBackupIds)
+          .isEqualTo(Map.of(TENANT_A, 7L, TENANT_B, 7L));
+      verify(apiA).takeBackup(TENANT_A, 7L);
+      verify(apiB).takeBackup(TENANT_B, 7L);
+    }
+
+    @Test
+    void shouldTakeBackupOnlyInRequestedPhysicalTenant() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiB.takeBackup(TENANT_B, 7L)).thenReturn(CompletableFuture.completedFuture(7L));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.take(7L, TENANT_B);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .extracting(TakeBackupRuntimeResponse::getBackupIds)
+          .isEqualTo(Map.of(TENANT_B, 7L));
+      verifyNoInteractions(apiA);
+    }
+
+    @Test
+    void shouldReportGeneratedBackupIdOfEveryPhysicalTenant() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.takeBackup(TENANT_A)).thenReturn(CompletableFuture.completedFuture(101L));
+      when(apiB.takeBackup(TENANT_B)).thenReturn(CompletableFuture.completedFuture(202L));
+      final var endpoint = endpoint(generatedIds(apiA), generatedIds(apiB));
+
+      // when
+      final var response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .satisfies(
+              body -> {
+                assertThat(body.getBackupIds()).isEqualTo(Map.of(TENANT_A, 101L, TENANT_B, 202L));
+                // no default tenant here, so the reported id falls back to the first in id order
+                assertThat(body.getBackupId()).isEqualTo(101L);
+              });
+    }
+
+    @Test
+    void shouldReportDefaultPhysicalTenantIdAsTheBackupId() {
+      // given
+      final var defaultApi = mock(BackupApi.class);
+      final var apiA = mock(BackupApi.class);
+      when(defaultApi.takeBackup(DEFAULT_PHYSICAL_TENANT_ID))
+          .thenReturn(CompletableFuture.completedFuture(555L));
+      when(apiA.takeBackup(TENANT_A)).thenReturn(CompletableFuture.completedFuture(101L));
+      final var backups = new LinkedHashMap<String, PhysicalTenantBackup>();
+      backups.put(TENANT_A, generatedIds(apiA));
+      backups.put(DEFAULT_PHYSICAL_TENANT_ID, generatedIds(defaultApi));
+
+      // when
+      final var response = new BackupEndpoint(backups).take();
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .extracting(TakeBackupRuntimeResponse::getBackupId)
+          .isEqualTo(555L);
+    }
+
+    @Test
+    void shouldRejectExplicitBackupIdWhenAnyPhysicalTenantGeneratesIds() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      final var endpoint = endpoint(explicitIds(apiA), generatedIds(apiB));
+
+      // when
+      final var response = endpoint.take(7L, null);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(400);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .contains("Affected physical tenant(s): [tenantb]");
+      verifyNoInteractions(apiA, apiB);
+    }
+
+    @Test
+    void shouldRejectGeneratedBackupIdWhenAnyPhysicalTenantExpectsAnExplicitId() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      final var endpoint = endpoint(explicitIds(apiA), generatedIds(apiB));
+
+      // when
+      final var response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(400);
+      verifyNoInteractions(apiA, apiB);
+    }
+
+    @Test
+    void shouldReportTriggeredBackupIdsWhenOnePhysicalTenantFails() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.takeBackup(TENANT_A)).thenReturn(CompletableFuture.completedFuture(101L));
+      when(apiB.takeBackup(TENANT_B))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenantb is down")));
+      final var endpoint = endpoint(generatedIds(apiA), generatedIds(apiB));
+
+      // when
+      final var response = endpoint.take();
+
+      // then the id of the backup that was triggered is still reachable, which with generated ids
+      // is the only way the operator can learn it
+      assertThat(response.getStatus()).isEqualTo(500);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .satisfies(
+              body -> {
+                assertThat(body.getBackupIds()).isEqualTo(Map.of(TENANT_A, 101L));
+                assertThat(body.getBackupId()).isEqualTo(101L);
+                assertThat(body.getFailureReason()).isEqualTo("tenantb is down");
+                assertThat(body.getMessage())
+                    .contains("tenantb is down")
+                    .contains("Backups were still triggered for physical tenant(s): [tenanta]");
+              });
+    }
+
+    @Test
+    void shouldNamePhysicalTenantsWhenOnlyTheDefaultOneWasTriggered() {
+      // given a two-tenant cluster where the default tenant is the one that succeeded
+      final var defaultApi = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(defaultApi.takeBackup(DEFAULT_PHYSICAL_TENANT_ID, 7L))
+          .thenReturn(CompletableFuture.completedFuture(7L));
+      when(apiB.takeBackup(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenantb is down")));
+      final var backups = new LinkedHashMap<String, PhysicalTenantBackup>();
+      backups.put(DEFAULT_PHYSICAL_TENANT_ID, explicitIds(defaultApi));
+      backups.put(TENANT_B, explicitIds(apiB));
+
+      // when
+      final var response = new BackupEndpoint(backups).take(7L, null);
+
+      // then the clause is not suppressed just because the reported set is exactly {default}
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupRuntimeResponse.class))
+          .extracting(TakeBackupRuntimeResponse::getMessage)
+          .asString()
+          .contains("Backups were still triggered for physical tenant(s): [default]");
+    }
+
+    @Test
+    void shouldNotNamePhysicalTenantsOnASingleTenantCluster() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofMinutes(1)));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when an explicit id is rejected because the single tenant generates its own
+      final var response = endpoint.take(7L, null);
+
+      // then the message reads exactly as it did before physical tenants existed
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .doesNotContain("physical tenant");
+    }
+
+    @Test
+    void shouldAggregateStatusAcrossPhysicalTenants() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(State.COMPLETED, null)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(State.FAILED, "disk full")));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query("7", null);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(BackupInfo.class))
+          .satisfies(
+              info -> {
+                assertThat(info.getState()).isEqualTo(StateCode.FAILED);
+                assertThat(info.getFailureReason()).isEqualTo("disk full");
+                // partition 1 exists in both tenants, so only the tenant id tells them apart
+                assertThat(info.getDetails())
+                    .extracting(
+                        PartitionBackupInfo::getPartitionId,
+                        PartitionBackupInfo::getPhysicalTenantId)
+                    .containsExactly(tuple(1, TENANT_A), tuple(1, TENANT_B));
+                assertThat(info.getPhysicalTenants())
+                    .extracting(BackupTenantInfo::getPhysicalTenantId, BackupTenantInfo::getState)
+                    .containsExactly(
+                        tuple(TENANT_A, StateCode.COMPLETED), tuple(TENANT_B, StateCode.FAILED));
+              });
+    }
+
+    @Test
+    void shouldReportIncompleteWhenBackupIsMissingInSomePhysicalTenants() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(State.COMPLETED, null)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(State.DOES_NOT_EXIST, null)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query("7", null);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(BackupInfo.class))
+          .extracting(BackupInfo::getState)
+          .isEqualTo(StateCode.INCOMPLETE);
+    }
+
+    @ParameterizedTest(name = "{0} + {1} -> {2}")
+    @MethodSource("aggregatedStates")
+    void shouldAggregateStateAsThePerPartitionRuleDoes(
+        final State tenantA, final State tenantB, final StateCode expected) {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, tenantA)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, tenantB)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query("7", null);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(BackupInfo.class))
+          .extracting(BackupInfo::getState)
+          .isEqualTo(expected);
+    }
+
+    /**
+     * The rule {@code BackupRequestHandler.getAggregatedStatus} applies across partitions, which
+     * this must match across tenants. Note DELETED outranks IN_PROGRESS, and outranks the COMPLETED
+     * + DOES_NOT_EXIST pair that would otherwise be INCOMPLETE.
+     */
+    private static Stream<Arguments> aggregatedStates() {
+      return Stream.of(
+          Arguments.of(State.COMPLETED, State.FAILED, StateCode.FAILED),
+          Arguments.of(State.COMPLETED, State.INCOMPLETE, StateCode.INCOMPLETE),
+          Arguments.of(State.COMPLETED, State.DOES_NOT_EXIST, StateCode.INCOMPLETE),
+          Arguments.of(State.IN_PROGRESS, State.DOES_NOT_EXIST, StateCode.INCOMPLETE),
+          Arguments.of(State.COMPLETED, State.DELETED, StateCode.DELETED),
+          Arguments.of(State.IN_PROGRESS, State.DELETED, StateCode.DELETED),
+          Arguments.of(State.DELETED, State.DOES_NOT_EXIST, StateCode.DELETED),
+          Arguments.of(State.COMPLETED, State.IN_PROGRESS, StateCode.IN_PROGRESS),
+          Arguments.of(State.COMPLETED, State.COMPLETED, StateCode.COMPLETED));
+    }
+
+    @Test
+    void shouldReturn404WhenBackupIsMissingInEveryPhysicalTenant() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(State.DOES_NOT_EXIST, null)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(State.DOES_NOT_EXIST, null)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query("7", null);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    void shouldGroupListedBackupsByIdAcrossPhysicalTenants() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.listBackups(TENANT_A, "*"))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(status(2L, State.COMPLETED), status(1L, State.COMPLETED))));
+      when(apiB.listBackups(TENANT_B, "*"))
+          .thenReturn(CompletableFuture.completedFuture(List.of(status(2L, State.IN_PROGRESS))));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.listAll(null);
+
+      // then a backup only one tenant has is INCOMPLETE, exactly as querying it by id reports it,
+      // and every in-scope tenant is accounted for
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.list(BackupInfo.class))
+          .satisfies(
+              backups -> {
+                assertThat(backups)
+                    .extracting(BackupInfo::getBackupId, BackupInfo::getState)
+                    .containsExactly(
+                        tuple(2L, StateCode.IN_PROGRESS), tuple(1L, StateCode.INCOMPLETE));
+                assertThat(backups.getFirst().getPhysicalTenants())
+                    .extracting(BackupTenantInfo::getPhysicalTenantId)
+                    .containsExactly(TENANT_A, TENANT_B);
+                assertThat(backups.getLast().getPhysicalTenants())
+                    .extracting(BackupTenantInfo::getPhysicalTenantId, BackupTenantInfo::getState)
+                    .containsExactly(
+                        tuple(TENANT_A, StateCode.COMPLETED),
+                        tuple(TENANT_B, StateCode.DOES_NOT_EXIST));
+              });
+    }
+
+    @Test
+    void shouldReportTheSameStateWhetherABackupIsListedOrQueriedById() {
+      // given a backup only one of two tenants has
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.listBackups(TENANT_A, "*"))
+          .thenReturn(CompletableFuture.completedFuture(List.of(status(7L, State.COMPLETED))));
+      when(apiB.listBackups(TENANT_B, "*"))
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
+      when(apiA.getStatus(TENANT_A, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, State.COMPLETED)));
+      when(apiB.getStatus(TENANT_B, 7L))
+          .thenReturn(CompletableFuture.completedFuture(status(7L, State.DOES_NOT_EXIST)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var listed =
+          ((List<BackupInfo>) endpoint.listAll(null).getBody()).getFirst().getState();
+      final var queried = ((BackupInfo) endpoint.query("7", null).getBody()).getState();
+
+      // then
+      assertThat(listed).isEqualTo(queried).isEqualTo(StateCode.INCOMPLETE);
+    }
+
+    @Test
+    void shouldDeleteBackupInEveryPhysicalTenant() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.deleteBackup(TENANT_A, 7L)).thenReturn(CompletableFuture.completedFuture(null));
+      when(apiB.deleteBackup(TENANT_B, 7L)).thenReturn(CompletableFuture.completedFuture(null));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.delete("7", null);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(204);
+      verify(apiA).deleteBackup(TENANT_A, 7L);
+      verify(apiB).deleteBackup(TENANT_B, 7L);
+    }
+
+    @Test
+    void shouldDeleteRuntimeStateOfRequestedPhysicalTenantOnly() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.deleteRuntimeState(TENANT_A)).thenReturn(CompletableFuture.completedFuture(null));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.delete("state", TENANT_A);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(204);
+      verifyNoInteractions(apiB);
+    }
+
+    @Test
+    void shouldReportCheckpointStateOfEveryPhysicalTenant() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getCheckpointState(TENANT_A))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      when(apiA.getBackupRanges(TENANT_A))
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+      when(apiB.getCheckpointState(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      when(apiB.getBackupRanges(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query(BackupApi.STATE, null);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(CheckpointState.class))
+          .extracting(CheckpointState::getCheckpointStates)
+          .asInstanceOf(InstanceOfAssertFactories.list(PartitionCheckpointState.class))
+          .extracting(
+              PartitionCheckpointState::getPartitionId,
+              PartitionCheckpointState::getPhysicalTenantId)
+          .containsExactly(tuple(1, TENANT_A), tuple(1, TENANT_B));
+    }
+
+    @Test
+    void shouldReportCheckpointStateOfPhysicalTenantsThatAnswered() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.getCheckpointState(TENANT_A))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenanta is down")));
+      when(apiA.getBackupRanges(TENANT_A))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenanta is down")));
+      when(apiB.getCheckpointState(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      when(apiB.getBackupRanges(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.query(BackupApi.STATE, null);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(CheckpointState.class))
+          .extracting(CheckpointState::getCheckpointStates)
+          .asInstanceOf(InstanceOfAssertFactories.list(PartitionCheckpointState.class))
+          .extracting(PartitionCheckpointState::getPhysicalTenantId)
+          .containsExactly(TENANT_B);
+    }
+
+    @Test
+    void shouldSyncMetadataOfEveryPhysicalTenant() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.syncMetadata(TENANT_A))
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+      when(apiB.syncMetadata(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+      when(apiA.getCheckpointState(TENANT_A))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      when(apiB.getCheckpointState(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.write(new String[] {BackupApi.STATE, BackupApi.SYNC});
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(200);
+      verify(apiA).syncMetadata(TENANT_A);
+      verify(apiB).syncMetadata(TENANT_B);
+    }
+
+    @Test
+    void shouldFailSyncMetadataWhenOnePhysicalTenantFails() {
+      // given
+      final var apiA = mock(BackupApi.class);
+      final var apiB = mock(BackupApi.class);
+      when(apiA.syncMetadata(TENANT_A))
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+      when(apiB.syncMetadata(TENANT_B))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tenantb is down")));
+      when(apiA.getCheckpointState(TENANT_A))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      when(apiB.getCheckpointState(TENANT_B))
+          .thenReturn(CompletableFuture.completedFuture(checkpointState(1)));
+      final var endpoint = endpoint(explicitIds(apiA), explicitIds(apiB));
+
+      // when
+      final var response = endpoint.write(new String[] {BackupApi.STATE, BackupApi.SYNC}, null);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(500);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .isEqualTo("tenantb is down");
+    }
+
+    @ParameterizedTest
+    @MethodSource("unknownTenantRequests")
+    void shouldRejectUnknownPhysicalTenant(
+        final String description, final Function<BackupEndpoint, WebEndpointResponse<?>> request) {
+      // given
+      final var endpoint =
+          endpoint(explicitIds(mock(BackupApi.class)), explicitIds(mock(BackupApi.class)));
+
+      // when
+      final var response = request.apply(endpoint);
+
+      // then
+      assertThat(response.getStatus()).as(description).isEqualTo(400);
+      assertThat(response.getBody())
+          .as(description)
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .isEqualTo(
+              "Unknown physical tenant 'tenantz'. Configured physical tenants: [tenanta, tenantb].");
+    }
+
+    private static Stream<Arguments> unknownTenantRequests() {
+      return Stream.of(
+          Arguments.of(
+              "take",
+              (Function<BackupEndpoint, WebEndpointResponse<?>>)
+                  endpoint -> endpoint.take(7L, "tenantz")),
+          Arguments.of(
+              "list",
+              (Function<BackupEndpoint, WebEndpointResponse<?>>)
+                  endpoint -> endpoint.listAll("tenantz")),
+          Arguments.of(
+              "status",
+              (Function<BackupEndpoint, WebEndpointResponse<?>>)
+                  endpoint -> endpoint.query("7", "tenantz")),
+          Arguments.of(
+              "state",
+              (Function<BackupEndpoint, WebEndpointResponse<?>>)
+                  endpoint -> endpoint.query(BackupApi.STATE, "tenantz")),
+          Arguments.of(
+              "delete",
+              (Function<BackupEndpoint, WebEndpointResponse<?>>)
+                  endpoint -> endpoint.delete("7", "tenantz")),
+          Arguments.of(
+              "sync",
+              (Function<BackupEndpoint, WebEndpointResponse<?>>)
+                  endpoint ->
+                      endpoint.write(new String[] {BackupApi.STATE, BackupApi.SYNC}, "tenantz")));
+    }
+
+    private BackupStatus status(final State state, final String failureReason) {
+      return status(7L, state, failureReason);
+    }
+
+    private BackupStatus status(final long backupId, final State state) {
+      return status(backupId, state, null);
+    }
+
+    private BackupStatus status(
+        final long backupId, final State state, final String failureReason) {
+      return new BackupStatus(
+          backupId,
+          state,
+          Optional.ofNullable(failureReason),
+          List.of(
+              new PartitionBackupStatus(
+                  1,
+                  state == State.FAILED ? BackupStatusCode.FAILED : BackupStatusCode.COMPLETED,
+                  Optional.ofNullable(failureReason),
+                  Optional.empty(),
+                  Optional.empty(),
+                  Optional.empty(),
+                  OptionalLong.empty(),
+                  OptionalLong.empty(),
+                  OptionalInt.empty(),
+                  Optional.empty())));
+    }
+
+    private CheckpointStateResponse checkpointState(final int partitionId) {
+      final var response = new CheckpointStateResponse();
+      response.setCheckpointStates(
+          Set.of(
+              new CheckpointStateResponse.PartitionCheckpointState(
+                  partitionId, 1L, CheckpointType.MARKER, 20L, 10L)));
+      return response;
     }
   }
 }

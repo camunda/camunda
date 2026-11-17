@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -18,8 +19,11 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
+import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -36,17 +40,16 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
+public final class JobFailProcessor
+    implements TypedRecordProcessor<JobRecord>, SuspensionAware<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
@@ -60,7 +63,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobBackoffCheckScheduler jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final SideEffectWriter sideEffectWriter;
   private final JobCommandPreconditionValidator preconditionChecker;
   private final ElementInstanceState elementInstanceState;
@@ -74,7 +77,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final JobProcessingMetrics jobMetrics,
       final JobBackoffCheckScheduler jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final IncidentMetrics incidentMetrics) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -85,10 +89,15 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     sideEffectWriter = writers.sideEffect();
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     preconditionChecker =
         new JobCommandPreconditionValidator(
-            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
+            jobState,
+            state.getBannedInstanceState(),
+            "fail",
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            List.of(JobLeaseFencingCheck.forLifecycleCommand()),
+            tenantCheck);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -97,17 +106,20 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
-
     preconditionChecker
-        .check(state, record)
+        .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(
+            job ->
+                variableBehavior
+                    .validateVariables(record.getValue().getVariablesBuffer())
+                    .map(unused -> job))
         .ifRightOrLeft(
             failedJob -> failJob(record, failedJob),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  record, rejection.type(), rejection.reason());
             });
   }
 
@@ -129,11 +141,10 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       sideEffectWriter.appendSideEffect(
           () -> {
             jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
-            return true;
           });
     }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
+    responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
     jobMetrics.countJobEvent(JobAction.FAILED, failedJob.getJobKind(), failedJob.getType());
 
     setFailedVariables(failedJob);
@@ -149,17 +160,25 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   }
 
   private void setFailedVariables(final JobRecord value) {
-    // set fail job variables locally
     final DirectBuffer variables = value.getVariablesBuffer();
     if (variables.capacity() > 0) {
-      variableBehavior.mergeLocalDocument(
-          value.getElementInstanceKey(),
-          value.getProcessDefinitionKey(),
-          value.getProcessInstanceKey(),
-          value.getRootProcessInstanceKey(),
-          value.getBpmnProcessIdBuffer(),
-          value.getTenantId(),
-          variables);
+      try {
+        variableBehavior.mergeLocalDocument(
+            value.getElementInstanceKey(),
+            value.getProcessDefinitionKey(),
+            value.getProcessInstanceKey(),
+            value.getRootProcessInstanceKey(),
+            value.getStorageOrdinal(),
+            value.getBpmnProcessIdBuffer(),
+            value.getTenantId(),
+            variables);
+      } catch (final ValidationException e) {
+        // as we perform validation for variables upfront, this should never happen
+        throw new IllegalArgumentException(
+            "Failed to set variables for job with key %d: %s"
+                .formatted(value.getElementInstanceKey(), e.getMessage()),
+            e);
+      }
     }
   }
 
@@ -184,6 +203,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setStorageOrdinal(value.getStorageOrdinal())
         .setElementId(value.getElementIdBuffer())
         .setElementInstanceKey(value.getElementInstanceKey())
         .setJobKey(key)
@@ -208,14 +228,21 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(job.getTenantId())
-            .addResourceId(job.getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(unused -> job);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
+        job,
+        AuthorizationRejectionMapper.noPrincipal());
+  }
+
+  @Override
+  public SuspensionAction onSuspended(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
+    return SuspensionAction.PROCESS;
   }
 }

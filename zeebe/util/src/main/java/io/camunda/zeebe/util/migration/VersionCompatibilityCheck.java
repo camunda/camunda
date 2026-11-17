@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import org.jspecify.annotations.Nullable;
 
 /** Checks the compatibility of the current version with the version that ran state migrations. */
 public final class VersionCompatibilityCheck {
@@ -30,7 +31,8 @@ public final class VersionCompatibilityCheck {
    *       <li>{@link Compatible} if the current version is compatible with the previous version,
    *           e.g. upgrade to the next minor version.
    */
-  public static CheckResult check(final String previousVersion, final String currentVersion) {
+  public static CheckResult check(
+      final @Nullable String previousVersion, final @Nullable String currentVersion) {
     if (previousVersion == null) {
       return new Indeterminate.PreviousVersionUnknown(currentVersion);
     }
@@ -79,9 +81,9 @@ public final class VersionCompatibilityCheck {
 
   public sealed interface CheckResult {
     sealed interface Indeterminate extends CheckResult {
-      record PreviousVersionUnknown(String currentVersion) implements Indeterminate {}
+      record PreviousVersionUnknown(@Nullable String currentVersion) implements Indeterminate {}
 
-      record CurrentVersionUnknown(String previousVersion) implements Indeterminate {}
+      record CurrentVersionUnknown(@Nullable String previousVersion) implements Indeterminate {}
 
       record PreviousVersionInvalid(String previousVersion, String currentVersion)
           implements Indeterminate {}

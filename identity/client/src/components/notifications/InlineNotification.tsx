@@ -12,18 +12,17 @@ import {
   ActionableNotification,
   InlineNotification as CarbonInlineNotification,
 } from "@carbon/react";
-import { spacing05 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { NotificationOptions } from "./NotificationContext";
 
 const StyledInlineNotification = styled(CarbonInlineNotification)`
   max-width: 100%;
-  margin: ${spacing05} 0 ${spacing05};
+  margin: var(--cds-spacing-05) 0 var(--cds-spacing-05);
 `;
 
 const StyledActionableNotification = styled(ActionableNotification)`
   max-width: 100%;
-  margin: ${spacing05} 0 ${spacing05};
+  margin: var(--cds-spacing-05) 0 var(--cds-spacing-05);
 `;
 
 type InlineNotificationProps = NotificationOptions & {

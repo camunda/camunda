@@ -124,11 +124,13 @@
 
   <resultMap id="persistentWebSessionResultMap" type="io.camunda.search.entities.PersistentWebSessionEntity">
     <constructor>
-      <idArg column="SESSION_ID" javaType="java.lang.String"/>
-      <arg column="CREATION_TIME" javaType="java.lang.Long"/>
-      <arg column="LAST_ACCESSED_TIME" javaType="java.lang.Long"/>
-      <arg column="MAX_INACTIVE_INTERVAL_IN_SECONDS" javaType="java.lang.Long"/>
-      <arg column="ATTRIBUTES" javaType="java.util.Map" typeHandler="io.camunda.db.rdbms.sql.typehandler.MapByteArrayJsonTypeHandler"/>
+      <idArg column="SESSION_ID" javaType="java.lang.String" name="id"/>
+      <arg column="CREATION_TIME" javaType="java.lang.Long" name="creationTime"/>
+      <arg column="LAST_ACCESSED_TIME" javaType="java.lang.Long" name="lastAccessedTime"/>
+      <arg column="MAX_INACTIVE_INTERVAL_IN_SECONDS" javaType="java.lang.Long"
+        name="maxInactiveIntervalInSeconds"/>
+      <arg column="ATTRIBUTES" javaType="java.util.Map" typeHandler="io.camunda.db.rdbms.sql.typehandler.MapByteArrayJsonTypeHandler"
+        name="attributes"/>
     </constructor>
   </resultMap>
 

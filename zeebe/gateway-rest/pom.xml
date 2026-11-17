@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
   <artifactId>zeebe-gateway-rest</artifactId>
@@ -29,6 +29,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
 
     <dependency>
@@ -53,7 +58,18 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-rebalance</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -84,12 +100,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
     </dependency>
 
     <dependency>
@@ -104,12 +125,27 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
+      <artifactId>camunda-security-library-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-validation</artifactId>
+      <artifactId>camunda-security-library-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-validation</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
     </dependency>
 
     <!-- rest api dependencies -->
@@ -193,6 +229,11 @@
       <artifactId>hibernate-validator</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
     <!-- Swagger dependencies for reading OpenAPI YAML -->
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
@@ -239,6 +280,13 @@
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-common</artifactId>
+      <exclusions>
+        <!-- pulls in log4j-to-slf4j, which conflicts with log4j-slf4j2-impl on the classpath -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -336,6 +384,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
       <scope>test</scope>
@@ -379,7 +433,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -433,7 +487,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- required due to ArchUnit presence -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
@@ -453,24 +506,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.tngtech.archunit</groupId>
-      <artifactId>archunit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.tngtech.archunit</groupId>
-      <artifactId>archunit-junit5-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.tngtech.archunit</groupId>
-      <artifactId>archunit-junit5-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.xmlunit</groupId>
       <artifactId>xmlunit-core</artifactId>
       <scope>test</scope>
@@ -479,6 +514,22 @@
 
   <build>
     <plugins>
+      <!--
+        Publish a test-jar so qa/archunit-tests can analyze our test classes
+        (e.g. ControllerStrictJsonCompareArchTest scans REST controller tests
+        for WebTestClient.BodyContentSpec#json calls).
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

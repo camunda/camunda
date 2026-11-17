@@ -18,8 +18,8 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.File;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Segment file utility.
@@ -34,24 +34,14 @@ public final class SegmentFile {
   private static final String EXTENSION = "log";
   private static final String DELETE_EXTENSION = "deleted";
   private static final char DELETE_EXTENSION_SEPARATOR = '_';
-  private final File file;
-  private Path fileMarkedForDeletion;
+  private final Path file;
+  private @Nullable Path fileMarkedForDeletion;
 
   /**
    * @throws IllegalArgumentException if {@code file} is not a valid segment file
    */
-  SegmentFile(final File file) {
+  SegmentFile(final Path file) {
     this.file = file;
-  }
-
-  /**
-   * Returns a boolean value indicating whether the given file appears to be a parsable segment
-   * file.
-   *
-   * @throws NullPointerException if {@code file} is null
-   */
-  public static boolean isSegmentFile(final String name, final File file) {
-    return isSegmentFile(name, file.getName());
   }
 
   /**
@@ -71,6 +61,16 @@ public final class SegmentFile {
     }
 
     return fileName.startsWith(journalName);
+  }
+
+  /**
+   * Returns a boolean value indicating whether the given file appears to be a parsable segment
+   * file.
+   *
+   * @throws NullPointerException if {@code file} is null
+   */
+  public static boolean isSegmentFile(final String name, final Path file) {
+    return isSegmentFile(name, file.getFileName().toString());
   }
 
   /**
@@ -99,12 +99,11 @@ public final class SegmentFile {
     }
   }
 
-  /** Creates a segment file for the given directory, log name, segment ID, and segment version. */
-  static File createSegmentFile(final String name, final File directory, final long id) {
-    return new File(
-        directory,
+  /** Creates a segment file for the given directory, log name, and segment ID. */
+  static Path createSegmentFile(final String name, final Path directory, final long id) {
+    return directory.resolve(
         String.format(
-            "%s%s%d%s%s",
+            "%s%c%d%c%s",
             checkNotNull(name, "name cannot be null"),
             PART_SEPARATOR,
             id,
@@ -117,12 +116,8 @@ public final class SegmentFile {
    *
    * @return The segment file.
    */
-  File file() {
+  Path file() {
     return file;
-  }
-
-  String name() {
-    return file.getName();
   }
 
   Path getFileMarkedForDeletion() {
@@ -130,8 +125,8 @@ public final class SegmentFile {
       final String renamedFileName =
           String.format(
               "%s%c%d-%s",
-              file.getName(), DELETE_EXTENSION_SEPARATOR, deletedFileIndex++, DELETE_EXTENSION);
-      fileMarkedForDeletion = Path.of(file.getParent(), renamedFileName);
+              file.getFileName(), DELETE_EXTENSION_SEPARATOR, deletedFileIndex++, DELETE_EXTENSION);
+      fileMarkedForDeletion = file.resolveSibling(renamedFileName);
     }
     return fileMarkedForDeletion;
   }

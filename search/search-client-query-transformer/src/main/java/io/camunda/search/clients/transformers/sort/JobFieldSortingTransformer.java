@@ -24,6 +24,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYP
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LISTENER_EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
@@ -48,6 +49,7 @@ public class JobFieldSortingTransformer implements FieldSortingTransformer {
       case "endTime" -> TIME;
       case "tenantId" -> TENANT_ID;
       case "retries" -> RETRIES;
+      case "priority" -> PRIORITY;
       case "isDenied" -> JOB_DENIED;
       case "deniedReason" -> JOB_DENIED_REASON;
       case "hasFailedWithRetriesLeft" -> JOB_FAILED_WITH_RETRIES_LEFT;

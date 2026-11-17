@@ -146,4 +146,136 @@ test.describe.parallel('Search User Task Tests', () => {
       expect(json.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
+
+  test('Search user task - filter by processDefinitionKey with $in operator', async ({
+    request,
+  }) => {
+    let processDefinitionKey = '';
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/user-tasks/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: state['processInstanceKey'],
+          },
+        },
+      });
+      const json = await res.json();
+      expect(json.items.length).toBeGreaterThan(0);
+      processDefinitionKey = String(json.items[0].processDefinitionKey);
+    }).toPass(defaultAssertionOptions);
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/user-tasks/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionKey: {
+              $in: [processDefinitionKey, '9999999999999'],
+            },
+          },
+        },
+      });
+      const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
+      expect(json.page.totalItems).toBeGreaterThanOrEqual(3);
+      expect(
+        json.items.every(
+          (item: {processDefinitionKey: number | string}) =>
+            String(item.processDefinitionKey) === processDefinitionKey,
+        ),
+      ).toBe(true);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search user task - filter by processDefinitionId with $like operator', async ({
+    request,
+  }) => {
+    let idSuffix = '';
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/user-tasks/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: state['processInstanceKey'],
+          },
+        },
+      });
+      const json = await res.json();
+      expect(json.items.length).toBeGreaterThan(0);
+      // Use a suffix of the ID so the pattern genuinely exercises the * wildcard
+      idSuffix = json.items[0].processDefinitionId.slice(-10);
+    }).toPass(defaultAssertionOptions);
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/user-tasks/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionId: {
+              $like: `*${idSuffix}`,
+            },
+          },
+        },
+      });
+      const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
+      expect(json.page.totalItems).toBeGreaterThanOrEqual(3);
+      expect(
+        json.items.every((item: {processDefinitionId: string}) =>
+          item.processDefinitionId.endsWith(idSuffix),
+        ),
+      ).toBe(true);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search user task - filter by processInstanceKey with $exists operator', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/user-tasks/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {
+              $exists: true,
+            },
+          },
+        },
+      });
+      const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
+      expect(json.page.totalItems).toBeGreaterThan(0);
+      expect(
+        json.items.every(
+          (item: {processInstanceKey: number | null | undefined}) =>
+            item.processInstanceKey !== null &&
+            item.processInstanceKey !== undefined,
+        ),
+      ).toBe(true);
+    }).toPass(defaultAssertionOptions);
+  });
 });

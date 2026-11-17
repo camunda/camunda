@@ -31,6 +31,8 @@ final class EngineCfgTest {
     // then
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(100);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofMinutes(1));
+    assertThat(configuration.getMessagesPendingSubscriptionRecoveryBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT);
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(1000L);
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
@@ -67,6 +69,36 @@ final class EngineCfgTest {
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
     assertThat(configuration.isBusinessIdUniquenessEnabled())
         .isEqualTo(EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED);
+    assertThat(configuration.isEnableRpaReexportMigration())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION);
+    assertThat(configuration.isEnableProcessDefinitionRestore())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE);
+    assertThat(configuration.getGroupNameCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
+    assertThat(configuration.isCandidateGroupNameResolution())
+        .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.isProcessCacheSoftValues())
+        .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_SOFT_VALUES);
+    assertThat(configuration.getSecretResolutionInterval())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_INTERVAL);
+    assertThat(configuration.getSecretResolutionRetryMaxAttempts())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS);
+    assertThat(configuration.getSecretResolutionRetryInitialDelay())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY);
+    assertThat(configuration.getSecretResolutionRetryMaxDelay())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY);
+    assertThat(configuration.getSecretResolutionRetryBackoffFactor())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR);
+    assertThat(configuration.getSecretResolutionBatchLimit())
+        .isEqualTo(EngineConfiguration.DEFAULT_SECRET_RESOLUTION_BATCH_LIMIT);
+    assertThat(configuration.isArchiverlessEnabled())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS);
+    assertThat(configuration.getFixedStorageOrdinals())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINALS);
+    assertThat(configuration.getInputMappingMode())
+        .isEqualTo(EngineConfiguration.InputMappingMode.COMBINED);
+    assertThat(configuration.getOutputMappingMode())
+        .isEqualTo(EngineConfiguration.OutputMappingMode.COMBINED);
   }
 
   @Test
@@ -105,6 +137,12 @@ final class EngineCfgTest {
         taskListeners.get(1), "test2", new String[] {"assigning", "canceling"}, "2", true);
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
     assertThat(configuration.isBusinessIdUniquenessEnabled()).isTrue();
+    assertThat(configuration.isEnableRpaReexportMigration()).isFalse();
+    assertThat(configuration.isEnableProcessDefinitionRestore()).isFalse();
+    assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
+    assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
+    assertThat(configuration.isArchiverlessEnabled()).isTrue();
+    assertThat(configuration.getFixedStorageOrdinals()).containsExactly(1001, 1002);
   }
 
   void assertListenerCfg(

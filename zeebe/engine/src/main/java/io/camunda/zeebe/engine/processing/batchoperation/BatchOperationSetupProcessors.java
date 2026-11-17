@@ -17,6 +17,9 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.DeleteProcessI
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResumeProcessInstanceBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.SuspendProcessInstanceBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.UpdateJobBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommands;
@@ -24,7 +27,8 @@ import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperatio
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -43,10 +47,11 @@ public final class BatchOperationSetupProcessors {
 
   public static void addBatchOperationProcessors(
       final KeyGenerator keyGenerator,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authorizationCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SearchClientsProxy searchClientsProxy,
       final ProcessingState processingState,
@@ -78,6 +83,15 @@ public final class BatchOperationSetupProcessors {
                 writers.command(), brokerRequestAuthorizationConverter),
             BatchOperationType.DELETE_DECISION_INSTANCE,
             new DeleteDecisionInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.UPDATE_JOB,
+            new UpdateJobBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.SUSPEND_PROCESS_INSTANCE,
+            new SuspendProcessInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.RESUME_PROCESS_INSTANCE,
+            new ResumeProcessInstanceBatchOperationExecutor(
                 writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
@@ -102,8 +116,9 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 processingState,
                 keyGenerator,
+                storageOrdinalProvider,
                 commandDistributionBehavior,
-                authorizationCheckBehavior,
+                cslCheck,
                 routingInfo,
                 batchOperationMetrics))
         .onCommand(
@@ -113,8 +128,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.FINISH_INITIALIZATION,
-            new BatchOperationInitializationFinishInitializationProcessor(
-                writers, batchOperationMetrics))
+            new BatchOperationInitializationFinishInitializationProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL,
@@ -145,7 +159,7 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 processingState,
-                authorizationCheckBehavior,
+                cslCheck,
                 keyGenerator,
                 batchOperationMetrics))
         .onCommand(
@@ -155,7 +169,7 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 processingState,
-                authorizationCheckBehavior,
+                cslCheck,
                 keyGenerator,
                 batchOperationMetrics))
         .onCommand(
@@ -165,7 +179,7 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 processingState,
-                authorizationCheckBehavior,
+                cslCheck,
                 keyGenerator,
                 batchOperationMetrics))
         .onCommand(

@@ -40,4 +40,10 @@ public interface CheckpointRecordValue extends RecordValue {
   CheckpointType getCheckpointType();
 
   long getFirstLogPosition();
+
+  /**
+   * @return the id of the snapshot reserved for the backup of this checkpoint before the checkpoint
+   *     was written, or an empty string if none was reserved
+   */
+  String getSnapshotId();
 }

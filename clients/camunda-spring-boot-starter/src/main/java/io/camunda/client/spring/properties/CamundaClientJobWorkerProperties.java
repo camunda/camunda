@@ -23,7 +23,8 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
-import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMING_TIMEOUT;
+import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAM_INACTIVITY_TIMEOUT;
+import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAM_TIMEOUT;
 
 import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
@@ -100,6 +101,13 @@ public class CamundaClientJobWorkerProperties {
   private Duration streamTimeout;
 
   /**
+   * If streaming is enabled, sets the maximum duration the worker will wait without receiving any
+   * job on the open stream before canceling and recreating it. The timer is reset every time a job
+   * is received. Must be strictly less than {@code streamTimeout} when both are set.
+   */
+  private Duration streamInactivityTimeout;
+
+  /**
    * The maximum number of retries before automatic responses (complete, fail, bpmn error) for jobs
    * are no longer attempted.
    */
@@ -107,6 +115,15 @@ public class CamundaClientJobWorkerProperties {
 
   /** The backoff before a retry of a failed job is possible. */
   private Duration retryBackoff;
+
+  /**
+   * Activate the jobs polled by this worker with a lease. When enabled, each activated job is
+   * assigned a distinct lease token, fencing the complete, fail, and throw-error commands against a
+   * superseded activation of the same job.
+   *
+   * <p>Only applies to the polling path. If not set, jobs are activated without a lease.
+   */
+  private Boolean withLease;
 
   /**
    * This instantiates the properties without any defaults. Intended to be used by {@link
@@ -137,7 +154,8 @@ public class CamundaClientJobWorkerProperties {
       retryBackoff = Duration.ZERO;
       forceFetchAllVariables = DEFAULT_FORCE_FETCH_ALL_VARIABLES;
       maxRetries = DEFAULT_MAX_RETRIES;
-      streamTimeout = DEFAULT_STREAMING_TIMEOUT;
+      streamTimeout = DEFAULT_STREAM_TIMEOUT;
+      streamInactivityTimeout = DEFAULT_STREAM_INACTIVITY_TIMEOUT;
     }
   }
 
@@ -253,6 +271,14 @@ public class CamundaClientJobWorkerProperties {
     this.streamTimeout = streamTimeout;
   }
 
+  public Duration getStreamInactivityTimeout() {
+    return streamInactivityTimeout;
+  }
+
+  public void setStreamInactivityTimeout(final Duration streamInactivityTimeout) {
+    this.streamInactivityTimeout = streamInactivityTimeout;
+  }
+
   public Integer getMaxRetries() {
     return maxRetries;
   }
@@ -267,5 +293,13 @@ public class CamundaClientJobWorkerProperties {
 
   public void setRetryBackoff(final Duration retryBackoff) {
     this.retryBackoff = retryBackoff;
+  }
+
+  public Boolean getWithLease() {
+    return withLease;
+  }
+
+  public void setWithLease(final Boolean withLease) {
+    this.withLease = withLease;
   }
 }

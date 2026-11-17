@@ -9,7 +9,7 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 
 public interface UsageMetricsReader extends SearchClientReader {
 

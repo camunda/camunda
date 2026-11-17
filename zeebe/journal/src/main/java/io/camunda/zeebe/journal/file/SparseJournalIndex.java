@@ -19,6 +19,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.jspecify.annotations.Nullable;
 
 final class SparseJournalIndex implements JournalIndex {
 
@@ -48,18 +49,18 @@ final class SparseJournalIndex implements JournalIndex {
   }
 
   @Override
-  public IndexInfo lookup(final long index) {
+  public @Nullable IndexInfo lookup(final long index) {
     final Map.Entry<Long, Integer> entry = indexToPosition.floorEntry(index);
     return entry != null ? new IndexInfo(entry.getKey(), entry.getValue()) : null;
   }
 
   @Override
-  public Long lookupAsqn(final long asqn) {
+  public @Nullable Long lookupAsqn(final long asqn) {
     return lookupAsqn(asqn, Long.MAX_VALUE);
   }
 
   @Override
-  public Long lookupAsqn(final long asqn, final long indexUpperBound) {
+  public @Nullable Long lookupAsqn(final long asqn, final long indexUpperBound) {
     final Map.Entry<Long, Long> entry = asqnToIndex.floorEntry(asqn);
     if (entry != null) {
       if (entry.getValue() <= indexUpperBound) {

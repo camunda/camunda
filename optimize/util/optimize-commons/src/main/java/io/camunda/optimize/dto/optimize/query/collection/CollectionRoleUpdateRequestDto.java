@@ -34,7 +34,7 @@ public class CollectionRoleUpdateRequestDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(role);
+    return Objects.hashCode(role);
   }
 
   @Override

@@ -87,7 +87,7 @@ public final class RequestRetryHandler {
           requestSender,
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
-    final var topology = topologyManager.getTopology();
+    final var topology = topologyManager.getTopology(request.getPartitionGroup());
     if (topology == null || topology.getPartitionsCount() == 0) {
       throwableConsumer.accept(new NoTopologyAvailableException());
       return;
@@ -129,7 +129,8 @@ public final class RequestRetryHandler {
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
     try {
-      request.setPartitionId(strategy.determinePartition(topologyManager));
+      request.setPartitionId(
+          strategy.determinePartition(topologyManager, request.getPartitionGroup()));
     } catch (final Exception e) {
       throwableConsumer.accept(e);
       return;
@@ -139,7 +140,7 @@ public final class RequestRetryHandler {
         .whenComplete(
             (response, error) -> {
               if (error == null) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
+                acceptBrokerResponse(response, responseConsumer, throwableConsumer);
               } else {
                 throwableConsumer.accept(error);
               }
@@ -157,7 +158,8 @@ public final class RequestRetryHandler {
       final Consumer<Throwable> throwableConsumer,
       final Collection<Throwable> errors) {
 
-    final int partitionId = determineNextPartition(triedPartitions, partitionCount);
+    final int partitionId =
+        determineNextPartition(triedPartitions, partitionCount, request.getPartitionGroup());
     if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
       final var exception = new RequestRetriesExhaustedException();
       errors.forEach(exception::addSuppressed);
@@ -171,11 +173,12 @@ public final class RequestRetryHandler {
         .apply(request)
         .whenComplete(
             (response, error) -> {
-              if (error == null) {
+              if (error == null && response.isResponse()) {
                 responseConsumer.accept(response.getKey(), response.getResponse());
-              } else if (shouldRetryWithNextPartition(error)) {
-                LOGGER.trace("Failed to create process on partition {}", partitionId, error);
-                errors.add(error);
+              } else if (shouldRetryWithNextPartition(response, error)) {
+                final var cause = toException(response, error);
+                LOGGER.trace("Failed to create process on partition {}", partitionId, cause);
+                errors.add(cause);
                 sendRequestWithRetry(
                     request,
                     requestSender,
@@ -185,7 +188,7 @@ public final class RequestRetryHandler {
                     throwableConsumer,
                     errors);
               } else {
-                throwableConsumer.accept(error);
+                throwableConsumer.accept(toException(response, error));
               }
             });
   }
@@ -196,10 +199,11 @@ public final class RequestRetryHandler {
    * concurrent retries scatter across partitions instead of all cascading to the same next
    * partition.
    */
-  private int determineNextPartition(final Set<Integer> triedPartitions, final int partitionCount) {
+  private int determineNextPartition(
+      final Set<Integer> triedPartitions, final int partitionCount, final String partitionGroup) {
     final var seen = new HashSet<Integer>();
     for (int i = 0; i < partitionCount; i++) {
-      final int partition = dispatchStrategy.determinePartition(topologyManager);
+      final int partition = dispatchStrategy.determinePartition(topologyManager, partitionGroup);
       if (partition == BrokerClusterState.PARTITION_ID_NULL) {
         return BrokerClusterState.PARTITION_ID_NULL;
       }
@@ -222,5 +226,34 @@ public final class RequestRetryHandler {
       return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
     }
     return false;
+  }
+
+  private boolean shouldRetryWithNextPartition(
+      final BrokerResponse<?> response, final Throwable error) {
+    if (error != null) {
+      return shouldRetryWithNextPartition(error);
+    }
+
+    if (response.isError()) {
+      final ErrorCode code = response.getError().getCode();
+      return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
+    }
+
+    return false;
+  }
+
+  private <BrokerResponseT> void acceptBrokerResponse(
+      final BrokerResponse<BrokerResponseT> response,
+      final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
+    if (response.isResponse()) {
+      responseConsumer.accept(response.getKey(), response.getResponse());
+    } else {
+      throwableConsumer.accept(response.toException());
+    }
+  }
+
+  private Throwable toException(final BrokerResponse<?> response, final Throwable error) {
+    return error == null ? response.toException() : error;
   }
 }

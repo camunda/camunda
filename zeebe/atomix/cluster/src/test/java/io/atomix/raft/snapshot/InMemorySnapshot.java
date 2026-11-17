@@ -25,6 +25,8 @@ import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -76,9 +78,23 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
       final long term,
       final int size,
       final TestSnapshotStore snapshotStore) {
+    return newPersistedSnapshot(nodeId, index, term, size, snapshotStore, false);
+  }
+
+  public static InMemorySnapshot newPersistedSnapshot(
+      final int nodeId,
+      final long index,
+      final long term,
+      final int size,
+      final TestSnapshotStore snapshotStore,
+      final boolean withMetadata) {
     final var snapshot = new InMemorySnapshot(snapshotStore, index, term, nodeId);
     for (int i = 0; i < size; i++) {
       snapshot.writeChunks("chunk-" + i, ("test-" + i).getBytes());
+    }
+    if (withMetadata) {
+      // Mirror a real snapshot, which ships a metadata chunk excluded from the total size in bytes.
+      snapshot.writeChunks(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME, "metadata".getBytes());
     }
     snapshot.persist();
     return snapshot;
@@ -178,7 +194,14 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
 
   @Override
   public SnapshotMetadata getMetadata() {
-    return null;
+    return new FileBasedSnapshotMetadata(1, 0L, 0L, 0L, 0L, false, 0L);
+  }
+
+  @Override
+  public long getTotalSizeInBytes() {
+    return chunks.entrySet().stream()
+        .mapToLong(entry -> StringUtil.getBytes(entry.getValue()).length)
+        .sum();
   }
 
   @Override

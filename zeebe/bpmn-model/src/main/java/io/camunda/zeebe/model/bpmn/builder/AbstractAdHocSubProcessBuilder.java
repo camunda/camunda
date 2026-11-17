@@ -23,6 +23,8 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentType;
 
 public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBuilder<B>>
     extends AbstractSubProcessBuilder<B> implements ZeebeJobWorkerElementBuilder<B> {
@@ -73,6 +75,17 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
     return myself;
   }
 
+  /**
+   * Sets the zeebe:modelerTemplate attribute of the build ad-hoc sub-process.
+   *
+   * @param modelerTemplate the element template id to set
+   * @return the builder object
+   */
+  public B zeebeModelerTemplate(final String modelerTemplate) {
+    ((AdHocSubProcess) element).setModelerTemplate(modelerTemplate);
+    return myself;
+  }
+
   public B zeebeOutputCollection(final String outputCollection) {
     final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
     adHoc.setOutputCollection(outputCollection);
@@ -83,6 +96,37 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
     final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
     adHoc.setOutputElement(asZeebeExpression(outputElementExpression));
     return myself;
+  }
+
+  /**
+   * Marks this ad-hoc sub-process as an agent definition.
+   *
+   * @param agentType the agent type declared on the marker
+   * @return the builder object
+   */
+  public B zeebeAgentDefinition(final ZeebeAgentType agentType) {
+    final ZeebeAgentDefinition agentDefinition =
+        getCreateSingleExtensionElement(ZeebeAgentDefinition.class);
+    agentDefinition.setAgentType(agentType);
+    return myself;
+  }
+
+  /**
+   * Marks this ad-hoc sub-process as a Camunda-native AI agent.
+   *
+   * @return the builder object
+   */
+  public B zeebeAiAgentSubProcessDefinition() {
+    return zeebeAgentDefinition(ZeebeAgentType.aiAgentSubProcess);
+  }
+
+  /**
+   * Marks this ad-hoc sub-process as an external agent.
+   *
+   * @return the builder object
+   */
+  public B zeebeExternalAgentDefinition() {
+    return zeebeAgentDefinition(ZeebeAgentType.external);
   }
 
   @Override

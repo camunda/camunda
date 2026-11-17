@@ -9,84 +9,93 @@ package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.Date;
+import java.util.Properties;
 import javax.sql.DataSource;
-import liquibase.database.Database;
-import liquibase.exception.DatabaseException;
+import liquibase.integration.spring.SpringLiquibase;
 import liquibase.lockservice.DatabaseChangeLogLock;
 import liquibase.lockservice.LockService;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for the per-physical-tenant {@link LiquibaseSchemaManager}. Schema-version behaviour
+ * is covered by {@link RdbmsSchemaVersionStoreTest}; which manager a tenant gets by {@link
+ * RdbmsSchemaManagersTest}; and orchestrating several tenants by {@code RdbmsSchemaInitializerTest}
+ * in the distribution.
+ */
 class LiquibaseSchemaManagerTest {
 
+  // ---- initialize ----
+
   @Test
-  void shouldHaveInitializedFalseByDefault() {
+  void shouldAbortStartupWhenApplicationVersionIsNull() {
     // given
-    final var schemaManager = new LiquibaseSchemaManager();
+    final var schemaManager = new TestLiquibaseSchemaManager(autoDdlConfig(), null);
 
     // when / then
-    assertThat(schemaManager.isInitialized()).isFalse();
+    assertThatThrownBy(schemaManager::initialize)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("applicationVersion is not configured");
   }
 
   @Test
-  void shouldSetInitializedTrueAfterSuccessfulInitialization() throws Exception {
+  void shouldRunVersionCheckThenMigrationThenRecordVersion() throws Exception {
     // given
-    final var schemaManager = new TestLiquibaseSchemaManager();
+    final var versionStore = mock(RdbmsSchemaVersionStore.class);
+    final var schemaManager =
+        new TestLiquibaseSchemaManager(autoDdlConfig(), "8.10.0", versionStore);
 
     // when
-    schemaManager.afterPropertiesSet();
+    schemaManager.initialize();
+
+    // then - the version compatibility check and the version recording both ran
+    verify(versionStore).checkCompatibility();
+    verify(versionStore).recordCurrentVersion();
+  }
+
+  @Test
+  void shouldUseTablePrefixAsLiquibaseContext() {
+    // given
+    final var schemaManager = new LiquibaseSchemaManager(autoDdlConfig("TENANT_"), "8.10.0");
+
+    // when
+    final var runner = schemaManager.buildRunner();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
+    assertThat(runner.getContexts()).isEqualTo("TENANT_CONTEXT");
   }
 
   @Test
-  void shouldKeepInitializedFalseWhenInitializationFails() {
+  void shouldNotSetLiquibaseContextWithoutTablePrefix() {
     // given
-    final var schemaManager = spy(new TestLiquibaseSchemaManager());
-    doThrow(new RuntimeException("Initialization failed")).when(schemaManager).performMigration();
-
-    // when / then
-    assertThatThrownBy(() -> schemaManager.afterPropertiesSet())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("Initialization failed");
-
-    assertThat(schemaManager.isInitialized()).isFalse();
-  }
-
-  @Test
-  void shouldSkipStaleLockCheckWhenDdlLockWaitTimeoutIsNull() throws Exception {
-    // given
-    final var schemaManager = new TestLiquibaseSchemaManager();
-    schemaManager.setDdlLockWaitTimeout(null);
-    final var mockDataSource = mock(DataSource.class);
-    schemaManager.setDataSource(mockDataSource);
+    final var schemaManager = new LiquibaseSchemaManager(autoDdlConfig(), "8.10.0");
 
     // when
-    schemaManager.releaseStaleLockIfPresent();
+    final var runner = schemaManager.buildRunner();
 
-    // then - no interaction with datasource because timeout is null
-    verify(mockDataSource, never()).getConnection();
+    // then
+    assertThat(runner.getContexts()).isNull();
   }
 
-  @Test
-  void shouldSkipStaleLockCheckWhenDataSourceIsNull() throws Exception {
-    // given
-    final var schemaManager = new TestLiquibaseSchemaManager();
-    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
-    // No datasource set
+  // ---- stale lock (mock-based) ----
 
-    // when / then - should not throw any exception
+  @Test
+  void shouldSkipStaleLockCheckWhenDataSourceIsNull() {
+    // given - ddl timeout is set but dataSource is null
+    final var schemaManager =
+        new LiquibaseSchemaManager(
+            new PerTenantSchemaConfig(null, h2Properties(), "", true, Duration.ofMinutes(10)),
+            "8.10.0");
+
+    // when / then - should not throw when dataSource is null
     schemaManager.releaseStaleLockIfPresent();
   }
 
@@ -96,63 +105,37 @@ class LiquibaseSchemaManagerTest {
     final var mockLockService = mock(LockService.class);
     when(mockLockService.listLocks()).thenReturn(new DatabaseChangeLogLock[0]);
 
-    final var schemaManager = new TestableSchemaManager(mockLockService);
-    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+    final var mockDataSource = mock(DataSource.class);
+    when(mockDataSource.getConnection()).thenReturn(mock(Connection.class));
+    final var schemaManager =
+        new MockLockServiceSchemaManager(
+            new PerTenantSchemaConfig(
+                mockDataSource, h2Properties(), "", true, Duration.ofMinutes(10)),
+            mockLockService);
 
     // when
     schemaManager.releaseStaleLockIfPresent();
 
-    // then
+    // then - empty lock list → no release
     verify(mockLockService, never()).forceReleaseLock();
-  }
-
-  @Test
-  void shouldNotReleaseLockWhenLockIsRecent() throws Exception {
-    // given
-    final var recentLock = new DatabaseChangeLogLock(1, new Date(), "some-host");
-    final var mockLockService = mock(LockService.class);
-    when(mockLockService.listLocks()).thenReturn(new DatabaseChangeLogLock[] {recentLock});
-
-    final var schemaManager = new TestableSchemaManager(mockLockService);
-    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
-
-    // when
-    schemaManager.releaseStaleLockIfPresent();
-
-    // then - lock is recent (just now), so it should not be released
-    verify(mockLockService, never()).forceReleaseLock();
-  }
-
-  @Test
-  void shouldReleaseLockWhenLockIsStale() throws Exception {
-    // given
-    final var staleLockTime = new Date(System.currentTimeMillis() - Duration.ofHours(1).toMillis());
-    final var staleLock = new DatabaseChangeLogLock(1, staleLockTime, "crashed-pod");
-    final var mockLockService = mock(LockService.class);
-    when(mockLockService.listLocks()).thenReturn(new DatabaseChangeLogLock[] {staleLock});
-
-    final var schemaManager = new TestableSchemaManager(mockLockService);
-    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
-
-    // when
-    schemaManager.releaseStaleLockIfPresent();
-
-    // then - stale lock (1 hour old, timeout 10 min) should be released
-    verify(mockLockService).forceReleaseLock();
   }
 
   @Test
   void shouldContinueMigrationWhenStaleLockCheckThrowsException() throws Exception {
-    // given
-    final var schemaManager = new TestLiquibaseSchemaManager();
-    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+    // given - getConnection() throws inside releaseStaleLockIfPresent
     final var mockDataSource = mock(DataSource.class);
     when(mockDataSource.getConnection()).thenThrow(new RuntimeException("DB connection failed"));
-    schemaManager.setDataSource(mockDataSource);
+    final var schemaManager =
+        new LiquibaseSchemaManager(
+            new PerTenantSchemaConfig(
+                mockDataSource, h2Properties(), "", true, Duration.ofMinutes(10)),
+            "8.10.0");
 
     // when / then - exception should be swallowed, method should return normally
     schemaManager.releaseStaleLockIfPresent();
   }
+
+  // ---- retry tests ----
 
   @Test
   void shouldRetryMigrationWhenDeadlockOccursAndThenSucceed() throws Exception {
@@ -168,10 +151,9 @@ class LiquibaseSchemaManagerTest {
                     1205)));
 
     // when
-    schemaManager.afterPropertiesSet();
+    schemaManager.initialize();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(schemaManager.attempts).isEqualTo(2);
     assertThat(schemaManager.waits).isEqualTo(1);
   }
@@ -186,11 +168,10 @@ class LiquibaseSchemaManagerTest {
                 "liquibase migration failed", new SQLException("deadlock victim", "40001", 1205)));
 
     // when / then
-    assertThatThrownBy(schemaManager::afterPropertiesSet)
+    assertThatThrownBy(schemaManager::initialize)
         .isInstanceOf(RuntimeException.class)
         .hasMessage("liquibase migration failed");
 
-    assertThat(schemaManager.isInitialized()).isFalse();
     assertThat(schemaManager.attempts).isEqualTo(3);
     assertThat(schemaManager.waits).isEqualTo(2);
   }
@@ -202,11 +183,10 @@ class LiquibaseSchemaManagerTest {
         new RetryableMigrationSchemaManager(1, new RuntimeException("non-retryable failure"));
 
     // when / then
-    assertThatThrownBy(schemaManager::afterPropertiesSet)
+    assertThatThrownBy(schemaManager::initialize)
         .isInstanceOf(RuntimeException.class)
         .hasMessage("non-retryable failure");
 
-    assertThat(schemaManager.isInitialized()).isFalse();
     assertThat(schemaManager.attempts).isEqualTo(1);
     assertThat(schemaManager.waits).isZero();
   }
@@ -221,10 +201,9 @@ class LiquibaseSchemaManagerTest {
                 "liquibase migration failed", new SQLException("transient conflict", "40001", 0)));
 
     // when
-    schemaManager.afterPropertiesSet();
+    schemaManager.initialize();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(schemaManager.attempts).isEqualTo(2);
     assertThat(schemaManager.waits).isEqualTo(1);
   }
@@ -240,75 +219,105 @@ class LiquibaseSchemaManagerTest {
                 new SQLException("generic db failure", "S0001", 1205)));
 
     // when
-    schemaManager.afterPropertiesSet();
+    schemaManager.initialize();
 
     // then
-    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(schemaManager.attempts).isEqualTo(2);
     assertThat(schemaManager.waits).isEqualTo(1);
   }
 
+  // ---- helpers ----
+
+  private static PerTenantSchemaConfig autoDdlConfig() {
+    return autoDdlConfig("");
+  }
+
+  private static PerTenantSchemaConfig autoDdlConfig(final String prefix) {
+    return new PerTenantSchemaConfig(mock(DataSource.class), h2Properties(), prefix, true, null);
+  }
+
+  private static VendorDatabaseProperties h2Properties() {
+    final var props = new Properties();
+    props.put(VendorDatabaseProperties.DATABASE_ID, "h2");
+    props.put("variableValue.previewSize", "8191");
+    props.put("userCharColumn.size", "256");
+    props.put("errorMessage.size", "4000");
+    props.put("treePath.size", "8191");
+    props.put("disableFkBeforeTruncate", "false");
+    props.put("tableRowCount.strategy", "live");
+    props.put("tableRowCount.identifierCase", "none");
+    return new VendorDatabaseProperties(props);
+  }
+
   /**
-   * Test implementation that overrides the parent's afterPropertiesSet to avoid actual Liquibase
-   * initialization. Designed for extension by test subclasses (e.g. {@code TestableSchemaManager}).
+   * Test subclass that skips the real {@link SpringLiquibase} runner, stale-lock handling, and
+   * migration so tests can drive {@link #initialize()} without a real database. Schema-version
+   * interactions are delegated to a (mocked) {@link RdbmsSchemaVersionStore}.
    */
   private static class TestLiquibaseSchemaManager extends LiquibaseSchemaManager {
-    @Override
-    public void afterPropertiesSet() throws Exception {
-      // Skip the actual Liquibase initialization (super.afterPropertiesSet())
-      // and just perform our state update
-      releaseStaleLockIfPresent();
-      performMigration();
-      setInitialized();
+    TestLiquibaseSchemaManager(
+        final PerTenantSchemaConfig config, final String applicationVersion) {
+      this(config, applicationVersion, mock(RdbmsSchemaVersionStore.class));
+    }
+
+    TestLiquibaseSchemaManager(
+        final PerTenantSchemaConfig config,
+        final String applicationVersion,
+        final RdbmsSchemaVersionStore versionStore) {
+      super(config, applicationVersion, versionStore);
     }
 
     @Override
-    protected void performMigration() {
-      // No-op for testing, can be overridden in spy
+    protected SpringLiquibase buildRunner() {
+      return null;
     }
 
-    protected void setInitialized() {
-      // Access the inherited behavior through a test method
-      try {
-        final var field = LiquibaseSchemaManager.class.getDeclaredField("initialized");
-        field.setAccessible(true);
-        field.set(this, true);
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+    @Override
+    protected void seedSchemaVersion() {
+      // no-op — the seeded version is what the mocked version store stands in for
+    }
+
+    @Override
+    protected void releaseStaleLockIfPresent() {
+      // no-op — tested separately
+    }
+
+    @Override
+    protected void performMigration(final SpringLiquibase runner) {
+      // no-op
     }
   }
 
   /**
-   * Test implementation that injects a mock {@link LockService} and a mock {@link DataSource} to
-   * allow testing of stale lock detection without a real database.
+   * Injects a mock {@link LockService} so stale-lock logic can be unit-tested without a real DB.
+   * Deliberately does NOT override {@link #releaseStaleLockIfPresent()} — the real implementation
+   * is what is under test.
    */
-  private static final class TestableSchemaManager extends TestLiquibaseSchemaManager {
+  private static final class MockLockServiceSchemaManager extends LiquibaseSchemaManager {
     private final LockService mockLockService;
 
-    TestableSchemaManager(final LockService mockLockService) {
+    MockLockServiceSchemaManager(
+        final PerTenantSchemaConfig config, final LockService mockLockService) {
+      super(config, "8.10.0");
       this.mockLockService = mockLockService;
-      final var mockDataSource = mock(DataSource.class);
-      final var mockConnection = mock(Connection.class);
-      try {
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-      setDataSource(mockDataSource);
     }
 
     @Override
-    protected Database openDatabase(final Connection connection) throws DatabaseException {
-      return mock(Database.class);
+    protected liquibase.database.Database openDatabase(
+        final Connection connection, final String lockTableName) {
+      return mock(liquibase.database.Database.class);
     }
 
     @Override
-    protected LockService getLockService(final Database database) {
+    protected LockService getLockService(final liquibase.database.Database database) {
       return mockLockService;
     }
   }
 
+  /**
+   * Retry tests run with a single tenant whose performMigration() fails {@code remainingFailures}
+   * times before succeeding.
+   */
   private static final class RetryableMigrationSchemaManager extends LiquibaseSchemaManager {
     private int remainingFailures;
     private final RuntimeException failure;
@@ -317,12 +326,28 @@ class LiquibaseSchemaManagerTest {
 
     private RetryableMigrationSchemaManager(
         final int failuresBeforeSuccess, final RuntimeException failure) {
+      super(autoDdlConfig(), "8.10.0", mock(RdbmsSchemaVersionStore.class));
       remainingFailures = failuresBeforeSuccess;
       this.failure = failure;
     }
 
     @Override
-    protected void performMigration() {
+    protected SpringLiquibase buildRunner() {
+      return null;
+    }
+
+    @Override
+    protected void seedSchemaVersion() {
+      // no-op — so that attempts count the schema migration's retries and nothing else
+    }
+
+    @Override
+    protected void releaseStaleLockIfPresent() {
+      // no-op
+    }
+
+    @Override
+    protected void performMigration(final SpringLiquibase runner) {
       attempts++;
       if (remainingFailures-- > 0) {
         throw failure;

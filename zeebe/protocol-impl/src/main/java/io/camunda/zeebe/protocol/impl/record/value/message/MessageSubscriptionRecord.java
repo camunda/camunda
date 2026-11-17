@@ -12,11 +12,14 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -37,6 +40,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
+  private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
@@ -51,9 +61,17 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+  private final EnumProperty<BpmnElementType> elementTypeProp =
+      new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+  private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
 
   public MessageSubscriptionRecord() {
-    super(10);
+    super(16);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -63,7 +81,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(businessIdProp)
+        .declareProperty(elementIdProp)
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalProp)
+        .declareProperty(elementTypeProp)
+        .declareProperty(subscriptionKeyProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -77,6 +101,12 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setVariables(record.getVariablesBuffer());
     setTenantId(record.getTenantId());
+    setBusinessId(record.getBusinessIdBuffer());
+    setElementId(record.getElementIdBuffer());
+    setRootProcessInstanceKey(record.getRootProcessInstanceKey());
+    setStorageOrdinal(record.getStorageOrdinal());
+    setElementType(record.getElementType());
+    setSubscriptionKey(record.getSubscriptionKey());
   }
 
   @JsonIgnore
@@ -139,6 +169,56 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getElementId() {
+    return bufferAsString(elementIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setRootProcessInstanceKey(final long key) {
+    rootProcessInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
+    return this;
+  }
+
   public MessageSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
@@ -196,6 +276,36 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   public MessageSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
+    return this;
+  }
+
+  @Override
+  public long getSubscriptionKey() {
+    return subscriptionKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setSubscriptionKey(final long subscriptionKey) {
+    subscriptionKeyProp.setValue(subscriptionKey);
     return this;
   }
 }

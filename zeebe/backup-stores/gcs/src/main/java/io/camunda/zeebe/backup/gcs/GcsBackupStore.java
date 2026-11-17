@@ -7,6 +7,16 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.gax.retrying.RetrySettings;
+import com.google.cloud.ServiceOptions;
+import com.google.cloud.http.HttpTransportOptions;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -18,19 +28,24 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
-import java.util.Collection;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -43,9 +58,18 @@ public final class GcsBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String ERROR_VALIDATION_FAILED =
       "Invalid configuration for GcsBackupStore: %s";
+
+  /**
+   * Retention hands the leader a batch of up to a thousand deletions at once. Each deletion makes
+   * several requests to GCS, and the client opens a connection per concurrent request, so without a
+   * bound the leader fails with connection errors instead of draining the batch.
+   */
+  static final int DELETE_PARALLELISM = 16;
+
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
-  private static final String METADATA_OBJECT_NAME = "metadata.json";
+
   private final ExecutorService executor;
+  private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
   private final Storage client;
@@ -60,12 +84,20 @@ public final class GcsBackupStore implements BackupStore {
   GcsBackupStore(final GcsBackupConfig config, final Storage client) {
     this.config = config;
     bucketInfo = BucketInfo.of(config.bucketName());
-    basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
+    basePath = formatBasePath(Optional.ofNullable(config.basePath()));
     this.client = client;
-    executor = Executors.newVirtualThreadPerTaskExecutor();
+    executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-backup-gcs-", 0).factory());
     manifestManager = new ManifestManager(client, bucketInfo, basePath, executor);
     fileSetManager =
-        new FileSetManager(client, bucketInfo, basePath, executor, config.maxConcurrentTransfers());
+        new FileSetManager(
+            client,
+            bucketInfo,
+            basePath,
+            executor,
+            config.maxConcurrentTransfers(),
+            config.bufferSize());
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
@@ -82,13 +114,13 @@ public final class GcsBackupStore implements BackupStore {
                   CompletableFuture.runAsync(
                       () ->
                           fileSetManager.save(
-                              backup.id(), FileSetManager.SNAPSHOT_FILESET_NAME, backup.snapshot()),
+                              backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot()),
                       executor);
               final var segmentsFuture =
                   CompletableFuture.runAsync(
                       () ->
                           fileSetManager.save(
-                              backup.id(), FileSetManager.SEGMENTS_FILESET_NAME, backup.segments()),
+                              backup.id(), SEGMENTS_FILESET_NAME, backup.segments()),
                       executor);
 
               return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
@@ -131,29 +163,34 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listBackupStatuses(wildcard), executor);
+        () -> manifestManager.listBackupStatuses(wildcard, options), executor);
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-
-    return CompletableFuture.runAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
-            return;
+            return null;
           } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
                 "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
-          fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          final var snapshotIds = fileSetManager.collectBlobIds(id, SNAPSHOT_FILESET_NAME);
+          final var segmentIds = fileSetManager.collectBlobIds(id, SEGMENTS_FILESET_NAME);
+          final List<BlobId> allIds = new ArrayList<>(snapshotIds);
+          allIds.addAll(segmentIds);
+          fileSetManager.deleteBlobs(allIds);
           manifestManager.deleteManifest(manifest);
+          return null;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -174,19 +211,13 @@ public final class GcsBackupStore implements BackupStore {
                   CompletableFuture.supplyAsync(
                       () ->
                           fileSetManager.restore(
-                              id,
-                              FileSetManager.SNAPSHOT_FILESET_NAME,
-                              completed.snapshot(),
-                              targetFolder),
+                              id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder),
                       executor);
               final var segmentsFuture =
                   CompletableFuture.supplyAsync(
                       () ->
                           fileSetManager.restore(
-                              id,
-                              FileSetManager.SEGMENTS_FILESET_NAME,
-                              completed.segments(),
-                              targetFolder),
+                              id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder),
                       executor);
 
               // Wait for both to complete
@@ -213,7 +244,7 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
-    return CompletableFuture.supplyAsync(
+    return SemaphoreLeasedScheduler.schedule(
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
@@ -222,7 +253,8 @@ public final class GcsBackupStore implements BackupStore {
           manifestManager.markAsDeleted(manifest);
           return BackupStatusCode.DELETED;
         },
-        executor);
+        executor,
+        deleteConcurrencyLimit);
   }
 
   @Override
@@ -300,9 +332,62 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   private BlobInfo backupMetadataBlobInfo(final int partitionId) {
-    return BlobInfo.newBuilder(
-            bucketInfo, "%smetadata/%d/%s".formatted(basePath, partitionId, METADATA_OBJECT_NAME))
-        .build();
+    return BlobInfo.newBuilder(bucketInfo, metadataPath(basePath, partitionId)).build();
+  }
+
+  /**
+   * Transport options capping how long a single request may stall, or empty to leave the
+   * google-http-client defaults in place. Slow storage backends can stall a response past its
+   * default of 20s, or stall a content upload indefinitely, which fails the whole backup.
+   */
+  static Optional<HttpTransportOptions> transportOptions(final GcsBackupConfig config) {
+    if (config.readTimeout().isEmpty() && config.writeTimeout().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final var optionsBuilder = HttpTransportOptions.newBuilder();
+    config.readTimeout().ifPresent(timeout -> optionsBuilder.setReadTimeout(toMillis(timeout)));
+    // HttpTransportOptions has no write timeout, even though the underlying request supports one.
+    return Optional.of(
+        config
+            .writeTimeout()
+            .map(timeout -> writeTimeoutOptions(optionsBuilder, toMillis(timeout)))
+            .orElseGet(optionsBuilder::build));
+  }
+
+  /**
+   * Retry settings bounding how long the client keeps retrying a failing request, or empty to leave
+   * the library defaults in place. The defaults retry for up to 50s, which delays reporting an
+   * unreachable endpoint.
+   */
+  static Optional<RetrySettings> retrySettings(final GcsBackupConfig config) {
+    if (config.retry().totalTimeout().isEmpty() && config.retry().maxAttempts().isEmpty()) {
+      return Optional.empty();
+    }
+
+    final var settings = ServiceOptions.getDefaultRetrySettings().toBuilder();
+    config.retry().totalTimeout().ifPresent(settings::setTotalTimeoutDuration);
+    config.retry().maxAttempts().ifPresent(settings::setMaxAttempts);
+    return Optional.of(settings.build());
+  }
+
+  private static HttpTransportOptions writeTimeoutOptions(
+      final HttpTransportOptions.Builder optionsBuilder, final int writeTimeoutMillis) {
+    return new HttpTransportOptions(optionsBuilder) {
+      @Override
+      public HttpRequestInitializer getHttpRequestInitializer(
+          final ServiceOptions<?, ?> serviceOptions) {
+        final var delegate = super.getHttpRequestInitializer(serviceOptions);
+        return request -> {
+          delegate.initialize(request);
+          request.setWriteTimeout(writeTimeoutMillis);
+        };
+      }
+    };
+  }
+
+  private static int toMillis(final Duration timeout) {
+    return Math.toIntExact(timeout.toMillis());
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
@@ -310,6 +395,9 @@ public final class GcsBackupStore implements BackupStore {
         StorageOptions.newBuilder()
             .setHost(config.connection().host())
             .setCredentials(config.connection().auth().credentials());
+
+    transportOptions(config).ifPresent(builder::setTransportOptions);
+    retrySettings(config).ifPresent(builder::setRetrySettings);
 
     // Without authentication, we need to set the project ID explicitly
     if (config.connection().auth() instanceof None(final String projectId)) {

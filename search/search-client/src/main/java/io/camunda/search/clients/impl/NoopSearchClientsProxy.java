@@ -10,6 +10,9 @@ package io.camunda.search.clients.impl;
 import static java.util.Collections.emptyList;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.AgentDefinitionEntity;
+import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -53,7 +56,13 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableHistoryItemEntity;
+import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.AgentDefinitionQuery;
+import io.camunda.search.query.AgentInstanceHistoryQuery;
+import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
@@ -63,6 +72,8 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -94,12 +105,42 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableHistoryItemQuery;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 import java.util.List;
 import java.util.Map;
 
 public class NoopSearchClientsProxy implements SearchClientsProxy {
+
+  @Override
+  public AgentDefinitionEntity getAgentDefinition(final long key) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<AgentDefinitionEntity> searchAgentDefinitions(
+      final AgentDefinitionQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public AgentInstanceEntity getAgentInstance(final long key) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<AgentInstanceEntity> searchAgentInstances(
+      final AgentInstanceQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<AgentInstanceHistoryEntity> searchAgentHistoryItems(
+      final AgentInstanceHistoryQuery query) {
+    return SearchQueryResult.empty();
+  }
 
   @Override
   public AuthorizationEntity getAuthorization(final long key) {
@@ -349,6 +390,22 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<VariableHistoryItemEntity> searchVariableHistoryItems(
+      final VariableHistoryItemQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public VariableHistoryItemEntity getVariableHistoryItem(final long key) {
+    return null;
+  }
+
+  @Override
+  public List<String> searchVariableNames(final VariableNameQuery query) {
+    return List.of();
+  }
+
+  @Override
   public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery filter) {
     return SearchQueryResult.empty();
   }
@@ -363,6 +420,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    return null;
   }
 
   @Override
@@ -389,6 +451,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
       final ClusterVariableQuery query) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    return this;
   }
 
   @Override
@@ -460,5 +527,22 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
     return null;
+  }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final DeployedResourceQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<WaitStateEntity> searchWaitStates(
+      final ElementInstanceWaitStateQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public List<WaitStateStatisticsEntity> waitStateStatistics(final long processInstanceKey) {
+    return emptyList();
   }
 }

@@ -31,6 +31,8 @@ const mockProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
+  suspendedDate: null,
 };
 
 const getWrapper = (

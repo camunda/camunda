@@ -14,6 +14,12 @@ public interface IndexTemplateDescriptor extends IndexDescriptor {
   String PARTITION_ID = "partitionId";
   String POSITION = "position";
 
+  /**
+   * Starts the suffix of an ordinal index, which holds runtime data next to the main index, e.g.
+   * {@code <full qualified name>ord00001}.
+   */
+  String ORDINAL_SUFFIX_START = "ord";
+
   String getIndexPattern();
 
   String getTemplateName();

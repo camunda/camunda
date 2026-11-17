@@ -11,7 +11,7 @@ import {
   ValidationScenario,
   ParameterModel,
 } from '../model/types.js';
-import {makeId} from './common.js';
+import {makeId, validParamValue} from './common.js';
 
 interface Opts {
   onlyOperations?: Set<string>;
@@ -22,13 +22,19 @@ function collectQueryParams(op: OperationModel): ParameterModel[] {
   return op.parameters.filter((p) => p.in === 'query');
 }
 
-function buildQueryParamMap(op: OperationModel): Record<string, string> {
+/**
+ * Valid placeholder values for the operation's *required* query parameters, so the violation
+ * under test is the only thing wrong with the request. Optional parameters are deliberately
+ * left out: a dummy value for one of them can fail its own validation, which would make the
+ * expected 400 mean something other than the violation the scenario claims to exercise.
+ */
+function buildRequiredQueryParamMap(
+  op: OperationModel,
+): Record<string, string> {
   const q: Record<string, string> = {};
   for (const p of collectQueryParams(op)) {
-    const t = p.schema?.type;
-    if (t === 'integer' || t === 'number') q[p.name] = '1';
-    else if (t === 'boolean') q[p.name] = 'true';
-    else q[p.name] = 'x';
+    if (!p.required) continue;
+    q[p.name] = validParamValue(p.schema, p.name);
   }
   return q;
 }
@@ -46,13 +52,11 @@ export function generateParamMissing(
       if (!p.required) continue;
       if (p.in === 'path') continue; // can't "omit" path param without changing path shape
       if (opts.capPerOperation && produced >= opts.capPerOperation) break;
-      let params: Record<string, string> | undefined;
+      let query: Record<string, string> | undefined;
       if (p.in === 'query') {
-        const allQ = buildQueryParamMap(op);
+        const allQ = buildRequiredQueryParamMap(op);
         delete allQ[p.name];
-        params = Object.keys(allQ).length ? allQ : undefined;
-      } else {
-        params = buildParams(op.path, {});
+        query = Object.keys(allQ).length ? allQ : undefined;
       }
       out.push({
         id: makeId([op.operationId, 'paramMissing', p.in, p.name]),
@@ -61,7 +65,8 @@ export function generateParamMissing(
         path: op.path,
         type: 'param-missing',
         target: `${p.in}.${p.name}`,
-        params,
+        params: buildPathParams(op.path),
+        query,
         expectedStatus: 400,
         description: `Missing required ${p.in} parameter ${p.name}`,
         headersAuth: true,
@@ -86,15 +91,16 @@ export function generateParamTypeMismatch(
       if (!p.schema || !p.schema.type) continue;
       if (p.in === 'path') continue; // path params often strictly string serialized
       if (opts.capPerOperation && produced >= opts.capPerOperation) break;
-      // Skip plain string parameters without enum/format; no real type mismatch possible.
-      if (p.schema.type === 'string' && !p.schema.enum && !p.schema.format)
+      // Skip string parameters that can't have a type mismatch: any string is a valid value
+      // unless an enum or a format with its own lexical space narrows it down.
+      if (p.schema.type === 'string' && !p.schema.enum && !hasTypedFormat(p))
         continue;
       const wrong = wrongTypeValue(p.schema.type);
       if (wrong === undefined) continue;
       // Start with all required query params (so we don't unintentionally create identical empty queries)
-      let params: Record<string, string> | undefined;
+      let query: Record<string, string> | undefined;
       if (p.in === 'query') {
-        const allQ = buildQueryParamMap(op);
+        const allQ = buildRequiredQueryParamMap(op);
         // Overwrite the specific param with wrong typed value (stringified to keep buildUrl logic simple)
         if (p.schema?.type === 'boolean') {
           allQ[p.name] = 'notBoolean';
@@ -111,9 +117,7 @@ export function generateParamTypeMismatch(
         } else if (p.schema?.type === 'object') {
           allQ[p.name] = 'notObject';
         }
-        params = allQ;
-      } else {
-        params = buildParams(op.path, {}); // no query mutation for non-query params
+        query = allQ;
       }
       out.push({
         id: makeId([op.operationId, 'paramType', p.in, p.name]),
@@ -122,7 +126,8 @@ export function generateParamTypeMismatch(
         path: op.path,
         type: 'param-type-mismatch',
         target: `${p.in}.${p.name}`,
-        params,
+        params: buildPathParams(op.path),
+        query,
         expectedStatus: 400,
         description: `Type mismatch for ${p.in} parameter ${p.name}`,
         headersAuth: true,
@@ -159,10 +164,11 @@ export function generateParamEnumViolation(
         path: op.path,
         type: 'param-enum-violation',
         target: `${p.in}.${p.name}`,
-        params: buildParams(op.path, {
-          extraQuery:
-            p.in === 'query' ? {[p.name]: String(invalid)} : undefined,
-        }),
+        params: buildPathParams(op.path),
+        query:
+          p.in === 'query'
+            ? {...buildRequiredQueryParamMap(op), [p.name]: String(invalid)}
+            : undefined,
         expectedStatus: 400,
         description: `Enum violation for ${p.in} parameter ${p.name}`,
         headersAuth: true,
@@ -172,6 +178,31 @@ export function generateParamEnumViolation(
     }
   }
   return out;
+}
+
+/**
+ * Standard formats the gateway binds to a typed Java value, so a malformed string is rejected on
+ * type grounds alone.
+ *
+ * The spec also uses `format` for semantic-type aliases (`DocumentId`, `TenantId`, `JobKey`, ...,
+ * always alongside `x-semantic-type`). Those name the domain concept, not a lexical space: what a
+ * value must look like is expressed separately as `pattern`/`minLength`/`maxLength`, which
+ * generateParamConstraintViolations already covers. Treating an alias as a type would claim a
+ * mismatch for a value the endpoint has no reason to reject.
+ */
+const TYPED_STRING_FORMATS = new Set([
+  'date',
+  'date-time',
+  'time',
+  'duration',
+  'uuid',
+]);
+
+function hasTypedFormat(p: ParameterModel): boolean {
+  return (
+    typeof p.schema?.format === 'string' &&
+    TYPED_STRING_FORMATS.has(p.schema.format)
+  );
 }
 
 function wrongTypeValue(type: string): any {
@@ -192,20 +223,11 @@ function wrongTypeValue(type: string): any {
   }
 }
 
-interface BuildParamsOpts {
-  omit?: string;
-  extraQuery?: Record<string, string>;
-}
-function buildParams(
-  path: string,
-  opt: BuildParamsOpts,
-): Record<string, string> | undefined {
+/** Valid placeholders for the path template's `{token}`s only - query values belong in `query`. */
+function buildPathParams(path: string): Record<string, string> | undefined {
   const m = path.match(/\{([^}]+)}/g);
+  if (!m) return undefined;
   const params: Record<string, string> = {};
-  if (m) for (const token of m) params[token.slice(1, -1)] = '1'; // default valid numeric-like placeholder
-  if (opt.extraQuery) {
-    for (const [k, v] of Object.entries(opt.extraQuery)) params[k] = v;
-  }
-  if (opt.omit) delete params[opt.omit];
-  return Object.keys(params).length ? params : undefined;
+  for (const token of m) params[token.slice(1, -1)] = '1'; // default valid numeric-like placeholder
+  return params;
 }

@@ -13,13 +13,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
@@ -69,19 +71,23 @@ public final class SimpleBrokerStartTest {
         assertThatThrownBy(
             () -> {
               final var systemContext =
-                  new SystemContext(
+                  SystemContextTestFactory.singleTenant(
+                      SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
                       brokerCfg,
+                      null,
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),
-                      new SecurityConfiguration(),
+                      new SimpleMeterRegistry(),
+                      EngineSecurityConfigurations.defaultConfig(),
                       mock(UserServices.class),
                       mock(PasswordEncoder.class),
                       mock(JwtDecoder.class),
-                      new NoopOidcClaimsProvider(),
+                      (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
                       mock(SearchClientsProxy.class),
                       mock(BrokerRequestAuthorizationConverter.class),
-                      mock(NodeIdProvider.class));
+                      mock(NodeIdProvider.class),
+                      PhysicalTenantIds.DEFAULT);
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -102,19 +108,23 @@ public final class SimpleBrokerStartTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
 
     final var systemContext =
-        new SystemContext(
+        SystemContextTestFactory.singleTenant(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             actorScheduler,
             atomixCluster,
             brokerClient,
-            new SecurityConfiguration(),
+            new SimpleMeterRegistry(),
+            EngineSecurityConfigurations.defaultConfig(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
             mock(JwtDecoder.class),
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             mock(SearchClientsProxy.class),
             mock(BrokerRequestAuthorizationConverter.class),
-            mock(NodeIdProvider.class));
+            mock(NodeIdProvider.class),
+            PhysicalTenantIds.DEFAULT);
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =

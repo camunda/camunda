@@ -16,11 +16,13 @@
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 /**
- * Represents the type of event listener, that indicates when EL should be executed: at the start
- * (beginning) or at the end (completion) of an element's processing.
+ * Represents the type of event listener, that indicates when an execution listener should be
+ * executed: at the {@code start} (beginning), {@code end} (completion), or {@code cancel}
+ * (termination) of an element's processing.
  */
 public enum ZeebeExecutionListenerEventType {
   beforeAll,
   start,
-  end
+  end,
+  cancel
 }

@@ -32,6 +32,7 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
         asLong(source.getProcessDefinitionId()),
         asLong(source.getProcessInstanceId()),
         source.getRootProcessInstanceKey(),
+        source.getBusinessId(),
         asLong(source.getFlowNodeInstanceId()),
         source.getTenantId(),
         source.getDueDate(),
@@ -42,7 +43,8 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
         source.getProcessDefinitionVersion(),
         source.getCustomHeaders(),
         source.getPriority(),
-        source.getTags());
+        source.getTags(),
+        Boolean.TRUE.equals(source.getIsSuspended()));
   }
 
   private UserTaskState toUserTaskState(final TaskState source) {

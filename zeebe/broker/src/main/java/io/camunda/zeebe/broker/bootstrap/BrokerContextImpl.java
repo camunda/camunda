@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import java.util.Map;
 
 final class BrokerContextImpl implements BrokerContext {
 
@@ -22,6 +23,7 @@ final class BrokerContextImpl implements BrokerContext {
   private final EmbeddedGatewayService embeddedGatewayService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final PartitionManager partitionManager;
+  private final Map<String, PartitionManager> partitionManagers;
   private final BrokerAdminService brokerAdminService;
   private final ManagedMessagingService apiMessagingService;
 
@@ -30,12 +32,14 @@ final class BrokerContextImpl implements BrokerContext {
       final ClusterServicesImpl clusterServices,
       final EmbeddedGatewayService embeddedGatewayService,
       final PartitionManager partitionManager,
+      final Map<String, PartitionManager> partitionManagers,
       final BrokerAdminService brokerAdminService,
       final ManagedMessagingService apiMessagingService) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
     this.embeddedGatewayService = embeddedGatewayService;
     this.partitionManager = requireNonNull(partitionManager);
+    this.partitionManagers = requireNonNull(partitionManagers);
     this.brokerAdminService = requireNonNull(brokerAdminService);
     this.apiMessagingService = requireNonNull(apiMessagingService);
   }
@@ -58,6 +62,11 @@ final class BrokerContextImpl implements BrokerContext {
   @Override
   public PartitionManager getPartitionManager() {
     return partitionManager;
+  }
+
+  @Override
+  public Map<String, PartitionManager> getPartitionManagers() {
+    return partitionManagers;
   }
 
   @Override

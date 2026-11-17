@@ -7,18 +7,24 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
+import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.exporter.ExporterHistoryPurger;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
@@ -30,12 +36,12 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
-import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -46,6 +52,7 @@ import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -64,26 +71,30 @@ import org.slf4j.LoggerFactory;
 public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
-  public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
+  private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
-  private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
+  private final ClusterConfigurationService clusterConfigurationService;
+  private final ClusterMembershipService membershipService;
   private final TopologyManagerImpl topologyManager;
+  private final BrokerHealthCheckService healthCheckService;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
+  private volatile boolean stopped = false;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final RaftPartitionFactory raftPartitionFactory;
-  private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
-  private final SharedRocksDbResources sharedRocksDbResources;
+  private final AtomixServerTransport gatewayBrokerTransport;
+  private final ExporterHistoryPurger exporterHistoryPurger;
 
   public PartitionManagerImpl(
+      final String partitionGroup,
       final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -93,41 +104,45 @@ public final class PartitionManagerImpl
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
-      final CommandApiService commandApiService,
-      final SnapshotApiRequestHandler snapshotApiRequestHandler,
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfig,
+      final RocksDbResources rocksDbResources,
+      final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    this.brokerCfg = brokerCfg;
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final FeatureFlags featureFlags,
+      final SecretStoreRegistry secretStoreRegistry,
+      final TopologyManagerImpl topologyManager) {
+    this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
+    this.clusterConfigurationService = clusterConfigurationService;
+    membershipService = clusterServices.getMembershipService();
+    this.topologyManager = topologyManager;
+    this.brokerCfg = brokerCfg;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
-    scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
-    final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
-    this.clusterConfigurationService = clusterConfigurationService;
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
+    scalingExecutor =
+        new BrokerClientPartitionScalingExecutor(partitionGroup, brokerClient, concurrencyControl);
     brokerMeterRegistry = meterRegistry;
-    // TODO: Do this as a separate step before starting the partition manager
-    topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
+    exporterHistoryPurger =
+        new ExporterHistoryPurger(partitionGroup, exporterRepository, meterRegistry);
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = new SharedRocksDbResources();
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
             actorSchedulingService,
             brokerCfg,
             localBroker,
-            commandApiService,
-            snapshotApiRequestHandler,
+            brokerClient,
             clusterServices,
             exporterRepository,
             diskSpaceUsageMonitor,
@@ -138,33 +153,20 @@ public final class PartitionManagerImpl
             topologyManager,
             featureFlags,
             securityConfig,
-            searchClientsProxy,
+            searchClientsProxy != null
+                ? searchClientsProxy.withPhysicalTenant(partitionGroup)
+                : null,
             brokerRequestAuthorizationConverter,
-            sharedRocksDbResources,
             clusterConfigurationService,
-            meterRegistry);
+            rocksDbResources,
+            secretStoreRegistry);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
     raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
-  }
-
-  public void start() {
-    actorSchedulingService.submitActor(topologyManager);
-    final var localMemberId = managementService.getMembershipService().getLocalMember().id();
-    final var memberPartitions = clusterConfigurationService.getMemberPartitions(localMemberId);
-
-    healthCheckService.registerBootstrapPartitions(memberPartitions);
-    for (final var partitionMetadata : memberPartitions) {
-      final var initialPartitionConfig =
-          clusterConfigurationService
-              .getInitialClusterConfiguration()
-              .members()
-              .get(localMemberId)
-              .getPartition(partitionMetadata.id().id())
-              .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
-    }
+    RocksDbSharedCacheMetrics.registerAllocationStrategy(
+        brokerMeterRegistry,
+        brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
   }
 
   private ActorFuture<Void> bootstrapPartition(
@@ -172,7 +174,7 @@ public final class PartitionManagerImpl
       final DynamicPartitionConfig initialPartitionConfig,
       final boolean initializeFromSnapshot) {
     final var result = concurrencyControl.<Void>createFuture();
-    final var id = partitionMetadata.id().id();
+    final var id = partitionMetadata.id().number();
     final var context =
         new PartitionStartupContext(
             actorSchedulingService,
@@ -188,11 +190,12 @@ public final class PartitionManagerImpl
             initialPartitionConfig,
             initializeFromSnapshot,
             brokerMeterRegistry,
-            brokerClient);
+            brokerClient,
+            gatewayBrokerTransport);
     final var partition = Partition.bootstrapping(context);
     if (partitions.putIfAbsent(id, partition) != null) {
       result.completeExceptionally(
-          new PartitionAlreadyExistsException(partitionMetadata.id().id()));
+          new PartitionAlreadyExistsException(partitionMetadata.id().number()));
     } else {
       concurrencyControl.runOnCompletion(
           partition.start(), (started, error) -> completePartitionStart(id, error, result));
@@ -203,9 +206,10 @@ public final class PartitionManagerImpl
 
   private ActorFuture<Void> joinPartition(
       final PartitionMetadata partitionMetadata,
-      final DynamicPartitionConfig initialPartitionConfig) {
+      final DynamicPartitionConfig initialPartitionConfig,
+      final RaftMember.Type joinMemberType) {
     final var result = concurrencyControl.<Void>createFuture();
-    final var id = partitionMetadata.id().id();
+    final var id = partitionMetadata.id().number();
     final var context =
         new PartitionStartupContext(
             actorSchedulingService,
@@ -221,7 +225,9 @@ public final class PartitionManagerImpl
             initialPartitionConfig,
             false,
             brokerMeterRegistry,
-            brokerClient);
+            brokerClient,
+            gatewayBrokerTransport);
+    context.joinMemberType(joinMemberType);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
@@ -239,56 +245,43 @@ public final class PartitionManagerImpl
   private void completePartitionStart(
       final int partitionId, final Throwable error, final ActorFuture<Void> future) {
 
-    if (error != null) {
-      // If Partition start was not complete due to a shutdown being called
-      // during the startup process, then this shouldn't be logged as an error
-      if (error instanceof StartupProcessShutdownException) {
-        LOGGER.warn("Aborting startup of partition {}", partitionId, error);
-      } else {
-        LOGGER.error(
-            "Failed to start partition {}, removing partition and shutting down already started steps",
-            partitionId,
-            error);
-        concurrencyControl.runOnCompletion(
-            partitions.remove(partitionId).stop(),
-            (stopped, stopError) -> {
-              topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
-              if (stopError != null) {
-                LOGGER.error(
-                    "Partition {} already failed during startup, now shutdown failed too",
-                    partitionId,
-                    error);
-              }
-            });
-      }
-
-      future.completeExceptionally(error);
+    if (error == null) {
+      LOGGER.info("Started partition {}", partitionId);
+      future.complete(null);
       return;
     }
 
-    LOGGER.info("Started partition {}", partitionId);
-    future.complete(null);
+    // If Partition start was not complete due to a shutdown being called
+    // during the startup process, then this shouldn't be logged as an error
+    if (error instanceof StartupProcessShutdownException) {
+      LOGGER.warn("Aborting startup of partition {}", partitionId, error);
+    } else {
+      LOGGER.error(
+          "Failed to start partition {}, removing partition and shutting down already started steps",
+          partitionId,
+          error);
+      stopFailedPartition(partitionId, error);
+    }
+
+    future.completeExceptionally(error);
   }
 
-  public ActorFuture<Void> stop() {
-    final var result = concurrencyControl.<Void>createFuture();
-    final var stop =
-        partitions.values().stream()
-            .map(Partition::stop)
-            .collect(new ActorFutureCollector<>(concurrencyControl));
+  private void stopFailedPartition(final int partitionId, final Throwable error) {
+    final var removed = partitions.remove(partitionId);
+    if (removed == null) {
+      return;
+    }
     concurrencyControl.runOnCompletion(
-        stop,
-        (ok, error) -> {
-          if (error != null) {
-            LOGGER.error("Failed to stop partitions", error);
-            result.completeExceptionally(error);
-          } else {
-            partitions.clear();
-            sharedRocksDbResources.close();
-            topologyManager.closeAsync().onComplete(result);
+        removed.stop(),
+        (stopped, stopError) -> {
+          topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
+          if (stopError != null) {
+            LOGGER.error(
+                "Partition {} already failed during startup, now shutdown failed too",
+                partitionId,
+                error);
           }
         });
-    return result;
   }
 
   @Override
@@ -321,10 +314,82 @@ public final class PartitionManagerImpl
   }
 
   @Override
+  public ActorFuture<Void> start() {
+    return clusterConfigurationService
+        .getLatestClusterConfiguration()
+        .andThen(this::startPartitions, concurrencyControl);
+  }
+
+  @Override
+  public ActorFuture<Void> stop() {
+    stopped = true;
+    clusterConfigurationService.removePartitionChangeExecutor(partitionGroup);
+
+    final var result = concurrencyControl.<Void>createFuture();
+    final var stop =
+        partitions.values().stream()
+            .map(Partition::stop)
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        stop,
+        (ok, error) -> {
+          if (error != null) {
+            LOGGER.error("Failed to stop partitions", error);
+            result.completeExceptionally(error);
+          } else {
+            partitions.clear();
+            result.complete(null);
+          }
+        });
+    return result;
+  }
+
+  private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
+    if (stopped) {
+      LOGGER.info(
+          "Not starting the partitions of partition group {}, the manager was stopped",
+          partitionGroup);
+      return CompletableActorFuture.completed();
+    }
+    final var localMemberId = localMemberId();
+    final var memberPartitions = localPartitions(configuration);
+
+    healthCheckService.registerBootstrapPartitions(partitionGroup, memberPartitions);
+    clusterConfigurationService.registerPartitionChangeExecutors(partitionGroup, this, this);
+
+    final var result = concurrencyControl.<Void>createFuture();
+    final var started =
+        memberPartitions.stream()
+            .map(
+                partitionMetadata -> {
+                  final var partitionConfig =
+                      configuration
+                          .partitionGroup(partitionGroup)
+                          .members()
+                          .get(localMemberId)
+                          .getPartition(partitionMetadata.id().number())
+                          .config();
+                  return bootstrapPartition(partitionMetadata, partitionConfig, false);
+                })
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        started,
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+    return result;
+  }
+
+  @Override
   public ActorFuture<Void> join(
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig partitionConfig) {
+      final DynamicPartitionConfig partitionConfig,
+      final boolean asLearner) {
     final int targetPriority = Collections.max(membersWithPriority.values());
 
     final var members = membersWithPriority.keySet();
@@ -341,13 +406,17 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, partitionId),
+            new PartitionId(partitionGroup, partitionId),
             members,
             membersWithPriority,
             targetPriority,
             primary);
 
-    return joinPartition(partitionMetadata, partitionConfig); // TODO
+    // A learner is replicated to but part of no quorum, so the join never makes a quorum depend on
+    // this empty-log member; the promote operation that follows makes it a voting member once it
+    // has caught up. Only operations from before two-phase joins existed join as a voting member.
+    final var joinMemberType = asLearner ? RaftMember.Type.PROMOTABLE : RaftMember.Type.ACTIVE;
+    return joinPartition(partitionMetadata, partitionConfig, joinMemberType);
   }
 
   @Override
@@ -379,6 +448,58 @@ public final class PartitionManagerImpl
   }
 
   @Override
+  public ActorFuture<Void> promote(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Promoting member to a voting member of partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.promoteMember(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                LOGGER.info("Promoted member to a voting member of partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> demote(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Demoting member to a non-voting member of partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.demoteMember(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+                LOGGER.info("Demoted member to a non-voting member of partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
+
+  @Override
   public ActorFuture<Void> bootstrap(
       final int partitionId,
       final int priority,
@@ -393,7 +514,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, partitionId),
+            new PartitionId(partitionGroup, partitionId),
             members,
             Map.of(localMember, targetPriority),
             targetPriority,
@@ -511,6 +632,52 @@ public final class PartitionManagerImpl
     concurrencyControl.run(
         () -> enableExporter(partitionId, exporterId, metadataVersion, initializeFrom, result));
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () ->
+            partitions.keySet().stream()
+                .map(partitionId -> setExportingState(partitionId, exportingState))
+                .collect(new ActorFutureCollector<Void>(concurrencyControl))
+                .thenAccept(ignored -> unit())
+                .onComplete(result));
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> deleteHistory() {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            exporterHistoryPurger.purgeAll();
+            result.complete(null);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
+  }
+
+  private ActorFuture<Void> setExportingState(
+      final int partitionId, final ExportingState exportingState) {
+    final var partition = partitions.get(partitionId);
+    if (partition == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+    }
+
+    if (partition.zeebePartition() == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException(
+              "Expected to set exporting state on partition %s, but zeebePartition is not ready"
+                  .formatted(partitionId)));
+    }
+    LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
+    return partition.zeebePartition().setExportingState(exportingState);
   }
 
   private void disableExporter(
@@ -655,6 +822,20 @@ public final class PartitionManagerImpl
     } else {
       return CompletableActorFuture.completed();
     }
+  }
+
+  private MemberId localMemberId() {
+    return membershipService.getLocalMember().id();
+  }
+
+  /** The partitions of this group that the local broker holds in the given configuration. */
+  private List<PartitionMetadata> localPartitions(final CurrentClusterConfiguration configuration) {
+    final var localMemberId = localMemberId();
+    return ClusterConfigurationService.partitionDistributionOf(configuration, partitionGroup)
+        .partitions()
+        .stream()
+        .filter(p -> p.members().contains(localMemberId))
+        .toList();
   }
 
   public final class PartitionAlreadyExistsException extends RuntimeException {

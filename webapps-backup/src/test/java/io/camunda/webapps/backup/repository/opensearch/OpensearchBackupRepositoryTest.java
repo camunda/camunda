@@ -9,6 +9,7 @@ package io.camunda.webapps.backup.repository.opensearch;
 
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.webapps.backup.BackupException;
-import io.camunda.webapps.backup.BackupException.InvalidRequestException;
+import io.camunda.webapps.backup.BackupException.DuplicateBackupIdException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
@@ -35,6 +36,10 @@ import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -159,6 +164,122 @@ class OpensearchBackupRepositoryTest {
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException("no internet")));
 
     repository.executeSnapshotting(snapshotRequest, onSuccess, onFailure);
+  }
+
+  @Test
+  void shouldPollSnapshotUntilCompletedWhenWaitingRequestFailsWithNonTimeoutIOException()
+      throws IOException {
+    // given
+    final var snapshotName = "camunda_webapps_1_8.7.0_part_1_of_1";
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            snapshotName,
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    // stands in for H2StreamResetException, which an idle HTTP/2 connection fails with
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new IOException("Timeout due to inactivity (30000 MILLISECONDS)")));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenReturn(snapshotResponse(snapshotName, SnapshotState.IN_PROGRESS))
+        .thenReturn(snapshotResponse(snapshotName, SnapshotState.SUCCESS));
+    final boolean[] onSuccessCalled = {false};
+
+    // when
+    repository.executeSnapshotting(
+        snapshotRequest,
+        () -> onSuccessCalled[0] = true,
+        () -> fail("onFailure should not be called"));
+
+    // then
+    assertThat(onSuccessCalled[0]).isTrue();
+  }
+
+  @Test
+  void shouldCallOnFailureWhenPollingAfterFailedWaitingRequestFails() throws IOException {
+    // given
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException("read timed out")));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenThrow(new IOException("connection refused"));
+    final boolean[] onFailureCalled = {false};
+
+    // when
+    repository.executeSnapshotting(
+        snapshotRequest,
+        () -> fail("onSuccess should not be called"),
+        () -> onFailureCalled[0] = true);
+
+    // then
+    assertThat(onFailureCalled[0]).isTrue();
+  }
+
+  @Test
+  void shouldCallOnFailureWhenSnapshotNameAlreadyInUse() throws IOException {
+    // given
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    final boolean[] onFailureCalled = {false};
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new OpenSearchException(
+                    new ErrorResponse.Builder()
+                        .status(400)
+                        .error(
+                            new ErrorCause.Builder()
+                                .type(SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)
+                                .reason("snapshot with the same name already exists")
+                                .build())
+                        .build())));
+
+    final String loggerName = OpensearchBackupRepository.class.getName();
+    final ListAppender appender = new ListAppender("test-list-appender");
+    appender.start();
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig =
+        new org.apache.logging.log4j.core.config.LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    ctx.getConfiguration().addLogger(loggerName, loggerConfig);
+    ctx.updateLoggers();
+
+    try {
+      // when
+      repository.executeSnapshotting(
+          snapshotRequest,
+          () -> fail("onSuccess should not be called"),
+          () -> onFailureCalled[0] = true);
+
+      // then
+      assertThat(onFailureCalled[0]).isTrue();
+      assertThat(appender.getEvents())
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                final String message = event.getMessage().getFormattedMessage();
+                assertThat(message)
+                    .contains(snapshotRequest.snapshotName())
+                    .contains("already exists")
+                    .contains("use a different backup ID");
+              });
+    } finally {
+      ctx.getConfiguration().removeLogger(loggerName);
+      ctx.updateLoggers();
+      appender.stop();
+    }
   }
 
   @Test
@@ -304,7 +425,7 @@ class OpensearchBackupRepositoryTest {
                                             .uuid("test"))))));
 
     final var exception =
-        assertThatExceptionOfType(InvalidRequestException.class)
+        assertThatExceptionOfType(DuplicateBackupIdException.class)
             .isThrownBy(() -> repository.validateNoDuplicateBackupId("repo", 42L))
             .actual();
     assertThat(exception.getMessage())
@@ -501,6 +622,18 @@ class OpensearchBackupRepositoryTest {
 
   private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {
     return b.snapshots(List.of());
+  }
+
+  private GetSnapshotResponse snapshotResponse(
+      final String snapshotName, final SnapshotState state) {
+    return GetSnapshotResponse.of(
+        b ->
+            b.snapshots(
+                SnapshotInfo.of(
+                    bi ->
+                        defaultFields(bi, new Metadata(1L, "1", 1, 1))
+                            .snapshot(snapshotName)
+                            .state(state.name()))));
   }
 
   private GetSnapshotResponse emptyResponse() {

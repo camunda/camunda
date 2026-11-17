@@ -15,6 +15,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import org.jspecify.annotations.Nullable;
 
 public final class StreamUtil {
   private StreamUtil() {}
@@ -27,7 +28,8 @@ public final class StreamUtil {
     return new MinMaxCollector<>(comparator);
   }
 
-  static final class MinMaxCollector<T> implements Collector<T, MinMax<T>, MinMax<T>> {
+  static final class MinMaxCollector<T extends @Nullable Object>
+      implements Collector<T, MinMax<T>, MinMax<T>> {
     private final Comparator<T> comparator;
 
     private MinMaxCollector(final Comparator<T> comparator) {
@@ -74,21 +76,21 @@ public final class StreamUtil {
       return Set.of(Characteristics.IDENTITY_FINISH);
     }
 
-    public static final class MinMax<T> {
-      private T min;
-      private T max;
+    public static final class MinMax<T extends @Nullable Object> {
+      private @Nullable T min;
+      private @Nullable T max;
 
       /**
        * @return the minimum value of the stream, or {@code null} if the stream was empty.
        */
-      public T min() {
+      public @Nullable T min() {
         return min;
       }
 
       /**
        * @return the maximum value of the stream, or {@code null} if the stream was empty.
        */
-      public T max() {
+      public @Nullable T max() {
         return max;
       }
     }

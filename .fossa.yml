@@ -13,12 +13,13 @@ project:
 
 paths:
   exclude:
+    - .github/actions/read-db-versions
     - .github/optimize/scripts/healthStatusReport
     - c8run
+    - monorepo-docs-site
     - optimize
     - qa/c8-orchestration-cluster-e2e-test-suite
-    - tasklist/qa/backup-restore-tests
-    - testing/camunda-process-test-coverage-frontend
+    - testing/camunda-process-test-coverage
 
 maven:
   scope-exclude:
@@ -29,6 +30,9 @@ maven:
 
 targets:
   exclude:
+    # Maven is the license source of truth. The Gradle build is a parallel experiment;
+    # exclude it so FOSSA never runs its Gradle analyzer (which also lacks config-cache support).
+    - type: gradle
     # qa
     - type: maven
       path: bom/
@@ -43,34 +47,6 @@ targets:
     - type: maven
       path: bom/
       target: io.camunda:camunda-process-test-spring
-    # tasklist
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-parent
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-810
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-820
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-830
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-840
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-qa-migration-tests-test-fixture-850
-    - type: maven
-      path: bom/
-      target: io.camunda:tasklist-test-coverage
     # zeebe
     - type: maven
       path: bom/

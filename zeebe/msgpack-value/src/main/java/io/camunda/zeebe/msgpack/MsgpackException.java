@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.msgpack;
 
+import org.jspecify.annotations.Nullable;
+
 public class MsgpackException extends RuntimeException {
   public MsgpackException() {}
 
@@ -14,7 +16,7 @@ public class MsgpackException extends RuntimeException {
     super(message);
   }
 
-  public MsgpackException(final String message, final Throwable cause) {
+  public MsgpackException(final String message, final @Nullable Throwable cause) {
     super(message, cause);
   }
 

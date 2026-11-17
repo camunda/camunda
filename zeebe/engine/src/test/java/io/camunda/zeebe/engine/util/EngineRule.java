@@ -11,21 +11,27 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.state.message.PendingSubscriptions;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
+import io.camunda.zeebe.engine.util.client.AgentHistoryClient;
+import io.camunda.zeebe.engine.util.client.AgentInstanceClient;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
@@ -45,6 +51,7 @@ import io.camunda.zeebe.engine.util.client.JobClient;
 import io.camunda.zeebe.engine.util.client.JobMetricsBatchClient;
 import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
+import io.camunda.zeebe.engine.util.client.ProbeClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
@@ -56,6 +63,7 @@ import io.camunda.zeebe.engine.util.client.TenantClient;
 import io.camunda.zeebe.engine.util.client.UsageMetricClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
+import io.camunda.zeebe.engine.util.client.UserTaskLookupClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -63,6 +71,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -75,7 +84,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.StreamClock;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
@@ -98,8 +106,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -124,22 +134,29 @@ public final class EngineRule extends ExternalResource {
       ResetRecordingExporterMode.AFTER_IDENTITY_SETUP;
   private boolean initializeRoutingState = true;
 
-  private Consumer<TypedRecord> onProcessedCallback = record -> {};
+  private LongConsumer onProcessedCallback = position -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
+  private ProbeNotifier probeNotifier = ProbeNotifier.noop();
+  private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
-  private Consumer<SecurityConfiguration> securityConfigModifier =
-      cfg -> cfg.getAuthorizations().setEnabled(false);
+  private boolean securityAuthorizationsEnabled = false;
+  private boolean securityMultiTenancyChecksEnabled = false;
+  private Consumer<EngineSecurityConfig> securityConfigModifier = cfg -> {};
   private Consumer<EngineConfiguration> engineConfigModifier =
       cfg -> {
         // identity setup is disabled by default so we can have deterministic writes
         // if you need it enabled, use #withIdentitySetup
         cfg.setEnableIdentitySetup(false);
+        cfg.setEnableRpaReexportMigration(false);
+        cfg.setEnableProcessDefinitionRestore(false);
       };
+  private BiConsumer<Integer, EngineConfiguration> partitionEngineConfigModifier =
+      (partitionId, cfg) -> {};
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
@@ -152,7 +169,10 @@ public final class EngineRule extends ExternalResource {
     this.partitionCount = partitionCount;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
+            PARTITION_ID,
+            partitionCount,
+            DefaultZeebeDbFactory.defaultFactory(partitionCount),
+            sharedStorage);
   }
 
   public static EngineRule singlePartition() {
@@ -243,12 +263,22 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withProbeNotifier(final ProbeNotifier probeNotifier) {
+    this.probeNotifier = probeNotifier;
+    return this;
+  }
+
+  public EngineRule withSecretStoreRegistry(final SecretStoreRegistry secretStoreRegistry) {
+    this.secretStoreRegistry = secretStoreRegistry;
+    return this;
+  }
+
   public EngineRule withFeatureFlags(final Consumer<FeatureFlags> modifier) {
     modifier.accept(featureFlags);
     return this;
   }
 
-  public EngineRule withOnProcessedCallback(final Consumer<TypedRecord> onProcessedCallback) {
+  public EngineRule withOnProcessedCallback(final LongConsumer onProcessedCallback) {
     this.onProcessedCallback = this.onProcessedCallback.andThen(onProcessedCallback);
     return this;
   }
@@ -263,13 +293,33 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withSecurityConfig(final Consumer<SecurityConfiguration> modifier) {
+  public EngineRule withSecurityConfig(final Consumer<EngineSecurityConfig> modifier) {
     securityConfigModifier = securityConfigModifier.andThen(modifier);
+    return this;
+  }
+
+  public EngineRule withAuthorizationsEnabled(final boolean enabled) {
+    securityAuthorizationsEnabled = enabled;
+    return this;
+  }
+
+  public EngineRule withMultiTenancyChecksEnabled(final boolean enabled) {
+    securityMultiTenancyChecksEnabled = enabled;
     return this;
   }
 
   public EngineRule withEngineConfig(final Consumer<EngineConfiguration> modifier) {
     engineConfigModifier = engineConfigModifier.andThen(modifier);
+    return this;
+  }
+
+  /**
+   * Modifies the engine configuration of a single partition, applied after the modifiers given to
+   * {@link #withEngineConfig(Consumer)}. Lets a test give partitions different settings.
+   */
+  public EngineRule withPartitionEngineConfig(
+      final BiConsumer<Integer, EngineConfiguration> modifier) {
+    partitionEngineConfigModifier = partitionEngineConfigModifier.andThen(modifier);
     return this;
   }
 
@@ -318,6 +368,12 @@ public final class EngineRule extends ExternalResource {
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
+    final var securityConfig =
+        EngineSecurityConfigurations.defaultConfig()
+            .withAuthorizationsEnabled(securityAuthorizationsEnabled)
+            .withMultiTenancyChecksEnabled(securityMultiTenancyChecksEnabled);
+    securityConfigModifier.accept(securityConfig);
+
     forEachPartition(
         partitionId -> {
           final var interPartitionCommandSender =
@@ -344,8 +400,9 @@ public final class EngineRule extends ExternalResource {
                   dbRoutingState.setDesiredPartitions(state.desiredPartitions(), 0L);
                 }
 
-                securityConfigModifier.accept(recordProcessorContext.getSecurityConfig());
                 engineConfigModifier.accept(recordProcessorContext.getConfig());
+                partitionEngineConfigModifier.accept(
+                    partitionId, recordProcessorContext.getConfig());
                 return EngineProcessors.createEngineProcessors(
                         recordProcessorContext,
                         partitionCount,
@@ -353,8 +410,10 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
+                        probeNotifier,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter)
+                        brokerRequestAuthorizationConverter,
+                        secretStoreRegistry)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));
@@ -362,25 +421,32 @@ public final class EngineRule extends ExternalResource {
               Optional.of(
                   new StreamProcessorListener() {
                     @Override
-                    public void onProcessed(final TypedRecord<?> processedCommand) {
-                      lastProcessedPosition = processedCommand.getPosition();
-                      onProcessedCallback.accept(processedCommand);
+                    public void onProcessed(final long processedPosition) {
+                      lastProcessedPosition = Math.max(lastProcessedPosition, processedPosition);
+                      onProcessedCallback.accept(processedPosition);
                     }
 
                     @Override
                     public void onSkipped(final LoggedEvent skippedRecord) {
-                      lastProcessedPosition = skippedRecord.getPosition();
+                      lastProcessedPosition =
+                          Math.max(lastProcessedPosition, skippedRecord.getPosition());
                       onSkippedCallback.accept(skippedRecord);
                     }
                   }),
               cfg -> cfg.streamProcessorMode(mode),
-              awaitOpening);
+              // when in replay mode, onRecovered callback is never called
+              awaitOpening && mode != StreamProcessorMode.REPLAY,
+              securityConfig);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
   public void snapshot() {
     environmentRule.snapshot();
+  }
+
+  public void snapshot(final int partitionId) {
+    environmentRule.snapshot(partitionId);
   }
 
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
@@ -406,7 +472,7 @@ public final class EngineRule extends ExternalResource {
     environmentRule.getClock().addTime(duration);
   }
 
-  public void reprocess() {
+  public void replay() {
     forEachPartition(
         partitionId -> {
           try {
@@ -423,7 +489,7 @@ public final class EngineRule extends ExternalResource {
     startProcessors(StreamProcessorMode.PROCESSING, true);
     TestUtil.waitUntil(
         () -> RecordingExporter.getRecords().size() >= lastSize,
-        "Failed to reprocess all events, only re-exported %d but expected %d",
+        "Failed to replay all events, only re-exported %d but expected %d",
         RecordingExporter.getRecords().size(),
         lastSize);
   }
@@ -438,12 +504,22 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public ProcessingState getProcessingState() {
-    return environmentRule.getProcessingState();
+  /**
+   * Returns the records written to the first partition's log, read with a fresh reader. Unlike
+   * {@link RecordingExporter}, this does not depend on how far the export has progressed.
+   */
+  public RecordStream events() {
+    return environmentRule.events();
   }
 
-  public ProcessingState getProcessingState(final int partitionId) {
-    return environmentRule.getProcessingState(partitionId);
+  /**
+   * Returns the process message subscriptions waiting for a reply from the message partition. They
+   * are kept in a thread-safe map in memory, so unlike the rest of the processing state they can be
+   * read while the partition processes.
+   */
+  public List<PendingSubscription> getPendingProcessMessageSubscriptions() {
+    return PendingSubscriptions.of(
+        environmentRule.getProcessingState().getTransientPendingSubscriptionState());
   }
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
@@ -506,6 +582,10 @@ public final class EngineRule extends ExternalResource {
     return new ExpressionClient(environmentRule);
   }
 
+  public ProbeClient probe() {
+    return new ProbeClient(environmentRule, () -> getClock().getCurrentTimeInMillis());
+  }
+
   public JobActivationClient jobs() {
     return new JobActivationClient(environmentRule);
   }
@@ -530,6 +610,14 @@ public final class EngineRule extends ExternalResource {
     return new AdHocSubProcessActivityClient(environmentRule);
   }
 
+  public AgentInstanceClient agentInstances() {
+    return new AgentInstanceClient(environmentRule);
+  }
+
+  public AgentHistoryClient agentHistories() {
+    return new AgentHistoryClient(environmentRule);
+  }
+
   public SignalClient signal() {
     return new SignalClient(environmentRule);
   }
@@ -540,6 +628,10 @@ public final class EngineRule extends ExternalResource {
 
   public UserTaskClient userTask() {
     return new UserTaskClient(environmentRule);
+  }
+
+  public UserTaskLookupClient userTaskLookup() {
+    return new UserTaskLookupClient(environmentRule);
   }
 
   public UserClient user() {
@@ -621,6 +713,15 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.writeBatch(records);
   }
 
+  public long writeRecordsOnPartition(final int partitionId, final RecordToWrite... records) {
+    return environmentRule.writeBatch(partitionId, records);
+  }
+
+  public long writeCommandOnPartition(
+      final int partitionId, final long key, final Intent intent, final UnifiedRecordValue value) {
+    return environmentRule.writeCommandOnPartition(partitionId, key, intent, value);
+  }
+
   public CommandResponseWriter getCommandResponseWriter() {
     return environmentRule.getCommandResponseWriter();
   }
@@ -648,7 +749,7 @@ public final class EngineRule extends ExternalResource {
                 Function.identity(),
                 columnFamily -> {
                   final var entries = new HashMap<>();
-                  ((ProcessingDbState) getProcessingState())
+                  ((ProcessingDbState) environmentRule.getProcessingState())
                       .forEach(
                           columnFamily,
                           keyInstance,
@@ -664,8 +765,10 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void awaitIdentitySetup() {
+    // The INITIALIZED event payload is intentionally empty (see IdentitySetupInitializeProcessor).
+    // Authorization count is read from the INITIALIZE command instead, which still carries it.
     final var identitySetup =
-        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).getFirst();
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE).getFirst();
 
     /*
      * We'll need to await for the identity setup to be completed before proceeding, but it's not

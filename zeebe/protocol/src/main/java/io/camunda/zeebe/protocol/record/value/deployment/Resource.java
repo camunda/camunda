@@ -16,13 +16,27 @@
 package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import java.nio.charset.StandardCharsets;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableResource.Builder.class)
 public interface Resource extends ResourceMetadataValue {
   /**
-   * @return returns the corresponding Resource
+   * @return returns the corresponding Resource content as a UTF-8 string. Note: this conversion is
+   *     lossy for non-UTF-8 binary content. Prefer {@link #getResourceBytes()} for binary-safe
+   *     access.
    */
   String getResourceProp();
+
+  /**
+   * @return returns the raw bytes of the corresponding Resource content. The default implementation
+   *     derives bytes from {@link #getResourceProp()} using UTF-8 and is therefore lossy for
+   *     non-UTF-8 binary content. {@link
+   *     io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord} overrides this with
+   *     a binary-safe implementation.
+   */
+  default byte[] getResourceBytes() {
+    return getResourceProp().getBytes(StandardCharsets.UTF_8);
+  }
 }

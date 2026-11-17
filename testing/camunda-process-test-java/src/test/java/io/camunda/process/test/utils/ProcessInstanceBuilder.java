@@ -36,11 +36,13 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private Long parentElementInstanceKey;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
+  private OffsetDateTime suspendedDate;
   private ProcessInstanceState state;
   private Boolean hasIncident;
   private String tenantId;
   private Set<String> tags;
   private String businessId;
+  private Integer storageOrdinal;
 
   @Override
   public Long getProcessInstanceKey() {
@@ -98,6 +100,11 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   }
 
   @Override
+  public OffsetDateTime getSuspendedDate() {
+    return suspendedDate;
+  }
+
+  @Override
   public ProcessInstanceState getState() {
     return state;
   }
@@ -120,6 +127,16 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public ProcessInstanceBuilder setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
   }
 
   public ProcessInstanceBuilder setBusinessId(final String businessId) {
@@ -149,6 +166,11 @@ public class ProcessInstanceBuilder implements ProcessInstance {
 
   public ProcessInstanceBuilder setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
+  }
+
+  public ProcessInstanceBuilder setSuspendedDate(final OffsetDateTime suspendedDate) {
+    this.suspendedDate = suspendedDate;
     return this;
   }
 

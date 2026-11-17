@@ -8,6 +8,10 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.system.Actor;
+import io.camunda.configuration.system.LegacyQueryApi;
+import io.camunda.configuration.system.Restore;
+import io.camunda.configuration.system.Upgrade;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -44,9 +48,10 @@ public class System {
   @NestedConfigurationProperty private Actor actor = new Actor();
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
   @NestedConfigurationProperty private Restore restore = new Restore();
+  @NestedConfigurationProperty private LegacyQueryApi legacyQueryApi = new LegacyQueryApi();
 
   public int getCpuThreadCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".cpu-thread-count",
         cpuThreadCount,
         Integer.class,
@@ -59,7 +64,7 @@ public class System {
   }
 
   public int getIoThreadCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".io-thread-count",
         ioThreadCount,
         Integer.class,
@@ -72,7 +77,7 @@ public class System {
   }
 
   public boolean getClockControlled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".clock-controlled",
         clockControlled,
         Boolean.class,
@@ -106,5 +111,13 @@ public class System {
 
   public void setRestore(final Restore restore) {
     this.restore = restore;
+  }
+
+  public LegacyQueryApi getLegacyQueryApi() {
+    return legacyQueryApi;
+  }
+
+  public void setLegacyQueryApi(final LegacyQueryApi legacyQueryApi) {
+    this.legacyQueryApi = legacyQueryApi;
   }
 }

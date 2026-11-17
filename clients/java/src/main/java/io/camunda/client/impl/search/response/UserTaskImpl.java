@@ -40,6 +40,7 @@ public class UserTaskImpl implements UserTask {
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long rootProcessInstanceKey;
+  private final String businessId;
   private final Long formKey;
   private final OffsetDateTime creationDate;
   private final OffsetDateTime completionDate;
@@ -50,6 +51,7 @@ public class UserTaskImpl implements UserTask {
   private final Integer processDefinitionVersion;
   private final Map<String, String> customHeaders;
   private final Integer priority;
+  private final Boolean isSuspended;
   private final Set<String> tags;
 
   public UserTaskImpl(final UserTaskResult item) {
@@ -66,6 +68,7 @@ public class UserTaskImpl implements UserTask {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
+    businessId = item.getBusinessId();
     formKey = ParseUtil.parseLongOrNull(item.getFormKey());
     creationDate = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationDate());
     completionDate = ParseUtil.parseOffsetDateTimeOrNull(item.getCompletionDate());
@@ -76,6 +79,7 @@ public class UserTaskImpl implements UserTask {
     processDefinitionVersion = item.getProcessDefinitionVersion();
     customHeaders = item.getCustomHeaders();
     priority = item.getPriority();
+    isSuspended = item.getIsSuspended();
     tags = item.getTags();
   }
 
@@ -145,6 +149,11 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
   public Long getFormKey() {
     return formKey;
   }
@@ -192,6 +201,11 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Integer getPriority() {
     return priority;
+  }
+
+  @Override
+  public Boolean isSuspended() {
+    return isSuspended;
   }
 
   @Override

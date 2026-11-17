@@ -7,7 +7,6 @@
  */
 
 import styled from 'styled-components';
-import {spacing03, supportSuccess, supportWarning} from '@carbon/elements';
 import {
   CheckmarkFilled as BaseCheckmark,
   ArrowRight as BaseArrowRight,
@@ -65,8 +64,8 @@ const ErrorMessageContainer = styled.div`
 `;
 
 const WarningFilled = styled(BaseWarningFilled)`
-  fill: ${supportWarning};
-  margin-right: ${spacing03};
+  fill: var(--cds-support-warning);
+  margin-right: var(--cds-spacing-03);
 
   [data-icon-path='inner-path'] {
     opacity: 1;
@@ -75,7 +74,7 @@ const WarningFilled = styled(BaseWarningFilled)`
 `;
 
 const CheckmarkFilled = styled(BaseCheckmark)`
-  color: ${supportSuccess};
+  color: var(--cds-support-success);
 `;
 
 const Select = styled(BaseSelect)`

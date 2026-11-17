@@ -23,13 +23,27 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
 
   private final Counter jobActivatedCounter;
   private final Counter jobHandledCounter;
+  private final Counter jobRefusedCounter;
+  private final Counter jobExpiredCounter;
+  private final Counter streamInactivityRecreatedCounter;
 
   public MicrometerJobWorkerMetrics(
-      final Counter jobActivatedCounter, final Counter jobHandledCounter) {
+      final Counter jobActivatedCounter,
+      final Counter jobHandledCounter,
+      final Counter jobRefusedCounter,
+      final Counter jobExpiredCounter,
+      final Counter streamInactivityRecreatedCounter) {
     this.jobActivatedCounter =
         Objects.requireNonNull(jobActivatedCounter, "must specify a job activated counter");
     this.jobHandledCounter =
         Objects.requireNonNull(jobHandledCounter, "must specify a job handled counter");
+    this.jobRefusedCounter =
+        Objects.requireNonNull(jobRefusedCounter, "must specify a job refused counter");
+    this.jobExpiredCounter =
+        Objects.requireNonNull(jobExpiredCounter, "must specify a job expired counter");
+    this.streamInactivityRecreatedCounter =
+        Objects.requireNonNull(
+            streamInactivityRecreatedCounter, "must specify a stream inactivity recreated counter");
   }
 
   @Override
@@ -40,5 +54,20 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
   @Override
   public void jobHandled(final int count) {
     jobHandledCounter.increment(count);
+  }
+
+  @Override
+  public void jobRefused(final int count) {
+    jobRefusedCounter.increment(count);
+  }
+
+  @Override
+  public void jobExpired(final int count) {
+    jobExpiredCounter.increment(count);
+  }
+
+  @Override
+  public void streamInactivityRecreated() {
+    streamInactivityRecreatedCounter.increment();
   }
 }

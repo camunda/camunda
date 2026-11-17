@@ -27,10 +27,7 @@ export interface DecisionInstance {
   decisionDefinitionName: string;
   decisionDefinitionVersion: number;
   decisionDefinitionType:
-    | 'DECISION_TABLE'
-    | 'LITERAL_EXPRESSION'
-    | 'UNSPECIFIED'
-    | 'UNKNOWN';
+    'DECISION_TABLE' | 'LITERAL_EXPRESSION' | 'UNSPECIFIED' | 'UNKNOWN';
   result: string;
   tenantId: string;
   decisionEvaluationKey: string;

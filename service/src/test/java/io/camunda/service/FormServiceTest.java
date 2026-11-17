@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 public final class FormServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private CamundaAuthentication authentication;
   private FormServices services;
   private FormSearchClient client;
@@ -34,6 +35,7 @@ public final class FormServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new FormServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

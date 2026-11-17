@@ -12,30 +12,45 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.service.TopologyServices.Health;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
+import io.camunda.service.TopologyServices.State;
 import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
+@NullMarked
 public class TopologyServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
+  private final int partitionId1 = 1;
+  private final int partitionId2 = 2;
+  private final int partitionId3 = 3;
+  private final BrokerMemberId leaderId1 = BrokerMemberId.from(1);
+  private final BrokerMemberId leaderId2 = BrokerMemberId.from(2);
+  private final BrokerMemberId leaderId3 = BrokerMemberId.from(3);
   private BrokerClient brokerClient;
   private BrokerClusterState clusterState;
   private TopologyServices services;
@@ -47,9 +62,10 @@ public class TopologyServiceTest {
     clusterState = mock(BrokerClusterState.class);
     topologyManager = mock(BrokerTopologyManager.class);
     when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
-    when(topologyManager.getTopology()).thenReturn(clusterState);
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(clusterState);
     services =
         new TopologyServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             mock(SecurityContextProvider.class),
             mock(ApiServicesExecutorProvider.class),
@@ -58,12 +74,6 @@ public class TopologyServiceTest {
 
   @Test
   void shouldReturnHealthyWhenAtLeastOnePartitionHasHealthyLeader() {
-    // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
     when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
     when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
@@ -79,7 +89,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.HEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
     verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
@@ -92,12 +102,6 @@ public class TopologyServiceTest {
       mode = EnumSource.Mode.EXCLUDE)
   void shouldReturnUnhealthyWhenNoPartitionHasHealthyLeader(
       final PartitionHealthStatus unhealthyStatus) {
-    // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
     when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
     when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
@@ -111,7 +115,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
     verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
@@ -131,14 +135,14 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
   }
 
   @Test
   void shouldReturnUnhealthyWhenNoTopologyExist() {
     // given
-    when(topologyManager.getTopology()).thenReturn(null);
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(null);
 
     // when
     final var status = services.getStatus().join();
@@ -147,19 +151,13 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.UNHEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verifyNoInteractions(clusterState);
   }
 
   @Test
   void shouldHandleMixedPartitionHealthStatuses() {
     // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int partitionId3 = 3;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-    final int leaderId3 = 3;
 
     when(clusterState.getPartitions())
         .thenReturn(List.of(partitionId1, partitionId2, partitionId3));
@@ -180,7 +178,7 @@ public class TopologyServiceTest {
     Assertions.assertThat(status).isEqualTo(ClusterStatus.HEALTHY);
 
     verify(brokerClient).getTopologyManager();
-    verify(topologyManager).getTopology();
+    verify(topologyManager).getTopology(PHYSICAL_TENANT_ID);
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
     verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
@@ -190,34 +188,43 @@ public class TopologyServiceTest {
     verify(clusterState).getPartitionHealth(leaderId3, partitionId3);
   }
 
-  @Test
-  public void shouldGetTopology() {
+  @ParameterizedTest
+  @ValueSource(strings = {"", "us-east1"})
+  public void shouldGetTopology(String zone) {
     // given
     final var version = VersionUtil.getVersion();
     final var clusterId = "cluster-id";
 
-    when(topologyManager.getTopology()).thenReturn(new TestBrokerClusterState(version, clusterId));
+    // null cannot be used in ValueSource
+    if (zone.isEmpty()) {
+      zone = null;
+    }
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID))
+        .thenReturn(new TestBrokerClusterState(zone, version, clusterId));
 
     final var expectedTopology =
         new Topology(
             List.of(
                 new Broker(
+                    zone,
                     0,
                     "localhost",
                     26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
+                    zone,
                     1,
                     "localhost",
                     26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
+                    zone,
                     2,
                     "localhost",
                     26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, State.UNKNOWN)),
                     version)),
             "cluster-id",
             3,
@@ -233,26 +240,74 @@ public class TopologyServiceTest {
     Assertions.assertThat(topology).isEqualTo(expectedTopology);
   }
 
-  @Test
-  void shouldReturnEmptyTopology() {
+  @ParameterizedTest
+  @EnumSource(PartitionState.State.class)
+  public void shouldExposePartitionOperationalState(final PartitionState.State dynamicConfigState) {
     // given
     final var version = VersionUtil.getVersion();
-    final var expectedTopology = new Topology(List.of(), null, null, null, null, version, null);
-    Mockito.when(topologyManager.getTopology()).thenReturn(null);
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID))
+        .thenReturn(new TestBrokerClusterState(null, version, "cluster-id", dynamicConfigState));
 
     // when
     final var topology = services.getTopology().join();
 
     // then
-    Assertions.assertThat(topology).isEqualTo(expectedTopology);
+    final var leaderPartitionState =
+        topology.brokers().stream()
+            .filter(broker -> broker.nodeIdx() == 0)
+            .findFirst()
+            .orElseThrow()
+            .partitions()
+            .getFirst()
+            .state();
+    Assertions.assertThat(leaderPartitionState).isEqualTo(expectedState(dynamicConfigState));
+  }
+
+  private static State expectedState(final PartitionState.State dynamicConfigState) {
+    return switch (dynamicConfigState) {
+      case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
+      case JOINING -> State.JOINING;
+      case ACTIVE -> State.ACTIVE;
+      case LEAVING -> State.LEAVING;
+      case RECOVERING -> State.RECOVERING;
+      case LEARNER -> State.LEARNER;
+    };
+  }
+
+  @Test
+  void shouldFailWithUnavailableWhenClusterStateNotYetReceived() {
+    // given
+    Mockito.when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(null);
+
+    // when / then
+    Assertions.assertThatThrownBy(() -> services.getTopology().join())
+        .hasCauseInstanceOf(io.camunda.service.exception.ServiceException.class)
+        .cause()
+        .satisfies(
+            ex -> {
+              final var se = (io.camunda.service.exception.ServiceException) ex;
+              Assertions.assertThat(se.getStatus())
+                  .isEqualTo(io.camunda.service.exception.ServiceException.Status.UNAVAILABLE);
+              Assertions.assertThat(se.getMessage())
+                  .contains("Cluster topology is not yet available");
+            });
   }
 
   /**
    * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
    * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
    */
-  private record TestBrokerClusterState(String version, String clusterId)
+  private record TestBrokerClusterState(
+      @Nullable String zone,
+      String version,
+      String clusterId,
+      PartitionState.State leaderPartitionState)
       implements BrokerClusterState {
+
+    TestBrokerClusterState(
+        final @Nullable String zone, final String version, final String clusterId) {
+      this(zone, version, clusterId, PartitionState.State.UNKNOWN);
+    }
 
     @Override
     public boolean isInitialized() {
@@ -275,23 +330,23 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
-      return 0;
+    public BrokerMemberId getLeaderForPartition(final int partition) {
+      return BrokerMemberId.from(zone, 0);
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
-      return Set.of(1);
+    public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
+      return Set.of(BrokerMemberId.from(zone, 1));
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
-      return Set.of(2);
+    public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
+      return Set.of(BrokerMemberId.from(zone, 2));
     }
 
     @Override
-    public int getRandomBroker() {
-      return ThreadLocalRandom.current().nextInt(0, 3);
+    public BrokerMemberId getRandomBroker() {
+      return BrokerMemberId.from(zone, ThreadLocalRandom.current().nextInt(0, 3));
     }
 
     @Override
@@ -300,31 +355,41 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public List<Integer> getBrokers() {
-      return List.of(0, 1, 2);
+    public List<BrokerMemberId> getBrokers() {
+      return Stream.of(0, 1, 2).map(id -> BrokerMemberId.from(zone, id)).toList();
     }
 
     @Override
-    public String getBrokerAddress(final int brokerId) {
-      return "localhost:" + (26501 + brokerId);
+    public String getBrokerAddress(final BrokerMemberId brokerId) {
+      return "localhost:" + (26501 + brokerId.nodeIdx());
     }
 
     @Override
-    public String getBrokerVersion(final int brokerId) {
+    public String getBrokerVersion(final BrokerMemberId brokerId) {
       return version;
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+    public PartitionHealthStatus getPartitionHealth(
+        final BrokerMemberId brokerId, final int partition) {
       if (partition != 1) {
         return PartitionHealthStatus.NULL_VAL;
       }
 
-      return switch (brokerId) {
+      return switch (brokerId.nodeIdx()) {
         case 0, 1 -> PartitionHealthStatus.HEALTHY;
         case 2 -> PartitionHealthStatus.UNHEALTHY;
         default -> PartitionHealthStatus.NULL_VAL;
       };
+    }
+
+    @Override
+    public PartitionState.State getPartitionState(
+        final BrokerMemberId brokerId, final int partition) {
+      if (partition == 1 && brokerId.nodeIdx() == 0) {
+        return leaderPartitionState;
+      }
+      return PartitionState.State.UNKNOWN;
     }
 
     @Override

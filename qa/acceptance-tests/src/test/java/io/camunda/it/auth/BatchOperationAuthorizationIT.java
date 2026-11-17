@@ -37,6 +37,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -345,7 +346,7 @@ class BatchOperationAuthorizationIT {
 
     // then we should find nothing with our restricted user
     Awaitility.await("should not return batch operation")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
@@ -377,7 +378,7 @@ class BatchOperationAuthorizationIT {
 
     // then we should find nothing with our restricted user
     Awaitility.await("should not return batch operation")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
@@ -471,7 +472,7 @@ class BatchOperationAuthorizationIT {
   private static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -483,7 +484,7 @@ class BatchOperationAuthorizationIT {
   public static void waitForBatchOperation(
       final CamundaClient camundaClient, final String batchOperationKey, final long itemsCount) {
     Awaitility.await("should wait for started batch operation")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
@@ -501,7 +502,7 @@ class BatchOperationAuthorizationIT {
       final long totalItemsCount,
       final BatchOperationState expectedState) {
     Awaitility.await("should wait for started batch operation")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
@@ -527,6 +528,7 @@ class BatchOperationAuthorizationIT {
       final String batchOperationKey,
       final Consumer<List<BatchOperationItem>> assertions) {
     Awaitility.await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 camundaClient
@@ -553,7 +555,7 @@ class BatchOperationAuthorizationIT {
       final long processInstanceKey,
       final boolean shouldBeInactive) {
     Awaitility.await("should wait for incident to be created")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions()
         .until(

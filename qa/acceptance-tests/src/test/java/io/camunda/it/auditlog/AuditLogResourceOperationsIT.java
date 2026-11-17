@@ -9,6 +9,7 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
+import static io.camunda.it.util.TestHelper.waitForDecisionInstanceCount;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -20,18 +21,17 @@ import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Acceptance tests for audit log entries related to resource operations. This test class verifies
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * search REST API endpoint using the Camunda Client.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogResourceOperationsIT {
 
   @MultiDbTestApplication
@@ -439,6 +438,127 @@ public class AuditLogResourceOperationsIT {
   }
 
   // ========================================================================================
+  // History Deletion Tests
+  // ========================================================================================
+
+  @Test
+  void shouldTrackProcessInstanceHistoryDeletion(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - a canceled process instance (history deletion requires a finished instance; the
+    // process waits on a service task with no worker, so it is canceled rather than completed)
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(SIMPLE_PROCESS, "pi-delete-test.bpmn")
+        .tenantId(TENANT_A)
+        .send()
+        .join();
+
+    final var processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    client.newCancelInstanceCommand(processInstanceKey).send().join();
+
+    // wait for the process instance to reach a terminal state in secondary storage
+    Awaitility.await("Process instance terminated")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .until(
+            () ->
+                client
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .send()
+                    .join()
+                    .items()
+                    .stream()
+                    .anyMatch(
+                        pi ->
+                            pi.getProcessInstanceKey() == processInstanceKey
+                                && pi.getState()
+                                    .equals(
+                                        io.camunda.client.api.search.enums.ProcessInstanceState
+                                            .TERMINATED)));
+
+    // when - delete the process instance history
+    client.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then - wait for audit log entry for the history deletion
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = findByEntityKey(auditLogItems, String.valueOf(processInstanceKey));
+    assertThat(auditLog.getEntityKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.DELETE);
+    assertThat(auditLog.getEntityDescription()).isEqualTo("PROCESS_INSTANCE");
+    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(PROCESS_ID);
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void shouldTrackDecisionInstanceHistoryDeletion(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - a decision instance
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("decisions/decision_model_1.dmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var decisionId = deployment.getDecisions().getFirst().getDmnDecisionId();
+
+    final var decisionEvaluation =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId(decisionId)
+            .tenantId(TENANT_A)
+            .variables("{\"input1\": \"A\"}")
+            .send()
+            .join();
+
+    final var decisionEvaluationKey = decisionEvaluation.getDecisionEvaluationKey();
+
+    // wait for the decision instance to be indexed in secondary storage before deleting;
+    // the delete API requires the instance to exist in secondary storage (eventual consistency)
+    waitForDecisionInstanceCount(client, f -> f.decisionInstanceKey(decisionEvaluationKey), 1);
+
+    // when - delete the decision instance history
+    client.newDeleteDecisionInstanceCommand(decisionEvaluationKey).send().join();
+
+    // then - wait for audit log entry for the history deletion
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.DECISION,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(decisionEvaluationKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = findByEntityKey(auditLogItems, String.valueOf(decisionEvaluationKey));
+    assertThat(auditLog.getEntityKey()).isEqualTo(String.valueOf(decisionEvaluationKey));
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.DECISION);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.DELETE);
+    assertThat(auditLog.getEntityDescription()).isEqualTo("DECISION_INSTANCE");
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  // ========================================================================================
   // Helper Methods
   // ========================================================================================
 
@@ -520,7 +640,7 @@ public class AuditLogResourceOperationsIT {
       final String entityKey) {
     return Awaitility.await("Audit log entry is created")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .until(
             () -> {
               final var auditLogItems =

@@ -14,8 +14,9 @@ import {
   TranslatedErrorInlineNotification,
 } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
-import { usePaginatedApi } from "src/utility/api";
-import { searchClusterVariables } from "src/utility/api/cluster-variables";
+import { usePagination } from "src/utility/api";
+import { useQuery } from "@tanstack/react-query";
+import { clusterVariableQueries } from "src/utility/api/cluster-variables/queries";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
@@ -25,16 +26,15 @@ import { usePollingReload } from "src/utility/hooks/usePollingReload";
 import { type QueryClusterVariablesResponseBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { useCallback } from "react";
 
-export default function List() {
+export default function List({ isSaaS }: { isSaaS: boolean }) {
   const { t } = useTranslate("clusterVariables");
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: clusterVariables,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchClusterVariables);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(clusterVariableQueries.search(pageParams));
 
   const compareClusterVariables = useCallback(
     (current: QueryClusterVariablesResponseBody) => {
@@ -74,6 +74,7 @@ export default function List() {
   const [addClusterVariable, addClusterVariableModal] = useModal(
     AddModal,
     reloadWithPolling,
+    { isSaaS },
   );
   const [deleteClusterVariable, deleteClusterVariableModal] = useEntityModal(
     DeleteModal,
@@ -173,12 +174,18 @@ export default function List() {
         ]}
         searchPlaceholder={t("searchByClusterVariableName")}
         searchKey="name"
-        {...paginationProps}
+        page={{ ...page, ...clusterVariables?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("clusterVariablesCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       {pollingStatus === "timeout" && (

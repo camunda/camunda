@@ -8,11 +8,13 @@
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 
@@ -49,6 +51,17 @@ public class ItemProviderFactory {
           forResolveIncident(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
               batchOperation.getAuthentication());
+      case SUSPEND_PROCESS_INSTANCE ->
+          forSuspendProcessInstance(
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication());
+      case RESUME_PROCESS_INSTANCE ->
+          forResumeProcessInstance(
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication());
+      case UPDATE_JOB ->
+          forUpdateJob(
+              batchOperation.getEntityFilter(JobFilter.class), batchOperation.getAuthentication());
       case DELETE_PROCESS_INSTANCE ->
           forDeleteProcessInstance(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
@@ -67,7 +80,7 @@ public class ItemProviderFactory {
         metrics,
         filter.toBuilder()
             .partitionId(partitionId)
-            .states(ProcessInstanceState.ACTIVE.name())
+            .states(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name())
             .parentProcessInstanceKeyOperations(Operation.exists(false))
             .build(),
         authentication);
@@ -75,6 +88,9 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forModifyProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // Narrows rather than replaces: a caller-supplied state is ANDed with ACTIVE. The REST layer
+    // rejects a top-level state other than ACTIVE (see ProcessInstanceRequestValidator); states
+    // inside orFilters are not validated, so an impossible branch yields no items.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
@@ -87,6 +103,7 @@ public class ItemProviderFactory {
 
   private ProcessInstanceItemProvider forMigrateProcessInstance(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // See forModifyProcessInstance.
     return new ProcessInstanceItemProvider(
         searchClientsProxy,
         metrics,
@@ -99,6 +116,7 @@ public class ItemProviderFactory {
 
   private IncidentItemProvider forResolveIncident(
       final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    // See forModifyProcessInstance.
     return new IncidentItemProvider(
         searchClientsProxy,
         metrics,
@@ -115,6 +133,47 @@ public class ItemProviderFactory {
         searchClientsProxy,
         metrics,
         filter.toBuilder().partitionId(partitionId).build(),
+        authentication);
+  }
+
+  private ProcessInstanceItemProvider forSuspendProcessInstance(
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    return new ProcessInstanceItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder()
+            .partitionId(partitionId)
+            .states(ProcessInstanceState.ACTIVE.name())
+            .build(),
+        authentication);
+  }
+
+  private ProcessInstanceItemProvider forResumeProcessInstance(
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    return new ProcessInstanceItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder()
+            .partitionId(partitionId)
+            .states(ProcessInstanceState.SUSPENDED.name())
+            .build(),
+        authentication);
+  }
+
+  private JobItemProvider forUpdateJob(
+      final JobFilter filter, final CamundaAuthentication authentication) {
+    return new JobItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder()
+            .partitionId(partitionId)
+            // Non-terminal job states only. The engine still rejects any job that is not actually
+            // updatable, so this is a safe upper bound rather than an exact match of the engine
+            // precondition states.
+            .stateOperations(
+                Operation.in(
+                    JobState.nonTerminalStates().stream().map(Enum::name).toArray(String[]::new)))
+            .build(),
         authentication);
   }
 

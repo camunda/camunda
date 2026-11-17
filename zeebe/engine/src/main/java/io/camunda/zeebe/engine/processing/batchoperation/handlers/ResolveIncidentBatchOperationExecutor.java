@@ -11,6 +11,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -39,30 +40,38 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   }
 
   @Override
-  public void execute(final long incidentKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long incidentKey,
+      final int itemStorageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     final var incident = incidentState.getIncidentRecord(incidentKey);
     if (incident == null) {
       // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentIntent.REVOLVE
       // rejection here, so we still append the resolve incident command
-      resolveIncident(incidentKey, batchOperation);
+      resolveIncident(incidentKey, itemStorageOrdinal, batchOperation);
       return;
     }
 
     if (incidentState.isJobIncident(incident)) {
       LOGGER.trace("Increasing retries for job with key '{}'", incident.getJobKey());
-      final var jobRecord = new JobRecord().setRetries(1);
+      final var jobRecord = new JobRecord().setRetries(1).setStorageOrdinal(itemStorageOrdinal);
       sendCommandWithMetadata(
           incident.getJobKey(), JobIntent.UPDATE_RETRIES, jobRecord, batchOperation);
     }
 
     LOGGER.trace("Resolving incident with key '{}'", incidentKey);
-    resolveIncident(incidentKey, batchOperation);
+    resolveIncident(incidentKey, itemStorageOrdinal, batchOperation);
   }
 
   private void resolveIncident(
-      final long incidentKey, final PersistedBatchOperation batchOperation) {
+      final long incidentKey,
+      final int storageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     sendCommandWithMetadata(
-        incidentKey, IncidentIntent.RESOLVE, new IncidentRecord(), batchOperation);
+        incidentKey,
+        IncidentIntent.RESOLVE,
+        new IncidentRecord().setStorageOrdinal(storageOrdinal),
+        batchOperation);
   }
 
   private void sendCommandWithMetadata(
@@ -71,12 +80,13 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
       final RecordValue recordValue,
       final PersistedBatchOperation batchOperation) {
     final var authentication = batchOperation.getAuthentication();
-    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
+    final var authInfo =
+        AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     commandWriter.appendFollowUpCommand(
         key,
         intent,
         recordValue,
         FollowUpCommandMetadata.of(
-            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
+            b -> b.batchOperationReference(batchOperation.getKey()).authInfo(authInfo)));
   }
 }

@@ -53,7 +53,7 @@ final class SerializationTest {
         new AddStreamRequest()
             .streamId(streamId)
             .streamType(BufferUtil.wrapString("foo"))
-            .metadata(new DirectBufferWriter().wrap(metadata));
+            .metadata(new DirectBufferWriter(metadata));
 
     // when
     request.write(buffer, 0);

@@ -24,6 +24,14 @@ public class CCSMAuthConfiguration {
   // Identity audience
   private String audience;
   private String baseUrl;
+  // When true, enables detailed DEBUG/WARN logging for OIDC redirect flows to diagnose
+  // reverse-proxy misconfigurations (forwarded-header mismatches, session-cookie issues).
+  // Defaults to false — only enable temporarily during troubleshooting.
+  private boolean diagnosticsEnabled = false;
+  // When true, rejects Microsoft Entra access tokens whose `ver` claim is not "2.0".
+  // Defaults to true. Set to false as a last-resort escape hatch if a deployment is stuck
+  // on v1.0 tokens and cannot immediately update the Azure app registration.
+  private boolean entraTokenVersionCheckEnabled = true;
 
   public CCSMAuthConfiguration() {}
 
@@ -83,6 +91,22 @@ public class CCSMAuthConfiguration {
     this.baseUrl = baseUrl;
   }
 
+  public boolean isDiagnosticsEnabled() {
+    return diagnosticsEnabled;
+  }
+
+  public void setDiagnosticsEnabled(final boolean diagnosticsEnabled) {
+    this.diagnosticsEnabled = diagnosticsEnabled;
+  }
+
+  public boolean isEntraTokenVersionCheckEnabled() {
+    return entraTokenVersionCheckEnabled;
+  }
+
+  public void setEntraTokenVersionCheckEnabled(final boolean entraTokenVersionCheckEnabled) {
+    this.entraTokenVersionCheckEnabled = entraTokenVersionCheckEnabled;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof CCSMAuthConfiguration;
   }
@@ -99,13 +123,23 @@ public class CCSMAuthConfiguration {
         && Objects.equals(clientId, that.clientId)
         && Objects.equals(clientSecret, that.clientSecret)
         && Objects.equals(audience, that.audience)
-        && Objects.equals(baseUrl, that.baseUrl);
+        && Objects.equals(baseUrl, that.baseUrl)
+        && diagnosticsEnabled == that.diagnosticsEnabled
+        && entraTokenVersionCheckEnabled == that.entraTokenVersionCheckEnabled;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        issuerUrl, issuerBackendUrl, redirectRootUrl, clientId, clientSecret, audience, baseUrl);
+        issuerUrl,
+        issuerBackendUrl,
+        redirectRootUrl,
+        clientId,
+        clientSecret,
+        audience,
+        baseUrl,
+        diagnosticsEnabled,
+        entraTokenVersionCheckEnabled);
   }
 
   @Override
@@ -124,6 +158,10 @@ public class CCSMAuthConfiguration {
         + getAudience()
         + ", baseUrl="
         + getBaseUrl()
+        + ", diagnosticsEnabled="
+        + isDiagnosticsEnabled()
+        + ", entraTokenVersionCheckEnabled="
+        + isEntraTokenVersionCheckEnabled()
         + ")";
   }
 }

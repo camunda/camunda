@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime.util;
 
-import io.camunda.process.test.impl.runtime.GitPropertiesUtil;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -28,24 +28,11 @@ import java.util.regex.Pattern;
 public class VersionedPropertiesUtil {
   public static final String SNAPSHOT_VERSION = "SNAPSHOT";
 
-  private static final Pattern STABLE_BRANCH_VERSION_PATTERN =
-      Pattern.compile("(backport-\\d+-to-)?stable/(\\d+)\\.(\\d+)");
   private static final Pattern SEMANTIC_VERSION_PATTERN =
       Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-.*)?");
 
-  /** Format string for snapshot versions (e.g., 8.8-SNAPSHOT). */
-  private static final String SNAPSHOT_VERSION_FORMAT = "%d.%d-%s";
-
-  private final GitPropertiesUtil gitProperties;
-
-  public VersionedPropertiesUtil(final GitPropertiesUtil gitProperties) {
-    this.gitProperties = gitProperties;
-  }
-
   public String getVersion(
       final Properties properties, final String propertyName, final String defaultValue) {
-    final String branchBasedSnapshotVersion = getBranchBasedSnapshotVersion(defaultValue);
-
     return PropertiesUtil.getPropertyOrDefault(
         properties,
         propertyName,
@@ -54,26 +41,9 @@ public class VersionedPropertiesUtil {
                 .map(SEMANTIC_VERSION_PATTERN::matcher)
                 .filter(Matcher::find)
                 .flatMap(matcher -> Optional.ofNullable(matcher.group(4)))
-                .filter(label -> label.contains(SNAPSHOT_VERSION))
-                .map(snapshotLabel -> branchBasedSnapshotVersion)
+                .filter(label -> label.toUpperCase(Locale.ROOT).contains(SNAPSHOT_VERSION))
+                .map(snapshotLabel -> defaultValue)
                 .orElse(propertyValue),
-        branchBasedSnapshotVersion);
-  }
-
-  private String getBranchBasedSnapshotVersion(final String defaultVersion) {
-    final Matcher stableBranchMatcher =
-        STABLE_BRANCH_VERSION_PATTERN.matcher(gitProperties.getBranch());
-
-    if (stableBranchMatcher.find()) {
-      final int stableBranchMajorVersion = Integer.parseInt(stableBranchMatcher.group(2));
-      final int stableBranchMinorVersion = Integer.parseInt(stableBranchMatcher.group(3));
-      return String.format(
-          SNAPSHOT_VERSION_FORMAT,
-          stableBranchMajorVersion,
-          stableBranchMinorVersion,
-          SNAPSHOT_VERSION);
-    } else {
-      return defaultVersion;
-    }
+        defaultValue);
   }
 }

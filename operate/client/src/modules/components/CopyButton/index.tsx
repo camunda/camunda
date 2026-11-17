@@ -8,15 +8,21 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Checkmark, Copy} from '@carbon/react/icons';
-import {Button} from '@carbon/react';
+import {Button, type ButtonBaseProps} from '@carbon/react';
 
 type Props = {
   value: string;
+  hasIconOnly?: ButtonBaseProps['hasIconOnly'];
+  tooltipAlignment?: ButtonBaseProps['tooltipAlignment'];
 };
 
 const COPY_FEEDBACK_TIMEOUT_MS = 5000;
 
-const CopyButton: React.FC<Props> = ({value}) => {
+const CopyButton: React.FC<Props> = ({
+  value,
+  hasIconOnly,
+  tooltipAlignment,
+}) => {
   const [isCopied, setIsCopied] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,6 +40,7 @@ const CopyButton: React.FC<Props> = ({value}) => {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsCopied(false);
     resetTimeout();
   }, [value]);
@@ -56,6 +63,8 @@ const CopyButton: React.FC<Props> = ({value}) => {
       size="sm"
       renderIcon={isCopied ? Checkmark : Copy}
       iconDescription={isCopied ? 'Copied to clipboard' : 'Copy to clipboard'}
+      hasIconOnly={hasIconOnly}
+      tooltipAlignment={tooltipAlignment}
       onClick={handleCopy}
     >
       {isCopied ? 'Copied' : 'Copy'}

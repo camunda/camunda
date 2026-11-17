@@ -52,6 +52,7 @@ public final class DmnDeploymentTest {
 
   private static final String DMN_MISSING_DECISION_NAME =
       "/dmn/decision-table-with-missing-decision-name.dmn";
+  private static final String DMN_MISSING_DECISION_ID = "/dmn/decision-without-id.dmn";
 
   private static final String DRG_ID_LENGTH_EXCEEDED = "/dmn/drg-id-length-exceeded.dmn";
   private static final String DRG_NAME_LENGTH_EXCEEDED = "/dmn/drg-name-length-exceeded.dmn";
@@ -195,6 +196,29 @@ public final class DmnDeploymentTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
 
     assertThat(deploymentEvent.getRejectionReason()).contains("because \"value\" is null");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDecisionId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_MISSING_DECISION_ID)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the decision 'No ID' to have an ID, but it has none in resource '%s'",
+                DMN_MISSING_DECISION_ID));
   }
 
   @Test

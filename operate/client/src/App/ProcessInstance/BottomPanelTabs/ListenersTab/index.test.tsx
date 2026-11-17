@@ -82,6 +82,8 @@ const mockProcessInstance = {
   tags: [],
   processDefinitionVersionTag: null,
   endDate: null,
+  businessId: null,
+  suspendedDate: null,
 } satisfies ProcessInstance;
 
 const mockElementInstance = {
@@ -115,6 +117,7 @@ const baseJobFields = {
   elementInstanceKey: '123456789',
   worker: 'worker-1',
   retries: 3,
+  priority: 0,
   deadline: null,
   customHeaders: null,
   tenantId: '<default>',
@@ -198,6 +201,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -221,6 +225,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -248,6 +253,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -273,6 +279,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -297,6 +304,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -324,6 +332,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -347,6 +356,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -373,6 +383,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -408,6 +419,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -443,6 +455,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -473,6 +486,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),

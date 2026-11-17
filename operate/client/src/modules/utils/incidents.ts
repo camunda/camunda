@@ -29,6 +29,7 @@ const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   FORM_NOT_FOUND: 'Form not found.',
   RESOURCE_NOT_FOUND: 'Resource not found.',
   AD_HOC_SUB_PROCESS_NO_RETRIES: 'Ad hoc sub process error (no retries left).',
+  SECRET_RESOLUTION_ERROR: 'Secret resolution error.',
 };
 
 const availableErrorTypes = Object.keys(

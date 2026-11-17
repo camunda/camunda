@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
@@ -30,6 +30,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-store-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
@@ -98,6 +103,12 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -192,6 +203,8 @@
             <ignoredUsedUndeclaredDependency>com.google.auth:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.apis:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.api:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>com.google.cloud:google-cloud-core-http</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>com.google.http-client:google-http-client</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

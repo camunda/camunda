@@ -2,6 +2,12 @@
 
 # Validates generated .flattened-pom.xml files contain required Maven Central metadata
 # (name, description, url, licenses, developers, scm), and packaging when the source POM is non-jar.
+#
+# Additionally validates Javadoc deployability for jar-packaged modules: Maven Central
+# requires every non-pom artifact to ship a *-javadoc.jar. We detect, statically across
+# the local parent chain, modules that set maven.javadoc.skip=true (which disables the
+# real maven-javadoc-plugin) but do not configure the empty-javadoc-jar placeholder
+# execution on maven-jar-plugin. See https://github.com/camunda/camunda/issues/55717.
 
 set -euo pipefail
 
@@ -35,6 +41,134 @@ read_xml_value() {
   local file_path="$1"
   local tag_name="$2"
   xmllint --xpath "normalize-space(string(/*[local-name()='project']/*[local-name()='${tag_name}']))" "${file_path}"
+}
+
+# Reads the value of a <properties><name/></properties> entry from a POM, or empty
+# string if absent.
+read_pom_property() {
+  local file_path="$1"
+  local property_name="$2"
+  xmllint --xpath "normalize-space(string(/*[local-name()='project']/*[local-name()='properties']/*[local-name()='${property_name}']))" "${file_path}" 2>/dev/null || true
+}
+
+# Resolves the source POM of the parent declared in the given POM via its
+# <relativePath>. Echoes the absolute path if a parent POM file exists locally,
+# otherwise echoes empty. <relativePath> defaults to ../pom.xml when omitted; an
+# explicit empty <relativePath/> disables local resolution.
+resolve_parent_pom() {
+  local file_path="$1"
+  local relative_path has_parent has_relative_path
+  has_parent="$(xmllint --xpath "count(/*[local-name()='project']/*[local-name()='parent'])" "${file_path}" 2>/dev/null || echo 0)"
+  if [[ "${has_parent}" != "1" ]]; then
+    return 0
+  fi
+  # <relativePath> defaults to ../pom.xml when omitted; an explicit empty
+  # <relativePath/> disables local resolution. We rely on count() to distinguish
+  # "tag absent" from "tag present but empty", since string() returns "" in
+  # both cases.
+  has_relative_path="$(xmllint --xpath "count(/*[local-name()='project']/*[local-name()='parent']/*[local-name()='relativePath'])" "${file_path}" 2>/dev/null || echo 0)"
+  if [[ "${has_relative_path}" == "1" ]]; then
+    relative_path="$(xmllint --xpath "string(/*[local-name()='project']/*[local-name()='parent']/*[local-name()='relativePath'])" "${file_path}" 2>/dev/null || echo "")"
+    if [[ -z "${relative_path}" ]]; then
+      # Explicit empty <relativePath/> means the parent is not local (e.g. resolved from a remote repository).
+      return 0
+    fi
+  else
+    relative_path="../pom.xml"
+  fi
+  local module_dir parent_candidate
+  module_dir="$(dirname "${file_path}")"
+  parent_candidate="${module_dir}/${relative_path}"
+  if [[ -d "${parent_candidate}" ]]; then
+    parent_candidate="${parent_candidate%/}/pom.xml"
+  fi
+  if [[ -f "${parent_candidate}" ]]; then
+    # Normalize path so caller comparisons / cycle detection work consistently.
+    ( cd "$(dirname "${parent_candidate}")" && printf '%s/%s\n' "$(pwd -P)" "$(basename "${parent_candidate}")" )
+  fi
+  # Always succeed: "no local parent found" is a normal outcome, not an error. A
+  # non-zero return here would abort under `set -e` if a caller ever invokes this
+  # outside an if/&&/|| context.
+  return 0
+}
+
+# Walks the local POM chain (self -> parent -> ...), stopping at the first non-local
+# parent, and evaluates a predicate against each POM. The predicate is a function name
+# invoked as `predicate <pom_path>`; its exit status is interpreted per-POM:
+#   0 -> match: stop and return 0 (true)
+#   2 -> definitive miss: stop and return 1 (false), short-circuiting ancestors
+#   other -> no decision: continue to the parent
+# Returns 1 (false) if no POM in the chain yields a match.
+walk_pom_chain() {
+  local file_path="$1"
+  local predicate="$2"
+  local visited=()
+  while [[ -n "${file_path}" && -f "${file_path}" ]]; do
+    # Cycle guard.
+    local already=0 v
+    for v in "${visited[@]+"${visited[@]}"}"; do
+      if [[ "${v}" == "${file_path}" ]]; then
+        already=1
+        break
+      fi
+    done
+    if [[ "${already}" -eq 1 ]]; then
+      break
+    fi
+    visited+=("${file_path}")
+
+    # Capture the predicate's status without tripping `set -e` when it returns
+    # non-zero (a normal "no match"/"miss" signal, not a failure).
+    local status=0
+    "${predicate}" "${file_path}" || status=$?
+    if [[ "${status}" -eq 0 ]]; then
+      return 0
+    elif [[ "${status}" -eq 2 ]]; then
+      return 1
+    fi
+
+    file_path="$(resolve_parent_pom "${file_path}")"
+  done
+  return 1
+}
+
+# Predicate for walk_pom_chain. Nearest definition of `maven.javadoc.skip` wins:
+#   `true`  -> 0 (skip active)
+#   `false` -> 2 (skip explicitly disabled; short-circuit ancestors)
+#   unset   -> 1 (no decision; defer to parent)
+_pom_javadoc_skip() {
+  local skip
+  skip="$(read_pom_property "$1" "maven.javadoc.skip")"
+  if [[ "${skip}" == "true" ]]; then
+    return 0
+  elif [[ "${skip}" == "false" ]]; then
+    return 2
+  fi
+  return 1
+}
+
+# Predicate for walk_pom_chain. Returns 0 if an `empty-javadoc-jar` execution is
+# declared on maven-jar-plugin in either <build><plugins> or
+# <build><pluginManagement><plugins>, otherwise 1 (defer to parent).
+_pom_declares_empty_javadoc_jar() {
+  local count
+  count="$(xmllint --xpath "count(/*[local-name()='project']/*[local-name()='build']//*[local-name()='plugin'][*[local-name()='artifactId']='maven-jar-plugin']//*[local-name()='execution'][*[local-name()='id']='empty-javadoc-jar'])" "$1" 2>/dev/null || echo 0)"
+  if [[ "${count}" -gt 0 ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# Returns 0 (true) if `maven.javadoc.skip` resolves to `true` via the nearest
+# definition in the local POM chain (self -> parent -> ...).
+javadoc_skip_set_in_chain() {
+  walk_pom_chain "$1" _pom_javadoc_skip
+}
+
+# Returns 0 (true) if `empty-javadoc-jar` execution is declared on `maven-jar-plugin`
+# anywhere in the local POM chain (self -> parent -> ...).
+empty_javadoc_jar_declared_in_chain() {
+  walk_pom_chain "$1" _pom_declares_empty_javadoc_jar
 }
 
 failures=0
@@ -84,6 +218,26 @@ while IFS= read -r flattened_pom; do
     echo "ERROR: ${flattened_pom} is missing required metadata: ${joined_missing}" >&2
     echo "  Fix: add/adjust metadata in ${source_pom} so flatten produces required values." >&2
   fi
+
+  # Javadoc deployability check: only applies to non-pom modules that will produce
+  # a primary jar artifact. Modules that set maven.javadoc.skip=true (in self or any
+  # local ancestor POM) skip the real attach-javadocs execution, so they must
+  # configure the empty-javadoc-jar placeholder to keep the deployment Maven Central
+  # compatible (https://central.sonatype.org/publish/requirements/#supply-javadoc-and-sources).
+  if [[ "${source_packaging}" == "jar" ]]; then
+    if javadoc_skip_set_in_chain "${source_pom}"; then
+      if ! empty_javadoc_jar_declared_in_chain "${source_pom}"; then
+        failures=$((failures + 1))
+        group_id="$(read_xml_value "${flattened_pom}" "groupId")"
+        artifact_id="$(read_xml_value "${flattened_pom}" "artifactId")"
+        version="$(read_xml_value "${flattened_pom}" "version")"
+        echo "ERROR: pkg:maven/${group_id}/${artifact_id}@${version}: Javadocs must be provided but not found in entries" >&2
+        echo "  Module: ${source_pom}" >&2
+        echo "  Cause: maven.javadoc.skip=true disables the real javadoc execution but no empty-javadoc-jar placeholder is configured for maven-jar-plugin in the module or any local ancestor POM." >&2
+        echo "  Fix: add an empty-javadoc-jar execution to maven-jar-plugin in ${source_pom} (or in a parent POM)." >&2
+      fi
+    fi
+  fi
 done < <(find "${search_roots[@]}" -name '.flattened-pom.xml' -type f | sort)
 
 if [[ "${flattened_poms_found}" -eq 0 ]]; then
@@ -93,8 +247,8 @@ if [[ "${flattened_poms_found}" -eq 0 ]]; then
 fi
 
 if [[ "${failures}" -gt 0 ]]; then
-  echo "Validation failed: ${failures} flattened POM file(s) are missing required metadata." >&2
+  echo "Validation failed: ${failures} flattened POM file(s) are missing required metadata or Javadoc configuration." >&2
   exit 1
 fi
 
-echo "Validation passed: all flattened POM files contain required Maven Central metadata."
+echo "Validation passed: all flattened POM files contain required Maven Central metadata and Javadoc configuration."

@@ -96,11 +96,11 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     }
   }
 
-  protected GetTasksResponse task(final String id) throws IOException {
+  public GetTasksResponse task(final String id) throws IOException {
     return openSearchClient.tasks().get(t -> t.taskId(id));
   }
 
-  protected List<TaskInfo> tasksWithActions(final List<String> actions) throws IOException {
+  public List<TaskInfo> tasksWithActions(final List<String> actions) throws IOException {
     return openSearchClient.tasks().list(l -> l.actions(actions)).tasks().groupedByNone();
   }
 

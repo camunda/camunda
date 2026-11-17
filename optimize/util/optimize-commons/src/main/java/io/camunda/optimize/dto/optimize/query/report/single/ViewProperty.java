@@ -7,10 +7,15 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_AUTOMATION_RATE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INPUT_TOKENS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_OUTPUT_TOKENS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_PERCENTAGE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOOL_CALLS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOTAL_TOKENS_PROPERTY;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -29,7 +34,13 @@ public class ViewProperty implements Combinable {
   public static final ViewProperty FREQUENCY = new ViewProperty(VIEW_FREQUENCY_PROPERTY);
   public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
   public static final ViewProperty PERCENTAGE = new ViewProperty(VIEW_PERCENTAGE_PROPERTY);
+  public static final ViewProperty AUTOMATION_RATE =
+      new ViewProperty(VIEW_AUTOMATION_RATE_PROPERTY);
   public static final ViewProperty RAW_DATA = new ViewProperty(VIEW_RAW_DATA_PROPERTY);
+  public static final ViewProperty INPUT_TOKENS = new ViewProperty(VIEW_INPUT_TOKENS_PROPERTY);
+  public static final ViewProperty OUTPUT_TOKENS = new ViewProperty(VIEW_OUTPUT_TOKENS_PROPERTY);
+  public static final ViewProperty TOOL_CALLS = new ViewProperty(VIEW_TOOL_CALLS_PROPERTY);
+  public static final ViewProperty TOTAL_TOKENS = new ViewProperty(VIEW_TOTAL_TOKENS_PROPERTY);
   private final TypedViewPropertyDto viewPropertyDto;
 
   @JsonCreator
@@ -70,6 +81,14 @@ public class ViewProperty implements Combinable {
   public <T extends TypedViewPropertyDto> Optional<T> getViewPropertyDtoIfOfType(
       final Class<T> clazz) {
     return Optional.of(viewPropertyDto).filter(clazz::isInstance).map(clazz::cast);
+  }
+
+  @JsonIgnore
+  public boolean isAgentToken() {
+    return INPUT_TOKENS.equals(this)
+        || OUTPUT_TOKENS.equals(this)
+        || TOOL_CALLS.equals(this)
+        || TOTAL_TOKENS.equals(this);
   }
 
   protected boolean canEqual(final Object other) {

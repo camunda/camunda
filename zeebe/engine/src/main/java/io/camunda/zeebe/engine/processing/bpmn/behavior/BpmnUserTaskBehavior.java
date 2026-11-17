@@ -13,6 +13,7 @@ import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefiniti
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -52,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +77,8 @@ public final class BpmnUserTaskBehavior {
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
   private final GlobalListenersState globalListenersState;
+  private final GroupState groupState;
+  private final boolean candidateGroupNameResolution;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -86,6 +91,8 @@ public final class BpmnUserTaskBehavior {
       final VariableState variableState,
       final AsyncRequestState asyncRequestState,
       final GlobalListenersState globalListenersState,
+      final GroupState groupState,
+      final boolean candidateGroupNameResolution,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -97,6 +104,8 @@ public final class BpmnUserTaskBehavior {
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
     this.globalListenersState = globalListenersState;
+    this.groupState = groupState;
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
     this.clock = clock;
   }
 
@@ -122,11 +131,19 @@ public final class BpmnUserTaskBehavior {
                     .map(p::candidateUsers))
         .flatMap(
             p ->
-                evaluateDateExpression(userTaskProps.getDueDate(), scopeKey, tenantId)
+                evaluateDateExpression(
+                        userTaskProps.getDueDate(),
+                        scopeKey,
+                        tenantId,
+                        () -> ExpressionLabel.dueDateExpression(element.getId()))
                     .map(p::dueDate))
         .flatMap(
             p ->
-                evaluateDateExpression(userTaskProps.getFollowUpDate(), scopeKey, tenantId)
+                evaluateDateExpression(
+                        userTaskProps.getFollowUpDate(),
+                        scopeKey,
+                        tenantId,
+                        () -> ExpressionLabel.followUpDateExpression(element.getId()))
                     .map(p::followUpDate))
         .flatMap(
             p ->
@@ -191,7 +208,9 @@ public final class BpmnUserTaskBehavior {
             .setPriority(userTaskProperties.getPriority())
             .setCreationTimestamp(clock.millis())
             .setTags(getTagsFromProcessInstance(context))
-            .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+            .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+            .setStorageOrdinal(context.getStorageOrdinal())
+            .setBusinessId(getBusinessIdFromProcessInstance(context));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
@@ -204,6 +223,14 @@ public final class BpmnUserTaskBehavior {
     }
     final var processInstance = elementInstance.getValue();
     return processInstance != null ? processInstance.getTags() : Collections.emptySet();
+  }
+
+  private String getBusinessIdFromProcessInstance(final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (elementInstance == null) {
+      return "";
+    }
+    return elementInstance.getValue().getBusinessId();
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(
@@ -219,7 +246,57 @@ public final class BpmnUserTaskBehavior {
     if (candidateGroups == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    final var evaluated =
+        expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    if (!candidateGroupNameResolution) {
+      return evaluated;
+    }
+    return evaluated.flatMap(groups -> resolveCandidateGroupNamesToIds(groups, scopeKey));
+  }
+
+  /**
+   * Resolves candidate group names to group IDs using a best-effort approach. For each value:
+   *
+   * <ul>
+   *   <li>If it matches a group ID, keep it as-is.
+   *   <li>If it matches a single group name, replace it with that group's ID.
+   *   <li>If it doesn't match any managed group, keep the original value. This is expected for
+   *       deployments whose groups are not managed in the engine (e.g. OIDC group claims), so the
+   *       original value still matches the user's group at authorization time.
+   *   <li>If it matches multiple group names, the value is ambiguous and cannot be resolved safely
+   *       (group names are not unique). Resolution fails so an incident is raised, prompting the
+   *       modeller to use the specific group ID.
+   * </ul>
+   *
+   * @param candidateGroups list of group IDs or names from BPMN
+   * @param scopeKey the variable scope key used to report a resulting incident
+   * @return resolved candidate groups, or a {@link Failure} if a name is ambiguous
+   */
+  private Either<Failure, List<String>> resolveCandidateGroupNamesToIds(
+      final List<String> candidateGroups, final long scopeKey) {
+    if (candidateGroups == null || candidateGroups.isEmpty()) {
+      return Either.right(candidateGroups);
+    }
+
+    final List<String> resolvedGroupIds = new ArrayList<>();
+    for (final String value : candidateGroups) {
+      final var matchingGroups = groupState.findByIdOrName(value);
+
+      if (matchingGroups.size() > 1) {
+        return Either.left(
+            new Failure(
+                "Expected to resolve the candidate group '%s' to a single group ID, but multiple groups share that name. Please use a specific group ID instead."
+                    .formatted(value),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
+      } else if (matchingGroups.isEmpty()) {
+        resolvedGroupIds.add(value);
+      } else {
+        resolvedGroupIds.add(matchingGroups.getFirst().getGroupId());
+      }
+    }
+
+    return Either.right(resolvedGroupIds);
   }
 
   public Either<Failure, List<String>> evaluateCandidateUsersExpression(
@@ -231,12 +308,15 @@ public final class BpmnUserTaskBehavior {
   }
 
   public Either<Failure, String> evaluateDateExpression(
-      final Expression date, final long scopeKey, final String tenantId) {
+      final Expression date,
+      final long scopeKey,
+      final String tenantId,
+      final Supplier<ExpressionLabel> label) {
     if (date == null) {
       return Either.right(null);
     }
     return expressionBehavior
-        .evaluateDateTimeExpression(date, scopeKey, tenantId, true)
+        .evaluateDateTimeExpression(date, scopeKey, tenantId, true, label.get())
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
@@ -365,8 +445,29 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
+  /**
+   * Cancels the user task of the element instance without waiting for canceling task listeners. A
+   * user task that is already {@code CANCELING}, for example because a listener job has no retries
+   * left, is canceled as well. The corrections of canceling listeners that already completed are
+   * kept.
+   */
   public void cancelUserTask(final ElementInstance elementInstance) {
-    userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
+    userTaskCanceling(elementInstance)
+        .or(() -> findCancelingUserTask(elementInstance))
+        .ifPresent(this::userTaskCanceled);
+  }
+
+  private Optional<UserTaskRecord> findCancelingUserTask(final ElementInstance elementInstance) {
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey <= 0
+        || userTaskState.getLifecycleState(userTaskKey) != LifecycleState.CANCELING) {
+      return Optional.empty();
+    }
+    // corrections of completed canceling listeners are only stored in the intermediate record
+    final UserTaskRecord cancelingUserTask =
+        userTaskState.getIntermediateState(userTaskKey).getRecord().copy();
+    cancelingUserTask.setDiffAsChangedAttributes(userTaskState.getUserTask(userTaskKey));
+    return Optional.of(cancelingUserTask);
   }
 
   public void cancelUserTask(final BpmnElementContext elementInstanceContext) {
@@ -402,7 +503,7 @@ public final class BpmnUserTaskBehavior {
             request -> {
               switch (request.valueType()) {
                 case USER_TASK ->
-                    responseWriter.writeRejection(
+                    responseWriter.writeRejectedResponse(
                         userTask.getUserTaskKey(),
                         request.intent(),
                         userTask,
@@ -416,7 +517,7 @@ public final class BpmnUserTaskBehavior {
                         .findVariableDocumentState(userTaskElementInstanceKey)
                         .ifPresent(
                             variableDocument -> {
-                              responseWriter.writeRejection(
+                              responseWriter.writeRejectedResponse(
                                   variableDocument.getKey(),
                                   request.intent(),
                                   variableDocument.getRecord(),

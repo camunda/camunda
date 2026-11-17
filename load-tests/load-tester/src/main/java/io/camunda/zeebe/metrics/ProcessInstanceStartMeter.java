@@ -7,8 +7,13 @@
  */
 package io.camunda.zeebe.metrics;
 
-import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterMetricKeyNames;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.config.LoadTesterProperties;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.starter.ProcessInstanceCreator;
+import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -18,11 +23,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
 
+@Component
+@Profile("starter")
+@ConditionalOnProperty(
+    name = "load-tester.monitor-data-availability",
+    havingValue = "true",
+    matchIfMissing = true)
 public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
@@ -35,6 +54,23 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final Clock clock;
   private final Timer dataAvailabilityQueryDurationTimer;
 
+  @Autowired
+  public ProcessInstanceStartMeter(
+      final MeterRegistry meterRegistry,
+      final LoadTesterProperties properties,
+      @Qualifier("queryCamundaClient") final CamundaClient queryClient,
+      final ProcessInstanceCreator processInstanceCreator) {
+    this(
+        System::nanoTime,
+        meterRegistry,
+        Executors.newScheduledThreadPool(1),
+        properties.getMonitorDataAvailabilityInterval(),
+        startedInstances -> searchStartedInstances(queryClient, startedInstances));
+    processInstanceCreator.addStartListener(this::recordProcessInstanceStart);
+  }
+
+  // Could be merged with the constructor above if the clock, the executor and the
+  // availability checker were beans.
   public ProcessInstanceStartMeter(
       final Clock clock,
       final MeterRegistry meterRegistry,
@@ -51,21 +87,64 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
+    MicrometerUtil.buildGauge(
+            StarterLatencyMetricsDoc.PENDING_PROCESS_INSTANCES, startedInstances::size)
+        .register(registry);
   }
 
   /** Starts the periodic checking for process instance availability. */
+  @EventListener(ApplicationReadyEvent.class)
   public void start() {
-    piCheckExecutorService.scheduleAtFixedRate(
+    scheduleCheck(availabilityCheckInterval.toMillis());
+  }
+
+  private static CompletionStage<List<Long>> searchStartedInstances(
+      final CamundaClient queryClient, final List<Long> startedInstances) {
+    return queryClient
+        .newProcessInstanceSearchRequest()
+        .filter((f) -> f.processInstanceKey(key -> key.in(startedInstances)))
+        .sort(s -> s.startDate().asc())
+        .page(p -> p.limit(2500))
+        .send()
+        .thenApply(
+            response ->
+                response.items().stream().map(ProcessInstance::getProcessInstanceKey).toList());
+  }
+
+  private void scheduleCheck(final long delay) {
+    piCheckExecutorService.schedule(
         () -> {
           try {
             checkForProcessInstances();
           } catch (final Exception e) {
             LOG.error("Failed to check process instances. Will retry...", e);
+            rescheduleCheck(0);
           }
         },
-        availabilityCheckInterval.toMillis(),
-        availabilityCheckInterval.toMillis(),
+        delay,
         TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * Reschedule the process instance check with a delay computed based on the elapsed time, which is
+   * recorded for the previous query duration (in nanoseconds).
+   *
+   * <p>If the query already took longer then the check interval, we immediately retrigger the
+   * check.
+   *
+   * @param elapsedTime the elapsed time (duration) of the previous query in nanosecond
+   */
+  private void rescheduleCheck(final long elapsedTime) {
+    // We only reschedule another check AFTER the previous is done
+    // This is to avoid multiple queries running at the same time, with quering the same
+    // data. Especially if the response takes longer than our schedule interval there is no
+    // point in running again in between.
+    // If responses are slow - we will time out the active instances eventually
+    final var nextDelay =
+        TimeUnit.NANOSECONDS.toMillis(elapsedTime) > availabilityCheckInterval.toMillis()
+            ? 0
+            : availabilityCheckInterval.toMillis() - TimeUnit.NANOSECONDS.toMillis(elapsedTime);
+    scheduleCheck(nextDelay);
   }
 
   /** Stops the periodic checking for process instance availability. */
@@ -74,6 +153,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   @Override
+  @EventListener(StarterFinished.class)
   public void close() {
     piCheckExecutorService.shutdownNow();
   }
@@ -81,6 +161,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private void checkForProcessInstances() {
     if (startedInstances.isEmpty()) {
       LOG.debug("No instances awaiting, skip check for process instances.");
+      rescheduleCheck(0);
       return;
     }
 
@@ -91,18 +172,18 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
         .whenCompleteAsync(
             (availableInstances, error) -> {
               final var endQueryTime = clock.getNanos();
-              dataAvailabilityQueryDurationTimer.record(
-                  endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+              final long duration = endQueryTime - startQueryTime;
+              dataAvailabilityQueryDurationTimer.record(duration, TimeUnit.NANOSECONDS);
 
-              if (error != null) {
+              if (error == null) {
+                LOG.debug("Available process instances items: {}", availableInstances.size());
+                processAvailableInstances(availableInstances);
+              } else {
                 LOG.error("Error while checking for available process instances", error);
-                cleanUpStaleInstances();
-                return;
               }
 
-              LOG.debug("Available process instances items: {}", availableInstances.size());
-              processAvailableInstances(availableInstances);
               cleanUpStaleInstances();
+              rescheduleCheck(duration);
             },
             piCheckExecutorService);
   }

@@ -6,4 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+import {getClientConfig} from 'modules/utils/getClientConfig';
+
+const IS_NAV_V2_ENABLED = getClientConfig().isNavV2Enabled;
+
+export {IS_NAV_V2_ENABLED};

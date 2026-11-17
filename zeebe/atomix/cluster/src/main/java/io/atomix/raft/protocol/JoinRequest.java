@@ -30,7 +30,7 @@ public final class JoinRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(joining);
+    return Objects.hashCode(joining);
   }
 
   @Override

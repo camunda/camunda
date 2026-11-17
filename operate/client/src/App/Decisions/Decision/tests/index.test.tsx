@@ -29,9 +29,6 @@ describe('<Decision />', () => {
   });
 
   it('should render decision table and panel header', async () => {
-    const originalWindowPrompt = window.prompt;
-    window.prompt = vi.fn();
-
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     const {user} = render(<Decision />, {
@@ -55,8 +52,6 @@ describe('<Decision />', () => {
     );
 
     expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();
-
-    window.prompt = originalWindowPrompt;
   });
 
   it('should render text when no decision is selected', async () => {

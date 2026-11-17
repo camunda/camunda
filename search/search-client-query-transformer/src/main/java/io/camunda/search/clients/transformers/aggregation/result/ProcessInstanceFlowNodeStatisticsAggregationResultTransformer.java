@@ -14,7 +14,6 @@ import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAgg
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_INCIDENTS;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
@@ -28,8 +27,7 @@ public class ProcessInstanceFlowNodeStatisticsAggregationResultTransformer
   @Override
   public ProcessInstanceFlowNodeStatisticsAggregationResult apply(
       final Map<String, AggregationResult> aggregations) {
-    final var children = aggregations.get(AGGREGATION_TO_FLOW_NODES);
-    final var filter = children.aggregations().get(AGGREGATION_FILTER_FLOW_NODES);
+    final var filter = aggregations.get(AGGREGATION_FILTER_FLOW_NODES);
     final var group = filter.aggregations().get(AGGREGATION_GROUP_FLOW_NODES);
     final var items = new ArrayList<ProcessFlowNodeStatisticsEntity>();
     group

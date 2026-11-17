@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,6 +39,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.PullPolicy;
 
 @ExtendWith(MockitoExtension.class)
 public class CamundaProcessTestContainerRuntimeTest {
@@ -162,6 +164,57 @@ public class CamundaProcessTestContainerRuntimeTest {
     verify(camundaContainer).withLogConsumer(any());
   }
 
+  @Test
+  void shouldConfigureClusterSecrets() {
+    // given
+    final Map<String, String> clusterSecrets = new HashMap<>();
+    clusterSecrets.put("secret-1", "1");
+    clusterSecrets.put("secret-2", "2");
+
+    final String additionalClusterSecretKey = "secret-3";
+    final String additionalClusterSecretValue = "3";
+
+    final Map<String, String> expectedClusterSecrets = new HashMap<>(clusterSecrets);
+    expectedClusterSecrets.put(additionalClusterSecretKey, additionalClusterSecretValue);
+
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withClusterSecrets(clusterSecrets)
+        .withClusterSecret(additionalClusterSecretKey, additionalClusterSecretValue)
+        .build();
+
+    // then
+    verify(camundaContainer).withClusterSecrets(expectedClusterSecrets);
+  }
+
+  @Test
+  void shouldAlwaysPullCamundaSnapshotImages() {
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withCamundaDockerImageVersion("8.9.0-SNAPSHOT")
+        .build();
+
+    // then
+    verify(camundaContainer)
+        .withImagePullPolicy(argThat(p -> p.getClass().equals(PullPolicy.alwaysPull().getClass())));
+  }
+
+  @Test
+  void shouldUseDefaultPullPolicyWhenCamundaImageVersionIsNull() {
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withCamundaDockerImageVersion(null)
+        .build();
+
+    // then
+    verify(camundaContainer)
+        .withImagePullPolicy(
+            argThat(p -> p.getClass().equals(PullPolicy.defaultPolicy().getClass())));
+  }
+
   // The ES container has been removed in favor of a H2 database solution. However, in the future ES
   // is going to be configurable as part of {@see https://github.com/camunda/camunda/issues/29854}
   @Disabled
@@ -246,6 +299,20 @@ public class CamundaProcessTestContainerRuntimeTest {
     verify(connectorsContainer).addExposedPort(200);
     verify(connectorsContainer).withEnv(expectedConnectorSecrets);
     verify(connectorsContainer).withLogConsumer(any());
+  }
+
+  @Test
+  void shouldUseDefaultPullPolicyForImmutableConnectorsImages() {
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withConnectorsDockerImageVersion("8.9.0")
+        .build();
+
+    // then
+    verify(connectorsContainer)
+        .withImagePullPolicy(
+            argThat(p -> p.getClass().equals(PullPolicy.defaultPolicy().getClass())));
   }
 
   @Test

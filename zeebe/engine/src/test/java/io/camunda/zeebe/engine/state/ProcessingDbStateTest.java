@@ -15,6 +15,7 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -54,6 +55,7 @@ class ProcessingDbStateTest {
             keyGenerator,
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
+            new TransientPendingMessageStartProcessInstanceAskState(),
             config,
             InstantSource.system(),
             ExpressionLanguageMetrics.noop());
@@ -78,6 +80,7 @@ class ProcessingDbStateTest {
             keyGenerator,
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
+            new TransientPendingMessageStartProcessInstanceAskState(),
             config,
             InstantSource.system(),
             ExpressionLanguageMetrics.noop());

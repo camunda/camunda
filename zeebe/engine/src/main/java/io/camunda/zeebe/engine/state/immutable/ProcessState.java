@@ -8,14 +8,28 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
 
   DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId, final String tenantId);
+
+  /**
+   * Latest active version of this process id (see {@link DeployedProcess#isActive()}: {@code
+   * ACTIVE} or a stuck {@code PENDING_DELETION}). Skips draining versions.
+   *
+   * <p>If the highest version in state is already active, that process is returned and older
+   * versions are not inspected. {@link #getLatestProcessVersionByProcessId} still returns the
+   * highest version in state regardless of lifecycle.
+   */
+  DeployedProcess getLatestActiveProcessVersionByProcessId(
+      DirectBuffer processId, final String tenantId);
 
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);
@@ -60,11 +74,27 @@ public interface ProcessState {
   Optional<Integer> findProcessVersionBefore(
       String bpmnProcessId, long version, final String tenantId);
 
+  List<Long> getKnownProcessVersions(String bpmnProcessId, String tenantId);
+
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, String tenantId, DirectBuffer elementId, Class<T> elementType);
 
   /** TODO: Remove the cache entirely from the immutable state */
   void clearCache();
+
+  /**
+   * Caches the given executable process for a process that was just persisted, so the next lookup
+   * does not need to parse and transform the resource again.
+   *
+   * <p>The executable process must be the result of transforming the persisted resource with the
+   * persisted transformer versions, i.e. exactly what a cache miss would produce.
+   *
+   * @param processDefinitionKey the key of the persisted process
+   * @param tenantId the tenant of the persisted process
+   * @param executableProcess the transformed process for the persisted resource
+   */
+  void cacheProcess(
+      long processDefinitionKey, String tenantId, ExecutableProcess executableProcess);
 
   /**
    * Iterates over all persisted processes until the visitor returns false or all processes have
@@ -75,6 +105,21 @@ public interface ProcessState {
   void forEachProcess(ProcessIdentifier previousProcess, PersistedProcessVisitor visitor);
 
   void forEachProcessWithLatestVersion(PersistedProcessVisitor visitor);
+
+  /** Whether the given partition still owes a drain report for the given process definition. */
+  boolean hasPendingDeletion(long processDefinitionKey, int partitionId);
+
+  /** Whether any partition still owes a drain report for the given process definition. */
+  boolean hasPendingDeletion(long processDefinitionKey);
+
+  /** The partitions that still owe a drain report for the given process definition. */
+  Set<Integer> getPendingDeletionPartitions(long processDefinitionKey);
+
+  /**
+   * Whether the startup cleanup that restores stray resting {@code PENDING_DELETION} process
+   * definitions back to {@code ACTIVE} has already run on this partition.
+   */
+  boolean hasRunProcessDefinitionRestore();
 
   record ProcessIdentifier(String tenantId, long processDefinitionKey)
       implements ResourceIdentifier {}

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
     streamer.pushAsync(payload, retryHandler, initialConsumer.id());
   }
 
-  private StreamConsumer<M> pickInitialConsumer() {
+  private @Nullable StreamConsumer<M> pickInitialConsumer() {
     final var consumers = stream.streamConsumers();
     var size = consumers.size();
 
@@ -89,7 +90,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
 
     /** Called the first time a push is retried */
     @Override
-    public void handleError(final Throwable error, final P data) {
+    public void handleError(final @Nullable Throwable error, final P data) {
       final var consumers = new ArrayList<>(stream.streamConsumers());
       if (consumers.isEmpty()) {
         onConsumersExhausted(error, data);
@@ -104,7 +105,9 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
 
     /** Called during future retries */
     private void retry(
-        final Throwable throwable, final P payload, final Iterator<StreamConsumer<M>> iterator) {
+        final @Nullable Throwable throwable,
+        final P payload,
+        final Iterator<StreamConsumer<M>> iterator) {
       if (!iterator.hasNext()) {
         onConsumersExhausted(throwable, payload);
         return;
@@ -116,7 +119,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
       streamer.pushAsync(payload, (error, data) -> retry(error, data, iterator), client.id());
     }
 
-    private void onConsumersExhausted(final Throwable throwable, final P payload) {
+    private void onConsumersExhausted(final @Nullable Throwable throwable, final P payload) {
       LOGGER.trace(
           "Failed to push payload (size = {}), no more streams to retry", payload.getLength());
       errorHandler.handleError(throwable, payload);

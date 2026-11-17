@@ -9,6 +9,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
@@ -25,7 +26,7 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {createIncident, searchResult} from 'modules/testUtils';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
 const PROCESS_INSTANCE_ID = mockProcessInstance.processInstanceKey;
@@ -69,7 +70,7 @@ describe('IncidentsTab', () => {
   });
 
   afterEach(() => {
-    incidentsPanelStore.clearSelection();
+    incidentsPanelFiltersStore.clearSelection();
   });
 
   it('should render the incidents table with correct columns', async () => {
@@ -83,11 +84,12 @@ describe('IncidentsTab', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    const table = within(screen.getByRole('table'));
-    expect(table.getByText(/^Type/)).toBeInTheDocument();
-    expect(table.getByText(/^Failing Element/)).toBeInTheDocument();
-    expect(table.getByText(/^Created/)).toBeInTheDocument();
-    expect(table.getByText(/^Operations/)).toBeInTheDocument();
+    const headerRow = within(screen.getAllByRole('row')[0]!);
+    expect(headerRow.getByText(/^Error message/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Type/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Failing Element/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Created/)).toBeInTheDocument();
+    expect(headerRow.getByText(/^Operations/)).toBeInTheDocument();
   });
 
   it('should render incident rows', async () => {
@@ -231,5 +233,53 @@ describe('IncidentsTab', () => {
         'There are no incidents matching this filter set',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should enable retry when the process instance is active', async () => {
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([
+        createIncident({
+          processInstanceKey: PROCESS_INSTANCE_ID,
+        }),
+      ]),
+    );
+
+    render(<IncidentsTab />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Retry Incident'}),
+      ).toBeEnabled();
+    });
+  });
+
+  it('should disable retry when the process instance is suspended', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'SUSPENDED',
+    });
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([
+        createIncident({
+          processInstanceKey: PROCESS_INSTANCE_ID,
+        }),
+      ]),
+    );
+
+    render(<IncidentsTab />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {name: 'Retry Incident'}),
+      ).toBeDisabled();
+    });
   });
 });

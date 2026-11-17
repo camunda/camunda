@@ -27,11 +27,13 @@ const Layer = styled(BaseLayer)<VariableContainerProps>`
       display: grid;
       grid-template-columns: 1fr 2fr auto;
       grid-gap: var(--cds-spacing-05);
-      ${$hasPendingVariable &&
-      css`
-        background-color: var(--cds-layer);
-        align-items: center;
-      `}
+      ${
+        $hasPendingVariable &&
+        css`
+          background-color: var(--cds-layer);
+          align-items: center;
+        `
+      }
     `;
   }};
 `;

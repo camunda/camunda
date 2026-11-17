@@ -1,6 +1,6 @@
 ## Local Renovate Tests
 
-If you want to tweak the [renovate config](../../.github/renovate.json), it's a good idea to test this locally.
+If you want to tweak the [renovate config](../../.github/renovate.json5), it's a good idea to test this locally.
 You can make use of the script [renovate-local.sh](./renovate-local.sh) to do so.
 
 ## Prerequisites

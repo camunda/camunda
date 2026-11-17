@@ -1,7 +1,7 @@
 # type: Release
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
-# NOTE: This workflow is not just for Zeebe, but also for 8.7+ monorepo release!
+# NOTE: This workflow is not just for Zeebe, but also for 8.6+ monorepo release!
 name: Zeebe Release Dry Run from stable branches
 
 on:
@@ -9,6 +9,9 @@ on:
   schedule:
     # Runs at 02:00 every week day; see this link for more: https://crontab.guru/#0_2_*_*_1-5
     - cron: '0 2 * * 1-5'
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   # Create short-lived branches from each stable branch so that dry-run pushes
@@ -21,7 +24,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -31,13 +34,15 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the dry-run branches and tags.
+        # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
           token: ${{ steps.github-token.outputs.token }}
       - name: Create branches
         run: |
-          for version in 8.7 8.8 8.9; do
+          for version in 8.6 8.7 8.8 8.9 8.10; do
             branch_name="tmp-dryrun-${version}-${{ github.run_id }}"
             git checkout "origin/stable/${version}"
             git checkout -b "${branch_name}"
@@ -47,19 +52,46 @@ jobs:
       - name: Create fake dry-run tags
         run: |
           declare -A tags=(
+            [8.6]=0.0.0-dryrun-86
             [8.7]=0.0.0-dryrun-87
             [8.8]=0.0.0-dryrun-88
             [8.9]=0.0.0-dryrun-89
+            [8.10]=0.0.0-dryrun-810
           )
 
-          for version in 8.7 8.8 8.9; do
+          for version in 8.6 8.7 8.8 8.9 8.10; do
             tag_name="${tags[$version]}"
             git checkout "origin/stable/${version}"
             git tag -f "${tag_name}"
             git push origin --force "refs/tags/${tag_name}"
             echo "Prepared ${tag_name} from stable/${version}"
           done
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  dry-run-release-810:
+    name: "Release from stable/8.10"
+    needs: create-dry-run-branches
+    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.10
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: tmp-dryrun-8.10-${{ github.run_id }}
+      # Uses fake tag for dry run testing without affecting real releases
+      releaseVersion: 0.0.0-dryrun-810
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      # 8.10 is the latest stable minor, so it is the only one flagged as latest
+      isLatest: true
+      dryRun: true
+      includeOptimize: true
   dry-run-release-89:
     name: "Release from stable/8.9"
     needs: create-dry-run-branches
@@ -72,8 +104,10 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-89
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
       dryRun: true
+      includeOptimize: true
   dry-run-release-88:
     name: "Release from stable/8.8"
     needs: create-dry-run-branches
@@ -86,8 +120,10 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-88
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
       dryRun: true
+      includeOptimize: true
   dry-run-release-87:
     name: "Release from stable/8.7"
     needs: create-dry-run-branches
@@ -100,21 +136,37 @@ jobs:
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-87
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
+      dryRun: true
+  dry-run-release-86:
+    name: "Release from stable/8.6"
+    needs: create-dry-run-branches
+    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.6
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: tmp-dryrun-8.6-${{ github.run_id }}
+      # Uses fake tag for dry run testing without affecting real releases
+      releaseVersion: 0.0.0-dryrun-86
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      # Only the latest stable minor is the latest release; older minors set false
+      isLatest: false
       dryRun: true
   # Always run cleanup. Delete refs for successful dry runs and keep failed
   # ones available for targeted reruns.
   cleanup-dry-run-branches:
     name: Delete temporary dry-run branches
     runs-on: ubuntu-slim
-    needs: [dry-run-release-87, dry-run-release-88, dry-run-release-89]
+    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88, dry-run-release-89, dry-run-release-810]
     if: always()
     timeout-minutes: 5
     permissions: {}  # Uses GitHub App token instead of GITHUB_TOKEN
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -124,9 +176,17 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # Credentials stay: this job pushes the branch and tag deletions.
+        # zizmor: ignore[artipacked]
         with:
           token: ${{ steps.github-token.outputs.token }}
+      - name: Delete temporary dryrun 8.10 branch and tag
+        if: ${{ needs.dry-run-release-810.result == 'success' }}
+        run: |
+          branch_name="tmp-dryrun-8.10-${{ github.run_id }}"
+          git push origin --delete "${branch_name}" || echo "::warning::Failed to delete ${branch_name}, it may have already been deleted"
+          git push origin --delete "refs/tags/0.0.0-dryrun-810" 2>/dev/null || echo "::warning::Failed to delete 0.0.0-dryrun-810, it may have already been deleted"
       - name: Delete temporary dryrun 8.9 branch and tag
         if: ${{ needs.dry-run-release-89.result == 'success' }}
         run: |
@@ -145,17 +205,32 @@ jobs:
           branch_name="tmp-dryrun-8.7-${{ github.run_id }}"
           git push origin --delete "${branch_name}" || echo "::warning::Failed to delete ${branch_name}, it may have already been deleted"
           git push origin --delete "refs/tags/0.0.0-dryrun-87" 2>/dev/null || echo "::warning::Failed to delete 0.0.0-dryrun-87, it may have already been deleted"
+      - name: Delete temporary dryrun 8.6 branch and tag
+        if: ${{ needs.dry-run-release-86.result == 'success' }}
+        run: |
+          branch_name="tmp-dryrun-8.6-${{ github.run_id }}"
+          git push origin --delete "${branch_name}" || echo "::warning::Failed to delete ${branch_name}, it may have already been deleted"
+          git push origin --delete "refs/tags/0.0.0-dryrun-86" 2>/dev/null || echo "::warning::Failed to delete 0.0.0-dryrun-86, it may have already been deleted"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   notify-camunda:
-    name: Send Slack notification for 8.7+
+    name: Send Slack notification for 8.6+
     runs-on: ubuntu-latest
-    needs: [dry-run-release-87, dry-run-release-88, dry-run-release-89, cleanup-dry-run-branches]
+    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88, dry-run-release-89, dry-run-release-810, cleanup-dry-run-branches]
     if: always()
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -166,8 +241,8 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
-        if: ${{ (needs.dry-run-release-87.result != 'success' || needs.dry-run-release-88.result != 'success' || needs.dry-run-release-89.result != 'success') && github.event_name == 'schedule' }}
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        if: ${{ (needs.dry-run-release-86.result != 'success' || needs.dry-run-release-87.result != 'success' || needs.dry-run-release-88.result != 'success' || needs.dry-run-release-89.result != 'success' || needs.dry-run-release-810.result != 'success') && github.event_name == 'schedule' }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -191,3 +266,17 @@ jobs:
                 }
               ]
             }
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -30,6 +30,8 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -38,6 +40,8 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
@@ -64,10 +68,16 @@ public class InactiveRole extends AbstractRole {
     logRequest(request);
     updateTermAndLeader(request.term(), request.leader());
 
+    // Store the term that identifies the configuration, not the term it was disseminated under, so
+    // that Configuration#term() means the same thing here as on the member that appended the entry.
+    // A leader that predates the configurationTerm field sends 0; fall back to its current term,
+    // which is the ambiguous value this member would have stored before.
+    final var configurationTerm =
+        request.configurationTerm() > 0 ? request.configurationTerm() : request.term();
     final Configuration configuration =
         new Configuration(
             request.index(),
-            request.term(),
+            configurationTerm,
             request.timestamp(),
             request.newMembers(),
             request.oldMembers() != null ? request.oldMembers() : List.of());
@@ -150,6 +160,31 @@ public class InactiveRole extends AbstractRole {
             TransferResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
+                .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<TimeoutNowResponse> onTimeoutNow(final TimeoutNowRequest request) {
+    logRequest(request);
+    final var result =
+        logResponse(
+            TimeoutNowResponse.builder()
+                .withStatus(Status.ERROR)
+                .withError(RaftError.Type.UNAVAILABLE)
+                .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    logRequest(request);
+    final var result =
+        logResponse(
+            LeadershipTransferInitiateResponse.builder()
+                .withStatus(Status.ERROR)
+                .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
                 .build());
     return CompletableFuture.completedFuture(result);
   }

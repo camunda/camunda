@@ -1,16 +1,20 @@
-# description: Runs Request Validation tests on the C8 Orchestration Cluster REST API for 8.8+ versions nightly
+# description: Runs Request Validation tests on the C8 Orchestration Cluster REST API nightly
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/request-validation
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/core-features
 ---
 name: C8 Orchestration Cluster V2 Stateless Tests Nightly
 
 on:
   schedule:
     - cron: "0 0 * * *" # Run all tests at midnight UTC
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  TEST_OWNER: '@camunda/core-features'
 
 jobs:
   request-validation-tests:
@@ -18,18 +22,36 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.8, main]
+        branch: [main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ matrix.branch }}
+          # A manual dispatch tests the branch it was dispatched from; the schedule tests main.
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || matrix.branch }}
 
       - name: Start Camunda
         run: |
           echo "Starting Camunda with unified architecture"
-          DATABASE=elasticsearch docker compose up -d camunda
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
+          # deadline exceeded"). docker compose up -d is idempotent, so a retry
+          # simply resumes the pull and starts the container.
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if DATABASE=elasticsearch docker compose up -d camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
@@ -46,7 +68,7 @@ jobs:
             tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
             operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
             identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-            
+
             if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
@@ -74,9 +96,9 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
           cache-dependency-path: |
             qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
@@ -89,9 +111,9 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Setup Node.js for request validation test generator
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Clean install dependencies for request validation test generator
         shell: bash
@@ -110,8 +132,6 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
       - name: Install Playwright Browsers
         shell: bash
@@ -120,7 +140,7 @@ jobs:
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.x"
 
@@ -157,9 +177,24 @@ jobs:
           npm run test -- --project=request-validation-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - name: Print Docker logs after failed tests
+        if: failure()
+        run: DATABASE=elasticsearch docker compose logs --timestamps camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: V2 Stateless Test Results (${{ matrix.branch }})
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "request-validation-tests/${{ matrix.branch }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

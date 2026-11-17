@@ -15,16 +15,22 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Schema compliance with OpenAPI 3.0 JSON Schema spec
   - Custom naming conventions (e.g., no "flow node" terminology)
   - Property description requirements
+  - Clearable schemas (`x-clearable`) must accept an empty string, and properties referencing them must not declare a `format`
   - Key property type validation (`...Key` properties must be strings)
-  - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
+  - Eventually-consistent annotation validation (every operation must declare `x-eventually-consistent` as `true` or `false`; command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
+  - Operation scope annotation validation (every operation must declare `x-scope` as `cluster-wide` or `physical-tenant`)
+  - Property versioning annotation shape validation (`x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only)
+  - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
+
+> Property-level version annotations (`x-properties-added-in-version`) have their shape checked by the Spectral rule `properties-added-in-version-shape` (see below). Their semantic correctness (property exists, version is right) is validated in CI by a separate Node verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md). See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the rules.
 
 ## Running Validation Locally
 
 ```bash
 # Install Spectral CLI (if not already installed)
-npm install -g @stoplight/spectral-cli
+npm install -g @camunda8/spectral-cli
 
 # Run validation from the repository root
 
@@ -64,9 +70,21 @@ required:
   - myField  # ✓ Correct - array at object level
 ```
 
-### `x-eventually-consistent` on Command Operations
+### `x-eventually-consistent` on Operations
 
-Command (mutating) operations must not be marked with `x-eventually-consistent: true`.
+Every operation must declare `x-eventually-consistent` explicitly as a boolean `true` or `false` (rule `require-eventually-consistent`). A missing value, `null`, or a quoted string such as `"true"` fails validation, because SDK generators read the annotation to decide whether to emit polling wrappers and a missing value silently means "no polling".
+
+In addition, command (mutating) operations must be marked `x-eventually-consistent: false`. Rule `no-eventually-consistent-on-commands` rejects `true` on them.
+
+**Missing:**
+
+```yaml
+paths:
+  /resources:
+    post:
+      operationId: createResource
+      # ❌ x-eventually-consistent is not declared
+```
 
 **Wrong:**
 
@@ -125,6 +143,38 @@ schema:
 
 See [#46224](https://github.com/camunda/camunda/issues/46224) for details.
 
+### Request Body Fields Must Not Be Nullable
+
+Request fields express optionality by being left out of `required`, not through `nullable`. A nullable request field makes SDK generators emit a three-state type (`T | undefined | null` in JS, `T | Unset | None` in Python). The `no-nullable-request-properties` rule fails on any `nullable: true` inside a request body schema. This includes the body schema itself: an optional body is expressed with `requestBody.required: false`, and a nullable body schema is allowlisted under the key `<root>`. Existing released fields, and PATCH fields where an explicit `null` erases the stored value, are listed in `spectral-functions/verifyNoNullableRequestProperties.allowlist.json` after API Governance review. Each entry belongs to a group carrying a `reason`.
+
+**Wrong:**
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        properties:
+          name:
+            type: string
+            nullable: true
+```
+
+**Correct:**
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        properties:
+          name:
+            type: string
+# Optional: simply leave `name` out of the required array
+```
+
+See [#66952](https://github.com/camunda/camunda/issues/66952) for details.
+
 ### Missing `x-added-in-version` on an Operation
 
 Every operation must declare the Camunda version in which it was first introduced via the `x-added-in-version` extension. The `require-added-in-version` rule fails the build if this annotation is missing.
@@ -154,6 +204,124 @@ paths:
 ```
 
 Set the value to the version in which the endpoint **first** ships and do not update it on later changes. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention.
+
+### Malformed `x-properties-added-in-version`
+
+The `properties-added-in-version-shape` rule (severity `error`) checks the shape of every `x-properties-added-in-version` annotation. It must be a non-empty array of `{propertyName, addedInVersion}` objects with no other keys, where `addedInVersion` matches `^[0-9]+\.[0-9]+(\.[0-9]+)?$` (e.g. `"8.8"`).
+
+The rule runs with `resolved: false` so paths point at the schema's source file. It fires in the file-level pass (`spectral lint "...*.yaml"`), not the entry-point pass on `rest-api.yaml`.
+
+**Wrong:**
+
+```yaml
+ProcessInstanceModificationInstruction:
+  x-properties-added-in-version:
+    - propertyame: moveInstructions   # ❌ typo: should be propertyName
+      addedInVersion: "8.8"
+```
+
+**Correct:**
+
+```yaml
+ProcessInstanceModificationInstruction:
+  x-properties-added-in-version:
+    - propertyName: moveInstructions
+      addedInVersion: "8.8"
+```
+
+Semantic correctness of these annotations (does the property actually exist? was it really introduced in that version?) is still validated in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md) — the Spectral rule only checks shape.
+
+When a reviewer deliberately wants to publish a version other than the one the verifier computes, use `x-added-in-version-override` / `addedInVersionOverride` instead of just changing the annotation — see ["Overriding the computed version"](../../.github/scripts/x-added-in-version-check/README.md#overriding-the-computed-version) in the verifier's README.
+
+### Missing or invalid `x-scope`
+
+Every operation must declare `x-scope` as either `cluster-wide` or `physical-tenant`, marking whether it operates on the whole cluster or on a single physical tenant. The `require-scope` rule fails the build if this annotation is missing or has an unrecognised value.
+
+**Wrong:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      tags: [My resource]
+      # ❌ Missing x-scope
+```
+
+**Correct:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      x-scope: physical-tenant  # ✓ Scoped to a single physical tenant
+      tags: [My resource]
+```
+
+See §2.20 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention, including how this maps to the `@ClusterScoped` controller annotation.
+
+### Conditional-presence annotations (`x-present-when`)
+
+A response property may be present only for certain request shapes. OpenAPI 3.x
+cannot express that a response field's presence depends on a request field, so
+generated SDKs default to typing such fields as always-nullable — which lets
+users write code that fails at runtime but compiles cleanly. `x-present-when`
+encodes that dependency as ground truth on the response property so SDK
+generators can derive request→response dependent typing.
+
+The `present-when-shape` rule validates the marker's structure: it must be an
+object with a `request` field (a top-level request-body property name) and a
+scalar `equals` literal (`boolean`, `string`, or `number`).
+
+```yaml
+ActivatedJobResult:
+  properties:
+    jobLeaseToken:
+      description: The lease token; `null` when activated without a lease.
+      nullable: true
+      x-present-when:
+        request: withLease   # top-level field on the operation's request body
+        equals: true         # property is present (required, non-null) iff withLease === true
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+```
+
+Semantics: SDK generators derive from the marker: when the request field is the
+compile-time literal `equals` value (`V`), the property is **present** (required,
+non-null); when it is any other compile-time literal — `false`/`null`/omitted, or
+a non-matching string/number such as `mode: "compact"` when `equals: "full"` —
+the property is **absent** (omitted for nominal languages; typed `?: never` for
+JS/TS; for Python, which has no `?: never` equivalent, modelled via an overload
+whose return type omits the property, e.g. a `TypedDict` without the key); when
+the request field is not a compile-time literal, the base nullable shape is
+preserved. The marker is inert
+on the wire — the property keeps its declared `nullable` shape and stays in
+`required`, so any consumer that does not derive from it is unaffected. See §2.21
+of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md)
+for the full derivation contract each SDK implements.
+
+### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
+
+Three rules validate the producer/consumer dependency annotations consumed by the API test generator:
+
+- `semantic-establishes-shape` — `x-semantic-establishes` must conform to the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal: true`).
+- `semantic-requires-shape` — `x-semantic-requires` must conform to the documented schema (`kind`, `bind` map of `from` / `name`).
+- `verify-semantic-kinds-registered` (custom JS function in `spectral-functions/`) — every `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; an operation's `x-semantic-establishes.shape` (defaulting to `entity` when omitted) must match the kind's registered shape, so e.g. forgetting `shape: edge` on a membership operation is a lint error rather than a style issue; every `identifiedBy` / `bind` member references a parameter or top-level body property that exists on the operation; operations must not directly establish/require kinds whose registry shape is `external-entity`; `identifiedBy[].acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+
+For the full annotation reference (including `x-semantic-provider`, `x-semantic-client-minted`, kind-level `shape: external-entity`, and the per-tuple `acceptsExternal` flag), see §2.18 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md). The kind registry itself is [`src/main/proto/v2/semantic-kinds.json`](src/main/proto/v2/semantic-kinds.json) — its `$comment` block documents how to add a new kind.
+
+### Required-permission annotations (`x-required-permissions`)
+
+Two rules validate the canonical endpoint → required-permission binding consumed by the API test generator and docs (camunda/camunda#54727):
+
+- `required-permissions-shape` — each `x-required-permissions` entry must conform to the documented schema (exactly one of: a static `{resourceType, permissionType}` pair, an `anyOf` OR-group, or `{dynamic: true, note}`).
+- `verify-required-permissions` (custom JS function in `spectral-functions/`) — every operation under `paths` must declare `x-required-permissions` (an array; `[]` means unrestricted — no specific permission required, though the endpoint is still authenticated), and every static `{resourceType, permissionType}` pair must be a valid pair per [`src/main/proto/v2/resource-permissions.json`](src/main/proto/v2/resource-permissions.json). Adding a new endpoint without a declared binding fails the build. It also checks that an operation marked `x-permission-enforcement: filter` declares at least one required permission.
+- `permission-enforcement-shape` — the optional operation-level `x-permission-enforcement` marker, when present, must be `reject` (default deny → `4xx`) or `filter` (deny → `200` with results scoped to authorized resources). Used by the runtime auth test (api-test-generator#374) to assert the correct deny shape.
+
+The registry `resource-permissions.json` mirrors `AuthorizationResourceType.buildResourcePermissionsMap()` and is kept honest by `ResourcePermissionsRegistryTest`. For the full reference see §2.19 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) and ADR [`docs/adr/security/001-endpoint-required-permission-mapping.md`](../../docs/adr/security/001-endpoint-required-permission-mapping.md).
 
 ## Testing Custom Spectral Functions
 

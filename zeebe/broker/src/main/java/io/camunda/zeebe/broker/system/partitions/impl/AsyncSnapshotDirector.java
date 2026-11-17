@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -46,7 +46,7 @@ public final class AsyncSnapshotDirector extends Actor
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
-      "Finished taking temporary snapshot, need to wait until last written event position {} is committed, current commit position is {}. After that snapshot will be committed.";
+      "Finished taking temporary snapshot, need to wait until position {} is committed, which is the highest of the last processed and last written event position, current commit position is {}. After that snapshot will be committed.";
   private static final String ERROR_MSG_ON_RESOLVE_PROCESSED_POS =
       "Unexpected error in resolving last processed position.";
   private static final String ERROR_MSG_ON_RESOLVE_WRITTEN_POS =
@@ -58,12 +58,10 @@ public final class AsyncSnapshotDirector extends Actor
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
-  private final String actorName;
   private final StreamProcessorMode streamProcessorMode;
   private final Callable<CompletableFuture<Void>> flushLog;
   private final StatePositionSupplier positionSupplier;
   private final Set<FailureListener> listeners = new HashSet<>();
-  private final int partitionId;
   private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
   private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
 
@@ -73,19 +71,18 @@ public final class AsyncSnapshotDirector extends Actor
   private long commitPosition;
 
   private AsyncSnapshotDirector(
-      final int partitionId,
+      final PartitionId partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
       final Duration snapshotRate,
       final StreamProcessorMode streamProcessorMode,
       final Callable<CompletableFuture<Void>> flushLog,
       final StatePositionSupplier positionSupplier) {
+    super("SnapshotDirector", partitionId);
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    this.partitionId = partitionId;
-    actorName = actorName(partitionId);
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
     this.positionSupplier = positionSupplier;
@@ -106,7 +103,7 @@ public final class AsyncSnapshotDirector extends Actor
    * @return snapshot director
    */
   public static AsyncSnapshotDirector of(
-      final int partitionId,
+      final PartitionId partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
       final StreamProcessorMode streamProcessorMode,
@@ -121,18 +118,6 @@ public final class AsyncSnapshotDirector extends Actor
         streamProcessorMode,
         flushLog,
         positionSupplier);
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
@@ -154,18 +139,13 @@ public final class AsyncSnapshotDirector extends Actor
   @Override
   protected void handleFailure(final Throwable failure) {
     LOG.error(
-        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}.",
-        actorName,
+        "No snapshot was taken. Will try to take snapshot after snapshot period {}.",
         snapshotRate,
         failure);
 
     resetStateOnFailure(failure);
     healthReport = HealthReport.unhealthy(this).withIssue(failure, Instant.now());
     notifyAllListeners();
-  }
-
-  public static String actorName(final int partitionId) {
-    return buildActorName("SnapshotDirector", partitionId);
   }
 
   private void notifyAllListeners() {
@@ -193,7 +173,7 @@ public final class AsyncSnapshotDirector extends Actor
 
   @Override
   public String componentName() {
-    return actorName;
+    return getName();
   }
 
   @Override
@@ -261,7 +241,8 @@ public final class AsyncSnapshotDirector extends Actor
       final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
     return takeTransientSnapshot(inProgressSnapshot, forceSnapshot)
         .andThen(() -> getPositionsAfterSnapshot(inProgressSnapshot), actor)
-        .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
+        .andThen(
+            () -> waitUntilLastProcessedAndWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
         .andThen(() -> persistSnapshot(inProgressSnapshot), actor);
   }
@@ -324,25 +305,46 @@ public final class AsyncSnapshotDirector extends Actor
             (position, error) -> {
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-                return CompletableActorFuture.completedExceptionally(error);
-              } else {
-                inProgressSnapshot.lastWrittenPosition = position;
-                return CompletableActorFuture.completed(null);
+                return CompletableActorFuture.<Void>completedExceptionally(error);
               }
+              inProgressSnapshot.lastWrittenPosition = position;
+              return getLastProcessedPositionAfterSnapshot(inProgressSnapshot);
             },
             actor);
   }
 
-  private ActorFuture<Void> waitUntilLastWrittenPositionIsCommitted(
+  /**
+   * Reads the processed position again, after the transient snapshot was taken, because that is the
+   * position the snapshot's contents actually reflect. The one read before the snapshot only bounds
+   * the snapshot from below, so waiting for it to commit would not cover a record the processor
+   * processed while the snapshot was being taken.
+   */
+  private ActorFuture<Void> getLastProcessedPositionAfterSnapshot(
       final InProgressSnapshot inProgressSnapshot) {
+    return streamProcessor
+        .getLastProcessedPositionAsync()
+        .andThen(
+            (position, error) -> {
+              if (error != null) {
+                LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
+                return CompletableActorFuture.<Void>completedExceptionally(error);
+              }
+              inProgressSnapshot.lastProcessedPosition = position;
+              return CompletableActorFuture.completed(null);
+            },
+            actor);
+  }
+
+  private ActorFuture<Void> waitUntilLastProcessedAndWrittenPositionIsCommitted(
+      final InProgressSnapshot inProgressSnapshot) {
+    final var requiredCommitPosition = inProgressSnapshot.requiredCommitPosition();
     if (streamProcessorMode == StreamProcessorMode.REPLAY
-        || commitPosition >= inProgressSnapshot.lastWrittenPosition) {
+        || commitPosition >= requiredCommitPosition) {
       return CompletableActorFuture.completed(null);
     } else {
-      LOG.info(
-          LOG_MSG_WAIT_UNTIL_COMMITTED, inProgressSnapshot.lastWrittenPosition, commitPosition);
+      LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, requiredCommitPosition, commitPosition);
       return commitAwaiters.computeIfAbsent(
-          inProgressSnapshot.lastWrittenPosition, k -> new CompletableActorFuture<>());
+          requiredCommitPosition, k -> new CompletableActorFuture<>());
     }
   }
 
@@ -424,8 +426,23 @@ public final class AsyncSnapshotDirector extends Actor
 
   private static final class InProgressSnapshot {
     private long lastWrittenPosition;
+    private long lastProcessedPosition;
     private TransientSnapshot pendingSnapshot;
     private long lowerBoundSnapshotPosition;
     private long maxExportedPosition;
+
+    /**
+     * The position that has to be committed before this snapshot may be persisted: the highest of
+     * what the processor has written and what it has processed.
+     *
+     * <p>The written position alone is not enough. The processor reads uncommitted records, so it
+     * can have processed a record above the commit index, and a result without follow-up records
+     * leaves the written position behind that record. Persisting then would record a processed
+     * position that a later truncation can remove from the log, and recovery would resume past
+     * records that never committed.
+     */
+    private long requiredCommitPosition() {
+      return Math.max(lastProcessedPosition, lastWrittenPosition);
+    }
   }
 }

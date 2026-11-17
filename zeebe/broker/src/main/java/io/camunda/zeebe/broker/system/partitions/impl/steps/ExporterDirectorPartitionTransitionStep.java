@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.BlockingExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -21,7 +22,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
@@ -116,25 +116,34 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final var exporterFilter = SkipPositionsFilter.of(skipRecords);
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
+    final var tenantName = context.partitionId().group();
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(Actor.buildActorName("Exporter", context.getPartitionId()))
+            .partitionId(context.partitionId())
             .clock(context.getStreamClock())
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
             .distributionInterval(exportingCfg.distributionInterval())
+            .migrationStatusScanMaxRecords(exportingCfg.migrationStatusScanMaxRecords())
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
-            .engineName(brokerCfg.getExperimental().getDefaultEngineName())
-            .sendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject())
-            .receiveOnLegacySubject(brokerCfg.getExperimental().isReceiveOnLegacySubject());
+            .clusterId(
+                context
+                    .getClusterConfigurationService()
+                    .getCurrentClusterConfiguration()
+                    .clusterId()
+                    .orElse(""))
+            .licenseKey(brokerCfg.getLicenseKey())
+            .tenantName(tenantName)
+            .receiveOnLegacySubject(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName));
 
     final ExporterDirector director =
-        exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
+        exporterDirectorBuilder.apply(exporterCtx, exporterPhase(context));
 
     context.getComponentHealthMonitor().registerComponent(director);
 
@@ -144,7 +153,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           if (error == null) {
             context.setExporterDirector(director);
             // Pause/Resume here in case the state was changed after the director was created
-            switch (context.getExporterPhase()) {
+            switch (exporterPhase(context)) {
               case PAUSED:
                 director.pauseExporting();
                 break;
@@ -161,6 +170,16 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  /**
+   * The exporter phase to (re)open a director with, sourced from dynamic cluster configuration
+   * rather than any broker-local state — so a pause survives restarts and applies to partitions
+   * that join later, since every replica converges on the same gossiped configuration regardless of
+   * whether it was already running when the pause was applied.
+   */
+  private static ExporterPhase exporterPhase(final PartitionTransitionContext context) {
+    return ExporterPhase.from(context.getDynamicPartitionConfig().exporting().state());
   }
 
   private void deleteOrEnableExportersIfConfigChanged(

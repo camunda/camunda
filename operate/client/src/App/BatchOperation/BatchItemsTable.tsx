@@ -211,7 +211,7 @@ export const BatchItemsTable: React.FC<Props> = ({
       />
       <PaginatedSortableTable
         size="md"
-        batchOperationId={batchOperationKey}
+        batchOperationKey={batchOperationKey}
         state={getTableState()}
         rows={rows}
         headerColumns={headerColumns}

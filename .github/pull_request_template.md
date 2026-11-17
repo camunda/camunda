@@ -4,9 +4,21 @@
 
 ## Checklist
 
-<!--- Please delete options that are not relevant. Boxes should be checked by reviewer. -->
+<!--- Please delete options that are not relevant. -->
 - [ ] Enable backports when necessary (fex. [for bug fixes](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#backporting-changes), [for CI changes](https://camunda.github.io/camunda/ci/#when-to-backport-ci-changes), or [for documentation changes](https://camunda.github.io/camunda/ci/#documentation-specific-backporting-monorepo-docs-folders)).
+- [ ] If this PR modifies the [C8 Orchestration Cluster E2E Test Suite](qa/c8-orchestration-cluster-e2e-test-suite), its automatic PR check has completed (for a fork PR: a maintainer has run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) on a copy of its branch in `camunda/camunda`) before requesting review. Any test failures are documented in the PR description and confirmed not to be regressions introduced by this PR.
 
 ## Related issues
 
+<!--
+Link the tracked ISSUE this PR belongs to (link the issue, NOT a PR):
+- This PR fully resolves the issue:  closes #1234  (also: fixes #1234, resolves #1234 — auto-closes it on merge)
+- One of several PRs for the issue (an epic, or work split across releases):  relates to #1234  or a bare  #1234
+This satisfies the gate but does NOT close the issue, so it stays open until the last PR lands.
+No tracked issue (hotfix, dep bump, CI/refactor), or it is tracked in another repo? Tick the opt-out below instead.
+-->
+
 closes #
+
+- [ ] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)
+

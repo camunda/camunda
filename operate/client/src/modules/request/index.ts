@@ -43,16 +43,24 @@ type RequestParams = {
   responseType?: 'json' | 'text' | 'none';
 };
 
-async function requestWithThrow<T>({
-  url,
-  method,
-  body,
-  headers,
-  signal,
-  responseType = 'json',
-}: RequestParams): RequestResult<T> {
+type RequestOptions = {
+  skipSessionCheck?: boolean;
+  /**
+   * Tells if a successful response still means that the caller has no session, so it is handled
+   * like a 401. An unprotected API answers the current user endpoint this way.
+   */
+  isUnauthenticated?: (response: Response) => Promise<boolean>;
+};
+
+async function requestWithThrow<T>(
+  {url, method, body, headers, signal, responseType = 'json'}: RequestParams,
+  options?: RequestOptions,
+): RequestResult<T> {
   try {
-    const response = await request({url, method, body, headers, signal});
+    const response = await request(
+      {url, method, body, headers, signal},
+      options,
+    );
 
     if (response.ok) {
       if (responseType === 'none') {
@@ -88,29 +96,73 @@ async function requestWithThrow<T>({
   }
 }
 
+function getCsrfToken() {
+  return sessionStorage.getItem('X-CSRF-TOKEN');
+}
+
+function storeCsrfTokenFromResponse(response: Response) {
+  const csrfToken = response.headers.get('X-CSRF-TOKEN');
+
+  if (csrfToken !== null) {
+    sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+  }
+}
+
+/**
+ * Gets a CSRF token and keeps it for the requests that follow. Does not change the session state,
+ * because this request does not tell us if the user has a session.
+ */
+async function requestCsrfToken(url: string) {
+  const clientConfig = getClientConfig();
+
+  try {
+    storeCsrfTokenFromResponse(
+      await fetch(mergePathname(clientConfig.contextPath, url), {
+        method: 'GET',
+        credentials: 'include',
+        headers: {Accept: 'text/html'},
+        mode: 'cors',
+      }),
+    );
+  } catch (error) {
+    // The request that needs the token reports the failure to the user, which looks like a
+    // rejected login. Log the cause so a broken token request is distinguishable from that.
+    logger.error(`Failed to fetch a CSRF token from ${url}`);
+    logger.error(error);
+  }
+}
+
 async function request(
   {url, method, body, headers, signal}: RequestParams,
-  {skipSessionCheck = false}: {skipSessionCheck?: boolean} = {},
+  {skipSessionCheck = false, isUnauthenticated}: RequestOptions = {},
 ) {
   const clientConfig = getClientConfig();
-  const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
+  const csrfToken = getCsrfToken();
   const hasCsrfToken =
     csrfToken !== null &&
     method !== undefined &&
     ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
 
-  const response = await fetch(mergePathname(clientConfig.contextPath, url), {
-    method,
-    credentials: 'include',
-    body: typeof body === 'string' ? body : JSON.stringify(body),
-    headers: {
-      'Content-Type': 'application/json',
-      ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
-      ...headers,
+  const fetchedResponse = await fetch(
+    mergePathname(clientConfig.contextPath, url),
+    {
+      method,
+      credentials: 'include',
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
+        ...headers,
+      },
+      mode: 'cors',
+      signal,
     },
-    mode: 'cors',
-    signal,
-  });
+  );
+  const response =
+    fetchedResponse.ok &&
+    (await isUnauthenticated?.(fetchedResponse.clone())) === true
+      ? new Response(null, {status: 401, statusText: 'Unauthorized'})
+      : fetchedResponse;
 
   if (!skipSessionCheck && response.status === 401) {
     authenticationStore.disableSession();
@@ -118,11 +170,7 @@ async function request(
 
   if (response.ok) {
     authenticationStore.activateSession();
-
-    const csrfToken = response.headers.get('X-CSRF-TOKEN');
-    if (csrfToken !== null) {
-      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
-    }
+    storeCsrfTokenFromResponse(response);
   }
 
   return response;
@@ -199,5 +247,12 @@ function isRequestError(error: unknown): error is RequestError {
   );
 }
 
-export {request, requestAndParse, requestWithThrow, isRequestError};
+export {
+  getCsrfToken,
+  request,
+  requestAndParse,
+  requestCsrfToken,
+  requestWithThrow,
+  isRequestError,
+};
 export type {RequestError};

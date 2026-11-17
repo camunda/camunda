@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
@@ -171,6 +171,36 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Number of distinct active tenants seen since last broker start */
+  ACTIVE_TENANTS {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {EngineKeyNames.ORGANIZATION_ID};
+
+    @Override
+    public String getDescription() {
+      return "Number of distinct active tenants seen since last broker start";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.active.tenants.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Number of banned instances */
   BANNED_INSTANCES {
     @Override
@@ -288,6 +318,106 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return new KeyName[] {EngineKeyNames.JOB_ACTION};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of unique deployed process definitions (distinct BPMN process IDs) */
+  DEPLOYED_PROCESS_DEFINITIONS {
+    @Override
+    public String getDescription() {
+      return "Number of unique deployed process definitions (distinct BPMN process IDs)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.definitions.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Total size in bytes of all deployed versions of each process definition */
+  PROCESS_DEFINITION_RESOURCE_SIZE {
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {ProcessDefinitionKeyNames.BPMN_PROCESS_ID};
+
+    @Override
+    public String getDescription() {
+      return "Total size in bytes of all deployed versions of each process definition";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.definition.resource.size.bytes";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of cached process definitions reclaimed by the GC under memory pressure */
+  PROCESS_CACHE_COLLECTED {
+    @Override
+    public String getDescription() {
+      return "Number of cached process definitions reclaimed by the GC under memory pressure";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.cache.collected.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of process definitions currently draining (deleted, awaiting last instance) */
+  DRAINING_PROCESS_DEFINITIONS {
+    @Override
+    public String getDescription() {
+      return "Number of process definitions currently draining (deleted, awaiting last instance)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.definitions.draining.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
     }
 
     @Override
@@ -432,9 +562,28 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   }
 
+  public enum ProcessDefinitionKeyNames implements KeyName {
+    /** The BPMN process ID of the process definition */
+    BPMN_PROCESS_ID {
+      @Override
+      public String asString() {
+        return "bpmnProcessId";
+      }
+    }
+  }
+
   public enum JobAction {
     CREATED("created"),
     ACTIVATED("activated"),
+    /**
+     * A leased job skipped by an activation requested without a lease. Operators watch this as the
+     * lease-collision signal, so the label stays {@code "skipped"} even though the constant is not:
+     * panel 13 of {@code monitor/grafana/zeebe.json} keys its orange row highlight on {@code
+     * action="skipped"}. Renaming the label means changing that dashboard in the same PR.
+     */
+    SKIPPED_LEASED("skipped"),
+    /** A job skipped because one of its secret references is not cached yet. */
+    SKIPPED_UNCACHED_SECRET("skipped uncached secret"),
     TIMED_OUT("timed out"),
     COMPLETED("completed"),
     FAILED("failed"),

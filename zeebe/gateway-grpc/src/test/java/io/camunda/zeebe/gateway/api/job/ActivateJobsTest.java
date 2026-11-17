@@ -51,7 +51,7 @@ public final class ActivateJobsTest {
     public MultiTenancyDisabledTest(final boolean isLongPollingEnabled) {
       super(
           cfg -> cfg.getLongPolling().setEnabled(isLongPollingEnabled),
-          cfg -> cfg.getMultiTenancy().setChecksEnabled(false));
+          cfg -> cfg.withMultiTenancyChecksEnabled(false));
     }
 
     @Parameters(name = "{index}: longPolling.enabled[{0}]")
@@ -227,7 +227,7 @@ public final class ActivateJobsTest {
     public MultiTenancyEnabledTest(final boolean isLongPollingEnabled) {
       super(
           cfg -> cfg.getLongPolling().setEnabled(isLongPollingEnabled),
-          cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
+          cfg -> cfg.withMultiTenancyChecksEnabled(true));
     }
 
     @Parameters(name = "{index}: longPolling.enabled[{0}]")

@@ -20,6 +20,7 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
 import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,11 +33,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch._types.ShardFailure;
+import org.opensearch.client.opensearch._types.ShardSearchFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -111,14 +113,10 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     }
   }
 
-  private String formatShardFailure(final ShardFailure failure) {
+  private String formatShardFailure(final ShardSearchFailure failure) {
     return String.format(
-        "ShardFailure[index=%s, shard=%s, status=%s, node=%s, reason=%s]",
-        failure.index(),
-        failure.shard(),
-        failure.status(),
-        failure.node(),
-        formatErrorCause(failure.reason()));
+        "ShardSearchFailure[index=%s, shard=%s, node=%s, reason=%s]",
+        failure.index(), failure.shard(), failure.node(), formatErrorCause(failure.reason()));
   }
 
   private String formatErrorCause(final ErrorCause errorCause) {
@@ -406,16 +404,42 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public long updateByQuery(final String index, final Query query, final Script script) {
-    final UpdateByQueryRequest request =
+    return updateByQuery(index, query, script, false);
+  }
+
+  public long updateByQuery(
+      final String index,
+      final Query query,
+      final Script script,
+      final boolean failOnVersionConflicts) {
+    return updateByQuery(index, query, script, failOnVersionConflicts, null);
+  }
+
+  public long updateByQuery(
+      final String index,
+      final Query query,
+      final Script script,
+      final boolean failOnVersionConflicts,
+      final Integer scrollSize) {
+    final UpdateByQueryRequest.Builder requestBuilder =
         applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
             .query(query)
             .refresh(Refresh.True)
-            .script(script)
-            .build();
+            .conflicts(failOnVersionConflicts ? Conflicts.Abort : Conflicts.Proceed)
+            .script(script);
+    if (scrollSize != null) {
+      requestBuilder.scrollSize(scrollSize);
+    }
+    final UpdateByQueryRequest request = requestBuilder.build();
     final UpdateByQueryResponse response;
     Long status;
     try {
       response = openSearchClient.updateByQuery(request);
+      if (failOnVersionConflicts && response.failures() != null && !response.failures().isEmpty()) {
+        final String message = "update by query contained failures: " + response.failures();
+        LOG.error(message);
+        throw new OptimizeByQueryFailureException(message);
+      }
       status = response.updated();
     } catch (final IOException e) {
       status = null;

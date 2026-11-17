@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ALL;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ASSIGNEE_ONLY;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -40,38 +39,40 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final UserTaskAuthorizationCheck userTaskAuth;
   private final UserTaskCommandPreconditionValidator commandChecker;
 
   public UserTaskAssignProcessor(
       final ProcessingState state,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslTenantCheck tenantCheck,
+      final UserTaskAuthorizationCheck userTaskAuth) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.userTaskAuth = userTaskAuth;
     commandChecker =
         new UserTaskCommandPreconditionValidator(
-            List.of(LifecycleState.CREATED), "assign", state.getUserTaskState(), authCheckBehavior);
+            List.of(LifecycleState.CREATED),
+            "assign",
+            state.getUserTaskState(),
+            tenantCheck,
+            state.getBannedInstanceState());
   }
 
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
-    return commandChecker
-        .checkUserTaskExists(command)
-        .flatMap(userTask -> enrichCommandForRejection(command, userTask))
-        .flatMap(userTask -> checkAuthorization(command, userTask))
-        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask));
+    return commandChecker.validate(command, task -> checkAuthorization(command, task));
   }
 
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        userTaskRecord.getElementInstanceKey(), userTaskRecord.getStorageOrdinal(), command);
 
     final var newAssignee = command.getValue().getAssignee();
     if (!userTaskRecord.getAssignee().equals(newAssignee)) {
@@ -96,14 +97,14 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       // Async request might be absent if the assignment transition was triggered internally
       // by Zeebe due to an assignee configured in the process model.
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
       return;
     }
 
     final var request = asyncRequest.get();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeResponse(
+    responseWriter.writeAcceptedResponse(
         userTaskKey,
         UserTaskIntent.ASSIGNED,
         userTaskRecord,
@@ -115,46 +116,34 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-
-    final var userTaskKey = String.valueOf(persistedUserTask.getUserTaskKey());
-
-    // First check: PROCESS_DEFINITION[UPDATE_USER_TASK] or USER_TASK[UPDATE]
-    final var primaryAuthResult =
-        authCheckBehavior.isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE));
-
-    if (primaryAuthResult.isRight()) {
-      return Either.right(persistedUserTask);
+    // Primary checks: PD.UPDATE_USER_TASK || UT.UPDATE (by id or task property)
+    final var primary =
+        userTaskAuth.check(
+            command,
+            persistedUserTask,
+            processDefinition(PermissionType.UPDATE_USER_TASK),
+            userTask(PermissionType.UPDATE, ALL));
+    if (primary.isRight() || !isSelfUnassign(command, persistedUserTask)) {
+      return primary;
     }
 
-    // Second check: self-unassigning case
-    // If the new assignee is empty (unassigning) and the current task assignee matches the current
-    // user, allow via PROCESS_DEFINITION[CLAIM_USER_TASK] or USER_TASK[CLAIM] permissions
+    // Secondary check for self-unassigning: PD.CLAIM_USER_TASK || UT.CLAIM (assignee property only)
+    return userTaskAuth.check(
+        command,
+        persistedUserTask,
+        processDefinition(PermissionType.CLAIM_USER_TASK),
+        userTask(PermissionType.CLAIM, ASSIGNEE_ONLY));
+  }
+
+  private boolean isSelfUnassign(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
     final var newAssignee = command.getValue().getAssignee();
     final var currentAssignee = persistedUserTask.getAssignee();
     final var currentUsername = getCurrentUsername(command);
-
-    if (newAssignee.isEmpty() && currentUsername.filter(currentAssignee::equals).isPresent()) {
-      return authCheckBehavior
-          .isAnyAuthorizedOrInternalCommand(
-              buildProcessDefinitionRequest(
-                  command, persistedUserTask, PermissionType.CLAIM_USER_TASK),
-              buildUserTaskRequest(
-                  command,
-                  persistedUserTask,
-                  PermissionType.CLAIM,
-                  UserTaskAuthorizationProperties.builder().assignee(currentAssignee).build()))
-          .map(ignored -> persistedUserTask);
-    }
-
-    // Return the original rejection from primary auth check
-    return primaryAuthResult.map(ignored -> persistedUserTask);
+    return newAssignee.isEmpty() && currentUsername.filter(currentAssignee::equals).isPresent();
   }
 
   private Optional<String> getCurrentUsername(final TypedRecord<?> command) {
-    return Optional.ofNullable(
-        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
+    return Optional.ofNullable(command.getAuthInfo().getUsername());
   }
 }

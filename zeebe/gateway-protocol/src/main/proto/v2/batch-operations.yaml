@@ -7,6 +7,11 @@ paths:
       tags:
         - Batch operation
       operationId: getBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get batch operation
       description: Get batch operation by key.
       parameters:
@@ -38,6 +43,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /batch-operations/search:
     post:
@@ -45,6 +51,12 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperations
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search batch operations
       description: Search for batch operations based on given criteria.
       requestBody:
@@ -69,6 +81,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /batch-operations/{batchOperationKey}/cancellation:
     post:
@@ -76,6 +89,11 @@ paths:
       tags:
         - Batch operation
       operationId: cancelBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Cancel Batch operation
       description: |
         Cancels a running batch operation.
@@ -108,6 +126,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /batch-operations/{batchOperationKey}/suspension:
     post:
@@ -115,6 +134,11 @@ paths:
       tags:
         - Batch operation
       operationId: suspendBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Suspend Batch operation
       description: |
         Suspends a running batch operation.
@@ -149,6 +173,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /batch-operations/{batchOperationKey}/resumption:
     post:
@@ -156,6 +181,11 @@ paths:
       tags:
         - Batch operation
       operationId: resumeBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: UPDATE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Resume Batch operation
       description: |
         Resumes a suspended batch operation.
@@ -190,6 +220,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /batch-operation-items/search:
     post:
@@ -197,6 +228,12 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperationItems
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: READ }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search batch operation items
       description: Search for batch operation items based on given criteria.
       requestBody:
@@ -221,6 +258,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -231,6 +269,8 @@ components:
         - batchOperationKey
         - batchOperationType
       description: The created batch operation.
+      x-semantic-provider:
+        - batchOperationKey
       type: object
       properties:
         batchOperationKey:
@@ -239,6 +279,11 @@ components:
           description: Key of the batch operation.
         batchOperationType:
           $ref: '#/components/schemas/BatchOperationTypeEnum'
+      x-properties-added-in-version:
+        - propertyName: batchOperationKey
+          addedInVersion: "8.8"
+        - propertyName: batchOperationType
+          addedInVersion: "8.8"
 
     BatchOperationSearchQuerySortRequest:
       type: object
@@ -300,6 +345,11 @@ components:
           description: The ID of the actor who performed the operation.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: actorType
+          addedInVersion: "8.9"
+        - propertyName: actorId
+          addedInVersion: "8.9"
 
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
@@ -337,7 +387,13 @@ components:
         state:
           $ref: '#/components/schemas/BatchOperationStateEnum'
         batchOperationType:
-          $ref: '#/components/schemas/BatchOperationTypeEnum'
+          description: |
+            The type of the batch operation.
+            This is `null` for batch operations whose type was never recorded in
+            secondary storage, such as legacy Operate batch operations.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
         startDate:
           type: string
           description: |
@@ -381,6 +437,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationError'
+      x-properties-added-in-version:
+        - propertyName: actorType
+          addedInVersion: "8.9"
+        - propertyName: actorId
+          addedInVersion: "8.9"
 
     BatchOperationError:
       required:
@@ -462,6 +523,9 @@ components:
           description: The type of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: operationType
+          addedInVersion: "8.9"
 
     BatchOperationItemSearchQueryResult:
       type: object
@@ -498,9 +562,13 @@ components:
           description: Key of the item, e.g. a process instance key.
           type: string
         processInstanceKey:
+          description: |
+            The process instance key of the processed item. Null for batch-op types whose targets
+            are not process instances (e.g. DELETE_DECISION_INSTANCE, DELETE_DECISION_DEFINITION,
+            DELETE_PROCESS_DEFINITION).
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-          description: the process instance key of the processed item.
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -529,6 +597,9 @@ components:
           description: The error message from the engine in case of a failed operation.
           nullable: true
           type: string
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
 
     DecisionInstanceDeletionBatchOperationRequest:
       type: object
@@ -557,6 +628,9 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - filter
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
 
     ProcessInstanceIncidentResolutionBatchOperationRequest:
       type: object
@@ -571,6 +645,9 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - filter
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
 
     ProcessInstanceDeletionBatchOperationRequest:
       type: object
@@ -603,6 +680,9 @@ components:
       required:
         - filter
         - migrationPlan
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
 
     ProcessInstanceMigrationBatchOperationPlan:
       type: object
@@ -643,6 +723,9 @@ components:
       required:
         - filter
         - moveInstructions
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
 
     ProcessInstanceModificationMoveBatchOperationInstruction:
       description: |
@@ -663,6 +746,34 @@ components:
       required:
         - sourceElementId
         - targetElementId
+
+    ProcessInstanceSuspensionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be suspended.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
+    ProcessInstanceResumptionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be resumed.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
 
     ## Enums
 
@@ -700,6 +811,9 @@ components:
         - MIGRATE_PROCESS_INSTANCE
         - MODIFY_PROCESS_INSTANCE
         - RESOLVE_INCIDENT
+        - RESUME_PROCESS_INSTANCE
+        - SUSPEND_PROCESS_INSTANCE
+        - UPDATE_JOB
         - UPDATE_VARIABLE
 
     ## Filters
@@ -737,6 +851,17 @@ components:
             $ref: '#/components/schemas/BatchOperationTypeEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$like"
+          addedInVersion: "8.8"
 
     BatchOperationStateFilterProperty:
       description: BatchOperationStateEnum property with full advanced search capabilities.

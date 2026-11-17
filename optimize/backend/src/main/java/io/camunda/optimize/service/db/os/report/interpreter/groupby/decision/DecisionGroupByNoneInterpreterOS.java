@@ -57,7 +57,7 @@ public class DecisionGroupByNoneInterpreterOS extends AbstractDecisionGroupByInt
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {

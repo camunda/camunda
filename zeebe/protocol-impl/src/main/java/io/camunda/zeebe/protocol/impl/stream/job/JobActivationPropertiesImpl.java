@@ -9,18 +9,21 @@ package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -35,15 +38,17 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final DocumentProperty claimsProp = new DocumentProperty("claims");
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>("tenantFilter", TenantFilter.class, TenantFilter.PROVIDED);
+  private final BooleanProperty withLeaseProp = new BooleanProperty("withLease", false);
 
   public JobActivationPropertiesImpl() {
-    super(6);
+    super(7);
     declareProperty(workerProp)
         .declareProperty(timeoutProp)
         .declareProperty(fetchVariablesProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(claimsProp)
-        .declareProperty(tenantFilterProp);
+        .declareProperty(tenantFilterProp)
+        .declareProperty(withLeaseProp);
   }
 
   public JobActivationPropertiesImpl setWorker(
@@ -57,7 +62,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     return this;
   }
 
-  public JobActivationPropertiesImpl setFetchVariables(final Collection<StringValue> variables) {
+  public JobActivationPropertiesImpl setFetchVariables(final Set<StringValue> variables) {
     fetchVariablesProp.reset();
     variables.forEach(variable -> fetchVariablesProp.add().wrap(variable));
     return this;
@@ -66,6 +71,11 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   public JobActivationPropertiesImpl setTenantIds(final Collection<String> tenantIds) {
     tenantIdsProp.reset();
     tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    return this;
+  }
+
+  public JobActivationPropertiesImpl setWithLease(final boolean withLease) {
+    withLeaseProp.setValue(withLease);
     return this;
   }
 
@@ -94,9 +104,18 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     return tenantFilterProp.getValue();
   }
 
-  @Override
   public Map<String, Object> claims() {
     return MsgPackConverter.convertToMap(claimsProp.getValue());
+  }
+
+  @Override
+  public AuthInfo authInfo() {
+    return AuthInfo.ofClaims(claims());
+  }
+
+  @Override
+  public boolean withLease() {
+    return withLeaseProp.getValue();
   }
 
   public JobActivationPropertiesImpl setTenantFilter(final TenantFilter tenantFilter) {

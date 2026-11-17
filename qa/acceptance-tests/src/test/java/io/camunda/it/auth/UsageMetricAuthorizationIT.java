@@ -21,19 +21,23 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
-import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -42,7 +46,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
@@ -60,9 +63,12 @@ public class UsageMetricAuthorizationIT {
           .withBasicAuth()
           .withMultiTenancyEnabled()
           .withAuthorizationsEnabled()
-          // set exportInterval via properties because it is not yet supported in unified config
-          .withProperty(
-              "zeebe.broker.experimental.engine.usageMetrics.exportInterval", EXPORT_INTERVAL);
+          .withUnifiedConfig(
+              cfg ->
+                  cfg.getMonitoring()
+                      .getMetrics()
+                      .getUsageMetrics()
+                      .setExportInterval(EXPORT_INTERVAL));
 
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
@@ -97,10 +103,27 @@ public class UsageMetricAuthorizationIT {
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, RESTRICTED);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN);
+
+  @Authenticated(ADMIN)
+  private static CamundaClient adminClient;
+
+  @Authenticated(RESTRICTED)
+  private static CamundaClient restrictedClient;
+
+  @Authenticated(UNAUTHORIZED)
+  private static CamundaClient unauthorizedClient;
+
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient, final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -112,13 +135,31 @@ public class UsageMetricAuthorizationIT {
                     .satisfies(fnRequirements));
   }
 
+  // Tenant assignments are exported asynchronously to secondary storage and used at request time
+  // to resolve a user's authenticated tenants. Without this wait, basic-auth requests can race
+  // and see an empty tenant list, causing tenant-scoped queries to return 0 results.
+  private static void waitForUsersAssignedToTenant(
+      final CamundaClient camundaClient, final String tenant, final String... usernames) {
+    Awaitility.await("users " + Arrays.asList(usernames) + " assigned to tenant " + tenant)
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newUsersByTenantSearchRequest(tenant)
+                            .send()
+                            .join()
+                            .items()
+                            .stream()
+                            .map(TenantUser::getUsername))
+                    .contains(usernames));
+  }
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, RESTRICTED, TENANT_A);
+    waitForUsersAssignedToTenant(adminClient, TENANT_A, ADMIN, RESTRICTED);
+    waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN);
 
     // Create PIs & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
@@ -130,34 +171,23 @@ public class UsageMetricAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideParameters")
-  void searchShouldReturnAssignedAndAuthorizedTenantMetricsOnly(
-      final TestUser testUser, final UsageMetricsStatisticsImpl expected) {
-    // given
+  void searchShouldReturnAssignedAndAuthorizedTenantMetricsOnly(final TestCase testCase) {
+    // when
+    final var actual =
+        testCase
+            .client()
+            .newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D)
+            .withTenants(true)
+            .send()
+            .join();
 
-    try (final CamundaClient client = createClient(testUser)) {
-      // when
-      final var actual =
-          client.newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D).withTenants(true).send().join();
-
-      // then
-      assertThat(actual.getProcessInstances()).isEqualTo(expected.getProcessInstances());
-      assertThat(actual.getDecisionInstances()).isEqualTo(expected.getDecisionInstances());
-      assertThat(actual.getAssignees()).isEqualTo(expected.getAssignees());
-      assertThat(actual.getActiveTenants()).isEqualTo(expected.getActiveTenants());
-      assertThat(actual.getTenants()).containsExactlyInAnyOrderEntriesOf(expected.getTenants());
-    }
-  }
-
-  private static CamundaClient createClient(final TestUser user) {
-    return BROKER
-        .newClientBuilder()
-        .preferRestOverGrpc(true)
-        .credentialsProvider(
-            new BasicAuthCredentialsProviderBuilder()
-                .username(user.username())
-                .password(user.password())
-                .build())
-        .build();
+    // then
+    final UsageMetricsStatistics expected = testCase.expected();
+    assertThat(actual.getProcessInstances()).isEqualTo(expected.getProcessInstances());
+    assertThat(actual.getDecisionInstances()).isEqualTo(expected.getDecisionInstances());
+    assertThat(actual.getAssignees()).isEqualTo(expected.getAssignees());
+    assertThat(actual.getActiveTenants()).isEqualTo(expected.getActiveTenants());
+    assertThat(actual.getTenants()).containsExactlyInAnyOrderEntriesOf(expected.getTenants());
   }
 
   private static DeploymentEvent deployResource(
@@ -168,15 +198,6 @@ public class UsageMetricAuthorizationIT {
         .tenantId(tenantId)
         .send()
         .join();
-  }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
   private static void startProcessInstance(
@@ -190,10 +211,10 @@ public class UsageMetricAuthorizationIT {
         .join();
   }
 
-  public static Stream<Arguments> provideParameters() {
+  public static Stream<TestCase> provideParameters() {
     return Stream.of(
-        Arguments.of(
-            ADMIN_USER,
+        new TestCase(
+            adminClient,
             new UsageMetricsStatisticsImpl(
                 2,
                 0,
@@ -204,10 +225,12 @@ public class UsageMetricAuthorizationIT {
                     new UsageMetricsStatisticsItemImpl(1, 0, 0),
                     TENANT_B,
                     new UsageMetricsStatisticsItemImpl(1, 0, 0)))),
-        Arguments.of(
-            RESTRICTED_USER,
+        new TestCase(
+            restrictedClient,
             new UsageMetricsStatisticsImpl(
                 1, 0, 0, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(1, 0, 0)))),
-        Arguments.of(UNAUTHORIZED_USER, new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())));
+        new TestCase(unauthorizedClient, new UsageMetricsStatisticsImpl(0, 0, 0, 0, Map.of())));
   }
+
+  private record TestCase(CamundaClient client, UsageMetricsStatistics expected) {}
 }

@@ -34,11 +34,13 @@ public final class ValueTypes {
           ValueType.PROCESS_INSTANCE_CREATION,
           ValueType.DECISION_EVALUATION,
           ValueType.PROCESS_INSTANCE_MODIFICATION,
+          ValueType.PROCESS_INSTANCE_BUSINESS_ID,
           ValueType.SIGNAL,
           ValueType.COMMAND_DISTRIBUTION,
           ValueType.PROCESS_INSTANCE_BATCH,
           ValueType.RESOURCE_DELETION,
           ValueType.USER_TASK,
+          ValueType.USER_TASK_LOOKUP,
           ValueType.PROCESS_INSTANCE_MIGRATION,
           ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
           ValueType.COMPENSATION_SUBSCRIPTION,
@@ -60,7 +62,10 @@ public final class ValueTypes {
           ValueType.CONDITIONAL_SUBSCRIPTION,
           ValueType.CONDITIONAL_EVALUATION,
           ValueType.EXPRESSION,
-          ValueType.GLOBAL_LISTENER);
+          ValueType.GLOBAL_LISTENER,
+          ValueType.AGENT_INSTANCE,
+          ValueType.PROBE,
+          ValueType.PROBE_BATCH);
 
   private ValueTypes() {}
 

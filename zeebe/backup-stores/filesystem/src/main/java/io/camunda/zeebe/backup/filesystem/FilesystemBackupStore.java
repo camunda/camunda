@@ -7,12 +7,21 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
+import static io.camunda.zeebe.backup.common.BackupStorePaths.CONTENTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.METADATA_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.METADATA_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
@@ -24,7 +33,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -47,13 +56,7 @@ public final class FilesystemBackupStore implements BackupStore {
       "Expected to restore from backup with id '%s', but does not exist.";
   private static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  private static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  private static final String SEGMENTS_FILESET_NAME = "segments";
-  private static final String CONTENTS_PATH = "contents";
-  private static final String MANIFESTS_PATH = "manifests";
   private static final String RANGES_PATH = "ranges";
-  private static final String METADATA_PATH = "metadata";
-  private static final String METADATA_FILE = "metadata.json";
 
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -71,10 +74,10 @@ public final class FilesystemBackupStore implements BackupStore {
     this.config = config;
     this.executor = executor;
 
-    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
-    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
+    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_DIRECTORY_NAME);
+    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_DIRECTORY_NAME);
     rangesDir = Path.of(config.basePath()).resolve(RANGES_PATH);
-    metadataBaseDir = Path.of(config.basePath()).resolve(METADATA_PATH);
+    metadataBaseDir = Path.of(config.basePath()).resolve(METADATA_DIRECTORY_NAME);
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
@@ -100,7 +103,7 @@ public final class FilesystemBackupStore implements BackupStore {
             fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
             manifestManager.completeManifest(manifest);
           } catch (final Exception e) {
-            manifestManager.markAsFailed(manifest.id(), e.getMessage());
+            manifestManager.markAsFailed(manifest.id(), e.toString());
             throw e;
           }
         },
@@ -121,9 +124,13 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+  public CompletableFuture<List<BackupStatus>> list(
+      final BackupIdentifierWildcard wildcard, final ListOptions options) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard, options).stream()
+                .map(Manifest::toStatus)
+                .toList(),
         executor);
   }
 
@@ -160,13 +167,14 @@ public final class FilesystemBackupStore implements BackupStore {
                     ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
+              final var descriptor = requireNonNull(manifest.descriptor());
               final var snapshot =
                   fileSetManager.restore(
                       id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
               final var segments =
                   fileSetManager.restore(
                       id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
-              yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
+              yield new BackupImpl(id, descriptor, snapshot, segments);
             }
           };
         },
@@ -189,7 +197,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.supplyAsync(
         () -> {
           final var manifest = manifestManager.getManifest(id);
-          manifestManager.markAsDeleted(manifest);
+          manifestManager.markAsDeleted(requireNonNull(manifest));
           return BackupStatusCode.DELETED;
         },
         executor);
@@ -200,7 +208,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve(METADATA_FILE);
+          final var metadataPath = metadataDir.resolve(METADATA_OBJECT_NAME);
           try {
             FileUtil.ensureDirectoryExists(metadataDir);
             Files.write(
@@ -222,7 +230,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.supplyAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve(METADATA_FILE);
+          final var metadataPath = metadataDir.resolve(METADATA_OBJECT_NAME);
           if (!Files.exists(metadataPath)) {
             return Optional.empty();
           }
@@ -301,7 +309,7 @@ public final class FilesystemBackupStore implements BackupStore {
         }
       }
       Files.delete(traversePath);
-      traversePath = traversePath.getParent();
+      traversePath = requireNonNull(traversePath.getParent());
     }
     FileUtil.flushDirectory(traversePath);
   }

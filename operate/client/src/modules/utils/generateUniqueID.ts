@@ -7,7 +7,12 @@
  */
 
 const generateUniqueID = () => {
-  return (Date.now() + Math.floor(Math.random() * 100)).toString();
+  return (
+    crypto.randomUUID?.() ??
+    Array.from(crypto.getRandomValues(new Uint32Array(4)), (value) =>
+      value.toString(16).padStart(8, '0'),
+    ).join('')
+  );
 };
 
 export {generateUniqueID};

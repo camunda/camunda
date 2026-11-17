@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.util.Environment;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public class BrokerCfg {
 
@@ -32,6 +34,10 @@ public class BrokerCfg {
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
   private boolean executionMetricsExporterEnabled;
+
+  // Safeguard: exclude from Jackson serialization to prevent accidental exposure (e.g. logging,
+  // debug endpoints). Primary sanitization is handled by ConfigSanitizingFunction.
+  @JsonIgnore private @Nullable String licenseKey;
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -148,8 +154,16 @@ public class BrokerCfg {
     return processingCfg;
   }
 
-  public void setProcessingCfg(final ProcessingCfg cfg) {
+  public void setProcessing(final ProcessingCfg cfg) {
     processingCfg = cfg;
+  }
+
+  /**
+   * @deprecated use {@link #setProcessing(ProcessingCfg)} instead
+   */
+  @Deprecated
+  public void setProcessingCfg(final ProcessingCfg cfg) {
+    setProcessing(cfg);
   }
 
   public ExperimentalCfg getExperimental() {
@@ -158,6 +172,14 @@ public class BrokerCfg {
 
   public void setExperimental(final ExperimentalCfg experimental) {
     this.experimental = experimental;
+  }
+
+  public @Nullable String getLicenseKey() {
+    return licenseKey;
+  }
+
+  public void setLicenseKey(final @Nullable String licenseKey) {
+    this.licenseKey = licenseKey;
   }
 
   @Override

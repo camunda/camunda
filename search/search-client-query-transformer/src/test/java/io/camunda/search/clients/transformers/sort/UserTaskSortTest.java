@@ -149,4 +149,30 @@ public class UserTaskSortTest extends AbstractSortTransformerTest {
 
     assertThat(followUpDateAsc).isTrue();
   }
+
+  @Test
+  public void shouldApplySortConditionByBusinessId() {
+    // given
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
+    final var request =
+        SearchQueryBuilders.userTaskSearchQuery(
+            (q) -> q.filter(userTaskStateFilter).sort((s) -> s.businessId().desc()));
+
+    // when
+    final var sort = transformRequest(request);
+
+    // then
+    Assertions.assertThat(sort).isNotNull();
+    Assertions.assertThat(sort).hasSize(2); // Assert has key + businessId
+
+    // Check if "businessId" is present in any position
+    final boolean businessIdDesc =
+        sort.stream()
+            .anyMatch(
+                s ->
+                    s.field().field().equals("businessId")
+                        && s.field().order().equals(SortOrder.DESC));
+
+    assertThat(businessIdDesc).isTrue();
+  }
 }

@@ -46,12 +46,15 @@ test.describe('Job Update API Tests', () => {
 
     await test.step('PATCH update the job', async () => {
       await expect(async () => {
-        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-          headers: jsonHeaders(),
-          data: {
-            changeset: {retries: 1, timeout: 9000},
+        const updateRes = await request.patch(
+          buildUrl('/jobs/{jobKey}', {jobKey}),
+          {
+            headers: jsonHeaders(),
+            data: {
+              changeset: {retries: 1, timeout: 9000},
+            },
           },
-        });
+        );
         await assertStatusCode(updateRes, 204);
       }).toPass(defaultAssertionOptions);
     });
@@ -61,13 +64,16 @@ test.describe('Job Update API Tests', () => {
     const jobKey = 2251799813738612; // non-existing
 
     await test.step('Send update for non-existing job', async () => {
-      const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-        headers: jsonHeaders(),
-        data: {
-          changeset: {retries: 0, timeout: 0},
-          operationReference: 0,
+      const updateRes = await request.patch(
+        buildUrl('/jobs/{jobKey}', {jobKey}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            changeset: {retries: 0, timeout: 0},
+            operationReference: 0,
+          },
         },
-      });
+      );
 
       await assertNotFoundRequest(
         updateRes,
@@ -80,13 +86,16 @@ test.describe('Job Update API Tests', () => {
     const jobKey = 2251799813738612; // non-existing
 
     await test.step('Send invalid payload to provoke a bad request', async () => {
-      const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-        headers: jsonHeaders(),
-        data: {
-          changeset: {retries: 'zero', timeout: 'zero'},
-          operationReference: 'invalid',
+      const updateRes = await request.patch(
+        buildUrl('/jobs/{jobKey}', {jobKey}),
+        {
+          headers: jsonHeaders(),
+          data: {
+            changeset: {retries: 'zero', timeout: 'zero'},
+            operationReference: 'invalid',
+          },
         },
-      });
+      );
       await assertBadRequest(updateRes, '');
     });
   });

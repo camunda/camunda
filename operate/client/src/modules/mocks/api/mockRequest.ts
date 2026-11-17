@@ -43,14 +43,18 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
       options?: {
         expectPolling?: boolean;
         mockResolverFn?: MockedFunction<() => void>;
+        requestBodyResolverFn?: MockedFunction<(body: unknown) => void>;
         statusCode?: number;
       },
     ) => {
       mockServer.use(
         http.post(
           url,
-          ({request}) => {
+          async ({request}) => {
             options?.mockResolverFn?.();
+            if (options?.requestBodyResolverFn) {
+              options.requestBodyResolverFn(await request.json());
+            }
             checkPollingHeader({
               req: request,
               expectPolling: options?.expectPolling,
@@ -265,6 +269,9 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
               req: request,
               expectPolling: options?.expectPolling,
             });
+            if (typeof responseData === 'string') {
+              return HttpResponse.text(responseData);
+            }
             return HttpResponse.json(responseData);
           },
           {once: true},

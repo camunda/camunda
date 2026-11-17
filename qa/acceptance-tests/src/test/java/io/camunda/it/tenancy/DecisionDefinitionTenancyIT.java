@@ -14,12 +14,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -53,14 +55,16 @@ public class DecisionDefinitionTenancyIT {
   @UserDefinition
   private static final TestUser USER2_USER = new TestUser(USER2, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, USER1);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN);
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, USER1, TENANT_A);
-
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
     deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
 
@@ -169,15 +173,6 @@ public class DecisionDefinitionTenancyIT {
                 .formatted(decisionDefinition.getDecisionKey()));
   }
 
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
-  }
-
   private static void deployResource(
       final CamundaClient camundaClient, final String resourceName, final String tenant) {
     camundaClient
@@ -191,7 +186,7 @@ public class DecisionDefinitionTenancyIT {
   private static void waitForDecisionDefinitionsToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

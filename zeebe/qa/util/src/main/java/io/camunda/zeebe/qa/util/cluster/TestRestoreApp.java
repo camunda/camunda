@@ -16,28 +16,25 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final Camunda config;
   private long[] backupId;
   private Instant from;
   private Instant to;
+  private String physicalTenantId;
+  private boolean allTenants;
 
   public TestRestoreApp() {
     this(new Camunda());
   }
 
   public TestRestoreApp(final Camunda config) {
-    super(RestoreApp.class);
-    this.config = config;
-
-    //noinspection resource
-    withBean("config", config, Camunda.class).withAdditionalProfile(Profile.RESTORE);
+    super(config, RestoreApp.class);
+    withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override
@@ -47,7 +44,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
   }
 
   @Override
@@ -61,21 +58,23 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   }
 
   @Override
-  public TestRestoreApp withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(config);
-    return this;
-  }
-
-  @Override
   protected String[] commandLineArgs() {
     final List<String> args = new ArrayList<>(List.of(super.commandLineArgs()));
     if (backupId != null) {
       args.add(
           "--backupId="
               + Arrays.stream(backupId).mapToObj(Long::toString).collect(Collectors.joining(",")));
-    } else if (from != null && to != null) {
+    }
+    if (from != null) {
       args.add("--from=" + from);
+    }
+    if (to != null) {
       args.add("--to=" + to);
+    }
+    if (allTenants) {
+      args.add("--allTenants");
+    } else if (physicalTenantId != null) {
+      args.add("--tenantId=" + physicalTenantId);
     }
     return args.toArray(String[]::new);
   }
@@ -90,9 +89,23 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     return this;
   }
 
+  /**
+   * Either bound may be {@code null} to leave out its {@code --from} or {@code --to} flag. The
+   * restore app rejects a time range combined with {@link #withBackupId(long...)}.
+   */
   public TestRestoreApp withTimeRange(final Instant from, final Instant to) {
     this.from = from;
     this.to = to;
+    return this;
+  }
+
+  public TestRestoreApp withPhysicalTenant(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
+    return this;
+  }
+
+  public TestRestoreApp withAllPhysicalTenants() {
+    allTenants = true;
     return this;
   }
 }

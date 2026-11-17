@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
+import static io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_EXTERNAL_ID_PATTERN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -17,8 +17,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.RoleCreateRequest;
 import io.camunda.gateway.protocol.model.RoleUpdateRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -28,12 +29,12 @@ import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -53,7 +54,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class RoleControllerTest {
 
   static final String ROLE_BASE_URL = "/v2/roles";
-  static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(RoleController.class)
@@ -64,11 +66,14 @@ public class RoleControllerTest {
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
     }
 
     @ParameterizedTest
@@ -92,7 +97,12 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName).description(description))
+          .bodyValue(
+              RoleCreateRequest.Builder.create()
+                  .roleId(roleId)
+                  .name(roleName)
+                  .description(description)
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated();
@@ -113,7 +123,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(RoleCreateRequest.Builder.create().roleId(roleId).name(roleName).build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -146,7 +156,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(RoleCreateRequest.Builder.create().roleId(roleId).name(roleName).build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -179,7 +189,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(RoleCreateRequest.Builder.create().roleId(roleId).name(roleName).build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -211,7 +221,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+          .bodyValue(RoleCreateRequest.Builder.create().roleId(roleId).name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -246,7 +256,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+          .bodyValue(RoleCreateRequest.Builder.create().roleId(roleId).name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -260,7 +270,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, ROLE_BASE_URL),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, ROLE_BASE_URL),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -288,7 +298,8 @@ public class RoleControllerTest {
           .uri("%s/%s".formatted(ROLE_BASE_URL, roleId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(
+              RoleUpdateRequest.Builder.create().name(roleName).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -322,7 +333,8 @@ public class RoleControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(
+              RoleUpdateRequest.Builder.create().name(roleName).description(description).build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -363,7 +375,8 @@ public class RoleControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(
+              RoleUpdateRequest.Builder.create().name(roleName).description(description).build())
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -393,7 +406,8 @@ public class RoleControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+          .bodyValue(
+              RoleUpdateRequest.Builder.create().name(roleName).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -566,7 +580,7 @@ public class RoleControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -597,7 +611,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -771,7 +785,7 @@ public class RoleControllerTest {
                 "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -802,7 +816,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -915,7 +929,7 @@ public class RoleControllerTest {
                   "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -945,7 +959,7 @@ public class RoleControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1059,7 +1073,7 @@ public class RoleControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1090,7 +1104,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1203,7 +1217,7 @@ public class RoleControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1233,7 +1247,7 @@ public class RoleControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1248,16 +1262,19 @@ public class RoleControllerTest {
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
     }
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldAssignExternalGroupToRoleAndReturnNoContentWhenGroupsAreExternallyManaged() {
@@ -1284,7 +1301,7 @@ public class RoleControllerTest {
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldUnassignExternalGroupFromRoleAndReturnNoContentWhenGroupsAreExternallyManaged() {
@@ -1314,7 +1331,7 @@ public class RoleControllerTest {
       @Bean
       @Primary
       public IdentifierValidator byogIdentifierValidator() {
-        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
+        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_PATTERN);
       }
     }
   }

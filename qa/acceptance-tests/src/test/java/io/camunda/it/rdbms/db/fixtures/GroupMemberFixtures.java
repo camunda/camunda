@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.fixtures;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel.Builder;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import java.util.function.Function;
 
 public final class GroupMemberFixtures extends CommonFixtures {

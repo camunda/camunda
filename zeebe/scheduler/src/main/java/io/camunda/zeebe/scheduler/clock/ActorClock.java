@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler.clock;
 import io.camunda.zeebe.scheduler.ActorThread;
 import java.time.Instant;
 import java.time.InstantSource;
+import org.jspecify.annotations.Nullable;
 
 public interface ActorClock extends InstantSource {
   boolean update();
@@ -20,7 +21,7 @@ public interface ActorClock extends InstantSource {
 
   long getNanoTime();
 
-  static ActorClock current() {
+  static @Nullable ActorClock current() {
     final ActorThread current = ActorThread.current();
     return current != null ? current.getClock() : null;
   }

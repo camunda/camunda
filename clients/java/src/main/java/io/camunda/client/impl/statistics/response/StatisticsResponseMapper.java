@@ -37,6 +37,7 @@ import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersio
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatisticsItem;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
+import io.camunda.client.api.statistics.response.ProcessInstanceWaitStateStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.search.response.SearchResponseImpl;
@@ -51,6 +52,7 @@ import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryRe
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.client.protocol.rest.StatusMetric;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
@@ -93,6 +95,17 @@ public class StatisticsResponseMapper {
     if (response.getItems() != null) {
       return response.getItems().stream()
           .map(ProcessElementStatisticsImpl::new)
+          .collect(Collectors.toList());
+    }
+    return Collections.emptyList();
+  }
+
+  public static List<ProcessInstanceWaitStateStatistics>
+      toProcessInstanceWaitStateStatisticsResponse(
+          final ProcessInstanceWaitStateStatisticsQueryResult response) {
+    if (response.getItems() != null) {
+      return response.getItems().stream()
+          .map(ProcessInstanceWaitStateStatisticsImpl::new)
           .collect(Collectors.toList());
     }
     return Collections.emptyList();

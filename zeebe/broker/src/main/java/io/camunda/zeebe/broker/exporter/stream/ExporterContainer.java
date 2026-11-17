@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -39,7 +41,9 @@ final class ExporterContainer implements Controller {
   private final ExporterContext context;
   private final Exporter exporter;
   private long position;
-  private boolean exporterIsSoftPaused = false;
+
+  private ExporterPhase phase = ExporterPhase.EXPORTING;
+
   private long lastUnacknowledgedPosition;
   private long lastAcknowledgedPosition;
   private byte[] lastExportedMetadata;
@@ -47,19 +51,28 @@ final class ExporterContainer implements Controller {
   private ExporterMetrics metrics;
   private ActorControl actor;
   private final ExporterInitializationInfo initializationInfo;
+  private final ExporterReplayControl replayControl;
+  private boolean replayAcceptedOnReopen;
+  private boolean removed;
 
   ExporterContainer(
       final ExporterDescriptor descriptor,
-      final int partitionId,
+      final PartitionId partitionId,
+      final String clusterId,
+      final String licenseKey,
       final ExporterInitializationInfo initializationInfo,
       final MeterRegistry meterRegistry,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final ExporterReplayControl replayControl) {
     this.initializationInfo = initializationInfo;
+    this.replayControl = replayControl;
     context =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
             partitionId,
+            clusterId,
+            licenseKey,
             meterRegistry,
             clock);
 
@@ -74,14 +87,13 @@ final class ExporterContainer implements Controller {
     this.actor = actor;
     this.metrics = metrics;
     exportersState = state;
-    if (phase == ExporterPhase.SOFT_PAUSED) {
-      softPauseExporter();
-    }
+    this.phase = phase;
   }
 
   private void initPosition() {
     position = exportersState.getPosition(getId());
     lastUnacknowledgedPosition = position;
+    lastAcknowledgedPosition = position;
     if (position == ExportersState.VALUE_NOT_FOUND) {
       exportersState.setPosition(getId(), -1L);
     }
@@ -114,6 +126,7 @@ final class ExporterContainer implements Controller {
 
   void openExporter() {
     LOG.debug("Open exporter with id '{}'", getId());
+    replayAcceptedOnReopen = false;
     ThreadContextUtil.runWithClassLoader(
         () -> exporter.open(this), exporter.getClass().getClassLoader());
   }
@@ -156,10 +169,18 @@ final class ExporterContainer implements Controller {
   }
 
   private void updateExporterState(final long eventPosition, final byte[] metadata) {
+    // A removed exporter may still acknowledge a position while closing, e.g. when flushing, and
+    // that update runs only after the director removed the exporter's state. Writing it would
+    // re-add
+    // a position that never advances again, and holds back compaction until the next restart.
+    if (removed) {
+      return;
+    }
+
     if (position < eventPosition) {
       lastAcknowledgedPosition = eventPosition;
       lastExportedMetadata = metadata;
-      if (!exporterIsSoftPaused) {
+      if (phase == ExporterPhase.EXPORTING) {
         DirectBuffer metadataBuffer = null;
         if (metadata != null) {
           metadataBuffer = BufferUtil.wrapArray(metadata);
@@ -199,6 +220,26 @@ final class ExporterContainer implements Controller {
         .map(BufferUtil::bufferAsArray);
   }
 
+  @Override
+  public boolean requestReplay(final long lastExportedPosition) {
+    LOG.info(
+        "Replay requested for exporter '{}': resetting position from {} to {}",
+        getId(),
+        position,
+        lastExportedPosition);
+
+    final boolean replayResult = replayControl.requestReplay(lastExportedPosition);
+    if (replayResult) {
+      position = lastExportedPosition;
+      lastUnacknowledgedPosition = lastExportedPosition;
+      lastAcknowledgedPosition = lastExportedPosition;
+      lastExportedMetadata = null;
+      exportersState.setPosition(getId(), lastExportedPosition);
+      replayAcceptedOnReopen = true;
+    }
+    return replayResult;
+  }
+
   public String getId() {
     return context.getConfiguration().getId();
   }
@@ -217,7 +258,7 @@ final class ExporterContainer implements Controller {
         () -> exporter.configure(context), exporter.getClass().getClassLoader());
   }
 
-  boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
+  ExportOutcome exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
     try {
       if (position < typedEvent.getPosition()) {
         if (acceptRecord(rawMetadata, typedEvent)) {
@@ -226,19 +267,61 @@ final class ExporterContainer implements Controller {
           updatePositionOnSkipIfUpToDate(typedEvent.getPosition());
         }
       }
-      return true;
+      return ExportOutcome.EXPORTED;
+    } catch (final ExporterException ex) {
+      if (ex.getCompensation() == ExporterException.Compensation.REOPEN) {
+        context
+            .getLogger()
+            .warn(
+                "Export error for exporter '{}' requires reopen to re-sync position", getId(), ex);
+        try {
+          reopenExporter();
+          if (replayAcceptedOnReopen) {
+            context
+                .getLogger()
+                .info(
+                    "Exporter '{}' accepted a replay during reopen; abandoning the current record"
+                        + " so it is redelivered in order from the rewound position",
+                    getId());
+            return ExportOutcome.ABORT_REPLAY;
+          }
+        } catch (final Exception reopenEx) {
+          context.getLogger().error("Failed to reopen exporter '{}'", getId(), reopenEx);
+        }
+      } else {
+        context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
+      }
+      return ExportOutcome.RETRY;
     } catch (final Exception ex) {
       context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
-      return false;
+      return ExportOutcome.RETRY;
     }
   }
 
-  void softPauseExporter() {
-    exporterIsSoftPaused = true;
+  void reopenExporter() {
+    try {
+      ThreadContextUtil.runCheckedWithClassLoader(
+          exporter::close, exporter.getClass().getClassLoader());
+    } catch (final Exception e) {
+      context.getLogger().error("Error closing exporter '{}' during reopen", getId(), e);
+    }
+    openExporter();
   }
 
-  void undoSoftPauseExporter() {
-    exporterIsSoftPaused = false;
+  void softPauseExporter() {
+    phase = ExporterPhase.SOFT_PAUSED;
+  }
+
+  void hardPauseExporter() {
+    phase = ExporterPhase.PAUSED;
+  }
+
+  /**
+   * Resumes the exporter from either pause mode. Always flushes {@code lastAcknowledgedPosition}/
+   * {@code lastExportedMetadata}.
+   */
+  void resumeExporter() {
+    phase = ExporterPhase.EXPORTING;
     updateExporterState(lastAcknowledgedPosition, lastExportedMetadata);
   }
 
@@ -246,6 +329,12 @@ final class ExporterContainer implements Controller {
     ThreadContextUtil.runWithClassLoader(
         () -> exporter.export(record), exporter.getClass().getClassLoader());
     lastUnacknowledgedPosition = record.getPosition();
+  }
+
+  /** Closes the exporter for good, ignoring any position it acknowledges from now on. */
+  void remove() {
+    removed = true;
+    close();
   }
 
   public void close() {

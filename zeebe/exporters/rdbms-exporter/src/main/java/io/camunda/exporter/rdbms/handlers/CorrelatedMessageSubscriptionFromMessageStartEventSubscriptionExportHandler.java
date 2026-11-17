@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.ExportUtil.emptyToNull;
 import static io.camunda.exporter.rdbms.utils.ExportUtil.tenantOrDefault;
 
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel.Builder;
@@ -46,6 +47,7 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExpor
         // processes started via message are always root process instances
         .rootProcessInstanceKey(value.getProcessInstanceKey())
         .subscriptionType(MessageSubscriptionType.START_EVENT)
+        .businessId(emptyToNull(value.getBusinessId()))
         .tenantId(tenantOrDefault(value.getTenantId()));
   }
 

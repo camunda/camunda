@@ -28,6 +28,7 @@ import type {OverlayData} from './overlayTypes';
 type OnElementSelection = (
   elementId?: string,
   isMultiInstance?: boolean,
+  clickedElementId?: string,
 ) => void;
 
 type OnElementDoubleClick = (elementId: string) => void;
@@ -200,6 +201,7 @@ class BpmnJS {
         selectedElementIds.forEach((elementId) => {
           this.#addMarker(elementId, 'op-selected');
           if (hasOuterBorderOnSelection) {
+            this.#ensureOutline(elementId);
             this.#addMarker(elementId, 'op-selected-frame');
           }
           this.selectedElement = elementRegistry?.getGraphics(elementId);
@@ -227,6 +229,7 @@ class BpmnJS {
       selectedElementIds.forEach((elementId) => {
         this.#removeMarker(elementId, 'op-selected-frame');
         if (hasOuterBorderOnSelection) {
+          this.#ensureOutline(elementId);
           this.#addMarker(elementId, 'op-selected-frame');
         }
       });
@@ -330,6 +333,16 @@ class BpmnJS {
     }
   };
 
+  #ensureOutline = (elementId: string) => {
+    const element = this.#navigatedViewer
+      ?.get('elementRegistry')
+      ?.get(elementId);
+
+    if (element !== undefined) {
+      this.#navigatedViewer?.get('outline')?.createOutline(element);
+    }
+  };
+
   #addTooltip = (elementId: string, tooltipText: string) => {
     const titleElement = document.querySelector(
       `[data-element-id="${elementId}"] title`,
@@ -363,8 +376,9 @@ class BpmnJS {
     const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
     const graphicsFactory = this.#navigatedViewer?.get('graphicsFactory');
     const element = elementRegistry?.get(id);
+
     if (element?.di !== undefined) {
-      element.di.set('stroke', color);
+      element.di.set('border-color', color);
 
       const gfx = elementRegistry?.getGraphics(element);
       if (gfx !== undefined) {
@@ -431,7 +445,7 @@ class BpmnJS {
         isMultiInstance(element.businessObject),
       );
     } else if (this.#selectedElementIds !== undefined) {
-      this.onElementSelection?.(undefined);
+      this.onElementSelection?.(undefined, undefined, element.id);
     }
   };
 

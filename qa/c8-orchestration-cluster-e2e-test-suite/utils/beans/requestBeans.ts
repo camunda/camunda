@@ -42,63 +42,7 @@ export const jobResponseFields = [
   'kind',
   'listenerEventType',
 ];
-export const jobSearchPageResponseRequiredFields = ['totalItems'];
 export const userTaskSearchPageResponseRequiredFields = ['totalItems'];
-export const jobSearchItemResponseFields = [
-  'customHeaders',
-  'elementInstanceKey',
-  'hasFailedWithRetriesLeft',
-  'jobKey',
-  'kind',
-  'listenerEventType',
-  'processDefinitionId',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'retries',
-  'state',
-  'tenantId',
-  'type',
-  'worker',
-];
-export const userTaskSearchItemResponseFields = [
-  'name',
-  'state',
-  'assignee',
-  'elementId',
-  'candidateGroups',
-  'candidateUsers',
-  'processDefinitionId',
-  'creationDate',
-  'completionDate',
-  'followUpDate',
-  'dueDate',
-  'tenantId',
-  'externalFormReference',
-  'processDefinitionVersion',
-  'priority',
-  'userTaskKey',
-  'elementInstanceKey',
-  'processName',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'formKey',
-];
-export const clusterTopologyResponseFields = [
-  'brokers',
-  'clusterSize',
-  'partitionsCount',
-  'replicationFactor',
-  'gatewayVersion',
-  'lastCompletedChangeId',
-];
-export const brokerResponseFields = [
-  'nodeId',
-  'host',
-  'port',
-  'partitions',
-  'version',
-];
-export const partitionsResponseFields = ['partitionId', 'role', 'health'];
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const tenantRequiredFields: string[] = [
   'tenantId',
@@ -113,14 +57,6 @@ export const mappingRuleRequiredFields: string[] = [
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
 export const authorizedComponentRequiredFields: string[] = ['authorizationKey'];
-export const authorizationRequiredFields: string[] = [
-  'ownerId',
-  'ownerType',
-  'resourceType',
-  'resourceId',
-  'permissionTypes',
-  'authorizationKey',
-];
 export const authorizationRequiredFieldsWithoutPermissionTypes: string[] = [
   'ownerId',
   'ownerType',
@@ -163,40 +99,6 @@ export const decisionInstanceRequiredFields: string[] = [
   'elementInstanceKey',
   'rootDecisionDefinitionKey',
 ];
-export const getDecisionInstanceResponseRequiredFields: string[] = [
-  'decisionEvaluationInstanceKey',
-  'state',
-  'evaluationDate',
-  'decisionDefinitionId',
-  'decisionDefinitionName',
-  'decisionDefinitionVersion',
-  'decisionDefinitionType',
-  'result',
-  'tenantId',
-  'decisionEvaluationKey',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'decisionDefinitionKey',
-  'elementInstanceKey',
-  'evaluatedInputs',
-  'matchedRules',
-  'rootDecisionDefinitionKey',
-];
-export const evaluateDecisionRequiredFields: string[] = [
-  'decisionDefinitionId',
-  'decisionDefinitionName',
-  'decisionDefinitionVersion',
-  'decisionRequirementsId',
-  'output',
-  'failedDecisionDefinitionId',
-  'failureMessage',
-  'tenantId',
-  'decisionDefinitionKey',
-  'decisionRequirementsKey',
-  'decisionInstanceKey',
-  'decisionEvaluationKey',
-  'evaluatedDecisions',
-];
 export const authenticationRequiredFields: string[] = [
   'username',
   'displayName',
@@ -208,58 +110,10 @@ export const authenticationRequiredFields: string[] = [
   'c8Links',
   'canLogout',
 ];
-export const licenseRequiredFields: string[] = [
-  'validLicense',
-  'licenseType',
-  'isCommercial',
-];
-export const messageSubscriptionRequiredFields = [
-  'messageSubscriptionKey',
-  'processDefinitionId',
-  'processInstanceKey',
-  'elementId',
-  'elementInstanceKey',
-  'messageSubscriptionState',
-  'lastUpdatedDate',
-  'messageName',
-  'correlationKey',
-  'tenantId',
-];
-export const documentRequiredFields = [
-  'camunda.document.type',
-  'storeId',
-  'documentId',
-  'contentHash',
-  'metadata',
-];
-export const multipleDocumentsRequiredFields = [
-  'createdDocuments',
-  'failedDocuments',
-];
 export const correlateMessageRequiredFields: string[] = [
   'tenantId',
   'messageKey',
   'processInstanceKey',
-];
-export const correlatedMessageSubscriptionRequiredFields: string[] = [
-  'correlationKey',
-  'correlationTime',
-  'elementId',
-  'elementInstanceKey',
-  'messageKey',
-  'messageName',
-  'partitionId',
-  'processDefinitionId',
-  'processInstanceKey',
-  'subscriptionKey',
-  'tenantId',
-];
-export const usageMetricsGetResponseRequiredFields: string[] = [
-  'activeTenants',
-  'tenants',
-  'processInstances',
-  'decisionInstances',
-  'assignees',
 ];
 export const expectedMessageSubscription1 = {
   messageName: 'Message_143t419',
@@ -525,6 +379,49 @@ export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
   return form;
 }
 
+/**
+ * The content endpoint decides from the stored `metadata.contentType` and never
+ * sniffs the bytes, so callers pass the type they want and the payload is
+ * incidental — except where a test renders the result.
+ */
+export function CREATE_DOCUMENT_REQUEST_WITH_CONTENT_TYPE(
+  fileName: string,
+  contentType: string,
+  // Bytes, not string: File re-encodes a string part as UTF-8.
+  fileContent: string | Uint8Array<ArrayBuffer> = documentFileContent(fileName),
+) {
+  const form = new FormData();
+  form.append('file', new File([fileContent], fileName, {type: contentType}));
+  form.append(
+    'metadata',
+    new Blob([JSON.stringify({contentType, fileName})], {
+      type: 'application/json',
+    }),
+  );
+  return form;
+}
+
+/**
+ * File part with **no** `Content-Type` header, so the server stores a null
+ * content type. Hand-built because Playwright's serializer always labels a
+ * part, which stores the literal `application/octet-stream` instead.
+ */
+export function CREATE_RAW_MULTIPART_WITHOUT_PART_CONTENT_TYPE(
+  fileName: string,
+): {body: Buffer; contentType: string} {
+  const boundary = `----camundaNoPartContentType${Date.now()}`;
+  const body = Buffer.from(
+    `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+      `\r\n` +
+      `${documentFileContent(fileName)}\r\n` +
+      `--${boundary}--\r\n`,
+    'utf8',
+  );
+
+  return {body, contentType: `multipart/form-data; boundary=${boundary}`};
+}
+
 export function EVALUATE_DECISION_EXPECTED_BODY(
   decision: DecisionDeployment,
   output: string,
@@ -788,23 +685,23 @@ export function DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(
 }
 
 // Cluster Variable beans
-export const clusterVariableRequiredFields: string[] = [
-  'name',
-  'value',
-  'scope',
-];
-export const clusterVariableSearchItemRequiredFields: string[] = [
-  'name',
-  'value',
-  'scope',
-  'isTruncated',
-];
-
 export function CREATE_CLUSTER_VARIABLE() {
   const uid = generateUniqueId();
   return {
     name: `cluster-var-${uid}`,
     value: {testKey: `testValue-${uid}`},
+  };
+}
+
+// Name is alphanumeric: a hyphen makes camunda.vars.env.<name> parse as subtraction in FEEL.
+export function CREATE_CLUSTER_VARIABLE_WITH_METADATA(
+  metadata: Record<string, string | number>,
+) {
+  const uid = generateUniqueId();
+  return {
+    name: `clusterVar${uid}`,
+    value: {testKey: `testValue-${uid}`},
+    metadata,
   };
 }
 

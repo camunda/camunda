@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.security.core.authz.TenantAccess;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -38,18 +38,21 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   private final StateWriter stateWriter;
   private final ResourceState resourceState;
   private final TenantState tenantState;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final CslTenantCheck tenantCheck;
 
   public ResourceFetchProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior,
+      final CslTenantCheck tenantCheck) {
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     stateWriter = writers.state();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
-    this.authorizationCheckBehavior = authorizationCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.tenantCheck = tenantCheck;
   }
 
   @Override
@@ -61,7 +64,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
               checkAuthorization(command, resource);
               final var record = asResourceRecord(resource);
               stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   resourceKey, ResourceIntent.FETCHED, record, command);
             },
             () -> {
@@ -83,7 +86,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private static ResourceRecord asResourceRecord(final PersistedResource resource) {
     return new ResourceRecord()
-        .setResource(BufferUtil.wrapString(resource.getResource()))
+        .setResource(resource.getResourceBuffer())
         .setResourceKey(resource.getResourceKey())
         .setResourceId(resource.getResourceId())
         .setResourceName(resource.getResourceName())
@@ -96,8 +99,8 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private Optional<PersistedResource> findResource(
       final TypedRecord<ResourceRecord> command, final long resourceKey) {
-    final var authorizedTenants = authorizationCheckBehavior.getAuthorizedTenantIds(command);
-    return AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
+    return authorizedTenants.wildcard()
         ? findResourceForAnonymouslyAuthorizedTenants(resourceKey)
         : findResourceForAuthenticatedAuthorizedTenants(resourceKey, authorizedTenants);
   }
@@ -110,8 +113,8 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   }
 
   private Optional<PersistedResource> findResourceForAuthenticatedAuthorizedTenants(
-      final long resourceKey, final AuthorizedTenants authorizedTenants) {
-    for (final var tenantId : authorizedTenants.getAuthorizedTenantIds()) {
+      final long resourceKey, final TenantAccess authorizedTenants) {
+    for (final var tenantId : authorizedTenants.tenantIds()) {
       final var optionalResource = resourceState.findResourceByKey(resourceKey, tenantId);
       if (optionalResource.isPresent()) {
         return optionalResource;
@@ -136,16 +139,14 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private void checkAuthorization(
       final TypedRecord<ResourceRecord> command, final PersistedResource resource) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.READ)
-            .tenantId(resource.getTenantId())
-            .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()))
-            .build();
-    if (authorizationCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
-      throw new ForbiddenException(authRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.RESOURCE,
+            PermissionType.READ,
+            BufferUtil.bufferAsString(resource.getResourceId()));
+    if (isAuthorized.isLeft()) {
+      throw new ForbiddenException(isAuthorized.getLeft());
     }
   }
 
@@ -154,7 +155,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
     return ProcessingError.EXPECTED_ERROR;
   }
 

@@ -13,14 +13,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class ExecutableFlowNode extends AbstractFlowElement {
 
   private final List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private final List<ExecutableSequenceFlow> outgoing = new ArrayList<>();
 
-  private Optional<Expression> inputMappings = Optional.empty();
-  private Optional<Expression> outputMappings = Optional.empty();
+  private Optional<InputMappings> inputMappings = Optional.empty();
+  private Optional<OutputMappings> outputMappings = Optional.empty();
 
   private final List<ExecutionListener> executionListeners = new ArrayList<>();
 
@@ -44,23 +45,74 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     incoming.add(flow);
   }
 
-  public Optional<Expression> getInputMappings() {
+  public Optional<InputMappings> getInputMappings() {
     return inputMappings;
   }
 
-  public void setInputMappings(final Expression inputMappings) {
+  public void setInputMappings(final InputMappings inputMappings) {
     this.inputMappings = Optional.of(inputMappings);
   }
 
-  public Optional<Expression> getOutputMappings() {
+  public Optional<OutputMappings> getOutputMappings() {
     return outputMappings;
   }
 
-  public void setOutputMappings(final Expression outputMappings) {
+  public void setOutputMappings(final OutputMappings outputMappings) {
     this.outputMappings = Optional.of(outputMappings);
   }
 
-  public void addListener(
+  /**
+   * Secret references detected in this flow node's input mappings, keyed by the JSON pointer (RFC
+   * 6901) of the leaf each secret belongs to (e.g. {@code /tokens/token}). Empty when no input
+   * mapping references a secret.
+   */
+  public Map<String, Set<SecretReference>> getSecretReferences() {
+    return inputMappings.map(InputMappings::secretReferences).orElse(Map.of());
+  }
+
+  /**
+   * Cluster-variable references detected in this flow node's input mappings, keyed by the JSON
+   * pointer (RFC 6901) of the leaf each reference belongs to (e.g. {@code /tokens/token}). Empty
+   * when no input mapping references a cluster variable.
+   */
+  public Map<String, Set<ClusterVariableReference>> getClusterVariableReferences() {
+    return inputMappings.map(InputMappings::clusterVariableReferences).orElse(Map.of());
+  }
+
+  public List<ExecutionListener> getBeforeAllExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
+        .toList();
+  }
+
+  public List<ExecutionListener> getStartExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.start)
+        .toList();
+  }
+
+  public List<ExecutionListener> getEndExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.end)
+        .toList();
+  }
+
+  public List<ExecutionListener> getCancelExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.cancel)
+        .toList();
+  }
+
+  public boolean hasCancelExecutionListeners() {
+    return executionListeners.stream()
+        .anyMatch(el -> el.getEventType() == ZeebeExecutionListenerEventType.cancel);
+  }
+
+  public boolean hasExecutionListeners() {
+    return !executionListeners.isEmpty();
+  }
+
+  public void addExecutionListener(
       final ZeebeExecutionListenerEventType eventType,
       final Expression type,
       final Expression retries,
@@ -76,19 +128,17 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     executionListeners.add(listener);
   }
 
-  public List<ExecutionListener> getStartExecutionListeners() {
-    return executionListeners.stream()
-        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.start)
-        .toList();
+  public void addExecutionListener(final ExecutionListener listener) {
+    executionListeners.add(listener);
   }
 
-  public List<ExecutionListener> getEndExecutionListeners() {
-    return executionListeners.stream()
-        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.end)
-        .toList();
-  }
-
-  public boolean hasExecutionListeners() {
-    return !executionListeners.isEmpty();
+  /**
+   * Removes all {@code beforeAll} execution listeners from this flow node and returns them. Used
+   * during multi-instance body transformation to re-attach them to the body.
+   */
+  public List<ExecutionListener> removeBeforeAllExecutionListeners() {
+    final List<ExecutionListener> removed = getBeforeAllExecutionListeners();
+    executionListeners.removeAll(removed);
+    return removed;
   }
 }

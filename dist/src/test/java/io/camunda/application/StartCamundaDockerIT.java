@@ -50,14 +50,67 @@ public class StartCamundaDockerIT extends AbstractCamundaDockerIT {
               "components": {
                 "brokerReady": {"status": "UP"},
                 "brokerStartup": {"status": "UP"},
-                "brokerStatus": {"status": "UP"},
-                "indicesCheck": {"status": "UP"},
+                "brokerStatus": {
+                  "status": "UP",
+                  "details": {
+                    "Partition-default-1": {
+                      "id": "Partition-default-1",
+                      "name": "Partition-default-1",
+                      "status": "HEALTHY",
+                      "componentsState": "HEALTHY",
+                      "children": [
+                        {
+                          "id": "SnapshotDirector-1",
+                          "name": "SnapshotDirector-1",
+                          "status": "HEALTHY",
+                          "children": []
+                        },
+                        {
+                          "id": "ZeebePartitionHealth-1",
+                          "name": "ZeebePartitionHealth-1",
+                          "status": "HEALTHY",
+                          "children": []
+                        },
+                        {
+                          "id": "StreamProcessor-1",
+                          "name": "StreamProcessor-1",
+                          "status": "HEALTHY",
+                          "children": []
+                        },
+                        {
+                          "id": "Exporter-1",
+                          "name": "Exporter-1",
+                          "status": "HEALTHY",
+                          "children": []
+                        },
+                        {
+                          "id": "MigrationSnapshotDirector",
+                          "name": "MigrationSnapshotDirector",
+                          "status": "HEALTHY",
+                          "children": []
+                        },
+                        {
+                          "id": "RaftPartition-1",
+                          "name": "RaftPartition-1",
+                          "status": "HEALTHY",
+                          "children": []
+                        }
+                      ]
+                    }
+                  }
+                },
                 "livenessState": {"status": "UP"},
                 "nodeIdProvider":{"status":"UP"},
                 "nodeIdProviderReady":{"status":"UP"},
+                "physicalTenantSchemaInitialization": {
+                  "status": "UP",
+                  "details": {
+                    "default": {"status": "UP", "state": "INITIALIZED"}
+                  }
+                },
                 "readinessState": {"status": "UP"},
                 "schemaReadinessCheck":{"status":"UP"},
-                "searchEngineCheck": {"status": "UP"}
+                "searchEngineStatus":{"status":"UP"}
               },
               "groups": ["liveness", "readiness", "startup", "status"]
             }
@@ -72,11 +125,9 @@ public class StartCamundaDockerIT extends AbstractCamundaDockerIT {
               "status": "UP",
               "components": {
                 "brokerReady": {"status": "UP"},
-                "indicesCheck": {"status": "UP"},
                 "nodeIdProviderReady": {"status": "UP"},
                 "readinessState": {"status": "UP"},
-                "schemaReadinessCheck":{"status":"UP"},
-                "searchEngineCheck": {"status": "UP"}
+                "schemaReadinessCheck":{"status":"UP"}
               }
             }
             """);

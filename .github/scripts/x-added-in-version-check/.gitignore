@@ -1,0 +1,4 @@
+node_modules/
+artefacts/
+.env
+output

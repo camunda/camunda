@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -125,8 +126,7 @@ public final class BatchOperationMultiPartitionTest {
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .contains(BatchOperationIntent.COMPLETED);
-    assertThat(engine.getProcessingState(1).getBatchOperationState().get(batchOperationKey))
-        .isEmpty();
+    assertBatchOperationRemovedFromPartition(batchOperationKey, 1);
 
     for (int i = 2; i <= PARTITION_COUNT; i++) {
       assertThat(
@@ -138,8 +138,7 @@ public final class BatchOperationMultiPartitionTest {
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .contains(BatchOperationIntent.PARTITION_COMPLETED);
-      assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
-          .isEmpty();
+      assertBatchOperationRemovedFromPartition(batchOperationKey, i);
     }
   }
 
@@ -205,8 +204,7 @@ public final class BatchOperationMultiPartitionTest {
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .contains(BatchOperationIntent.PARTITION_COMPLETED);
-      assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
-          .isEmpty();
+      assertBatchOperationRemovedFromPartition(batchOperationKey, i);
     }
 
     // partitions 3 is failed
@@ -218,8 +216,7 @@ public final class BatchOperationMultiPartitionTest {
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .contains(BatchOperationIntent.PARTITION_FAILED);
-    assertThat(engine.getProcessingState(3).getBatchOperationState().get(batchOperationKey))
-        .isEmpty();
+    assertBatchOperationRemovedFromPartition(batchOperationKey, 3);
   }
 
   @Test
@@ -481,5 +478,29 @@ public final class BatchOperationMultiPartitionTest {
     return r.getValue() instanceof CommandDistributionRecordValue
         ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
         : r.getPartitionId();
+  }
+
+  /**
+   * A partition rejects executing a batch operation it no longer holds, which shows that the
+   * completion removed it there.
+   */
+  private void assertBatchOperationRemovedFromPartition(
+      final long batchOperationKey, final int partitionId) {
+    engine
+        .batchOperation()
+        .newExecution()
+        .onPartition(partitionId)
+        .withBatchOperationKey(batchOperationKey)
+        .expectRejection()
+        .execute();
+    final var rejection =
+        RecordingExporter.batchOperationExecutionRecords(BatchOperationExecutionIntent.EXECUTE)
+            .onlyCommandRejections()
+            .withPartitionId(partitionId)
+            .withBatchOperationKey(batchOperationKey)
+            .getFirst();
+    assertThat(rejection.getRejectionType())
+        .describedAs("execution on partition %d", partitionId)
+        .isEqualTo(RejectionType.NOT_FOUND);
   }
 }

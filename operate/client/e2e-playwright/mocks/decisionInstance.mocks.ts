@@ -58,6 +58,7 @@ const mockEvaluatedDecisionInstance: GetDecisionInstanceResponseBody = {
   ],
   decisionDefinitionType: 'DECISION_TABLE',
   result: '"budget"',
+  businessId: null,
 };
 
 const mockEvaluatedDecisionInstancesSearch: QueryDecisionInstancesResponseBody =
@@ -112,6 +113,7 @@ const mockEvaluatedDecisionInstanceWithoutPanels: GetDecisionInstanceResponseBod
     matchedRules: [],
     decisionDefinitionType: 'LITERAL_EXPRESSION',
     result: '"$1000"',
+    businessId: null,
   };
 
 const mockEvaluatedDecisionInstancesSearchWithoutPanels: QueryDecisionInstancesResponseBody =
@@ -166,6 +168,7 @@ const mockFailedDecisionInstance: GetDecisionInstanceResponseBody = {
   matchedRules: [],
   decisionDefinitionType: 'DECISION_TABLE',
   result: 'null',
+  businessId: null,
 };
 
 const mockFailedDecisionInstancesSearch: QueryDecisionInstancesResponseBody = {

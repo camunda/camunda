@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const testRailOptions = {
+const junitOptions = {
   embedAnnotationsAsProperties: true,
   outputFile: './test-results/junit-report.xml',
 };
@@ -31,7 +31,7 @@ function getTestTypeLabel(): string {
 // Reporters
 const useReportersWithoutSlack: any[] = [
   ['list'],
-  ['junit', testRailOptions],
+  ['junit', junitOptions],
   ['html', {outputFolder: 'html-report'}],
   ['json', {outputFile: `json-report/results.json`}],
 ];
@@ -70,7 +70,9 @@ const apiTestIgnore = [
   'tests/api/v2/usage-metrics/*.spec.ts',
   'tests/api/v2/audit-log/*.spec.ts',
   'tests/api/v2/job/job-statistics-*.spec.ts',
+  'tests/api/v2/global-task-listener/*.spec.ts',
   'tests/api/v2/optimize/**/*.spec.ts',
+  'tests/api/v2/analytics-exporter/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -88,6 +90,10 @@ const normalProjects = [
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
       'tests/api/v2/job/job-statistics-*.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/api/v2/global-task-listener/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,
@@ -101,6 +107,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -108,9 +115,16 @@ const normalProjects = [
   },
   {
     name: 'chromium-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'firefox',
@@ -120,6 +134,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -127,9 +142,13 @@ const normalProjects = [
   },
   {
     name: 'firefox-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Firefox'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'msedge',
@@ -139,6 +158,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -146,9 +166,13 @@ const normalProjects = [
   },
   {
     name: 'msedge-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Edge'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'tasklist-e2e',
@@ -159,7 +183,15 @@ const normalProjects = [
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
-    teardown: 'chromium-subset',
+    teardown: 'tasklist-e2e-subset',
+  },
+  {
+    // A teardown project runs in full whatever the file or grep filter, so a
+    // Tasklist-scoped run gets its own instead of sharing chromium-subset.
+    name: 'tasklist-e2e-subset',
+    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'identity-e2e',
@@ -180,13 +212,52 @@ const normalProjects = [
       ...devices['Desktop Chrome'],
     },
   },
+  {
+    name: 'optimize-startup',
+    testMatch: ['tests/api/v2/optimize/optimize-startup.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+  },
+  {
+    // Analytics exporter tests that can't share the main stack's
+    // long-running `camunda` container — the disabled-by-default test and
+    // the counter/raw-count parity test — each run against their own
+    // standalone, throwaway broker variant. See
+    // config/docker-compose.analytics-isolated.yml
+    // and utils/dockerComposeControl.ts. Kept as its own single-worker
+    // project so specs never run concurrently with each other and each
+    // test's container lifecycle stays isolated from every other project.
+    name: 'analytics-exporter-isolated',
+    testMatch: [
+      'tests/api/v2/analytics-exporter/analytics-exporter-isolated/*.spec.ts',
+    ],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
+  },
+];
 
+// The generated cluster and restore specs put the whole cluster into recovery mode for their
+// restore scenarios. While a tenant is recovering, its secondary-storage endpoints answer 503, so
+// these specs must not overlap with any other spec. They run as the teardown of the main project,
+// i.e. after every other spec has finished (and also when one of them failed).
+const recoveryModeSpecs = [
+  'v2-stateless-tests/tests/request-validation/cluster-validation-api-tests.spec.ts',
+  'v2-stateless-tests/tests/request-validation/restore-validation-api-tests.spec.ts',
 ];
 
 const v2StatelessProjects = [
   {
     name: 'request-validation-tests',
     testMatch: ['v2-stateless-tests/tests/request-validation/*.spec.ts'],
+    testIgnore: recoveryModeSpecs,
+    teardown: 'request-validation-recovery-mode-tests',
+    use: devices['Desktop Chrome'],
+  },
+  {
+    name: 'request-validation-recovery-mode-tests',
+    testMatch: recoveryModeSpecs,
     use: devices['Desktop Chrome'],
   },
 ];
@@ -194,6 +265,14 @@ const v2StatelessProjects = [
 export default defineConfig({
   testDir: `./`,
   timeout: 12 * 60 * 1000,
+  // Opt-in cap on the whole run, set in CI via C8E2E_GLOBAL_TIMEOUT_MIN so a
+  // hanging suite stops itself and still writes its report. The changed-spec
+  // verdict step then runs instead of the CI job being killed at its
+  // timeout-minutes, so a PR that changed no spec is not blocked by the hang.
+  // Unset locally, so local runs are unaffected. See camunda/camunda#67452.
+  globalTimeout: process.env.C8E2E_GLOBAL_TIMEOUT_MIN
+    ? Number(process.env.C8E2E_GLOBAL_TIMEOUT_MIN) * 60 * 1000
+    : undefined,
   workers: 4,
   retries: 1,
   expect: {

@@ -8,17 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 
 public class TenantEntityAddedHandler
-    implements ExportHandler<TenantMemberEntity, TenantRecordValue> {
+    implements MainIndexExporterHandler<TenantMemberEntity, TenantRecordValue> {
 
   private final String indexName;
 
@@ -46,7 +48,9 @@ public class TenantEntityAddedHandler
     final var tenantRecord = record.getValue();
     return List.of(
         TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-            tenantRecord.getTenantId(), tenantRecord.getEntityId(), tenantRecord.getEntityType()));
+            tenantRecord.getTenantId(),
+            tenantRecord.getEntityId(),
+            AuthzModelMapper.fromProtocol(tenantRecord.getEntityType())));
   }
 
   @Override
@@ -60,14 +64,15 @@ public class TenantEntityAddedHandler
     final TenantRecordValue value = record.getValue();
     entity
         .setMemberId(value.getEntityId())
-        .setMemberType(value.getEntityType())
+        .setMemberType(AuthzModelMapper.fromProtocol(value.getEntityType()))
         .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantId()));
   }
 
   @Override
-  public void flush(final TenantMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final TenantMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
+    batchRequest.addWithRouting(index, entity, entity.getJoin().parent());
   }
 
   @Override

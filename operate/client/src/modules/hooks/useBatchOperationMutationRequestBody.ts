@@ -17,22 +17,74 @@ import {parseDecisionInstancesSearchFilter} from 'modules/utils/filter/decisions
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const useBatchOperationMutationRequestBody = () => {
-  const variable = variableFilterStore.variable;
+const getIncludeIds = (selectedIds: string[], checkedEligibleIds: string[]) => {
+  if (selectedIds.length === 0) {
+    return [];
+  }
+
+  return checkedEligibleIds.length > 0 ? checkedEligibleIds : selectedIds;
+};
+
+const FINISHED_STATE_SEARCH_PARAMS = ['completed', 'canceled'];
+
+const useProcessInstancesBatchOperationMutationRequestBody = (
+  checkedEligibleIds: string[],
+  includeSuspended: boolean,
+  excludeFinishedStates = false,
+) => {
+  const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
 
-  const {selectedIds, excludedIds, checkedRunningIds} =
-    processInstancesSelectionStore;
+  const {selectedIds, excludedIds} = processInstancesSelectionStore;
 
-  const includeIds = selectedIds.length > 0 ? checkedRunningIds : [];
+  const includeIds = getIncludeIds(selectedIds, checkedEligibleIds);
+
+  const requestSearchParams = new URLSearchParams(searchParams);
+  if (excludeFinishedStates) {
+    FINISHED_STATE_SEARCH_PARAMS.forEach((param) =>
+      requestSearchParams.delete(param),
+    );
+  }
 
   return buildMutationRequestBody({
-    searchParams,
+    searchParams: requestSearchParams,
     includeIds,
     excludeIds: excludedIds,
-    variableFilter: variable,
+    conditions,
+    includeSuspended,
   });
 };
+
+/** Retry and batch modification only apply to active instances. */
+const useBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    processInstancesSelectionStore.checkedRunningIds,
+    false,
+  );
+
+// Cancellation and suspension reject finished states at the top level, so they are left out of the filter.
+const useCancelProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    [
+      ...processInstancesSelectionStore.checkedRunningIds,
+      ...processInstancesSelectionStore.checkedSuspendedIds,
+    ],
+    true,
+    true,
+  );
+
+const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    processInstancesSelectionStore.checkedRunningIds,
+    false,
+    true,
+  );
+
+const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    processInstancesSelectionStore.checkedSuspendedIds,
+    true,
+  );
 
 /**
  * Hook for building the request body for delete batch operations.
@@ -40,19 +92,19 @@ const useBatchOperationMutationRequestBody = () => {
  * finished instances (COMPLETED or TERMINATED).
  */
 const useDeleteProcessInstancesBatchOperationMutationRequestBody = () => {
-  const variable = variableFilterStore.variable;
+  const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
 
   const {selectedIds, excludedIds, checkedFinishedIds} =
     processInstancesSelectionStore;
 
-  const includeIds = selectedIds.length > 0 ? checkedFinishedIds : [];
+  const includeIds = getIncludeIds(selectedIds, checkedFinishedIds);
 
   return buildMutationRequestBody({
     searchParams,
     includeIds,
     excludeIds: excludedIds,
-    variableFilter: variable,
+    conditions,
   });
 };
 
@@ -75,7 +127,11 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
   };
 
 export {
+  FINISHED_STATE_SEARCH_PARAMS,
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
+  useSuspendProcessInstancesBatchOperationMutationRequestBody,
+  useResumeProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
   useDeleteDecisionInstancesBatchOperationRequestBody,
 };

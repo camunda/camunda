@@ -33,13 +33,41 @@ export const createUniqueUser = (customId?: string) => {
   };
 };
 
+// Default `page.limit` applied by the v2 search endpoints when a request does
+// not set one.
+export const DEFAULT_PAGE_LIMIT = 100;
+
 export const defaultAssertionOptions = {
   intervals: [5_000, 10_000, 15_000],
   timeout: 30_000,
 };
 
-export const uniqueBusinessId = (prefix = 'biz'): string => {
+// Use when an assertion polls on data that has to propagate through the
+// secondary-storage indexer on a loaded shared cluster (e.g. post-batch
+// user-task search, cross-view count reconciliation).
+export const extendedAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+  timeout: 90_000,
+};
+
+// Use when waiting for a suspend or resume to land. The engine walks the
+// instance's element tree one element per batch, interleaved with other
+// partition work, so a wide tree on a loaded cluster can take well past the
+// default window; poll densely so the common fast case returns at once.
+export const suspensionAssertionOptions = {
+  intervals: [500, 1_000, 2_000, 5_000],
+  timeout: 90_000,
+};
+
+// Prefixed unique id for a resource a test deploys or creates — process
+// definition ids, message names, job types. Parallel workers share a cluster, so
+// a fixed id would let one test's deployment or subscription answer another's.
+export const uniquePrefixedId = (prefix: string): string => {
   return `${prefix}-${generateUniqueId()}`;
+};
+
+export const uniqueBusinessId = (prefix = 'biz'): string => {
+  return uniquePrefixedId(prefix);
 };
 
 // Create unique auth role with optional custom ID
@@ -77,6 +105,14 @@ export const createUniqueTenant = (customId?: string) => {
     tenantId: `tenant${id}`,
     name: `Test Tenant ${id}`,
     description: `Test tenant description ${id}`,
+  };
+};
+
+export const createEditedTenant = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    name: `Edited Tenant ${id}`,
+    description: `Edited tenant description ${id}`,
   };
 };
 
@@ -122,6 +158,19 @@ export const createComponentAuthorization = (
   accessPermissions: ['access'],
 });
 
+export const createSecretAuthorization = (
+  owner: {name: string},
+  accessPermissions: ('read' | 'reveal')[] = ['read'],
+  ownerType: 'Role' | 'User' | 'Group' = 'Role',
+  resourceId = '*',
+) => ({
+  ownerType,
+  ownerId: owner.name,
+  resourceType: 'Secret',
+  resourceId,
+  accessPermissions,
+});
+
 // Generic function to create specific test data with shared ID
 export const createTestData = (options: {
   user?: boolean;
@@ -131,6 +180,7 @@ export const createTestData = (options: {
   group?: boolean;
   editedGroup?: boolean;
   tenant?: boolean;
+  editedTenant?: boolean;
   mappingRule?: boolean;
   editedMappingRule?: boolean;
 }) => {
@@ -142,6 +192,7 @@ export const createTestData = (options: {
     group = false,
     editedGroup = false,
     tenant = false,
+    editedTenant = false,
     mappingRule = false,
     editedMappingRule = false,
   } = options;
@@ -155,6 +206,7 @@ export const createTestData = (options: {
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
     tenant?: ReturnType<typeof createUniqueTenant>;
+    editedTenant?: ReturnType<typeof createEditedTenant>;
     mappingRule?: ReturnType<typeof createUniqueMappingRule>;
     editedMappingRule?: ReturnType<typeof createEditedMappingRule>;
     id: string;
@@ -180,6 +232,10 @@ export const createTestData = (options: {
     result.tenant = createUniqueTenant(sharedId);
   }
 
+  if (editedTenant) {
+    result.editedTenant = createEditedTenant(sharedId);
+  }
+
   if (mappingRule) {
     result.mappingRule = createUniqueMappingRule(sharedId);
   }
@@ -203,4 +259,21 @@ export const createTestData = (options: {
 export const NEW_AUTH_ROLE = {
   id: 'authrole',
   name: 'Auth role',
+};
+
+export const createUniqueGlobalTaskListener = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    id: `test-gl-${id}`,
+    type: `io.camunda.test.listener.${id}`,
+    eventType: 'creating',
+  };
+};
+
+export const createEditedGlobalTaskListener = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    type: `io.camunda.test.edited.${id}`,
+    eventType: 'completing',
+  };
 };

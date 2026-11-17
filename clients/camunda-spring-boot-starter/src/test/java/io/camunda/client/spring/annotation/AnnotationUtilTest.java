@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.ClusterVariables;
 import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.ElementInstanceKey;
 import io.camunda.client.annotation.JobKey;
@@ -34,6 +35,8 @@ import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.MethodClusterVariablesValue;
+import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
 import io.camunda.client.annotation.value.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
@@ -41,7 +44,9 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
+import io.camunda.client.jobhandling.DocumentContext;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
@@ -95,6 +100,45 @@ public class AnnotationUtilTest {
       assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("value"));
     }
 
+    @Test
+    void shouldExtractDocumentContextVariableName() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithDocumentContext");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new GeneratedFromMethodInfo<>("context"));
+    }
+
+    @Test
+    void shouldExtractDocumentReferenceListVariableName() {
+      // given
+      final MethodInfo methodInfo =
+          methodInfo(this, "test", "sampleWorkerWithDocumentReferenceList");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new GeneratedFromMethodInfo<>("documents"));
+    }
+
+    @Test
+    void shouldExtractDocumentNamedVariableName() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithNamedDocument");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("myDoc"));
+    }
+
     @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithEmptyJsonProperty(
         @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
@@ -109,6 +153,36 @@ public class AnnotationUtilTest {
     @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithJsonProperty(
         @VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithDocumentContext(
+        @io.camunda.client.annotation.Document final DocumentContext context) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithDocumentReferenceList(
+        @io.camunda.client.annotation.Document final List<DocumentReferenceResponse> documents) {}
+
+    @Test
+    void shouldDeduplicateVariableAndDocumentWithSameName() {
+      // given
+      final MethodInfo methodInfo =
+          methodInfo(this, "test", "sampleWorkerWithDuplicateVariableAndDocument");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("myVar"));
+    }
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithNamedDocument(
+        @io.camunda.client.annotation.Document("myDoc") final DocumentContext context) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithDuplicateVariableAndDocument(
+        @io.camunda.client.annotation.Variable("myVar") final String var1,
+        @io.camunda.client.annotation.Document("myVar") final DocumentContext context) {}
 
     private static final class PropertyAnnotatedClass {
       @JsonProperty("some_name")
@@ -402,5 +476,158 @@ public class AnnotationUtilTest {
     public void testElementInstanceKey(@ElementInstanceKey final String key) {}
 
     public void testRootProcessInstanceKey(@RootProcessInstanceKey final String key) {}
+  }
+
+  @Nested
+  class ClusterVariablesAnnotation {
+
+    @Test
+    void shouldDetectClassAnnotation() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new SingleResourceBean());
+      // when / then
+      assertThat(AnnotationUtil.isClusterVariables(beanInfo)).isTrue();
+    }
+
+    @Test
+    void shouldDetectMethodAnnotation() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new MethodVariablesBean());
+      // when / then
+      assertThat(AnnotationUtil.isClusterVariables(beanInfo)).isTrue();
+    }
+
+    @Test
+    void shouldNotDetectUnannotatedBean() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new UnannotatedBean());
+      // when / then
+      assertThat(AnnotationUtil.isClusterVariables(beanInfo)).isFalse();
+    }
+
+    @Test
+    void shouldExtractResourceValueFromClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new SingleResourceBean());
+      // when
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0).getResources()).containsExactly("classpath:variables.json");
+      assertThat(values.get(0).getTenantId()).isNull();
+    }
+
+    @Test
+    void shouldExtractResourceValueWithTenantFromClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new TenantScopedResourceBean());
+      // when
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0).getResources()).containsExactly("classpath:vars.json");
+      assertThat(values.get(0).getTenantId()).isEqualTo("my-tenant");
+    }
+
+    @Test
+    void shouldExtractMultipleResourceValuesFromClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new RepeatableResourceBean());
+      // when
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).hasSize(2);
+      assertThat(values.get(0).getResources()).containsExactly("classpath:v1.json");
+      assertThat(values.get(1).getResources()).containsExactly("classpath:v2.json");
+    }
+
+    @Test
+    void shouldReturnEmptyForUnannotatedClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new UnannotatedBean());
+      // when
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).isEmpty();
+    }
+
+    @Test
+    void shouldExtractMethodValueAsMethodClusterVariablesValue() {
+      // given
+      final MethodInfo methodInfo = methodInfo(new MethodVariablesBean(), "test", "variables");
+      // when
+      final List<MethodClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0)).isInstanceOf(MethodClusterVariablesValue.class);
+      assertThat(values.get(0).getTenantId()).isNull();
+      final MethodClusterVariablesValue methodValue = (MethodClusterVariablesValue) values.get(0);
+      assertThat(methodValue.getVariableSupplier().get()).isEqualTo(Map.of("key", "value"));
+    }
+
+    @Test
+    void shouldExtractTenantScopedMethodValue() {
+      // given
+      final MethodInfo methodInfo =
+          methodInfo(new TenantScopedMethodBean(), "test", "tenantVariables");
+      // when
+      final List<MethodClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0)).isInstanceOf(MethodClusterVariablesValue.class);
+      assertThat(values.get(0).getTenantId()).isEqualTo("my-tenant");
+    }
+
+    @Test
+    void shouldReturnEmptyForUnannotatedMethod() {
+      // given
+      final MethodInfo methodInfo = methodInfo(new UnannotatedBean(), "test", "noAnnotation");
+      // when
+      final List<MethodClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).isEmpty();
+    }
+
+    // Public to allow reflective method invocation from SpringMethodInfo
+    public static class MethodVariablesBean {
+      @ClusterVariables
+      public Map<String, Object> variables() {
+        return Map.of("key", "value");
+      }
+    }
+
+    // Public to allow reflective method invocation from SpringMethodInfo
+    public static class TenantScopedMethodBean {
+      @ClusterVariables(tenantId = "my-tenant")
+      public Map<String, Object> tenantVariables() {
+        return Map.of("key", "value");
+      }
+    }
+
+    public static class MethodWithResourcesBean {
+      @ClusterVariables(resources = "classpath:from-method.json")
+      public void unused() {}
+    }
+
+    @ClusterVariables(resources = "classpath:variables.json")
+    static class SingleResourceBean {}
+
+    @ClusterVariables(resources = "classpath:vars.json", tenantId = "my-tenant")
+    static class TenantScopedResourceBean {}
+
+    @ClusterVariables(resources = "classpath:v1.json")
+    @ClusterVariables(resources = "classpath:v2.json")
+    static class RepeatableResourceBean {}
+
+    static class UnannotatedBean {
+      public void noAnnotation() {}
+    }
   }
 }

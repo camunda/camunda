@@ -35,6 +35,7 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
             .subscriptionKey(321L)
             .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
             .tenantId("tenantId")
+            .businessId("testBusinessId")
             .build();
 
     // When
@@ -50,7 +51,7 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
     final var model =
         new CorrelatedMessageSubscriptionDbModel.Builder()
             .correlationKey(null)
-            .correlationTime(null)
+            .correlationTime(OffsetDateTime.now())
             .messageKey(123L)
             .messageName(null)
             .flowNodeId(null)
@@ -71,7 +72,6 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
     // Then
     assertThat(entity.correlationKey())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
-    assertThat(entity.correlationTime()).isNull();
     assertThat(entity.messageKey()).isNotNull();
     assertThat(entity.messageName())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
@@ -81,5 +81,6 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.tenantId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.businessId()).isNull(); // nullable field is passed through unchanged
   }
 }

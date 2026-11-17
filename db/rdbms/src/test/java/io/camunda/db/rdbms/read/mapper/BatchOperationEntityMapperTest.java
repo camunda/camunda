@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -21,10 +22,8 @@ class BatchOperationEntityMapperTest {
 
   @Test
   void shouldMapDbModelToEntity() {
-    final var errorDbModel = new BatchOperationDbModel.BatchOperationErrorDbModel();
-    errorDbModel.partitionId(1);
-    errorDbModel.type("ERROR_TYPE");
-    errorDbModel.message("stacktrace");
+    final var errorDbModel =
+        new BatchOperationDbModel.BatchOperationErrorDbModel(1, "ERROR_TYPE", "stacktrace");
 
     final var dbModel =
         new BatchOperationDbModel.Builder()
@@ -66,6 +65,9 @@ class BatchOperationEntityMapperTest {
   void shouldMapDbModelToEntityWithActor() {
     final var dbModel =
         new BatchOperationDbModel.Builder()
+            .batchOperationKey("batch-1")
+            .state(BatchOperationState.ACTIVE)
+            .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .actorType(AuditLogActorType.USER)
             .actorId("user-123")
             .build();
@@ -78,10 +80,8 @@ class BatchOperationEntityMapperTest {
 
   @Test
   void shouldMapErrorDbModelToErrorEntity() {
-    final var errorDbModel = new BatchOperationDbModel.BatchOperationErrorDbModel();
-    errorDbModel.partitionId(42);
-    errorDbModel.type("SOME_ERROR");
-    errorDbModel.message("trace");
+    final var errorDbModel =
+        new BatchOperationDbModel.BatchOperationErrorDbModel(42, "SOME_ERROR", "trace");
 
     final var errorEntity = BatchOperationEntityMapper.toErrorEntity(errorDbModel);
 

@@ -8,17 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 
 public class TenantEntityRemovedHandler
-    implements ExportHandler<TenantMemberEntity, TenantRecordValue> {
+    implements MainIndexExporterHandler<TenantMemberEntity, TenantRecordValue> {
 
   private final String indexName;
 
@@ -47,7 +49,9 @@ public class TenantEntityRemovedHandler
     final var tenantRecord = record.getValue();
     return List.of(
         TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-            tenantRecord.getTenantId(), tenantRecord.getEntityId(), tenantRecord.getEntityType()));
+            tenantRecord.getTenantId(),
+            tenantRecord.getEntityId(),
+            AuthzModelMapper.fromProtocol(tenantRecord.getEntityType())));
   }
 
   @Override
@@ -64,10 +68,11 @@ public class TenantEntityRemovedHandler
   }
 
   @Override
-  public void flush(final TenantMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final TenantMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.deleteWithRouting(
-        indexName, entity.getId(), String.valueOf(entity.getJoin().parent()));
+        index, entity.getId(), String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

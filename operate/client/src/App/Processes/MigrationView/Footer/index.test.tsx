@@ -23,6 +23,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 
 type Props = {
   children?: React.ReactNode;
+  initialEntries?: string[];
 };
 
 vi.mock('modules/tracking', () => ({
@@ -36,14 +37,14 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const Wrapper = ({children}: Props) => {
+const Wrapper = ({children, initialEntries}: Props) => {
   useEffect(() => {
     processInstanceMigrationStore.setCurrentStep('elementMapping');
     return processInstanceMigrationStore.reset;
   }, []);
   return (
     <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         {children}
         <button
           onClick={() => {
@@ -172,7 +173,7 @@ describe('Footer', () => {
 
     await user.click(screen.getByRole('button', {name: 'Exit migration'}));
 
-    await user.click(screen.getByRole('button', {name: 'danger Exit'}));
+    await user.click(screen.getByRole('button', {name: 'Exit'}));
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
   });
 
@@ -239,7 +240,7 @@ describe('Footer', () => {
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?active=true&incidents=true&processDefinitionId=bigVarProcess&processDefinitionVersion=1',
+      '?active=true&suspended=true&incidents=true&processDefinitionId=bigVarProcess&processDefinitionVersion=1',
     );
 
     expect(tracking.track).toHaveBeenCalledWith({
@@ -257,6 +258,56 @@ describe('Footer', () => {
     );
 
     vi.useRealTimers();
+  });
+
+  it('should leave finished states out of the migration request filter', async () => {
+    const requestBodyResolverFn = vi.fn();
+    mockMigrateProcessInstancesBatchOperation().withSuccess(
+      {
+        batchOperationKey: 'migrate-operation-123',
+        batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
+      },
+      {requestBodyResolverFn},
+    );
+
+    processInstanceMigrationStore.setBatchOperationQuery({
+      ids: ['1', '2'],
+    });
+    processInstanceMigrationStore.setTargetProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'target-process-key'}),
+    );
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'source-process-key'}),
+    );
+
+    const {user} = render(<Footer />, {
+      wrapper: ({children}: Props) => (
+        <Wrapper
+          initialEntries={['/?active=true&completed=true&canceled=true']}
+        >
+          {children}
+        </Wrapper>
+      ),
+    });
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
+    await user.click(screen.getByRole('button', {name: /next/i}));
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    const withinModal = within(screen.getByRole('dialog'));
+    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
+    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
+
+    await waitFor(() => {
+      expect(requestBodyResolverFn).toHaveBeenCalledTimes(1);
+    });
+
+    const requestBody = requestBodyResolverFn.mock.calls[0]?.[0];
+    expect(requestBody).toMatchObject({
+      filter: {state: {$eq: 'ACTIVE'}},
+    });
+    expect(JSON.stringify(requestBody)).not.toContain('COMPLETED');
+    expect(JSON.stringify(requestBody)).not.toContain('TERMINATED');
   });
 
   it('should show an auth warning and keep the migration view open when batch migration creation is forbidden', async () => {
@@ -294,7 +345,7 @@ describe('Footer', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'warning',
       title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
+      subtitle: 'Contact the administrator if you need access.',
       isDismissable: true,
     });
     expect(tracking.track).toHaveBeenCalledWith({
@@ -340,7 +391,7 @@ describe('Footer', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: "Couldn't create operation",
       subtitle: undefined,
       isDismissable: true,
     });

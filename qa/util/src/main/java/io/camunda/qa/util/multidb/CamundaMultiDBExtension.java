@@ -7,13 +7,26 @@
  */
 package io.camunda.qa.util.multidb;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Fail.fail;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.SecondaryStorageReadiness;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -22,13 +35,27 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.jspecify.annotations.NonNull;
@@ -210,6 +237,18 @@ public class CamundaMultiDBExtension
       "test.integration.aurora.aws.username";
   public static final String TEST_INTEGRATION_AURORA_AWS_PASSWORD =
       "test.integration.aurora.aws.password";
+  public static final String TEST_INTEGRATION_RDBMS_FAST_INIT =
+      "test.integration.camunda.database.fast-init";
+  public static final String TEST_INTEGRATION_PHYSICAL_TENANT =
+      "test.integration.camunda.physical-tenant";
+  public static final String TEST_INTEGRATION_PHYSICAL_TENANT_ELASTICSEARCH_URL =
+      "test.integration.camunda.physical-tenant.elasticsearch.url";
+  public static final String TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL =
+      "test.integration.camunda.physical-tenant.opensearch.url";
+  public static final String TEST_ARCHIVERLESS_ENABLED =
+      "test.integration.camunda.archiverless.enabled";
+  public static final String PROP_TEST_INTEGRATION_APP_STARTUP_TIMEOUT =
+      "test.integration.camunda.app.startup.timeout.seconds";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
@@ -218,22 +257,50 @@ public class CamundaMultiDBExtension
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
+  public static final Duration TIMEOUT_APPLICATION_STARTUP =
+      Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_APP_STARTUP_TIMEOUT))
+          .map(val -> Duration.ofSeconds(Long.parseLong(val)))
+          .orElse(Duration.ofMinutes(5));
   public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   public static final String KEYCLOAK_REALM = "camunda";
+  public static final String PT_ADMIN_PASSWORD = "ptadmin";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private static final String EXTENSION_COORDINATION_KEY = "extension-running";
   private static final String EXTENSION_NAME = "CamundaMultiDBExtension";
   private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
   private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
+
+  /**
+   * PT ids are interpolated into SQL identifiers (schema/database names, table prefixes) by the
+   * bootstrap DDL, so restrict them to lowercase-alphanumeric starting with a letter — valid on
+   * every dialect and injection-safe.
+   */
+  private static final Pattern PHYSICAL_TENANT_ID_PATTERN = Pattern.compile("[a-z][a-z0-9]*");
+
+  /**
+   * Caps the PT id so the namespace {@code <basePrefix>_<tenantId>} (a 10-char run token plus the
+   * id) fits Oracle's 30-character identifier limit, the strictest supported dialect: {@code 10 + 1
+   * + 19 = 30}.
+   */
+  private static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 19;
+
   private final List<AutoCloseable> closeables = new ArrayList<>();
+  // Best-effort drop of per-PT schemas/databases provisioned for this run; cleared in afterAll.
+  private final List<Runnable> physicalTenantNamespaceCleanups = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
   private DatabaseType databaseType;
   private ApplicationUnderTest applicationUnderTest;
   private String testPrefix;
+  private String physicalTenantId;
+  // non-null when @MultiDbPhysicalTenants is present; keyed by tenantId
+  private List<String> multiPhysicalTenantIds;
+  private MultiPhysicalTenantClients multiPhysicalTenantClients;
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
+  // the physical tenant's own Elasticsearch cluster, when it runs on a separate one
+  private MultiDbSetupHelper ptSetupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
   private KeycloakContainer keycloakContainer;
 
@@ -243,6 +310,11 @@ public class CamundaMultiDBExtension
 
   public CamundaMultiDBExtension(final TestStandaloneApplication<?> testApplication) {
     defaultTestApplication = testApplication;
+  }
+
+  /** The conventional admin username for a physical tenant: {@code <tenantId>-admin}. */
+  public static String physicalTenantAdminUsername(final String physicalTenantId) {
+    return physicalTenantId + "-admin";
   }
 
   private static ExtensionContext.Store coordinationStore(final ExtensionContext context) {
@@ -266,6 +338,40 @@ public class CamundaMultiDBExtension
     return databaseType;
   }
 
+  public static String getPhysicalTenant() {
+    final String value = System.getProperty(TEST_INTEGRATION_PHYSICAL_TENANT);
+    return value == null || value.isBlank() ? null : value;
+  }
+
+  public static String getPhysicalTenantElasticsearchUrl() {
+    final String value = System.getProperty(TEST_INTEGRATION_PHYSICAL_TENANT_ELASTICSEARCH_URL);
+    return value == null || value.isBlank() ? null : value;
+  }
+
+  public static String getPhysicalTenantOpensearchUrl() {
+    final String value = System.getProperty(TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL);
+    return value == null || value.isBlank() ? null : value;
+  }
+
+  private static MultiDbSetupHelper physicalTenantSetupHelper() {
+    final String ptElasticsearchUrl = getPhysicalTenantElasticsearchUrl();
+    final String ptOpensearchUrl = getPhysicalTenantOpensearchUrl();
+    if (ptElasticsearchUrl != null && ptOpensearchUrl != null) {
+      throw new IllegalStateException(
+          "Both %s and %s are set - the physical-tenant backend must be unambiguous, configure only one"
+              .formatted(
+                  TEST_INTEGRATION_PHYSICAL_TENANT_ELASTICSEARCH_URL,
+                  TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL));
+    }
+    if (ptElasticsearchUrl != null) {
+      return new ElasticsearchSetupHelper(ptElasticsearchUrl, List.of());
+    }
+    if (ptOpensearchUrl != null) {
+      return new OpenSearchSetupHelper(ptOpensearchUrl, List.of());
+    }
+    return new NoopDBSetupHelper();
+  }
+
   private DatabaseType currentMultiDbDatabaseType(final ExtensionContext context) {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
@@ -281,6 +387,418 @@ public class CamundaMultiDBExtension
                 AnnotationSupport.findAnnotation(testClass, MultiDbTest.class)
                     .map(MultiDbTest::value))
         .orElse(DatabaseType.LOCAL);
+  }
+
+  private void configurePhysicalTenant() {
+    // Single-PT path: copy root defaultRoles as-is, no per-PT admin user seeded.
+    provisionPhysicalTenant(physicalTenantId, false);
+  }
+
+  private void configurePhysicalTenants(final List<String> tenantIds) {
+    // Multi-PT path: each PT gets its own seeded <ptId>-admin user + admin default role.
+    for (final String tenantId : tenantIds) {
+      provisionPhysicalTenant(tenantId, true);
+    }
+  }
+
+  /**
+   * Validates the {@link MultiDbPhysicalTenants} ids: at least one, none blank, no duplicates, and
+   * never {@code default} (the default physical tenant is implicit and carries the broker's root
+   * config).
+   */
+  private static List<String> validatedPhysicalTenantIds(final String[] values) {
+    final List<String> ids = List.of(values);
+    if (ids.isEmpty()) {
+      throw new IllegalStateException(
+          "@MultiDbPhysicalTenants must declare at least one tenant id");
+    }
+    final List<String> seen = new ArrayList<>();
+    for (final String id : ids) {
+      if (id.isBlank()) {
+        throw new IllegalStateException("@MultiDbPhysicalTenants tenant ids must not be blank");
+      }
+      if ("default".equals(id)) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants must not include 'default'; the default physical tenant is"
+                + " implicit");
+      }
+      if (!PHYSICAL_TENANT_ID_PATTERN.matcher(id).matches()) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants tenant id '"
+                + id
+                + "' must be lowercase alphanumeric and start with a letter (it is embedded into"
+                + " SQL identifiers)");
+      }
+      if (id.length() > MAX_PHYSICAL_TENANT_ID_LENGTH) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants tenant id '"
+                + id
+                + "' exceeds the maximum length of "
+                + MAX_PHYSICAL_TENANT_ID_LENGTH
+                + " characters (to keep the provisioned namespace within the database"
+                + " identifier-length limits)");
+      }
+      if (seen.contains(id)) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants has a duplicate tenant id '" + id + "'");
+      }
+      seen.add(id);
+    }
+    return ids;
+  }
+
+  /**
+   * Provisions a single physical tenant: configures isolated secondary storage, and copies the root
+   * {@code security.initialization} into the PT — a PT must own its initialization and cannot
+   * inherit it from root (see {@code PhysicalTenantRequiredOverrideValidation}). Authentication
+   * method and {@code authorizations.enabled} DO inherit from root and are not copied.
+   *
+   * <p>Storage isolation strategy:
+   *
+   * <ul>
+   *   <li>{@code ES}/{@code LOCAL} (Elasticsearch): each PT gets a per-tenant index prefix ({@code
+   *       <testPrefix>-<tenantId>}) on the shared cluster. The prefix extends the base test prefix
+   *       so the delete-by-prefix cleanup in afterAll also removes the PT's indices.
+   *   <li>{@code RDBMS_H2}: each PT gets a fresh dedicated in-memory H2 database (separate URL per
+   *       PT, so no table-prefix separation is needed).
+   *   <li>{@code RDBMS_POSTGRES}/{@code RDBMS_AURORA}, {@code RDBMS_MYSQL}/{@code RDBMS_MARIADB},
+   *       {@code RDBMS_MSSQL}: each PT gets a dedicated namespace (schema or database) named {@code
+   *       <basePrefix>_<tenantId>}, created via a bootstrap JDBC connection before broker start and
+   *       targeted by the PT's URL ({@code currentSchema}, the URL database segment, or {@code
+   *       databaseName} respectively). The table prefix is empty — isolation is at the
+   *       schema/database level.
+   *   <li>{@code RDBMS_ORACLE}: each PT gets a dedicated user (== schema) named {@code
+   *       <basePrefix>_<tenantId>}, created via a privileged bootstrap connection before broker
+   *       start; the PT connects as that user (no table prefix) and pins {@code database-vendor-id:
+   *       oracle} so the production isolation check keys the location on the distinct user. See
+   *       {@link PhysicalTenantSchemaProvisioner}.
+   * </ul>
+   *
+   * <p>When {@code seedAdminUser} is {@code true} (multi-PT mode), a {@code <tenantId>-admin}
+   * basic-auth user is appended to the PT's init and the {@code admin} default role is bound to
+   * that user alone. The PT intentionally does NOT inherit the root/default-tenant default-role
+   * bindings (e.g. mapping rules bound to {@code admin}): each physical tenant is isolated and
+   * seeds its own admin identity. When {@code false} (single-PT mode), the root {@code
+   * defaultRoles} are copied verbatim.
+   */
+  private void provisionPhysicalTenant(final String tenantId, final boolean seedAdminUser) {
+    if (!(applicationUnderTest.application
+        instanceof final TestSpringApplication<?> springApplication)) {
+      throw new IllegalStateException(
+          "Physical-tenant mode requires a TestSpringApplication-based application; got "
+              + applicationUnderTest.application.getClass().getName());
+    }
+    final var rootInit = springApplication.unifiedConfig().getSecurity().getInitialization();
+    final String adminUsername = physicalTenantAdminUsername(tenantId);
+
+    // Derive per-PT storage config based on the active database type.
+    final Consumer<SecondaryStorage> configurePtStorage;
+    if (databaseType.storageType().isElasticSearch() || databaseType.storageType().isOpenSearch()) {
+      // Same cluster by default (per-PT index prefix); if
+      // test.integration.camunda.physical-tenant.<elasticsearch|opensearch>.url is set, the PT
+      // points at that separate cluster instead. Extending testPrefix keeps the PT's indices
+      // covered by the delete-by-prefix cleanup in afterAll, and the distinct prefix/URL satisfies
+      // the storage-isolation validation (SecondaryStorageIsolationValidation).
+      final boolean elastic = databaseType.storageType().isElasticSearch();
+      final var baseSecondaryStorage =
+          springApplication.unifiedConfig().getData().getSecondaryStorage();
+      final var baseDatabase =
+          elastic ? baseSecondaryStorage.getElasticsearch() : baseSecondaryStorage.getOpensearch();
+      final String ptUrl =
+          Optional.ofNullable(
+                  elastic ? getPhysicalTenantElasticsearchUrl() : getPhysicalTenantOpensearchUrl())
+              .orElseGet(baseDatabase::getUrl);
+      final String ptIndexPrefix = baseDatabase.getIndexPrefix() + "-" + tenantId;
+      configurePtStorage =
+          secondaryStorage -> {
+            secondaryStorage.setType(
+                elastic ? SecondaryStorageType.elasticsearch : SecondaryStorageType.opensearch);
+            final var database =
+                elastic ? secondaryStorage.getElasticsearch() : secondaryStorage.getOpensearch();
+            database.setUrl(ptUrl);
+            database.setIndexPrefix(ptIndexPrefix);
+          };
+    } else if (databaseType == DatabaseType.RDBMS_H2) {
+      // Fresh in-memory database per PT — DBs are already separate, so no prefix needed.
+      final String ptUrl =
+          "jdbc:h2:mem:"
+              + testPrefix
+              + "-"
+              + tenantId
+              + "-"
+              + UUID.randomUUID()
+              + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+      configurePtStorage = configureRdbmsStorage(ptUrl, "sa", "", testPrefix, null);
+    } else {
+      // Per-PT isolated storage derived from the database type: a dedicated schema/database whose
+      // namespace lives in the PT URL (Postgres/MySQL/MariaDB/SQL Server), or — on Oracle — a
+      // dedicated user/schema the PT connects as. The provisioner returns the prefix to apply
+      // (empty for every dialect) and, for Oracle, the vendor id to pin.
+      final var baseRdbms =
+          springApplication.unifiedConfig().getData().getSecondaryStorage().getRdbms();
+      final var ptConfig =
+          PhysicalTenantSchemaProvisioner.provisionAndDerive(
+              databaseType,
+              baseRdbms.getUrl(),
+              baseRdbms.getUsername(),
+              baseRdbms.getPassword(),
+              baseRdbms.getPrefix(),
+              tenantId);
+      configurePtStorage =
+          configureRdbmsStorage(
+              ptConfig.url(),
+              ptConfig.username(),
+              ptConfig.password(),
+              ptConfig.prefix(),
+              ptConfig.databaseVendorId());
+
+      // Track the provisioned namespace so afterAll can drop it best-effort, preventing schemas /
+      // databases from accumulating on persistent shared instances (e.g. Aurora) across CI runs.
+      // The base connection params are captured here because the broker's config may have been
+      // rewritten to the per-PT URL by the time cleanup runs.
+      final var cleanupType = databaseType;
+      final String cleanupUrl = baseRdbms.getUrl();
+      final String cleanupUsername = baseRdbms.getUsername();
+      final String cleanupPassword = baseRdbms.getPassword();
+      final String cleanupNamespace =
+          PhysicalTenantSchemaProvisioner.buildNamespace(baseRdbms.getPrefix(), tenantId);
+      physicalTenantNamespaceCleanups.add(
+          () ->
+              PhysicalTenantSchemaProvisioner.dropNamespace(
+                  cleanupType, cleanupUrl, cleanupUsername, cleanupPassword, cleanupNamespace));
+    }
+
+    springApplication.withPtConfig(
+        tenantId,
+        camunda -> {
+          configurePtStorage.accept(camunda.getData().getSecondaryStorage());
+          isolateBackupLocation(
+              springApplication.unifiedConfig().getData().getPrimaryStorage().getBackup(),
+              camunda.getData().getPrimaryStorage().getBackup(),
+              tenantId);
+
+          final var init = camunda.getSecurity().getInitialization();
+          init.setUsers(rootInit.getUsers());
+          init.setRoles(rootInit.getRoles());
+          init.setMappingRules(rootInit.getMappingRules());
+          init.setGroups(rootInit.getGroups());
+          init.setAuthorizations(rootInit.getAuthorizations());
+          init.setTenants(rootInit.getTenants());
+
+          if (seedAdminUser) {
+            final var users = new ArrayList<>(init.getUsers());
+            users.add(
+                new ConfiguredUser(
+                    adminUsername,
+                    PT_ADMIN_PASSWORD,
+                    adminUsername,
+                    adminUsername + "@example.com"));
+            init.setUsers(users);
+            // Bind the admin role to this PT's own admin only — intentionally NOT inheriting the
+            // root/default-tenant default-role bindings, so a physical tenant stays isolated.
+            init.setDefaultRoles(Map.of("admin", Map.of("users", List.of(adminUsername))));
+          } else {
+            init.setDefaultRoles(rootInit.getDefaultRoles());
+          }
+        });
+
+    // A non-default physical tenant must explicitly declare which generic exporters run for it
+    // (PhysicalTenantExporterAssignedValidation, ADR-0008 D1/D2/D5) once any generic exporter
+    // exists in the root catalog. This harness registers recordingExporter (setupTestApplication)
+    // for every acceptance test, and physical-tenant tests assert on records exported from the
+    // tenant's own partitions (e.g. AuditLogUserTaskOperationsIT via RecordingExporter), so it is
+    // assigned here rather than narrowed away.
+    springApplication.withProperty(
+        "camunda.physical-tenants." + tenantId + ".data.exporters-assigned[0]",
+        "recordingExporter");
+
+    // A non-default physical tenant must declare its assigned authentication provider when
+    // running with OIDC; it does not inherit from root (PhysicalTenantAssignedProvidersValidation).
+    final var authenticationMethod =
+        springApplication.unifiedConfig().getSecurity().getAuthentication().getMethod();
+    final String assignedProviderProperty =
+        "camunda.physical-tenants."
+            + physicalTenantId
+            + ".security.authentication.providers.assigned[0]";
+    if (AuthenticationMethod.OIDC.equals(authenticationMethod)
+        && springApplication.property(assignedProviderProperty, String.class, null) == null) {
+      springApplication.withProperty(assignedProviderProperty, "oidc");
+    }
+  }
+
+  /**
+   * Gives the physical tenant its own backup location, the way it gets its own secondary storage. A
+   * tenant inherits the root backup configuration it does not override, and two tenants sharing one
+   * location would write their partition 1 backups to the same keys, which
+   * PrimaryStorageBackupIsolationValidation rejects at boot. The tenant id is appended to the
+   * configured base path rather than nested inside it, since a base path contains everything below
+   * its separator.
+   *
+   * <p>The store to isolate is read from the root configuration, not the tenant's: {@code
+   * withPtConfig} hands out a pristine {@link Camunda} whose values are only the ones this test
+   * explicitly overrides, and which is flattened into properties by diffing against a pristine
+   * instance. Everything else — including the backup store the tenant collides on — is inherited
+   * from the root at resolve time and is not visible here.
+   */
+  private static void isolateBackupLocation(
+      final PrimaryStorageBackup root, final PrimaryStorageBackup tenant, final String tenantId) {
+    switch (root.getStore()) {
+      case NONE -> {}
+      case FILESYSTEM ->
+          tenant
+              .getFilesystem()
+              .setBasePath(suffixed(root.getFilesystem().getBasePath(), tenantId));
+      case S3 -> tenant.getS3().setBasePath(suffixed(root.getS3().getBasePath(), tenantId));
+      case GCS -> tenant.getGcs().setBasePath(suffixed(root.getGcs().getBasePath(), tenantId));
+      case AZURE ->
+          tenant.getAzure().setBasePath(suffixed(root.getAzure().getBasePath(), tenantId));
+      default -> throw new IllegalArgumentException("Unsupported backup store: " + root.getStore());
+    }
+  }
+
+  private static String suffixed(final String basePath, final String tenantId) {
+    return basePath == null || basePath.isBlank() ? tenantId : basePath + "-" + tenantId;
+  }
+
+  private static Consumer<SecondaryStorage> configureRdbmsStorage(
+      final String url,
+      final String username,
+      final String password,
+      final String prefix,
+      final String databaseVendorId) {
+    return secondaryStorage -> {
+      secondaryStorage.setType(SecondaryStorageType.rdbms);
+      final var rdbms = secondaryStorage.getRdbms();
+      rdbms.setUrl(url);
+      rdbms.setUsername(username);
+      rdbms.setPassword(password);
+      rdbms.setPrefix(prefix);
+      if (databaseVendorId != null) {
+        // Oracle: pin the vendor so the production isolation check keys on the connecting user
+        // (schema-per-user), instead of collapsing the two PTs to a single storage location.
+        rdbms.setDatabaseVendorId(databaseVendorId);
+      }
+    };
+  }
+
+  private MultiPhysicalTenantClients buildMultiPhysicalTenantClients(final List<String> tenantIds) {
+    final Map<String, CamundaClient> clients = new LinkedHashMap<>();
+    for (final String tenantId : tenantIds) {
+      final String adminUsername = physicalTenantAdminUsername(tenantId);
+      final String base =
+          applicationUnderTest.application.restAddress().toString().replaceAll("/+$", "");
+      final URI restAddress = URI.create(base + "/physical-tenants/" + tenantId);
+      final CamundaClient client =
+          applicationUnderTest
+              .application
+              .newClientBuilder()
+              .physicalTenantId(tenantId)
+              .preferRestOverGrpc(true)
+              // the REST address already carries the /physical-tenants/<id> prefix, so opt out of
+              // the client's auto-prefixing to avoid a doubled path
+              .prefixPhysicalTenantPath(false)
+              .restAddress(restAddress)
+              .grpcAddress(applicationUnderTest.application.grpcAddress())
+              .credentialsProvider(
+                  new BasicAuthCredentialsProviderBuilder()
+                      .applyEnvironmentOverrides(false)
+                      .username(adminUsername)
+                      .password(PT_ADMIN_PASSWORD)
+                      .build())
+              .build();
+      clients.put(tenantId, client);
+    }
+    return new MultiPhysicalTenantClients(clients);
+  }
+
+  /**
+   * Waits until every physical tenant's secondary-storage schema is initialized, not just one.
+   *
+   * <p>The application's startup gate opens as soon as <em>any</em> physical tenant is serviceable
+   * and the rest have settled, so a tenant whose first schema attempt failed is still degraded and
+   * retrying in the background once the port is open. Components that consult that state degrade
+   * silently rather than failing: a persistent web session created on a degraded tenant is dropped
+   * with a warning, and the request that reads it back then sees no session at all. A test starting
+   * at that moment observes it as a flake, so the wait belongs here rather than in each test.
+   */
+  private void awaitEveryPhysicalTenantSecondaryStorageReady() {
+    if (!applicationUnderTest.shouldBeManaged) {
+      // the application is started by the test itself, so there is no context to consult here
+      return;
+    }
+    final TestStandaloneApplication<?> application = applicationUnderTest.application();
+    final PhysicalTenantIds tenantIds = application.bean(PhysicalTenantIds.class);
+    final SecondaryStorageReadiness readiness = application.bean(SecondaryStorageReadiness.class);
+    Awaitility.await("every physical tenant's secondary storage is ready")
+        .timeout(TIMEOUT_DATABASE_READINESS)
+        .until(() -> tenantIds.known().stream().allMatch(readiness::isReady));
+  }
+
+  private void awaitMultiPhysicalTenantAdminsReady(final MultiPhysicalTenantClients ptClients) {
+    for (final String tenantId : multiPhysicalTenantIds) {
+      final CamundaClient admin = ptClients.admin(tenantId);
+      Awaitility.await("per-PT admin ready for tenant " + tenantId)
+          .timeout(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> assertThat(admin.newUsersSearchRequest().send().join().items()).isNotNull());
+    }
+  }
+
+  private void awaitTestUserClientsAuthenticated(final TestEntityCollection testEntities) {
+    // @UserDefinition users are only ever created and cached against a
+    // BasicAuthCamundaClientTestFactory (see createClientsForTestEntities); under any other
+    // factory type none of them were created, so there is nothing to await here.
+    if (!(authenticatedClientFactory instanceof BasicAuthCamundaClientTestFactory)) {
+      return;
+    }
+    for (final TestUser user : testEntities.users()) {
+      final CamundaClient client = authenticatedClientFactory.getCamundaClient(user.username());
+      Awaitility.await("until user '%s' can authenticate".formatted(user.username()))
+          .timeout(Duration.ofSeconds(60))
+          .untilAsserted(
+              () ->
+                  assertThatNoException()
+                      .isThrownBy(() -> client.newTopologyRequest().send().join()));
+    }
+  }
+
+  private void injectStaticMultiPtClientsField(
+      final Class<?> testClass, final MultiPhysicalTenantClients ptClients) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == MultiPhysicalTenantClients.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, ptClients);
+          } else {
+            fail("MultiPhysicalTenantClients field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
+  private CamundaClientBuilder applyPhysicalTenant(final CamundaClientBuilder builder) {
+    // tenantRestAddress already prefixes the REST address with /physical-tenants/<id>, so opt out
+    // of the client's auto-prefixing to avoid a doubled path; the physical tenant id still drives
+    // the gRPC Camunda-Physical-Tenant header
+    return physicalTenantId != null
+        ? builder.physicalTenantId(physicalTenantId).prefixPhysicalTenantPath(false)
+        : builder;
+  }
+
+  private URI tenantRestAddress(final URI restAddress) {
+    if (physicalTenantId == null) {
+      return restAddress;
+    }
+    final String base = restAddress.toString().replaceAll("/+$", "");
+    // keep the trailing slash so the address matches the root REST address convention: raw-HTTP
+    // tests concatenate relative paths onto getRestAddress() (e.g. ApplicationAuthorizationIT's
+    // createUri), which 404s on ".../<tenant>v2/..." without it
+    return URI.create(base + "/physical-tenants/" + physicalTenantId + "/");
   }
 
   private void setupTestApplication(final Class<?> testClass) {
@@ -323,6 +841,40 @@ public class CamundaMultiDBExtension
     store.put(EXTENSION_COORDINATION_KEY, EXTENSION_NAME);
 
     final var databaseType = getDatabaseType(context);
+    physicalTenantId = getPhysicalTenant();
+    if (physicalTenantId == null) {
+      physicalTenantId =
+          AnnotationSupport.findAnnotation(testClass, MultiDbTest.class)
+              .map(MultiDbTest::physicalTenantId)
+              .filter(id -> !id.isBlank())
+              .orElse(null);
+    }
+    if (physicalTenantId != null
+        && !databaseType.storageType().isRdbms()
+        && !databaseType.storageType().isElasticSearch()
+        && !databaseType.storageType().isOpenSearch()) {
+      throw new IllegalStateException(
+          ("Physical-tenant mode (%s) is only supported on RDBMS, Elasticsearch or OpenSearch"
+                  + " storage; got %s.")
+              .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
+    }
+
+    // Multi-PT mode: @MultiDbPhysicalTenants overrides the single-PT path
+    final MultiDbPhysicalTenants multiPtAnnotation =
+        AnnotationSupport.findAnnotation(testClass, MultiDbPhysicalTenants.class).orElse(null);
+    if (multiPtAnnotation != null) {
+      if (!databaseType.storageType().isRdbms()
+          && !databaseType.storageType().isElasticSearch()
+          && !databaseType.storageType().isOpenSearch()) {
+        throw new IllegalStateException(
+            "@MultiDbPhysicalTenants is only supported on RDBMS, Elasticsearch or OpenSearch"
+                + " storage; got "
+                + databaseType);
+      }
+      multiPhysicalTenantIds = validatedPhysicalTenantIds(multiPtAnnotation.value());
+      // In multi-PT mode the single-PT path is inactive
+      physicalTenantId = null;
+    }
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
@@ -336,12 +888,14 @@ public class CamundaMultiDBExtension
             elasticSearchUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticsearchSetupHelper(elasticSearchUrl, expectedDescriptors);
+        ptSetupHelper = physicalTenantSetupHelper();
       }
       case ES -> {
         multiDbConfigurator.configureElasticsearchSupport(
             DEFAULT_ES_URL, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticsearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
+        ptSetupHelper = physicalTenantSetupHelper();
       }
       case OS -> {
         multiDbConfigurator.configureOpenSearchSupport(
@@ -353,56 +907,44 @@ public class CamundaMultiDBExtension
             false);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new OpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
+        ptSetupHelper = physicalTenantSetupHelper();
       }
       case RDBMS_H2 ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
               "sa",
-              "",
-              "org.h2.Driver");
+              "");
       case RDBMS_POSTGRES ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:postgresql:camunda",
-              "camunda",
-              "camunda",
-              "org.postgresql.Driver");
+              isHistoryRelatedTest, "jdbc:postgresql:camunda", "camunda", "camunda");
       case RDBMS_MARIADB ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
-              "jdbc:mariadb://localhost:3306/camunda",
+              "jdbc:mariadb://localhost:3306/camunda?sslMode=disable",
               "camunda",
-              "camunda",
-              "org.mariadb.jdbc.Driver");
+              "camunda");
       case RDBMS_MYSQL ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:mysql://localhost:3306/camunda",
-              "camunda",
-              "camunda",
-              "com.mysql.cj.jdbc.Driver");
+              isHistoryRelatedTest, "jdbc:mysql://localhost:3306/camunda", "camunda", "camunda");
       case RDBMS_ORACLE ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               "jdbc:oracle:thin:@localhost:1521/FREEPDB1",
               "camunda",
-              "camunda",
-              "oracle.jdbc.OracleDriver");
+              "camunda");
       case RDBMS_MSSQL ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               "jdbc:sqlserver://localhost:1433;Encrypt=false",
               "sa",
-              "Camunda#8_demo",
-              "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+              "Camunda#8_demo");
       case RDBMS_AURORA ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL),
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME),
-              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
-              "software.amazon.jdbc.Driver");
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD));
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
@@ -418,19 +960,21 @@ public class CamundaMultiDBExtension
       switch (getDatabaseType(context)) {
         case ES, LOCAL:
           setupHelper.applyIndexPoliciesPollInterval(Duration.ofSeconds(1));
+          // a physical tenant on its own cluster needs the same ILM cadence for cleanup;
+          // no-op when there is no separate physical tenant cluster
+          ptSetupHelper.applyIndexPoliciesPollInterval(Duration.ofSeconds(1));
           break;
         case OS:
           setupHelper.applyIndexPoliciesPollInterval(
               Duration.ofMinutes(1)); // OpenSearch can't go lower
+          ptSetupHelper.applyIndexPoliciesPollInterval(Duration.ofMinutes(1));
           break;
         default:
           break;
       }
     }
 
-    // we need to close the test application before cleaning up
-    closeables.add(() -> setupHelper.cleanup(testPrefix));
-    closeables.add(setupHelper);
+    // cleaning up secondary storage is explicitly handled in afterAll() method
 
     Awaitility.await("Await secondary storage connection")
         .timeout(TIMEOUT_DATABASE_READINESS)
@@ -442,25 +986,25 @@ public class CamundaMultiDBExtension
             .orElse(false);
     if (shouldSetupKeycloak) {
       setupKeycloak();
+      final var issuerUri =
+          keycloakContainer.getAuthServerUrl()
+              + "/realms/"
+              + CamundaMultiDBExtension.KEYCLOAK_REALM;
       applicationUnderTest
           .application()
           .withSecurityConfig(
-              cfg -> {
-                final var oidcConfig = cfg.getAuthentication().getOidc();
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
-                oidcConfig.setIssuerUri(
-                    keycloakContainer.getAuthServerUrl()
-                        + "/realms/"
-                        + CamundaMultiDBExtension.KEYCLOAK_REALM);
+              c -> {
+                c.getAuthentication().getOidc().setClientId("example");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com/sso-callback");
+                c.getAuthentication().getOidc().setIssuerUri(issuerUri);
               });
     }
 
     if (shouldSetupKeycloak) {
       authenticatedClientFactory =
           new OidcCamundaClientTestFactory(
-              applicationUnderTest.application.newClientBuilder(),
-              applicationUnderTest.application.restAddress(),
+              applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+              tenantRestAddress(applicationUnderTest.application.restAddress()),
               applicationUnderTest.application.grpcAddress(),
               testPrefix,
               keycloakContainer.getAuthServerUrl()
@@ -469,9 +1013,19 @@ public class CamundaMultiDBExtension
     } else {
       authenticatedClientFactory =
           new BasicAuthCamundaClientTestFactory(
-              applicationUnderTest.application.newClientBuilder(),
-              applicationUnderTest.application.restAddress(),
+              applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+              tenantRestAddress(applicationUnderTest.application.restAddress()),
               applicationUnderTest.application.grpcAddress());
+    }
+
+    final var archiverlessEnabled = System.getProperty(TEST_ARCHIVERLESS_ENABLED, "false");
+    if (archiverlessEnabled.equalsIgnoreCase("true")) {
+      applicationUnderTest.application.withUnifiedConfig(
+          camunda -> {
+            final var ordinalsConfig = camunda.getProcessing().getEngine().getStorageOrdinals();
+            ordinalsConfig.setEnableArchiverless(true);
+            ordinalsConfig.setFixedStorageOrdinals(List.of(1));
+          });
     }
 
     final TestEntityCollection testEntities = new TestEntityCollector().collect(testClass);
@@ -480,16 +1034,52 @@ public class CamundaMultiDBExtension
     applicationUnderTest.application.withSecurityConfig(
         cfg -> {
           final var config = cfg.getInitialization();
-          config.getUsers().addAll(configuredEntities.users());
-          config.getRoles().addAll(configuredEntities.roles());
-          config.getMappingRules().addAll(configuredEntities.mappingRules());
-          config.getGroups().addAll(configuredEntities.groups());
-          config.getAuthorizations().addAll(configuredEntities.authorizations());
-          config.getTenants().addAll(configuredEntities.tenants());
+          final var users = new ArrayList<>(config.getUsers());
+          users.addAll(configuredEntities.users());
+          config.setUsers(users);
+
+          final var roles = new ArrayList<>(config.getRoles());
+          roles.addAll(configuredEntities.roles());
+          config.setRoles(roles);
+
+          final var mappingRules = new ArrayList<>(config.getMappingRules());
+          mappingRules.addAll(configuredEntities.mappingRules());
+          config.setMappingRules(mappingRules);
+
+          final var groups = new ArrayList<>(config.getGroups());
+          groups.addAll(configuredEntities.groups());
+          config.setGroups(groups);
+
+          final var authorizations = new ArrayList<>(config.getAuthorizations());
+          authorizations.addAll(configuredEntities.authorizations());
+          config.setAuthorizations(authorizations);
+
+          final var tenants = new ArrayList<>(config.getTenants());
+          tenants.addAll(configuredEntities.tenants());
+          config.setTenants(tenants);
         });
+
+    if (physicalTenantId != null) {
+      configurePhysicalTenant();
+    }
+
+    if (multiPhysicalTenantIds != null) {
+      configurePhysicalTenants(multiPhysicalTenantIds);
+    }
 
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
+    }
+
+    if (physicalTenantId != null || multiPhysicalTenantIds != null) {
+      awaitEveryPhysicalTenantSecondaryStorageReady();
+    }
+
+    if (multiPhysicalTenantIds != null) {
+      multiPhysicalTenantClients = buildMultiPhysicalTenantClients(multiPhysicalTenantIds);
+      closeables.add(multiPhysicalTenantClients);
+      awaitMultiPhysicalTenantAdminsReady(multiPhysicalTenantClients);
+      injectStaticMultiPtClientsField(testClass, multiPhysicalTenantClients);
     }
 
     final EntityManager entityManager =
@@ -499,11 +1089,14 @@ public class CamundaMultiDBExtension
 
     createClientsForTestEntities(shouldSetupKeycloak, testEntities);
 
+    awaitTestUserClientsAuthenticated(testEntities);
+
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
     injectStaticDatabaseTypeField(testClass, context);
+    injectStaticClientTestFactoryField(testClass);
   }
 
   private KeycloakContainer setupKeycloak() {
@@ -535,8 +1128,8 @@ public class CamundaMultiDBExtension
                 final var clientFactory =
                     (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
                 clientFactory.createClientForUser(
-                    applicationUnderTest.application.newClientBuilder(),
-                    applicationUnderTest.application.restAddress(),
+                    applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                    tenantRestAddress(applicationUnderTest.application.restAddress()),
                     applicationUnderTest.application.grpcAddress(),
                     user);
               } catch (final ClassCastException e) {
@@ -553,8 +1146,8 @@ public class CamundaMultiDBExtension
               try {
                 final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
                 clientFactory.createClientForMappingRule(
-                    applicationUnderTest.application.newClientBuilder(),
-                    applicationUnderTest.application.restAddress(),
+                    applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                    tenantRestAddress(applicationUnderTest.application.restAddress()),
                     applicationUnderTest.application.grpcAddress(),
                     mappingRule);
               } catch (final ClassCastException e) {
@@ -575,8 +1168,8 @@ public class CamundaMultiDBExtension
               try {
                 final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
                 clientFactory.createClientForClient(
-                    applicationUnderTest.application.newClientBuilder(),
-                    applicationUnderTest.application.restAddress(),
+                    applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                    tenantRestAddress(applicationUnderTest.application.restAddress()),
                     applicationUnderTest.application.grpcAddress(),
                     client);
               } catch (final ClassCastException e) {
@@ -615,19 +1208,165 @@ public class CamundaMultiDBExtension
   private void manageApplicationUnderTest() {
     final var application = applicationUnderTest.application;
     closeables.add(application);
-    application.start();
+    startWithinTimeout(application);
+    final var clusterCfg = application.unifiedConfig().getCluster();
     application.awaitCompleteTopology(
-        application.unifiedConfig(), authenticatedClientFactory.getAdminCamundaClient());
+        clusterCfg.getSize(),
+        clusterCfg.getPartitionCount(),
+        clusterCfg.getReplicationFactor(),
+        Duration.ofSeconds(30),
+        authenticatedClientFactory.getAdminCamundaClient());
 
     Awaitility.await("Await exporter readiness")
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(testPrefix));
+
+    if ((physicalTenantId != null || multiPhysicalTenantIds != null)
+        && application
+            .clientAuthenticationMethod()
+            .map(AuthenticationMethod.BASIC::equals)
+            .orElse(false)) {
+      try (final var defaultScopeClient = application.newClientBuilder().build()) {
+        application.awaitCompleteTopology(
+            clusterCfg.getSize(),
+            clusterCfg.getPartitionCount(),
+            clusterCfg.getReplicationFactor(),
+            Duration.ofSeconds(30),
+            defaultScopeClient);
+      }
+    }
+  }
+
+  /**
+   * Starts the application on a separate thread so a startup that never returns fails the class
+   * instead of hanging the fork. Only the bootstrap call moves: every pool the application builds
+   * during startup is created by its own code with its own factory, so thread usage afterwards is
+   * unchanged. Also logs a threaddump when the timeout is hit, so a hang leaves evidence for later
+   * debugging & fixing tests.
+   *
+   * <p>A startup that outlives the timeout is handed to {@link
+   * #abandonStartup(TestStandaloneApplication, ExecutorService)}.
+   */
+  private void startWithinTimeout(final TestStandaloneApplication<?> application) {
+    final var starter =
+        Executors.newSingleThreadExecutor(r -> new Thread(r, "multidbext-app-startup"));
+    final var startupFuture = starter.submit(application::start);
+    try {
+      startupFuture.get(TIMEOUT_APPLICATION_STARTUP.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final TimeoutException e) {
+      LOGGER.error(
+          "The test application used for the MultiDbTest within CamundaMultiDBExtension did not "
+              + "start within {}. Thread dump follows.\n{}",
+          TIMEOUT_APPLICATION_STARTUP,
+          threadDump());
+      startupFuture.cancel(true);
+      abandonStartup(application, starter);
+      throw new IllegalStateException(
+          "The test application used for the MultiDbTest within CamundaMultiDBExtension did not "
+              + "start within %s".formatted(TIMEOUT_APPLICATION_STARTUP),
+          e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      startupFuture.cancel(true);
+      abandonStartup(application, starter);
+      throw new IllegalStateException(
+          "Interrupted while starting the test application used "
+              + "for the MultiDbTest within CamundaMultiDBExtension",
+          e);
+    } catch (final ExecutionException e) {
+      throw new IllegalStateException(
+          "The test application used for the MultiDbTest within "
+              + "CamundaMultiDBExtension failed to start",
+          e.getCause());
+    } finally {
+      // orderly, so a close queued by abandonStartup still runs once start() returns
+      starter.shutdown();
+    }
+  }
+
+  /**
+   * This will reuse the same executor service to trigger closing the application. As it is single
+   * threaded, will only execute once it returns from start() - if it ever does.
+   *
+   * <p>A startup that completes after its timeout would otherwise leave a broker nobody closes and
+   * may introduce weird test behaviors in the same fork. This would interrupt the startup thread,
+   * which would force Spring to unwind the half-built context and close it. It is not guaranteed
+   * that actions from the spring cleanup here may all complete before `afterAll()` runs, and as a
+   * result, resources may not get cleaned up fully. This is a known and accepted limitation, and as
+   * we have cleanup at the beginning of tests, would not cause issues for next run. This is
+   * preferred over delaying every failed class to wait for a startup that may never return.
+   */
+  private void abandonStartup(
+      final TestStandaloneApplication<?> application, final ExecutorService starter) {
+    closeables.remove(application);
+    starter.execute(
+        () -> {
+          LOGGER.warn(
+              "The test application used for the MultiDbTest within CamundaMultiDBExtension "
+                  + "started after its timeout had already failed the class; closing it now so it "
+                  + "stops writing to the secondary storage and releases its ports.");
+          CloseHelper.quietClose(application);
+        });
+  }
+
+  private static String threadDump() {
+    final var bean = ManagementFactory.getThreadMXBean();
+    return Arrays.stream(bean.dumpAllThreads(true, true))
+        .map(CamundaMultiDBExtension::describeThread)
+        .collect(Collectors.joining());
+  }
+
+  /**
+   * Renders a thread very similar to {@link ThreadInfo#toString()} does, without the frame limit.
+   */
+  private static String describeThread(final ThreadInfo info) {
+    final var description =
+        new StringBuilder(
+            "\"%s\"%s prio=%d Id=%d %s"
+                .formatted(
+                    info.getThreadName(),
+                    info.isDaemon() ? " daemon" : "",
+                    info.getPriority(),
+                    info.getThreadId(),
+                    info.getThreadState()));
+
+    description.append(
+        "%s%s%s%s\n"
+            .formatted(
+                info.getLockName() != null ? " on " + info.getLockName() : "",
+                info.getLockOwnerName() != null
+                    ? " owned by \"" + info.getLockOwnerName() + "\"  Id=" + info.getLockOwnerId()
+                    : "",
+                info.isSuspended() ? " (suspended)" : "",
+                info.isInNative() ? " (in native)" : ""));
+
+    int depth = 0;
+    for (final var frame : info.getStackTrace()) {
+      description.append("\n\tat ").append(frame);
+      if (depth == 0 && info.getLockInfo() != null) {
+        final String state =
+            switch (info.getThreadState()) {
+              case BLOCKED -> "blocked";
+              case WAITING, TIMED_WAITING -> "waiting";
+              default -> null;
+            };
+        if (state != null) {
+          description
+              .append("\n\t- BOO %s on ".formatted(state))
+              .append(info.getLockInfo())
+              .append('\n');
+        }
+      }
+      depth++;
+    }
+
+    return description.append('\n').toString();
   }
 
   private ElasticsearchContainer setupElasticsearch() {
     final ElasticsearchContainer elasticsearchContainer =
-        TestSearchContainers.createDefeaultElasticsearchContainer()
+        TestSearchContainers.createDefaultElasticsearchContainer()
             // We need to configure ILM to run more often, to make sure data is cleaned up earlier
             // Useful for tests where we verify history clean up
             // Default is 10m
@@ -724,6 +1463,32 @@ public class CamundaMultiDBExtension
     }
   }
 
+  /**
+   * Injects the physical-tenant-aware client factory so tests that need a {@link CamundaClient} for
+   * a runtime-determined identity (e.g. a {@code TestClient} coming from a parameterized
+   * {@code @MethodSource}, rather than a compile-time constant usable with {@link Authenticated})
+   * can look it up via {@link CamundaClientTestFactory#getCamundaClient(String)} instead of
+   * building their own client. A client built directly from the test application (e.g. via {@code
+   * BROKER.newClientBuilder()}) bypasses physical-tenant scoping and ends up talking to the
+   * "default" physical tenant instead of the one the test was set up under.
+   */
+  private void injectStaticClientTestFactoryField(final Class<?> testClass) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == CamundaClientTestFactory.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, authenticatedClientFactory);
+          } else {
+            fail("CamundaClientTestFactory field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
   @Override
   public void afterAll(final @NonNull ExtensionContext context) throws Exception {
     // Only cleanup if this extension actually ran
@@ -732,8 +1497,36 @@ public class CamundaMultiDBExtension
       return;
     }
 
+    // 1. Stop application and other resources first (forward iteration)
     CloseHelper.quietCloseAll(closeables);
     CloseHelper.quietClose(authenticatedClientFactory);
+
+    // 2. Drop per-physical-tenant schemas/databases provisioned for this run, now that the broker
+    // has stopped writing. Best-effort: failures are logged inside dropNamespace and never fail the
+    // run, so persistent shared instances (e.g. Aurora) don't accumulate orphaned namespaces.
+    physicalTenantNamespaceCleanups.forEach(Runnable::run);
+    physicalTenantNamespaceCleanups.clear();
+
+    // 3. Delete test indices now that the application has stopped writing
+    if (testPrefix != null) {
+      try {
+        setupHelper.cleanup(testPrefix);
+      } catch (final Exception e) {
+        LOGGER.warn("Failed to cleanup indices with prefix {}", testPrefix, e);
+      }
+      try {
+        // a physical tenant on its own cluster accumulates each class's schema otherwise, until
+        // the cluster's shard limit blocks schema creation and stalls the next application start;
+        // no-op when there is no separate physical tenant cluster
+        ptSetupHelper.cleanup(testPrefix);
+      } catch (final Exception e) {
+        LOGGER.warn("Failed to cleanup physical tenant indices with prefix {}", testPrefix, e);
+      }
+    }
+    CloseHelper.quietClose(setupHelper);
+    CloseHelper.quietClose(ptSetupHelper);
+
+    // 4. Reset exporter to make sure it doesn't interfere with other tests
     RecordingExporter.reset();
 
     coordinationStore(context).remove(EXTENSION_COORDINATION_KEY);
@@ -772,8 +1565,8 @@ public class CamundaMultiDBExtension
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
-        applicationUnderTest.application.newClientBuilder(),
-        applicationUnderTest.application.restAddress(),
+        applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+        tenantRestAddress(applicationUnderTest.application.restAddress()),
         authenticated);
   }
 
@@ -803,17 +1596,33 @@ public class CamundaMultiDBExtension
     public void close() throws Exception {}
   }
 
+  /**
+   * Test database flavors, each mapped to the storage family it exercises. The family
+   * (Elasticsearch / OpenSearch / RDBMS) is reused from the production {@link
+   * io.camunda.search.connect.configuration.DatabaseType} so capability checks (e.g. RDBMS-only
+   * features) don't hard-code flavor lists here.
+   */
   public enum DatabaseType {
-    LOCAL,
-    ES,
-    OS,
-    RDBMS_H2,
-    RDBMS_MARIADB,
-    RDBMS_MSSQL,
-    RDBMS_MYSQL,
-    RDBMS_ORACLE,
-    RDBMS_POSTGRES,
-    RDBMS_AURORA,
-    AWS_OS
+    LOCAL(io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+    ES(io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+    OS(io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH),
+    RDBMS_H2(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_MARIADB(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_MSSQL(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_MYSQL(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_ORACLE(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_POSTGRES(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    RDBMS_AURORA(io.camunda.search.connect.configuration.DatabaseType.RDBMS),
+    AWS_OS(io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
+
+    private final io.camunda.search.connect.configuration.DatabaseType storageType;
+
+    DatabaseType(final io.camunda.search.connect.configuration.DatabaseType storageType) {
+      this.storageType = storageType;
+    }
+
+    public io.camunda.search.connect.configuration.DatabaseType storageType() {
+      return storageType;
+    }
   }
 }

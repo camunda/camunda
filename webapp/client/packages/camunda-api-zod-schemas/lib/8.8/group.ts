@@ -18,21 +18,21 @@ type CreateGroupRequestBody = z.infer<typeof createGroupRequestBodySchema>;
 const createGroupResponseBodySchema = groupSchema;
 type CreateGroupResponseBody = z.infer<typeof createGroupResponseBodySchema>;
 
-const createGroup: Endpoint = {
+const createGroup = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/groups`;
+		return `/${API_VERSION}/groups` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const getGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const getGroup = {
 	method: 'GET',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
 const getGroupResponseBodySchema = groupSchema;
 type GetGroupResponseBody = z.infer<typeof getGroupResponseBodySchema>;
@@ -46,23 +46,23 @@ type UpdateGroupRequestBody = z.infer<typeof updateGroupRequestBodySchema>;
 const updateGroupResponseBodySchema = groupSchema;
 type UpdateGroupResponseBody = z.infer<typeof updateGroupResponseBodySchema>;
 
-const updateGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const updateGroup = {
 	method: 'PUT',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const deleteGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const deleteGroup = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
 const queryGroupsRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'groupId'] as const,
@@ -78,12 +78,12 @@ type QueryGroupsRequestBody = z.infer<typeof queryGroupsRequestBodySchema>;
 const queryGroupsResponseBodySchema = getQueryResponseBodySchema(groupSchema);
 type QueryGroupsResponseBody = z.infer<typeof queryGroupsResponseBodySchema>;
 
-const queryGroups: Endpoint = {
+const queryGroups = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/groups/search`;
+		return `/${API_VERSION}/groups/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 const queryUsersByGroupRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['username'] as const,
@@ -94,14 +94,14 @@ type QueryUsersByGroupRequestBody = z.infer<typeof queryUsersByGroupRequestBodyS
 const queryUsersByGroupResponseBodySchema = getQueryResponseBodySchema(userSchema.pick({username: true}));
 type QueryUsersByGroupResponseBody = z.infer<typeof queryUsersByGroupResponseBodySchema>;
 
-const queryUsersByGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const queryUsersByGroup = {
 	method: 'POST',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/search` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
 const queryClientsByGroupRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['clientId'] as const,
@@ -116,14 +116,14 @@ const queryClientsByGroupResponseBodySchema = getQueryResponseBodySchema(
 );
 type QueryClientsByGroupResponseBody = z.infer<typeof queryClientsByGroupResponseBodySchema>;
 
-const queryClientsByGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const queryClientsByGroup = {
 	method: 'POST',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/search` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
 const queryRolesByGroupRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'roleId'] as const,
@@ -139,14 +139,14 @@ type QueryRolesByGroupRequestBody = z.infer<typeof queryRolesByGroupRequestBodyS
 const queryRolesByGroupResponseBodySchema = getQueryResponseBodySchema(roleSchema.pick({roleId: true, name: true}));
 type QueryRolesByGroupResponseBody = z.infer<typeof queryRolesByGroupResponseBodySchema>;
 
-const queryRolesByGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const queryRolesByGroup = {
 	method: 'POST',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/roles/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/roles/search` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
 const queryMappingRulesByGroupRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['claimName', 'claimValue', 'name'] as const,
@@ -163,68 +163,68 @@ type QueryMappingRulesByGroupRequestBody = z.infer<typeof queryMappingRulesByGro
 const queryMappingRulesByGroupResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesByGroupResponseBody = z.infer<typeof queryMappingRulesByGroupResponseBodySchema>;
 
-const queryMappingRulesByGroup: Endpoint<Pick<Group, 'groupId'>> = {
+const queryMappingRulesByGroup = {
 	method: 'POST',
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/search` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'>>;
 
-const assignUserToGroup: Endpoint<Pick<Group, 'groupId'> & {username: string}> = {
+const assignUserToGroup = {
 	method: 'PUT',
 	getUrl(params) {
 		const {groupId, username} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'> & {username: string}>;
 
-const unassignUserFromGroup: Endpoint<Pick<Group, 'groupId'> & {username: string}> = {
+const unassignUserFromGroup = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {groupId, username} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'> & {username: string}>;
 
-const assignClientToGroup: Endpoint<Pick<Group, 'groupId'> & {clientId: string}> = {
+const assignClientToGroup = {
 	method: 'PUT',
 	getUrl(params) {
 		const {groupId, clientId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'> & {clientId: string}>;
 
-const unassignClientFromGroup: Endpoint<Pick<Group, 'groupId'> & {clientId: string}> = {
+const unassignClientFromGroup = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {groupId, clientId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'> & {clientId: string}>;
 
-const assignMappingToGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingRuleId'>> = {
+const assignMappingToGroup = {
 	method: 'PUT',
 	getUrl(params) {
 		const {groupId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingRuleId'>>;
 
-const unassignMappingFromGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingRuleId'>> = {
+const unassignMappingFromGroup = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {groupId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingRuleId'>>;
 
 export {
 	createGroup,

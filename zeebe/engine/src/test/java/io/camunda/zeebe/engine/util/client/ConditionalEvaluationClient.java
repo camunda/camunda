@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
@@ -78,6 +79,13 @@ public class ConditionalEvaluationClient {
     final long position =
         writer.writeCommand(
             ConditionalEvaluationIntent.EVALUATE, username, conditionalEvaluationRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<ConditionalEvaluationRecordValue> evaluate(final AuthInfo authorizations) {
+    final long position =
+        writer.writeCommand(
+            ConditionalEvaluationIntent.EVALUATE, conditionalEvaluationRecord, authorizations);
     return expectation.apply(position);
   }
 }

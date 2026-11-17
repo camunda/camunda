@@ -32,6 +32,7 @@ public record IncidentDbModel(
     IncidentState state,
     String treePath,
     String tenantId,
+    Integer storageOrdinal,
     int partitionId)
     implements DbModel<IncidentDbModel> {
 
@@ -59,6 +60,7 @@ public record IncidentDbModel(
                 .state(state)
                 .treePath(treePath)
                 .tenantId(tenantId)
+                .storageOrdinal(storageOrdinal)
                 .partitionId(partitionId))
         .build();
   }
@@ -89,6 +91,7 @@ public record IncidentDbModel(
         state,
         treePath,
         tenantId,
+        storageOrdinal,
         partitionId);
   }
 
@@ -109,6 +112,7 @@ public record IncidentDbModel(
     private IncidentState state;
     private String treePath;
     private String tenantId;
+    private Integer storageOrdinal;
     private int partitionId;
 
     public Builder incidentKey(final Long incidentKey) {
@@ -186,6 +190,11 @@ public record IncidentDbModel(
       return this;
     }
 
+    public Builder storageOrdinal(final Integer storageOrdinal) {
+      this.storageOrdinal = storageOrdinal;
+      return this;
+    }
+
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
@@ -209,6 +218,7 @@ public record IncidentDbModel(
           state,
           treePath,
           tenantId,
+          storageOrdinal,
           partitionId);
     }
   }

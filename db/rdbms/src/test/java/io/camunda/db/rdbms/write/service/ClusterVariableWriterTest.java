@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +20,8 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ClusterVariableWriterTest {
@@ -38,6 +41,7 @@ class ClusterVariableWriterTest {
     final var truncatedModel = mock(ClusterVariableDbModel.class);
     when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
     when(model.id()).thenReturn("var1");
+    when(truncatedModel.metadata()).thenReturn(List.of());
 
     writer.create(model);
 
@@ -50,6 +54,48 @@ class ClusterVariableWriterTest {
                     "var1",
                     "io.camunda.db.rdbms.sql.ClusterVariableMapper.insert",
                     truncatedModel)));
+    verify(executionQueue, never())
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.INSERT,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.insertMetadata",
+                    truncatedModel)));
+  }
+
+  @Test
+  void shouldCreateClusterVariableWithMetadata() {
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+
+    final var model = mock(ClusterVariableDbModel.class);
+    final var truncatedModel = mock(ClusterVariableDbModel.class);
+    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.id()).thenReturn("var1");
+    when(truncatedModel.metadata()).thenReturn(List.of(new MetadataEntry("kind", "X", null)));
+
+    writer.create(model);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.INSERT,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.insert",
+                    truncatedModel)));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.INSERT,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.insertMetadata",
+                    truncatedModel)));
   }
 
   @Test
@@ -59,6 +105,15 @@ class ClusterVariableWriterTest {
 
     writer.delete(model);
 
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.DELETE,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.deleteMetadata",
+                    "var1")));
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -79,6 +134,7 @@ class ClusterVariableWriterTest {
     final var truncatedModel = mock(ClusterVariableDbModel.class);
     when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
     when(model.id()).thenReturn("var1");
+    when(truncatedModel.metadata()).thenReturn(List.of());
 
     writer.update(model);
 
@@ -90,6 +146,57 @@ class ClusterVariableWriterTest {
                     WriteStatementType.UPDATE,
                     "var1",
                     "io.camunda.db.rdbms.sql.ClusterVariableMapper.update",
+                    truncatedModel)));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.DELETE,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.deleteMetadata",
+                    "var1")));
+    verify(executionQueue, never())
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.INSERT,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.insertMetadata",
+                    truncatedModel)));
+  }
+
+  @Test
+  void shouldUpdateClusterVariableReplacesMetadata() {
+    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+
+    final var model = mock(ClusterVariableDbModel.class);
+    final var truncatedModel = mock(ClusterVariableDbModel.class);
+    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    when(model.id()).thenReturn("var1");
+    when(truncatedModel.metadata()).thenReturn(List.of(new MetadataEntry("kind", "X", null)));
+
+    writer.update(model);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.DELETE,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.deleteMetadata",
+                    "var1")));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.CLUSTER_VARIABLE,
+                    WriteStatementType.INSERT,
+                    "var1",
+                    "io.camunda.db.rdbms.sql.ClusterVariableMapper.insertMetadata",
                     truncatedModel)));
   }
 }

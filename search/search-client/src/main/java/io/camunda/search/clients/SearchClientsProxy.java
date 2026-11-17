@@ -8,10 +8,14 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.clients.impl.NoopSearchClientsProxy;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.search.clients.tenant.PhysicalTenantScoped;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface SearchClientsProxy
-    extends AuditLogSearchClient,
+    extends AgentDefinitionSearchClient,
+        AgentHistorySearchClient,
+        AgentInstanceSearchClient,
+        AuditLogSearchClient,
         AuthorizationSearchClient,
         BatchOperationSearchClient,
         DecisionDefinitionSearchClient,
@@ -34,8 +38,14 @@ public interface SearchClientsProxy
         UserSearchClient,
         VariableSearchClient,
         ClusterVariableSearchClient,
+        VariableHistorySearchClient,
         GlobalListenerSearchClient,
-        DeployedResourceSearchClient {
+        DeployedResourceSearchClient,
+        WaitStateSearchClient,
+        PhysicalTenantScoped<SearchClientsProxy> {
+
+  @Override
+  SearchClientsProxy withPhysicalTenant(final String physicalTenantId);
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);

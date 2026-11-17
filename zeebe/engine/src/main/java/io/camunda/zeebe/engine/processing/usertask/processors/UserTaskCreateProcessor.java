@@ -100,7 +100,7 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
         .ifPresentOrElse(
             listener ->
                 jobBehavior.createNewTaskListenerJob(
-                    context, userTaskRecord, listener, List.of(UserTaskRecord.ASSIGNEE)),
+                    context, userTaskRecord, element, listener, List.of(UserTaskRecord.ASSIGNEE)),
             () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 }

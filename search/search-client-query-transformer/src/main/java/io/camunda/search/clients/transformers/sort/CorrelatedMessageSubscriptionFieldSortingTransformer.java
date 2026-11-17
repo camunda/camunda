@@ -15,6 +15,7 @@ public class CorrelatedMessageSubscriptionFieldSortingTransformer
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
+      case "businessId" -> BUSINESS_ID;
       case "correlationKey" -> CORRELATION_KEY;
       case "correlationTime" -> CORRELATION_TIME;
       case "flowNodeId" -> FLOW_NODE_ID;

@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
 
@@ -52,13 +54,18 @@ public final class JobStreamEndpoint {
    * Returns the complete list of remote and client job streams as an object with two keys: {@code
    * remote} and {@code client}. Both are collections of the job streams of the appropriate type.
    *
+   * <p>Without the {@code physicalTenant} query parameter, streams from every physical tenant are
+   * included (today's whole-cluster meaning). With the parameter, only streams belonging to that
+   * physical tenant are returned.
+   *
    * <p>This view is mostly used for human debugging to quickly correlate the state of a stream on
    * the gateway and brokers.
    */
   @ReadOperation
-  public WebEndpointResponse<JobStreams> list() {
+  public WebEndpointResponse<JobStreams> list(@Nullable final String physicalTenant) {
+    final var tenant = Optional.ofNullable(physicalTenant).filter(t -> !t.isBlank());
     return new WebEndpointResponse<>(
-        new JobStreams(getRemoteStreams(), getClientStreams()),
+        new JobStreams(getRemoteStreams(tenant), getClientStreams(tenant)),
         200,
         MimeTypeUtils.APPLICATION_JSON);
   }
@@ -68,10 +75,14 @@ public final class JobStreamEndpoint {
    * {@code type}. If the type is unknown, returns a 400 with a singleton map containing an error
    * field with an appropriate message.
    *
+   * <p>Without the {@code physicalTenant} query parameter, streams from every physical tenant are
+   * included. With the parameter, only streams belonging to that physical tenant are returned.
+   *
    * @param type the type of streams to return
    */
   @ReadOperation
-  public WebEndpointResponse<?> list(final @Selector String type) {
+  public WebEndpointResponse<?> list(
+      final @Selector String type, @Nullable final String physicalTenant) {
     if (!TYPES.contains(type)) {
       return new WebEndpointResponse<>(
           Map.of("error", "No known stream type '%s'; should be one of %s".formatted(type, TYPES)),
@@ -79,16 +90,18 @@ public final class JobStreamEndpoint {
           MimeTypeUtils.APPLICATION_JSON);
     }
 
-    final Collection<?> streams = "client".equals(type) ? getClientStreams() : getRemoteStreams();
+    final var tenant = Optional.ofNullable(physicalTenant).filter(t -> !t.isBlank());
+    final Collection<?> streams =
+        "client".equals(type) ? getClientStreams(tenant) : getRemoteStreams(tenant);
     return new WebEndpointResponse<>(streams, 200, MimeTypeUtils.APPLICATION_JSON);
   }
 
-  private Collection<RemoteJobStream> getRemoteStreams() {
-    return transformRemote(service.remoteJobStreams());
+  private Collection<RemoteJobStream> getRemoteStreams(final Optional<String> physicalTenantId) {
+    return transformRemote(service.remoteJobStreams(physicalTenantId));
   }
 
-  private Collection<ClientJobStream> getClientStreams() {
-    return transformClient(service.clientJobStreams());
+  private Collection<ClientJobStream> getClientStreams(final Optional<String> physicalTenantId) {
+    return transformClient(service.clientJobStreams(physicalTenantId));
   }
 
   private Collection<RemoteJobStream> transformRemote(
@@ -167,6 +180,25 @@ public final class JobStreamEndpoint {
 
     /** Returns the list of registered client/gateway job streams. */
     Collection<ClientStream<JobActivationProperties>> clientJobStreams();
+
+    /**
+     * Returns the list of registered remote/broker job streams, optionally filtered to a single
+     * physical tenant. The default implementation ignores the filter and returns every stream;
+     * tenant-aware implementations should override this to narrow the result.
+     */
+    default Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams(
+        final Optional<String> physicalTenantId) {
+      return remoteJobStreams();
+    }
+
+    /**
+     * Returns the list of registered client/gateway job streams, optionally filtered to a single
+     * physical tenant. The default implementation ignores the filter and returns every stream.
+     */
+    default Collection<ClientStream<JobActivationProperties>> clientJobStreams(
+        final Optional<String> physicalTenantId) {
+      return clientJobStreams();
+    }
   }
 
   public interface JobStream {

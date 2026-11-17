@@ -1,0 +1,741 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration.physicaltenants;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Secrets;
+import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
+import org.springframework.mock.env.MockEnvironment;
+
+class PhysicalTenantSecretsOverlayTest {
+
+  private MockEnvironment environment;
+
+  @BeforeEach
+  void setUp() {
+    environment = new MockEnvironment();
+    environment.setProperty("camunda.data.secondary-storage.type", "none");
+    UnifiedConfigurationHelper.setCustomEnvironment(environment);
+  }
+
+  @AfterEach
+  void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
+
+  private PhysicalTenantResolver newResolver() {
+    final Camunda camunda = new Camunda();
+    Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
+    return PhysicalTenantResolver.of(environment, camunda);
+  }
+
+  /**
+   * Sets {@code properties} and, for each given tenant, adds the admin user that {@code
+   * PhysicalTenantRequiredOverrideValidation} requires.
+   */
+  private void setProperties(final Map<String, Object> properties, final String... tenantIds) {
+    final Map<String, Object> all = new HashMap<>(properties);
+    for (final String tenantId : tenantIds) {
+      all.put(
+          "camunda.physical-tenants."
+              + tenantId
+              + ".security.initialization.default-roles.admin.users[0]",
+          tenantId + "-admin");
+    }
+    environment.getPropertySources().addFirst(new MapPropertySource("test", all));
+  }
+
+  @Test
+  void shouldOverlayFileStorePathPerTenant() {
+    // given a root file store and a tenant that overrides its path
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.file.shared.path", "/root/secrets.txt",
+                "camunda.physical-tenants.tenanta.secrets.stores.file.shared.path",
+                    "/tenanta/secrets.txt")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own path and the synthesized default keeps the root path
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getFile()
+                .get("shared")
+                .getPath())
+        .isEqualTo("/tenanta/secrets.txt");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getFile()
+                .get("shared")
+                .getPath())
+        .isEqualTo("/root/secrets.txt");
+  }
+
+  @Test
+  void shouldInheritRootFileStoreWhenTenantHasNoSecretsOverride() {
+    // given only a root file store; the tenant overrides no secrets field
+    setProperties(
+        new HashMap<>(Map.of("camunda.secrets.stores.file.shared.path", "/root/secrets.txt")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits the root file store (non-overridden -> seeded from root bind)
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getFile()
+                .get("shared")
+                .getPath())
+        .isEqualTo("/root/secrets.txt");
+  }
+
+  @Test
+  void shouldExposePerTenantSecretsViaRegistry() {
+    // given a root and a tenant override, verify
+    // PhysicalTenantResolver.mapValues(Camunda::getSecrets)
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.file.shared.path", "/root/secrets.txt",
+                "camunda.physical-tenants.tenanta.secrets.stores.file.shared.path",
+                    "/tenanta/secrets.txt")),
+        "tenanta");
+
+    // when the registry is built from the resolver
+    final Map<String, Secrets> registry = newResolver().mapValues(Camunda::getSecrets);
+
+    // then it contains a Secrets per tenant with the correct per-tenant path
+    assertThat(registry).containsKeys("tenanta", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(registry.get("tenanta").getStores().getFile().get("shared").getPath())
+        .isEqualTo("/tenanta/secrets.txt");
+    assertThat(
+            registry
+                .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getStores()
+                .getFile()
+                .get("shared")
+                .getPath())
+        .isEqualTo("/root/secrets.txt");
+  }
+
+  @Test
+  void shouldOverlayAwsSecretsManagerStorePerTenant() {
+    // given a root aws store and a tenant that overrides its path-prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.path-prefix",
+                    "tenanta/")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own path-prefix and the synthesized default keeps the root one
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getAws()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("tenanta/");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getAws()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("camunda/");
+  }
+
+  @Test
+  void shouldInheritRootAwsSecretsManagerStoreWhenTenantHasNoSecretsOverride() {
+    // given only a root aws store; the tenant overrides no secrets field
+    setProperties(
+        new HashMap<>(Map.of("camunda.secrets.stores.aws.shared.path-prefix", "camunda/")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits the root store (non-overridden -> seeded from root bind)
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getAws()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("camunda/");
+  }
+
+  @Test
+  void shouldOverrideOnlyTheFieldTenantSetsForAwsSecretsManagerStore() {
+    // given root sets both region and path-prefix; tenant overrides only region
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.aws.shared.region", "eu-west-1",
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.region", "us-east-1")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta's region is overridden but path-prefix survives the deep merge from root
+    final var store =
+        resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getAws().get("shared");
+    assertThat(store.getRegion()).isEqualTo("us-east-1");
+    assertThat(store.getPathPrefix()).isEqualTo("camunda/");
+  }
+
+  @Test
+  void shouldOverrideBatchEnabledPerTenantWhileInheritingPathPrefix() {
+    // given root has batching off and a path-prefix; tenant opts into batching only
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.batch-enabled",
+                    "true")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta's batch-enabled is overridden but path-prefix survives the deep merge
+    final var store =
+        resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getAws().get("shared");
+    assertThat(store.isBatchEnabled()).isTrue();
+    assertThat(store.getPathPrefix()).isEqualTo("camunda/");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getAws()
+                .get("shared")
+                .isBatchEnabled())
+        .isFalse();
+  }
+
+  @Test
+  void shouldExposePerTenantAwsSecretsManagerStoreViaRegistry() {
+    // given a root and a tenant override, verify
+    // PhysicalTenantResolver.mapValues(Camunda::getSecrets)
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.path-prefix",
+                    "tenanta/")),
+        "tenanta");
+
+    // when the registry is built from the resolver
+    final Map<String, Secrets> registry = newResolver().mapValues(Camunda::getSecrets);
+
+    // then it contains a Secrets per tenant with the correct per-tenant path-prefix
+    assertThat(registry).containsKeys("tenanta", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(registry.get("tenanta").getStores().getAws().get("shared").getPathPrefix())
+        .isEqualTo("tenanta/");
+    assertThat(
+            registry
+                .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getStores()
+                .getAws()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("camunda/");
+  }
+
+  @Test
+  void shouldOverlayGcpStorePerTenant() {
+    // given a root gcp store and a tenant that overrides its path-prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.gcp.shared.project-id", "my-gcp-project",
+                "camunda.secrets.stores.gcp.shared.path-prefix", "camunda-",
+                "camunda.physical-tenants.tenanta.secrets.stores.gcp.shared.path-prefix",
+                    "tenanta-")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own path-prefix and the synthesized default keeps the root one
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getGcp()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("tenanta-");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getGcp()
+                .get("shared")
+                .getPathPrefix())
+        .isEqualTo("camunda-");
+  }
+
+  @Test
+  void shouldInheritRootGcpStoreWhenTenantHasNoSecretsOverride() {
+    // given only a root gcp store; the tenant overrides no secrets field
+    setProperties(
+        new HashMap<>(Map.of("camunda.secrets.stores.gcp.shared.project-id", "my-gcp-project")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits the root store (non-overridden -> seeded from root bind)
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getSecrets()
+                .getStores()
+                .getGcp()
+                .get("shared")
+                .getProjectId())
+        .isEqualTo("my-gcp-project");
+  }
+
+  @Test
+  void shouldOverrideOnlyTheFieldTenantSetsForGcpStore() {
+    // given root sets both project-id and path-prefix; tenant overrides only path-prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.gcp.shared.project-id", "my-gcp-project",
+                "camunda.secrets.stores.gcp.shared.path-prefix", "camunda-",
+                "camunda.physical-tenants.tenanta.secrets.stores.gcp.shared.path-prefix",
+                    "tenanta-")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta's path-prefix is overridden but project-id survives the deep merge from root
+    final var store =
+        resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getGcp().get("shared");
+    assertThat(store.getPathPrefix()).isEqualTo("tenanta-");
+    assertThat(store.getProjectId()).isEqualTo("my-gcp-project");
+  }
+
+  @Test
+  void shouldOverlayEnvStorePrefixPerTenant() {
+    // given a root env store and two tenants that each override its prefix
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "ROOT_SECRET_",
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
+                    "TENANTA_SECRET_",
+                "camunda.physical-tenants.tenantb.secrets.stores.env.default.prefix",
+                    "TENANTB_SECRET_")),
+        "tenanta",
+        "tenantb");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then each tenant gets its own prefix and the synthesized default keeps the root one
+    assertThat(envPrefixOf(resolver, "tenanta")).isEqualTo("TENANTA_SECRET_");
+    assertThat(envPrefixOf(resolver, "tenantb")).isEqualTo("TENANTB_SECRET_");
+    assertThat(envPrefixOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo("ROOT_SECRET_");
+  }
+
+  @Test
+  void shouldRefuseTenantInheritingTheRootEnvStorePrefix() {
+    // given only a root env store; tenanta inherits it and so shares the default tenant's prefix
+    setProperties(
+        new HashMap<>(Map.of("camunda.secrets.stores.env.default.prefix", "ROOT_SECRET_")),
+        "tenanta");
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("'default' (prefix 'ROOT_SECRET_')")
+        .withMessageContaining("'tenanta' (prefix 'ROOT_SECRET_')");
+  }
+
+  @Test
+  void shouldRefuseEnvStorePrefixNestedInAnotherTenantsPrefix() {
+    // given the default tenant's prefix is a prefix of pt1's
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "SECRET_",
+                "camunda.physical-tenants.pt1.secrets.stores.env.default.prefix", "SECRET_PT1_")),
+        "pt1");
+
+    // when / then startup is refused, naming both tenants and prefixes
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("overlapping environment-variable secret store prefixes")
+        .withMessageContaining("'default' (prefix 'SECRET_')")
+        .withMessageContaining("'pt1' (prefix 'SECRET_PT1_')");
+  }
+
+  @Test
+  void shouldReportEveryOverlappingPairOfEnvStorePrefixes() {
+    // given pt1's prefix encloses both the default tenant's and pt2's, which do not overlap
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "SECRET_PT1_",
+                "camunda.physical-tenants.pt1.secrets.stores.env.default.prefix", "SECRET_",
+                "camunda.physical-tenants.pt2.secrets.stores.env.default.prefix", "SECRET_PT2_")),
+        "pt1",
+        "pt2");
+
+    // when / then both conflicts are reported, and only those
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("'default' (prefix 'SECRET_PT1_')")
+        .withMessageContaining("'pt1' (prefix 'SECRET_')")
+        .withMessageContaining("'pt2' (prefix 'SECRET_PT2_')")
+        .satisfies(
+            refusal ->
+                assertThat(refusal.getMessage().split("Conflicts: ")[1].split("; ")).hasSize(2));
+  }
+
+  @Test
+  void shouldNotReportABlankEnvStorePrefixAsAnOverlap() {
+    // given tenanta's prefix is blank, which every other prefix starts with
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix", "",
+                "camunda.physical-tenants.tenantb.secrets.stores.env.default.prefix",
+                    "TENANTB_SECRET_")),
+        "tenanta",
+        "tenantb");
+
+    // when / then the resolver leaves the blank prefix to the store, which names the missing
+    // setting
+    assertThatCode(this::newResolver).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldNotReportNestedPrefixesOfTheSameTenantAsAnOverlap() {
+    // given one tenant with two env stores whose prefixes nest, which only exposes its own secrets
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "SECRET_",
+                "camunda.secrets.stores.env.other.prefix", "SECRET_OTHER_")));
+
+    // when / then the resolver leaves the second store to the one-store-per-tenant rule
+    assertThatCode(this::newResolver).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRefuseEnvStoreInSaas() {
+    // given a SaaS cluster with a root env store and no physical tenants
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.security.saas.cluster-id", "cluster-1",
+                "camunda.secrets.stores.env.default.prefix", "SECRET_")));
+
+    // when / then startup is refused, naming the setting
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("not supported in SaaS")
+        .withMessageContaining("camunda.secrets.stores.env")
+        .withMessageContaining("[default]");
+  }
+
+  @Test
+  void shouldRefuseEnvStoreForAPhysicalTenantInSaas() {
+    // given a SaaS cluster where only tenanta configures an env store
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.security.saas.cluster-id", "cluster-1",
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
+                    "TENANTA_SECRET_")),
+        "tenanta");
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("not supported in SaaS")
+        .withMessageContaining("[tenanta]");
+  }
+
+  @Test
+  void shouldRefuseAPhysicalTenantThatSetsTheSaasClusterId() {
+    // given tenanta alone sets the SaaS cluster id
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.env.default.prefix", "SECRET_",
+                "camunda.physical-tenants.tenanta.security.saas.cluster-id", "cluster-1")),
+        "tenanta");
+
+    // when / then resolution fails on the override, not on the secret store
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta=[security.saas.cluster-id]");
+  }
+
+  @Test
+  void shouldAcceptEnvStoreWhenSaasClusterIdIsBlank() {
+    // given a blank cluster id, which does not mark the cluster as SaaS
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.security.saas.cluster-id", " ",
+                "camunda.secrets.stores.env.default.prefix", "SECRET_")));
+
+    // when / then
+    assertThatCode(this::newResolver).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptFileStoreInSaas() {
+    // given a SaaS cluster on the file store
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.security.saas.cluster-id", "cluster-1",
+                "camunda.secrets.stores.file.default.path", "/root/secrets.txt")));
+
+    // when / then
+    assertThatCode(this::newResolver).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldConfigureEnvStoreForOnlyTheTenantThatDeclaresIt() {
+    // given an env store declared only under tenanta, not at the root
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.env.default.prefix",
+                "TENANTA_SECRET_")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then only tenanta has the env store; the synthesized default has none
+    assertThat(envPrefixOf(resolver, "tenanta")).isEqualTo("TENANTA_SECRET_");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getSecrets()
+                .getStores()
+                .getEnv())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldOverlayCacheTtlPerTenant() {
+    // given a root cache ttl and a tenant that overrides it
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.ttl", "10m",
+                "camunda.physical-tenants.tenanta.secrets.cache.ttl", "5m")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own ttl and the synthesized default keeps the root one
+    assertThat(cacheOf(resolver, "tenanta").getTtl()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(cacheOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getTtl())
+        .isEqualTo(Duration.ofMinutes(10));
+  }
+
+  @Test
+  void shouldOverlayCacheMaxSizePerTenant() {
+    // given a root cache max size and a tenant that overrides it
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.max-size", "500",
+                "camunda.physical-tenants.tenanta.secrets.cache.max-size", "50")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta gets its own max size and the synthesized default keeps the root one
+    assertThat(cacheOf(resolver, "tenanta").getMaxSize()).isEqualTo(50);
+    assertThat(cacheOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getMaxSize())
+        .isEqualTo(500);
+  }
+
+  @Test
+  void shouldInheritRootCacheWhenTenantHasNoCacheOverride() {
+    // given only a root cache configuration; the tenant overrides no cache field
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.ttl", "10m",
+                "camunda.secrets.cache.max-size", "500")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta inherits both root values
+    assertThat(cacheOf(resolver, "tenanta").getTtl()).isEqualTo(Duration.ofMinutes(10));
+    assertThat(cacheOf(resolver, "tenanta").getMaxSize()).isEqualTo(500);
+  }
+
+  @Test
+  void shouldOverrideOnlyTheCacheFieldTenantSets() {
+    // given root sets both cache fields; tenant overrides only the ttl
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.cache.ttl", "10m",
+                "camunda.secrets.cache.max-size", "500",
+                "camunda.physical-tenants.tenanta.secrets.cache.ttl", "5m")),
+        "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then tenanta's ttl is overridden but the root max size survives: the overlay engine only
+    // repairs maps, so this pins that a scalar section is layered onto the root instance rather
+    // than rebuilt from the tenant's sub-keys
+    assertThat(cacheOf(resolver, "tenanta").getTtl()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(cacheOf(resolver, "tenanta").getMaxSize()).isEqualTo(500);
+  }
+
+  @Test
+  void shouldFallBackToTheDefaultCacheWhenNeitherRootNorTenantConfiguresIt() {
+    // given a tenant declared without any camunda.secrets.* property
+    setProperties(new HashMap<>(), "tenanta");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then both tenants get the documented defaults
+    for (final String tenantId :
+        new String[] {"tenanta", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID}) {
+      assertThat(cacheOf(resolver, tenantId).getTtl()).isEqualTo(Duration.ofMinutes(20));
+      assertThat(cacheOf(resolver, tenantId).getMaxSize()).isEqualTo(1000);
+    }
+  }
+
+  @Test
+  void shouldOverlayAzureStoreVaultAndIdentityPerTenant() {
+    // given a root azure store and a tenant that overrides its vault and managed identity
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.azure.default.vault-url",
+                "https://root.vault.azure.net",
+                "camunda.physical-tenants.pt1.secrets.stores.azure.default.vault-url",
+                "https://pt1.vault.azure.net",
+                "camunda.physical-tenants.pt1.secrets.stores.azure.default.managed-identity-client-id",
+                "pt1-client-id")),
+        "pt1");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then pt1 gets its own vault and identity while the default tenant keeps the root store
+    final var pt1Store = azureStoreOf(resolver, "pt1");
+    assertThat(pt1Store.getVaultUrl()).isEqualTo("https://pt1.vault.azure.net");
+    assertThat(pt1Store.getManagedIdentityClientId()).isEqualTo("pt1-client-id");
+    final var defaultStore = azureStoreOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(defaultStore.getVaultUrl()).isEqualTo("https://root.vault.azure.net");
+    assertThat(defaultStore.getManagedIdentityClientId()).isNull();
+  }
+
+  @Test
+  void shouldBindAzureStoreVaultUrlFromEnvironmentVariable() {
+    // given the vault URL comes from an environment variable
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                Map.of(
+                    "CAMUNDA_SECRETS_STORES_AZURE_DEFAULT_VAULTURL",
+                    "https://env.vault.azure.net")));
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then the default tenant's azure store reads the vault URL from it
+    assertThat(azureStoreOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getVaultUrl())
+        .isEqualTo("https://env.vault.azure.net");
+  }
+
+  private static Secrets.AzureKeyVaultStore azureStoreOf(
+      final PhysicalTenantResolver resolver, final String tenantId) {
+    return resolver.forPhysicalTenant(tenantId).getSecrets().getStores().getAzure().get("default");
+  }
+
+  private static String envPrefixOf(final PhysicalTenantResolver resolver, final String tenantId) {
+    return resolver
+        .forPhysicalTenant(tenantId)
+        .getSecrets()
+        .getStores()
+        .getEnv()
+        .get("default")
+        .getPrefix();
+  }
+
+  private Secrets.Cache cacheOf(final PhysicalTenantResolver resolver, final String tenantId) {
+    return resolver.forPhysicalTenant(tenantId).getSecrets().getCache();
+  }
+}

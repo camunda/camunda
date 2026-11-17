@@ -15,10 +15,11 @@ import io.camunda.search.clients.reader.DecisionRequirementsReader;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
   }
 
   @Override
-  public DecisionRequirementsEntity getByKey(
+  public @Nullable DecisionRequirementsEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     return getByKey(key, resourceAccessChecks, false);
   }
@@ -92,7 +93,7 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
   }
 
   @Override
-  public DecisionRequirementsEntity getByKey(
+  public @Nullable DecisionRequirementsEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks, final boolean includeXml) {
     return findOne(key).orElse(null);
   }

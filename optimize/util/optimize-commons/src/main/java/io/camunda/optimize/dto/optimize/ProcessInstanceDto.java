@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NOD
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import java.time.OffsetDateTime;
@@ -19,12 +20,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Represents a process instance as stored in Optimize's ES/OS index.
+ *
+ * <p><b>Terminology note:</b> Optimize retains C7 identifier conventions, which are the
+ * <em>inverse</em> of C8 / Zeebe conventions. The table below shows how Optimize field names map to
+ * their C8 equivalents:
+ *
+ * <table border="1">
+ *   <tr><th>Optimize field name</th><th>Zeebe field name</th><th>Meaning</th></tr>
+ *   <tr><td>{@link #processDefinitionKey}</td><td>{@code bpmnProcessId}</td>
+ *       <td>Non-unique BPMN process ID string, e.g. {@code "invoice-process"}</td></tr>
+ *   <tr><td>{@link #processDefinitionId}</td><td>{@code processDefinitionKey}</td>
+ *       <td>Unique {@code Long} key for a specific definition version (stored as {@code String})</td></tr>
+ *   <tr><td>{@link #processInstanceId}</td><td>{@code processInstanceKey}</td>
+ *       <td>Unique {@code Long} key for this process instance (stored as {@code String})</td></tr>
+ * </table>
+ *
+ * <p>This naming is intentional and must not be changed. See {@code
+ * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+ */
 public class ProcessInstanceDto implements OptimizeDto {
 
+  /** Maps to Zeebe's {@code bpmnProcessId}. See class-level Javadoc for the naming rationale. */
   private String processDefinitionKey;
+
   private String processDefinitionVersion;
+
+  /** Maps to Zeebe's {@code processDefinitionKey}. See class-level Javadoc. */
   private String processDefinitionId;
+
+  /** Maps to Zeebe's {@code processInstanceKey}. See class-level Javadoc. */
   private String processInstanceId;
+
   private String businessKey;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -33,6 +61,12 @@ public class ProcessInstanceDto implements OptimizeDto {
   private List<FlowNodeInstanceDto> flowNodeInstances = new ArrayList<>();
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
   private List<IncidentDto> incidents = new ArrayList<>();
+  private List<AgentInstanceDto> agentInstances = new ArrayList<>();
+  private Long agentTotalInputTokens;
+  private Long agentTotalOutputTokens;
+  private Long agentTotalModelCalls;
+  private Long agentTotalToolCalls;
+  private Long agentTotalTokens;
   private DataSourceDto dataSource;
   private String tenantId;
 
@@ -94,6 +128,16 @@ public class ProcessInstanceDto implements OptimizeDto {
     } else {
       incidents = defaultIncidents();
     }
+    if (b.agentInstancesSet) {
+      agentInstances = b.agentInstancesValue;
+    } else {
+      agentInstances = defaultAgentInstances();
+    }
+    agentTotalInputTokens = b.agentTotalInputTokens;
+    agentTotalOutputTokens = b.agentTotalOutputTokens;
+    agentTotalModelCalls = b.agentTotalModelCalls;
+    agentTotalToolCalls = b.agentTotalToolCalls;
+    agentTotalTokens = b.agentTotalTokens;
     dataSource = b.dataSource;
     tenantId = b.tenantId;
   }
@@ -201,6 +245,54 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.incidents = incidents;
   }
 
+  public List<AgentInstanceDto> getAgentInstances() {
+    return agentInstances;
+  }
+
+  public void setAgentInstances(final List<AgentInstanceDto> agentInstances) {
+    this.agentInstances = agentInstances;
+  }
+
+  public Long getAgentTotalInputTokens() {
+    return agentTotalInputTokens;
+  }
+
+  public void setAgentTotalInputTokens(final Long agentTotalInputTokens) {
+    this.agentTotalInputTokens = agentTotalInputTokens;
+  }
+
+  public Long getAgentTotalOutputTokens() {
+    return agentTotalOutputTokens;
+  }
+
+  public void setAgentTotalOutputTokens(final Long agentTotalOutputTokens) {
+    this.agentTotalOutputTokens = agentTotalOutputTokens;
+  }
+
+  public Long getAgentTotalModelCalls() {
+    return agentTotalModelCalls;
+  }
+
+  public void setAgentTotalModelCalls(final Long agentTotalModelCalls) {
+    this.agentTotalModelCalls = agentTotalModelCalls;
+  }
+
+  public Long getAgentTotalToolCalls() {
+    return agentTotalToolCalls;
+  }
+
+  public void setAgentTotalToolCalls(final Long agentTotalToolCalls) {
+    this.agentTotalToolCalls = agentTotalToolCalls;
+  }
+
+  public Long getAgentTotalTokens() {
+    return agentTotalTokens;
+  }
+
+  public void setAgentTotalTokens(final Long agentTotalTokens) {
+    this.agentTotalTokens = agentTotalTokens;
+  }
+
   public DataSourceDto getDataSource() {
     return dataSource;
   }
@@ -236,6 +328,12 @@ public class ProcessInstanceDto implements OptimizeDto {
         flowNodeInstances,
         variables,
         incidents,
+        agentInstances,
+        agentTotalInputTokens,
+        agentTotalOutputTokens,
+        agentTotalModelCalls,
+        agentTotalToolCalls,
+        agentTotalTokens,
         dataSource,
         tenantId);
   }
@@ -261,6 +359,12 @@ public class ProcessInstanceDto implements OptimizeDto {
         && Objects.equals(flowNodeInstances, that.flowNodeInstances)
         && Objects.equals(variables, that.variables)
         && Objects.equals(incidents, that.incidents)
+        && Objects.equals(agentInstances, that.agentInstances)
+        && Objects.equals(agentTotalInputTokens, that.agentTotalInputTokens)
+        && Objects.equals(agentTotalOutputTokens, that.agentTotalOutputTokens)
+        && Objects.equals(agentTotalModelCalls, that.agentTotalModelCalls)
+        && Objects.equals(agentTotalToolCalls, that.agentTotalToolCalls)
+        && Objects.equals(agentTotalTokens, that.agentTotalTokens)
         && Objects.equals(dataSource, that.dataSource)
         && Objects.equals(tenantId, that.tenantId);
   }
@@ -291,6 +395,18 @@ public class ProcessInstanceDto implements OptimizeDto {
         + getVariables()
         + ", incidents="
         + getIncidents()
+        + ", agentInstances="
+        + getAgentInstances()
+        + ", agentTotalInputTokens="
+        + getAgentTotalInputTokens()
+        + ", agentTotalOutputTokens="
+        + getAgentTotalOutputTokens()
+        + ", agentTotalModelCalls="
+        + getAgentTotalModelCalls()
+        + ", agentTotalToolCalls="
+        + getAgentTotalToolCalls()
+        + ", agentTotalTokens="
+        + getAgentTotalTokens()
         + ", dataSource="
         + getDataSource()
         + ", tenantId="
@@ -307,6 +423,10 @@ public class ProcessInstanceDto implements OptimizeDto {
   }
 
   private static List<IncidentDto> defaultIncidents() {
+    return new ArrayList<>();
+  }
+
+  private static List<AgentInstanceDto> defaultAgentInstances() {
     return new ArrayList<>();
   }
 
@@ -329,6 +449,12 @@ public class ProcessInstanceDto implements OptimizeDto {
     public static final String flowNodeInstances = "flowNodeInstances";
     public static final String variables = "variables";
     public static final String incidents = "incidents";
+    public static final String agentInstances = "agentInstances";
+    public static final String agentTotalInputTokens = "agentTotalInputTokens";
+    public static final String agentTotalOutputTokens = "agentTotalOutputTokens";
+    public static final String agentTotalModelCalls = "agentTotalModelCalls";
+    public static final String agentTotalToolCalls = "agentTotalToolCalls";
+    public static final String agentTotalTokens = "agentTotalTokens";
     public static final String dataSource = "dataSource";
     public static final String tenantId = "tenantId";
   }
@@ -351,6 +477,13 @@ public class ProcessInstanceDto implements OptimizeDto {
     private boolean variablesSet;
     private List<IncidentDto> incidentsValue;
     private boolean incidentsSet;
+    private List<AgentInstanceDto> agentInstancesValue;
+    private boolean agentInstancesSet;
+    private Long agentTotalInputTokens;
+    private Long agentTotalOutputTokens;
+    private Long agentTotalModelCalls;
+    private Long agentTotalToolCalls;
+    private Long agentTotalTokens;
     private DataSourceDto dataSource;
     private String tenantId;
 
@@ -414,6 +547,37 @@ public class ProcessInstanceDto implements OptimizeDto {
     public B incidents(final List<IncidentDto> incidents) {
       incidentsValue = incidents;
       incidentsSet = true;
+      return self();
+    }
+
+    public B agentInstances(final List<AgentInstanceDto> agentInstances) {
+      agentInstancesValue = agentInstances;
+      agentInstancesSet = true;
+      return self();
+    }
+
+    public B agentTotalInputTokens(final Long agentTotalInputTokens) {
+      this.agentTotalInputTokens = agentTotalInputTokens;
+      return self();
+    }
+
+    public B agentTotalOutputTokens(final Long agentTotalOutputTokens) {
+      this.agentTotalOutputTokens = agentTotalOutputTokens;
+      return self();
+    }
+
+    public B agentTotalModelCalls(final Long agentTotalModelCalls) {
+      this.agentTotalModelCalls = agentTotalModelCalls;
+      return self();
+    }
+
+    public B agentTotalToolCalls(final Long agentTotalToolCalls) {
+      this.agentTotalToolCalls = agentTotalToolCalls;
+      return self();
+    }
+
+    public B agentTotalTokens(final Long agentTotalTokens) {
+      this.agentTotalTokens = agentTotalTokens;
       return self();
     }
 

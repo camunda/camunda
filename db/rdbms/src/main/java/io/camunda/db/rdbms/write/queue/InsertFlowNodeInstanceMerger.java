@@ -13,6 +13,10 @@ public class InsertFlowNodeInstanceMerger extends BatchInsertMerger<FlowNodeInst
 
   public InsertFlowNodeInstanceMerger(
       final FlowNodeInstanceDbModel flowNodeInstance, final int maxBatchSize) {
-    super(ContextType.FLOW_NODE, flowNodeInstance, maxBatchSize);
+    super(
+        ContextType.FLOW_NODE,
+        flowNodeInstance,
+        maxBatchSize,
+        FlowNodeInstanceDbModel::flowNodeInstanceKey);
   }
 }

@@ -33,7 +33,8 @@ public class CorrelatedMessageSubscriptionEntityTransformer
         value.getRootProcessInstanceKey(),
         value.getSubscriptionKey(),
         toMessageSubscriptionType(value.getSubscriptionType()),
-        value.getTenantId());
+        value.getTenantId(),
+        value.getBusinessId());
   }
 
   private MessageSubscriptionType toMessageSubscriptionType(final String value) {

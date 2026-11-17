@@ -14,6 +14,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -35,13 +37,14 @@ public class MappingRulesByTenantSearchIT {
   private static final String MAPPING_RULE_ID_3 = "c" + Strings.newRandomValidUsername();
   private static final String TENANT_ID = Strings.newRandomValidTenantId();
 
+  @TenantDefinition
+  private static final TestTenant TENANT = new TestTenant(TENANT_ID).setName("name");
+
   @BeforeAll
   static void setup() {
     createMappingRule(MAPPING_RULE_ID_1);
     createMappingRule(MAPPING_RULE_ID_2);
     createMappingRule(MAPPING_RULE_ID_3);
-
-    createTenant(TENANT_ID);
 
     assignMappingRuleToTenant(MAPPING_RULE_ID_1, TENANT_ID);
     assignMappingRuleToTenant(MAPPING_RULE_ID_2, TENANT_ID);
@@ -119,10 +122,6 @@ public class MappingRulesByTenantSearchIT {
         .claimValue(mappingRuleId + "claimValue")
         .send()
         .join();
-  }
-
-  private static void createTenant(final String tenantId) {
-    camundaClient.newCreateTenantCommand().tenantId(tenantId).name("name").send().join();
   }
 
   private static void assignMappingRuleToTenant(final String mappingRuleId, final String tenantId) {

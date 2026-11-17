@@ -29,31 +29,17 @@ import org.mockito.Mockito;
 
 final class ManifestMetadataPropertyTest {
 
-  private static final String BASE_PATH = "base/";
-  private static final String MANIFEST_BLOB_NAME = "manifest.json";
-
   @Property(tries = 100)
   void shouldRoundTripAnyManifest(@ForAll("manifests") final Manifest manifest) {
     // given
     final var expectedStatus = Manifest.toStatus(manifest);
     final var id = manifest.id();
-    final var blobName =
-        BASE_PATH
-            + "manifests/"
-            + id.partitionId()
-            + "/"
-            + id.checkpointId()
-            + "/"
-            + id.nodeId()
-            + "/"
-            + MANIFEST_BLOB_NAME;
 
     // when
     final var metadata = ManifestMetadata.fromManifest(manifest);
     final var blob = Mockito.mock(Blob.class);
-    Mockito.when(blob.getName()).thenReturn(blobName);
     Mockito.when(blob.getMetadata()).thenReturn(metadata);
-    final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+    final var result = ManifestMetadata.toBackupStatus(blob, id);
 
     // then
     assertThat(result).isPresent();

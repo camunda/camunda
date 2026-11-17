@@ -7,10 +7,20 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.cloud.http.HttpTransportOptions;
+import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Optional;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ConfigTest {
 
@@ -108,6 +118,69 @@ final class ConfigTest {
   }
 
   @Test
+  void shouldUseConfiguredReadTimeoutAsClientReadTimeout() {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withoutAuthentication()
+            .withReadTimeout(Duration.ofSeconds(90))
+            .build();
+
+    // when
+    final var client = GcsBackupStore.buildClient(config);
+
+    // then
+    Assertions.assertThat(client.getOptions().getTransportOptions())
+        .asInstanceOf(InstanceOfAssertFactories.type(HttpTransportOptions.class))
+        .extracting(HttpTransportOptions::getReadTimeout)
+        .isEqualTo(90_000);
+  }
+
+  @Test
+  void shouldApplyConfiguredWriteTimeoutToRequests() throws IOException {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withoutAuthentication()
+            .withWriteTimeout(Duration.ofSeconds(120))
+            .build();
+    final var transportOptions = GcsBackupStore.transportOptions(config).orElseThrow();
+    final var request =
+        new NetHttpTransport()
+            .createRequestFactory()
+            .buildGetRequest(new GenericUrl("http://localhost"));
+
+    // when
+    // the write timeout is not part of HttpTransportOptions, it is applied per request
+    transportOptions
+        .getHttpRequestInitializer(StorageOptions.newBuilder().setProjectId("test").build())
+        .initialize(request);
+
+    // then
+    Assertions.assertThat(request.getWriteTimeout()).isEqualTo(120_000);
+  }
+
+  @Test
+  void shouldKeepClientDefaultsWhenNoTimeoutIsSet() {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder().withBucketName("test").withoutAuthentication().build();
+
+    // when
+    final var client = GcsBackupStore.buildClient(config);
+
+    // then
+    // -1 means the client does not set a read timeout, leaving the google-http-client default
+    Assertions.assertThat(GcsBackupStore.transportOptions(config)).isEmpty();
+    Assertions.assertThat(client.getOptions().getTransportOptions())
+        .asInstanceOf(InstanceOfAssertFactories.type(HttpTransportOptions.class))
+        .extracting(HttpTransportOptions::getReadTimeout)
+        .isEqualTo(-1);
+  }
+
+  @Test
   void shouldUseNoAuthenticationWhenRequested() {
     // given
     final var bucketName = "test";
@@ -119,5 +192,52 @@ final class ConfigTest {
     // then
     Assertions.assertThat(config.connection().auth())
         .isInstanceOf(GcsConnectionConfig.Authentication.None.class);
+  }
+
+  @Test
+  void shouldApplyRetryTotalTimeoutAndMaxAttempts() {
+    // given
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withRetryTotalTimeout(Optional.of(Duration.ofSeconds(5)))
+            .withRetryMaxAttempts(Optional.of(3))
+            .build();
+
+    // when
+    final var settings = GcsBackupStore.retrySettings(config);
+
+    // then
+    Assertions.assertThat(settings).isPresent();
+    Assertions.assertThat(settings.get().getTotalTimeoutDuration())
+        .isEqualTo(Duration.ofSeconds(5));
+    Assertions.assertThat(settings.get().getMaxAttempts()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldKeepLibraryDefaultsWhenNoRetryIsSet() {
+    // given
+    final var config = new GcsBackupConfig.Builder().withBucketName("test").build();
+
+    // when
+    final var settings = GcsBackupStore.retrySettings(config);
+
+    // then
+    Assertions.assertThat(settings).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void shouldRejectNonPositiveRetryMaxAttempts(final int maxAttempts) {
+    // given
+    final var builder =
+        new GcsBackupConfig.Builder()
+            .withBucketName("test")
+            .withRetryMaxAttempts(Optional.of(maxAttempts));
+
+    // when / then
+    Assertions.assertThatThrownBy(builder::build)
+        .isInstanceOf(ConfigurationException.class)
+        .hasMessageContaining("maxAttempts");
   }
 }

@@ -10,8 +10,9 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
-import { getRolesByTenantId } from "src/utility/api/tenants";
+import { useQuery } from "@tanstack/react-query";
+import { usePagination } from "src/utility/api";
+import { tenantQueries } from "src/utility/api/tenants/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/roles/DeleteModal";
@@ -24,34 +25,29 @@ type RolesProps = {
 
 const Roles: FC<RolesProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
+  const noop = () => {};
 
+  const { pageParams, page, ...paginationCallbacks } = usePagination();
   const {
     data: roles,
-    loading,
-    success,
-    reload,
-    ...paginationProps
-  } = usePaginatedApi(getRolesByTenantId, {
-    tenantId: tenantId,
-  });
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(tenantQueries.roles(tenantId, pageParams));
 
   const isAssignedRolesListEmpty = !roles || roles.items?.length === 0;
 
   const [assignRoles, assignRolesModal] = useEntityModal(
     AssignRolesModal,
-    reload,
+    noop,
     {
       assignedRoles: roles?.items || [],
     },
   );
   const openAssignModal = () => assignRoles({ id: tenantId });
-  const [unassignRole, unassignRoleModal] = useEntityModal(
-    DeleteModal,
-    reload,
-    {
-      tenant: tenantId,
-    },
-  );
+  const [unassignRole, unassignRoleModal] = useEntityModal(DeleteModal, noop, {
+    tenant: tenantId,
+  });
 
   if (!loading && !success)
     return (
@@ -60,7 +56,12 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
         description={t("unableToLoadResource", {
           resourceType: t("role").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        button={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
       />
     );
 
@@ -98,7 +99,8 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
             onClick: unassignRole,
           },
         ]}
-        {...paginationProps}
+        page={{ ...page, ...roles?.page }}
+        {...paginationCallbacks}
       />
       {assignRolesModal}
       {unassignRoleModal}

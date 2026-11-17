@@ -28,6 +28,8 @@
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pi.TREE_PATH,
            pi.BUSINESS_ID,
+           pi.SUSPENDED_DATE,
+           pi.STORAGE_ORDINAL,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
            pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
            pit.TAG_VALUE AS TAG_VALUE
@@ -68,6 +70,8 @@
     pif.PROCESS_DEFINITION_VERSION,
     pif.TREE_PATH,
     pif.BUSINESS_ID,
+    pif.SUSPENDED_DATE,
+    pif.STORAGE_ORDINAL,
     pif.PROCESS_DEFINITION_NAME,
     pif.PROCESS_DEFINITION_VERSION_TAG,
     pit.TAG_VALUE AS TAG_VALUE
@@ -91,6 +95,8 @@
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pi.TREE_PATH,
     pi.BUSINESS_ID,
+    pi.SUSPENDED_DATE,
+    pi.STORAGE_ORDINAL,
     pd.NAME AS PROCESS_DEFINITION_NAME,
     pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM ${prefix}PROCESS_INSTANCE pi
@@ -229,6 +235,12 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.suspendedDateOperations != null and !filter.suspendedDateOperations.isEmpty()">
+      <foreach collection="filter.suspendedDateOperations" item="operation">
+        AND SUSPENDED_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
 
     <!-- process definition filters -->
     <if
@@ -306,13 +318,27 @@
     <!-- Error message filters -->
     <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
       <foreach collection="filter.errorMessageOperations" item="operation">
-        AND EXISTS (
-        SELECT 1
-        FROM ${prefix}INCIDENT i
-        WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-        AND i.ERROR_MESSAGE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        )
+        <choose>
+          <when test="operation.operator.name().equals('NOT_EXISTS')">
+            AND NOT EXISTS (
+            SELECT 1
+            FROM ${prefix}INCIDENT i
+            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+            AND i.ERROR_MESSAGE IS NOT NULL
+            )
+          </when>
+          <otherwise>
+            AND EXISTS (
+            SELECT 1
+            FROM ${prefix}INCIDENT i
+            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.errorMessageOperationCondition">
+              <property name="column" value="i.ERROR_MESSAGE"/>
+            </include>
+            )
+          </otherwise>
+        </choose>
       </foreach>
     </if>
     <if
@@ -362,24 +388,36 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
-      <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" name="processInstanceKey"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="rootProcessInstanceKey"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
-      <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime" />
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime" />
-      <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
-      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="processDefinitionId"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"
+        name="processDefinitionName"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"
+        name="processDefinitionVersion"/>
+      <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"
+        name="processDefinitionVersionTag"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"
+        name="processDefinitionKey"/>
+      <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"
+        name="parentProcessInstanceKey"/>
+      <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"
+        name="parentFlowNodeInstanceKey"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime" name="startDate"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime" name="endDate"/>
+      <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"
+        name="state"/>
+      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean" name="hasIncident"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
-      <arg column="BUSINESS_ID" javaType="java.lang.String"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
+        name="tenantId"/>
+      <arg column="TREE_PATH" javaType="java.lang.String" name="treePath"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String" name="businessId"/>
+      <arg column="SUSPENDED_DATE" javaType="java.time.OffsetDateTime" name="suspendedDate"/>
+      <arg column="STORAGE_ORDINAL" javaType="java.lang.Integer" name="storageOrdinal"/>
     </constructor>
     <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">
       <id column="TAG_VALUE"/>
@@ -406,7 +444,8 @@
     FROM ${prefix}PROCESS_INSTANCE pi
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
     WHERE pi.PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
-      AND fni.TYPE != 'MULTI_INSTANCE_BODY'
+      <!-- exclude multi-instance bodies UNLESS they have a direct incident -->
+      AND (fni.TYPE != 'MULTI_INSTANCE_BODY' OR fni.INCIDENT_KEY IS NOT NULL)
     <!-- authorization filters -->
     <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
       AND pi.PROCESS_DEFINITION_ID IN
@@ -429,12 +468,13 @@
                                            TENANT_ID, PARENT_PROCESS_INSTANCE_KEY,
                                            PARENT_ELEMENT_INSTANCE_KEY,
                                            NUM_INCIDENTS, VERSION, PARTITION_ID, TREE_PATH,
-                                           HISTORY_CLEANUP_DATE, BUSINESS_ID)
+                                           HISTORY_CLEANUP_DATE, BUSINESS_ID, SUSPENDED_DATE, STORAGE_ORDINAL)
     VALUES (#{processInstanceKey}, #{rootProcessInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{parentProcessInstanceKey},
             #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{treePath},
-            #{historyCleanupDate, jdbcType=TIMESTAMP}, #{businessId})
+            #{historyCleanupDate, jdbcType=TIMESTAMP}, #{businessId}, #{suspendedDate, jdbcType=TIMESTAMP},
+            #{storageOrdinal, jdbcType=INTEGER})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
@@ -451,15 +491,32 @@
         VERSION                     = #{version},
         TREE_PATH                   = #{treePath},
         HISTORY_CLEANUP_DATE        = #{historyCleanupDate, jdbcType=TIMESTAMP},
-        BUSINESS_ID                 = #{businessId}
+        BUSINESS_ID                 = #{businessId},
+        SUSPENDED_DATE              = #{suspendedDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
   <update id="updateStateAndEndDate"
     parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$EndProcessInstanceDto">
     UPDATE ${prefix}PROCESS_INSTANCE
-    SET STATE    = #{state},
-        END_DATE = #{endDate}
+    SET STATE          = #{state},
+        END_DATE       = #{endDate},
+        SUSPENDED_DATE = NULL
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <update id="updateBusinessId"
+    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$UpdateBusinessIdDto">
+    UPDATE ${prefix}PROCESS_INSTANCE
+    SET BUSINESS_ID = #{businessId}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <update id="updateSuspendedState"
+    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$UpdateSuspendedStateDto">
+    UPDATE ${prefix}PROCESS_INSTANCE
+    SET STATE          = #{state},
+        SUSPENDED_DATE = #{suspendedDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 

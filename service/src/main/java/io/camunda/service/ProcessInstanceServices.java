@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
@@ -16,11 +16,13 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -28,10 +30,10 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -40,6 +42,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -47,11 +50,14 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessInstanceRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -82,6 +88,7 @@ public final class ProcessInstanceServices
   private static final int MAX_CACHED_DEFINITIONS = 1024;
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
+  private final WaitStateSearchClient waitStateSearchClient;
   private final IncidentServices incidentServices;
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
@@ -91,18 +98,22 @@ public final class ProcessInstanceServices
           Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        waitStateSearchClient,
         incidentServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
@@ -111,19 +122,23 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        waitStateSearchClient,
         incidentServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
@@ -132,19 +147,23 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final RequestRetryHandler requestRetryHandler) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        waitStateSearchClient,
         incidentServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
@@ -153,22 +172,26 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final RequestRetryHandler requestRetryHandler,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
+    this.waitStateSearchClient = waitStateSearchClient;
     this.incidentServices = incidentServices;
     this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
@@ -204,6 +227,20 @@ public final class ProcessInstanceServices
                 .processInstanceFlowNodeStatistics(processInstanceKey));
   }
 
+  public List<WaitStateStatisticsEntity> waitStateStatistics(
+      final long processInstanceKey, final CamundaAuthentication authentication) {
+    // Existence + authorization check: throws ServiceException(NOT_FOUND) / (FORBIDDEN) before
+    // aggregating, since the aggregation alone cannot distinguish "not found" from "no results".
+    getByKey(processInstanceKey, authentication);
+    return executeSearchRequest(
+        () ->
+            waitStateSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .waitStateStatistics(processInstanceKey));
+  }
+
   public List<ProcessInstanceEntity> callHierarchy(
       final long processInstanceKey, final CamundaAuthentication authentication) {
     final var rootInstance = getByKey(processInstanceKey, authentication);
@@ -227,7 +264,7 @@ public final class ProcessInstanceServices
                     processInstanceSearchClient
                         .withSecurityContext(
                             securityContextProvider.provideSecurityContext(
-                                CamundaAuthentication.anonymous()))
+                                authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                         .searchProcessInstances(
                             processInstanceSearchQuery(
                                 q ->
@@ -238,7 +275,10 @@ public final class ProcessInstanceServices
             .items()
             .stream()
             .collect(
-                Collectors.toMap(ProcessInstanceEntity::processInstanceKey, Function.identity()));
+                Collectors.toMap(
+                    ProcessInstanceEntity::processInstanceKey,
+                    Function.identity(),
+                    (first, second) -> first));
 
     return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
   }
@@ -265,7 +305,7 @@ public final class ProcessInstanceServices
         processInstanceKey,
         securityContextProvider.provideSecurityContext(
             authentication,
-            withAuthorization(
+            withRequiredAuthorization(
                 PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)));
   }
 
@@ -285,6 +325,7 @@ public final class ProcessInstanceServices
             .setBpmnProcessId(request.bpmnProcessId())
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
+            .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setStartInstructionsFromRecord(request.startInstructions())
@@ -315,6 +356,7 @@ public final class ProcessInstanceServices
             .setBpmnProcessId(request.bpmnProcessId())
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
+            .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setInstructions(request.startInstructions())
@@ -353,6 +395,30 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
+  public CompletableFuture<ProcessInstanceRecord> suspendProcessInstance(
+      final ProcessInstanceSuspendRequest request, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerSuspendProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<ProcessInstanceRecord> resumeProcessInstance(
+      final ProcessInstanceResumeRequest request, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerResumeProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public CompletableFuture<BatchOperationCreationRecord>
       cancelProcessInstanceBatchOperationWithResult(
           final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
@@ -360,6 +426,30 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord>
+      suspendProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord>
+      resumeProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE)
             .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest, authentication);
@@ -381,7 +471,7 @@ public final class ProcessInstanceServices
             .setAuthentication(authentication)
             // the user only needs single instance update permission, not batch creation
             .setAuthorizationCheck(
-                Authorization.withAuthorization(
+                RequiredAuthorization.withRequiredAuthorization(
                     PROCESS_INSTANCE_UPDATE_AUTHORIZATION, processInstance.processDefinitionId()));
 
     return sendBrokerRequest(brokerRequest, authentication);
@@ -426,6 +516,16 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<ProcessInstanceBusinessIdRecord> assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerAssignProcessInstanceBusinessIdRequest()
+            .setProcessInstanceKey(request.processInstanceKey())
+            .setBusinessId(request.businessId());
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
@@ -514,13 +614,14 @@ public final class ProcessInstanceServices
             b ->
                 b.filter(
                         query.filter().toBuilder()
-                            .treePathOperations(Operation.like("*" + treePath + "*"))
+                            .treePathOperations(Operation.like(treePath + "*"))
                             .build())
                     .page(query.page())
                     .sort(query.sort())),
         authentication);
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(
       final BrokerRequest<R> brokerRequest,
       final ProcessDefinitionIdentifier identifier,
@@ -566,9 +667,10 @@ public final class ProcessInstanceServices
       final CamundaAuthentication authentication,
       final Duration requestTimeout,
       final RequestRetryHandler handler) {
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
+    // partition group) so the retry handler dispatches to the tenant's partition group. The handler
+    // reads brokerRequest.getPartitionGroup() when selecting partitions.
+    applyBrokerRequestMutators(brokerRequest, authentication);
     final CompletableFuture<R> responseFuture = new CompletableFuture<>();
     if (requestTimeout != null) {
       handler.sendRequest(
@@ -596,6 +698,7 @@ public final class ProcessInstanceServices
       Long processDefinitionKey,
       String bpmnProcessId,
       Integer version,
+      String versionTag,
       Map<String, Object> variables,
       String tenantId,
       Boolean awaitCompletion,
@@ -622,11 +725,18 @@ public final class ProcessInstanceServices
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 
+  public record ProcessInstanceSuspendRequest(Long processInstanceKey, Long operationReference) {}
+
+  public record ProcessInstanceResumeRequest(Long processInstanceKey, Long operationReference) {}
+
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
       Long operationReference) {}
+
+  public record AssignProcessInstanceBusinessIdRequest(
+      Long processInstanceKey, String businessId) {}
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,

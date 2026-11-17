@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.atomix.cluster.BrokerMemberId;
+import org.jspecify.annotations.Nullable;
+
 /** Uniquely identifies a backup stored in the BackupStore. */
 public interface BackupIdentifier {
 
@@ -14,6 +17,12 @@ public interface BackupIdentifier {
    * @return id of the broker which took this backup
    */
   int nodeId();
+
+  /**
+   * @return zone of the broker which took this backup, or {@code null} when the cluster is not
+   *     zone-aware
+   */
+  @Nullable String zone();
 
   /**
    * @return id of the partition of which the backup is taken
@@ -24,4 +33,11 @@ public interface BackupIdentifier {
    * @return id of the checkpoint included in the backup
    */
   long checkpointId();
+
+  /**
+   * @return the broker member identifier combining zone and nodeId, for use in backup storage paths
+   */
+  default BrokerMemberId brokerId() {
+    return BrokerMemberId.from(zone(), nodeId());
+  }
 }

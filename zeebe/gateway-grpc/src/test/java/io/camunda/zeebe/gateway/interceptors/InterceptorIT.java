@@ -16,7 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.api.util.GatewayTestFactory;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.gateway.interceptors.util.TestInterceptor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -93,15 +93,14 @@ final class InterceptorIT {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry),
-            TopicSupplier.withLegacyTopicName());
+            new BrokerClientRequestMetrics(meterRegistry));
 
     jobStreamClient =
         new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);
     gateway =
-        new Gateway(
+        GatewayTestFactory.create(
             config,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,
             scheduler,
             jobStreamClient.streamer(),

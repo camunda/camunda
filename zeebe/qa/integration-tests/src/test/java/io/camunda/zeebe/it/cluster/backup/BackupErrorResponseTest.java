@@ -16,7 +16,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStore
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.shared.management.BackupEndpoint;
-import io.camunda.zeebe.test.testcontainers.MinioContainer;
+import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -36,7 +36,7 @@ class BackupErrorResponseTest {
   @Nested
   final class DuplicateBackupIdTest {
 
-    @Container private static final MinioContainer S3 = new MinioContainer();
+    @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
     private BackupEndpoint backupEndpoint;
 
     private String bucketName;
@@ -132,7 +132,7 @@ class BackupErrorResponseTest {
     @Test
     void shouldReturn400() {
       // when - then
-      assertThat(backupEndpoint.query("1").getStatus()).isEqualTo(400);
+      assertThat(backupEndpoint.query("1", null).getStatus()).isEqualTo(400);
     }
   }
 
@@ -163,7 +163,7 @@ class BackupErrorResponseTest {
       clusteringRule.disconnect(clusteringRule.getBroker(0));
 
       // when - then
-      assertThat(backupEndpoint.query("1").getStatus()).isEqualTo(504);
+      assertThat(backupEndpoint.query("1", null).getStatus()).isEqualTo(504);
     }
   }
 

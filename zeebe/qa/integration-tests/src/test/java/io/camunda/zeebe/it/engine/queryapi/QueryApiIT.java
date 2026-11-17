@@ -15,7 +15,7 @@ import io.camunda.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
-import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.api.grpc.Interceptor;
 import io.camunda.zeebe.it.engine.queryapi.util.TestAuthorizationClientInterceptor;
 import io.camunda.zeebe.it.engine.queryapi.util.TestAuthorizationListener;
 import io.camunda.zeebe.it.engine.queryapi.util.TestAuthorizationServerInterceptor;

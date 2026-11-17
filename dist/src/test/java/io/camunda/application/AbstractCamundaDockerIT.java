@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -46,7 +46,7 @@ public abstract class AbstractCamundaDockerIT {
   protected static final String ELASTICSEARCH_DOCKER_IMAGE =
       System.getProperty(
           "camunda.docker.test.elasticsearch.image",
-          "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION);
+          "docker.elastic.co/elasticsearch/elasticsearch:" + TEST_ELASTICSEARCH_VERSION);
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCamundaDockerIT.class);
   protected Network network;
   private final List<GenericContainer<?>> createdContainers = new ArrayList<>();
@@ -153,8 +153,6 @@ public abstract class AbstractCamundaDockerIT {
         .withEnv(
             "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD", TestSearchContainers.CAMUNDA_PASSWORD)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_DATABASE_VENDOR_ID", vendorId)
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
         // ---
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
@@ -193,8 +191,6 @@ public abstract class AbstractCamundaDockerIT {
             "io.camunda.zeebe.exporter.ElasticsearchExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticsearchUrl())
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-        .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", gatewayAddress())
-        .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", httpUrl())
         // Unified Configuration
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)

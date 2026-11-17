@@ -36,7 +36,9 @@ test.describe('Get Batch Operation Tests', () => {
       await expect(async () => {
         const batchOperationKey = localState['batchOperationKey'] as string;
         const res = await request.get(
-          buildUrl(`/batch-operations/${batchOperationKey}`),
+          buildUrl('/batch-operations/{batchOperationKey}', {
+            batchOperationKey,
+          }),
           {
             headers: jsonHeaders(),
           },
@@ -72,7 +74,9 @@ test.describe('Get Batch Operation Tests', () => {
   test('Get Batch Operation - Not Found', async ({request}) => {
     const unknownBatchOperationKey = '2251799813999999';
     const res = await request.get(
-      buildUrl(`/batch-operations/${unknownBatchOperationKey}`),
+      buildUrl('/batch-operations/{batchOperationKey}', {
+        batchOperationKey: unknownBatchOperationKey,
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -93,7 +97,9 @@ test.describe('Get Batch Operation Tests', () => {
 
     await test.step('Get Batch Operation without auth', async () => {
       const authRes = await request.get(
-        buildUrl(`/batch-operations/${localState['batchOperationKey']}`),
+        buildUrl('/batch-operations/{batchOperationKey}', {
+          batchOperationKey: localState['batchOperationKey'] as string,
+        }),
         {
           // No Authorization header on purpose
           headers: {

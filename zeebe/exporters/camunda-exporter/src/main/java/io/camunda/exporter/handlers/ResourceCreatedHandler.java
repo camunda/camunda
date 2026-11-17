@@ -8,7 +8,9 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.util.ResourceUtils;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -16,9 +18,11 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.util.List;
 
-public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEntity, Resource> {
+public class ResourceCreatedHandler
+    implements MainIndexExporterHandler<DeployedResourceEntity, Resource> {
 
-  private static final ResourceIntent SUPPORTED_INTENT = ResourceIntent.CREATED;
+  private static final List<ResourceIntent> SUPPORTED_INTENTS =
+      List.of(ResourceIntent.CREATED, ResourceIntent.REEXPORTED);
   private final String indexName;
 
   public ResourceCreatedHandler(final String indexName) {
@@ -38,7 +42,7 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
   @Override
   public boolean handlesRecord(final Record<Resource> record) {
     return getHandledValueType().equals(record.getValueType())
-        && SUPPORTED_INTENT.equals(record.getIntent());
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
@@ -58,17 +62,19 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
         .setResourceKey(value.getResourceKey())
         .setResourceId(value.getResourceId())
         .setResourceName(value.getResourceName())
+        .setResourceType(ResourceUtils.deriveResourceType(value.getResourceName()))
         .setVersion(value.getVersion())
         .setVersionTag(value.getVersionTag())
         .setDeploymentKey(value.getDeploymentKey())
         .setTenantId(value.getTenantId())
-        .setResourceContent(value.getResourceProp());
+        .setResourceContent(value.getResourceBytes());
   }
 
   @Override
-  public void flush(final DeployedResourceEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final DeployedResourceEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

@@ -16,11 +16,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 public record MetaStoreRecord(long term, long lastFlushedIndex, long commitIndex, String votedFor) {
 
   public MetaStoreRecord {
-    checkArgument(term >= 0, "term must be >= 0, but was: %d", term);
+    checkArgument(term >= 0, "term must be >= 0, but was: %s", term);
     checkArgument(
         lastFlushedIndex >= -1,
-        "lastFlushedIndex term must be >= -1, but was: %d",
+        "lastFlushedIndex term must be >= -1, but was: %s",
         lastFlushedIndex);
-    checkArgument(commitIndex >= -1, "commitIndex must be >= -1 , but was: ", commitIndex);
+    checkArgument(commitIndex >= -1, "commitIndex must be >= -1 , but was: %s", commitIndex);
   }
 }

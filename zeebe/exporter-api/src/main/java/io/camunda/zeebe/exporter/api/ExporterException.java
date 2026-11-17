@@ -17,12 +17,65 @@ package io.camunda.zeebe.exporter.api;
 
 public final class ExporterException extends RuntimeException {
   private static final long serialVersionUID = 9144017472787012481L;
+  private final Compensation compensation;
 
   public ExporterException(final String message) {
     super(message);
+    compensation = Compensation.RETRY;
   }
 
   public ExporterException(final String message, final Throwable cause) {
     super(message, cause);
+    compensation = Compensation.RETRY;
+  }
+
+  /**
+   * Creates an exporter exception with an explicit compensation hint. When {@code compensation} is
+   * {@link Compensation#REOPEN}, the {@link
+   * io.camunda.zeebe.broker.exporter.stream.ExporterContainer} will close and reopen the exporter
+   * instead of simply logging the failure and skipping the record.
+   */
+  public ExporterException(
+      final String message, final Throwable cause, final Compensation compensation) {
+    super(message, cause);
+    this.compensation = compensation;
+  }
+
+  /**
+   * Creates an exporter exception with an explicit compensation hint and no cause. When {@code
+   * compensation} is {@link Compensation#REOPEN}, the {@link
+   * io.camunda.zeebe.broker.exporter.stream.ExporterContainer} will close and reopen the exporter
+   * instead of simply logging the failure and skipping the record.
+   */
+  public ExporterException(final String message, final Compensation compensation) {
+    super(message);
+    this.compensation = compensation;
+  }
+
+  /**
+   * Returns the compensation action the caller should take. Defaults to {@link Compensation#RETRY}
+   * when not explicitly set.
+   */
+  public Compensation getCompensation() {
+    return compensation;
+  }
+
+  /**
+   * Describes the compensation action the {@link
+   * io.camunda.zeebe.broker.exporter.stream.ExporterContainer} should take when this exception is
+   * caught.
+   */
+  public enum Compensation {
+    /**
+     * Close and reopen the exporter to re-synchronise its state (e.g. re-read the authoritative DB
+     * position after a detected divergence).
+     */
+    REOPEN,
+
+    /**
+     * Retry the failed operation without reopening the exporter (e.g. transient network
+     * connectivity issues).
+     */
+    RETRY,
   }
 }

@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.11.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -30,7 +30,8 @@
 
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
-    <plugin.version.jib>3.5.1</plugin.version.jib>
+    <plugin.version.jib>3.5.2</plugin.version.jib>
+    <docker.registry>registry.camunda.cloud/team-reliability-testing</docker.registry>
   </properties>
 
   <dependencies>
@@ -38,6 +39,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Webflux (Netty) instead of Web (Tomcat) to minimize memory footprint.
@@ -47,11 +54,39 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webflux</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Direct deps for WebClient / Mono usage in the Optimize client -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webflux</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
     </dependency>
 
     <dependency>
@@ -62,6 +97,16 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
     </dependency>
 
     <dependency>
@@ -82,6 +127,39 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Log4j2 backend with Stackdriver-formatted JSON layout. Mirrors the
+         dist module's setup so load-tester pods emit the same JSON shape as
+         zeebe/operate/etc. Toggled by LOAD_TESTER_LOG_APPENDER (see
+         src/main/resources/log4j2.xml).
+
+         Declared explicitly rather than via spring-boot-starter-log4j2:
+         the parent pom pins log4j-core and log4j-slf4j2-impl to test scope,
+         and Maven's "direct beats transitive" rule keeps them at test scope
+         when the starter brings them transitively. Since the load-tester
+         ships as its own jib container (not bundled into dist), test-scope
+         deps are excluded from the runtime image and SLF4J falls back to
+         NOP — silent pods. Re-declaring at compile scope here overrides
+         the parent's test-scope pin. -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-layout-template-json</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
 
     <dependency>
@@ -107,6 +185,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
     </dependency>
 
     <dependency>
@@ -155,6 +238,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
     </dependency>
 
     <dependency>
@@ -250,6 +338,16 @@
         <configuration>
           <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
         </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+            <configuration>
+              <classifier>exec</classifier>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -264,6 +362,11 @@
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dependency>
+            <!-- Log4j2 runtime deps loaded via SPI / log4j2.xml, not direct imports -->
+            <dependency>org.apache.logging.log4j:log4j-api</dependency>
+            <dependency>org.apache.logging.log4j:log4j-core</dependency>
+            <dependency>org.apache.logging.log4j:log4j-slf4j2-impl</dependency>
+            <dependency>org.apache.logging.log4j:log4j-layout-template-json</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
@@ -284,7 +387,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
+                <image>${docker.registry}/starter:SNAPSHOT</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
@@ -310,7 +413,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
+                <image>${docker.registry}/worker:SNAPSHOT</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>

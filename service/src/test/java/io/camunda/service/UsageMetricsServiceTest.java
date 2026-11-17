@@ -18,16 +18,18 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public final class UsageMetricsServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private UsageMetricsServices services;
   private UsageMetricsSearchClient client;
   private CamundaAuthentication authentication;
@@ -37,12 +39,15 @@ public final class UsageMetricsServiceTest {
     client = mock(UsageMetricsSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     authentication = mock(CamundaAuthentication.class);
+    final var executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new UsageMetricsServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            mock(ApiServicesExecutorProvider.class),
+            executorProvider,
             null);
   }
 

@@ -31,6 +31,7 @@ import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportData
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -62,6 +63,7 @@ import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.ReportAuthorizationService;
 import io.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import io.camunda.optimize.service.util.ValidationHelper;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -94,6 +96,7 @@ public class ReportService implements CollectionReferencingService {
   private final AuthorizedCollectionService collectionService;
   private final AbstractIdentityService identityService;
   private final DefinitionService defintionService;
+  private final ConfigurationService configurationService;
 
   public ReportService(
       final ReportWriter reportWriter,
@@ -102,7 +105,8 @@ public class ReportService implements CollectionReferencingService {
       final ReportRelationService reportRelationService,
       final AuthorizedCollectionService collectionService,
       final AbstractIdentityService identityService,
-      final DefinitionService defintionService) {
+      final DefinitionService defintionService,
+      final ConfigurationService configurationService) {
     this.reportWriter = reportWriter;
     this.reportReader = reportReader;
     this.reportAuthorizationService = reportAuthorizationService;
@@ -110,6 +114,7 @@ public class ReportService implements CollectionReferencingService {
     this.collectionService = collectionService;
     this.identityService = identityService;
     this.defintionService = defintionService;
+    this.configurationService = configurationService;
   }
 
   private static void copyDefinitionMetaDataToUpdate(
@@ -147,6 +152,7 @@ public class ReportService implements CollectionReferencingService {
       final String userId, final SingleDecisionReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
     validateReportDescription(definitionDto.getDescription());
+    validateReportName(definitionDto.getName());
     return createReport(
         userId,
         definitionDto,
@@ -158,6 +164,7 @@ public class ReportService implements CollectionReferencingService {
       final String userId, final SingleProcessReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
     validateReportDescription(definitionDto.getDescription());
+    validateReportName(definitionDto.getName());
     Optional.ofNullable(definitionDto.getData())
         .ifPresent(
             data -> {
@@ -177,6 +184,7 @@ public class ReportService implements CollectionReferencingService {
   public IdResponseDto createNewCombinedProcessReport(
       final String userId, final CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
     validateReportDescription(combinedReportDefinitionDto.getDescription());
+    validateReportName(combinedReportDefinitionDto.getName());
     verifyValidReportCombination(
         userId,
         combinedReportDefinitionDto.getCollectionId(),
@@ -199,6 +207,7 @@ public class ReportService implements CollectionReferencingService {
       final String reportId, final String userId, final String newReportName) {
     final AuthorizedReportDefinitionResponseDto authorizedReportDefinition =
         getReportDefinition(reportId, userId);
+    validateReportName(newReportName);
     final ReportDefinitionDto oldReportDefinition = authorizedReportDefinition.getDefinitionDto();
 
     return copyAndMoveReport(
@@ -210,6 +219,9 @@ public class ReportService implements CollectionReferencingService {
       final String userId,
       final String collectionId,
       final String newReportName) {
+    // authorize first, so the name check cannot answer whether the report exists
+    getReportDefinition(reportId, userId);
+    validateReportName(newReportName);
     return copyAndMoveReport(reportId, userId, collectionId, newReportName, new HashMap<>());
   }
 
@@ -269,9 +281,8 @@ public class ReportService implements CollectionReferencingService {
         getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition =
         authorizedReportDefinition.getDefinitionDto();
-    if (isManagementOrInstantPreviewReport(originalReportDefinition)) {
-      throw new OptimizeValidationException(
-          "Management and Instant Preview Reports cannot be copied");
+    if (isSystemGeneratedReport(originalReportDefinition)) {
+      throw new OptimizeValidationException("System-generated reports cannot be copied");
     }
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
@@ -379,6 +390,7 @@ public class ReportService implements CollectionReferencingService {
       final CombinedReportDefinitionRequestDto updatedReport) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     validateReportDescription(updatedReport.getDescription());
+    validateReportName(updatedReport.getName());
 
     final ReportDefinitionDto currentReportVersion =
         getReportDefinition(combinedReportId, userId).getDefinitionDto();
@@ -404,15 +416,15 @@ public class ReportService implements CollectionReferencingService {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     ValidationHelper.validateProcessFilters(updatedReport.getData().getFilter());
     validateReportDescription(updatedReport.getDescription());
+    validateReportName(updatedReport.getName());
     Optional.ofNullable(updatedReport.getData().getConfiguration())
         .ifPresent(
             config -> ValidationHelper.validateAggregationTypes(config.getAggregationTypes()));
 
     final SingleProcessReportDefinitionRequestDto currentReportVersion =
         getSingleProcessReportDefinition(reportId, userId);
-    if (isManagementOrInstantPreviewReport(currentReportVersion)) {
-      throw new OptimizeValidationException(
-          "Management and Instant Preview Reports cannot be updated");
+    if (isSystemGeneratedReport(currentReportVersion)) {
+      throw new OptimizeValidationException("System-generated reports cannot be updated");
     }
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(
@@ -438,6 +450,39 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.updateProcessDefinitionXmlForProcessReportsWithKey(definitionKey, definitionXml);
   }
 
+  /**
+   * Clears the cached BPMN XML ({@code data.configuration.xml}) on every single-process report
+   * whose first-listed definition is {@code processDefinitionKey} and whose tenants include {@code
+   * tenantId}. A report scoped to other tenants only is left untouched, since its cached XML still
+   * reflects data that is unaffected by this tenant's deletion.
+   */
+  public void clearCachedReportXml(final String processDefinitionKey, final String tenantId) {
+    final List<String> reportIdsToClear =
+        getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
+            .filter(
+                report -> matchesFirstDefinitionAndTenant(report, processDefinitionKey, tenantId))
+            .map(ReportDefinitionDto::getId)
+            .toList();
+    if (!reportIdsToClear.isEmpty()) {
+      reportWriter.clearReportDefinitionXmlForReportIds(
+          reportIdsToClear, processDefinitionKey, tenantId);
+    }
+  }
+
+  private boolean matchesFirstDefinitionAndTenant(
+      final ReportDefinitionDto<?> report,
+      final String processDefinitionKey,
+      final String tenantId) {
+    if (!(report.getData() instanceof final SingleReportDataDto singleReportData)
+        || !processDefinitionKey.equals(singleReportData.getDefinitionKey())) {
+      return false;
+    }
+    // getTenantIds() is null when the underlying definition's tenant list is itself null. Treat it
+    // as "unknown, always matches"
+    final List<String> tenantIds = singleReportData.getTenantIds();
+    return tenantIds == null || tenantIds.contains(tenantId);
+  }
+
   public void updateSingleDecisionReport(
       final String reportId,
       final SingleDecisionReportDefinitionRequestDto updatedReport,
@@ -445,6 +490,7 @@ public class ReportService implements CollectionReferencingService {
       final boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     validateReportDescription(updatedReport.getDescription());
+    validateReportName(updatedReport.getName());
     final SingleDecisionReportDefinitionRequestDto currentReportVersion =
         getSingleDecisionReportDefinition(reportId, userId);
     getReportWithEditAuthorization(userId, currentReportVersion);
@@ -465,9 +511,8 @@ public class ReportService implements CollectionReferencingService {
 
   public void deleteReport(final String reportId) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
-    if (isManagementOrInstantPreviewReport(reportDefinition)) {
-      throw new OptimizeValidationException(
-          "Management and Instant Preview Reports cannot be deleted manually");
+    if (isSystemGeneratedReport(reportDefinition)) {
+      throw new OptimizeValidationException("System-generated reports cannot be deleted manually");
     }
     removeReportAndAssociatedResources(reportId, reportDefinition);
   }
@@ -479,9 +524,8 @@ public class ReportService implements CollectionReferencingService {
 
   public void deleteReportAsUser(final String userId, final String reportId, final boolean force) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
-    if (isManagementOrInstantPreviewReport(reportDefinition)) {
-      throw new OptimizeValidationException(
-          "Management and Instant Preview Reports cannot be deleted");
+    if (isSystemGeneratedReport(reportDefinition)) {
+      throw new OptimizeValidationException("System-generated reports cannot be deleted");
     }
     getReportWithEditAuthorization(userId, reportDefinition);
     validateEntityEditorAuthorization(reportDefinition.getCollectionId());
@@ -632,6 +676,14 @@ public class ReportService implements CollectionReferencingService {
     }
   }
 
+  public void validateReportName(final String reportName) {
+    ValidationHelper.validateEntityName("Report", reportName, getNameMaxLength());
+  }
+
+  private Integer getNameMaxLength() {
+    return configurationService.getEntityConfiguration().getNameMaxLength();
+  }
+
   public Optional<String> updateReportDefinitionXmlIfRequiredAndReturn(
       final ReportDefinitionDto reportDefinition) {
     // we only need to validate that the stored XML is still up to date for heatmap reports on the
@@ -679,6 +731,10 @@ public class ReportService implements CollectionReferencingService {
       final boolean keepSubReportNames) {
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     validateEntityEditorAuthorization(oldCollectionId);
+    // clamped rather than rejected: by this point the name may be Optimize's own " – Copy" variant
+    // or an existing stored name, neither of which the user can correct
+    final String newName =
+        ValidationHelper.clampGeneratedEntityName(newReportName, getNameMaxLength());
 
     if (!originalReportDefinition.isCombined()) {
       switch (originalReportDefinition.getReportType()) {
@@ -690,7 +746,7 @@ public class ReportService implements CollectionReferencingService {
           return reportWriter.createNewSingleProcessReport(
               userId,
               singleProcessReportDefinitionDto.getData(),
-              newReportName,
+              newName,
               originalReportDefinition.getDescription(),
               newCollectionId);
         case DECISION:
@@ -701,7 +757,7 @@ public class ReportService implements CollectionReferencingService {
           return reportWriter.createNewSingleDecisionReport(
               userId,
               singleDecisionReportDefinitionDto.getData(),
-              newReportName,
+              newName,
               originalReportDefinition.getDescription(),
               newCollectionId);
         default:
@@ -713,7 +769,7 @@ public class ReportService implements CollectionReferencingService {
           (CombinedReportDefinitionRequestDto) originalReportDefinition;
       return copyAndMoveCombinedReport(
           userId,
-          newReportName,
+          newName,
           newCollectionId,
           oldCollectionId,
           combinedReportDefinition,
@@ -1072,15 +1128,12 @@ public class ReportService implements CollectionReferencingService {
         .collect(toList());
   }
 
-  private boolean isManagementOrInstantPreviewReport(
-      final ReportDefinitionDto<?> reportDefinition) {
-    return reportDefinition instanceof SingleProcessReportDefinitionRequestDto
-        && (((SingleProcessReportDefinitionRequestDto) reportDefinition)
-                .getData()
-                .isManagementReport()
-            || ((SingleProcessReportDefinitionRequestDto) reportDefinition)
-                .getData()
-                .isInstantPreviewReport());
+  private boolean isSystemGeneratedReport(final ReportDefinitionDto<?> reportDefinition) {
+    // Management, instant-preview and agentic control reports are all generated by Optimize and
+    // must not be mutated by users; their data is injected at query time so a user edit/save
+    // round-trip would fail.
+    return reportDefinition instanceof final SingleProcessReportDefinitionRequestDto singleProcess
+        && singleProcess.getData().isSystemGeneratedReport();
   }
 
   private boolean isHeatmapReportOnVersionAllOrLatest(final ProcessReportDataDto reportData) {

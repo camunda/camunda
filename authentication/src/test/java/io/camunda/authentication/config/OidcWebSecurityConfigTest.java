@@ -15,6 +15,7 @@ import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,10 +69,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
-      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
-      "camunda.security.authentication.oidc.token-uri=token.example.com",
-      "camunda.security.authentication.oidc.jwk-set-uri=jwks.example.com"
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com/sso-callback",
+      "camunda.security.authentication.oidc.authorization-uri=https://authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=https://token.example.com",
+      "camunda.security.authentication.oidc.jwk-set-uri=https://jwks.example.com"
     })
 public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
@@ -96,20 +97,30 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
   @Test
   public void shouldRequireCsrfTokenWithSessionAuthentication() {
-    // given
-    final MockHttpSession mockHttpSession = new MockHttpSession();
+    // given: a real, cookie-backed session — established via the OIDC authorization redirect,
+    // which writes an OAuth2AuthorizationRequest into a genuine session (no IdP round-trip needed;
+    // CSRF enforcement only cares that a session exists, not that it is authenticated)
+    final var sessionCookie = establishRealSessionCookie();
 
     // when
     final MvcTestResult result =
         mockMvcTester
             .post()
-            .session(mockHttpSession)
-            .with(user("demo"))
+            .cookie(sessionCookie)
             .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
             .exchange();
 
     // then
     assertMissingCsrfToken(result);
+  }
+
+  private Cookie establishRealSessionCookie() {
+    final MvcTestResult redirectResult =
+        mockMvcTester.get().uri("https://localhost/oauth2/authorization/oidc").exchange();
+    final Cookie sessionCookie =
+        redirectResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(sessionCookie).isNotNull();
+    return sessionCookie;
   }
 
   @Test
@@ -150,7 +161,7 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
   }
 
   @Test
-  public void shouldRejectRequestsToProtectedWebResourcesWithoutAuthentication() {
+  public void shouldRedirectToOidcProviderForProtectedWebResourcesWithoutAuthentication() {
     // when
     final MvcTestResult testResult =
         mockMvcTester
@@ -159,7 +170,12 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
             .exchange();
 
     // then
-    assertThat(testResult).hasStatus(HttpStatus.UNAUTHORIZED);
+    // Browser navigations to a protected webapp path (no Authorization header) are redirected to
+    // the OIDC authorization endpoint by the CSL OIDC webapp chain. The test context registers a
+    // single client registration so the redirect target is /oauth2/authorization/<id>.
+    assertThat(testResult)
+        .hasStatus(HttpStatus.FOUND)
+        .hasHeader("Location", "/oauth2/authorization/oidc");
   }
 
   @Test

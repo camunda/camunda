@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.util;
 
-import static org.apache.commons.lang3.StringUtils.isNumeric;
+import static java.util.Objects.requireNonNull;
 
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A semantic version as specified by <a href="https://semver.org/">Semantic Versioning 2.0.0</a>.
@@ -20,8 +22,20 @@ import java.util.regex.Pattern;
  * Object#equals(Object)} because SemVer does not consider build metadata when comparing versions.
  */
 public record SemanticVersion(
-    int major, int minor, int patch, String preRelease, String buildMetadata)
+    int major, int minor, int patch, @Nullable String preRelease, @Nullable String buildMetadata)
     implements Comparable<SemanticVersion> {
+
+  /**
+   * Comparator for Camunda-style pre-release versions (e.g. {@code alpha1}, {@code alpha1-rc1},
+   * {@code rc3}, {@code SNAPSHOT}) which splits identifiers on numeric boundaries so that {@code
+   * alpha2 < alpha10}, and treats qualifiers like {@code -rcN} as lower precedence than the base
+   * pre-release.
+   *
+   * <p>Note: this comparator is not SemVer 2.0.0 compliant for all possible pre-release forms; use
+   * {@link #compareTo(SemanticVersion)} for strict SemVer ordering.
+   */
+  public static final Comparator<SemanticVersion> ALPHA_AND_RELEASE_CANDIDATE_COMPARATOR =
+      new AlphaAndReleaseCandidateComparator();
 
   private static final ConcurrentHashMap<String, SemanticVersion> CACHE =
       new ConcurrentHashMap<>(16);
@@ -56,7 +70,22 @@ public record SemanticVersion(
     return preRelease != null;
   }
 
-  public static Optional<SemanticVersion> parse(final String version) {
+  public String toMinorVersionString() {
+    return major + "." + minor;
+  }
+
+  /**
+   * @return this version with its pre-release/build-metadata suffix stripped (e.g. {@code
+   *     8.10.0-SNAPSHOT} becomes {@code 8.10.0}), or this version unchanged if it has neither.
+   */
+  public SemanticVersion withoutPreRelease() {
+    if (preRelease == null && buildMetadata == null) {
+      return this;
+    }
+    return new SemanticVersion(major, minor, patch, null, null);
+  }
+
+  public static Optional<SemanticVersion> parse(final @Nullable String version) {
     if (version == null) {
       return Optional.empty();
     }
@@ -64,7 +93,15 @@ public record SemanticVersion(
     return Optional.ofNullable(CACHE.computeIfAbsent(version, SemanticVersion::doParse));
   }
 
-  private static SemanticVersion doParse(final String version) {
+  /**
+   * @return {@code version} stripped of any pre-release/build-metadata suffix, or the raw input
+   *     unchanged if it can't be parsed as a semantic version.
+   */
+  public static String withoutPreReleaseSuffix(final String version) {
+    return parse(version).map(sv -> sv.withoutPreRelease().toString()).orElse(version);
+  }
+
+  private static @Nullable SemanticVersion doParse(final String version) {
     final var matcher = PATTERN.matcher(version);
     if (matcher.matches()) {
       final var major = Integer.parseInt(matcher.group("major"));
@@ -106,8 +143,8 @@ public record SemanticVersion(
       return 1;
     }
 
-    final var preReleaseParts = preRelease.split("\\.");
-    final var otherPreReleaseParts = other.preRelease.split("\\.");
+    final var preReleaseParts = requireNonNull(preRelease).split("\\.");
+    final var otherPreReleaseParts = requireNonNull(other.preRelease).split("\\.");
 
     // Precedence for two pre-release versions with the same major, minor, and patch version MUST be
     // determined by comparing each dot separated identifier from left to right until a difference
@@ -148,5 +185,10 @@ public record SemanticVersion(
       return version + "-" + preRelease;
     }
     return version;
+  }
+
+  /** Whether the identifier is non-empty and consists only of digits. */
+  static boolean isNumeric(final String identifier) {
+    return !identifier.isEmpty() && identifier.chars().allMatch(Character::isDigit);
   }
 }

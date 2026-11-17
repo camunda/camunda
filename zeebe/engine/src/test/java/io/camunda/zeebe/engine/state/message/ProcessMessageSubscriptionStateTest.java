@@ -12,11 +12,11 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.PendingSubscriptionRecovery;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,7 +172,7 @@ public final class ProcessMessageSubscriptionStateTest {
     state.put(1L, record);
 
     // when
-    ((StreamProcessorLifecycleAware) state).onRecovered(null);
+    pendingState.recoverPending(PendingSubscriptionRecovery.NO_ELEMENT_INSTANCE, Integer.MAX_VALUE);
 
     // then
     final AtomicReference<String> tenantId = new AtomicReference<>();

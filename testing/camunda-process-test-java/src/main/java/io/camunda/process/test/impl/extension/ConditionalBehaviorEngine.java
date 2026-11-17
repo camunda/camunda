@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,7 +201,7 @@ public class ConditionalBehaviorEngine {
     private final List<Runnable> actions = new CopyOnWriteArrayList<>();
     private final AtomicInteger actionIndex = new AtomicInteger(0);
     private final AtomicInteger fireCount = new AtomicInteger(0);
-    private final AtomicInteger failureCount = new AtomicInteger(0);
+    private final AtomicLong nextAllowedFireTimeMillis = new AtomicLong(0);
     private volatile String name;
 
     ConditionalBehavior(final BehaviorCondition condition, final String defaultName) {
@@ -213,10 +214,14 @@ public class ConditionalBehaviorEngine {
     }
 
     void evaluate() {
+      if (System.currentTimeMillis() < nextAllowedFireTimeMillis.get()) {
+        return;
+      }
       if (isConditionMet()) {
         LOGGER.trace("Condition met for '{}', firing action at index {}", name, actionIndex.get());
-        fireAction();
-        waitForConditionReset();
+        if (fireAction()) {
+          waitForConditionReset();
+        }
       }
     }
 
@@ -252,20 +257,25 @@ public class ConditionalBehaviorEngine {
       }
     }
 
-    private void fireAction() {
+    private boolean fireAction() {
       if (actions.isEmpty()) {
-        return;
+        return false;
       }
       fireCount.incrementAndGet();
       final Runnable action = actions.get(clampToLastAction(actionIndex.get()));
       try {
         action.run();
       } catch (final Throwable t) {
-        failureCount.incrementAndGet();
-        LOGGER.warn("Behavior '{}' action threw an exception, will retry", name, t);
-        return;
+        nextAllowedFireTimeMillis.set(System.currentTimeMillis() + resetTimeout.toMillis());
+        LOGGER.warn(
+            "Behavior '{}' action threw an exception, will retry after {}s",
+            name,
+            resetTimeout.getSeconds(),
+            t);
+        return false;
       }
       actionIndex.set(clampToLastAction(actionIndex.get() + 1));
+      return true;
     }
 
     private int clampToLastAction(final int index) {

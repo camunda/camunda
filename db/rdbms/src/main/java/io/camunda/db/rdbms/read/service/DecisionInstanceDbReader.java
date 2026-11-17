@@ -20,13 +20,14 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputE
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceEntity getById(
+  public @Nullable DecisionInstanceEntity getById(
       final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(id).orElse(null);
   }

@@ -11,16 +11,19 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.jupiter.api.DisplayName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Category(SlowTest.class)
 public class RaftCorruptedDataTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(RaftCorruptedDataTest.class);
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

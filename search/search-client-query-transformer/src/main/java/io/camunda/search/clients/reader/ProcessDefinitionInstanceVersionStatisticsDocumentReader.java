@@ -15,7 +15,7 @@ import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class ProcessDefinitionInstanceVersionStatisticsDocumentReader extends DocumentBasedReader
@@ -45,7 +45,6 @@ public class ProcessDefinitionInstanceVersionStatisticsDocumentReader extends Do
                 resourceAccessChecks,
                 ProcessDefinitionInstanceVersionStatisticsAggregationResult::items);
 
-    // Return paginated items and total from the single query result
     return new SearchQueryResult<>(
         paginatedResult.total(),
         paginatedResult.hasMoreTotalItems(),

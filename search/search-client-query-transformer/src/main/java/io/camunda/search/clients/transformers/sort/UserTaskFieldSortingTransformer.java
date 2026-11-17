@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.COMPLETION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.DUE_DATE;
@@ -25,6 +26,7 @@ public class UserTaskFieldSortingTransformer implements FieldSortingTransformer 
       case "dueDate" -> DUE_DATE;
       case "followUpDate" -> FOLLOW_UP_DATE;
       case "name" -> NAME;
+      case "businessId" -> BUSINESS_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };
   }

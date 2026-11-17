@@ -25,6 +25,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotBrokerRequest extends BrokerRequest<SnapshotResponse> {
 
@@ -81,7 +82,7 @@ public class SnapshotBrokerRequest extends BrokerRequest<SnapshotResponse> {
   }
 
   @Override
-  public BufferWriter getRequestWriter() {
+  public @Nullable BufferWriter getRequestWriter() {
     return null;
   }
 

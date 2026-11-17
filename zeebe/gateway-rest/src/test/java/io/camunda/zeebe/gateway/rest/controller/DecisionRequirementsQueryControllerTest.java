@@ -21,10 +21,11 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionRequirementsSort;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -91,9 +92,12 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
           """;
   @MockitoBean DecisionRequirementsServices decisionRequirementsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.decisionRequirementsServices(any()))
+        .thenReturn(decisionRequirementsServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
@@ -371,7 +375,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     when(service.apply(decisionRequirementsServices, decisionRequirementsKey))
         .thenThrow(
             ErrorMapper.createForbiddenException(
-                Authorization.of(a -> a.decisionRequirementsDefinition().read())));
+                RequiredAuthorization.of(a -> a.decisionRequirementsDefinition().read())));
     // when / then
     final String formattedUrl = url.formatted(decisionRequirementsKey);
     webClient

@@ -7,6 +7,12 @@ paths:
       tags:
         - Process definition
       operationId: searchProcessDefinitions
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search process definitions
       description: Search for process definitions based on given criteria.
       requestBody:
@@ -31,6 +37,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}:
     get:
@@ -38,6 +45,11 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinition
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process definition
       description: Returns process definition as JSON.
       parameters:
@@ -73,6 +85,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/xml:
     get:
@@ -80,6 +93,11 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionXML
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process definition XML
       description: Returns process definition as XML.
       parameters:
@@ -120,6 +138,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/form:
     get:
@@ -127,6 +146,11 @@ paths:
       tags:
         - Process definition
       operationId: getStartProcessForm
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process start form
       description: |
         Get the start form of a process.
@@ -162,6 +186,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
 
   /process-definitions/{processDefinitionKey}/statistics/element-instances:
     post:
@@ -169,6 +194,12 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process definition statistics
       description: Get statistics about elements in currently running process instances by process definition key and search filter.
       parameters:
@@ -200,6 +231,52 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
+      x-scope: physical-tenant
+
+  /process-definitions/{processDefinitionKey}/variable-names/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Process definition
+      operationId: searchProcessDefinitionVariableNames
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search process definition variable names
+      description: Search for distinct variable names defined on a process definition, optionally narrowed by the name filter.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionVariableNameSearchQuery'
+      responses:
+        "200":
+          description: The process definition variable name search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionVariableNameSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+      x-scope: physical-tenant
 
   /process-definitions/statistics/message-subscriptions:
     post:
@@ -207,6 +284,12 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionMessageSubscriptionStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get message subscription statistics
       description: |
         Get message subscription statistics, grouped by process definition.
@@ -232,6 +315,7 @@ paths:
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-definitions/statistics/process-instances:
     post:
@@ -239,6 +323,12 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionInstanceStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process instance statistics
       description: |
         Get statistics about process instances, grouped by process definition and tenant.
@@ -264,6 +354,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
   /process-definitions/statistics/process-instances-by-version:
     post:
@@ -271,6 +362,12 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionInstanceVersionStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process instance statistics by version
       description: |
         Get statistics about process instances, grouped by version for a given process definition.
@@ -297,6 +394,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
+      x-scope: physical-tenant
 
 ## Schema definitions
 
@@ -377,6 +475,23 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
+        state:
+          description: |
+            Filter by the process definition's state.
+            When not set, process definitions in any state are returned.
+            Set to `ACTIVE` to exclude draining and deleted definitions (recommended for most use cases).
+            Set to `DRAINING` to return only definitions that are being deleted but still have
+            active process instances draining.
+            Set to `DELETED` to return only definitions that have been deleted but are still
+            retained in secondary storage.
+          type: string
+          enum:
+            - ACTIVE
+            - DRAINING
+            - DELETED
+      x-properties-added-in-version:
+        - propertyName: "state"
+          addedInVersion: "8.10"
 
     ProcessDefinitionSearchQueryResult:
       type: object
@@ -402,6 +517,7 @@ components:
         - processDefinitionId
         - tenantId
         - hasStartForm
+        - state
       properties:
         name:
           description: Name of this process definition.
@@ -433,6 +549,19 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
+        state:
+          description: |
+            The state of this process definition.
+            `DRAINING` indicates the definition is being deleted but still has active process
+            instances draining before it is removed.
+          type: string
+          enum:
+            - ACTIVE
+            - DRAINING
+            - DELETED
+      x-properties-added-in-version:
+        - propertyName: "state"
+          addedInVersion: "8.10"
 
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
@@ -486,6 +615,52 @@ components:
           description: The total number of completed instances of the element.
           type: integer
           format: int64
+
+    ProcessDefinitionVariableNameSearchQuery:
+      description: Process definition variable name search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        filter:
+          description: The process definition variable name search filters.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionVariableNameFilter'
+
+    ProcessDefinitionVariableNameFilter:
+      description: Process definition variable name filter request.
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          description: The variable name search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    ProcessDefinitionVariableNameSearchQueryResult:
+      description: Process definition variable name search query response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching variable names.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionVariableNameSearchResult'
+
+    ProcessDefinitionVariableNameSearchResult:
+      description: Process definition variable name search response item.
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: The variable name.
+          type: string
 
     ProcessDefinitionMessageSubscriptionStatisticsQuery:
       type: object

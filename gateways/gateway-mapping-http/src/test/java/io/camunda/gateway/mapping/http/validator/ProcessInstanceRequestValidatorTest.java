@@ -11,14 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.search.filter.Operation;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.ProblemDetail;
 
@@ -28,8 +32,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid processDefinitionKey format")
   void shouldAcceptValidProcessDefinitionKey() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -40,8 +46,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid tags")
   void shouldAcceptValidTags() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setTags(Set.of("valid-tag", "another-tag"));
 
     final Optional<ProblemDetail> result =
@@ -53,8 +61,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject invalid tags")
   void shouldRejectInvalidTags() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setTags(Set.of("1 invalid-tag", "another-tag"));
 
     final Optional<ProblemDetail> result =
@@ -69,8 +79,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject too many tags")
   void shouldRejectTooManyTags() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setTags(Set.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
 
     final Optional<ProblemDetail> result =
@@ -86,8 +98,10 @@ class ProcessInstanceRequestValidatorTest {
   @ValueSource(strings = {"abc", "12.34", "12abc", "", " "})
   @DisplayName("Should reject invalid processDefinitionKey formats")
   void shouldRejectInvalidProcessDefinitionKey(final String invalidKey) {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey(invalidKey);
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey(invalidKey)
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -104,8 +118,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept null processDefinitionKey when processDefinitionId is provided")
   void shouldAcceptNullProcessDefinitionKeyWhenIdProvided() {
-    final var request = new ProcessInstanceCreationInstructionById();
-    request.setProcessDefinitionId("process-id");
+    final var request =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process-id")
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -116,14 +132,16 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid targetProcessDefinitionKey format in migration request")
   void shouldAcceptValidTargetProcessDefinitionKey() {
-
-    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
-    migrationPlan.setTargetProcessDefinitionKey("987654321");
-    migrationPlan.setMappingInstructions(java.util.List.of());
-
-    final var request = new ProcessInstanceMigrationBatchOperationRequest();
-    request.setFilter(new ProcessInstanceFilter());
-    request.setMigrationPlan(migrationPlan);
+    final var migrationPlan =
+        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
+            .targetProcessDefinitionKey("987654321")
+            .mappingInstructions(java.util.List.of())
+            .build();
+    final var request =
+        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
+            .filter(ProcessInstanceFilter.Builder.create().build())
+            .migrationPlan(migrationPlan)
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
@@ -141,13 +159,16 @@ class ProcessInstanceRequestValidatorTest {
   @ValueSource(strings = {"xyz", "99.99", "99xyz", "", " "})
   @DisplayName("Should reject invalid targetProcessDefinitionKey formats in migration request")
   void shouldRejectInvalidTargetProcessDefinitionKey(final String invalidKey) {
-    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
-    migrationPlan.setTargetProcessDefinitionKey(invalidKey);
-    migrationPlan.setMappingInstructions(java.util.List.of());
-
-    final var request = new ProcessInstanceMigrationBatchOperationRequest();
-    request.setFilter(new ProcessInstanceFilter());
-    request.setMigrationPlan(migrationPlan);
+    final var migrationPlan =
+        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
+            .targetProcessDefinitionKey(invalidKey)
+            .mappingInstructions(java.util.List.of())
+            .build();
+    final var request =
+        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
+            .filter(ProcessInstanceFilter.Builder.create().build())
+            .migrationPlan(migrationPlan)
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
@@ -165,10 +186,11 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should handle edge case Long values")
   void shouldHandleEdgeCaseLongValues() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-
     // Test with maximum Long value
-    request.setProcessDefinitionKey(String.valueOf(Long.MAX_VALUE));
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey(String.valueOf(Long.MAX_VALUE))
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -179,9 +201,11 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject Long values that are too large")
   void shouldRejectLongValuesTooLarge() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
     // Create a number larger than Long.MAX_VALUE
-    request.setProcessDefinitionKey("99999999999999999999999999999");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("99999999999999999999999999999")
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -198,8 +222,8 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept zero as valid Long value")
   void shouldAcceptZeroAsValidLong() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("0");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create().processDefinitionKey("0").build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -210,8 +234,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept negative Long values")
   void shouldAcceptNegativeLongValues() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("-123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("-123456789")
+            .build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -222,8 +248,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject businessId exceeding max length when creating by key")
   void shouldRejectBusinessIdExceedingMaxLengthByKey() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setBusinessId("a".repeat(257));
 
     final Optional<ProblemDetail> result =
@@ -238,8 +266,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject businessId exceeding max length when creating by id")
   void shouldRejectBusinessIdExceedingMaxLengthById() {
-    final var request = new ProcessInstanceCreationInstructionById();
-    request.setProcessDefinitionId("process-id");
+    final var request =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process-id")
+            .build();
     request.setBusinessId("a".repeat(257));
 
     final Optional<ProblemDetail> result =
@@ -249,6 +279,140 @@ class ProcessInstanceRequestValidatorTest {
     final ProblemDetail problem = result.get();
     assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
     assertThat(problem.getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  @DisplayName("Should accept valid creation by version tag")
+  void shouldAcceptCreationByVersionTag() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("process-id")
+            .processDefinitionVersionTag("release-1")
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "  "})
+  @DisplayName("Should reject blank version tag when creating by version tag")
+  void shouldRejectBlankVersionTag(final String versionTag) {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("process-id")
+            .processDefinitionVersionTag(versionTag)
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(result.get().getDetail()).contains("processDefinitionVersionTag");
+  }
+
+  @Test
+  @DisplayName("Should reject invalid processDefinitionId when creating by version tag")
+  void shouldRejectInvalidProcessDefinitionIdWhenCreatingByVersionTag() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("9invalid")
+            .processDefinitionVersionTag("release-1")
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).contains("processDefinitionId");
+  }
+
+  @Test
+  @DisplayName("Should reject version tag combined with version in simple API")
+  void shouldRejectVersionTagCombinedWithVersionSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setProcessDefinitionVersion(2);
+    request.setProcessDefinitionVersionTag("release-1");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo(
+            "Only one of [processDefinitionVersion, processDefinitionVersionTag] is allowed.");
+  }
+
+  @Test
+  @DisplayName("Should accept version tag with latest version in simple API")
+  void shouldAcceptVersionTagWithLatestVersionSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setProcessDefinitionVersion(-1);
+    request.setProcessDefinitionVersionTag("release-1");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should only report blank version tag when combined with version in simple API")
+  void shouldOnlyReportBlankVersionTagWhenCombinedWithVersionSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setProcessDefinitionVersion(2);
+    request.setProcessDefinitionVersionTag(" ");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).isEqualTo("No processDefinitionVersionTag provided.");
+  }
+
+  @Test
+  @DisplayName("Should only report blank version tag when used without id in simple API")
+  void shouldOnlyReportBlankVersionTagWithoutIdSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionKey("123");
+    request.setProcessDefinitionVersionTag(" ");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).isEqualTo("No processDefinitionVersionTag provided.");
   }
 
   @Test
@@ -271,8 +435,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept businessId with exactly max length")
   void shouldAcceptBusinessIdWithMaxLength() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setBusinessId("a".repeat(256));
 
     final Optional<ProblemDetail> result =
@@ -284,8 +450,10 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept null businessId")
   void shouldAcceptNullBusinessId() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setBusinessId(null);
 
     final Optional<ProblemDetail> result =
@@ -297,13 +465,263 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept empty businessId")
   void shouldAcceptEmptyBusinessId() {
-    final var request = new ProcessInstanceCreationInstructionByKey();
-    request.setProcessDefinitionKey("123456789");
+    final var request =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123456789")
+            .build();
     request.setBusinessId("");
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
 
     assertThat(result).isEmpty();
+  }
+
+  private static io.camunda.search.filter.ProcessInstanceFilter.Builder searchFilter() {
+    return new io.camunda.search.filter.ProcessInstanceFilter.Builder();
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateEqForSuspend() {
+    // given
+    final var filter = searchFilter().states("COMPLETED").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(result.get().getStatus()).isEqualTo(400);
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [ACTIVE].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateInForSuspend() {
+    // given
+    final var filter = searchFilter().stateOperations(Operation.in("ACTIVE", "SUSPENDED")).build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'SUSPENDED' but must be one of [ACTIVE].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateEqForResume() {
+    // given
+    final var filter = searchFilter().states("ACTIVE").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'ACTIVE' but must be one of [SUSPENDED].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateInForResume() {
+    // given
+    final var filter =
+        searchFilter().stateOperations(Operation.in("SUSPENDED", "COMPLETED")).build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [SUSPENDED].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateEqForCancel() {
+    // given
+    final var filter = searchFilter().states("COMPLETED").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].");
+  }
+
+  @Test
+  void shouldRejectTopLevelInvalidStateInForCancel() {
+    // given
+    final var filter = searchFilter().stateOperations(Operation.in("ACTIVE", "COMPLETED")).build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].");
+  }
+
+  @Test
+  void shouldReportCanceledAsTerminatedForCancel() {
+    // given
+    final var filter = searchFilter().states("CANCELED").build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo("The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED].");
+  }
+
+  @Test
+  void shouldReportEachDistinctInvalidStateForCancel() {
+    // given
+    final var filter =
+        searchFilter()
+            .stateOperations(Operation.in("COMPLETED", "CANCELED", "COMPLETED", "ACTIVE"))
+            .build();
+
+    // when
+    final var result =
+        ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(filter);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .contains("The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED]")
+        .contains("The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED]");
+  }
+
+  @Test
+  void shouldAcceptValidStatesForSuspend() {
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                searchFilter().states("ACTIVE").build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                searchFilter().build()))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldAcceptValidStatesForResume() {
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                searchFilter().states("SUSPENDED").build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                searchFilter().build()))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldAcceptValidStatesForCancel() {
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                searchFilter().stateOperations(Operation.in("ACTIVE", "SUSPENDED")).build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                searchFilter().states("ACTIVE").build()))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                searchFilter().build()))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldNotValidateStatesInsideOrFilters() {
+    // given
+    final var filter =
+        searchFilter()
+            .addOrOperation(searchFilter().states("COMPLETED").build())
+            .addOrOperation(searchFilter().processInstanceKeys(42L).build())
+            .build();
+
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+  }
+
+  static Stream<Operation<String>> nonRestrictingStateOperations() {
+    return Stream.of(
+        Operation.neq("COMPLETED"),
+        Operation.exists(true),
+        Operation.exists(false),
+        Operation.like("COMP*"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonRestrictingStateOperations")
+  void shouldNotValidateOtherStateOperators(final Operation<String> stateOperation) {
+    // given
+    final var filter = searchFilter().stateOperations(stateOperation).build();
+
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldNeverRejectParentProcessInstanceKeyFilter() {
+    // given
+    final var filter = searchFilter().parentProcessInstanceKeys(12345L).build();
+
+    // when / then
+    assertThat(
+            ProcessInstanceRequestValidator.validateSuspendProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateResumeProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
+    assertThat(
+            ProcessInstanceRequestValidator.validateCancelProcessInstanceBatchOperationFilter(
+                filter))
+        .isEmpty();
   }
 }

@@ -15,13 +15,13 @@
   <resultMap id="GlobalJobStatisticsResultMap"
     type="io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbResult">
     <constructor>
-      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="INCOMPLETE_BATCH" javaType="java.lang.Boolean"/>
+      <arg column="CREATED_COUNT" javaType="java.lang.Long" name="createdCount"/>
+      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime" name="lastCreatedAt"/>
+      <arg column="COMPLETED_COUNT" javaType="java.lang.Long" name="completedCount"/>
+      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime" name="lastCompletedAt"/>
+      <arg column="FAILED_COUNT" javaType="java.lang.Long" name="failedCount"/>
+      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime" name="lastFailedAt"/>
+      <arg column="INCOMPLETE_BATCH" javaType="java.lang.Boolean" name="incompleteBatch"/>
     </constructor>
   </resultMap>
 
@@ -64,14 +64,14 @@
   <resultMap id="JobTypeStatisticsResultMap"
     type="io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbResult">
     <constructor>
-      <arg column="JOB_TYPE" javaType="java.lang.String"/>
-      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="WORKERS" javaType="java.lang.Integer"/>
+      <arg column="JOB_TYPE" javaType="java.lang.String" name="jobType"/>
+      <arg column="CREATED_COUNT" javaType="java.lang.Long" name="createdCount"/>
+      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime" name="lastCreatedAt"/>
+      <arg column="COMPLETED_COUNT" javaType="java.lang.Long" name="completedCount"/>
+      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime" name="lastCompletedAt"/>
+      <arg column="FAILED_COUNT" javaType="java.lang.Long" name="failedCount"/>
+      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime" name="lastFailedAt"/>
+      <arg column="WORKERS" javaType="java.lang.Integer" name="workers"/>
     </constructor>
   </resultMap>
 
@@ -124,13 +124,13 @@
   <resultMap id="JobWorkerStatisticsResultMap"
     type="io.camunda.db.rdbms.read.domain.JobWorkerStatisticsDbResult">
     <constructor>
-      <arg column="WORKER" javaType="java.lang.String"/>
-      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg column="WORKER" javaType="java.lang.String" name="worker"/>
+      <arg column="CREATED_COUNT" javaType="java.lang.Long" name="createdCount"/>
+      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime" name="lastCreatedAt"/>
+      <arg column="COMPLETED_COUNT" javaType="java.lang.Long" name="completedCount"/>
+      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime" name="lastCompletedAt"/>
+      <arg column="FAILED_COUNT" javaType="java.lang.Long" name="failedCount"/>
+      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime" name="lastFailedAt"/>
     </constructor>
   </resultMap>
 
@@ -180,13 +180,13 @@
   <resultMap id="JobTimeSeriesStatisticsResultMap"
     type="io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbResult">
     <constructor>
-      <arg column="BUCKET_TIME" javaType="java.time.OffsetDateTime"/>
-      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
-      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
-      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg column="BUCKET_TIME" javaType="java.time.OffsetDateTime" name="bucketTime"/>
+      <arg column="CREATED_COUNT" javaType="java.lang.Long" name="createdCount"/>
+      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime" name="lastCreatedAt"/>
+      <arg column="COMPLETED_COUNT" javaType="java.lang.Long" name="completedCount"/>
+      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime" name="lastCompletedAt"/>
+      <arg column="FAILED_COUNT" javaType="java.lang.Long" name="failedCount"/>
+      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime" name="lastFailedAt"/>
     </constructor>
   </resultMap>
 
@@ -244,9 +244,9 @@
   <resultMap id="JobErrorStatisticsResultMap"
     type="io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbResult">
     <constructor>
-      <arg column="ERROR_CODE"    javaType="java.lang.String"/>
-      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
-      <arg column="WORKERS"       javaType="java.lang.Integer"/>
+      <arg column="ERROR_CODE" javaType="java.lang.String" name="errorCode"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String" name="errorMessage"/>
+      <arg column="WORKERS" javaType="java.lang.Integer" name="workers"/>
     </constructor>
   </resultMap>
 

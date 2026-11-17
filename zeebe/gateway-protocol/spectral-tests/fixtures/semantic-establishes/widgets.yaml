@@ -1,0 +1,1419 @@
+# Domain file for semantic-establishes / semantic-requires test fixture.
+# Each operation exercises one named violation (or, for valid cases, the
+# happy path).
+openapi: "3.0.3"
+info:
+  title: Widgets domain (test fixture)
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: single-key entity establish + matching consumer ───
+  /valid/widgets:
+    post:
+      operationId: createWidget
+      summary: Create a widget
+      description: Establishes a Widget identified by widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                widgetId: { type: string }
+              required: [widgetId]
+      responses:
+        '201':
+          description: Created.
+
+  /valid/widgets/{widgetId}:
+    get:
+      operationId: getWidget
+      summary: Get a widget
+      description: Requires a Widget to exist.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # Establishes User. Required for the assignOwnerToWidget edge below to be
+  # valid: the edge's identifiedBy includes Username, which the registry
+  # declares as User's identifier, so User becomes a derived requires.
+  /valid/users:
+    post:
+      operationId: createUser
+      summary: Create a user
+      description: Establishes a User identified by username.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: User
+        identifiedBy:
+          - { in: body, name: username, semanticType: Username }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+              required: [username]
+      responses:
+        '201':
+          description: Created.
+
+  # ── Valid: edge establish + edge consumer ────────────────────
+  /valid/widgets/{widgetId}/owners/{username}:
+    put:
+      operationId: assignOwnerToWidget
+      summary: Assign owner to widget
+      description: Establishes a WidgetOwnership edge.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: username
+          in: path
+          required: true
+          description: The username.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetOwnership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: username, semanticType: Username }
+      responses:
+        '204':
+          description: Assigned.
+
+  /valid/widgets/{widgetId}/owners/search:
+    post:
+      operationId: searchOwnersForWidget
+      summary: Search widget owners
+      description: Requires a WidgetOwnership to exist; binds only widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: WidgetOwnership
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: shape lint (semantic-establishes-shape) ─────────
+
+  # 1. Missing required `kind`.
+  /invalid/missing-kind:
+    post:
+      operationId: missingKind
+      summary: Missing kind
+      description: Should fail semantic-establishes-shape — missing kind.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 2. kind violates PascalCase pattern.
+  /invalid/bad-kind-case:
+    post:
+      operationId: badKindCase
+      summary: Bad kind case
+      description: Should fail semantic-establishes-shape — kind not PascalCase.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 3. Typo'd top-level key — additionalProperties: false rejects it.
+  /invalid/typoed-key:
+    post:
+      operationId: typoedKey
+      summary: Typoed key
+      description: Should fail semantic-establishes-shape — `identifedBy` typo.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 4. Bad `shape` enum value.
+  /invalid/bad-shape-enum:
+    post:
+      operationId: badShapeEnum
+      summary: Bad shape enum
+      description: Should fail semantic-establishes-shape — shape not in enum.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        shape: relation
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 5. identifiedBy must have at least one item.
+  /invalid/empty-identified-by:
+    post:
+      operationId: emptyIdentifiedBy
+      summary: Empty identifiedBy
+      description: Should fail semantic-establishes-shape — empty identifiedBy.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy: []
+      responses:
+        '201':
+          description: Created.
+
+  # 6. identifiedBy item with bad `in` enum value.
+  /invalid/identified-by-bad-in:
+    post:
+      operationId: identifiedByBadIn
+      summary: identifiedBy bad in
+      description: Should fail semantic-establishes-shape — `in: cookie` not in enum.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: cookie, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # ── Invalid: requires shape lint ─────────────────────────────
+
+  # 7. Missing required `bind`.
+  /invalid/requires-missing-bind:
+    get:
+      operationId: requiresMissingBind
+      summary: Requires missing bind
+      description: Should fail semantic-requires-shape — missing bind.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: registry / cross-reference ──────────────────────
+
+  # 8. Establishes a kind not in the registry.
+  /invalid/unknown-establishes-kind:
+    post:
+      operationId: unknownEstablishesKind
+      summary: Unknown establishes kind
+      description: Should fail verify-semantic-kinds-registered.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Sprocket
+        identifiedBy:
+          - { in: body, name: sprocketId, semanticType: SprocketId }
+      responses:
+        '201':
+          description: Created.
+
+  # 9. Requires a kind not in the registry.
+  /invalid/unknown-requires-kind:
+    get:
+      operationId: unknownRequiresKind
+      summary: Unknown requires kind
+      description: Should fail verify-semantic-kinds-registered.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Gizmo
+        bind:
+          gizmoId: { from: path, name: gizmoId }
+      responses:
+        '200':
+          description: OK.
+
+  # 10. Requires a kind that IS in the registry but is not established
+  #     anywhere in this spec — exercises the cross-reference check.
+  /invalid/orphan-requires:
+    get:
+      operationId: orphanRequires
+      summary: Orphan requires
+      description: Should fail verify-semantic-kinds-registered — kind in registry but never established here.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: OrphanedKind
+        bind:
+          orphanedId: { from: path, name: orphanedId }
+      responses:
+        '200':
+          description: OK.
+
+  # 11. Edge with an identifiedBy semanticType that no entity in the registry
+  #     declares as an identifier. Exercises the unresolved-endpoint check
+  #     (derived-requires resolution failure).
+  /invalid/widgets/{widgetId}/mystery/{mysteryId}:
+    put:
+      operationId: assignMysteryToWidget
+      summary: Assign mystery to widget
+      description: Should fail verify-semantic-kinds-registered — MysteryId is no entity's identifier.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: mysteryId
+          in: path
+          required: true
+          description: The mystery id.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetMysteryLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId,  semanticType: WidgetId }
+          - { in: path, name: mysteryId, semanticType: MysteryId }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 12. Edge whose identifiedBy semanticType resolves to a registered entity
+  #     (Frob), but Frob is never established by any operation. Exercises
+  #     the derived-requires orphan check — the edge implicitly requires
+  #     Frob to exist, and nothing produces it.
+  /invalid/widgets/{widgetId}/frobs/{frobId}:
+    put:
+      operationId: assignFrobToWidget
+      summary: Assign frob to widget
+      description: Should fail verify-semantic-kinds-registered — Frob is registered but never established.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: frobId
+          in: path
+          required: true
+          description: The frob id.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetFrobLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: frobId,   semanticType: FrobId }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 13. Edge whose endpoint resolves to an external-entity (ExternalThing).
+  #     The cross-reference check must NOT report ExternalThing as an
+  #     orphan, because external entities have no producer by definition
+  #     (camunda/camunda#52320).
+  /valid/widgets/{widgetId}/external-things/{externalThingId}:
+    put:
+      operationId: assignExternalThingToWidget
+      summary: Assign external thing to widget
+      description: Should pass — ExternalThing is an external-entity, no producer required.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetExternalLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId,        semanticType: WidgetId }
+          - { in: path, name: externalThingId, semanticType: ExternalThingId }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 13b. Edge whose endpoint resolves to a registered entity (Bimodal)
+  #      that has NO producer in the fixture, but where the identifiedBy
+  #      tuple sets `acceptsExternal: true` (camunda/camunda#52322). The
+  #      cross-reference check must NOT report Bimodal as an orphan for
+  #      this tuple, because the flag declares that the site accepts
+  #      either an in-API producer or an externally-minted ID. Note that
+  #      Bimodal is registered as `shape: entity`, not `external-entity`
+  #      — the per-tuple flag is the discriminator, not the registry
+  #      entry.
+  /valid/widgets/{widgetId}/bimodals/{bimodalId}:
+    put:
+      operationId: assignBimodalToWidget
+      summary: Assign bimodal to widget
+      description: Should pass — identifiedBy.acceptsExternal:true skips the orphan-derived-requires check on the Bimodal endpoint.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: bimodalId
+          in: path
+          required: true
+          description: The bimodal id (may be in-API or externally minted).
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetBimodalLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId,  semanticType: WidgetId }
+          - { in: path, name: bimodalId, semanticType: BimodalId, acceptsExternal: true }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 14. Operation that tries to `establishes` an external entity directly.
+  #     Should fail — external entities have no API producer (camunda/camunda#52320).
+  /invalid/external-things:
+    post:
+      operationId: createExternalThingDirectly
+      summary: Create an external thing
+      description: Should fail — ExternalThing is shape:external-entity and cannot be established.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: ExternalThing
+        identifiedBy:
+          - { in: body, name: id, semanticType: ExternalThingId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201':
+          description: Created.
+
+  # 15. Operation that tries to `requires` an external entity directly.
+  #     Should fail — external entities are referenced via edges only.
+  /invalid/external-things/{externalThingId}:
+    get:
+      operationId: getExternalThingDirectly
+      summary: Get an external thing
+      description: Should fail — ExternalThing is shape:external-entity and cannot be required directly.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: ExternalThing
+        bind:
+          externalThingId: { from: path, name: externalThingId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: x-semantic-* binding-existence (camunda/camunda#52413) ──
+  # The semantic-establishes-shape rule validates the *shape* of identifiedBy
+  # entries; verify-semantic-kinds-registered now also verifies that each
+  # named member actually exists on the operation. One fixture per source
+  # locator (path / query / header / body) on each side (establishes /
+  # requires) covers the defect class, plus the issue's exact "body member
+  # but operation has no requestBody" example.
+
+  # 16. establishes binds to a body member, but the operation declares
+  #     no requestBody at all.
+  /invalid/establishes-body-no-body:
+    post:
+      operationId: establishesBodyNoBody
+      summary: Establishes from body with no requestBody
+      description: Should fail — body binding but no requestBody declared.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 17. establishes binds to a body member that the requestBody does not declare.
+  /invalid/establishes-body-missing-prop:
+    post:
+      operationId: establishesBodyMissingProp
+      summary: Establishes from body with missing property
+      description: Should fail — body declared but does not contain widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        '201':
+          description: Created.
+
+  # 18. establishes binds to a path parameter that the operation does not declare.
+  /invalid/establishes-path-missing/{actuallyDeclared}:
+    put:
+      operationId: establishesPathMissing
+      summary: Establishes from undeclared path parameter
+      description: Should fail — path binding to widgetId, but only actuallyDeclared exists.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: actuallyDeclared
+          in: path
+          required: true
+          description: The actually-declared parameter.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+      responses:
+        '204':
+          description: OK.
+
+  # 19. requires binds from a query parameter that the operation does not declare.
+  /invalid/requires-query-missing:
+    get:
+      operationId: requiresQueryMissing
+      summary: Requires from undeclared query parameter
+      description: Should fail — query binding but no such query parameter.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: query, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # 20. requires binds from a header that the operation does not declare.
+  /invalid/requires-header-missing:
+    get:
+      operationId: requiresHeaderMissing
+      summary: Requires from undeclared header
+      description: Should fail — header binding but no such header parameter.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: header, name: X-Widget-Id }
+      responses:
+        '200':
+          description: OK.
+
+  # 21. requires binds from a body member that the requestBody does not declare.
+  /invalid/requires-body-missing-prop:
+    post:
+      operationId: requiresBodyMissingProp
+      summary: Requires from missing body property
+      description: Should fail — body declared but does not contain widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: body, name: widgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Valid: path-item-level parameters honored ────────────────
+  # Path-item-level parameters apply to all operations on the path
+  # (OpenAPI 3.x). The existence check must honor them, not require the
+  # binding to find the parameter on the operation itself.
+  /valid/widgets-pathitem/{widgetId}:
+    parameters:
+      - name: widgetId
+        in: path
+        required: true
+        description: The widget id (declared at path-item level).
+        schema: { type: string }
+    get:
+      operationId: getWidgetPathItem
+      summary: Get widget via path-item parameter
+      description: Path parameter declared at path-item level, not on the operation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: shape declared on operation contradicts the registry ──
+  # Class-scoped: covers both directions of the mismatch (edge kind
+  # annotated as entity — the dangerous case that bypasses edge-endpoint
+  # resolution and the implicit requires it derives — plus the symmetric
+  # entity-kind-annotated-as-edge for completeness).
+
+  # 22. Edge kind annotated with `shape:` omitted (defaults to entity).
+  /invalid/widgets/{widgetId}/wrong-shape-default/{username}:
+    put:
+      operationId: edgeKindShapeDefaulted
+      summary: Edge kind establishes with no `shape:` (defaults to entity)
+      description: |
+        Should fail — `WidgetOwnership` is registered with `shape: edge`,
+        but this op omits `shape:` so it defaults to `entity`. Without the
+        check, edge-endpoint resolution + derived requires would silently
+        skip this operation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: username
+          in: path
+          required: true
+          description: The username.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetOwnership
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: username, semanticType: Username }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 23. Entity kind annotated with `shape: edge`.
+  /invalid/widgets/wrong-shape-explicit:
+    post:
+      operationId: entityKindShapeEdge
+      summary: Entity kind establishes with `shape: edge`
+      description: |
+        Should fail — `Widget` is registered with `shape: entity`, but
+        this op declares `shape: edge`. Class-scoped symmetric coverage
+        of the registry-mismatch check.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        shape: edge
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                widgetId: { type: string }
+              required: [widgetId]
+      responses:
+        '201':
+          description: Created.
+
+  # ── Producer-existence gate: broken producer must not suppress consumer orphan ──
+  # Class-scoped: any defect in the establishes block (broken identifiedBy
+  # binding here) prevents the kind from being treated as produced, so
+  # downstream consumers still see the orphan error and the real
+  # downstream impact is visible.
+
+  # 24. Producer with broken identifiedBy (references undeclared path param).
+  /invalid/broken-establish:
+    put:
+      operationId: brokenEstablishProducer
+      summary: Establishes BrokenProducedKind via undeclared path param
+      description: |
+        Should fail establishes-side existence check — `brokenProducedId`
+        is not a declared parameter. The producer-existence gate must NOT
+        count BrokenProducedKind as established, so the consumer below
+        still gets the orphan error.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: BrokenProducedKind
+        identifiedBy:
+          - { in: path, name: brokenProducedId, semanticType: BrokenProducedId }
+      responses:
+        '204':
+          description: OK.
+
+  # 25. Consumer of BrokenProducedKind. Should report the orphan error
+  #     (no usable producer) — not be silently masked.
+  /invalid/broken-establish-consumer/{brokenProducedId}:
+    get:
+      operationId: brokenEstablishConsumer
+      summary: Requires BrokenProducedKind
+      description: Class-scoped guard for the producer-existence gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: brokenProducedId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: BrokenProducedKind
+        bind:
+          brokenProducedId: { from: path, name: brokenProducedId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Producer-existence gate: structural-shape validation ─────
+  # Class-scoped: the gate must NOT count a malformed-shape producer as
+  # an actual producer of its declared `kind`, even though the
+  # `semantic-establishes-shape` Spectral rule already flags the shape.
+  # Errors raised by other rules are not visible inside the
+  # verifySemanticKindsRegistered function's local errors[], so without
+  # a duplicated structural check the kind would still be added to
+  # `established` and the consumer's orphan error would be silently
+  # suppressed. Mirror of fixtures #24/#25 but for the structural-shape
+  # branch instead of the existence-binding branch.
+
+  # 26. Empty identifiedBy.
+  /invalid/malformed-empty-identified-by:
+    post:
+      operationId: malformedEmptyIdentifiedBy
+      summary: Establishes MalformedShapeKind with empty identifiedBy
+      description: |
+        Should fail the shape rule AND not satisfy the producer gate, so
+        the consumer below still reports orphan.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: MalformedShapeKind
+        identifiedBy: []
+      responses:
+        '201':
+          description: Created.
+
+  # 27. Missing identifiedBy entirely.
+  /invalid/malformed-missing-identified-by:
+    post:
+      operationId: malformedMissingIdentifiedBy
+      summary: Establishes MalformedShapeKind without identifiedBy
+      description: Should fail the shape rule AND not satisfy the producer gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: MalformedShapeKind
+      responses:
+        '201':
+          description: Created.
+
+  # 28. Typo'd top-level key (`identifyBy` instead of `identifiedBy`).
+  /invalid/malformed-typoed-top-level-key:
+    post:
+      operationId: malformedTypoedTopLevelKey
+      summary: Establishes MalformedShapeKind with typo'd top-level key
+      description: Should fail the shape rule AND not satisfy the producer gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: MalformedShapeKind
+        identifyBy:
+          - { in: body, name: id, semanticType: MalformedShapeId }
+      responses:
+        '201':
+          description: Created.
+
+  # 29. Consumer of MalformedShapeKind. Must report the orphan error
+  #     once — not three times (one per malformed producer above) and
+  #     not zero (which would mean a malformed producer was admitted).
+  /invalid/malformed-shape-consumer/{malformedShapeId}:
+    get:
+      operationId: malformedShapeConsumer
+      summary: Requires MalformedShapeKind
+      description: Class-scoped guard for the structural-shape branch of the producer-existence gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: malformedShapeId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: MalformedShapeKind
+        bind:
+          malformedShapeId: { from: path, name: malformedShapeId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Binding existence: non-object request body ───────────────
+  # camunda/camunda#52322 review: the verifier previously conflated
+  # "schema unresolvable in this pass" with "schema resolved to a
+  # non-object type" — both returned null from
+  # collectTopLevelBodyProperties, so a body binding against a scalar or
+  # array request body lint-cleaned instead of failing. The walker now
+  # returns a tri-state {unresolved | walked | non-object}, and the
+  # binding-existence check fails any body binding when the resolved
+  # state is non-object.
+
+  # 30. Establishes binds in: body against a scalar (type: string) request body.
+  /invalid/establishes-body-non-object-scalar:
+    post:
+      operationId: establishesBodyNonObjectScalar
+      summary: Establishes from a scalar request body
+      description: |
+        Should fail — the requestBody schema resolves to `type: string`,
+        which cannot have top-level properties. Without the tri-state
+        fix, this would silently lint clean.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '201':
+          description: Created.
+
+  # 31. Requires binds from: body against an array request body.
+  /invalid/requires-body-non-object-array:
+    post:
+      operationId: requiresBodyNonObjectArray
+      summary: Requires from an array request body
+      description: |
+        Should fail — the requestBody schema resolves to `type: array`,
+        which cannot have top-level properties. Symmetric coverage with
+        #30 across the establish/require branches.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: body, name: widgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        '200':
+          description: OK.
+
+  # ── Closed-object request body (camunda/camunda#52322 review) ──
+  # The walker previously returned `unresolved` for explicit
+  # `{type: object, additionalProperties: false}` schemas with no
+  # properties, because no composition/properties walk set `walked` and
+  # the non-object branch only fires for non-object `type:` strings. A
+  # body binding then silently lint-cleaned ("defer to bundled pass")
+  # instead of failing — even though such a closed schema documents zero
+  # top-level properties and cannot host any binding. The walker now
+  # returns `walked` with an empty Set for explicit-object-no-properties,
+  # surfacing the deterministic `no requestBody media-type schema
+  # declares ...` error.
+
+  # 32. Establishes binds in: body against a closed-object request body.
+  /invalid/establishes-body-closed-object:
+    post:
+      operationId: establishesBodyClosedObject
+      summary: Establishes from a closed-object request body
+      description: |
+        Should fail — the requestBody schema is `{type: object,
+        additionalProperties: false}` with no properties. The contract
+        documents zero top-level properties, so a body binding to
+        widgetId cannot resolve. Symmetric with #30/#31 (non-object
+        scalar/array bodies) but for the closed-object case.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '201':
+          description: Created.
+
+  # ── Bind-key tuple validation (camunda/camunda#52322 review) ──
+  # Each bind key on an entity-kind requires must equal
+  # camelCase(identifier) for one of the kind's registered identifiers,
+  # or appear in `legacyBindKeys` as a grandfathered escape hatch. The
+  # existing existence check only validates `binding.name` against the
+  # operation's members; a typo'd bind key (the map key, not
+  # `binding.name`) like `wigetId` for `kind: Widget` would otherwise
+  # lint clean.
+
+  # 33. Bind key 'wigetId' typo on kind: Widget (allowed: widgetId).
+  /invalid/requires-bind-bogus-key/{widgetId}:
+    get:
+      operationId: requiresBindBogusKey
+      summary: Requires Widget with typo'd bind key
+      description: |
+        Should fail — bind key 'wigetId' is not camelCase('WidgetId') and
+        Widget declares no `legacyBindKeys`. The existence check passes
+        (binding.name 'widgetId' is a real path param), so without the
+        tuple check this typo would silently lint clean.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          wigetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # 34. Producer for LegacyBindKind. Wire field is `id`, not
+  #     `legacyBindKindId`, mirroring the GlobalTaskListener real-world
+  #     situation. semanticType remains LegacyBindKindId (the registered
+  #     identifier) — the wire field name and the semantic identifier
+  #     type are independent.
+  /valid/legacy-bind-producer:
+    post:
+      operationId: legacyBindProducer
+      summary: Establishes LegacyBindKind via wire field `id`
+      description: |
+        Should pass. The producer's identifiedBy semanticType is
+        LegacyBindKindId (matches the kind's registered identifier);
+        the wire field happens to be `id` rather than `legacyBindKindId`
+        because the spec was published before the camelCase convention
+        existed.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: LegacyBindKind
+        identifiedBy:
+          - { in: body, name: id, semanticType: LegacyBindKindId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string }
+              required: [id]
+      responses:
+        '201':
+          description: Created.
+
+  # 35. Consumer of LegacyBindKind using the legacy bind key `id`.
+  #     Must lint clean — `id` is in LegacyBindKind.legacyBindKeys.
+  /valid/legacy-bind-consumer/{id}:
+    get:
+      operationId: legacyBindConsumer
+      summary: Requires LegacyBindKind via legacy bind key `id`
+      description: |
+        Should pass. Bind key `id` is whitelisted by
+        LegacyBindKind.legacyBindKeys even though it is not
+        camelCase('LegacyBindKindId').
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The legacy bind kind id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: LegacyBindKind
+        bind:
+          id: { from: path, name: id }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Entity-tuple semanticType validation (camunda/camunda#52322 review) ──
+  # An entity producer's `identifiedBy[].semanticType` must be one of
+  # the kind's own registered identifiers. Without the check, a producer
+  # can claim to establish kind X via a foreign identifier and the
+  # orphan check on every consumer of X is silently satisfied.
+
+  # 36. Entity producer establishes IsolatedKind via wrong semanticType.
+  /invalid/establishes-bogus-semantic-type:
+    post:
+      operationId: establishesBogusSemanticType
+      summary: Establishes IsolatedKind with wrong semanticType
+      description: |
+        Should fail — IsolatedKind declares identifiers
+        ['IsolatedKindId'] but the producer claims semanticType
+        'WrongIdentifierType'. The producer-existence gate must reject
+        it so the consumer below still reports orphan.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: IsolatedKind
+        identifiedBy:
+          - { in: body, name: isolatedKindId, semanticType: WrongIdentifierType }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isolatedKindId: { type: string }
+              required: [isolatedKindId]
+      responses:
+        '201':
+          description: Created.
+
+  # 37. Consumer of IsolatedKind. Must report the orphan error — proves
+  #     the wrong-semanticType producer (#36) was not silently admitted.
+  /invalid/isolated-kind-consumer/{isolatedKindId}:
+    get:
+      operationId: isolatedKindConsumer
+      summary: Requires IsolatedKind
+      description: Class-scoped guard for entity-tuple validation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: isolatedKindId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: IsolatedKind
+        bind:
+          isolatedKindId: { from: path, name: isolatedKindId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Foreign-identifier-without-requires (camunda/camunda#52322 review) ──
+  # An entity producer whose `identifiedBy` contains a foreign-owned
+  # identifier (i.e. an identifier registered to a different entity
+  # kind) must also declare a corresponding `x-semantic-requires` on
+  # the owning kind. Otherwise the runtime dependency is unannotated:
+  # downstream planners walk the producer as a root and synthesise an
+  # identifier value the engine rejects. Mirrors the production
+  # TenantClusterVariable / Tenant relationship.
+
+  # 38. Producer establishes ForeignBound via (widgetId: WidgetId,
+  #     foreignBoundName: ForeignBoundName) WITHOUT requires:Widget.
+  /invalid/establishes-foreign-id-no-requires/{widgetId}/{foreignBoundName}:
+    post:
+      operationId: establishesForeignIdNoRequires
+      summary: Establishes ForeignBound with foreign WidgetId but no requires
+      description: |
+        Should fail — `WidgetId` is owned by `Widget`, not by
+        `ForeignBound`, and the operation declares no
+        `x-semantic-requires` on `Widget`. The runtime would 404 on a
+        synthesised widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The foreign widget id.
+          schema: { type: string }
+        - name: foreignBoundName
+          in: path
+          required: true
+          description: The ForeignBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ForeignBound
+        identifiedBy:
+          - { in: path, name: widgetId,         semanticType: WidgetId }
+          - { in: path, name: foreignBoundName, semanticType: ForeignBoundName }
+      responses:
+        '201':
+          description: Created.
+
+  # 39. Same producer, but with the corresponding requires:Widget. Must
+  #     lint clean.
+  /valid/establishes-foreign-id-with-requires/{widgetId}/{foreignBoundName}:
+    post:
+      operationId: establishesForeignIdWithRequires
+      summary: Establishes ForeignBound with foreign WidgetId AND requires:Widget
+      description: |
+        Should pass. The foreign-owned identifier `WidgetId` is paired
+        with an `x-semantic-requires` on `Widget`, which mirrors the
+        runtime dependency the engine enforces.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: foreignBoundName
+          in: path
+          required: true
+          description: The ForeignBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ForeignBound
+        identifiedBy:
+          - { in: path, name: widgetId,         semanticType: WidgetId }
+          - { in: path, name: foreignBoundName, semanticType: ForeignBoundName }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # ── External-entity-foreign-owner (camunda/camunda#52322 review) ──
+  # An entity producer whose `identifiedBy` borrows an identifier owned
+  # only by an external-entity kind cannot satisfy the dependency via
+  # `x-semantic-requires` (forbidden by the no-direct-establishes/
+  # requires-on-external-entity rule). The only valid pattern is the
+  # per-tuple `acceptsExternal: true` opt-out. Without it the producer
+  # is unreachable via chain planning, and orphan detection would be
+  # silently suppressed because `identifierToKinds` includes
+  # external-entity identifiers.
+
+  # 40. Producer establishes ExternalBound via (externalThingId:
+  #     ExternalThingId, externalBoundName: ExternalBoundName) WITHOUT
+  #     `acceptsExternal: true`. Should fail.
+  /invalid/establishes-external-id-no-accepts-external/{externalThingId}/{externalBoundName}:
+    post:
+      operationId: establishesExternalIdNoAcceptsExternal
+      summary: Establishes ExternalBound borrowing ExternalThingId without acceptsExternal
+      description: |
+        Should fail — `ExternalThingId` is owned by `ExternalThing`,
+        which is shape:external-entity. `x-semantic-requires` cannot
+        target external-entity kinds, so the only way to declare
+        bimodal acceptance is the per-tuple `acceptsExternal: true`
+        flag. Without it the producer is unreachable via chain
+        planning.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id (foreign external-entity identifier).
+          schema: { type: string }
+        - name: externalBoundName
+          in: path
+          required: true
+          description: The ExternalBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ExternalBound
+        identifiedBy:
+          - { in: path, name: externalThingId,   semanticType: ExternalThingId }
+          - { in: path, name: externalBoundName, semanticType: ExternalBoundName }
+      responses:
+        '201':
+          description: Created.
+
+  # 41. Same producer, but the foreign external-entity identifier tuple
+  #     entry is marked `acceptsExternal: true`. Must lint clean.
+  /valid/establishes-external-id-with-accepts-external/{externalThingId}/{externalBoundName}:
+    post:
+      operationId: establishesExternalIdWithAcceptsExternal
+      summary: Establishes ExternalBound borrowing ExternalThingId with acceptsExternal:true
+      description: |
+        Should pass. The foreign external-entity identifier
+        `ExternalThingId` is paired with `acceptsExternal: true`,
+        declaring that this site accepts an externally-minted ID
+        (mirrors how edge endpoints opt into bimodal acceptance).
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id (externally minted).
+          schema: { type: string }
+        - name: externalBoundName
+          in: path
+          required: true
+          description: The ExternalBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ExternalBound
+        identifiedBy:
+          - { in: path, name: externalThingId,   semanticType: ExternalThingId, acceptsExternal: true }
+          - { in: path, name: externalBoundName, semanticType: ExternalBoundName }
+      responses:
+        '201':
+          description: Created.
+
+  # ── Own-identifier presence (Hole E, camunda/camunda#52322 review) ──
+  # An entity producer must include at least one of the establishing
+  # kind's own identifiers in `identifiedBy`. A producer that lists
+  # only foreign identifiers does not actually produce the kind's
+  # identifier tuple; without this check, the producer-existence gate
+  # silently swallows downstream orphan errors.
+
+  # 42. Producer claims `kind: OwnIdMissingKind` but identifiedBy lists
+  #     only WidgetId (foreign). Should fail.
+  /invalid/establishes-only-foreign-id/{widgetId}:
+    post:
+      operationId: establishesOnlyForeignId
+      summary: Claims to establish OwnIdMissingKind via foreign WidgetId only
+      description: |
+        Should fail — `OwnIdMissingKind`'s own identifier is
+        `OwnIdMissingKindId`, but no `identifiedBy` entry references
+        it. The producer never produces an OwnIdMissingKindId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id (foreign identifier).
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: OwnIdMissingKind
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 43. Consumer of OwnIdMissingKind. Must report the orphan error —
+  #     proves the foreign-only producer (#42) was not silently
+  #     admitted by the producer-existence gate.
+  /invalid/own-id-missing-kind-consumer/{ownIdMissingKindId}:
+    get:
+      operationId: ownIdMissingKindConsumer
+      summary: Requires OwnIdMissingKind
+      description: Class-scoped guard for the own-identifier-presence check.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: ownIdMissingKindId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: OwnIdMissingKind
+        bind:
+          ownIdMissingKindId: { from: path, name: ownIdMissingKindId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Consumer-bind tuple coverage (Hole F, camunda/camunda#52322 review) ──
+  # For composite-key entities (registered with `requiredBindKeys`),
+  # consumers must bind every key in the full identifier tuple. A
+  # consumer that binds only one key leaves the planner with an
+  # under-specified reference. Mirrors the production
+  # TenantClusterVariable / (tenantId, name) case.
+
+  # 44. Producer of CompositeBindKind: establishes correctly with both
+  #     identifiers AND requires:Widget (so it is a clean producer
+  #     against which consumers can be validated).
+  /valid/composite-bind/{widgetId}/{compositeBindKindName}:
+    post:
+      operationId: createCompositeBindKind
+      summary: Create CompositeBindKind
+      description: Establishes the composite-key kind cleanly.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: compositeBindKindName
+          in: path
+          required: true
+          description: The composite bind kind name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: CompositeBindKind
+        identifiedBy:
+          - { in: path, name: widgetId,              semanticType: WidgetId }
+          - { in: path, name: compositeBindKindName, semanticType: CompositeBindKindName }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 45. Consumer of CompositeBindKind binding ONLY compositeBindKindName.
+  #     Should fail — `widgetId` is in `requiredBindKeys` and not bound.
+  /invalid/composite-bind-consumer-missing-widget-id/{compositeBindKindName}:
+    get:
+      operationId: compositeBindConsumerMissingWidgetId
+      summary: Consumes CompositeBindKind binding only one of two required keys
+      description: |
+        Should fail — `CompositeBindKind` declares
+        `requiredBindKeys: [widgetId, compositeBindKindName]`, but
+        this consumer binds only `compositeBindKindName`. The planner
+        has no way to obtain the (widgetId) half of the tuple.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: compositeBindKindName
+          in: path
+          required: true
+          description: The name.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: CompositeBindKind
+        bind:
+          compositeBindKindName: { from: path, name: compositeBindKindName }
+      responses:
+        '200':
+          description: OK.
+
+  # 46. Consumer of CompositeBindKind binding the FULL tuple. Must
+  #     lint clean.
+  /valid/composite-bind-consumer-full-tuple/{widgetId}/{compositeBindKindName}:
+    get:
+      operationId: compositeBindConsumerFullTuple
+      summary: Consumes CompositeBindKind binding the full tuple
+      description: Should pass — both required bind keys are present.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: compositeBindKindName
+          in: path
+          required: true
+          description: The name.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: CompositeBindKind
+        bind:
+          widgetId:              { from: path, name: widgetId }
+          compositeBindKindName: { from: path, name: compositeBindKindName }
+      responses:
+        '200':
+          description: OK.
+
+  # 47. Consumer of Widget binding NOTHING (empty bind). Default rule
+  #     (no requiredBindKeys on Widget) should fail because every
+  #     registered identifier (WidgetId -> widgetId) must be bound.
+  /invalid/widget-consumer-empty-bind:
+    get:
+      operationId: widgetConsumerEmptyBind
+      summary: Consumes Widget with empty bind
+      description: |
+        Should fail — `Widget`'s only registered identifier is
+        `WidgetId` (camelCased `widgetId`); the consumer must bind it.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: someOtherParam
+          in: query
+          required: false
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind: {}
+      responses:
+        '200':
+          description: OK.

@@ -10,6 +10,7 @@ import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
 import {
+  AgenticControlPlane,
   PrivateRoute,
   Home,
   Collection,
@@ -66,7 +67,7 @@ export default function App({error}) {
 
   if (error) {
     return (
-      <ErrorPage noLink text="Optimize could not be loaded, please make sure the server is running">
+      <ErrorPage noLink text="Optimize couldn't load. Make sure the server is running">
         <Button kind="ghost" onClick={() => window.location.reload(true)}>
           Reload
         </Button>
@@ -92,6 +93,11 @@ export default function App({error}) {
                         render={renderEntity}
                       />
                       <PrivateRoute exact path="/collections" component={Home} />
+                      <PrivateRoute
+                        exact
+                        path="/agentic-control-plane"
+                        component={AgenticControlPlane}
+                      />
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>

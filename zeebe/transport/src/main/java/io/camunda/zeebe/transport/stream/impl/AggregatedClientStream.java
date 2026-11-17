@@ -21,6 +21,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   private final UUID streamId;
   private final LogicalId<M> logicalId;
+  private final String physicalTenantId;
   private final Set<MemberId> liveConnections = new HashSet<>();
   private final ClientStreamMetrics metrics;
   private final Int2ObjectHashMap<ClientStreamImpl<M>> clientStreams = new Int2ObjectHashMap<>();
@@ -28,14 +29,19 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private boolean isOpened;
   private int nextLocalId;
 
-  AggregatedClientStream(final UUID streamId, final LogicalId<M> logicalId) {
-    this(streamId, logicalId, ClientStreamMetrics.noop());
+  AggregatedClientStream(
+      final UUID streamId, final LogicalId<M> logicalId, final String physicalTenantId) {
+    this(streamId, logicalId, physicalTenantId, ClientStreamMetrics.noop());
   }
 
   AggregatedClientStream(
-      final UUID streamId, final LogicalId<M> logicalId, final ClientStreamMetrics metrics) {
+      final UUID streamId,
+      final LogicalId<M> logicalId,
+      final String physicalTenantId,
+      final ClientStreamMetrics metrics) {
     this.streamId = streamId;
     this.logicalId = logicalId;
+    this.physicalTenantId = physicalTenantId;
     this.metrics = metrics;
   }
 
@@ -46,6 +52,10 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   UUID streamId() {
     return streamId;
+  }
+
+  String physicalTenantId() {
+    return physicalTenantId;
   }
 
   Collection<ClientStreamImpl<M>> list() {
@@ -130,6 +140,8 @@ final class AggregatedClientStream<M extends BufferWriter> {
         + streamId
         + ", logicalId="
         + logicalId
+        + ", physicalTenantId="
+        + physicalTenantId
         + ", liveConnections="
         + liveConnections
         + ", clientStreams="

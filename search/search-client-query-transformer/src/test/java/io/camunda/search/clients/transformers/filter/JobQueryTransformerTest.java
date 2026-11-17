@@ -10,8 +10,10 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
@@ -20,10 +22,10 @@ import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -279,6 +281,27 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByPartitionId() {
+    // Given
+    final var filter = FilterBuilders.job(b -> b.partitionId(3));
+
+    // When
+    final var searchQuery = transformQuery(filter);
+
+    // Then
+    final var queryVariant = searchQuery.queryOption();
+
+    assertThat(queryVariant)
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("partitionId");
+              assertThat(t.value().intValue()).isEqualTo(3);
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // Given
     final var filter = FilterBuilders.job(b -> b.tenantIds("tenant_1"));
@@ -303,7 +326,7 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
@@ -328,7 +351,8 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -379,6 +403,65 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByPriorityGteAboveZero() {
+    // given
+    final var filter = FilterBuilders.job(b -> b.priorityOperations(Operation.gte(5)));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            q -> {
+              assertThat(q.field()).isEqualTo("priority");
+              assertThat(q.gte()).isEqualTo(5);
+            });
+  }
+
+  @Test
+  public void shouldQueryByPriorityGtZero() {
+    // given
+    final var filter = FilterBuilders.job(b -> b.priorityOperations(Operation.gt(0)));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            q -> {
+              assertThat(q.field()).isEqualTo("priority");
+              assertThat(q.gt()).isEqualTo(0);
+            });
+  }
+
+  @Test
+  public void shouldQueryByCompoundPriorityRange() {
+    // given — gte(1) AND lte(10) form the range [1,10]
+    final var filter =
+        FilterBuilders.job(b -> b.priorityOperations(Operation.gte(1), Operation.lte(10)));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then — a single range query with both bounds
+    assertThat(searchQuery.queryOption())
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            q -> {
+              assertThat(q.field()).isEqualTo("priority");
+              assertThat(q.gte()).isEqualTo(1);
+              assertThat(q.lte()).isEqualTo(10);
+            });
+  }
+
+  @Test
   public void shouldIgnoreTenantCheckWhenDisabled() {
     // given
     final var tenantCheck = TenantCheck.disabled();
@@ -396,7 +479,7 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
@@ -411,5 +494,82 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchQuery.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
+  }
+
+  @Test
+  public void shouldIncludeExistsGuardForPriorityNotEquals() {
+    // given
+    final var filter = FilterBuilders.job(b -> b.priorityOperations(Operation.neq(5)));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then — must([mustNot(term(priority, 5)), exists(priority)]) to exclude pre-8.10 jobs
+    assertThat(searchQuery.queryOption())
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.must()).hasSize(2);
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      q ->
+                          assertThat(q.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchBoolQuery.class,
+                                  inner -> {
+                                    assertThat(inner.mustNot()).hasSize(1);
+                                    assertThat(inner.mustNot().getFirst().queryOption())
+                                        .isInstanceOfSatisfying(
+                                            SearchTermQuery.class,
+                                            term -> {
+                                              assertThat(term.field()).isEqualTo("priority");
+                                              assertThat(term.value().intValue()).isEqualTo(5);
+                                            });
+                                  }));
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      q ->
+                          assertThat(q.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  exists -> assertThat(exists.field()).isEqualTo("priority")));
+            });
+  }
+
+  @Test
+  public void shouldIncludeExistsGuardForPriorityNotIn() {
+    // given
+    final var filter = FilterBuilders.job(b -> b.priorityOperations(Operation.notIn(1, 2)));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then — must([mustNot(terms(priority, [1,2])), exists(priority)]) to exclude pre-8.10 jobs
+    assertThat(searchQuery.queryOption())
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.must()).hasSize(2);
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      q ->
+                          assertThat(q.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchBoolQuery.class,
+                                  inner -> {
+                                    assertThat(inner.mustNot()).hasSize(1);
+                                    assertThat(inner.mustNot().getFirst().queryOption())
+                                        .isInstanceOf(SearchTermsQuery.class);
+                                  }));
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      q ->
+                          assertThat(q.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  exists -> assertThat(exists.field()).isEqualTo("priority")));
+            });
   }
 }

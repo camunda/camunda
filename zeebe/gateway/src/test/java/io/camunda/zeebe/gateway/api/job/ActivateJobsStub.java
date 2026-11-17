@@ -30,6 +30,7 @@ public class ActivateJobsStub
   public static final long JOB_BATCH_KEY = 123;
   public static final int RETRIES = 12;
   public static final long DEADLINE = 123123123L;
+  public static final int PRIORITY = 80;
 
   public static final long PROCESS_INSTANCE_KEY = 123L;
   public static final String BPMN_PROCESS_ID = "stubProcess";
@@ -138,6 +139,7 @@ public class ActivateJobsStub
               job.setType(type)
                   .setWorker(worker)
                   .setRetries(RETRIES)
+                  .setPriority(PRIORITY)
                   .setDeadline(DEADLINE)
                   .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
                   .setVariables(VARIABLES_MSGPACK)

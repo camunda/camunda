@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -26,10 +25,10 @@ import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
 final class TemplateReader {
   @SuppressWarnings("java:S1075") // not an actual URI
-  private static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
+  private static final String INDEX_TEMPLATE_FILENAME_PATTERN =
+      "/opensearch/zeebe-record-%s-template.json";
 
-  private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/opensearch/zeebe-record-template.json";
 
   private final OpensearchExporterConfiguration.IndexConfiguration config;
 

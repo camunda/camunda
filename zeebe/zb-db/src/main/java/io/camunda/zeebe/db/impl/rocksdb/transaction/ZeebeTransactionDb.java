@@ -34,26 +34,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.OptimisticTransactionDB;
+import org.rocksdb.CompactRangeOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
-import org.rocksdb.Transaction;
+import org.rocksdb.Statistics;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
 public class ZeebeTransactionDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-    implements ZeebeDb<ColumnFamilyNames>, TransactionRenovator {
+    implements ZeebeDb<ColumnFamilyNames> {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
-  private final OptimisticTransactionDB optimisticTransactionDB;
+  private final RocksDB rocksDB;
   private final List<AutoCloseable> closables;
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
@@ -67,20 +68,21 @@ public class ZeebeTransactionDb<
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
-      final OptimisticTransactionDB optimisticTransactionDB,
+      final RocksDB rocksDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration accessMetricsConfiguration,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final @Nullable Statistics statistics) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
-    this.optimisticTransactionDB = optimisticTransactionDB;
+    this.rocksDB = rocksDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
     this.meterRegistry = meterRegistry;
-    metricExporter = new RocksDBMetricExporter(meterRegistry);
+    metricExporter = new RocksDBMetricExporter(meterRegistry, statistics);
 
     prefixReadOptions = PrefixReadOptions.readOptions();
     closables.add(prefixReadOptions);
@@ -102,12 +104,11 @@ public class ZeebeTransactionDb<
           final Supplier<MeterRegistry> meterRegistryFactory)
           throws RocksDBException {
     final var cfDescriptors =
-        Arrays.asList( // todo: could consider using List.of
+        Arrays.asList(
             new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, options.cfOptions()));
     final List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
-    final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(options.dbOptions(), path, cfDescriptors, cfHandles);
-    closables.add(optimisticTransactionDB);
+    final RocksDB rocksDB = RocksDB.open(options.dbOptions(), path, cfDescriptors, cfHandles);
+    closables.add(rocksDB);
 
     if (cfHandles.size() != 1) {
       throw new IllegalStateException(
@@ -123,12 +124,13 @@ public class ZeebeTransactionDb<
 
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,
-        optimisticTransactionDB,
+        rocksDB,
         closables,
         rocksDbConfiguration,
         consistencyChecksSettings,
         metrics,
-        meterRegistry);
+        meterRegistry,
+        options.statistics());
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -180,7 +182,7 @@ public class ZeebeTransactionDb<
 
   @Override
   public void createSnapshot(final File snapshotDir) {
-    try (final Checkpoint checkpoint = Checkpoint.create(optimisticTransactionDB)) {
+    try (final Checkpoint checkpoint = Checkpoint.create(rocksDB)) {
       try {
         checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
       } catch (final RocksDBException rocksException) {
@@ -190,11 +192,26 @@ public class ZeebeTransactionDb<
     }
   }
 
+  /**
+   * Rewrites all data into compressed, target-sized SST files. The bottommost level is forced to be
+   * compacted, as otherwise RocksDB trivially moves a lone L0 file down without rewriting (and thus
+   * without compressing or splitting) it.
+   */
+  public void compactAll() {
+    try (final var options =
+        new CompactRangeOptions()
+            .setBottommostLevelCompaction(CompactRangeOptions.BottommostLevelCompaction.kForce)) {
+      rocksDB.compactRange(defaultHandle, null, null, options);
+    } catch (final RocksDBException e) {
+      throw new ZeebeDbException("Failed to compact the database.", e);
+    }
+  }
+
   @Override
   public Optional<String> getProperty(final String propertyName) {
     String propertyValue = null;
     try {
-      propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);
+      propertyValue = rocksDB.getProperty(defaultHandle, propertyName);
     } catch (final RocksDBException rde) {
       LOG.debug(rde.getMessage(), rde);
     }
@@ -203,8 +220,7 @@ public class ZeebeTransactionDb<
 
   @Override
   public TransactionContext createContext() {
-    final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
-    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
+    final var zeebeTransaction = new ZeebeTransaction(rocksDB, defaultWriteOptions);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }
@@ -223,12 +239,7 @@ public class ZeebeTransactionDb<
 
   @Override
   public void exportMetrics() {
-    metricExporter.exportMetrics(optimisticTransactionDB);
-  }
-
-  @Override
-  public Transaction renewTransaction(final Transaction oldTransaction) {
-    return optimisticTransactionDB.beginTransaction(defaultWriteOptions, oldTransaction);
+    metricExporter.exportMetrics(rocksDB);
   }
 
   @Override

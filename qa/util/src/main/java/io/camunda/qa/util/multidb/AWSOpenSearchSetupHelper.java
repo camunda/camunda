@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.DeleteComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest.Builder;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsResponse;
@@ -117,6 +118,15 @@ public class AWSOpenSearchSetupHelper extends OpenSearchSetupHelper {
           .deleteIndexTemplate(new DeleteIndexTemplateRequest.Builder().name(prefix + "*").build());
     } catch (final IOException e) {
       LOGGER.warn("Exception on cleaning index templates {}", prefix, e);
+    }
+
+    try {
+      client
+          .cluster()
+          .deleteComponentTemplate(
+              DeleteComponentTemplateRequest.builder().name(prefix + "*").build());
+    } catch (final IOException e) {
+      LOGGER.warn("Exception on cleaning component templates {}", prefix, e);
     }
   }
 

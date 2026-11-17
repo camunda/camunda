@@ -366,6 +366,88 @@ final class StreamProcessorReplayTest {
             any(Throwable.class), any(TypedRecord.class), any(ProcessingResultBuilder.class));
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/55571")
+  void shouldNotAdvanceKeyCounterWhenReplayingRejectionWithLargeKey() {
+    // given
+    // write a normal command/event pair first to establish a baseline key in the log
+    final var normalEventKey = Protocol.encodePartitionId(1, 5L);
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .key(normalEventKey)
+            .causedBy(0));
+
+    // a command + rejection pair with an anomalously large key — valid partition bits but a
+    // sequence number far ahead, simulating a misbehaving client or corrupt request that was
+    // rejected by the engine; both the command and rejection carry this key in their log-entry
+    // header
+    final var anomalouslyLargeKey = Protocol.encodePartitionId(1, 1_000_000_000L);
+    streamPlatform.writeBatch(
+        RecordToWrite.command()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .key(anomalouslyLargeKey),
+        RecordToWrite.rejection()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .key(anomalouslyLargeKey)
+            .causedBy(0));
+
+    // when: start the stream processor — triggers replay of all log records
+    streamPlatform.startStreamProcessor();
+
+    // then: the key counter must be at the highest EVENT key (5), not the anomalous value from
+    // the rejection records; only engine-authored COMMANDS/EVENT should advance the counter during
+    // replay
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
+        .as(
+            "key counter must stay at the highest EVENT key (%d), "
+                + "not jump to the anomalous command/rejection key (%d)",
+            Protocol.decodeKeyInPartition(normalEventKey),
+            Protocol.decodeKeyInPartition(anomalouslyLargeKey))
+        .isEqualTo(Protocol.decodeKeyInPartition(normalEventKey));
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/55571")
+  void shouldAdvanceKeyCounterForEngineGeneratedFollowUpCommandRejection() {
+    // given
+    // a normal command/event pair to establish a baseline key
+    final var baselineEventKey = Protocol.encodePartitionId(1, 5L);
+    // an engine-generated follow-up command with a nextKey()-allocated key that is REJECTED
+    // (no EVENT with this key is ever written)
+    final var followUpCommandKey = Protocol.encodePartitionId(1, 8L);
+
+    // batch: external command → event (key=5) + follow-up command (key=8) + rejection of it
+    // causedBy(0) sets sourceEventPosition to pos(command), so >= 0 → engine-authored
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .key(baselineEventKey)
+            .causedBy(0),
+        RecordToWrite.command()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .key(followUpCommandKey)
+            .causedBy(0),
+        RecordToWrite.rejection()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .key(followUpCommandKey)
+            .causedBy(2));
+
+    // when: start the stream processor — triggers replay of all log records
+    streamPlatform.startStreamProcessor();
+
+    // then: the key counter must reach the follow-up command's key (8), not stay at the event
+    // key (5); the engine-generated command was rejected so no EVENT with key=8 exists, but
+    // nextKey() already allocated it in the committed transaction
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
+        .as(
+            "key counter must advance to the rejected follow-up command's key (%d), "
+                + "not stop at the highest event key (%d)",
+            Protocol.decodeKeyInPartition(followUpCommandKey),
+            Protocol.decodeKeyInPartition(baselineEventKey))
+        .isEqualTo(Protocol.decodeKeyInPartition(followUpCommandKey));
+  }
+
   @Test
   void shouldIgnoreKeysFromDifferentPartition() {
     // given

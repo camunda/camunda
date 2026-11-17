@@ -103,33 +103,35 @@ class UnassignGroupFromTenantTest {
   }
 
   @Test
-  void shouldUnassignIfGroupDoesNotExist() {
+  void shouldUnassignDeletedGroupFromTenant() {
     // given
-    final String nonExistentGroupId = Strings.newRandomValidIdentityId();
-    client.newCreateGroupCommand().groupId(nonExistentGroupId).name("group").send().join();
-    client
-        .newAssignGroupToTenantCommand()
-        .groupId(nonExistentGroupId)
-        .tenantId(tenantId)
-        .send()
-        .join();
-    client.newDeleteGroupCommand(nonExistentGroupId).send().join();
+    final String deletedGroupId = Strings.newRandomValidIdentityId();
+    client.newCreateGroupCommand().groupId(deletedGroupId).name("group").send().join();
+    client.newAssignGroupToTenantCommand().groupId(deletedGroupId).tenantId(tenantId).send().join();
 
     // when
-    client
-        .newUnassignGroupFromTenantCommand()
-        .groupId(nonExistentGroupId)
-        .tenantId(tenantId)
-        .send()
-        .join();
+    client.newDeleteGroupCommand(deletedGroupId).send().join();
 
-    // then
+    // then the deletion removes the group from the tenant
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
         tenantId,
         (tenant) -> {
           assertThat(tenant.getTenantId()).isEqualTo(tenantId);
-          assertThat(tenant.getEntityId()).isEqualTo(nonExistentGroupId);
+          assertThat(tenant.getEntityId()).isEqualTo(deletedGroupId);
         });
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(deletedGroupId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Expected to remove group with ID '%s' from tenant with ID '%s', but the group is not assigned to this tenant."
+                .formatted(deletedGroupId, tenantId));
   }
 
   @Test

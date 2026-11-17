@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -221,6 +222,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getRootProcessInstanceKey(),
+        context.getStorageOrdinal(),
         context.getBpmnProcessId(),
         context.getTenantId(),
         variableName,
@@ -237,34 +239,53 @@ public final class BpmnStateBehavior {
     final var variablesAsDocument =
         variablesState.getVariablesAsDocument(sourceScope, List.of(variableName));
 
-    variableBehavior.mergeDocument(
-        targetScope,
-        context.getProcessDefinitionKey(),
-        context.getProcessInstanceKey(),
-        context.getRootProcessInstanceKey(),
-        context.getBpmnProcessId(),
-        context.getTenantId(),
-        variablesAsDocument);
+    try {
+      variableBehavior.mergeDocument(
+          targetScope,
+          context.getProcessDefinitionKey(),
+          context.getProcessInstanceKey(),
+          context.getRootProcessInstanceKey(),
+          context.getStorageOrdinal(),
+          context.getBpmnProcessId(),
+          context.getTenantId(),
+          variablesAsDocument);
+    } catch (final ValidationException e) {
+      throw new BpmnProcessingException(
+          context,
+          String.format(
+              "Failed to propagate variable '%s' from scope '%d' to scope '%d': %s",
+              variableName, sourceScope, targetScope, e.getMessage()));
+    }
   }
 
   public void copyAllVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetStorageOrdinal,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
     copyVariablesToProcessInstance(
-        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
+        targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
+        targetStorageOrdinal,
+        targetProcess,
+        variables);
   }
 
   public void copyLocalVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetStorageOrdinal,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesLocalAsDocument(sourceScopeKey);
     copyVariablesToProcessInstance(
-        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
+        targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
+        targetStorageOrdinal,
+        targetProcess,
+        variables);
   }
 
   /**
@@ -282,16 +303,26 @@ public final class BpmnStateBehavior {
   private void copyVariablesToProcessInstance(
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetStorageOrdinal,
       final DeployedProcess targetProcess,
       final DirectBuffer variables) {
-    variableBehavior.mergeDocument(
-        targetProcessInstanceKey,
-        targetProcess.getKey(),
-        targetProcessInstanceKey,
-        targetRootProcessInstanceKey,
-        targetProcess.getBpmnProcessId(),
-        targetProcess.getTenantId(),
-        variables);
+    try {
+      variableBehavior.mergeDocument(
+          targetProcessInstanceKey,
+          targetProcess.getKey(),
+          targetProcessInstanceKey,
+          targetRootProcessInstanceKey,
+          targetStorageOrdinal,
+          targetProcess.getBpmnProcessId(),
+          targetProcess.getTenantId(),
+          variables);
+    } catch (final ValidationException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Failed to copy variables to process instance '%d': %s",
+              targetProcessInstanceKey, e.getMessage()),
+          e);
+    }
   }
 
   public boolean isInterrupted(final BpmnElementContext flowScopeContext) {

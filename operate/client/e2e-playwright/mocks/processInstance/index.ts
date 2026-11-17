@@ -16,6 +16,10 @@ import type {
   QueryProcessInstanceIncidentsResponseBody,
   QueryElementInstancesResponseBody,
   QueryAuditLogsResponseBody,
+  QueryElementInstanceInspectionResponseBody,
+  GetProcessInstanceWaitStateStatisticsResponseBody,
+  QueryAgentInstancesResponseBody,
+  QueryAgentInstanceHistoryResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 type InstanceMock = {
@@ -27,6 +31,10 @@ type InstanceMock = {
   sequenceFlows: GetProcessInstanceSequenceFlowsResponseBody;
   variables: Variable[];
   incidents?: QueryProcessInstanceIncidentsResponseBody;
+  waitStates?: QueryElementInstanceInspectionResponseBody;
+  waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
+  agentInstances?: QueryAgentInstancesResponseBody;
+  agentInstanceHistory?: QueryAgentInstanceHistoryResponseBody;
 };
 
 function mockResponses({
@@ -39,6 +47,10 @@ function mockResponses({
   xml,
   incidents,
   auditLogs,
+  waitStates,
+  waitStateStatistics,
+  agentInstances,
+  agentInstanceHistory,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -49,6 +61,10 @@ function mockResponses({
   xml?: string;
   incidents?: QueryProcessInstanceIncidentsResponseBody;
   auditLogs?: QueryAuditLogsResponseBody;
+  waitStates?: QueryElementInstanceInspectionResponseBody;
+  waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
+  agentInstances?: QueryAgentInstancesResponseBody;
+  agentInstanceHistory?: QueryAgentInstanceHistoryResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -62,6 +78,141 @@ function mockResponses({
           c8Links: {},
           username: 'demo',
         }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route.request().url().includes('/v2/element-instances/wait-states/search')
+    ) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(
+          waitStates ?? {
+            items: [],
+            page: {
+              totalItems: 0,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
+          },
+        ),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/agent-instances\/\d+\/history\/search/)
+    ) {
+      const requestBody = route.request().postDataJSON() ?? {};
+      const roleFilter: string | object | undefined = requestBody?.filter?.role;
+      const elementInstanceKeyFilter: string | undefined =
+        requestBody?.filter?.elementInstanceKey;
+
+      let items = agentInstanceHistory?.items ?? [];
+      if (typeof roleFilter === 'string') {
+        items = items.filter((item) => item.role === roleFilter);
+      }
+      if (elementInstanceKeyFilter) {
+        items = items.filter(
+          (item) => item.elementInstanceKey === elementInstanceKeyFilter,
+        );
+      }
+
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          items,
+          page: {
+            totalItems: items.length,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/agent-instances/search')) {
+      const elementId: string | undefined = route.request().postDataJSON()
+        ?.filter?.elementId;
+
+      let filteredAgentInstances = agentInstances;
+      if (elementId && agentInstances) {
+        const filteredItems = agentInstances.items.filter(
+          (instance) => instance.elementId === elementId,
+        );
+        filteredAgentInstances = {
+          items: filteredItems,
+          page: {
+            totalItems: filteredItems.length,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        };
+      }
+
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(
+          filteredAgentInstances ?? {
+            items: [],
+            page: {
+              totalItems: 0,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
+          },
+        ),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/jobs/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    const elementInstanceByKeyMatch = route
+      .request()
+      .url()
+      .match(/\/v2\/element-instances\/(\d+)(?:\?|$)/);
+    if (route.request().method() === 'GET' && elementInstanceByKeyMatch) {
+      const elementInstanceKey = elementInstanceByKeyMatch[1];
+      const item = elementInstances?.items.find(
+        (instance) => instance.elementInstanceKey === elementInstanceKey,
+      );
+      return route.fulfill({
+        status: item === undefined ? 404 : 200,
+        body: JSON.stringify(item ?? {}),
         headers: {
           'content-type': 'application/json',
         },
@@ -106,6 +257,16 @@ function mockResponses({
       });
     }
 
+    if (route.request().url().includes('statistics/wait-states')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(waitStateStatistics ?? {items: []}),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     if (route.request().url().includes('statistics/element-instances')) {
       return route.fulfill({
         status: statistics === undefined ? 400 : 200,
@@ -138,6 +299,14 @@ function mockResponses({
         headers: {
           'content-type': 'application/json',
         },
+      });
+    }
+
+    if (route.request().url().includes('/v2/process-definitions/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({items: [], page: {totalItems: 0}}),
+        headers: {'content-type': 'application/json'},
       });
     }
 
@@ -263,5 +432,12 @@ export {eventBasedGatewayProcessInstance} from './eventBasedGatewayProcessInstan
 export {instanceWithIncident} from './instanceWithIncident.mocks';
 export {orderProcessInstance} from './orderProcessInstance.mocks';
 export {runningInstance} from './runningInstance.mocks';
+export {waitStateProcessInstance} from './waitStateProcessInstance.mocks';
+export {waitStateRunningInstance} from './waitStateRunningInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
+export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';
+export {
+  agentProcessWithOneActiveInstance,
+  agentProcessWithTwoActiveInstances,
+} from './aiAgentProcessInstance.mock';

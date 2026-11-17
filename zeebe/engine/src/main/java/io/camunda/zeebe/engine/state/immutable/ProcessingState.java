@@ -26,6 +26,10 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   MessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
+  MessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState();
+
+  MessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState();
+
   ProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   MessageCorrelationState getMessageCorrelationState();
@@ -34,9 +38,17 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   BannedInstanceState getBannedInstanceState();
 
+  SuspensionState getSuspensionState();
+
   VariableState getVariableState();
 
   ClusterVariableState getClusterVariableState();
+
+  AgentHistoryState getAgentHistoryState();
+
+  AgentInstanceState getAgentInstanceState();
+
+  AgentDefinitionState getAgentDefinitionState();
 
   TimerInstanceState getTimerState();
 
@@ -78,6 +90,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   ClockState getClockState();
 
+  PolicyState getPolicyState();
+
   RoleState getRoleState();
 
   GroupState getGroupState();
@@ -101,4 +115,10 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   GlobalListenersState getGlobalListenersState();
 
   JobMetricsState getJobMetricsState();
+
+  SecretReferenceState getSecretReferenceState();
+
+  PolicyUpdateState getPolicyUpdateState();
+
+  ProbeState getProbeState();
 }

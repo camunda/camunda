@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.tool.cluster;
 
 import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.OperationalToolsTest;
@@ -16,6 +17,7 @@ import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.Partition;
 import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
+import io.camunda.gateway.protocol.model.Partition.StateEnum;
 import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
@@ -31,6 +33,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,6 +51,11 @@ class ClusterToolsTest extends OperationalToolsTest {
   @MockitoBean private TopologyServices topologyServices;
   @Autowired private JsonMapper objectMapper;
 
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
+  }
+
   @Nested
   class GetClusterStatus {
 
@@ -59,7 +67,7 @@ class ClusterToolsTest extends OperationalToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+          mcpClient.callTool(CallToolRequest.builder("getClusterStatus").build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -81,7 +89,7 @@ class ClusterToolsTest extends OperationalToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+          mcpClient.callTool(CallToolRequest.builder("getClusterStatus").build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -105,66 +113,90 @@ class ClusterToolsTest extends OperationalToolsTest {
       // given
       final var version = VersionUtil.getVersion();
       final var expectedResponse =
-          new TopologyResponse()
-              .clusterId("cluster-id")
-              .gatewayVersion(version)
+          TopologyResponse.Builder.create()
+              .brokers(
+                  List.of(
+                      BrokerInfo.Builder.create()
+                          .nodeId(0)
+                          .brokerId("0")
+                          .host("localhost")
+                          .port(26501)
+                          .partitions(
+                              List.of(
+                                  Partition.Builder.create()
+                                      .partitionId(1)
+                                      .role(RoleEnum.LEADER)
+                                      .health(HealthEnum.HEALTHY)
+                                      .state(StateEnum.UNKNOWN)
+                                      .build()))
+                          .version(version)
+                          .build(),
+                      BrokerInfo.Builder.create()
+                          .nodeId(1)
+                          .brokerId("1")
+                          .host("localhost")
+                          .port(26502)
+                          .partitions(
+                              List.of(
+                                  Partition.Builder.create()
+                                      .partitionId(1)
+                                      .role(RoleEnum.FOLLOWER)
+                                      .health(HealthEnum.HEALTHY)
+                                      .state(StateEnum.UNKNOWN)
+                                      .build()))
+                          .version(version)
+                          .build(),
+                      BrokerInfo.Builder.create()
+                          .nodeId(2)
+                          .brokerId("2")
+                          .host("localhost")
+                          .port(26503)
+                          .partitions(
+                              List.of(
+                                  Partition.Builder.create()
+                                      .partitionId(1)
+                                      .role(RoleEnum.INACTIVE)
+                                      .health(HealthEnum.UNHEALTHY)
+                                      .state(StateEnum.UNKNOWN)
+                                      .build()))
+                          .version(version)
+                          .build()))
               .clusterSize(3)
               .partitionsCount(1)
               .replicationFactor(3)
+              .gatewayVersion(version)
               .lastCompletedChangeId("1")
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(0)
-                      .host("localhost")
-                      .port(26501)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.LEADER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(1)
-                      .host("localhost")
-                      .port(26502)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.FOLLOWER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(2)
-                      .host("localhost")
-                      .port(26503)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.UNHEALTHY)
-                              .role(RoleEnum.INACTIVE)));
+              .clusterId("cluster-id")
+              .build();
       final var topologyResponse =
           new Topology(
               List.of(
                   new Broker(
+                      null,
                       0,
                       "localhost",
                       26501,
-                      List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(
+                              1, Role.LEADER, Health.HEALTHY, TopologyServices.State.UNKNOWN)),
                       version),
                   new Broker(
+                      null,
                       1,
                       "localhost",
                       26502,
-                      List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(
+                              1, Role.FOLLOWER, Health.HEALTHY, TopologyServices.State.UNKNOWN)),
                       version),
                   new Broker(
+                      null,
                       2,
                       "localhost",
                       26503,
-                      List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(
+                              1, Role.INACTIVE, Health.UNHEALTHY, TopologyServices.State.UNKNOWN)),
                       version)),
               "cluster-id",
               3,
@@ -178,7 +210,7 @@ class ClusterToolsTest extends OperationalToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+          mcpClient.callTool(CallToolRequest.builder("getTopology").build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -199,7 +231,7 @@ class ClusterToolsTest extends OperationalToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+          mcpClient.callTool(CallToolRequest.builder("getTopology").build());
 
       // then
       assertThat(result.isError()).isTrue();

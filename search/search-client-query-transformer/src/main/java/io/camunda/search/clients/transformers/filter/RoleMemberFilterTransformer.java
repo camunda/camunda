@@ -9,15 +9,17 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleMemberFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import java.util.Arrays;
 
 public class RoleMemberFilterTransformer extends IndexFilterTransformer<RoleMemberFilter> {
   public RoleMemberFilterTransformer(final IndexDescriptor indexDescriptor) {
@@ -27,18 +29,23 @@ public class RoleMemberFilterTransformer extends IndexFilterTransformer<RoleMemb
   @Override
   public SearchQuery toSearchQuery(final RoleMemberFilter filter) {
     return and(
-        filter.memberType() == null
-            ? null
-            : term(RoleIndex.MEMBER_TYPE, filter.memberType().name()),
-        filter.roleId() == null
-            ? term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType())
-            : hasParentQuery(
-                IdentityJoinRelationshipType.ROLE.getType(),
-                term(RoleIndex.ROLE_ID, filter.roleId())));
+        Arrays.asList(
+            filter.memberType() == null
+                ? null
+                : term(RoleIndex.MEMBER_TYPE, filter.memberType().name()),
+            filter.roleId() == null
+                ? term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType())
+                : hasParentQuery(
+                    IdentityJoinRelationshipType.ROLE.getType(),
+                    term(RoleIndex.ROLE_ID, filter.roleId()))),
+        stringOperations(RoleIndex.MEMBER_ID, filter.memberIdOperations()));
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(RoleIndex.ROLE_ID, authorization.resourceIds());
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
+    return hasParentQuery(
+        IdentityJoinRelationshipType.ROLE.getType(),
+        stringTerms(RoleIndex.ROLE_ID, authorization.resourceIds()));
   }
 }

@@ -9,11 +9,18 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.application.commons.security.EngineSecurityConfigFactory;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -22,9 +29,12 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -41,11 +51,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
-    basePackages = {
-      "io.camunda.zeebe.gateway",
-      "io.camunda.zeebe.shared",
-      "io.camunda.zeebe.util.liveness"
-    },
+    basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"},
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
@@ -57,50 +63,55 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final GatewayBasedConfiguration configuration;
-  private final SecurityConfiguration securityConfiguration;
+  private final Map<String, EngineSecurityConfig> engineSecurityConfigsByPhysicalTenant;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
-  private final UserServices userServices;
+  private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
-  private final OidcClaimsProvider oidcClaimsProvider;
+  private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
+  private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
+  private final PhysicalTenantIds physicalTenantIds;
 
   private Gateway gateway;
 
   @Autowired
   public GatewayModuleConfiguration(
       final GatewayBasedConfiguration configuration,
-      final SecurityConfiguration securityConfiguration,
+      final PhysicalTenantResolver physicalTenantResolver,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient,
-      @Autowired(required = false) final UserServices userServices,
+      @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
-      @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
+      @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false)
+          final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       final MeterRegistry meterRegistry,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
+      final GatewayRestConfiguration gatewayRestConfiguration,
+      final PhysicalTenantIds physicalTenantIds) {
     this.configuration = configuration;
-    this.securityConfiguration = securityConfiguration;
+    engineSecurityConfigsByPhysicalTenant =
+        physicalTenantResolver.mapValues(
+            camunda -> EngineSecurityConfigFactory.create(camunda.getSecurity()));
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
-    this.userServices = userServices;
+    this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
-    this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider =
-        oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider();
+    this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
+    this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.meterRegistry = meterRegistry;
     maxVariableNameLength = gatewayRestConfiguration.getMaxNameFieldLength();
+    this.physicalTenantIds = physicalTenantIds;
   }
 
   @Bean(destroyMethod = "close")
@@ -119,26 +130,30 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     // topology to be set up, otherwise the callback may be lost
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
+    final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
+        authConfig -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig);
+    final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
+        authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
+    final Function<String, UserServices> userServicesForTenant =
+        tenantId -> serviceRegistry.userServices(tenantId);
+
     gateway =
         new Gateway(
             configuration.shutdownTimeout(),
             configuration.config(),
-            securityConfiguration,
+            engineSecurityConfigsByPhysicalTenant,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices,
+            jwtDecoderFactory,
+            oidcClaimsProviderFactory,
+            userServicesForTenant,
             passwordEncoder,
-            jwtDecoder,
-            oidcClaimsProvider,
             meterRegistry,
-            maxVariableNameLength);
+            maxVariableNameLength,
+            physicalTenantIds);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
-    springGatewayBridge.registerClusterStateSupplier(
-        () ->
-            Optional.ofNullable(gateway.getBrokerClient())
-                .map(BrokerClient::getTopologyManager)
-                .map(BrokerTopologyManager::getTopology));
+    springGatewayBridge.registerClusterStatesSupplier(this::clusterStatesByPhysicalTenant);
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     atomixClusterStartFuture.join();
@@ -146,6 +161,34 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;
+  }
+
+  /**
+   * Builds the cluster topology for every configured physical tenant (partition group), keyed by
+   * physical tenant id. Used by health indicators that must not privilege the default physical
+   * tenant and instead aggregate readiness across all of them (OR-semantics).
+   *
+   * <p>Groups for which {@link BrokerTopologyManager#getTopology(String)} returns {@code null}
+   * (permitted by its contract) are skipped rather than collected, since {@link
+   * java.util.stream.Collectors#toMap} does not tolerate null values.
+   */
+  private Map<String, BrokerClusterState> clusterStatesByPhysicalTenant() {
+    final var topologyManager =
+        Optional.ofNullable(gateway.getBrokerClient())
+            .map(BrokerClient::getTopologyManager)
+            .orElse(null);
+    if (topologyManager == null) {
+      return Map.of();
+    }
+
+    final Map<String, BrokerClusterState> clusterStates = new HashMap<>();
+    for (final var physicalTenantId : physicalTenantIds.known()) {
+      final var topology = topologyManager.getTopology(physicalTenantId);
+      if (topology != null) {
+        clusterStates.put(physicalTenantId, topology);
+      }
+    }
+    return clusterStates;
   }
 
   @Override

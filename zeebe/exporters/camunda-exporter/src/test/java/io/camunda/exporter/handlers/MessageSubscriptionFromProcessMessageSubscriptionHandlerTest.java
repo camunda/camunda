@@ -11,10 +11,18 @@ import static io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessage
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -22,6 +30,9 @@ import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -30,7 +41,9 @@ import io.camunda.zeebe.protocol.record.value.ImmutableProcessMessageSubscriptio
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,12 +57,18 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   private final ExporterMetadata exporterMetadata =
       new ExporterMetadata(TestObjectMapper.objectMapper());
 
+  @SuppressWarnings("unchecked")
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache =
+      mock(ExporterEntityCache.class);
+
   private final MessageSubscriptionFromProcessMessageSubscriptionHandler underTest =
-      new MessageSubscriptionFromProcessMessageSubscriptionHandler(indexName, exporterMetadata);
+      new MessageSubscriptionFromProcessMessageSubscriptionHandler(
+          indexName, exporterMetadata, processCache, new ExtensionPropertyConfiguration());
 
   @BeforeEach
   void resetMetadata() {
     exporterMetadata.setFirstProcessMessageSubscriptionKey(-1);
+    Mockito.when(processCache.get(Mockito.anyLong())).thenReturn(Optional.empty());
   }
 
   @Test
@@ -89,8 +108,11 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   }
 
   @Test
-  void testGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
     final long processInstanceKey = 123L;
     final long elementInstanceKey = 456L;
     final var recordValue =
@@ -102,17 +124,20 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION, r -> r.withValue(recordValue));
 
-    // when
-    final var ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids)
-        .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    // when - then
+    assertThat(underTest.extractIdAndIndexes(indexLocator, record))
+        .containsExactly(
+            new IdAndIndex(
+                String.format(ID_PATTERN, processInstanceKey, elementInstanceKey), index));
   }
 
   @Test
-  void shouldGenerateIdForNewVersionRecord() {
+  void shouldExtractIdAndIndexesForNewVersionRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long recordKey = 110L;
     exporterMetadata.setFirstProcessMessageSubscriptionKey(recordKey - 1);
     final var recordValue =
@@ -129,16 +154,20 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(idsAndIndexes).containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey - 1);
   }
 
   @Test
-  void shouldGenerateIdForOldVersionRecord() {
+  void shouldExtractIdAndIndexesForOldVersionRecord() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long recordKey = 90L;
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
@@ -157,17 +186,23 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids)
-        .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    assertThat(idsAndIndexes)
+        .containsExactly(
+            new IdAndIndex(
+                String.format(ID_PATTERN, processInstanceKey, elementInstanceKey), index));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey + 1);
   }
 
   @Test
   void shouldSetFirstProcessMessageSubscriptionKeyOnCreatedIntent() {
     // given
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateOrdinalIndex(eq(indexName), any())).thenReturn(index);
+
     final long recordKey = 100L;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -183,10 +218,10 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final var ids = underTest.generateIds(record);
+    final var idsAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(idsAndIndexes).containsExactly(new IdAndIndex(String.valueOf(recordKey), index));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey);
   }
 
@@ -217,6 +252,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final String businessId = "businessId";
     final Intent intent = ProcessMessageSubscriptionIntent.CREATED;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -229,6 +265,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
             .withTenantId(tenantId)
             .withMessageName(messageName)
             .withCorrelationKey(correlationKey)
+            .withBusinessId(businessId)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -262,7 +299,41 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getPositionProcessMessageSubscription()).isEqualTo(position);
     assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);
     assertThat(entity.getMetadata().getCorrelationKey()).isEqualTo(correlationKey);
+    assertThat(entity.getBusinessId()).isEqualTo(businessId);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessInstanceKey(123)
+            .withElementInstanceKey(456)
+            .withProcessDefinitionKey(555)
+            .withElementId("elementId")
+            .withBpmnProcessId("bpmnProcessId")
+            .withTenantId("tenantId")
+            .withMessageName("messageName")
+            .withCorrelationKey("correlationKey")
+            .withBusinessId("")
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(recordValue));
+
+    // when
+    final var ids = underTest.generateIds(record);
+    final MessageSubscriptionEntity entity = underTest.createNewEntity(ids.getFirst());
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
   }
 
   @Test
@@ -287,6 +358,117 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   }
 
   @Test
+  void shouldSetProcessDefinitionNameFromCache() {
+    // given
+    final long processDefinitionKey = 100L;
+    final String processName = "My Process";
+    Mockito.when(processCache.get(processDefinitionKey))
+        .thenReturn(
+            Optional.of(
+                new CachedProcessEntity(
+                    processName, 3, "v3", List.of(), Map.of(), false, Map.of())));
+
+    final ImmutableProcessMessageSubscriptionRecordValue value =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withBpmnProcessId("proc")
+            .withElementId("Event_1")
+            .withMessageName("msg")
+            .withTenantId("<default>")
+            .withProcessInstanceKey(15L)
+            .withCorrelationKey("")
+            .withMessageKey(-1L)
+            .build();
+
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(value));
+
+    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getProcessDefinitionName()).isEqualTo(processName);
+    assertThat(entity.getProcessDefinitionVersion()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldExtractToolNameAndInboundConnectorTypeFromCache() {
+    // given
+    final long processDefinitionKey = 100L;
+    final String elementId = "Event_1";
+    final Map<String, String> extProps =
+        Map.of("io.camunda.tool:name", "myTool", "inbound.type", "io.camunda:http-webhook:1");
+    Mockito.when(processCache.get(processDefinitionKey))
+        .thenReturn(
+            Optional.of(
+                new CachedProcessEntity(
+                    "Process", 1, null, List.of(), Map.of(), false, Map.of(elementId, extProps))));
+
+    final ImmutableProcessMessageSubscriptionRecordValue value =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withBpmnProcessId("proc")
+            .withElementId(elementId)
+            .withMessageName("msg")
+            .withTenantId("<default>")
+            .withProcessInstanceKey(15L)
+            .withCorrelationKey("")
+            .withMessageKey(-1L)
+            .build();
+
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(value));
+
+    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getToolName()).isEqualTo("myTool");
+    assertThat(entity.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
+    assertThat(entity.getToolProperties()).containsExactly(entry("io.camunda.tool:name", "myTool"));
+  }
+
+  @Test
+  void shouldHandleMissingProcessCacheGracefully() {
+    // given
+    Mockito.when(processCache.get(Mockito.anyLong())).thenReturn(Optional.empty());
+
+    final ImmutableProcessMessageSubscriptionRecordValue value =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(999L)
+            .withBpmnProcessId("proc")
+            .withElementId("Event_1")
+            .withMessageName("msg")
+            .withTenantId("<default>")
+            .withProcessInstanceKey(15L)
+            .withCorrelationKey("")
+            .withMessageKey(-1L)
+            .build();
+
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(value));
+
+    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
+
+    // when - then (no exception)
+    underTest.updateEntity(record, entity);
+    assertThat(entity.getProcessDefinitionName()).isNull();
+    assertThat(entity.getProcessDefinitionVersion()).isNull();
+    assertThat(entity.getToolName()).isNull();
+    assertThat(entity.getInboundConnectorType()).isNull();
+  }
+
+  @Test
   void shouldAddEntityOnFlush() {
     // given
     final String expectedIndexName = MessageSubscriptionTemplate.INDEX_NAME;
@@ -304,6 +486,10 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
             .setPositionProcessMessageSubscription(position)
             .setMetadata(metadata);
 
+    final Map<String, Object> metadataMap = new LinkedHashMap<>();
+    metadataMap.put(MESSAGE_NAME, metadata.getMessageName());
+    metadataMap.put(CORRELATION_KEY, metadata.getCorrelationKey());
+
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put("key", key);
     expectedUpdateFields.put("positionProcessMessageSubscription", position);
@@ -314,19 +500,21 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("messageSubscriptionType", null);
     expectedUpdateFields.put("bpmnProcessId", null);
     expectedUpdateFields.put("processDefinitionKey", null);
-
-    final Map<String, Object> metadataMap = new LinkedHashMap<>();
-    metadataMap.put(MESSAGE_NAME, metadata.getMessageName());
-    metadataMap.put(CORRELATION_KEY, metadata.getCorrelationKey());
+    expectedUpdateFields.put("processDefinitionName", null);
+    expectedUpdateFields.put("processDefinitionVersion", null);
+    expectedUpdateFields.put("toolName", null);
+    expectedUpdateFields.put("inboundConnectorType", null);
+    expectedUpdateFields.put("toolProperties", null);
     expectedUpdateFields.put("metadata", metadataMap);
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(expectedIndexName, id, inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, id, inputEntity, expectedUpdateFields);
   }
 
   private Record<ProcessMessageSubscriptionRecordValue> generateRecord(final Intent intent) {

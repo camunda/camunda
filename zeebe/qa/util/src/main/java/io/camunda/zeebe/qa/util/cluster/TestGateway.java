@@ -148,13 +148,21 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
       final int replicationFactor,
       final Duration timeout,
       final CamundaClient client) {
+    // when the REST API is disabled, topology cannot be queried over REST, so force the request
+    // over gRPC regardless of the client's default communication API.
+    final boolean restDisabled = !property("camunda.rest.enabled", Boolean.class, true);
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
         .ignoreExceptions()
         .untilAsserted(
-            () ->
-                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                    .isComplete(clusterSize, partitionCount, replicationFactor));
+            () -> {
+              final var request = client.newTopologyRequest();
+              if (restDisabled) {
+                request.useGrpc();
+              }
+              TopologyAssert.assertThat(request.send().join())
+                  .isComplete(clusterSize, partitionCount, replicationFactor);
+            });
     return self();
   }
 

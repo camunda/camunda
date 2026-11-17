@@ -18,10 +18,12 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -61,18 +63,48 @@ public final class JobTimeOutTest {
     jobRecords(TIMED_OUT).withType(jobType).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
-    // then activated again
+    // then the job's event lifecycle is CREATED -> TIMED_OUT
     final List<Record<JobRecordValue>> jobEvents =
-        jobRecords().withType(jobType).limit(3).collect(Collectors.toList());
+        jobRecords().withType(jobType).onlyEvents().limit(2).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
         .extracting(Record::getIntent)
-        .containsExactly(JobIntent.CREATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
+        .containsExactly(JobIntent.CREATED, JobIntent.TIMED_OUT);
   }
 
   @Test
-  public void shouldTimeOutAfterReprocessing() {
+  public void shouldTimeOutLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final long timeout = 10L;
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withTimeout(timeout).withLease().activate();
+    final long jobKey = batch.getValue().getJobKeys().get(0);
+    final String jobLeaseToken = batch.getValue().getJobs().get(0).getJobLeaseToken();
+    assertThat(jobLeaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+
+    // then
+    final Record<JobRecordValue> timedOutRecord =
+        jobRecords(TIMED_OUT).withRecordKey(jobKey).getFirst();
+    Assertions.assertThat(timedOutRecord)
+        .describedAs("time-out is engine-internal and must never be fenced by a lease token")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(TIMED_OUT);
+
+    // and it stays leased, so only a leasing worker re-activates it
+    final Record<JobBatchRecordValue> reactivatedBatch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    assertThat(reactivatedBatch.getValue().getJobKeys())
+        .describedAs("the timed-out job stays leased and is re-activated by a leasing worker")
+        .containsExactly(jobKey);
+  }
+
+  @Test
+  public void shouldTimeOutAfterReplay() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final Duration timeout = Duration.ofSeconds(10);
@@ -87,7 +119,7 @@ public final class JobTimeOutTest {
     ENGINE.job().withKey(jobKey).complete();
 
     // when
-    ENGINE.reprocess();
+    ENGINE.replay();
 
     // then
     ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));

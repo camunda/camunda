@@ -86,7 +86,7 @@ public final class LockUtil {
       Thread.currentThread().interrupt();
       errorHandler.onError(e);
       LangUtil.rethrowUnchecked(e);
-      return null; // unreachable
+      throw new RuntimeException("unreachable");
     }
 
     try {
@@ -113,14 +113,14 @@ public final class LockUtil {
       Thread.currentThread().interrupt();
       errorHandler.onError(e);
       LangUtil.rethrowUnchecked(e);
-      return null; // unreachable
+      throw new RuntimeException("unreachable");
     }
 
     try {
       return callable.call();
     } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
-      return null; // unreachable
+      throw new RuntimeException("unreachable");
     } finally {
       lock.unlock();
     }

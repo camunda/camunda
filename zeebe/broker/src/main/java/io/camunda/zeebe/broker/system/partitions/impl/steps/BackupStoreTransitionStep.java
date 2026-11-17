@@ -9,16 +9,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.azure.AzureBackupStore;
-import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.InvalidConfigurationException;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -57,14 +49,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
       final BackupStore store;
       try {
-        store =
-            switch (backupCfg.getStore()) {
-              case NONE -> null; // No backup store is installed. BackupManager can handle this case
-              case S3 -> createS3Store(backupCfg);
-              case GCS -> createGcsStore(backupCfg);
-              case AZURE -> createAzureStore(backupCfg);
-              case FILESYSTEM -> createFilesystemStore(backupCfg);
-            };
+        store = BackupCfg.BackupStoreFactory.createStore(backupCfg);
       } catch (final Exception e) {
         installed.completeExceptionally("Failed to create backup store.", e);
         return installed;
@@ -105,30 +90,6 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
   @Override
   public String getName() {
     return "BackupStore";
-  }
-
-  private static BackupStore createS3Store(final BackupCfg backupCfg) {
-    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
-    return S3BackupStore.of(storeConfig);
-  }
-
-  private static BackupStore createGcsStore(final BackupCfg backupCfg) {
-    final var brokerGcsConfig = backupCfg.getGcs();
-    final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
-    return GcsBackupStore.of(storeGcsConfig);
-  }
-
-  private static BackupStore createAzureStore(final BackupCfg backupCfg) {
-    final var brokerAzureConfig = backupCfg.getAzure();
-    final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
-    return AzureBackupStore.of(storeAzureConfig);
-  }
-
-  private static BackupStore createFilesystemStore(final BackupCfg backupCfg) {
-    final var brokerFilesystemConfig = backupCfg.getFilesystem();
-    final var storeFilesystemConfig =
-        FilesystemBackupStoreConfig.toStoreConfig(brokerFilesystemConfig);
-    return FilesystemBackupStore.of(storeFilesystemConfig);
   }
 
   private boolean shouldInstallOnTransition(final Role currentRole, final Role targetRole) {

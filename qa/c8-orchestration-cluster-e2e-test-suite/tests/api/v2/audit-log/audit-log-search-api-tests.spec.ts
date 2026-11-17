@@ -148,12 +148,16 @@ for (const {description, sort} of sortTestCases) {
       const body = await res.json();
       const values = body.items.map(
         (item: Record<string, unknown>) => item[sort.field],
-      ) as Array<string | number>;
-      const sorted = [...values].sort();
+      ) as Array<string | number | null>;
+      // Null placement is undefined by the API and differs per backend
+      // (ES/OS last on ASC, RDBMS first - camunda#57579), so assert ordering
+      // only over rows that carry a value.
+      const present = values.filter((value) => value !== null);
+      const sorted = [...present].sort();
       if (sort.order === 'DESC') {
         sorted.reverse();
       }
-      expect(values).toEqual(sorted);
+      expect(present).toEqual(sorted);
     }).toPass(defaultAssertionOptions);
   });
 }
@@ -378,7 +382,6 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
       const values = body.items.map(
         (item: Record<string, unknown>) => item.actorId,
       ) as string[];
-      console.log('Extracted actorIds:', values);
       const sorted = [...values].sort();
       expect(values).toEqual(sorted);
     }).toPass(defaultAssertionOptions);
@@ -400,7 +403,7 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
 
       await assertBadRequest(
         res,
-        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
+        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, inboundChannelType, inboundChannelToolName, result, tenantId, timestamp, userTaskKey]",
       );
     }).toPass(defaultAssertionOptions);
   });

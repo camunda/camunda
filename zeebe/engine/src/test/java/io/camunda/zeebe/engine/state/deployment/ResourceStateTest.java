@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,6 +151,117 @@ public class ResourceStateTest {
         resourceState.findResourceByIdAndVersionTag(
             resourceRecord.getResourceId(), "v1.0", tenantId);
     assertThat(deleted).isEmpty();
+  }
+
+  @Test
+  void shouldVisitAllResourcesByKeyFromBeginning() {
+    // given
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(1L, "resource-1"));
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(2L, "resource-2"));
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(3L, "resource-3"));
+
+    // when - using empty string tenant and key 0 to visit all resources (as used by the migrator)
+    final List<Long> visitedKeys = new ArrayList<>();
+    resourceState.visitResourcesByKey(
+        "",
+        0,
+        resource -> {
+          visitedKeys.add(resource.getResourceKey());
+          return true;
+        });
+
+    // then
+    assertThat(visitedKeys).containsExactly(1L, 2L, 3L);
+  }
+
+  @Test
+  void shouldVisitResourcesByKeyStartingFromGivenKey() {
+    // given
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(1L, "resource-1"));
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(2L, "resource-2"));
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(3L, "resource-3"));
+
+    // when - start from key 2
+    final List<Long> visitedKeys = new ArrayList<>();
+    resourceState.visitResourcesByKey(
+        tenantId,
+        2,
+        resource -> {
+          visitedKeys.add(resource.getResourceKey());
+          return true;
+        });
+
+    // then - only resources with key >= 2 are visited
+    assertThat(visitedKeys).containsExactly(2L, 3L);
+  }
+
+  @Test
+  void shouldStopVisitingWhenVisitorReturnsFalse() {
+    // given
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(1L, "resource-1"));
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(2L, "resource-2"));
+    resourceState.storeResourceInResourceColumnFamily(resourceRecord(3L, "resource-3"));
+
+    // when - visitor stops after finding the first resource
+    final List<Long> visitedKeys = new ArrayList<>();
+    resourceState.visitResourcesByKey(
+        "",
+        0,
+        resource -> {
+          visitedKeys.add(resource.getResourceKey());
+          return false; // stop after first
+        });
+
+    // then - only the first resource is visited
+    assertThat(visitedKeys).containsExactly(1L);
+  }
+
+  @Test
+  void shouldNotVisitWhenNoResourcesAreStored() {
+    // when
+    final List<Long> visitedKeys = new ArrayList<>();
+    resourceState.visitResourcesByKey(
+        "",
+        0,
+        resource -> {
+          visitedKeys.add(resource.getResourceKey());
+          return true;
+        });
+
+    // then
+    assertThat(visitedKeys).isEmpty();
+  }
+
+  @Test
+  void shouldReturnFalseWhenMigrationHasNotRan() {
+    // when
+    final boolean hasRan = resourceState.hasRanRpaReexportMigration();
+
+    // then
+    assertThat(hasRan).isFalse();
+  }
+
+  @Test
+  void shouldReturnTrueAfterMigrationIsMarkedAsRan() {
+    // given
+    resourceState.markRpaReexportMigrationAsRan();
+
+    // when
+    final boolean hasRan = resourceState.hasRanRpaReexportMigration();
+
+    // then
+    assertThat(hasRan).isTrue();
+  }
+
+  private ResourceRecord resourceRecord(final long resourceKey, final String resourceId) {
+    return new ResourceRecord()
+        .setResourceId(resourceId)
+        .setVersion(1)
+        .setResourceKey(resourceKey)
+        .setTenantId(tenantId)
+        .setDeploymentKey(1L)
+        .setResourceName(resourceId + ".rpa")
+        .setVersionTag("v1.0");
   }
 
   private ResourceRecord sampleResourceRecord() {

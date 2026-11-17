@@ -13,14 +13,15 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.impl.LogCompactor;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.broker.utils.InlineThreadContext;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.test.DynamicAutoCloseable;
@@ -87,12 +89,16 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     snapshotStore =
         manage(
             new FileBasedSnapshotStore(
-                0, partitionId, dataDirectory, snapshotPath -> Map.of(), meterRegistry));
+                0,
+                partitionId,
+                dataDirectory,
+                snapshotPath -> SnapshotFilesInfo.none(),
+                meterRegistry));
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
+            new PartitionId("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectory.toFile(), meterRegistry);
 
@@ -118,8 +124,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     backupService =
         manage(
             new BackupService(
-                nodeId,
-                partitionId,
+                BrokerMemberId.from(nodeId),
+                new PartitionId("raft", partitionId),
                 backupStore,
                 snapshotStore,
                 dataDirectory,
@@ -201,7 +207,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   }
 
   private void appendRecord(final long asqn, final String data) {
-    journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    journal.append(asqn, new DirectBufferWriter(new UnsafeBuffer(data.getBytes())));
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {

@@ -31,10 +31,60 @@ const Container = styled.div`
 
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
+  gap: var(--cds-spacing-03);
+
+  /* Improves responsiveness for smaller screen sizes by shrinking the title into an ellipse.
+  Important for the ElementInstanceLog where space can be very limited when the user shrinks it. */
+  h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cds--stack-horizontal {
+    flex-shrink: 0;
+  }
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`
   margin: auto;
 `;
 
-export {PanelHeader, Container, ErrorMessage};
+const PanelBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+`;
+
+const SearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+  width: 100%;
+
+  .cds--search {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+const SearchAndFilterContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cds-spacing-04);
+  padding: var(--cds-spacing-05);
+  border-bottom: solid 1px var(--cds-border-subtle-01);
+`;
+
+export {
+  PanelHeader,
+  Container,
+  ErrorMessage,
+  PanelBody,
+  SearchRow,
+  SearchAndFilterContainer,
+};

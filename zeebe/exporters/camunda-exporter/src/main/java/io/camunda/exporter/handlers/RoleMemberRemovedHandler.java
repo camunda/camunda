@@ -8,16 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
-public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity, RoleRecordValue> {
+public class RoleMemberRemovedHandler
+    implements MainIndexExporterHandler<RoleMemberEntity, RoleRecordValue> {
   private final String indexName;
 
   public RoleMemberRemovedHandler(final String indexName) {
@@ -45,7 +48,9 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity,
     final RoleRecordValue value = record.getValue();
     return List.of(
         RoleIndex.JOIN_RELATION_FACTORY.createChildId(
-            value.getRoleId(), value.getEntityId(), value.getEntityType()));
+            value.getRoleId(),
+            value.getEntityId(),
+            AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Override
@@ -62,9 +67,10 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity,
   }
 
   @Override
-  public void flush(final RoleMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final RoleMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent());
+    batchRequest.deleteWithRouting(index, entity.getId(), entity.getJoin().parent());
   }
 
   @Override

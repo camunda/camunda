@@ -18,6 +18,7 @@ import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
+import io.camunda.optimize.service.exceptions.OptimizeMetadataReadException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -46,13 +48,13 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
 
   @Override
   public Optional<MetadataDto> readMetadata(final OptimizeOpenSearchClient osClient) {
-    final boolean metaDataIndexExists =
-        osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
-    if (!metaDataIndexExists) {
-      LOG.info("Optimize Metadata index wasn't found, thus no metadata available.");
-      return Optional.empty();
-    }
     try {
+      final boolean metaDataIndexExists =
+          osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
+      if (!metaDataIndexExists) {
+        LOG.info("Optimize Metadata index wasn't found, thus no metadata available.");
+        return Optional.empty();
+      }
       final Optional<MetadataDto> metadata =
           osClient
               .getRichOpenSearchClient()
@@ -65,9 +67,8 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
             "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
       }
       return metadata;
-    } catch (final OptimizeRuntimeException e) {
-      LOG.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
-      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
+    } catch (final OptimizeRuntimeException | OpenSearchException e) {
+      throw new OptimizeMetadataReadException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
   }
 

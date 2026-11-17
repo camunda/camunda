@@ -14,8 +14,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.filter.DecisionInstanceFilter;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
@@ -37,9 +38,11 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
 
   @MockitoBean private DecisionInstanceServices decisionInstanceServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.decisionInstanceServices(any())).thenReturn(decisionInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
