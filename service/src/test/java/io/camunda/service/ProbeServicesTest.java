@@ -24,8 +24,11 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateProbesRequest;
@@ -37,6 +40,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -257,6 +262,79 @@ final class ProbeServicesTest {
   }
 
   @Test
+  void shouldKeepTheRejectionOfAProbeTooLargeForOneBatch() {
+    // given
+    broker =
+        request ->
+            new BrokerRejectionResponse<>(
+                new BrokerRejection(
+                    ProbeIntent.CREATE, -1, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, ""));
+
+    // when / then - still INTERNAL, as for any request, but the REST layer can tell it apart (D53)
+    assertThatThrownBy(
+            () ->
+                services(CLUSTER_REQUEST_TIMEOUT)
+                    .createProbe(create(10_000L), authentication)
+                    .join())
+        .cause()
+        .isInstanceOfSatisfying(
+            ServiceException.class,
+            error -> {
+              assertThat(error.getStatus()).isEqualTo(Status.INTERNAL);
+              assertThat(error.getCause()).isInstanceOf(BrokerRejectionException.class);
+            });
+  }
+
+  @Test
+  void shouldKeepTheRejectionOfAnAnswerTooLargeForOneBatch() {
+    // given
+    when(brokerClient.sendRequestWithRetry(any(BrokerProbeAnswerRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerRejectionResponse<>(
+                    new BrokerRejection(
+                        ProbeIntent.ANSWER, 1, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, ""))));
+
+    // when / then
+    assertThatThrownBy(() -> answer(ProbeOutcome.UNSUPPORTED).join())
+        .cause()
+        .isInstanceOfSatisfying(
+            ServiceException.class,
+            error -> {
+              assertThat(error.getStatus()).isEqualTo(Status.INTERNAL);
+              assertThat(error.getCause()).isInstanceOf(BrokerRejectionException.class);
+            });
+  }
+
+  @Test
+  void shouldMapTheOtherRejectionsOfAnAnswerAsAnyRequest() {
+    // given
+    when(brokerClient.sendRequestWithRetry(any(BrokerProbeAnswerRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerRejectionResponse<>(
+                    new BrokerRejection(ProbeIntent.ANSWER, 1, RejectionType.NOT_FOUND, "ended"))),
+            CompletableFuture.completedFuture(
+                new BrokerErrorResponse<>(
+                    new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"))));
+
+    // when / then
+    assertThatThrownBy(() -> answer(ProbeOutcome.UNSUPPORTED).join())
+        .cause()
+        .isInstanceOfSatisfying(
+            ServiceException.class,
+            error -> {
+              assertThat(error.getStatus()).isEqualTo(Status.NOT_FOUND);
+              assertThat(error.getCause()).isNull();
+            });
+    assertThatThrownBy(() -> answer(ProbeOutcome.UNSUPPORTED).join())
+        .cause()
+        .isInstanceOfSatisfying(
+            ServiceException.class,
+            error -> assertThat(error.getStatus()).isEqualTo(Status.RESOURCE_EXHAUSTED));
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   void shouldHandAPollToTheLongPollingHandler() {
     // given
@@ -296,6 +374,13 @@ final class ProbeServicesTest {
         activateProbesHandler,
         clusterRequestTimeout,
         clock);
+  }
+
+  private CompletableFuture<ProbeRecord> answer(final ProbeOutcome outcome) {
+    return services(CLUSTER_REQUEST_TIMEOUT)
+        .answerProbe(
+            new ProbeAnswerRequest(Protocol.encodePartitionId(1, 1), outcome, null, null),
+            authentication);
   }
 
   private static ProbeCreateRequest create(final Long requestTimeout) {
