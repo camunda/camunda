@@ -28,11 +28,11 @@ import {
   fingerprint,
   parseArgs,
   readJson,
+  testOutcome,
   walkSpecs,
 } from './report.mjs';
 import {readdirSync} from 'node:fs';
 
-const ATTEMPT_FAILED = new Set(['failed', 'timedOut']);
 const OBSERVATION_RANK = {passed: 0, flaky: 1, failed: 2};
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -79,17 +79,8 @@ export function pick({reportsDir, ledger = {}, max = 3, minScore = 2, now}) {
               });
             }
             for (const test of spec.tests ?? []) {
-              // `unexpected` also covers interrupted runs (a cancelled
-              // nightly); only an attempt that actually failed counts.
-              const attemptFailed = (test.results ?? []).some((r) =>
-                ATTEMPT_FAILED.has(r.status),
-              );
-              let status;
-              if (test.status === 'flaky') status = 'flaky';
-              else if (test.status === 'unexpected' && attemptFailed) {
-                status = 'failed';
-              } else if (test.status === 'expected') status = 'passed';
-              else continue;
+              const status = testOutcome(test);
+              if (!status) continue;
               const previous = observed.get(key);
               if (
                 previous &&

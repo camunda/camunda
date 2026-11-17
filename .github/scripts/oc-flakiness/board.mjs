@@ -9,13 +9,16 @@
 // hours apart.
 //
 //   node board.mjs --init targets.json --date 2026-11-12 --run-url <url>
-//     -> board JSON on stdout, every row "dispatched"
+//                  [--postmerge postmerge.json]
+//     -> board JSON on stdout, every row "dispatched", plus the standing
+//        verdicts on the fixes that already merged
 //
 //   node board.mjs --set board.json --fp ab12cd34 --status open_pr
 //                  [--detail "..."] [--pr <url>] [--run <url>] [--rate 100]
 //     -> the same board with that row replaced
 //
 //   node board.mjs --merge board.json --targets targets.json
+//                  [--postmerge postmerge.json]
 //     -> the board with any target it does not yet carry appended
 //
 // Every change bumps `rev`. Writers overlap, so the one that publishes to
@@ -89,8 +92,22 @@ const asRow = (t) => ({
   run: '',
 });
 
-export function initBoard({targets, date, runUrl = '', channel = CHANNEL}) {
-  return {date, channel, ts: '', rev: 1, run_url: runUrl, rows: targets.map(asRow)};
+export function initBoard({
+  targets,
+  date,
+  runUrl = '',
+  channel = CHANNEL,
+  postMerge = [],
+}) {
+  return {
+    date,
+    channel,
+    ts: '',
+    rev: 1,
+    run_url: runUrl,
+    rows: targets.map(asRow),
+    post_merge: postMerge,
+  };
 }
 
 // A second pick on the same day -- a re-run, or a manual dispatch -- must not
@@ -98,12 +115,19 @@ export function initBoard({targets, date, runUrl = '', channel = CHANNEL}) {
 // vanish and their verdicts would land on a board nobody is reading.
 // Takes either picked targets or rows of an already-built board, so the pick
 // can merge the board it would have posted into the one already in the channel.
-export function mergeTargets(board, targets) {
+// `postMerge` is a fresh measurement of the same merged fixes, so the later
+// one replaces the board's rather than being appended to it.
+export function mergeTargets(board, targets, postMerge) {
   const known = new Set((board.rows ?? []).map((r) => r.fp));
   const added = targets
     .filter((t) => !known.has(t.fp))
     .map((t) => (t.titlePath ? asRow(t) : t));
-  return {...board, rev: (board.rev ?? 0) + 1, rows: [...(board.rows ?? []), ...added]};
+  return {
+    ...board,
+    rev: (board.rev ?? 0) + 1,
+    rows: [...(board.rows ?? []), ...added],
+    post_merge: postMerge ?? board.post_merge ?? [],
+  };
 }
 
 export function setRow(board, {fp, status, detail = '', pr = '', run = '', rate}) {
@@ -167,6 +191,47 @@ function outcomeText(row) {
   return row.run ? link(row.run, text) : escape(text);
 }
 
+// The only part of the board measured outside the agent's own runs: for each
+// fix that merged, how the nightlies have treated the test since. Only the
+// fixes that did not hold are named -- a fix that holds needs a number, not a
+// row of its own.
+function postMergeLines(board) {
+  const items = board.post_merge ?? [];
+  if (items.length === 0) return [];
+  const of = (verdict) => items.filter((i) => i.verdict === verdict);
+  const reflaked = of('re-flaked');
+  const holding = [...of('clean'), ...of('clean-in-window')];
+  const pending = of('pending');
+
+  const parts = [];
+  if (holding.length > 0) parts.push(`:white_check_mark: ${holding.length} holding`);
+  if (reflaked.length > 0) parts.push(`:warning: ${reflaked.length} re-flaked`);
+  if (pending.length > 0) parts.push(`:hourglass: ${pending.length} not run yet`);
+
+  const lines = [
+    '',
+    `:shield: *Merged fixes — ${items.length} under watch*` +
+      (parts.length > 0 ? ` — ${parts.join('  |  ')}` : ''),
+  ];
+  for (const item of reflaked) {
+    const prNumber = String(item.pr ?? '').match(/\/pull\/(\d+)/)?.[1];
+    const pr = prNumber ? ` (${link(item.pr, `PR #${prNumber}`)})` : '';
+    const title = item.title ? ` › ${escape(item.title)}` : '';
+    lines.push(
+      `  :warning: ${escape(item.version)} \`${escape(item.file)}\`${title}${pr}` +
+        ` — ${escape(item.post_merge?.summary ?? 're-flaked')}`,
+    );
+  }
+  const partial = of('clean-in-window').length;
+  if (partial > 0) {
+    lines.push(
+      `  :grey_question: ${partial} of them merged before the report window starts,` +
+        ' so only the nights inside the window were measured.',
+    );
+  }
+  return lines;
+}
+
 export function render(board, {now = new Date()} = {}) {
   const rows = board.rows ?? [];
   const stamp = new Date(now).toISOString().slice(11, 16);
@@ -179,6 +244,7 @@ export function render(board, {now = new Date()} = {}) {
     lines.push(
       ':seedling: *No test met the bar today* — every candidate was already covered by a fix branch or is still cooling down.',
     );
+    lines.push(...postMergeLines(board));
     if (board.run_url) {
       lines.push('', `<${board.run_url}|Pick run> :arrow_right:`);
     }
@@ -233,6 +299,8 @@ export function render(board, {now = new Date()} = {}) {
     );
   }
 
+  lines.push(...postMergeLines(board));
+
   if (board.run_url) {
     lines.push('', `<${board.run_url}|Pick run> :arrow_right:`);
   }
@@ -250,6 +318,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
           date: args.date,
           runUrl: args['run-url'] ?? '',
           channel: args.channel || CHANNEL,
+          postMerge: args.postmerge ? readJson(args.postmerge, []) : [],
         }),
       )}\n`,
     );
@@ -278,7 +347,13 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       process.exit(2);
     }
     process.stdout.write(
-      `${JSON.stringify(mergeTargets(board, readJson(args.targets, [])))}\n`,
+      `${JSON.stringify(
+        mergeTargets(
+          board,
+          readJson(args.targets, []),
+          args.postmerge ? readJson(args.postmerge, []) : undefined,
+        ),
+      )}\n`,
     );
   } else if (args.render !== undefined) {
     const board = readJson(args.render, null);
