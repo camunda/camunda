@@ -11,6 +11,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.File;
@@ -28,9 +29,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Queue;
 import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -48,7 +51,9 @@ final class SegmentsManager implements AutoCloseable {
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableFuture<UninitializedSegment> nextSegment = null;
-  // stops at the first failed batch, so that the log on disk never has a gap
+  // the deletion stops at the first failed segment and retries it later, so that the log on disk
+  // never has a gap
+  private final Queue<Segment> segmentsToDelete = new ConcurrentLinkedQueue<>();
   private CompletableFuture<Void> pendingDeletion = CompletableFuture.completedFuture(null);
 
   private final JournalMetrics journalMetrics;
@@ -83,7 +88,11 @@ final class SegmentsManager implements AutoCloseable {
 
   @Override
   public void close() {
-    awaitPendingDeletion();
+    try {
+      deleteQueuedSegmentsNow();
+    } catch (final RuntimeException e) {
+      LOG.warn("{} - Failed to delete compacted segments on close", name, e);
+    }
     segments
         .values()
         .forEach(
@@ -202,45 +211,46 @@ final class SegmentsManager implements AutoCloseable {
         getFirstIndex(),
         compactSegments.get(compactSegments.lastKey()).index(),
         compactSegments.size());
-    final List<Segment> segmentsToDelete = List.copyOf(compactSegments.values());
-    // removes them from the segment map
-    compactSegments.clear();
-    for (final Segment segment : segmentsToDelete) {
+    for (final Segment segment : compactSegments.values()) {
       segment.markAsClosed();
+      segmentsToDelete.add(segment);
       journalMetrics.decSegmentCount();
     }
+    // removes them from the segment map
+    compactSegments.clear();
 
     journalIndex.deleteUntil(index);
 
     // file deletion is slow, and appends and readers wait for the journal lock
-    pendingDeletion =
-        pendingDeletion.thenRunAsync(() -> deleteSegments(segmentsToDelete), deletionExecutor);
+    pendingDeletion = pendingDeletion.thenRunAsync(this::tryDeleteQueuedSegments, deletionExecutor);
 
     return true;
   }
 
-  private void deleteSegments(final List<Segment> segmentsToDelete) {
-    for (final Segment segment : segmentsToDelete) {
-      LOG.trace("{} - Deleting segment: {}", name, segment);
-      try {
-        segment.delete();
-      } catch (final RuntimeException e) {
-        LOG.error(
-            "{} - Failed to delete segment {}. The journal keeps the compacted segments until restart.",
-            name,
-            segment,
-            e);
-        throw e;
-      }
+  private void tryDeleteQueuedSegments() {
+    try {
+      deleteQueuedSegments();
+    } catch (final RuntimeException e) {
+      LOG.error(
+          "{} - Failed to delete segment {}. The next compaction tries again.",
+          name,
+          segmentsToDelete.peek(),
+          e);
     }
   }
 
-  private void awaitPendingDeletion() {
-    try {
-      pendingDeletion.join();
-    } catch (final CompletionException e) {
-      // already logged when the deletion failed
+  private void deleteQueuedSegments() {
+    Segment segment;
+    while ((segment = segmentsToDelete.peek()) != null) {
+      LOG.trace("{} - Deleting segment: {}", name, segment);
+      segment.delete();
+      segmentsToDelete.poll();
     }
+  }
+
+  private void deleteQueuedSegmentsNow() {
+    pendingDeletion.join();
+    deleteQueuedSegments();
   }
 
   /**
@@ -250,15 +260,15 @@ final class SegmentsManager implements AutoCloseable {
    * @return the first segment
    */
   Segment resetSegments(final long index) {
-    // the new first segment can use the ID of a segment that waits for deletion
-    awaitPendingDeletion();
-
     // reset the last flushed index before deleting data to avoid data corruption on start up in
     // case of node crash
     // setting the last flushed index to a semantic-null value will let us know on start up that
     // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
     // creating the segment but before writing its descriptor)
     metaStore.resetLastFlushedIndex();
+
+    // the new first segment can use the ID of a segment that waits for deletion
+    deleteQueuedSegmentsNow();
 
     // delete the segments in reverse order, such that if the operation is interrupted (e.g. crash)
     // in the middle, there are no gaps in the log (or between the log and snapshot)
@@ -380,6 +390,20 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
+    try {
+      return createSegmentFile(descriptor, lastWrittenAsqn);
+    } catch (final OutOfDiskSpace e) {
+      if (segmentsToDelete.isEmpty()) {
+        throw e;
+      }
+      // callers compact on out of disk space and retry at once, before the deletion frees space
+      deleteQueuedSegmentsNow();
+      return createSegmentFile(descriptor, lastWrittenAsqn);
+    }
+  }
+
+  private Segment createSegmentFile(
+      final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
         segmentFile.toPath(), descriptor, lastWrittenAsqn, journalIndex);

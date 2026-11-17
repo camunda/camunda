@@ -37,6 +37,7 @@ import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,6 +56,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -482,6 +484,99 @@ class SegmentedJournalTest {
     journal = openJournal(2);
     assertThat(journal.getFirstIndex()).isEqualTo(100);
     assertThat(journal.getLastIndex()).isEqualTo(100);
+  }
+
+  @Test
+  void shouldDeleteCompactedSegmentFilesOnClose() {
+    // given
+    journal = openJournal(2, CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS));
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.deleteUntil(5);
+
+    // when
+    journal.close();
+
+    // then
+    assertThat(directory.resolve("data"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-1.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"))
+        .isDirectoryNotContaining(
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()));
+  }
+
+  @Test
+  void shouldRetryFailedSegmentDeletionInOrder() throws IOException {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    journal = openJournal(2, deletions::add);
+    for (int i = 0; i < 8; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final Path logDirectory = directory.resolve("data");
+    final Path firstSegment = logDirectory.resolve("journal-1.log");
+    final Path movedFirstSegment = directory.resolve("journal-1.log.moved");
+    Files.move(firstSegment, movedFirstSegment);
+    journal.deleteUntil(5);
+
+    // when
+    deletions.poll().run();
+
+    // then
+    assertThat(logDirectory)
+        .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+
+    // when
+    Files.move(movedFirstSegment, firstSegment);
+    journal.deleteUntil(7);
+    deletions.poll().run();
+
+    // then
+    assertThat(logDirectory)
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-1.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-3.log"))
+        .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-4.log"));
+    journal.close();
+    journal = openJournal(2);
+    assertThat(journal.getFirstIndex()).isEqualTo(7);
+    assertThat(journal.getLastIndex()).isEqualTo(8);
+  }
+
+  @Test
+  void shouldWaitForPendingSegmentDeletionWhenOutOfDiskSpace() {
+    // given
+    final Path firstSegment = directory.resolve("data").resolve("journal-1.log");
+    final AtomicBoolean diskFull = new AtomicBoolean();
+    final SegmentAllocator allocator =
+        (channel, fd, segmentSize) -> {
+          if (diskFull.get() && Files.exists(firstSegment)) {
+            throw new OutOfDiskSpace("Disk is full until the compacted segment is deleted");
+          }
+          SegmentAllocator.posix(SegmentAllocator.noop()).allocate(channel, fd, segmentSize);
+        };
+    journalFactory = new TestJournalFactory("test", 2, allocator);
+    journal =
+        journalFactory.journal(
+            journalFactory.segmentsManager(
+                directory, CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS)));
+    closeables.add(journal);
+    for (int i = 0; i < 4; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.deleteUntil(3);
+    diskFull.set(true);
+
+    // when
+    for (int i = 0; i < 2; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final var record = journal.append(journalFactory.entry());
+
+    // then
+    assertThat(record.index()).isEqualTo(7);
   }
 
   @Test
