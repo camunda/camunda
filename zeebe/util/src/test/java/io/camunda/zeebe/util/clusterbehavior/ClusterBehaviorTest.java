@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.util.SemanticVersion;
+import java.util.BitSet;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 final class ClusterBehaviorTest {
@@ -22,6 +24,22 @@ final class ClusterBehaviorTest {
   // The spec example (0 to 17, 20 and 22 with 8-bit words) scaled to the word size: shifted by two
   // words so that it lives in word 2, with first unsupported = 2 * WORD_SIZE + 18.
   private static final int SHIFT = 2 * WORD_SIZE;
+
+  private static BitSet bits(final int... ordinals) {
+    final var bits = new BitSet();
+    for (final int ordinal : ordinals) {
+      bits.set(ordinal);
+    }
+    return bits;
+  }
+
+  private static int[] range(final int fromInclusive, final int toExclusive) {
+    return IntStream.range(fromInclusive, toExclusive).toArray();
+  }
+
+  private static int[] concat(final int[] a, final int... b) {
+    return IntStream.concat(IntStream.of(a), IntStream.of(b)).toArray();
+  }
 
   private static ClusterBehavior specExample(final SemanticVersion version) {
     return new ClusterBehavior(SHIFT + 18, new long[] {0b1010011_1111_1111_1111_1111L}, version);
@@ -101,5 +119,124 @@ final class ClusterBehaviorTest {
                 + ", lastSupportedCapability="
                 + (SHIFT + 22)
                 + "}");
+  }
+
+  @Test
+  void shouldBuildTheSpecExampleFromBits() {
+    final var behavior =
+        ClusterBehavior.of(V1, bits(concat(range(0, SHIFT + 18), SHIFT + 20, SHIFT + 22)));
+
+    assertThat(behavior).isEqualTo(specExample(V1));
+    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
+  }
+
+  @Test
+  void shouldBuildTheEmptySetWithTheGivenVersion() {
+    final var behavior = ClusterBehavior.of(V1);
+
+    assertThat(behavior).isEqualTo(ClusterBehavior.of(V1, new BitSet()));
+    assertThat(behavior.capabilityBitmask()).isEmpty();
+    assertThat(behavior.firstUnsupportedCapability()).isZero();
+    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
+    // the version is not part of equality
+    assertThat(behavior).isEqualTo(ClusterBehavior.empty());
+  }
+
+  @Test
+  void shouldStoreNothingForAContiguousAlignedSetFromBits() {
+    final var behavior = ClusterBehavior.of(V1, bits(range(0, 2 * WORD_SIZE)));
+
+    assertThat(behavior).isEqualTo(new ClusterBehavior(2 * WORD_SIZE, new long[0], V1));
+  }
+
+  @Test
+  void shouldBuildTheSameSetWhateverTheOrderAndDuplicates() {
+    final var behavior =
+        ClusterBehavior.of(
+            V1,
+            bits(
+                SHIFT + 22,
+                SHIFT + 20,
+                5,
+                SHIFT + 22,
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                17));
+    final var sorted =
+        ClusterBehavior.of(
+            V1,
+            bits(
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                SHIFT + 20,
+                SHIFT + 22));
+
+    assertThat(behavior).isEqualTo(sorted).hasSameHashCodeAs(sorted);
+    assertThat(behavior.capabilityBitmask()).containsExactly(sorted.capabilityBitmask());
+  }
+
+  @Test
+  void shouldCheckCapabilitiesAcrossWordsAndGaps() {
+    final var behavior = ClusterBehavior.of(V1, bits(0, 1, 2, WORD_SIZE, WORD_SIZE + 1, 200, 1000));
+
+    assertThat(behavior.firstUnsupportedCapability()).isEqualTo(3);
+    assertThat(behavior.firstWord()).isZero();
+    assertThat(behavior.lastWord()).isEqualTo(1000 / WORD_SIZE);
+    assertThat(behavior.capabilityBitmask()).hasSize(1000 / WORD_SIZE + 1);
+    for (final int enabled : new int[] {0, 1, 2, WORD_SIZE, WORD_SIZE + 1, 200, 1000}) {
+      assertThat(behavior.isCapabilityEnabled(enabled)).as("ordinal %d", enabled).isTrue();
+    }
+    for (final int disabled :
+        new int[] {3, WORD_SIZE - 1, WORD_SIZE + 2, 199, 201, 999, 1001, 100_000}) {
+      assertThat(behavior.isCapabilityEnabled(disabled)).as("ordinal %d", disabled).isFalse();
+    }
+  }
+
+  @Test
+  void shouldRejectANegativeOrdinalInTheCapabilityCheck() {
+    assertThatThrownBy(() -> ClusterBehavior.empty().isCapabilityEnabled(-1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldBuildFromCatalogEntries() {
+    final var behavior = ClusterBehavior.of(V1, EngineCapabilityCatalog.values());
+
+    for (final var capability : EngineCapabilityCatalog.values()) {
+      assertThat(behavior.isCapabilityEnabled(capability)).isTrue();
+    }
+    assertThat(behavior.behaviorVersion()).isEqualTo(V1);
   }
 }

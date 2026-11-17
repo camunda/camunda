@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.clusterbehavior;
 
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Objects;
 
 /**
@@ -70,6 +71,30 @@ public final class ClusterBehavior {
     return EMPTY;
   }
 
+  /** The set of the given catalog entries with the given behavior version. */
+  public static ClusterBehavior of(
+      final SemanticVersion behaviorVersion, final EngineCapabilityCatalog... capabilities) {
+    final BitSet bits = new BitSet();
+    for (final EngineCapabilityCatalog capability : capabilities) {
+      bits.set(capability.capabilityOrdinal());
+    }
+    return of(behaviorVersion, bits);
+  }
+
+  /**
+   * The set of the enabled ordinals in {@code enabledOrdinals} with the given behavior version. It
+   * keeps ordinals that the catalog of this binary does not list.
+   */
+  public static ClusterBehavior of(
+      final SemanticVersion behaviorVersion, final BitSet enabledOrdinals) {
+    // the first clear bit is the first unsupported capability; toLongArray has no trailing zero
+    // words, so dropping the words below it gives the canonical bitmask
+    final int first = enabledOrdinals.nextClearBit(0);
+    final long[] all = enabledOrdinals.toLongArray();
+    return new ClusterBehavior(
+        first, Arrays.copyOfRange(all, first / WORD_SIZE, all.length), behaviorVersion);
+  }
+
   /** The lowest ordinal not in the set; every lower one is in it. */
   public int firstUnsupportedCapability() {
     return firstUnsupportedCapability;
@@ -98,6 +123,31 @@ public final class ClusterBehavior {
   /** The index of the last stored word. */
   public int lastWord() {
     return lastWord;
+  }
+
+  /** Whether the set contains the given capability. */
+  public boolean isCapabilityEnabled(final EngineCapabilityCatalog capability) {
+    return isCapabilityEnabled(capability.capabilityOrdinal());
+  }
+
+  /**
+   * Whether the set contains the given explicit ordinal.
+   *
+   * @param capability a non-negative ordinal, not {@link Enum#ordinal()}
+   */
+  public boolean isCapabilityEnabled(final int capability) {
+    if (capability < 0) {
+      throw new IllegalArgumentException("ordinal must not be negative: " + capability);
+    }
+    if (capability < firstUnsupportedCapability) {
+      return true;
+    }
+    if (capability > lastSupportedCapability) {
+      return false;
+    }
+    return (capabilityBitmask[capability / WORD_SIZE - firstWord]
+            & (1L << (capability % WORD_SIZE)))
+        != 0;
   }
 
   @Override
