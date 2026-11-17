@@ -15,24 +15,25 @@ import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.Connected;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 /**
- * Deploys the benchmark process on a separate thread once the cluster is {@link Connected}, retries
- * until it succeeds, then publishes {@link ProcessDeployed}.
+ * Deploys the benchmark process once the cluster is {@link Connected}, retries until it succeeds,
+ * then publishes {@link ProcessDeployed}. The deployment is asynchronous, so the thread that
+ * published {@link Connected} is not blocked.
  */
 @Component
 @Profile("starter")
-public class ProcessDeployer implements SmartLifecycle {
+public class ProcessDeployer {
 
+  private static final Duration RETRY_DELAY = Duration.ofMillis(200);
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(ProcessDeployer.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(ProcessDeployer.class);
@@ -41,69 +42,45 @@ public class ProcessDeployer implements SmartLifecycle {
   private final StarterProperties starterCfg;
   private final StarterLivenessIndicator livenessIndicator;
   private final ApplicationEventPublisher eventPublisher;
-  private final ExecutorService executor = Executors.newSingleThreadExecutor();
-  private volatile boolean stopped;
+  private final TaskScheduler scheduler;
 
   public ProcessDeployer(
       final CamundaClient loaderClient,
       final LoadTesterProperties properties,
       final StarterLivenessIndicator livenessIndicator,
-      final ApplicationEventPublisher eventPublisher) {
+      final ApplicationEventPublisher eventPublisher,
+      final TaskScheduler scheduler) {
     this.loaderClient = loaderClient;
     starterCfg = properties.getStarter();
     this.livenessIndicator = livenessIndicator;
     this.eventPublisher = eventPublisher;
+    this.scheduler = scheduler;
   }
 
   @EventListener(Connected.class)
   void onConnected() {
     livenessIndicator.recordStarted();
-    executor.execute(this::deployProcess);
+    deploy(constructDeploymentCommand());
   }
 
-  void deployProcess() {
-    final long processDefinitionKey = deploy();
-    if (!stopped) {
-      eventPublisher.publishEvent(new ProcessDeployed(processDefinitionKey));
-    }
-  }
-
-  @Override
-  public void start() {}
-
-  @Override
-  public void stop() {
-    stopped = true;
-    executor.shutdownNow();
-  }
-
-  @Override
-  public boolean isRunning() {
-    return !stopped;
-  }
-
-  private long deploy() {
-    final var deployCmd = constructDeploymentCommand();
-
-    while (!stopped) {
-      try {
-        final var result = deployCmd.send().join();
-        return result.getProcesses().stream()
-            .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
-            .findFirst()
-            .map(Process::getProcessDefinitionKey)
-            .orElse(0L);
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
-        try {
-          Thread.sleep(200);
-        } catch (final InterruptedException ex) {
-          Thread.currentThread().interrupt();
-          return 0L;
-        }
-      }
-    }
-    return 0L;
+  private void deploy(final DeployResourceCommandStep2 deployCmd) {
+    deployCmd
+        .send()
+        .whenComplete(
+            (result, error) -> {
+              if (error == null) {
+                final long processDefinitionKey =
+                    result.getProcesses().stream()
+                        .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
+                        .findFirst()
+                        .map(Process::getProcessDefinitionKey)
+                        .orElse(0L);
+                eventPublisher.publishEvent(new ProcessDeployed(processDefinitionKey));
+              } else {
+                THROTTLED_LOGGER.warn("Failed to deploy process, retrying", error);
+                scheduler.schedule(() -> deploy(deployCmd), Instant.now().plus(RETRY_DELAY));
+              }
+            });
   }
 
   private DeployResourceCommandStep2 constructDeploymentCommand() {
