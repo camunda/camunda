@@ -8,12 +8,14 @@
 package io.camunda.search.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.migration.MigrationConditionStatus;
 import io.camunda.cluster.migration.MigrationState;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,6 +70,53 @@ class ElasticsearchSchemaMigrationStatusProviderTest {
     // then
     assertThat(status.state()).isEqualTo(MigrationState.MIGRATED);
     assertThat(status.detail()).contains("8.10.0");
+  }
+
+  @Test
+  void shouldReadEachTenantWithItsOwnSharedClient() {
+    // given
+    final var configs =
+        Map.of(
+            "tenantA",
+            SearchEngineConfiguration.of(c -> c),
+            "tenantB",
+            SearchEngineConfiguration.of(c -> c));
+    final var clients =
+        Map.of(
+            "tenantA",
+            clientWithSchemaVersion("8.10.0"),
+            "tenantB",
+            clientWithSchemaVersion("8.9.0"));
+
+    // when
+    final var statuses =
+        ElasticsearchSchemaMigrationStatusProvider.fromClients(configs, clients, "8.10.0")
+            .getMigrationStatus();
+
+    // then
+    assertThat(statuses.get("tenantA").state()).isEqualTo(MigrationState.MIGRATED);
+    assertThat(statuses.get("tenantB").state()).isEqualTo(MigrationState.MIGRATION_IN_PROGRESS);
+  }
+
+  @Test
+  void shouldRejectTenantWithoutClient() {
+    // given
+    final var configs = Map.of("tenantA", SearchEngineConfiguration.of(c -> c));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                ElasticsearchSchemaMigrationStatusProvider.fromClients(configs, Map.of(), "8.10.0"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("tenantA");
+  }
+
+  private static SearchEngineClient clientWithSchemaVersion(final String schemaVersion) {
+    final var searchEngineClient = mock(SearchEngineClient.class);
+    when(searchEngineClient.indexExists(anyString())).thenReturn(true);
+    when(searchEngineClient.getDocument(anyString(), anyString()))
+        .thenReturn(Map.of(MetadataIndex.VALUE, schemaVersion));
+    return searchEngineClient;
   }
 
   private static ElasticsearchSchemaMigrationStatusProvider provider(

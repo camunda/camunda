@@ -12,6 +12,7 @@ import static io.camunda.application.commons.condition.ConditionalOnAnyHttpGatew
 import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -60,6 +61,8 @@ public class SearchEngineDatabaseConfiguration {
           final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
       @Qualifier("physicalTenantScopedIndexDescriptors")
           final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
+      @Qualifier("physicalTenantClientAdapters")
+          final Map<String, ClientAdapter> physicalTenantClientAdapters,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final BrokerTopologyManager brokerTopologyManager,
@@ -68,6 +71,7 @@ public class SearchEngineDatabaseConfiguration {
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
+        physicalTenantClientAdapters,
         meterRegistry,
         isAnyHttpGatewayEnabled(environment),
         new SchemaInitializationRecoveryCheck(brokerTopologyManager));

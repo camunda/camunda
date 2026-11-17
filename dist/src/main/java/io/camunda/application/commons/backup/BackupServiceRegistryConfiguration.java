@@ -15,6 +15,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage;
 import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupRepository;
@@ -76,6 +77,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -118,6 +120,8 @@ public class BackupServiceRegistryConfiguration {
   public BackupServiceRegistry backupServiceRegistry(
       final PhysicalTenantResolver physicalTenantResolver,
       final SearchClients searchClients,
+      @Qualifier("physicalTenantClientAdapters")
+          final Map<String, ClientAdapter> clientAdaptersByTenant,
       @Qualifier("searchEngineConfigurationsByTenant")
           final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
       @Qualifier("physicalTenantScopedIndexDescriptors")
@@ -140,6 +144,9 @@ public class BackupServiceRegistryConfiguration {
                   new BackupServiceImpl(
                       threadPoolTaskExecutor,
                       new BackupWiring(backupPriorities(secondaryStorage), props, repository),
+                      Objects.requireNonNull(
+                          clientAdaptersByTenant.get(physicalTenantId),
+                          "No search client for physical tenant '" + physicalTenantId + "'"),
                       searchEngineConfigurationsByTenant.get(physicalTenantId),
                       indexDescriptors.indices(),
                       indexDescriptors.templates());

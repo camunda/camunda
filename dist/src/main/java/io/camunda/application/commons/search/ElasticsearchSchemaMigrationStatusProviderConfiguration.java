@@ -9,9 +9,12 @@ package io.camunda.application.commons.search;
 
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.ElasticsearchSchemaMigrationStatusProvider;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -31,15 +34,20 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchSchemaMigrationStatusProviderConfiguration {
 
   /**
-   * The returned provider implements {@link AutoCloseable}; Spring infers and calls its {@code
-   * close()} on context shutdown to release the long-lived per-tenant search engine clients it
-   * opens.
+   * The provider reads with the application's shared search clients, which it does not own and
+   * therefore does not close.
    */
   @Bean
   public ElasticsearchSchemaMigrationStatusProvider elasticsearchSchemaMigrationStatusProvider(
       @Qualifier("searchEngineConfigurationsByTenant")
-          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
-    return ElasticsearchSchemaMigrationStatusProvider.fromConfigs(
-        searchEngineConfigurationsByTenant, VersionUtil.getVersion());
+          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
+      @Qualifier("physicalTenantClientAdapters")
+          final Map<String, ClientAdapter> physicalTenantClientAdapters) {
+    final Map<String, SearchEngineClient> searchEngineClients = new LinkedHashMap<>();
+    physicalTenantClientAdapters.forEach(
+        (physicalTenantId, adapter) ->
+            searchEngineClients.put(physicalTenantId, adapter.getSearchEngineClient()));
+    return ElasticsearchSchemaMigrationStatusProvider.fromClients(
+        searchEngineConfigurationsByTenant, searchEngineClients, VersionUtil.getVersion());
   }
 }

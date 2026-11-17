@@ -10,8 +10,6 @@ package io.camunda.application.commons.search;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.search.SearchEngineSchemaInitializer.TerminalSchemaInitializationException;
@@ -27,7 +25,6 @@ import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
@@ -35,6 +32,9 @@ import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -66,6 +66,7 @@ class SearchEngineSchemaInitializerTest {
   private static final String UNREACHABLE_URL = "http://localhost:1";
 
   private SearchEngineSchemaInitializer initializer;
+  private final List<ClientAdapter> adapters = new ArrayList<>();
 
   @BeforeAll
   @AfterAll
@@ -74,13 +75,17 @@ class SearchEngineSchemaInitializerTest {
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws Exception {
     if (initializer != null) {
       // stops the background retry loop, which would otherwise keep hammering the unreachable URL
       // for the rest of the suite
       initializer.destroy();
       initializer = null;
     }
+    for (final var adapter : adapters) {
+      adapter.close();
+    }
+    adapters.clear();
   }
 
   @Test
@@ -171,16 +176,15 @@ class SearchEngineSchemaInitializerTest {
   }
 
   @Test
-  void shouldTreatAnUnbuildableSearchClientAsTerminal() {
-    // given - connect settings that no search client can be built from. Retrying a static
-    // misconfiguration like this would never succeed, so the tenant is left degraded instead
+  void shouldTreatAMissingSearchClientAsTerminal() {
+    // given - a tenant for which no shared search client exists. Retrying a wiring defect like
+    // this would never succeed, so the tenant is left degraded instead
     initializer = terminallyMisconfiguredInitializer(false);
 
     // when / then
     assertThatThrownBy(() -> initializer.initializeTenant(DEFAULT_TENANT))
         .isInstanceOf(TerminalSchemaInitializationException.class)
-        .cause()
-        .isInstanceOf(IllegalArgumentException.class);
+        .hasMessageContaining(DEFAULT_TENANT);
   }
 
   @Test
@@ -272,17 +276,6 @@ class SearchEngineSchemaInitializerTest {
         .isFalse();
   }
 
-  @Test
-  void shouldNotFailTheTenantWhenTheSearchClientCannotBeClosed() throws Exception {
-    // given - the client is only released once the schema has been applied
-    final var clientAdapter = mock(ClientAdapter.class);
-    doThrow(new IOException("connection reset")).when(clientAdapter).close();
-
-    // when / then - failing here would retry an initialization that already succeeded
-    assertThatCode(() -> SearchEngineSchemaInitializer.closeQuietly(clientAdapter, DEFAULT_TENANT))
-        .doesNotThrowAnyException();
-  }
-
   /** A node with an HTTP gateway: it holds startup at the gate. */
   private SearchEngineSchemaInitializer gatewayInitializerFor(
       final PhysicalTenantResolver resolver) {
@@ -297,18 +290,32 @@ class SearchEngineSchemaInitializerTest {
 
   private SearchEngineSchemaInitializer initializerFor(
       final PhysicalTenantResolver resolver, final boolean holdsStartup) {
+    final var configs = configsFor(resolver);
     return new SearchEngineSchemaInitializer(
-        configsFor(resolver),
+        configs,
         descriptorsFor(resolver),
+        adaptersFor(configs),
         new SimpleMeterRegistry(),
         holdsStartup,
         tenantId -> false);
   }
 
+  /** Builds one client per tenant, as the application does once for all consumers. */
+  private Map<String, ClientAdapter> adaptersFor(
+      final Map<String, SearchEngineConfiguration> configs) {
+    final var byTenant = new LinkedHashMap<String, ClientAdapter>();
+    configs.forEach(
+        (tenantId, config) -> {
+          final var adapter = ClientAdapter.of(config.connect());
+          adapters.add(adapter);
+          byTenant.put(tenantId, adapter);
+        });
+    return byTenant;
+  }
+
   /**
-   * A single tenant whose connect settings no search client can be built from, so it is terminal
-   * from its first attempt and stays that way — the shortest route to "every tenant terminal"
-   * without a container.
+   * A single tenant without a search client, so it is terminal from its first attempt and stays
+   * that way — the shortest route to "every tenant terminal" without a container.
    */
   private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
       final boolean holdsStartup) {
@@ -318,10 +325,13 @@ class SearchEngineSchemaInitializerTest {
   private SearchEngineSchemaInitializer terminallyMisconfiguredInitializer(
       final boolean holdsStartup, final Predicate<String> recovering) {
     final PhysicalTenantResolver resolver = tenants(camunda -> {}, Map.of());
-    final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
-    configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
     return new SearchEngineSchemaInitializer(
-        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup, recovering);
+        configsFor(resolver),
+        descriptorsFor(resolver),
+        Map.of(),
+        new SimpleMeterRegistry(),
+        holdsStartup,
+        recovering);
   }
 
   /**
