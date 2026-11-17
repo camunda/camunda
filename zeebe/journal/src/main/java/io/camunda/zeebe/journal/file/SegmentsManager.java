@@ -94,6 +94,9 @@ final class SegmentsManager implements AutoCloseable {
       deleteQueuedSegmentsNow();
     } catch (final RuntimeException e) {
       LOG.warn("{} - Failed to delete compacted segments on close", name, e);
+      // the files stay on disk, and the next start loads them again
+      segmentsToDelete.forEach(Segment::close);
+      segmentsToDelete.clear();
     }
     segments
         .values()
@@ -235,20 +238,20 @@ final class SegmentsManager implements AutoCloseable {
     if (!segmentsToDelete.isEmpty()) {
       // file deletion is slow, and appends and readers wait for the journal lock
       pendingDeletion =
-          pendingDeletion.thenRunAsync(this::tryDeleteQueuedSegments, deletionExecutor);
+          pendingDeletion
+              .thenRunAsync(this::deleteQueuedSegments, deletionExecutor)
+              // a failed stage must not skip the later stages
+              .exceptionally(this::onDeletionFailed);
     }
   }
 
-  private void tryDeleteQueuedSegments() {
-    try {
-      deleteQueuedSegments();
-    } catch (final RuntimeException e) {
-      LOG.error(
-          "{} - Failed to delete segment {}. The next compaction tries again.",
-          name,
-          segmentsToDelete.peek(),
-          e);
-    }
+  private @Nullable Void onDeletionFailed(final Throwable error) {
+    LOG.error(
+        "{} - Failed to delete segment {}. The next compaction tries again.",
+        name,
+        segmentsToDelete.peek(),
+        error);
+    return null;
   }
 
   private void deleteQueuedSegments() {

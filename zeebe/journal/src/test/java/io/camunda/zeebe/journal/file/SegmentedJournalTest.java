@@ -55,6 +55,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -675,6 +676,36 @@ class SegmentedJournalTest {
     journal = openJournal(2);
     assertThat(journal.getFirstIndex()).isEqualTo(7);
     assertThat(journal.getLastIndex()).isEqualTo(8);
+  }
+
+  @Test
+  void shouldDeleteSegmentsAfterRejectedDeletion() {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    final AtomicBoolean rejectNext = new AtomicBoolean(true);
+    journal =
+        openJournal(
+            2,
+            task -> {
+              if (rejectNext.getAndSet(false)) {
+                throw new RejectedExecutionException("rejected");
+              }
+              deletions.add(task);
+            });
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.deleteUntil(5);
+
+    // when
+    journal.deleteUntil(5);
+    deletions.poll().run();
+
+    // then
+    assertThat(directory.resolve("data"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-1.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"));
   }
 
   @Test
