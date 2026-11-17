@@ -24,14 +24,25 @@ package io.atomix.raft;
  * @param configurationVersion an opaque version that the leader passes to its {@link
  *     JoinAdmission}, for example the version of the joiner's view of the cluster membership; 0 if
  *     unknown
+ * @param emptyStartProbeTerm if not negative, the member joins with an empty log and keeps the
+ *     empty-start guard until it caught up with a leader of at least this term: until then it
+ *     grants no votes and starts no election. It is the highest term that the voters reported
+ *     before the join.
  */
-public record JoinOptions(long incarnation, long configurationVersion) {
+public record JoinOptions(long incarnation, long configurationVersion, long emptyStartProbeTerm) {
 
   public static JoinOptions withIncarnation(final long incarnation) {
-    return new JoinOptions(incarnation, 0);
+    return new JoinOptions(incarnation, 0, -1);
   }
 
   public JoinOptions withConfigurationVersion(final long configurationVersion) {
-    return new JoinOptions(incarnation, configurationVersion);
+    return new JoinOptions(incarnation, configurationVersion, emptyStartProbeTerm);
+  }
+
+  public JoinOptions withEmptyStartGuard(final long probeTerm) {
+    if (probeTerm < 0) {
+      throw new IllegalArgumentException("probeTerm must not be negative");
+    }
+    return new JoinOptions(incarnation, configurationVersion, probeTerm);
   }
 }

@@ -916,4 +916,122 @@ final class SystemPartitionRaftTest {
       assertThat(memberTypes(leader)).containsEntry(a1, Type.ACTIVE);
     }
   }
+
+  @Nested
+  final class EmptyStartGuard {
+
+    private static boolean guarded(final RaftServer server) {
+      return server.isEmptyStartGuardActive().orTimeout(5, TimeUnit.SECONDS).join();
+    }
+
+    private List<RaftServer> bootstrapTwoVoters() {
+      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE);
+      final var m1 = createServer(id1, id2, id3);
+      final var m2 = createServer(id2, id1, id3);
+      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      return List.of(m1, m2);
+    }
+
+    @Test
+    void shouldReleaseGuardOnceCaughtUpWithCurrentLeader() {
+      // given
+      final var cluster = bootstrapTwoVoters();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var index = appendEntry(leader);
+      final var m3 = createServer(id3, id1, id2);
+
+      // when
+      m3.join(
+              Type.PASSIVE,
+              List.of(id1, id2),
+              JoinOptions.withIncarnation(3).withEmptyStartGuard(leader.getTerm()))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+
+      // then
+      Awaitility.await("guard is released").untilAsserted(() -> assertThat(guarded(m3)).isFalse());
+      assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(index);
+    }
+
+    @Test
+    void shouldNotGrantPollsWhileGuarded() {
+      // given - the probe saw a higher term than any current leader has
+      final var cluster = bootstrapTwoVoters();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var m3 = createServer(id3, id1, id2);
+      m3.join(
+              Type.PASSIVE,
+              List.of(id1, id2),
+              JoinOptions.withIncarnation(3).withEmptyStartGuard(leader.getTerm() + 100))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      appendEntry(leader);
+
+      // when - a candidate with an up-to-date log asks for a vote
+      final var protocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+      final var response =
+          protocol
+              .poll(
+                  id3,
+                  PollRequest.builder()
+                      .withTerm(leader.getTerm())
+                      .withCandidate(leader.getContext().getCluster().getLocalMember().memberId())
+                      .withLastLogIndex(Long.MAX_VALUE / 2)
+                      .withLastLogTerm(leader.getTerm())
+                      .build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(guarded(m3)).isTrue();
+      assertThat(response.accepted()).isFalse();
+    }
+
+    @Test
+    void shouldNotHelpElectLeaderWhileGuarded() throws IOException {
+      // given - three voters, member 3 lost its disk and joins again with the guard
+      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
+      final var m1 = createServer(id1, id2, id3);
+      final var m2 = createServer(id2, id1, id3);
+      final var m3 = createServer(id3, id1, id2);
+      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      Awaitility.await("member 1 is the leader")
+          .until(
+              () -> {
+                final var leader = awaitLeader(m1, m2, m3);
+                if (leader != m1) {
+                  leader.stepDown().join();
+                  return false;
+                }
+                return true;
+              });
+      appendEntry(m1);
+      m3.shutdown().join();
+      servers.remove(m3);
+      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
+      final var rejoined = createServer(id3, id1, id2);
+      rejoined
+          .join(
+              Type.PASSIVE,
+              List.of(id1, id2),
+              JoinOptions.withIncarnation(33).withEmptyStartGuard(m1.getTerm() + 100))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      Awaitility.await("rejoined member stays a voter")
+          .untilAsserted(() -> assertThat(rejoined.getRole()).isEqualTo(Role.FOLLOWER));
+
+      // when - the leader goes down; member 2 needs the vote of member 3
+      m1.shutdown().join();
+
+      // then - no leader is elected while member 3 is guarded
+      Awaitility.await("no leader while guarded")
+          .during(Duration.ofSeconds(3))
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(leaderOf(m2, rejoined)).isEmpty());
+    }
+  }
 }

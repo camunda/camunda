@@ -133,6 +133,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Set<FencedListener> fencedListeners = new CopyOnWriteArraySet<>();
   private boolean fenced;
   private volatile JoinAdmission joinAdmission = JoinAdmission.ADMIT_ALL;
+  private EmptyStartGuard emptyStartGuard;
   protected final RaftStorage storage;
   private final RaftElectionConfig electionConfig;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
@@ -448,6 +449,42 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return fenced;
   }
 
+  /**
+   * Activates the empty-start guard, see {@link EmptyStartGuard}: the member grants no polls or
+   * votes and starts no election until it has caught up with a leader of at least {@code
+   * probeTerm}.
+   */
+  public void activateEmptyStartGuard(final long probeTerm) {
+    checkThread();
+    LOGGER.info("Activating the empty-start guard with probe term {}", probeTerm);
+    emptyStartGuard = new EmptyStartGuard(probeTerm);
+  }
+
+  public boolean isEmptyStartGuardActive() {
+    return emptyStartGuard != null && emptyStartGuard.isActive();
+  }
+
+  /**
+   * Called for each append request of the current leader, see {@link EmptyStartGuard}.
+   *
+   * @param leaderTerm the term of the leader
+   * @param leaderCommitIndex the commit index of the leader
+   */
+  public void onAppendFromLeader(final long leaderTerm, final long leaderCommitIndex) {
+    if (emptyStartGuard != null
+        && leaderTerm == term
+        && emptyStartGuard.onAppendFromLeader(leaderTerm, leaderCommitIndex, commitIndex)) {
+      onEmptyStartGuardReleased();
+    }
+  }
+
+  private void onEmptyStartGuardReleased() {
+    LOGGER.info(
+        "Releasing the empty-start guard (probe term {}) at commit index {}",
+        emptyStartGuard.probeTerm(),
+        commitIndex);
+  }
+
   public JoinAdmission getJoinAdmission() {
     return joinAdmission;
   }
@@ -663,6 +700,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       raftLog.setCommitIndex(commitIndex);
       this.commitIndex = commitIndex;
+      if (emptyStartGuard != null && emptyStartGuard.onCommit(commitIndex)) {
+        onEmptyStartGuardReleased();
+      }
       final var clusterConfig = cluster.getConfiguration();
       if (clusterConfig != null) {
         final long configurationIndex = clusterConfig.index();
@@ -807,6 +847,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     if (fenced && role != Role.INACTIVE) {
       LOGGER.debug("Not transitioning to {}, the local member is fenced", role);
+      return;
+    }
+
+    if (role == Role.CANDIDATE && isEmptyStartGuardActive()) {
+      LOGGER.debug("Not transitioning to {}, the empty-start guard is active", role);
       return;
     }
 

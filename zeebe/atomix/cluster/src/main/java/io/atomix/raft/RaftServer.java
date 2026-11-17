@@ -383,6 +383,12 @@ public interface RaftServer {
   void setJoinAdmission(JoinAdmission joinAdmission);
 
   /**
+   * @return true while the empty-start guard of a join is active, see {@link
+   *     JoinOptions#emptyStartProbeTerm()}
+   */
+  CompletableFuture<Boolean> isEmptyStartGuardActive();
+
+  /**
    * Adds a listener that is notified when the local member is fenced, see {@link FencedListener}.
    */
   void addFencedListener(FencedListener listener);

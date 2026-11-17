@@ -163,7 +163,14 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   public CompletableFuture<Void> join(
       final Type type, final Collection<MemberId> cluster, final JoinOptions options) {
     // The thread context runs tasks in order, so the join runs with the new incarnation.
-    raft.getThreadContext().execute(() -> localMember.setIncarnation(options.incarnation()));
+    raft.getThreadContext()
+        .execute(
+            () -> {
+              localMember.setIncarnation(options.incarnation());
+              if (options.emptyStartProbeTerm() >= 0) {
+                raft.activateEmptyStartGuard(options.emptyStartProbeTerm());
+              }
+            });
     return join(type, cluster, options.configurationVersion());
   }
 

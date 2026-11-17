@@ -418,6 +418,7 @@ public class PassiveRole extends InactiveRole {
       // snapshot replication, so we must abort it to avoid waiting forever.
       abortPendingSnapshots();
     }
+    raft.onAppendFromLeader(request.term(), request.commitIndex());
     return handleAppend(request);
   }
 
@@ -447,6 +448,14 @@ public class PassiveRole extends InactiveRole {
 
   /** Handles a poll request. */
   protected PollResponse handlePoll(final PollRequest request) {
+    if (raft.isEmptyStartGuardActive()) {
+      log.debug("Rejected {}: the empty-start guard is active", request);
+      return PollResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withAccepted(false)
+          .build();
+    }
     // If the request term is not as great as the current context term then don't
     // vote for the candidate. We want to vote for candidates that are at least
     // as up to date as us.
@@ -521,6 +530,14 @@ public class PassiveRole extends InactiveRole {
 
   /** Handles a vote request. */
   protected VoteResponse handleVote(final VoteRequest request) {
+    if (raft.isEmptyStartGuardActive()) {
+      log.debug("Rejected {}: the empty-start guard is active", request);
+      return VoteResponse.builder()
+          .withStatus(RaftResponse.Status.OK)
+          .withTerm(raft.getTerm())
+          .withVoted(false)
+          .build();
+    }
     // If the request term is not as great as the current context term then don't
     // vote for the candidate. We want to vote for candidates that are at least
     // as up to date as us.

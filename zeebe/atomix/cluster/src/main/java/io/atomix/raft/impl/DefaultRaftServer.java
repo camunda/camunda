@@ -126,6 +126,12 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<Boolean> isEmptyStartGuardActive() {
+    return CompletableFuture.supplyAsync(
+        context::isEmptyStartGuardActive, context.getThreadContext());
+  }
+
+  @Override
   public void setJoinAdmission(final JoinAdmission joinAdmission) {
     context.setJoinAdmission(joinAdmission);
   }
