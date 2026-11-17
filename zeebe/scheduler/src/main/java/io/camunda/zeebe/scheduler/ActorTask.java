@@ -597,9 +597,7 @@ public class ActorTask {
       startingFuture.completeExceptionally(error);
     }
 
-    if (previousPhase != ActorLifecyclePhase.CLOSED) {
-      closeFuture.completeExceptionally(error);
-    }
+    completeExceptionallyIfPending(closeFuture, error);
 
     discardNextJobs();
     actor.onActorFailed();
