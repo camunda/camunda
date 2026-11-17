@@ -20,11 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
-<<<<<<< HEAD
-=======
-import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.tls.TlsContexts;
->>>>>>> 35c287c0 (feat: support mTLS client certificates in the Java client and Spring starter)
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.net.URI;
