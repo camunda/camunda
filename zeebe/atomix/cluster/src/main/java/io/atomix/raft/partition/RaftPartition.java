@@ -35,6 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -100,6 +101,22 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         .contains(managementService.getMembershipService().getLocalMember().id())) {
       initServer(managementService, snapshotStore);
       return server.bootstrap().thenApply(v -> this);
+    }
+    return CompletableFuture.completedFuture(this);
+  }
+
+  /**
+   * Bootstraps a partition with typed members, so that only some members are voters. Does nothing
+   * if the local member is not one of the given members. See {@link
+   * io.atomix.raft.RaftServer#bootstrap(Map)}.
+   */
+  public CompletableFuture<RaftPartition> bootstrap(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore,
+      final Map<MemberId, RaftMember.Type> members) {
+    if (members.containsKey(managementService.getMembershipService().getLocalMember().id())) {
+      initServer(managementService, snapshotStore);
+      return server.bootstrap(members).thenApply(v -> this);
     }
     return CompletableFuture.completedFuture(this);
   }

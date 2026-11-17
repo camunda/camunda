@@ -98,6 +98,11 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<RaftServer> bootstrap(final Map<MemberId, Type> members) {
+    return start(() -> cluster().bootstrap(members));
+  }
+
+  @Override
   public CompletableFuture<RaftServer> join(final Type type, final Collection<MemberId> cluster) {
     return start(() -> cluster().join(type, cluster));
   }

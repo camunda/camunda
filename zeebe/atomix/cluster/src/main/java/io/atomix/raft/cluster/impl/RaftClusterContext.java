@@ -74,6 +74,30 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> bootstrap(final Collection<MemberId> cluster) {
+    // An untyped bootstrap makes every member a voter, the local member included even if it is not
+    // part of the given members.
+    final var members = new HashMap<MemberId, Type>();
+    cluster.forEach(member -> members.put(member, Type.ACTIVE));
+    members.put(localMember.memberId(), Type.ACTIVE);
+    return bootstrap(members);
+  }
+
+  @Override
+  public CompletableFuture<Void> bootstrap(final Map<MemberId, Type> cluster) {
+    final var localType = cluster.get(localMember.memberId());
+    if (localType == null || localType == Type.INACTIVE) {
+      return CompletableFuture.failedFuture(
+          new IllegalArgumentException(
+              "Cannot bootstrap with members %s: the local member %s must be a member that is not %s"
+                  .formatted(cluster, localMember.memberId(), Type.INACTIVE)));
+    }
+    if (!cluster.containsValue(Type.ACTIVE)) {
+      return CompletableFuture.failedFuture(
+          new IllegalArgumentException(
+              "Cannot bootstrap with members %s: at least one member must be %s"
+                  .formatted(cluster, Type.ACTIVE)));
+    }
+    final var members = Map.copyOf(cluster);
     final var bootstrapFuture = new CompletableFuture<Void>();
     raft.getThreadContext()
         .execute(
@@ -86,7 +110,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               reloadStoredConfiguration();
               reloadConfigurationFromLog();
               if (configuration == null) {
-                createInitialConfig(cluster);
+                createInitialConfig(members);
               }
               raft.transition(localMember.getType());
               bootstrapFuture.complete(null);
@@ -128,23 +152,24 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return configuration != null ? configuration.allMembers() : null;
   }
 
-  private void createInitialConfig(final Collection<MemberId> cluster) {
-    localMember.setType(Type.ACTIVE);
+  private void createInitialConfig(final Map<MemberId, Type> members) {
+    localMember.setType(members.get(localMember.memberId()));
 
-    // Create a set of active members.
-    final Set<RaftMember> activeMembers =
-        cluster.stream()
-            .filter(m -> !m.equals(localMember.memberId()))
-            .map(m -> new DefaultRaftMember(m, Type.ACTIVE, localMember.getLastUpdated()))
+    final Set<RaftMember> initialMembers =
+        members.entrySet().stream()
+            .filter(m -> !m.getKey().equals(localMember.memberId()))
+            .map(
+                m ->
+                    (RaftMember)
+                        new DefaultRaftMember(
+                            m.getKey(), m.getValue(), localMember.getLastUpdated()))
             .collect(Collectors.toSet());
-
-    // Add the local member to the set of active members.
-    activeMembers.add(localMember);
+    initialMembers.add(localMember);
 
     // Create a new configuration and store it on disk to ensure the cluster can fall back to the
-    // configuration.
+    // configuration. The types are part of the stored configuration, so a restart keeps them.
     final var initialConfiguration =
-        new Configuration(0, 0, localMember.getLastUpdated().toEpochMilli(), activeMembers);
+        new Configuration(0, 0, localMember.getLastUpdated().toEpochMilli(), initialMembers);
     configure(initialConfiguration);
     commitCurrentConfiguration();
   }

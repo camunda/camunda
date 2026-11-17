@@ -20,6 +20,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -134,6 +135,21 @@ public interface RaftCluster {
    * @return A completable future to be completed once the cluster has been bootstrapped.
    */
   CompletableFuture<Void> bootstrap(Collection<MemberId> cluster);
+
+  /**
+   * Bootstraps the cluster with typed members. Unlike {@link #bootstrap(Collection)}, which makes
+   * every member {@link RaftMember.Type#ACTIVE}, the initial configuration uses the given types, so
+   * that only some members are voters. The local member must be part of the map, and at least one
+   * member must be {@link RaftMember.Type#ACTIVE}. As for an untyped bootstrap, all members must be
+   * bootstrapped with the same map.
+   *
+   * <p>The types only apply to the initial configuration: a server that already has a stored or
+   * logged configuration starts with it.
+   *
+   * @param members the members of the initial configuration with their types
+   * @return A completable future to be completed once the cluster has been bootstrapped.
+   */
+  CompletableFuture<Void> bootstrap(Map<MemberId, RaftMember.Type> members);
 
   /**
    * Joins the cluster as an {@link RaftMember.Type#ACTIVE} member.

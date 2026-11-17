@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,12 +107,25 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> bootstrap() {
+    return bootstrap(server -> server.bootstrap(partition.members()));
+  }
+
+  /**
+   * Bootstraps the partition with typed members, so that only some members are voters. See {@link
+   * RaftServer#bootstrap(Map)}.
+   */
+  public CompletableFuture<RaftPartitionServer> bootstrap(final Map<MemberId, Type> members) {
+    return bootstrap(server -> server.bootstrap(members));
+  }
+
+  private CompletableFuture<RaftPartitionServer> bootstrap(
+      final Function<RaftServer, CompletableFuture<RaftServer>> bootstrapper) {
     final RaftStartupMetrics raftStartupMetrics =
         new RaftStartupMetrics(partition.name(), meterRegistry);
     LOGGER.info("Server bootstrapping partition {}", partition.id());
     final long bootstrapStartTime = System.currentTimeMillis();
-    return server
-        .bootstrap(partition.members())
+    return bootstrapper
+        .apply(server)
         .whenComplete(
             (r, e) -> {
               if (e == null) {

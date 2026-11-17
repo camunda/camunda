@@ -260,6 +260,15 @@ public interface RaftServer {
   CompletableFuture<RaftServer> bootstrap(Collection<MemberId> cluster);
 
   /**
+   * Bootstraps the cluster with typed members, see {@link
+   * io.atomix.raft.cluster.RaftCluster#bootstrap(Map)}.
+   *
+   * @param members the members of the initial configuration with their types
+   * @return A completable future to be completed once the cluster has been bootstrapped.
+   */
+  CompletableFuture<RaftServer> bootstrap(Map<MemberId, Type> members);
+
+  /**
    * Bootstraps the cluster using the provided cluster configuration.
    *
    * <p>Bootstrapping the cluster results in a new cluster being formed with the provided
