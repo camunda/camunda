@@ -769,6 +769,27 @@ jobs:
               --title "test: stabilize flaky \"${title}\" (${VERSION})" \
               --body-file "$RUNNER_TEMP/pr-body.md" --label flaky-test-fix)
             echo "Opened ${pr_url}"
+
+            # A failure-free pass is a proven fix, so it gets the reviewer hold
+            # that keeps close-stale-fix-prs off it; it waits for a human rather
+            # than being swept the next night. A best-effort PR (every cell at
+            # MIN_PASS_RATE and up MIN_IMPROVEMENT_PP, but still failing
+            # sometimes) is NOT proven and deliberately gets no hold: it goes on
+            # the daily clock, and the ledger re-picks the test later. Stamping
+            # every PR would make the label mean "a bot opened this" instead of
+            # "this works".
+            #
+            # Gated on the score's own verdict, NOT on `rate >= 100`: rate is
+            # rounded to one decimal, so at the supported ceiling of 30 shards x
+            # 70 repeats a single failure in 2100 runs reads as 100.0% and would
+            # buy an indefinite hold for a test that is still flaky. `green` is
+            # pooled failures == 0 and no blocked cell, i.e. every planned run
+            # passed in every cell.
+            best_score="$o/flaky-score-${BEST}/score.json"
+            if [[ "$(jq -r '.verdict // ""' "$best_score")" == "green" ]]; then
+              gh pr edit "$pr_url" --repo "$REPO" --add-label do-not-close
+              echo "Held: ${BEST} is green, do-not-close applied"
+            fi
           elif [[ "$branch_exists" == "true" ]]; then
             gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
             echo "Deleted ${BRANCH}: ${REASON}"
@@ -1775,6 +1796,37 @@ jobs:
           } >> "${RUNNER_TEMP}/pr-body.md"
           gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file "${RUNNER_TEMP}/pr-body.md" >/dev/null \
             || echo "::warning::could not note the unmeasured head on the PR"
+
+          # The hold the decide job may have applied asserts that the measured
+          # commit was green, and this push moved the head past that
+          # measurement. Leaving it would exempt an unmeasured head from
+          # close-stale-fix-prs indefinitely, so give it up for the same reason
+          # a best-effort PR never gets one: it is no longer proven.
+          #
+          # Only ours, though. A reviewer can apply the same label while this
+          # round is running — it takes minutes — and removing their override
+          # would hand their PR to the next sweep, branch deletion included. So
+          # release it only when the last application was this agent's own. No
+          # event to attribute it to means it is not provably ours: keep it.
+          # --slurp, because --paginate alone runs --jq once PER PAGE: the
+          # filter would emit one line per page and the last page carries no
+          # labeled event, so reading the last line loses the actor. --slurp
+          # hands jq every page at once, and `.[][]` flattens them back to
+          # events. Same pattern as .github/scripts/nightly-fix-reopen.sh.
+          applier=$(gh api --paginate --slurp "repos/${REPO}/issues/${PR_NUMBER}/timeline" \
+            --jq '[.[][] | select(.event == "labeled" and .label.name == "do-not-close")][-1].actor.login // ""' \
+            2>/dev/null)
+          # GitHub spells an App actor `qa-processes[bot]` here and `app/qa-processes` elsewhere.
+          owner=$(printf '%s' "$applier" | tr '[:upper:]' '[:lower:]' | sed -e 's#^app/##' -e 's#\[bot\]$##')
+          if [ -z "$applier" ]; then
+            echo "do-not-close was not set on #${PR_NUMBER} -- nothing to release."
+          elif [ "$owner" != "qa-processes" ]; then
+            echo "Hold kept: do-not-close was applied by ${applier}, not by this agent."
+          elif gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label do-not-close >/dev/null 2>&1; then
+            echo "Hold released: ${PUSHED} was not measured."
+          else
+            echo "::warning::could not release do-not-close on #${PR_NUMBER}"
+          fi
 
       - name: Summarize the round
         if: always()
