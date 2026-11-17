@@ -1,6 +1,11 @@
 ---
 # Default values for the Connectors preview environment
 
+# Seeds a process with more running instances than the data layer's default count cap
+seed:
+  enabled: true
+  instanceCount: 10500
+
 # Global values
 global:
 

@@ -1,0 +1,117 @@
+{{- if .Values.seed.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seed-process-instances
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+data:
+  order-fulfillment.bpmn: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+      <bpmn:process id="order-fulfillment" name="Order Fulfillment" isExecutable="true">
+        <bpmn:startEvent id="start" name="Order received"/>
+        <bpmn:userTask id="review" name="Review order"><bpmn:extensionElements><zeebe:userTask/></bpmn:extensionElements></bpmn:userTask>
+        <bpmn:endEvent id="end" name="Order fulfilled"/>
+        <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="review"/>
+        <bpmn:sequenceFlow id="f2" sourceRef="review" targetRef="end"/>
+      </bpmn:process>
+      <bpmndi:BPMNDiagram id="d"><bpmndi:BPMNPlane id="p" bpmnElement="order-fulfillment"/></bpmndi:BPMNDiagram>
+    </bpmn:definitions>
+  seed.sh: |
+    #!/bin/sh
+    set -u
+    API="http://orchestration:8080/orchestration/v2"
+    TOKEN_URL="https://{{ include "ingress.domain" . }}/auth/realms/camunda-platform/protocol/openid-connect/token"
+    TARGET="{{ .Values.seed.instanceCount }}"
+    BATCH=500
+
+    fetch_token() {
+      curl -s -X POST "$TOKEN_URL" \
+        -d grant_type=client_credentials \
+        -d client_id=orchestration \
+        -d "client_secret=$CLIENT_SECRET" \
+        | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
+    }
+
+    export TOKEN
+    TOKEN=$(fetch_token)
+    [ -n "$TOKEN" ] || { echo "could not get a token from $TOKEN_URL"; exit 1; }
+
+    echo "waiting for the orchestration cluster"
+    i=0
+    until [ "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$API/topology")" = "200" ]; do
+      i=$((i + 1))
+      [ "$i" -le 60 ] || { echo "orchestration cluster not ready"; exit 1; }
+      sleep 5
+    done
+
+    existing=$(curl -s -X POST "$API/process-instances/search" \
+      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+      -d '{"filter":{"processDefinitionId":"order-fulfillment"},"page":{"limit":1}}')
+    case "$existing" in
+      *'"hasMoreTotalItems":true'*) echo "already seeded, nothing to do"; exit 0 ;;
+    esac
+
+    curl -sf -X POST "$API/deployments" -H "Authorization: Bearer $TOKEN" \
+      -F "resources=@/seed/order-fulfillment.bpmn" > /dev/null || { echo "deployment failed"; exit 1; }
+    echo "deployed order-fulfillment"
+
+    created=0
+    while [ "$created" -lt "$TARGET" ]; do
+      TOKEN=$(fetch_token)
+      seq "$BATCH" | xargs -P 16 -I{} curl -s -o /dev/null \
+        -X POST "$API/process-instances" \
+        -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+        -d '{"processDefinitionId":"order-fulfillment"}'
+      created=$((created + BATCH))
+      echo "created about $created of $TARGET instances"
+    done
+    echo "done"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-process-instances
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: dockerhub-registry
+      containers:
+      - name: seed
+        image: curlimages/curl:8.11.1
+        command: ["sh", "/seed/seed.sh"]
+        env:
+        - name: CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.preview.secrets.name }}
+              key: identity-orchestration-client-token
+        volumeMounts:
+        - name: seed
+          mountPath: /seed
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+      volumes:
+      - name: seed
+        configMap:
+          name: seed-process-instances
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: previews
+        operator: Exists
+        effect: NoSchedule
+{{- end }}
