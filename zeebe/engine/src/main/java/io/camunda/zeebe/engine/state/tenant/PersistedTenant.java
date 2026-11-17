@@ -8,26 +8,29 @@
 package io.camunda.zeebe.engine.state.tenant;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class PersistedTenant extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class PersistedTenant extends MsgpackBufferValue<PersistedTenant> implements DbValue {
 
-  private final LongProperty tenantKeyProp = new LongProperty("tenantKey");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId");
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty descriptionProp = new StringProperty("description", "");
-
-  public PersistedTenant() {
-    super(4);
-    declareProperty(tenantKeyProp);
-    declareProperty(tenantIdProp);
-    declareProperty(nameProp);
-    declareProperty(descriptionProp);
-  }
+  final RequiredLong tenantKey = new RequiredLong();
+  @Nullable DirectBuffer tenantId;
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer description = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public PersistedTenant copy() {
     final var copy = new PersistedTenant();
@@ -41,7 +44,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @return the tenant key as a long value
    */
   public long getTenantKey() {
-    return tenantKeyProp.getValue();
+    return tenantKey.get();
   }
 
   /**
@@ -51,7 +54,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @return the current PersistedTenant instance
    */
   public PersistedTenant setTenantKey(final long tenantKey) {
-    tenantKeyProp.setValue(tenantKey);
+    this.tenantKey.set(tenantKey);
     return this;
   }
 
@@ -61,7 +64,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @return the tenant ID as a string
    */
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(tenantId, "tenantId"));
   }
 
   /**
@@ -71,7 +74,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @return the current PersistedTenant instance
    */
   public PersistedTenant setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
@@ -81,7 +84,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @return the name of the tenant as a string
    */
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(name);
   }
 
   /**
@@ -91,16 +94,16 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @return the current PersistedTenant instance
    */
   public PersistedTenant setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   public String getDescription() {
-    return BufferUtil.bufferAsString(descriptionProp.getValue());
+    return BufferUtil.bufferAsString(description);
   }
 
   public PersistedTenant setDescription(final String description) {
-    descriptionProp.setValue(description);
+    this.description = BufferUtil.wrapString(description);
     return this;
   }
 
@@ -112,9 +115,19 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @param tenantRecord the TenantRecord from which to copy the data
    */
   public void from(final TenantRecord tenantRecord) {
-    tenantKeyProp.setValue(tenantRecord.getTenantKey());
-    tenantIdProp.setValue(tenantRecord.getTenantId());
-    nameProp.setValue(tenantRecord.getName());
-    descriptionProp.setValue(tenantRecord.getDescription());
+    tenantKey.set(tenantRecord.getTenantKey());
+    tenantId = BufferUtil.wrapString(tenantRecord.getTenantId());
+    name = BufferUtil.wrapString(tenantRecord.getName());
+    description = BufferUtil.wrapString(tenantRecord.getDescription());
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedTenant> codec() {
+    return PersistedTenantCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedTenant> ops() {
+    return PersistedTenantOps.INSTANCE;
   }
 }

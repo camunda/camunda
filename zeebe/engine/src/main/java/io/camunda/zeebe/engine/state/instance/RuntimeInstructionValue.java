@@ -8,38 +8,50 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class RuntimeInstructionValue extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class RuntimeInstructionValue extends MsgpackBufferValue<RuntimeInstructionValue>
+    implements DbValue {
 
-  private final StringProperty afterElementIdProp = new StringProperty("afterElementId", "");
-  private final EnumProperty<RuntimeInstructionType> typeProp =
-      new EnumProperty<>(
-          "type", RuntimeInstructionType.class, RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
-
-  public RuntimeInstructionValue() {
-    super(2);
-    declareProperty(afterElementIdProp);
-    declareProperty(typeProp);
-  }
+  DirectBuffer afterElementId = Decoding.EMPTY;
+  RuntimeInstructionType type = RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public String getAfterElementId() {
-    return BufferUtil.bufferAsString(afterElementIdProp.getValue());
+    return BufferUtil.bufferAsString(afterElementId);
   }
 
   public void setAfterElementId(final String afterElementId) {
-    afterElementIdProp.setValue(afterElementId);
+    this.afterElementId = BufferUtil.wrapString(afterElementId);
   }
 
   public RuntimeInstructionType getType() {
-    return typeProp.getValue();
+    return type;
   }
 
   public void setType(final RuntimeInstructionType type) {
-    typeProp.setValue(type);
+    this.type = type;
+  }
+
+  @Override
+  protected MsgpackCodec<RuntimeInstructionValue> codec() {
+    return RuntimeInstructionValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<RuntimeInstructionValue> ops() {
+    return RuntimeInstructionValueOps.INSTANCE;
   }
 }

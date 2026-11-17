@@ -10,119 +10,125 @@ package io.camunda.zeebe.engine.state.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class PersistedDecisionRequirements extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class PersistedDecisionRequirements
+    extends MsgpackBufferValue<PersistedDecisionRequirements>
     implements DbValue, ProjectionOf<DecisionRequirementsRecord, PersistedDecisionRequirements> {
 
-  private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId");
-  private final StringProperty decisionRequirementsNameProp =
-      new StringProperty("decisionRequirementsName");
-  private final IntegerProperty decisionRequirementsVersionProp =
-      new IntegerProperty("decisionRequirementsVersion");
-  private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey");
+  @Nullable DirectBuffer decisionRequirementsId;
+  @Nullable DirectBuffer decisionRequirementsName;
+  final RequiredInt decisionRequirementsVersion = new RequiredInt();
+  final RequiredLong decisionRequirementsKey = new RequiredLong();
+  @Nullable DirectBuffer resourceName;
 
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer checksum;
 
-  public PersistedDecisionRequirements() {
-    super(9);
-    declareProperty(decisionRequirementsIdProp)
-        .declareProperty(decisionRequirementsNameProp)
-        .declareProperty(decisionRequirementsVersionProp)
-        .declareProperty(decisionRequirementsKeyProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp)
-        .declareProperty(resourceProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer resource;
+
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public PersistedDecisionRequirements wrap(final DecisionRequirementsRecord record) {
-    decisionRequirementsIdProp.setValue(record.getDecisionRequirementsIdBuffer());
-    decisionRequirementsNameProp.setValue(record.getDecisionRequirementsNameBuffer());
-    decisionRequirementsVersionProp.setValue(record.getDecisionRequirementsVersion());
-    decisionRequirementsKeyProp.setValue(record.getDecisionRequirementsKey());
-    resourceNameProp.setValue(record.getResourceNameBuffer());
-    checksumProp.setValue(record.getChecksumBuffer());
-    resourceProp.setValue(record.getResourceBuffer());
-    tenantIdProp.setValue(record.getTenantId());
-    deploymentKeyProp.setValue(record.getDeploymentKey());
+    decisionRequirementsId = record.getDecisionRequirementsIdBuffer();
+    decisionRequirementsName = record.getDecisionRequirementsNameBuffer();
+    decisionRequirementsVersion.set(record.getDecisionRequirementsVersion());
+    decisionRequirementsKey.set(record.getDecisionRequirementsKey());
+    resourceName = record.getResourceNameBuffer();
+    checksum = record.getChecksumBuffer();
+    resource = record.getResourceBuffer();
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    deploymentKey = record.getDeploymentKey();
     return this;
   }
 
   public PersistedDecisionRequirements copy() {
     final var copy = new PersistedDecisionRequirements();
-    copy.decisionRequirementsIdProp.setValue(BufferUtil.cloneBuffer(getDecisionRequirementsId()));
-    copy.decisionRequirementsNameProp.setValue(
-        BufferUtil.cloneBuffer(getDecisionRequirementsName()));
-    copy.decisionRequirementsVersionProp.setValue(getDecisionRequirementsVersion());
-    copy.decisionRequirementsKeyProp.setValue(getDecisionRequirementsKey());
-    copy.resourceNameProp.setValue(BufferUtil.cloneBuffer(getResourceName()));
-    copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
-    copy.resourceProp.setValue(BufferUtil.cloneBuffer(getResource()));
-    copy.tenantIdProp.setValue(getTenantId());
-    copy.deploymentKeyProp.setValue(getDeploymentKey());
+    copy.decisionRequirementsId = BufferUtil.cloneBuffer(getDecisionRequirementsId());
+    copy.decisionRequirementsName = BufferUtil.cloneBuffer(getDecisionRequirementsName());
+    copy.decisionRequirementsVersion.set(getDecisionRequirementsVersion());
+    copy.decisionRequirementsKey.set(getDecisionRequirementsKey());
+    copy.resourceName = BufferUtil.cloneBuffer(getResourceName());
+    copy.checksum = BufferUtil.cloneBuffer(getChecksum());
+    copy.resource = BufferUtil.cloneBuffer(getResource());
+    copy.tenantId = BufferUtil.wrapString(getTenantId());
+    copy.deploymentKey = getDeploymentKey();
     return copy;
   }
 
   public DirectBuffer getDecisionRequirementsId() {
-    return decisionRequirementsIdProp.getValue();
+    return Decoding.required(decisionRequirementsId, "decisionRequirementsId");
   }
 
   public DirectBuffer getDecisionRequirementsName() {
-    return decisionRequirementsNameProp.getValue();
+    return Decoding.required(decisionRequirementsName, "decisionRequirementsName");
   }
 
   public int getDecisionRequirementsVersion() {
-    return decisionRequirementsVersionProp.getValue();
+    return decisionRequirementsVersion.get();
   }
 
   public long getDecisionRequirementsKey() {
-    return decisionRequirementsKeyProp.getValue();
+    return decisionRequirementsKey.get();
   }
 
   public DirectBuffer getResourceName() {
-    return resourceNameProp.getValue();
+    return Decoding.required(resourceName, "resourceName");
   }
 
   public DirectBuffer getChecksum() {
-    return checksumProp.getValue();
+    return Decoding.required(checksum, "checksum");
   }
 
   public DirectBuffer getResource() {
-    return resourceProp.getValue();
+    return Decoding.required(resource, "resource");
   }
 
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public void setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
   }
 
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public void setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedDecisionRequirements> codec() {
+    return PersistedDecisionRequirementsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedDecisionRequirements> ops() {
+    return PersistedDecisionRequirementsOps.INSTANCE;
   }
 }

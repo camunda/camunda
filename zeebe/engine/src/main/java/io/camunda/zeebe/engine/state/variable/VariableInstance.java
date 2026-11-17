@@ -8,36 +8,57 @@
 package io.camunda.zeebe.engine.state.variable;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class VariableInstance extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class VariableInstance extends MsgpackBufferValue<VariableInstance>
+    implements DbValue {
 
-  private final LongProperty keyProp = new LongProperty("key");
-  private final BinaryProperty valueProp = new BinaryProperty("value");
+  final RequiredLong key = new RequiredLong();
 
-  public VariableInstance() {
-    super(2);
-    declareProperty(keyProp).declareProperty(valueProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer value;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getKey() {
-    return keyProp.getValue();
+    return key.get();
   }
 
   public VariableInstance setKey(final long key) {
-    keyProp.setValue(key);
+    this.key.set(key);
     return this;
   }
 
   public VariableInstance setValue(final DirectBuffer value, final int offset, final int length) {
-    valueProp.setValue(value, offset, length);
+    this.value = new UnsafeBuffer(value, offset, length);
     return this;
   }
 
   public DirectBuffer getValue() {
-    return valueProp.getValue();
+    return Decoding.required(value, "value");
+  }
+
+  @Override
+  protected MsgpackCodec<VariableInstance> codec() {
+    return VariableInstanceCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<VariableInstance> ops() {
+    return VariableInstanceOps.INSTANCE;
   }
 }

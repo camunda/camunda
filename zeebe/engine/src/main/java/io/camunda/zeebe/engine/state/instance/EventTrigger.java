@@ -8,30 +8,37 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class EventTrigger extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class EventTrigger extends MsgpackBufferValue<EventTrigger> implements DbValue {
 
-  private final StringProperty elementIdProp = new StringProperty("elementId");
-  private final BinaryProperty variablesProp = new BinaryProperty("variables");
-  private final LongProperty eventKeyProp = new LongProperty("eventKey");
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  @Nullable DirectBuffer elementId;
 
-  public EventTrigger() {
-    super(4);
-    declareProperty(elementIdProp)
-        .declareProperty(variablesProp)
-        .declareProperty(eventKeyProp)
-        .declareProperty(processInstanceKeyProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer variables;
+
+  final RequiredLong eventKey = new RequiredLong();
+  long processInstanceKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public EventTrigger() {}
 
   // Copies over the previous event
   public EventTrigger(final EventTrigger other) {
@@ -44,38 +51,38 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   public DirectBuffer getElementId() {
-    return elementIdProp.getValue();
+    return Decoding.required(elementId, "elementId");
   }
 
   public EventTrigger setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = elementId;
     return this;
   }
 
   public DirectBuffer getVariables() {
-    return variablesProp.getValue();
+    return Decoding.required(variables, "variables");
   }
 
   public EventTrigger setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = variables;
     return this;
   }
 
   public long getEventKey() {
-    return eventKeyProp.getValue();
+    return eventKey.get();
   }
 
   public EventTrigger setEventKey(final long eventKey) {
-    eventKeyProp.setValue(eventKey);
+    this.eventKey.set(eventKey);
     return this;
   }
 
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public EventTrigger setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
@@ -95,5 +102,15 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
     final EventTrigger that = (EventTrigger) o;
     return BufferUtil.equals(getElementId(), that.getElementId())
         && BufferUtil.equals(getVariables(), that.getVariables());
+  }
+
+  @Override
+  protected MsgpackCodec<EventTrigger> codec() {
+    return EventTriggerCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<EventTrigger> ops() {
+    return EventTriggerOps.INSTANCE;
   }
 }

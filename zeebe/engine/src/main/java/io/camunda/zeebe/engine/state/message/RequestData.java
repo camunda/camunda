@@ -8,19 +8,23 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
 
-public class RequestData extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class RequestData extends MsgpackBufferValue<RequestData> implements DbValue {
 
-  private final LongProperty requestIdProp = new LongProperty("requestId");
-  private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId");
-
-  public RequestData() {
-    super(2);
-    declareProperty(requestIdProp).declareProperty(requestStreamIdProp);
-  }
+  final RequiredLong requestId = new RequiredLong();
+  final RequiredInt requestStreamId = new RequiredInt();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public RequestData copy() {
     final var copy = new RequestData();
@@ -30,20 +34,30 @@ public class RequestData extends UnpackedObject implements DbValue {
   }
 
   public Long getRequestId() {
-    return requestIdProp.getValue();
+    return requestId.get();
   }
 
   public RequestData setRequestIdProp(final long requestId) {
-    requestIdProp.setValue(requestId);
+    this.requestId.set(requestId);
     return this;
   }
 
   public Integer getRequestStreamId() {
-    return requestStreamIdProp.getValue();
+    return requestStreamId.get();
   }
 
   public RequestData setRequestStreamIdProp(final int requestStreamId) {
-    requestStreamIdProp.setValue(requestStreamId);
+    this.requestStreamId.set(requestStreamId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<RequestData> codec() {
+    return RequestDataCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<RequestData> ops() {
+    return RequestDataOps.INSTANCE;
   }
 }

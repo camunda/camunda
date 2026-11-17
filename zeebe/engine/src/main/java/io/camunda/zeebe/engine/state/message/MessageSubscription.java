@@ -8,50 +8,61 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import org.jspecify.annotations.NullMarked;
 
-public final class MessageSubscription extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageSubscription extends MsgpackBufferValue<MessageSubscription>
+    implements DbValue {
 
-  private final ObjectProperty<MessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new MessageSubscriptionRecord());
-
-  private final LongProperty keyProp = new LongProperty("key");
-
-  private final BooleanProperty correlatingProp = new BooleanProperty("correlating", false);
-
-  public MessageSubscription() {
-    super(3);
-    declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
-  }
+  final MessageSubscriptionRecord record = new MessageSubscriptionRecord();
+  final RequiredLong key = new RequiredLong();
+  boolean correlating = false;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public MessageSubscriptionRecord getRecord() {
-    return recordProp.getValue();
+    return record;
   }
 
   public MessageSubscription setRecord(final MessageSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
+    this.record.wrap(record);
     return this;
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key.get();
   }
 
   public MessageSubscription setKey(final long key) {
-    keyProp.setValue(key);
+    this.key.set(key);
     return this;
   }
 
   public boolean isCorrelating() {
-    return correlatingProp.getValue();
+    return correlating;
   }
 
   public MessageSubscription setCorrelating(final boolean correlating) {
-    correlatingProp.setValue(correlating);
+    this.correlating = correlating;
     return this;
+  }
+
+  // The nested record reads its values from the input buffer, so the input is copied first.
+  @Override
+  protected MsgpackCodec<MessageSubscription> codec() {
+    return MessageSubscriptionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageSubscription> ops() {
+    return MessageSubscriptionOps.INSTANCE;
   }
 }

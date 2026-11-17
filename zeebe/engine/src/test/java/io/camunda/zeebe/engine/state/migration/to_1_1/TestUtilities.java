@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_1_1;
 
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 class TestUtilities {
@@ -17,7 +15,8 @@ class TestUtilities {
       final long key, final long elementInstanceKey) {
     final var subscription = new LegacyMessageSubscription();
 
-    final MessageSubscriptionRecord record = createMessageSubscriptionRecord(elementInstanceKey);
+    final io.camunda.zeebe.protocol.impl.record.value.message.legacy.MessageSubscriptionRecord
+        record = createMessageSubscriptionRecord(elementInstanceKey);
 
     subscription.setRecord(record);
     subscription.setKey(key);
@@ -25,8 +24,10 @@ class TestUtilities {
     return subscription;
   }
 
-  static MessageSubscriptionRecord createMessageSubscriptionRecord(final long elementInstanceKey) {
-    final var record = new MessageSubscriptionRecord();
+  static io.camunda.zeebe.protocol.impl.record.value.message.legacy.MessageSubscriptionRecord
+      createMessageSubscriptionRecord(final long elementInstanceKey) {
+    final var record =
+        new io.camunda.zeebe.protocol.impl.record.value.message.legacy.MessageSubscriptionRecord();
     record.setProcessInstanceKey(0);
     record.setElementInstanceKey(elementInstanceKey);
     record.setMessageName(BufferUtil.wrapString("messageName"));
@@ -37,8 +38,9 @@ class TestUtilities {
       final long key, final long elementInstanceKey) {
     final var subscription = new LegacyProcessMessageSubscription();
 
-    final ProcessMessageSubscriptionRecord record =
-        createProcessMessageSubscriptionRecord(elementInstanceKey);
+    final io.camunda.zeebe.protocol.impl.record.value.message.legacy
+            .ProcessMessageSubscriptionRecord
+        record = createProcessMessageSubscriptionRecord(elementInstanceKey);
 
     subscription.setRecord(record);
     subscription.setKey(key);
@@ -46,10 +48,12 @@ class TestUtilities {
     return subscription;
   }
 
-  static ProcessMessageSubscriptionRecord createProcessMessageSubscriptionRecord(
-      final long elementInstanceKey) {
+  static io.camunda.zeebe.protocol.impl.record.value.message.legacy.ProcessMessageSubscriptionRecord
+      createProcessMessageSubscriptionRecord(final long elementInstanceKey) {
 
-    final var record = new ProcessMessageSubscriptionRecord();
+    final var record =
+        new io.camunda.zeebe.protocol.impl.record.value.message.legacy
+            .ProcessMessageSubscriptionRecord();
     record.setProcessInstanceKey(0);
     record.setSubscriptionPartitionId(0);
     record.setElementInstanceKey(elementInstanceKey);

@@ -8,25 +8,38 @@
 package io.camunda.zeebe.engine.state.agentdefinition;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
+import org.jspecify.annotations.NullMarked;
 
-public final class DbAgentDefinition extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class DbAgentDefinition extends MsgpackBufferValue<DbAgentDefinition>
+    implements DbValue {
 
-  private final ObjectProperty<AgentDefinitionRecord> recordProp =
-      new ObjectProperty<>("agentDefinitionRecord", new AgentDefinitionRecord());
-
-  public DbAgentDefinition() {
-    super(1);
-    declareProperty(recordProp);
-  }
+  final AgentDefinitionRecord agentDefinitionRecord = new AgentDefinitionRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public AgentDefinitionRecord getRecord() {
-    return recordProp.getValue();
+    return agentDefinitionRecord;
   }
 
   public void setRecord(final AgentDefinitionRecord record) {
-    recordProp.getValue().copyFrom(record);
+    agentDefinitionRecord.copyFrom(record);
+  }
+
+  @Override
+  protected MsgpackCodec<DbAgentDefinition> codec() {
+    return DbAgentDefinitionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DbAgentDefinition> ops() {
+    return DbAgentDefinitionOps.INSTANCE;
   }
 }

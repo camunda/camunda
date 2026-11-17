@@ -8,73 +8,85 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import org.jspecify.annotations.NullMarked;
 
-public final class ProcessMessageSubscription extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class ProcessMessageSubscription extends MsgpackBufferValue<ProcessMessageSubscription>
+    implements DbValue {
 
-  private final ObjectProperty<ProcessMessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new ProcessMessageSubscriptionRecord());
-  private final EnumProperty<State> stateProp =
-      new EnumProperty<>("state", State.class, State.STATE_OPENING);
-  private final LongProperty keyProp = new LongProperty("key");
-
-  public ProcessMessageSubscription() {
-    super(3);
-    declareProperty(recordProp).declareProperty(stateProp).declareProperty(keyProp);
-  }
+  final ProcessMessageSubscriptionRecord record = new ProcessMessageSubscriptionRecord();
+  State state = State.STATE_OPENING;
+  final RequiredLong key = new RequiredLong();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public ProcessMessageSubscriptionRecord getRecord() {
-    return recordProp.getValue();
+    return record;
   }
 
   public ProcessMessageSubscription setRecord(final ProcessMessageSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
+    this.record.wrap(record);
     return this;
   }
 
   public boolean isOpening() {
-    return stateProp.getValue() == State.STATE_OPENING;
+    return state == State.STATE_OPENING;
   }
 
   public ProcessMessageSubscription setOpening() {
-    stateProp.setValue(State.STATE_OPENING);
+    state = State.STATE_OPENING;
     return this;
   }
 
   public ProcessMessageSubscription setOpened() {
-    stateProp.setValue(State.STATE_OPENED);
+    state = State.STATE_OPENED;
     return this;
   }
 
   public boolean isClosing() {
-    return stateProp.getValue() == State.STATE_CLOSING;
+    return state == State.STATE_CLOSING;
   }
 
   public ProcessMessageSubscription setClosing() {
-    stateProp.setValue(State.STATE_CLOSING);
+    state = State.STATE_CLOSING;
     return this;
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key.get();
   }
 
   public ProcessMessageSubscription setKey(final long key) {
-    keyProp.setValue(key);
+    this.key.set(key);
     return this;
   }
 
   public State getState() {
-    return stateProp.getValue();
+    return state;
   }
 
   public State setState(final State state) {
-    stateProp.setValue(state);
+    this.state = state;
     return state;
+  }
+
+  // The nested record reads its values from the input buffer, so the input is copied first.
+  @Override
+  protected MsgpackCodec<ProcessMessageSubscription> codec() {
+    return ProcessMessageSubscriptionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessMessageSubscription> ops() {
+    return ProcessMessageSubscriptionOps.INSTANCE;
   }
 
   public enum State {

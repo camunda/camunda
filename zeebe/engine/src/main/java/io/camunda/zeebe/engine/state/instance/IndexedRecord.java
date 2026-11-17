@@ -8,60 +8,56 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class IndexedRecord extends UnpackedObject implements DbValue {
-  // Static StringValue keys for property names
-  private static final StringValue KEY_KEY = new StringValue("key");
-  private static final StringValue STATE_KEY = new StringValue("state");
-  private static final StringValue PROCESS_INSTANCE_RECORD_KEY =
-      new StringValue("processInstanceRecord");
+@MsgpackPojo
+@NullMarked
+public final class IndexedRecord extends MsgpackBufferValue<IndexedRecord> implements DbValue {
 
-  private final LongProperty keyProp = new LongProperty(KEY_KEY, 0L);
-  private final EnumProperty<ProcessInstanceIntent> stateProp =
-      new EnumProperty<>(STATE_KEY, ProcessInstanceIntent.class);
-  private final ObjectProperty<ProcessInstanceRecord> valueProp =
-      new ObjectProperty<>(PROCESS_INSTANCE_RECORD_KEY, new ProcessInstanceRecord());
+  long key = 0L;
+  @Nullable ProcessInstanceIntent state;
+  final ProcessInstanceRecord processInstanceRecord = new ProcessInstanceRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  IndexedRecord() {
-    super(3);
-    declareProperty(keyProp).declareProperty(stateProp).declareProperty(valueProp);
-  }
+  IndexedRecord() {}
 
   public IndexedRecord(
       final long key,
       final ProcessInstanceIntent instanceState,
       final ProcessInstanceRecord record) {
-    this();
-    keyProp.setValue(key);
-    stateProp.setValue(instanceState);
+    this.key = key;
+    state = instanceState;
     setValue(record);
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key;
   }
 
   public IndexedRecord setKey(final long key) {
-    keyProp.setValue(key);
+    this.key = key;
     return this;
   }
 
   public ProcessInstanceIntent getState() {
-    return stateProp.getValue();
+    return Decoding.required(state, "state");
   }
 
   public IndexedRecord setState(final ProcessInstanceIntent state) {
-    stateProp.setValue(state);
+    this.state = state;
     return this;
   }
 
@@ -70,7 +66,7 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
   }
 
   public ProcessInstanceRecord getValue() {
-    return valueProp.getValue();
+    return processInstanceRecord;
   }
 
   public IndexedRecord setValue(final ProcessInstanceRecord value) {
@@ -79,7 +75,7 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
     valueBuffer.wrap(new byte[encodedLength]);
 
     value.write(valueBuffer, 0);
-    valueProp.getValue().wrap(valueBuffer, 0, encodedLength);
+    processInstanceRecord.wrap(valueBuffer, 0, encodedLength);
 
     return this;
   }
@@ -90,5 +86,15 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
     final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);
     super.wrap(mutableBuffer, 0, length);
+  }
+
+  @Override
+  protected MsgpackCodec<IndexedRecord> codec() {
+    return IndexedRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<IndexedRecord> ops() {
+    return IndexedRecordOps.INSTANCE;
   }
 }

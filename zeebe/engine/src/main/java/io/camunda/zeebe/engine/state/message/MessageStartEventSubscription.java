@@ -8,37 +8,53 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import org.jspecify.annotations.NullMarked;
 
-public class MessageStartEventSubscription extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageStartEventSubscription
+    extends MsgpackBufferValue<MessageStartEventSubscription> implements DbValue {
 
-  private final ObjectProperty<MessageStartEventSubscriptionRecord> recordProp =
-      new ObjectProperty<>(
-          "messageStartEventSubscriptionRecord", new MessageStartEventSubscriptionRecord());
-  private final LongProperty keyProp = new LongProperty("key");
+  @MsgpackProperty("messageStartEventSubscriptionRecord")
+  final MessageStartEventSubscriptionRecord record = new MessageStartEventSubscriptionRecord();
 
-  public MessageStartEventSubscription() {
-    super(2);
-    declareProperty(recordProp).declareProperty(keyProp);
-  }
+  final RequiredLong key = new RequiredLong();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public MessageStartEventSubscriptionRecord getRecord() {
-    return recordProp.getValue();
+    return record;
   }
 
   public void setRecord(final MessageStartEventSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
+    this.record.wrap(record);
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key.get();
   }
 
   public MessageStartEventSubscription setKey(final long key) {
-    keyProp.setValue(key);
+    this.key.set(key);
     return this;
+  }
+
+  // The nested record reads its values from the input buffer, so the input is copied first.
+  @Override
+  protected MsgpackCodec<MessageStartEventSubscription> codec() {
+    return MessageStartEventSubscriptionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageStartEventSubscription> ops() {
+    return MessageStartEventSubscriptionOps.INSTANCE;
   }
 }

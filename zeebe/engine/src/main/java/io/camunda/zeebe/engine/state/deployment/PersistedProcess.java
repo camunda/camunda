@@ -11,56 +11,49 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformerSlot;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord.TransformerVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.ProjectionOf;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class PersistedProcess extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class PersistedProcess extends MsgpackBufferValue<PersistedProcess>
     implements DbValue, ProjectionOf<Tuple<ProcessRecord, Long>, PersistedProcess> {
   private static final long NO_DEPLOYMENT_KEY = -1L;
-  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
-  private final LongProperty keyProp = new LongProperty("key", -1L);
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource");
-  private final EnumProperty<PersistedProcessState> stateProp =
-      new EnumProperty<>("state", PersistedProcessState.class, PersistedProcessState.ACTIVE);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp =
-      new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final ArrayProperty<TransformerVersion> transformerVersionsProp =
-      new ArrayProperty<>("transformerVersions", TransformerVersion::new);
-  private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
 
-  public PersistedProcess() {
-    super(11);
-    declareProperty(versionProp)
-        .declareProperty(keyProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(resourceProp)
-        .declareProperty(stateProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp)
-        .declareProperty(transformerVersionsProp)
-        .declareProperty(deleteHistoryProp);
-  }
+  int version = -1;
+  long key = -1L;
+  @Nullable DirectBuffer bpmnProcessId;
+  @Nullable DirectBuffer resourceName;
+
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer resource;
+
+  PersistedProcessState state = PersistedProcessState.ACTIVE;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = NO_DEPLOYMENT_KEY;
+  DirectBuffer versionTag = Decoding.EMPTY;
+  final List<TransformerVersion> transformerVersions = new ArrayList<>();
+  boolean deleteHistory = false;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public PersistedProcess wrap(final Tuple<ProcessRecord, Long> source) {
@@ -70,23 +63,24 @@ public final class PersistedProcess extends UnpackedObject
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
     reset();
-    bpmnProcessIdProp.setValue(processRecord.getBpmnProcessIdBuffer());
-    resourceNameProp.setValue(processRecord.getResourceNameBuffer());
-    resourceProp.setValue(processRecord.getResourceBuffer());
+    bpmnProcessId = processRecord.getBpmnProcessIdBuffer();
+    resourceName = processRecord.getResourceNameBuffer();
+    resource = processRecord.getResourceBuffer();
 
-    versionProp.setValue(processRecord.getVersion());
-    keyProp.setValue(processDefinitionKey);
-    tenantIdProp.setValue(processRecord.getTenantId());
-    deploymentKeyProp.setValue(processRecord.getDeploymentKey());
-    versionTagProp.setValue(processRecord.getVersionTag());
+    version = processRecord.getVersion();
+    key = processDefinitionKey;
+    tenantId = BufferUtil.wrapString(processRecord.getTenantId());
+    deploymentKey = processRecord.getDeploymentKey();
+    versionTag = BufferUtil.wrapString(processRecord.getVersionTag());
 
     processRecord
         .getTransformerVersions()
         .forEach(
-            (slotId, version) -> {
-              final var entry = transformerVersionsProp.add();
+            (slotId, slotVersion) -> {
+              final var entry = new TransformerVersion();
               entry.setSlotId(slotId);
-              entry.setVersion(version);
+              entry.setVersion(slotVersion);
+              transformerVersions.add(entry);
             });
   }
 
@@ -96,7 +90,7 @@ public final class PersistedProcess extends UnpackedObject
    */
   public Map<TransformerSlot, Integer> getTransformerVersions() {
     final Map<TransformerSlot, Integer> result = new EnumMap<>(TransformerSlot.class);
-    for (final TransformerVersion entry : transformerVersionsProp) {
+    for (final TransformerVersion entry : transformerVersions) {
       final TransformerSlot slot = TransformerSlot.fromId(entry.getSlotId());
       result.put(slot, entry.getVersion());
     }
@@ -104,67 +98,77 @@ public final class PersistedProcess extends UnpackedObject
   }
 
   public int getVersion() {
-    return versionProp.getValue();
+    return version;
   }
 
   public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
+    return bufferAsString(versionTag);
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key;
   }
 
   public DirectBuffer getBpmnProcessId() {
-    return bpmnProcessIdProp.getValue();
+    return Decoding.required(bpmnProcessId, "bpmnProcessId");
   }
 
   public DirectBuffer getResourceName() {
-    return resourceNameProp.getValue();
+    return Decoding.required(resourceName, "resourceName");
   }
 
   public DirectBuffer getResource() {
-    return resourceProp.getValue();
+    return Decoding.required(resource, "resource");
   }
 
   public PersistedProcessState getState() {
-    return stateProp.getValue();
+    return state;
   }
 
   public PersistedProcess setState(final PersistedProcessState state) {
-    stateProp.setValue(state);
+    this.state = state;
     return this;
   }
 
   public boolean isDeleteHistory() {
-    return deleteHistoryProp.getValue();
+    return deleteHistory;
   }
 
   public PersistedProcess setDeleteHistory(final boolean deleteHistory) {
-    deleteHistoryProp.setValue(deleteHistory);
+    this.deleteHistory = deleteHistory;
     return this;
   }
 
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public PersistedProcess setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   public boolean hasDeploymentKey() {
-    return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
+    return deploymentKey != NO_DEPLOYMENT_KEY;
   }
 
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public PersistedProcess setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedProcess> codec() {
+    return PersistedProcessCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedProcess> ops() {
+    return PersistedProcessOps.INSTANCE;
   }
 
   public enum PersistedProcessState {

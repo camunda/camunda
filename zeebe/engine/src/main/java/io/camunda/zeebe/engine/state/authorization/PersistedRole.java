@@ -8,55 +8,58 @@
 package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class PersistedRole extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class PersistedRole extends MsgpackBufferValue<PersistedRole> implements DbValue {
 
-  private final LongProperty roleKeyProp = new LongProperty("roleKey");
-  private final StringProperty roleIdProp = new StringProperty("roleId");
-  private final StringProperty descriptionProp = new StringProperty("description");
-  private final StringProperty nameProp = new StringProperty("name");
-
-  public PersistedRole() {
-    super(4);
-    declareProperty(roleKeyProp)
-        .declareProperty(roleIdProp)
-        .declareProperty(nameProp)
-        .declareProperty(descriptionProp);
-  }
+  final RequiredLong roleKey = new RequiredLong();
+  @Nullable DirectBuffer roleId;
+  @Nullable DirectBuffer name;
+  @Nullable DirectBuffer description;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getRoleKey() {
-    return roleKeyProp.getValue();
+    return roleKey.get();
   }
 
   public PersistedRole setRoleKey(final long roleKey) {
-    roleKeyProp.setValue(roleKey);
+    this.roleKey.set(roleKey);
     return this;
   }
 
   public String getRoleId() {
-    return BufferUtil.bufferAsString(roleIdProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(roleId, "roleId"));
   }
 
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(name, "name"));
   }
 
   public PersistedRole setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   public String getDescription() {
-    return BufferUtil.bufferAsString(descriptionProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(description, "description"));
   }
 
   public PersistedRole setDescription(final String description) {
-    descriptionProp.setValue(description);
+    this.description = BufferUtil.wrapString(description);
     return this;
   }
 
@@ -74,9 +77,19 @@ public class PersistedRole extends UnpackedObject implements DbValue {
    * @param roleRecord the RoleRecord from which to copy the data
    */
   public void from(final RoleRecord roleRecord) {
-    roleKeyProp.setValue(roleRecord.getRoleKey());
-    roleIdProp.setValue(roleRecord.getRoleId());
-    nameProp.setValue(roleRecord.getName());
-    descriptionProp.setValue(roleRecord.getDescription());
+    roleKey.set(roleRecord.getRoleKey());
+    roleId = BufferUtil.wrapString(roleRecord.getRoleId());
+    name = BufferUtil.wrapString(roleRecord.getName());
+    description = BufferUtil.wrapString(roleRecord.getDescription());
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedRole> codec() {
+    return PersistedRoleCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedRole> ops() {
+    return PersistedRoleOps.INSTANCE;
   }
 }

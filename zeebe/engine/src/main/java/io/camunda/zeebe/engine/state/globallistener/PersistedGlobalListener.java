@@ -8,25 +8,38 @@
 package io.camunda.zeebe.engine.state.globallistener;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import org.jspecify.annotations.NullMarked;
 
-public final class PersistedGlobalListener extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class PersistedGlobalListener extends MsgpackBufferValue<PersistedGlobalListener>
+    implements DbValue {
 
-  private final ObjectProperty<GlobalListenerRecord> globalListener =
-      new ObjectProperty<>("globalListener", new GlobalListenerRecord());
-
-  public PersistedGlobalListener() {
-    super(1);
-    declareProperty(globalListener);
-  }
+  final GlobalListenerRecord globalListener = new GlobalListenerRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public GlobalListenerRecord getGlobalListener() {
-    return globalListener.getValue();
+    return globalListener;
   }
 
   public void setGlobalListener(final GlobalListenerRecord record) {
-    globalListener.getValue().copyFrom(record);
+    globalListener.copyFrom(record);
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedGlobalListener> codec() {
+    return PersistedGlobalListenerCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedGlobalListener> ops() {
+    return PersistedGlobalListenerOps.INSTANCE;
   }
 }

@@ -8,9 +8,13 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Value of the cross-partition message-start dedup column family on {@code P_B}. Stores the
@@ -19,44 +23,51 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
  * messageDeadline} (= {@code publishTime + ttl} on {@code P_K}) and is never updated; the read path
  * treats {@code deletionDeadline <= now} as a miss and the sweeper deletes such rows.
  */
-public final class MessageStartProcessInstanceDedupEntry extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageStartProcessInstanceDedupEntry
+    extends MsgpackBufferValue<MessageStartProcessInstanceDedupEntry> implements DbValue {
 
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final LongProperty deletionDeadlineProp = new LongProperty("deletionDeadline", -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
-
-  public MessageStartProcessInstanceDedupEntry() {
-    super(3);
-    declareProperty(processInstanceKeyProp)
-        .declareProperty(deletionDeadlineProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  long processInstanceKey = -1L;
+  long deletionDeadline = -1L;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public MessageStartProcessInstanceDedupEntry setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public MessageStartProcessInstanceDedupEntry setProcessInstanceKey(
       final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   public long getDeletionDeadline() {
-    return deletionDeadlineProp.getValue();
+    return deletionDeadline;
   }
 
   public MessageStartProcessInstanceDedupEntry setDeletionDeadline(final long deletionDeadline) {
-    deletionDeadlineProp.setValue(deletionDeadline);
+    this.deletionDeadline = deletionDeadline;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<MessageStartProcessInstanceDedupEntry> codec() {
+    return MessageStartProcessInstanceDedupEntryCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageStartProcessInstanceDedupEntry> ops() {
+    return MessageStartProcessInstanceDedupEntryOps.INSTANCE;
   }
 }

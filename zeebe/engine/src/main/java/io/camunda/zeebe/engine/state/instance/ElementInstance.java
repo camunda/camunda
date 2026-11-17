@@ -10,82 +10,46 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class ElementInstance extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class ElementInstance extends MsgpackBufferValue<ElementInstance> implements DbValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue PARENT_KEY = new StringValue("parentKey");
-  private static final StringValue CHILD_COUNT = new StringValue("childCount");
-  private static final StringValue CHILD_ACTIVATED_COUNT = new StringValue("childActivatedCount");
-  private static final StringValue CHILD_COMPLETED_COUNT = new StringValue("childCompletedCount");
-  private static final StringValue CHILD_TERMINATED_COUNT = new StringValue("childTerminatedCount");
-  private static final StringValue JOB_KEY = new StringValue("jobKey");
-  private static final StringValue MULTI_INSTANCE_LOOP_COUNTER =
-      new StringValue("multiInstanceLoopCounter");
-  private static final StringValue INTERRUPTING_ELEMENT_ID =
-      new StringValue("interruptingElementId");
-  private static final StringValue INTERRUPTED_BY_RUNTIME_INSTRUCTION =
-      new StringValue("interruptedByRuntimeInstruction");
-  private static final StringValue CALLED_CHILD_INSTANCE_KEY =
-      new StringValue("calledChildInstanceKey");
-  private static final StringValue ELEMENT_RECORD = new StringValue("elementRecord");
-  private static final StringValue ACTIVE_SEQUENCE_FLOWS = new StringValue("activeSequenceFlows");
-  private static final StringValue ACTIVE_SEQUENCE_FLOW_IDS =
-      new StringValue("activeSequenceFlowIds");
-  private static final StringValue USER_TASK_KEY = new StringValue("userTaskKey");
-  private static final StringValue EXECUTION_LISTENER_INDEX =
-      new StringValue("executionListenerIndex");
-  private static final StringValue TASK_LISTENER_INDICES_RECORD =
-      new StringValue("taskListenerIndicesRecord");
-  private static final StringValue COMPLETION_CONDITION_FULFILLED =
-      new StringValue("completionConditionFulfilled");
-  private static final StringValue PROCESS_DEPTH = new StringValue("processDepth");
-  private static final StringValue AGENT_INSTANCE_KEY = new StringValue("agentInstanceKey");
-  private final LongProperty parentKeyProp = new LongProperty(PARENT_KEY, -1L);
-  private final IntegerProperty childCountProp = new IntegerProperty(CHILD_COUNT, 0);
-  private final IntegerProperty childActivatedCountProp =
-      new IntegerProperty(CHILD_ACTIVATED_COUNT, 0);
-  private final IntegerProperty childCompletedCountProp =
-      new IntegerProperty(CHILD_COMPLETED_COUNT, 0);
-  private final IntegerProperty childTerminatedCountProp =
-      new IntegerProperty(CHILD_TERMINATED_COUNT, 0);
-  private final LongProperty jobKeyProp = new LongProperty(JOB_KEY, 0L);
-  private final IntegerProperty multiInstanceLoopCounterProp =
-      new IntegerProperty(MULTI_INSTANCE_LOOP_COUNTER, 0);
-  private final StringProperty interruptingEventKeyProp =
-      new StringProperty(INTERRUPTING_ELEMENT_ID, "");
-  private final BooleanProperty interruptedByRuntimeInstructionProp =
-      new BooleanProperty(INTERRUPTED_BY_RUNTIME_INSTRUCTION, false);
-  private final LongProperty calledChildInstanceKeyProp =
-      new LongProperty(CALLED_CHILD_INSTANCE_KEY, -1L);
-  private final ObjectProperty<IndexedRecord> recordProp =
-      new ObjectProperty<>(ELEMENT_RECORD, new IndexedRecord());
-  private final IntegerProperty activeSequenceFlowsProp =
-      new IntegerProperty(ACTIVE_SEQUENCE_FLOWS, 0);
-  private final ArrayProperty<StringValue> activeSequenceFlowIdsProp =
-      new ArrayProperty<>(ACTIVE_SEQUENCE_FLOW_IDS, StringValue::new);
-  private final LongProperty userTaskKeyProp = new LongProperty(USER_TASK_KEY, -1L);
-  private final IntegerProperty executionListenerIndexProp =
-      new IntegerProperty(EXECUTION_LISTENER_INDEX, 0);
-  private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
-      new ObjectProperty<>(TASK_LISTENER_INDICES_RECORD, new TaskListenerIndicesRecord());
-  private final IntegerProperty processDepth = new IntegerProperty(PROCESS_DEPTH, 1);
-  private final BooleanProperty completionConditionFulfilledProp =
-      new BooleanProperty(COMPLETION_CONDITION_FULFILLED, false);
-  private final LongProperty agentInstanceKeyProp = new LongProperty(AGENT_INSTANCE_KEY, -1L);
+  long parentKey = -1L;
+  int childCount = 0;
+  int childActivatedCount = 0;
+  int childCompletedCount = 0;
+  int childTerminatedCount = 0;
+  long jobKey = 0L;
+  int multiInstanceLoopCounter = 0;
+  DirectBuffer interruptingElementId = Decoding.EMPTY;
+  long calledChildInstanceKey = -1L;
+  final IndexedRecord elementRecord = new IndexedRecord();
+  int activeSequenceFlows = 0;
+  final List<DirectBuffer> activeSequenceFlowIds = new ArrayList<>();
+  long userTaskKey = -1L;
+  int executionListenerIndex = 0;
+  final TaskListenerIndicesRecord taskListenerIndicesRecord = new TaskListenerIndicesRecord();
+  int processDepth = 1;
+  boolean interruptedByRuntimeInstruction = false;
+  boolean completionConditionFulfilled = false;
+  long agentInstanceKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /**
    * Expresses the current depth of the process instance in the called process tree.
@@ -101,42 +65,21 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    *     or after the property was added that are part of a root process instance created prior to
    *     the property existed, will not have a correct depth.
    */
-  public ElementInstance() {
-    super(19);
-    declareProperty(parentKeyProp)
-        .declareProperty(childCountProp)
-        .declareProperty(childActivatedCountProp)
-        .declareProperty(childCompletedCountProp)
-        .declareProperty(childTerminatedCountProp)
-        .declareProperty(jobKeyProp)
-        .declareProperty(multiInstanceLoopCounterProp)
-        .declareProperty(interruptingEventKeyProp)
-        .declareProperty(calledChildInstanceKeyProp)
-        .declareProperty(recordProp)
-        .declareProperty(activeSequenceFlowsProp)
-        .declareProperty(activeSequenceFlowIdsProp)
-        .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerIndexProp)
-        .declareProperty(taskListenerIndicesRecordProp)
-        .declareProperty(processDepth)
-        .declareProperty(interruptedByRuntimeInstructionProp)
-        .declareProperty(completionConditionFulfilledProp)
-        .declareProperty(agentInstanceKeyProp);
-  }
+  public ElementInstance() {}
 
   public ElementInstance(
       final long key,
-      final ElementInstance parent,
+      final @Nullable ElementInstance parent,
       final ProcessInstanceIntent state,
       final ProcessInstanceRecord value) {
     this();
 
-    recordProp.getValue().setKey(key);
-    recordProp.getValue().setState(state);
-    recordProp.getValue().setValue(value);
+    elementRecord.setKey(key);
+    elementRecord.setState(state);
+    elementRecord.setValue(value);
     if (parent != null) {
-      parentKeyProp.setValue(parent.getKey());
-      parent.childCountProp.increment();
+      parentKey = parent.getKey();
+      parent.childCount++;
     }
   }
 
@@ -146,35 +89,35 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public long getKey() {
-    return recordProp.getValue().getKey();
+    return elementRecord.getKey();
   }
 
   public ProcessInstanceIntent getState() {
-    return recordProp.getValue().getState();
+    return elementRecord.getState();
   }
 
   public void setState(final ProcessInstanceIntent state) {
-    recordProp.getValue().setState(state);
+    elementRecord.setState(state);
   }
 
   public ProcessInstanceRecord getValue() {
-    return recordProp.getValue().getValue();
+    return elementRecord.getValue();
   }
 
   public void setValue(final ProcessInstanceRecord value) {
-    recordProp.getValue().setValue(value);
+    elementRecord.setValue(value);
   }
 
   public long getJobKey() {
-    return jobKeyProp.getValue();
+    return jobKey;
   }
 
   public void setJobKey(final long jobKey) {
-    jobKeyProp.setValue(jobKey);
+    this.jobKey = jobKey;
   }
 
   public void decrementChildCount() {
-    final int childCount = childCountProp.decrement();
+    childCount--;
 
     if (childCount < 0) {
       throw new IllegalStateException(
@@ -199,67 +142,67 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public int getNumberOfActiveElementInstances() {
-    return childCountProp.getValue();
+    return childCount;
   }
 
   public int getNumberOfCompletedElementInstances() {
-    return childCompletedCountProp.getValue();
+    return childCompletedCount;
   }
 
   public int getNumberOfElementInstances() {
-    return childActivatedCountProp.getValue();
+    return childActivatedCount;
   }
 
   public int getNumberOfTerminatedElementInstances() {
-    return childTerminatedCountProp.getValue();
+    return childTerminatedCount;
   }
 
   public void incrementNumberOfCompletedElementInstances() {
-    childCompletedCountProp.increment();
+    childCompletedCount++;
   }
 
   public void incrementNumberOfElementInstances() {
-    childActivatedCountProp.increment();
+    childActivatedCount++;
   }
 
   public void incrementNumberOfTerminatedElementInstances() {
-    childTerminatedCountProp.increment();
+    childTerminatedCount++;
   }
 
   public int getMultiInstanceLoopCounter() {
-    return multiInstanceLoopCounterProp.getValue();
+    return multiInstanceLoopCounter;
   }
 
   public void setMultiInstanceLoopCounter(final int loopCounter) {
-    multiInstanceLoopCounterProp.setValue(loopCounter);
+    multiInstanceLoopCounter = loopCounter;
   }
 
   public void incrementMultiInstanceLoopCounter() {
-    multiInstanceLoopCounterProp.increment();
+    multiInstanceLoopCounter++;
   }
 
   public long getCalledChildInstanceKey() {
-    return calledChildInstanceKeyProp.getValue();
+    return calledChildInstanceKey;
   }
 
   public void setCalledChildInstanceKey(final long calledChildInstanceKey) {
-    calledChildInstanceKeyProp.setValue(calledChildInstanceKey);
+    this.calledChildInstanceKey = calledChildInstanceKey;
   }
 
   public DirectBuffer getInterruptingElementId() {
-    return interruptingEventKeyProp.getValue();
+    return interruptingElementId;
   }
 
   public void setInterruptingElementId(final DirectBuffer elementId) {
-    interruptingEventKeyProp.setValue(elementId);
+    interruptingElementId = elementId;
   }
 
   public boolean isInterruptedByRuntimeInstruction() {
-    return interruptedByRuntimeInstructionProp.getValue();
+    return interruptedByRuntimeInstruction;
   }
 
   public void setInterruptedByRuntimeInstruction() {
-    interruptedByRuntimeInstructionProp.setValue(true);
+    interruptedByRuntimeInstruction = true;
   }
 
   public boolean isInterrupted() {
@@ -267,20 +210,20 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void clearInterruptedState() {
-    interruptingEventKeyProp.setValue("");
+    interruptingElementId = Decoding.EMPTY;
   }
 
   public long getParentKey() {
-    return parentKeyProp.getValue();
+    return parentKey;
   }
 
   public int getActiveSequenceFlows() {
-    return activeSequenceFlowsProp.getValue();
+    return activeSequenceFlows;
   }
 
   public void decrementActiveSequenceFlows() {
     if (getActiveSequenceFlows() > 0) {
-      activeSequenceFlowsProp.decrement();
+      activeSequenceFlows--;
       // This should never happen, but we should fix this in a better way
       // https://github.com/camunda/camunda/issues/9528
       //    if (decrement < 0) {
@@ -293,22 +236,22 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void decrementActiveSequenceFlows(final int amount) {
     final var current = getActiveSequenceFlows();
     if (current > 0) {
-      activeSequenceFlowsProp.setValue(Math.max(0, current - amount));
+      activeSequenceFlows = Math.max(0, current - amount);
     }
   }
 
   public void incrementActiveSequenceFlows() {
-    activeSequenceFlowsProp.increment();
+    activeSequenceFlows++;
   }
 
   public void addActiveSequenceFlowId(final DirectBuffer sequenceFlowId) {
-    activeSequenceFlowIdsProp.add().wrap(sequenceFlowId);
+    activeSequenceFlowIds.add(sequenceFlowId);
   }
 
   public void removeActiveSequenceFlowId(final DirectBuffer sequenceFlowId) {
-    final Iterator<StringValue> iterator = activeSequenceFlowIdsProp.iterator();
+    final Iterator<DirectBuffer> iterator = activeSequenceFlowIds.iterator();
     while (iterator.hasNext()) {
-      if (iterator.next().getValue().equals(sequenceFlowId)) {
+      if (iterator.next().equals(sequenceFlowId)) {
         iterator.remove();
         return;
       }
@@ -316,43 +259,43 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void resetActiveSequenceFlows() {
-    activeSequenceFlowsProp.setValue(0);
+    activeSequenceFlows = 0;
   }
 
   public long getUserTaskKey() {
-    return userTaskKeyProp.getValue();
+    return userTaskKey;
   }
 
   public void setUserTaskKey(final long userTaskKey) {
-    userTaskKeyProp.setValue(userTaskKey);
+    this.userTaskKey = userTaskKey;
   }
 
   public int getExecutionListenerIndex() {
-    return executionListenerIndexProp.getValue();
+    return executionListenerIndex;
   }
 
   public void incrementExecutionListenerIndex() {
-    executionListenerIndexProp.increment();
+    executionListenerIndex++;
   }
 
   public void resetExecutionListenerIndex() {
-    executionListenerIndexProp.reset();
+    executionListenerIndex = 0;
   }
 
   public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    return taskListenerIndicesRecordProp.getValue().getTaskListenerIndex(eventType);
+    return taskListenerIndicesRecord.getTaskListenerIndex(eventType);
   }
 
   public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    taskListenerIndicesRecordProp.getValue().incrementTaskListenerIndex(eventType);
+    taskListenerIndicesRecord.incrementTaskListenerIndex(eventType);
   }
 
   public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    taskListenerIndicesRecordProp.getValue().resetTaskListenerIndex(eventType);
+    taskListenerIndicesRecord.resetTaskListenerIndex(eventType);
   }
 
   public void resetTaskListenerIndices() {
-    taskListenerIndicesRecordProp.getValue().reset();
+    taskListenerIndicesRecord.reset();
   }
 
   /**
@@ -367,30 +310,40 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    * @since 8.6
    */
   public List<DirectBuffer> getActiveSequenceFlowIds() {
-    return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
+    return activeSequenceFlowIds.stream().toList();
   }
 
   public int getProcessDepth() {
-    return processDepth.getValue();
+    return processDepth;
   }
 
   public void setProcessDepth(final int depth) {
-    processDepth.setValue(depth);
+    processDepth = depth;
   }
 
   public boolean isCompletionConditionFulfilled() {
-    return completionConditionFulfilledProp.getValue();
+    return completionConditionFulfilled;
   }
 
   public void setCompletionConditionFulfilled(final boolean fulfilled) {
-    completionConditionFulfilledProp.setValue(fulfilled);
+    completionConditionFulfilled = fulfilled;
   }
 
   public long getAgentInstanceKey() {
-    return agentInstanceKeyProp.getValue();
+    return agentInstanceKey;
   }
 
   public void setAgentInstanceKey(final long agentInstanceKey) {
-    agentInstanceKeyProp.setValue(agentInstanceKey);
+    this.agentInstanceKey = agentInstanceKey;
+  }
+
+  @Override
+  protected MsgpackCodec<ElementInstance> codec() {
+    return ElementInstanceCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ElementInstance> ops() {
+    return ElementInstanceOps.INSTANCE;
   }
 }

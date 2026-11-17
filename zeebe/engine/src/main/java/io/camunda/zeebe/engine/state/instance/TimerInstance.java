@@ -8,111 +8,97 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class TimerInstance extends UnpackedObject implements DbValue, TenantOwned {
+@MsgpackPojo
+@NullMarked
+public final class TimerInstance extends MsgpackBufferValue<TimerInstance>
+    implements DbValue, TenantOwned {
 
   public static final long NO_ELEMENT_INSTANCE = -1L;
 
-  private final StringProperty handlerNodeIdProp = new StringProperty("handlerNodeId", "");
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", 0L);
-  private final LongProperty keyProp = new LongProperty("key", 0L);
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", 0L);
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", 0L);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty dueDateProp = new LongProperty("dueDate", 0L);
-  private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty("rootProcessInstanceKey", NO_ELEMENT_INSTANCE);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final EnumProperty<BpmnElementType> elementTypeProp =
-      new EnumProperty<>(
-          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-
-  public TimerInstance() {
-    super(12);
-    declareProperty(handlerNodeIdProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(keyProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(dueDateProp)
-        .declareProperty(repetitionsProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(elementTypeProp);
-  }
+  DirectBuffer handlerNodeId = Decoding.EMPTY;
+  long processDefinitionKey = 0L;
+  long key = 0L;
+  long elementInstanceKey = 0L;
+  long processInstanceKey = 0L;
+  long dueDate = 0L;
+  int repetitions = 0;
+  DirectBuffer tenantId = wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = NO_ELEMENT_INSTANCE;
+  int storageOrdinal = 0;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  BpmnElementType elementType = BpmnElementType.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   public void setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public long getDueDate() {
-    return dueDateProp.getValue();
+    return dueDate;
   }
 
   public void setDueDate(final long dueDate) {
-    dueDateProp.setValue(dueDate);
+    this.dueDate = dueDate;
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key;
   }
 
   public void setKey(final long key) {
-    keyProp.setValue(key);
+    this.key = key;
   }
 
   public DirectBuffer getHandlerNodeId() {
-    return handlerNodeIdProp.getValue();
+    return handlerNodeId;
   }
 
   public void setHandlerNodeId(final DirectBuffer handlerNodeId) {
-    handlerNodeIdProp.setValue(handlerNodeId);
+    this.handlerNodeId = handlerNodeId;
   }
 
   public int getRepetitions() {
-    return repetitionsProp.getValue();
+    return repetitions;
   }
 
   public void setRepetitions(final int repetitions) {
-    repetitionsProp.setValue(repetitions);
+    this.repetitions = repetitions;
   }
 
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public void setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
   }
 
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public void setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
   }
 
   @Override
@@ -125,47 +111,57 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public TimerInstance setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = wrapString(tenantId);
     return this;
   }
 
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public TimerInstance setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public TimerInstance setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   public TimerInstance setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = wrapString(bpmnProcessId);
     return this;
   }
 
   public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
+    return elementType;
   }
 
   public TimerInstance setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
+    this.elementType = elementType;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<TimerInstance> codec() {
+    return TimerInstanceCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<TimerInstance> ops() {
+    return TimerInstanceOps.INSTANCE;
   }
 }

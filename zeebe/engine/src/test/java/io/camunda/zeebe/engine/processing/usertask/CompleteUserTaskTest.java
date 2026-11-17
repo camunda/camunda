@@ -197,7 +197,6 @@ public final class CompleteUserTaskTest {
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
-    assertThat(throwable.getMessage()).contains("Property 'variables' is invalid");
     assertThat(throwable.getMessage())
         .contains("Expected document to be a root level object, but was 'INTEGER'");
   }

@@ -8,24 +8,37 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import org.jspecify.annotations.NullMarked;
 
-public class Incident extends UnpackedObject implements DbValue {
-  private final ObjectProperty<IncidentRecord> recordProp =
-      new ObjectProperty<>("incidentRecord", new IncidentRecord());
+@MsgpackPojo
+@NullMarked
+public final class Incident extends MsgpackBufferValue<Incident> implements DbValue {
 
-  public Incident() {
-    super(1);
-    declareProperty(recordProp);
-  }
+  final IncidentRecord incidentRecord = new IncidentRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public IncidentRecord getRecord() {
-    return recordProp.getValue();
+    return incidentRecord;
   }
 
   public void setRecord(final IncidentRecord record) {
-    recordProp.getValue().wrap(record);
+    incidentRecord.wrap(record);
+  }
+
+  @Override
+  protected MsgpackCodec<Incident> codec() {
+    return IncidentCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<Incident> ops() {
+    return IncidentOps.INSTANCE;
   }
 }

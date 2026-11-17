@@ -8,25 +8,39 @@
 package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
 
-public final class MigrationTaskState extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class MigrationTaskState extends MsgpackBufferValue<MigrationTaskState>
+    implements DbValue {
 
-  private final EnumProperty<State> stateProp =
-      new EnumProperty<>("state", State.class, State.NOT_STARTED);
+  State state = State.NOT_STARTED;
 
-  public MigrationTaskState() {
-    super(1);
-    declareProperty(stateProp);
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  @Override
+  protected MsgpackCodec<MigrationTaskState> codec() {
+    return MigrationTaskStateCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MigrationTaskState> ops() {
+    return MigrationTaskStateOps.INSTANCE;
   }
 
   public State getState() {
-    return stateProp.getValue();
+    return state;
   }
 
   public MigrationTaskState setState(final State state) {
-    stateProp.setValue(state);
+    this.state = state;
     return this;
   }
 

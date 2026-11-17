@@ -8,30 +8,41 @@
 package io.camunda.zeebe.engine.state.policy;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.jspecify.annotations.NullMarked;
 
 /** A buffered chunk of a policy update, with its policy data. */
+@MsgpackPojo
 @NullMarked
-public final class PersistedPolicyUpdateChunk extends UnpackedObject implements DbValue {
+public final class PersistedPolicyUpdateChunk extends MsgpackBufferValue<PersistedPolicyUpdateChunk>
+    implements DbValue {
 
-  private final ObjectProperty<PolicyUpdateRecord> chunkProp =
-      new ObjectProperty<>("chunk", new PolicyUpdateRecord());
-
-  public PersistedPolicyUpdateChunk() {
-    super(1);
-    declareProperty(chunkProp);
-  }
+  final PolicyUpdateRecord chunk = new PolicyUpdateRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public PolicyUpdateRecord getChunk() {
-    return chunkProp.getValue();
+    return chunk;
   }
 
   public PersistedPolicyUpdateChunk setChunk(final PolicyUpdateRecord chunk) {
-    BufferUtil.copy(chunk, chunkProp.getValue());
+    BufferUtil.copy(chunk, this.chunk);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedPolicyUpdateChunk> codec() {
+    return PersistedPolicyUpdateChunkCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedPolicyUpdateChunk> ops() {
+    return PersistedPolicyUpdateChunkOps.INSTANCE;
   }
 }

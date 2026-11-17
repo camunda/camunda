@@ -9,24 +9,39 @@ package io.camunda.zeebe.engine.state.suspension;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class SuspensionMarkerValue extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class SuspensionMarkerValue extends MsgpackBufferValue<SuspensionMarkerValue>
+    implements DbValue {
 
-  private final EnumProperty<SuspensionState.State> stateProp =
-      new EnumProperty<>("suspensionState", SuspensionState.State.class);
-
-  public SuspensionMarkerValue() {
-    super(1);
-    declareProperty(stateProp);
-  }
+  SuspensionState.@Nullable State suspensionState;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public SuspensionState.State getState() {
-    return stateProp.getValue();
+    return Decoding.required(suspensionState, "suspensionState");
   }
 
   public void setState(final SuspensionState.State state) {
-    stateProp.setValue(state);
+    suspensionState = state;
+  }
+
+  @Override
+  protected MsgpackCodec<SuspensionMarkerValue> codec() {
+    return SuspensionMarkerValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<SuspensionMarkerValue> ops() {
+    return SuspensionMarkerValueOps.INSTANCE;
   }
 }

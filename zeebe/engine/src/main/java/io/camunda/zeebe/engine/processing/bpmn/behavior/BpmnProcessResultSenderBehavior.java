@@ -87,7 +87,7 @@ public final class BpmnProcessResultSenderBehavior {
         .fetchVariables()
         .forEach(
             variable -> {
-              final var variableName = cloneBuffer(variable.getValue());
+              final var variableName = cloneBuffer(variable);
               variablesToCollect.add(variableName);
             });
 

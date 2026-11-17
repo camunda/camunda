@@ -8,37 +8,48 @@
 package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class Permissions extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class Permissions extends MsgpackBufferValue<Permissions> implements DbValue {
   // A map of PermissionType to a List of Strings (resource identifiers)
-  private final DocumentProperty permissions = new DocumentProperty("permissions");
+  @MsgpackProperty(document = true)
+  DirectBuffer permissions = DocumentValue.EMPTY_DOCUMENT;
 
-  public Permissions() {
-    super(1);
-    declareProperty(permissions);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public Map<PermissionType, Set<AuthorizationScope>> getPermissions() {
-    return MsgPackConverter.convertToPermissionMap(permissions.getValue());
+    return MsgPackConverter.convertToPermissionMap(permissions);
   }
 
   public void setPermissions(final Map<PermissionType, Set<AuthorizationScope>> permissions) {
-    this.permissions.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(permissions)));
+    this.permissions =
+        Decoding.document(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(permissions)));
   }
 
   public void removeAuthorizationScopes(
       final PermissionType permissionType, final Set<AuthorizationScope> authorizationScopes) {
     final var permissions = getPermissions();
-    final var totalAuthorizationScopes = permissions.get(permissionType);
+    final var totalAuthorizationScopes = Objects.requireNonNull(permissions.get(permissionType));
     totalAuthorizationScopes.removeAll(authorizationScopes);
 
     if (totalAuthorizationScopes.isEmpty()) {
@@ -55,8 +66,18 @@ public class Permissions extends UnpackedObject implements DbValue {
     setPermissions(permissions);
   }
 
-  @Override
+  // Not an override any more: MsgpackBufferValue has no isEmpty, the callers use this class type.
   public boolean isEmpty() {
     return getPermissions().isEmpty();
+  }
+
+  @Override
+  protected MsgpackCodec<Permissions> codec() {
+    return PermissionsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<Permissions> ops() {
+    return PermissionsOps.INSTANCE;
   }
 }

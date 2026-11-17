@@ -27,7 +27,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -336,7 +335,7 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void activateElementsForStartInstructions(
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
+      final List<ProcessInstanceCreationStartInstruction> startInstructions,
       final DeployedProcess process,
       final ProcessInstanceRecord processInstance) {
 
@@ -349,7 +348,7 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateHasNoneStartEventOrStartInstructions(
       final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+      final List<ProcessInstanceCreationStartInstruction> startInstructions) {
 
     if (process.getNoneStartEvent() != null || !startInstructions.isEmpty()) {
       return VALID;
@@ -361,7 +360,7 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateElementsExist(
       final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+      final List<ProcessInstanceCreationStartInstruction> startInstructions) {
 
     return startInstructions.stream()
         .map(ProcessInstanceCreationStartInstruction::getElementId)
@@ -383,7 +382,7 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+      final List<ProcessInstanceCreationStartInstruction> startInstructions) {
 
     return startInstructions.stream()
         .map(ProcessInstanceCreationStartInstruction::getElementId)
@@ -420,7 +419,7 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateTargetsSupportedElementType(
       final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+      final List<ProcessInstanceCreationStartInstruction> startInstructions) {
 
     return startInstructions.stream()
         .map(
@@ -451,7 +450,7 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateElementNotBelongingToEventBasedGateway(
       final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+      final List<ProcessInstanceCreationStartInstruction> startInstructions) {
 
     return startInstructions.stream()
         .map(ProcessInstanceCreationStartInstruction::getElementId)
@@ -469,7 +468,7 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateRuntimeInstructionAfterElementsExist(
       final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
+      final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
 
     final var unknownIds =
         runtimeInstructions.stream()

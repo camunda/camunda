@@ -8,33 +8,43 @@
 package io.camunda.zeebe.engine.state.multiinstance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class PersistedInputCollection extends UnpackedObject implements DbValue {
-  private static final StringValue INPUT_COLLECTION = new StringValue("inputCollection");
-  private final ArrayProperty<StringValue> inputCollectionProperty =
-      new ArrayProperty<>(INPUT_COLLECTION, StringValue::new);
+@MsgpackPojo
+@NullMarked
+public final class PersistedInputCollection extends MsgpackBufferValue<PersistedInputCollection>
+    implements DbValue {
 
-  public PersistedInputCollection() {
-    super(0);
-    declareProperty(inputCollectionProperty);
-  }
+  final List<DirectBuffer> inputCollection = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public List<DirectBuffer> getInputCollection() {
-    return inputCollectionProperty.stream()
-        .map(element -> BufferUtil.cloneBuffer(element.getValue()))
-        .toList();
+    return inputCollection.stream().map(BufferUtil::cloneBuffer).toList();
   }
 
   public PersistedInputCollection setInputCollection(final List<DirectBuffer> inputCollection) {
-    inputCollectionProperty.reset();
-    inputCollection.forEach(
-        element -> inputCollectionProperty.add().wrap(BufferUtil.cloneBuffer(element)));
+    this.inputCollection.clear();
+    inputCollection.forEach(element -> this.inputCollection.add(BufferUtil.cloneBuffer(element)));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedInputCollection> codec() {
+    return PersistedInputCollectionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedInputCollection> ops() {
+    return PersistedInputCollectionOps.INSTANCE;
   }
 }

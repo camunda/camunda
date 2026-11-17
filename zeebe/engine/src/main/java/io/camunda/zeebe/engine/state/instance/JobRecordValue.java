@@ -8,25 +8,37 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import org.jspecify.annotations.NullMarked;
 
-public class JobRecordValue extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class JobRecordValue extends MsgpackBufferValue<JobRecordValue> implements DbValue {
 
-  private final ObjectProperty<JobRecord> recordProp =
-      new ObjectProperty<>("jobRecord", new JobRecord());
-
-  public JobRecordValue() {
-    super(1);
-    declareProperty(recordProp);
-  }
+  final JobRecord jobRecord = new JobRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public JobRecord getRecord() {
-    return recordProp.getValue();
+    return jobRecord;
   }
 
   public void setRecordWithoutVariables(final JobRecord record) {
-    recordProp.getValue().wrapWithoutVariables(record);
+    jobRecord.wrapWithoutVariables(record);
+  }
+
+  @Override
+  protected MsgpackCodec<JobRecordValue> codec() {
+    return JobRecordValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobRecordValue> ops() {
+    return JobRecordValueOps.INSTANCE;
   }
 }

@@ -8,49 +8,61 @@
 package io.camunda.zeebe.engine.state.policy;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 
 /** The committed policy of a partition that Hub manages. */
+@MsgpackPojo
 @NullMarked
-public final class PersistedPolicy extends UnpackedObject implements DbValue {
+public final class PersistedPolicy extends MsgpackBufferValue<PersistedPolicy> implements DbValue {
 
-  private final StringProperty policyIdProp = new StringProperty("policyId", "");
-  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
-  private final LongProperty seqNoProp = new LongProperty("seqNo", 0);
-
-  public PersistedPolicy() {
-    super(3);
-    declareProperty(policyIdProp).declareProperty(policyVersionProp).declareProperty(seqNoProp);
-  }
+  DirectBuffer policyId = Decoding.EMPTY;
+  long policyVersion = 0;
+  long seqNo = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public String getPolicyId() {
-    return BufferUtil.bufferAsString(policyIdProp.getValue());
+    return BufferUtil.bufferAsString(policyId);
   }
 
   public PersistedPolicy setPolicyId(final String policyId) {
-    policyIdProp.setValue(policyId);
+    this.policyId = BufferUtil.wrapString(policyId);
     return this;
   }
 
   public long getPolicyVersion() {
-    return policyVersionProp.getValue();
+    return policyVersion;
   }
 
   public PersistedPolicy setPolicyVersion(final long policyVersion) {
-    policyVersionProp.setValue(policyVersion);
+    this.policyVersion = policyVersion;
     return this;
   }
 
   public long getSeqNo() {
-    return seqNoProp.getValue();
+    return seqNo;
   }
 
   public PersistedPolicy setSeqNo(final long seqNo) {
-    seqNoProp.setValue(seqNo);
+    this.seqNo = seqNo;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedPolicy> codec() {
+    return PersistedPolicyCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedPolicy> ops() {
+    return PersistedPolicyOps.INSTANCE;
   }
 }

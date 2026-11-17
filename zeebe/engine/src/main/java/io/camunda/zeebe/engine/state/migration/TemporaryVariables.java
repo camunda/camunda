@@ -8,23 +8,43 @@
 package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class TemporaryVariables extends UnpackedObject implements DbValue {
-  private final BinaryProperty valueProp = new BinaryProperty("temporaryVariables");
+@MsgpackPojo
+@NullMarked
+public final class TemporaryVariables extends MsgpackBufferValue<TemporaryVariables>
+    implements DbValue {
 
-  public TemporaryVariables() {
-    super(1);
-    declareProperty(valueProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer temporaryVariables;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public DirectBuffer get() {
-    return valueProp.getValue();
+    return Decoding.required(temporaryVariables, "temporaryVariables");
   }
 
   public void set(final DirectBuffer value) {
-    valueProp.setValue(value);
+    temporaryVariables = value;
+  }
+
+  @Override
+  protected MsgpackCodec<TemporaryVariables> codec() {
+    return TemporaryVariablesCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<TemporaryVariables> ops() {
+    return TemporaryVariablesOps.INSTANCE;
   }
 }

@@ -8,22 +8,38 @@
 package io.camunda.zeebe.engine.state.processing;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
 
-public class LastProcessedPosition extends UnpackedObject implements DbValue {
-  private final LongProperty positionProp = new LongProperty("lastProcessPosition");
+@MsgpackPojo
+@NullMarked
+public final class LastProcessedPosition extends MsgpackBufferValue<LastProcessedPosition>
+    implements DbValue {
+  final RequiredLong lastProcessPosition = new RequiredLong();
 
-  public LastProcessedPosition() {
-    super(1);
-    declareProperty(positionProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void set(final long position) {
-    positionProp.setValue(position);
+    lastProcessPosition.set(position);
   }
 
   public long get() {
-    return positionProp.getValue();
+    return lastProcessPosition.get();
+  }
+
+  @Override
+  protected MsgpackCodec<LastProcessedPosition> codec() {
+    return LastProcessedPositionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<LastProcessedPosition> ops() {
+    return LastProcessedPositionOps.INSTANCE;
   }
 }

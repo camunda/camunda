@@ -8,77 +8,64 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import java.util.Objects;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import java.util.ArrayList;
+import java.util.List;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class AwaitProcessInstanceResultMetadata extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class AwaitProcessInstanceResultMetadata
+    extends MsgpackBufferValue<AwaitProcessInstanceResultMetadata> implements DbValue {
 
-  private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
-  private final IntegerProperty requestStreamIdProperty =
-      new IntegerProperty("requestStreamId", -1);
-  private final ArrayProperty<StringValue> fetchVariablesProperty =
-      new ArrayProperty<>("fetchVariables", StringValue::new);
-
-  public AwaitProcessInstanceResultMetadata() {
-    super(3);
-    declareProperty(requestIdProperty)
-        .declareProperty(requestStreamIdProperty)
-        .declareProperty(fetchVariablesProperty);
-  }
+  long requestId = -1;
+  int requestStreamId = -1;
+  final List<DirectBuffer> fetchVariables = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getRequestId() {
-    return requestIdProperty.getValue();
+    return requestId;
   }
 
   public AwaitProcessInstanceResultMetadata setRequestId(final long requestId) {
-    requestIdProperty.setValue(requestId);
+    this.requestId = requestId;
     return this;
   }
 
   public int getRequestStreamId() {
-    return requestStreamIdProperty.getValue();
+    return requestStreamId;
   }
 
   public AwaitProcessInstanceResultMetadata setRequestStreamId(final int requestStreamId) {
-    requestStreamIdProperty.setValue(requestStreamId);
+    this.requestStreamId = requestStreamId;
     return this;
   }
 
-  public ArrayProperty<StringValue> fetchVariables() {
-    return fetchVariablesProperty;
+  public List<DirectBuffer> fetchVariables() {
+    return fetchVariables;
   }
 
+  /** The variables are referenced, not copied. */
   public AwaitProcessInstanceResultMetadata setFetchVariables(
-      final ArrayProperty<StringValue> variables) {
-    fetchVariablesProperty.reset();
-    variables.forEach(variable -> fetchVariablesProperty.add().wrap(variable));
+      final Iterable<DirectBuffer> variables) {
+    fetchVariables.clear();
+    variables.forEach(fetchVariables::add);
     return this;
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(), requestIdProperty, requestStreamIdProperty, fetchVariablesProperty);
+  protected MsgpackCodec<AwaitProcessInstanceResultMetadata> codec() {
+    return AwaitProcessInstanceResultMetadataCodec.INSTANCE;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final AwaitProcessInstanceResultMetadata that = (AwaitProcessInstanceResultMetadata) o;
-    return requestIdProperty.equals(that.requestIdProperty)
-        && requestStreamIdProperty.equals(that.requestStreamIdProperty)
-        && fetchVariablesProperty.equals(that.fetchVariablesProperty);
+  protected MsgpackOps<AwaitProcessInstanceResultMetadata> ops() {
+    return AwaitProcessInstanceResultMetadataOps.INSTANCE;
   }
 }

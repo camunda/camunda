@@ -11,8 +11,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -214,8 +212,8 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceCreationWithResultClient withFetchVariables(
         final Set<String> fetchVariables) {
-      final ArrayProperty<StringValue> variablesToCollect = record.fetchVariables();
-      fetchVariables.forEach(variable -> variablesToCollect.add().wrap(wrapString(variable)));
+      final var variablesToCollect = record.fetchVariables();
+      fetchVariables.forEach(variable -> variablesToCollect.add(wrapString(variable)));
       return this;
     }
 
