@@ -350,6 +350,26 @@ final class CslTenantCheckTest {
   }
 
   @Test
+  void shouldAllowInternalCommandForAllTenantsWhenPrincipalIsRequired() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(true);
+    when(command.isCommandDistributed()).thenReturn(false);
+
+    // when
+    final var result =
+        tenantCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a", "tenant-b"),
+            tenantCheck.resolveAuthorizedTenants(command),
+            "ok",
+            () -> new Rejection(RejectionType.FORBIDDEN, "denied"));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
   void shouldResolveTenantsFromClaimsForDistributedCommand() {
     // given
     final var tenantCheck = tenantCheck(true);
