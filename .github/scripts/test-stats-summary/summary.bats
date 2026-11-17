@@ -18,6 +18,8 @@ setup() {
   export FIXTURES="${BATS_TEST_TMPDIR}/fixtures"
   export PATH="${BATS_TEST_TMPDIR}/bin:${PATH}"
   MESSAGES="${BATS_TEST_TMPDIR}/messages.json"
+  # the list-maintained-branches output is not sorted
+  export MAINTAINED_BRANCHES='["stable/8.9","main","stable/8.10","stable/8.8"]'
 
   # bq: picks the fixture by the column the query selects, logs the query parameters
   cat > bin/bq <<'EOF'
@@ -408,6 +410,29 @@ in:title FooIT AND (label:kind/flake OR in:title flaky)" ]
   [ "$status" -eq 2 ]
   run bash "$BUILD" flaky
   [ "$status" -eq 2 ]
+}
+
+@test "should put main first and the stable branches newest first" {
+  # given
+  echo '[]' > fixtures/top-tests.json
+
+  # when
+  build flaky
+
+  # then
+  grep -qx -- '--parameter=branches:ARRAY<STRING>:\["main","stable/8.10","stable/8.9","stable/8.8"\]' fixtures/bq-parameters.txt
+}
+
+@test "should fail without the maintained branches" {
+  # given
+  unset MAINTAINED_BRANCHES
+
+  # when
+  run bash "$BUILD" flaky "$MESSAGES"
+
+  # then
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"MAINTAINED_BRANCHES"* ]]
 }
 
 @test "should post the first message to the channel and the others in its thread" {

@@ -27,9 +27,11 @@ if [[ ! "$MODE" =~ ^(flaky|failure)$ || -z "$OUT_FILE" ]]; then
   exit 2
 fi
 
-# main goes in the top-level message, the stable branches in its thread. Update this list at each
-# minor release: add the new stable/8.x branch and remove branches that move to ESUP.
-SUPPORTED_BRANCHES=(main stable/8.10 stable/8.9 stable/8.8)
+# MAINTAINED_BRANCHES is the JSON array of the list-maintained-branches action, in any order. main
+# goes in the top-level message, the stable branches in its thread, newest first.
+: "${MAINTAINED_BRANCHES:?set MAINTAINED_BRANCHES to a JSON array of the maintained branches}"
+SUPPORTED_BRANCHES=(main)
+mapfile -t -O 1 SUPPORTED_BRANCHES < <(jq -r '.[] | select(. != "main")' <<< "$MAINTAINED_BRANCHES" | sort -rV)
 TOP_TESTS_MAIN=5
 TOP_TESTS_STABLE=3
 FLAKY_TEST_THRESHOLD=10
