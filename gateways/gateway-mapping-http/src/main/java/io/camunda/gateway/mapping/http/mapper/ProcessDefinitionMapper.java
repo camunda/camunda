@@ -94,7 +94,7 @@ public class ProcessDefinitionMapper {
       final ProcessDefinitionSuspensionResolvedVersionValue version) {
     return ProcessDefinitionSuspensionVersionResult.Builder.create()
         .processDefinitionKey(keyToString(version.getProcessDefinitionKey()))
-        .version(version.getVersion())
+        .processDefinitionVersion(version.getVersion())
         .outcome(
             ProcessDefinitionSuspensionVersionResult.OutcomeEnum.fromValue(
                 version.getOutcome().name()))
@@ -105,7 +105,7 @@ public class ProcessDefinitionMapper {
       final ProcessDefinitionSuspensionResolvedVersionValue version) {
     return ProcessDefinitionResumptionVersionResult.Builder.create()
         .processDefinitionKey(keyToString(version.getProcessDefinitionKey()))
-        .version(version.getVersion())
+        .processDefinitionVersion(version.getVersion())
         .outcome(
             ProcessDefinitionResumptionVersionResult.OutcomeEnum.fromValue(
                 version.getOutcome().name()))

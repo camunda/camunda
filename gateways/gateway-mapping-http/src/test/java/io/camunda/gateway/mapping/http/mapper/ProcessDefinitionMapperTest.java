@@ -276,7 +276,10 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo("77");
     assertThat(result.getProcessDefinitions())
-        .extracting(v -> v.getProcessDefinitionKey(), v -> v.getVersion(), v -> v.getOutcome())
+        .extracting(
+            v -> v.getProcessDefinitionKey(),
+            v -> v.getProcessDefinitionVersion(),
+            v -> v.getOutcome())
         .containsExactly(
             tuple("11", 1, OutcomeEnum.SUSPENDED), tuple("12", 2, OutcomeEnum.ALREADY_SUSPENDED));
   }
@@ -329,7 +332,10 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo("78");
     assertThat(result.getProcessDefinitions())
-        .extracting(v -> v.getProcessDefinitionKey(), v -> v.getVersion(), v -> v.getOutcome())
+        .extracting(
+            v -> v.getProcessDefinitionKey(),
+            v -> v.getProcessDefinitionVersion(),
+            v -> v.getOutcome())
         .containsExactly(
             tuple("11", 1, ProcessDefinitionResumptionVersionResult.OutcomeEnum.RESUMED),
             tuple("12", 2, ProcessDefinitionResumptionVersionResult.OutcomeEnum.ALREADY_RESUMED));

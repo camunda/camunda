@@ -86,7 +86,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             """
             {
               "processDefinitions": [
-                {"processDefinitionKey": "11", "version": 1, "outcome": "SUSPENDED"}
+                {"processDefinitionKey": "11", "processDefinitionVersion": 1, "outcome": "SUSPENDED"}
               ],
               "batchOperationKey": null
             }""",
@@ -126,8 +126,8 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             """
             {
               "processDefinitions": [
-                {"processDefinitionKey": "11", "version": 1, "outcome": "ALREADY_SUSPENDED"},
-                {"processDefinitionKey": "12", "version": 2, "outcome": "SUSPENDED"}
+                {"processDefinitionKey": "11", "processDefinitionVersion": 1, "outcome": "ALREADY_SUSPENDED"},
+                {"processDefinitionKey": "12", "processDefinitionVersion": 2, "outcome": "SUSPENDED"}
               ],
               "batchOperationKey": "99"
             }""",
@@ -201,7 +201,7 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             """
             {
               "processDefinitions": [
-                {"processDefinitionKey": "11", "version": 1, "outcome": "RESUMED"}
+                {"processDefinitionKey": "11", "processDefinitionVersion": 1, "outcome": "RESUMED"}
               ],
               "batchOperationKey": null
             }""",
