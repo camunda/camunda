@@ -215,7 +215,7 @@ final class LeaderAppender {
     final long timestamp = System.currentTimeMillis();
 
     LOGGER.trace("Sending {} to {}", request, member.getMember().memberId());
-    raft.getProtocol()
+    raft.getOutboundProtocol()
         .append(member.getMember().memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {
@@ -308,6 +308,10 @@ final class LeaderAppender {
 
   /** Builds a configure request for the given member. */
   private ConfigureRequest buildConfigureRequest() {
+    return buildConfigureRequest(false);
+  }
+
+  private ConfigureRequest buildConfigureRequest(final boolean committed) {
     final var leader = raft.getLeader();
     final var configuration = raft.getCluster().getConfiguration();
     return ConfigureRequest.builder()
@@ -321,9 +325,34 @@ final class LeaderAppender {
         .withLeader(leader.memberId())
         .withIndex(configuration.index())
         .withTime(configuration.time())
-        .withNewMembers(configuration.newMembers())
-        .withOldMembers(configuration.oldMembers())
+        // Beware that immutable collections cannot be serialized by Kryo
+        .withNewMembers(new ArrayList<>(configuration.newMembers()))
+        .withOldMembers(new ArrayList<>(configuration.oldMembers()))
+        .withFenced(configuration.fenced())
+        .withVoterPolicy(configuration.voterPolicy())
+        .withCommitted(committed)
         .build();
+  }
+
+  /**
+   * A fenced member gets no entries: its log may have entries that the other members do not have,
+   * and its answers must not count. Instead, once the configuration that fences it is committed,
+   * the leader sends it that configuration as a notice, at most once per heartbeat interval. The
+   * member then stops taking part, see {@link io.atomix.raft.FencedListener}.
+   */
+  private void sendFencedNotice(final RaftMemberContext member) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (!configuration.force() && raft.getCommitIndex() < configuration.index()) {
+      return;
+    }
+    final long now = System.currentTimeMillis();
+    if (now - member.getLastFencedNoticeTime() < raft.getHeartbeatInterval().toMillis()) {
+      return;
+    }
+    member.setLastFencedNoticeTime(now);
+    LOGGER.debug("Sending a fenced notice to {}", member.getMember());
+    raft.getOutboundProtocol()
+        .configure(member.getMember().memberId(), buildConfigureRequest(true));
   }
 
   /** Connects to the member and sends a configure request. */
@@ -337,7 +366,7 @@ final class LeaderAppender {
     final long timestamp = System.currentTimeMillis();
 
     LOGGER.trace("Sending {} to {}", request, member.getMember().memberId());
-    raft.getProtocol()
+    raft.getOutboundProtocol()
         .configure(member.getMember().memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {
@@ -500,7 +529,7 @@ final class LeaderAppender {
     final long timestamp = System.currentTimeMillis();
 
     LOGGER.trace("Sending {} to {}", request, member.getMember().memberId());
-    raft.getProtocol()
+    raft.getOutboundProtocol()
         .install(member.getMember().memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {
@@ -871,6 +900,11 @@ final class LeaderAppender {
     if (!member.isOpen()) {
       // Prevent recursive, asynchronous appends from being executed if the member is no longer
       // open.
+      return;
+    }
+
+    if (raft.getCluster().isFenced(member.getMember())) {
+      sendFencedNotice(member);
       return;
     }
 

@@ -198,7 +198,7 @@ public final class CandidateRole extends ActiveRole {
       final VoteQuorum quorum,
       final RaftMember member,
       final VoteRequest request) {
-    raft.getProtocol()
+    raft.getOutboundProtocol()
         .vote(member.memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {

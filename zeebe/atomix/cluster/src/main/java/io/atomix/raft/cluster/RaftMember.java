@@ -131,6 +131,17 @@ public interface RaftMember {
   Type getType();
 
   /**
+   * Returns the incarnation of the member. A member that deletes its data and joins again gets a
+   * new incarnation, so that a fence entry of its previous incarnation does not apply to it.
+   * Members of an initial (bootstrap) configuration have incarnation 0.
+   *
+   * @return the incarnation of the member
+   */
+  default long getIncarnation() {
+    return 0;
+  }
+
+  /**
    * Indicates how the member participates in voting and replication.
    *
    * <p>The member type defines how a member interacts with the other members of the cluster and,

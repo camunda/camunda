@@ -16,11 +16,15 @@
 package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Named.named;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -227,6 +231,32 @@ class MetaStoreTest {
     }
 
     @Test
+    void shouldStoreAndLoadMemberIncarnations() {
+      // given
+      final var config =
+          new Configuration(
+              2,
+              3,
+              1234L,
+              List.of(
+                  new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now(), 7L),
+                  new DefaultRaftMember(MemberId.from("2"), Type.PASSIVE, Instant.now(), 0L)),
+              List.of(new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now(), -5L)));
+      metaStore.storeConfiguration(config);
+
+      // when
+      final Configuration readConfig = metaStore.loadConfiguration();
+
+      // then
+      assertThat(readConfig.newMembers())
+          .extracting(RaftMember::memberId, RaftMember::getIncarnation)
+          .containsExactly(tuple(MemberId.from("1"), 7L), tuple(MemberId.from("2"), 0L));
+      assertThat(readConfig.oldMembers())
+          .extracting(RaftMember::getIncarnation)
+          .containsExactly(-5L);
+    }
+
+    @Test
     void shouldLoadExistingConfiguration() throws IOException {
       // given
       final Configuration config = getConfiguration(1, 2);
@@ -295,7 +325,19 @@ class MetaStoreTest {
           Arguments.of(
               named(
                   "force configuration",
-                  new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
+                  new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))),
+          Arguments.of(
+              named(
+                  "fence list and voter policy",
+                  new Configuration(
+                      2,
+                      3,
+                      1236L,
+                      getMembers("a_0", "b_1"),
+                      List.of(),
+                      false,
+                      List.of(new FenceEntry(MemberId.from("b_2"), 42L)),
+                      VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 1))))));
     }
   }
 }

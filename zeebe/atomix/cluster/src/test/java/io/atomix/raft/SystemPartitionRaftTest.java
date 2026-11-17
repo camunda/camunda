@@ -17,22 +17,29 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
+import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.system.Configuration;
+import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -491,6 +498,205 @@ final class SystemPartitionRaftTest {
       // then
       assertThatThrownBy(() -> m1.forceConfigure(target).orTimeout(30, TimeUnit.SECONDS).join())
           .hasRootCauseInstanceOf(RaftException.ProtocolException.class);
+    }
+  }
+
+  @Nested
+  final class Fencing {
+
+    private Configuration configurationOf(final RaftServer server) {
+      return onRaftThread(server, () -> server.getContext().getCluster().getConfiguration());
+    }
+
+    private List<RaftServer> bootstrapThreeVoters() {
+      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
+      final var m1 = createServer(id1, id2, id3);
+      final var m2 = createServer(id2, id1, id3);
+      final var m3 = createServer(id3, id1, id2);
+      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      return List.of(m1, m2, m3);
+    }
+
+    /** Demotes and fences member 3 with incarnation 0, with a leader among 1 and 2. */
+    private RaftServer fenceMember3(final List<RaftServer> cluster) {
+      final var m1 = cluster.get(0);
+      final var m2 = cluster.get(1);
+      final var m3 = cluster.get(2);
+      Awaitility.await("member 3 is not the leader")
+          .until(
+              () -> {
+                final var leader = awaitLeader(m1, m2, m3);
+                if (leader == m3) {
+                  m3.stepDown().join();
+                  return false;
+                }
+                return true;
+              });
+      final var leader = awaitLeader(m1, m2);
+      Awaitility.await("member 3 is demoted and fenced")
+          .until(
+              () -> {
+                final var current = configurationId(leader);
+                return leader
+                    .reconfigure(
+                        Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE),
+                        List.of(new FenceEntry(id3, 0)),
+                        null,
+                        current.index(),
+                        current.term())
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .join();
+              },
+              response -> response.status() == Status.OK);
+      return leader;
+    }
+
+    @Test
+    void shouldNotifyFencedMemberWithLeaderNotice() {
+      // given
+      final var cluster = bootstrapThreeVoters();
+      final var m3 = cluster.get(2);
+      final var fencedIncarnation = new CompletableFuture<Long>();
+      m3.addFencedListener(fencedIncarnation::complete);
+
+      // when
+      final var leader = fenceMember3(cluster);
+
+      // then
+      assertThat(fencedIncarnation.orTimeout(30, TimeUnit.SECONDS).join()).isZero();
+      Awaitility.await("fenced member stays inactive")
+          .untilAsserted(() -> assertThat(m3.getRole()).isEqualTo(Role.INACTIVE));
+      assertThat(configurationOf(leader).fenced()).containsExactly(new FenceEntry(id3, 0));
+      // the cluster continues without the fenced member
+      appendEntry(leader);
+    }
+
+    @Test
+    void shouldRejectPollFromFencedMemberWithoutTakingItsTerm() {
+      // given
+      final var cluster = bootstrapThreeVoters();
+      final var m1 = cluster.get(0);
+      final var m3 = cluster.get(2);
+      final var leader = fenceMember3(cluster);
+      appendEntry(leader);
+      final var termBefore = m1.getTerm();
+
+      // when - the fenced member asks for a vote with a much higher term
+      final var protocol = (TestRaftServerProtocol) m3.getContext().getProtocol();
+      final var response =
+          protocol
+              .poll(
+                  id1,
+                  PollRequest.builder()
+                      .withTerm(termBefore + 100)
+                      .withCandidate(id3)
+                      .withLastLogIndex(Long.MAX_VALUE / 2)
+                      .withLastLogTerm(termBefore + 100)
+                      .build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().type()).isEqualTo(RaftError.Type.FENCED);
+      assertThat(m1.getTerm()).isEqualTo(termBefore);
+    }
+
+    @Test
+    void shouldAdmitFencedMemberThatJoinsWithNewIncarnation() throws IOException {
+      // given
+      final var cluster = bootstrapThreeVoters();
+      final var m3 = cluster.get(2);
+      final var leader = fenceMember3(cluster);
+      final var fenced = new CompletableFuture<Long>();
+      m3.addFencedListener(fenced::complete);
+      fenced.orTimeout(30, TimeUnit.SECONDS).join();
+
+      // when - member 3 deletes its data and joins with a new incarnation
+      m3.shutdown().join();
+      servers.remove(m3);
+      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
+      final var rejoined = createServer(id3, id1, id2);
+      rejoined.join(Type.PASSIVE, List.of(id1, id2), 77L).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then
+      final var configuration = configurationOf(leader);
+      assertThat(configuration.newMembers())
+          .filteredOn(member -> member.memberId().equals(id3))
+          .extracting(RaftMember::getType, RaftMember::getIncarnation)
+          .containsExactly(tuple(Type.PASSIVE, 77L));
+      assertThat(configuration.fenced()).containsExactly(new FenceEntry(id3, 0));
+      final var index = appendEntry(leader);
+      Awaitility.await("rejoined member receives entries")
+          .untilAsserted(() -> assertThat(commitIndex(rejoined)).isGreaterThanOrEqualTo(index));
+    }
+
+    @Test
+    void shouldRejectJoinWithFencedIncarnation() throws IOException {
+      // given
+      final var cluster = bootstrapThreeVoters();
+      final var m3 = cluster.get(2);
+      fenceMember3(cluster);
+      m3.shutdown().join();
+      servers.remove(m3);
+      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
+      final var rejoined = createServer(id3, id1, id2);
+      final var fenced = new CompletableFuture<Long>();
+      rejoined.addFencedListener(fenced::complete);
+
+      // when - it joins again with the fenced incarnation
+      final var join = rejoined.join(Type.PASSIVE, List.of(id1, id2), 0L);
+
+      // then
+      assertThat(fenced.orTimeout(30, TimeUnit.SECONDS).join()).isZero();
+      assertThatThrownBy(() -> join.orTimeout(30, TimeUnit.SECONDS).join())
+          .hasMessageContaining("fenced");
+    }
+
+    @Test
+    void shouldNotifyFencedMemberThatRestartsWithOldData() {
+      // given - member 3 is down while it is fenced
+      final var cluster = bootstrapThreeVoters();
+      final var m3 = cluster.get(2);
+      Awaitility.await("member 3 is not the leader")
+          .until(
+              () -> {
+                final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+                if (leader == m3) {
+                  m3.stepDown().join();
+                  return false;
+                }
+                return true;
+              });
+      m3.shutdown().join();
+      servers.remove(m3);
+      final var leader = awaitLeader(cluster.get(0), cluster.get(1));
+      final var current = configurationId(leader);
+      assertThat(
+              leader
+                  .reconfigure(
+                      Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE),
+                      List.of(new FenceEntry(id3, 0)),
+                      null,
+                      current.index(),
+                      current.term())
+                  .orTimeout(10, TimeUnit.SECONDS)
+                  .join()
+                  .status())
+          .isEqualTo(Status.OK);
+
+      // when - it restarts with its old data, in which it is a voter
+      final var restarted = createServer(id3, id1, id2);
+      final var fenced = new CompletableFuture<Long>();
+      restarted.addFencedListener(fenced::complete);
+      restarted.bootstrap(id1, id2, id3);
+
+      // then
+      assertThat(fenced.orTimeout(30, TimeUnit.SECONDS).join()).isZero();
+      assertThat(restarted.getRole()).isEqualTo(Role.INACTIVE);
+      appendEntry(awaitLeader(cluster.get(0), cluster.get(1)));
     }
   }
 }

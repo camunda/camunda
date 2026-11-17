@@ -24,6 +24,16 @@ public interface RaftRequest extends RaftMessage {
   MemberId from();
 
   /**
+   * @return the incarnation of the sender, see {@link
+   *     io.atomix.raft.cluster.RaftMember#getIncarnation()}
+   */
+  default long senderIncarnation() {
+    return 0;
+  }
+
+  default void setSenderIncarnation(final long senderIncarnation) {}
+
+  /**
    * Request builder.
    *
    * @param <T> The builder type.

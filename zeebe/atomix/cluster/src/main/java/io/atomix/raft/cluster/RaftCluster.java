@@ -174,6 +174,15 @@ public interface RaftCluster {
   CompletableFuture<Void> join(RaftMember.Type type, Collection<MemberId> cluster);
 
   /**
+   * Joins like {@link #join(RaftMember.Type, Collection)}, with the given incarnation of the local
+   * member. A member that starts without data uses a new incarnation, so that a fence entry of its
+   * previous incarnation does not apply to it. If the incarnation differs from the one in the
+   * leader's configuration, the leader writes a new configuration with it.
+   */
+  CompletableFuture<Void> join(
+      RaftMember.Type type, Collection<MemberId> cluster, long incarnation);
+
+  /**
    * Returns a member by ID.
    *
    * <p>The returned {@link RaftMember} is referenced by the unique {@link RaftMember#memberId()}.

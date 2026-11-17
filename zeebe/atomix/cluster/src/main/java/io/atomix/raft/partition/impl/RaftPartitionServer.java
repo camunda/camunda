@@ -144,11 +144,24 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public CompletableFuture<RaftPartitionServer> join(final Type type) {
+    return join(type, server -> server.join(type, partitionMetadata.members()));
+  }
+
+  /**
+   * Joins with the given incarnation of the local member, see {@link RaftServer#join(Type,
+   * java.util.Collection, long)}.
+   */
+  public CompletableFuture<RaftPartitionServer> join(final Type type, final long incarnation) {
+    return join(type, server -> server.join(type, partitionMetadata.members(), incarnation));
+  }
+
+  private CompletableFuture<RaftPartitionServer> join(
+      final Type type, final Function<RaftServer, CompletableFuture<RaftServer>> joiner) {
     final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
     LOGGER.info("Server joining partition {} as {}", partition.id(), type);
-    return server
-        .join(type, partitionMetadata.members())
+    return joiner
+        .apply(server)
         .whenComplete(
             (r, e) -> {
               if (e == null) {

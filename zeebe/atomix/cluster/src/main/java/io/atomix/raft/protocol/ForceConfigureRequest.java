@@ -20,10 +20,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Request to change configuration forcefully without going through the joint consensus.
@@ -40,17 +45,48 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
   private final Set<RaftMember> members;
   private final String from;
 
+  // Absent (null) in requests of members that predate fencing and voter policies.
+  private final @Nullable Collection<FenceEntry> fenced;
+  private final @Nullable VoterPolicy voterPolicy;
+
   public ForceConfigureRequest(
       final long term,
       final long index,
       final long timestamp,
       final Set<RaftMember> newMembers,
       final String from) {
+    this(term, index, timestamp, newMembers, from, null, null);
+  }
+
+  public ForceConfigureRequest(
+      final long term,
+      final long index,
+      final long timestamp,
+      final Set<RaftMember> newMembers,
+      final String from,
+      final @Nullable Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy) {
     this.term = term;
     this.index = index;
     this.timestamp = timestamp;
     members = newMembers;
     this.from = from;
+    this.fenced = fenced;
+    this.voterPolicy = voterPolicy;
+  }
+
+  /**
+   * @return the fence list of the configuration, never null
+   */
+  public Collection<FenceEntry> fenced() {
+    return fenced == null ? List.of() : fenced;
+  }
+
+  /**
+   * @return the voter policy of the configuration, or null if it has none
+   */
+  public @Nullable VoterPolicy voterPolicy() {
+    return voterPolicy;
   }
 
   @Override
@@ -88,6 +124,10 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
         + ", from='"
         + from
         + '\''
+        + ", fenced="
+        + fenced
+        + ", voterPolicy="
+        + voterPolicy
         + '}';
   }
 
@@ -150,6 +190,20 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
     private Set<RaftMember> newMembers;
     private String from;
 
+    private @Nullable Collection<FenceEntry> fenced;
+    private @Nullable VoterPolicy voterPolicy;
+
+    public Builder withFenced(final Collection<FenceEntry> fenced) {
+      // Beware that immutable collections cannot be serialized by Kryo
+      this.fenced = new ArrayList<>(fenced);
+      return this;
+    }
+
+    public Builder withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
+      this.voterPolicy = voterPolicy;
+      return this;
+    }
+
     /**
      * Sets the request term.
      *
@@ -210,7 +264,8 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
     @Override
     public ForceConfigureRequest build() {
       validate();
-      return new ForceConfigureRequest(term, index, timestamp, newMembers, from);
+      return new ForceConfigureRequest(
+          term, index, timestamp, newMembers, from, fenced, voterPolicy);
     }
 
     @Override

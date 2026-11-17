@@ -30,6 +30,7 @@ import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -45,14 +46,23 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
   private final transient Set<Consumer<Type>> typeChangeListeners = new CopyOnWriteArraySet<>();
   private Type type;
   private Instant updated;
+  // Absent (0) when sent by a member that predates incarnations, which is the incarnation of a
+  // bootstrap member.
+  private long incarnation;
   private transient Scheduled configureTimeout;
   private transient RaftClusterContext cluster;
 
   public DefaultRaftMember(final MemberId id, final Type type, final Instant updated) {
+    this(id, type, updated, 0);
+  }
+
+  public DefaultRaftMember(
+      final MemberId id, final Type type, final Instant updated, final long incarnation) {
     this.id = checkNotNull(id, "id cannot be null");
     hash = Hashing.murmur3_32_fixed().hashUnencodedChars(id.id()).asInt();
     setType(checkNotNull(type, "type cannot be null"));
     this.updated = checkNotNull(updated, "updated cannot be null");
+    this.incarnation = incarnation;
   }
 
   @Override
@@ -109,6 +119,16 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
   @Override
   public RaftMember.Type getType() {
     return type;
+  }
+
+  @Override
+  public long getIncarnation() {
+    return incarnation;
+  }
+
+  /** Sets the incarnation, see {@link RaftMember#getIncarnation()}. */
+  public void setIncarnation(final long incarnation) {
+    this.incarnation = incarnation;
   }
 
   /**
@@ -196,7 +216,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
                 .withTerm(cluster.getConfigurationTerm())
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
-                .withMember(new DefaultRaftMember(id, type, updated))
+                .withMember(new DefaultRaftMember(id, type, updated, incarnation))
                 .from(cluster.getLocalMember().memberId().id())
                 .build())
         .whenComplete(
@@ -219,7 +239,11 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
                             response.index(),
                             response.term(),
                             response.timestamp(),
-                            response.members()));
+                            response.members(),
+                            List.of(),
+                            false,
+                            response.fenced(),
+                            response.voterPolicy()));
                     future.complete(null);
                   } catch (final Exception e) {
                     future.completeExceptionally(e);
@@ -298,7 +322,12 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("id", id).add("type", type).add("updated", updated).toString();
+    return toStringHelper(this)
+        .add("id", id)
+        .add("type", type)
+        .add("updated", updated)
+        .add("incarnation", incarnation)
+        .toString();
   }
 
   /** Sets the member's parent cluster. */

@@ -50,6 +50,7 @@ public final class RaftMemberContext {
   private boolean configuring;
   private boolean installing;
   private int failures;
+  private long lastFencedNoticeTime;
   private long failureTime;
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
@@ -341,6 +342,17 @@ public final class RaftMemberContext {
    *
    * @return The member term.
    */
+  /**
+   * @return the time (epoch millis) at which the leader last sent a fenced notice to the member
+   */
+  public long getLastFencedNoticeTime() {
+    return lastFencedNoticeTime;
+  }
+
+  public void setLastFencedNoticeTime(final long lastFencedNoticeTime) {
+    this.lastFencedNoticeTime = lastFencedNoticeTime;
+  }
+
   public long getConfigTerm() {
     return term;
   }

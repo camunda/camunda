@@ -21,11 +21,16 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /** Request a change of members. Members can change type, be removed or added. */
 public class ReconfigureRequest extends AbstractRaftRequest {
@@ -44,9 +49,15 @@ public class ReconfigureRequest extends AbstractRaftRequest {
    */
   private final boolean exactIndex;
 
+  /** Fence entries to add to the configuration; null or empty to add none. */
+  private final @Nullable Collection<FenceEntry> fenced;
+
+  /** The voter policy of the target configuration; null to keep the current policy. */
+  private final @Nullable VoterPolicy voterPolicy;
+
   public ReconfigureRequest(
       final Collection<RaftMember> members, final long index, final long term, final String from) {
-    this(members, index, term, from, false);
+    this(members, index, term, from, false, null, null);
   }
 
   public ReconfigureRequest(
@@ -54,16 +65,34 @@ public class ReconfigureRequest extends AbstractRaftRequest {
       final long index,
       final long term,
       final String from,
-      final boolean exactIndex) {
+      final boolean exactIndex,
+      final @Nullable Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy) {
     this.members = members;
     this.index = index;
     this.term = term;
     this.from = from;
     this.exactIndex = exactIndex;
+    this.fenced = fenced;
+    this.voterPolicy = voterPolicy;
   }
 
   public boolean exactIndex() {
     return exactIndex;
+  }
+
+  /**
+   * @return the fence entries to add, never null
+   */
+  public Collection<FenceEntry> fenced() {
+    return fenced == null ? List.of() : fenced;
+  }
+
+  /**
+   * @return the voter policy of the target configuration, or null to keep the current one
+   */
+  public @Nullable VoterPolicy voterPolicy() {
+    return voterPolicy;
   }
 
   /**
@@ -122,6 +151,8 @@ public class ReconfigureRequest extends AbstractRaftRequest {
         .add("term", term)
         .add("members", members)
         .add("exactIndex", exactIndex)
+        .add("fenced", fenced)
+        .add("voterPolicy", voterPolicy)
         .toString();
   }
 
@@ -134,6 +165,21 @@ public class ReconfigureRequest extends AbstractRaftRequest {
   public static class Builder extends AbstractRaftRequest.Builder<Builder, ReconfigureRequest> {
 
     private boolean exactIndex;
+    private @Nullable Collection<FenceEntry> fenced;
+    private @Nullable VoterPolicy voterPolicy;
+
+    /** Fence entries to add to the configuration, see {@link FenceEntry}. */
+    public Builder withFenced(final Collection<FenceEntry> fenced) {
+      // Beware that immutable collections cannot be serialized by Kryo
+      this.fenced = new ArrayList<>(fenced);
+      return this;
+    }
+
+    /** The voter policy of the target configuration; null keeps the current one. */
+    public Builder withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
+      this.voterPolicy = voterPolicy;
+      return this;
+    }
 
     /**
      * Requires the leader's configuration index to be exactly the request index, see {@link
@@ -215,7 +261,7 @@ public class ReconfigureRequest extends AbstractRaftRequest {
     @Override
     public ReconfigureRequest build() {
       validate();
-      return new ReconfigureRequest(members, index, term, from, exactIndex);
+      return new ReconfigureRequest(members, index, term, from, exactIndex, fenced, voterPolicy);
     }
 
     @Override

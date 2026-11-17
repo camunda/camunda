@@ -305,7 +305,7 @@ public class PassiveRole extends InactiveRole {
                   .withError(RaftError.Type.NO_LEADER)
                   .build()));
     } else {
-      return forward(request, raft.getProtocol()::reconfigure)
+      return forward(request, raft.getOutboundProtocol()::reconfigure)
           .exceptionally(
               error ->
                   ReconfigureResponse.builder()
@@ -336,7 +336,9 @@ public class PassiveRole extends InactiveRole {
                   request.timestamp(),
                   request.newMembers(),
                   List.of(), // Skip joint consensus
-                  true));
+                  true,
+                  request.fenced(),
+                  request.voterPolicy()));
     } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
       // This is not expected. When force configuration is retried, we expect that they are retried
       // with the same state. If this is not the case, it is likely that there are two force
@@ -377,7 +379,7 @@ public class PassiveRole extends InactiveRole {
           logResponse(
               JoinResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build()));
     } else {
-      return forward(request, raft.getProtocol()::join)
+      return forward(request, raft.getOutboundProtocol()::join)
           .exceptionally(
               error ->
                   JoinResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build())
@@ -395,7 +397,7 @@ public class PassiveRole extends InactiveRole {
           logResponse(
               LeaveResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build()));
     } else {
-      return forward(request, raft.getProtocol()::leave)
+      return forward(request, raft.getOutboundProtocol()::leave)
           .exceptionally(
               error ->
                   LeaveResponse.builder()

@@ -46,6 +46,23 @@ public abstract class AbstractRole implements RaftRole {
 
   @Override
   public Either<RaftError, Void> shouldAcceptRequest(final RaftRequest request) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (configuration != null
+        && configuration.isFenced(request.from(), request.senderIncarnation())) {
+      // The request is rejected before a role handles it, thus a fenced member never changes the
+      // term. The sender acts on the rejection only if the fence entry is committed: an entry of a
+      // configuration that is not committed can still be truncated.
+      final var committed = isFenceCommitted(request.from(), request.senderIncarnation());
+      return Either.left(
+          new RaftError(
+              committed ? Type.FENCED : Type.ILLEGAL_MEMBER_STATE,
+              "%s with incarnation %d is fenced%s"
+                  .formatted(
+                      request.from(),
+                      request.senderIncarnation(),
+                      committed ? "" : " in a configuration that is not committed yet")));
+    }
+
     // Reject only if we are in force configuration change and the request is not from the members
     // of forced configuration
     final boolean shouldReject =
@@ -62,6 +79,17 @@ public abstract class AbstractRole implements RaftRole {
     } else {
       return Either.right(null);
     }
+  }
+
+  private boolean isFenceCommitted(final MemberId member, final long incarnation) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (configuration.force() || raft.getCommitIndex() >= configuration.index()) {
+      return true;
+    }
+    // Fence entries are never removed, thus an entry in the stored (committed) configuration is
+    // committed too. Only read on this rare path.
+    final var stored = raft.getMetaStore().loadConfiguration();
+    return stored != null && stored.isFenced(member, incarnation);
   }
 
   /** Logs a request. */

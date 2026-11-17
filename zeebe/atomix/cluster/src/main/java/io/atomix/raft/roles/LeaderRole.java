@@ -25,7 +25,10 @@ import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
@@ -68,12 +71,16 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /** Leader state. */
 public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
@@ -224,8 +231,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // requester calculated from the configuration at request.index(). The target is only correct
     // for that configuration, thus any other index is rejected. If the target is already the
     // current configuration, it is a retry of a change that succeeded and is answered OK.
+    final var targetFenced = targetFenced(configuration, request);
+    final var targetVoterPolicy = targetVoterPolicy(configuration, request);
     if (request.exactIndex()
         && equalMembership(configuration.newMembers(), request.members())
+        && configuration.fenced().equals(targetFenced)
+        && Objects.equals(configuration.voterPolicy(), targetVoterPolicy)
         && !configuration.requiresJointConsensus()) {
       return CompletableFuture.completedFuture(
           logResponse(
@@ -235,6 +246,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withTerm(configurationTerm)
                   .withTime(configuration.time())
                   .withMembers(new ArrayList<>(configuration.newMembers()))
+                  .withFenced(configuration.fenced())
+                  .withVoterPolicy(configuration.voterPolicy())
                   .build()));
     }
     if (request.exactIndex() && request.index() != configuration.index()) {
@@ -281,7 +294,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .formatted(updatedMembers)));
     }
 
-    if (equalMembership(currentMembers, updatedMembers)) {
+    if (equalMembership(currentMembers, updatedMembers)
+        && configuration.fenced().equals(targetFenced)
+        && Objects.equals(configuration.voterPolicy(), targetVoterPolicy)) {
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
@@ -290,7 +305,25 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withTerm(configuration.term())
                   .withTime(configuration.time())
                   .withMembers(currentMembers)
+                  .withFenced(configuration.fenced())
+                  .withVoterPolicy(configuration.voterPolicy())
                   .build()));
+    }
+
+    // A fenced member is not replicated to, thus as a voter it would block every commit.
+    final var fencedVoter =
+        updatedMembers.stream()
+            .filter(member -> member.getType() == RaftMember.Type.ACTIVE)
+            .filter(
+                member ->
+                    targetFenced.stream()
+                        .anyMatch(f -> f.matches(member.memberId(), member.getIncarnation())))
+            .findAny();
+    if (fencedVoter.isPresent()) {
+      return CompletableFuture.completedFuture(
+          rejectReconfigure(
+              Type.CONFIGURATION_ERROR,
+              "Cannot make the fenced member %s a voter".formatted(fencedVoter.get())));
     }
 
     if (request.exactIndex()) {
@@ -374,7 +407,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
 
     ongoingReconfigurationRequestFuture = new CompletableFuture<>();
-    configure(updatedMembers, currentMembers)
+    configure(updatedMembers, currentMembers, targetFenced, targetVoterPolicy)
         .whenComplete(
             (jointConsensusIndex, jointConsensusError) -> {
               if (jointConsensusError == null) {
@@ -408,7 +441,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             .withTime(configuration.time())
             // Beware that immutable collections cannot be serialized by Kryo
             .withMembers(new ArrayList<>(configuration.newMembers()))
+            .withFenced(configuration.fenced())
+            .withVoterPolicy(configuration.voterPolicy())
             .build());
+  }
+
+  /** The fence list only grows: the request can add entries, but never remove one. */
+  private static List<FenceEntry> targetFenced(
+      final Configuration configuration, final ReconfigureRequest request) {
+    final var fenced = new LinkedHashSet<>(configuration.fenced());
+    fenced.addAll(request.fenced());
+    return List.copyOf(fenced);
+  }
+
+  private static @Nullable VoterPolicy targetVoterPolicy(
+      final Configuration configuration, final ReconfigureRequest request) {
+    return request.voterPolicy() != null ? request.voterPolicy() : configuration.voterPolicy();
   }
 
   @Override
@@ -443,7 +491,26 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         currentConfiguration.newMembers().stream()
             .filter(member -> member.memberId().equals(request.joiningMember().memberId()))
             .findAny();
+    // A member that joins with another incarnation lost its data and starts again. The leader
+    // writes the new incarnation, so that a fence entry of the old incarnation no longer applies,
+    // but it keeps the member's type: a voter that lost its disk stays a voter.
+    final var sameIncarnation =
+        existingMember
+            .map(member -> member.getIncarnation() == request.joiningMember().getIncarnation())
+            .orElse(false);
+    final RaftMember joiningMember =
+        existingMember.isPresent()
+                && !sameIncarnation
+                && existingMember.get().getType().ordinal()
+                    > request.joiningMember().getType().ordinal()
+            ? new DefaultRaftMember(
+                request.joiningMember().memberId(),
+                existingMember.get().getType(),
+                Instant.now(),
+                request.joiningMember().getIncarnation())
+            : request.joiningMember();
     if (existingMember.isPresent()
+        && sameIncarnation
         && existingMember.get().getType().ordinal() > request.joiningMember().getType().ordinal()
         && !initializing()
         && !configuring()
@@ -465,7 +532,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 .withTerm(raft.getCluster().getConfigurationTerm())
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
-                .withMember(request.joiningMember())
+                .withMember(joiningMember)
                 .from(raft.getCluster().getLocalMember().memberId().id())
                 .build())
         .handle(
@@ -563,7 +630,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
       return;
     }
-    configure(updatedMembers, List.of())
+    // The joint configuration already has the target fence list and voter policy.
+    final var jointConfiguration = raft.getCluster().getConfiguration();
+    configure(
+            updatedMembers,
+            List.of(),
+            jointConfiguration.fenced(),
+            jointConfiguration.voterPolicy())
         .whenComplete(
             (leftJointConsensusIndex, leftJointConsensusError) -> {
               if (leftJointConsensusError == null) {
@@ -575,6 +648,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                             .withTerm(configuration.term())
                             .withTime(configuration.time())
                             .withMembers(updatedMembers)
+                            .withFenced(jointConfiguration.fenced())
+                            .withVoterPolicy(jointConfiguration.voterPolicy())
                             .build()));
               } else {
                 ongoingReconfigurationRequestFuture.complete(
@@ -589,23 +664,31 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private boolean isDuplicateReconfigureRequest(final ReconfigureRequest request) {
     final var requestedUpdate = request.members();
-    final var ongoingUpdate = raft.getCluster().getConfiguration().newMembers();
-    return equalMembership(requestedUpdate, ongoingUpdate);
+    final var configuration = raft.getCluster().getConfiguration();
+    return equalMembership(requestedUpdate, configuration.newMembers())
+        && configuration.fenced().equals(targetFenced(configuration, request))
+        && Objects.equals(configuration.voterPolicy(), targetVoterPolicy(configuration, request));
   }
 
   /** Checks if the membership is equal in terms of member ids and types. */
   private boolean equalMembership(
       final Collection<RaftMember> currentMembers, final Collection<RaftMember> updatedMembers) {
     // Unpack member id and type because DefaultRaftMember#equals only compares the id
-    record MemberIdAndType(MemberId memberId, RaftMember.Type type) {}
+    record MemberIdAndType(MemberId memberId, RaftMember.Type type, long incarnation) {}
 
     final var currentMembersWithTypes =
         currentMembers.stream()
-            .map(member -> new MemberIdAndType(member.memberId(), member.getType()))
+            .map(
+                member ->
+                    new MemberIdAndType(
+                        member.memberId(), member.getType(), member.getIncarnation()))
             .collect(Collectors.toSet());
     final var updatedMembersWithTypes =
         updatedMembers.stream()
-            .map(member -> new MemberIdAndType(member.memberId(), member.getType()))
+            .map(
+                member ->
+                    new MemberIdAndType(
+                        member.memberId(), member.getType(), member.getIncarnation()))
             .collect(Collectors.toSet());
     return currentMembersWithTypes.equals(updatedMembersWithTypes);
   }
@@ -780,13 +863,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   /** Commits the given configuration. */
   private CompletableFuture<Long> configure(
-      final Collection<RaftMember> newMembers, final Collection<RaftMember> oldMembers) {
+      final Collection<RaftMember> newMembers,
+      final Collection<RaftMember> oldMembers,
+      final Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy) {
     raft.checkThread();
 
     final long term = raft.getTerm();
 
     final var configurationEntry =
-        new ConfigurationEntry(System.currentTimeMillis(), newMembers, oldMembers);
+        new ConfigurationEntry(
+            System.currentTimeMillis(), newMembers, oldMembers, fenced, voterPolicy);
     final IndexedRaftLogEntry entry;
     try {
       entry = appendEntry(new RaftLogEntry(term, configurationEntry));
@@ -804,7 +891,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 entry.term(),
                 configurationEntry.timestamp(),
                 configurationEntry.newMembers(),
-                configurationEntry.oldMembers()));
+                configurationEntry.oldMembers(),
+                false,
+                configurationEntry.fenced(),
+                configurationEntry.voterPolicy()));
 
     return appender
         .appendEntries(entry.index())

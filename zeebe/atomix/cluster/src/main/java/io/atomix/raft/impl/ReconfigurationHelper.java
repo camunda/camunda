@@ -14,8 +14,10 @@ import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.protocol.ForceConfigureRequest;
@@ -35,6 +37,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +48,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,7 +115,10 @@ public final class ReconfigurationHelper {
           // retry join any way.
           final var joining =
               new DefaultRaftMember(
-                  raftContext.getCluster().getLocalMember().memberId(), type, Instant.now());
+                  raftContext.getCluster().getLocalMember().memberId(),
+                  type,
+                  Instant.now(),
+                  raftContext.getCluster().getLocalMember().getIncarnation());
           final var knownAssistingMembers =
               clusterMembers.stream()
                   .filter(memberId -> !memberId.equals(joining.memberId()))
@@ -179,7 +186,7 @@ public final class ReconfigurationHelper {
       return;
     }
     raftContext
-        .getProtocol()
+        .getOutboundProtocol()
         .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
         .whenCompleteAsync(
             (response, error) -> {
@@ -292,19 +299,30 @@ public final class ReconfigurationHelper {
    */
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final Map<MemberId, Type> members, final long index, final long term) {
+    return reconfigure(members, List.of(), null, index, term);
+  }
+
+  /**
+   * Like {@link #reconfigure(Map, long, long)}, and adds the given fence entries to the fence list
+   * and sets the voter policy, if it is not null.
+   */
+  public CompletableFuture<ReconfigureResponse> reconfigure(
+      final Map<MemberId, Type> members,
+      final Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy,
+      final long index,
+      final long term) {
     final var result = new CompletableFuture<ReconfigureResponse>();
     threadContext.execute(
         () -> {
-          final var now = Instant.now();
-          final Set<RaftMember> targetMembers =
-              members.entrySet().stream()
-                  .map(entry -> new DefaultRaftMember(entry.getKey(), entry.getValue(), now))
-                  .collect(Collectors.toSet());
+          final Set<RaftMember> targetMembers = withKnownIncarnations(members);
           final var request =
               ReconfigureRequest.builder()
                   .withIndex(index)
                   .withTerm(term)
                   .withMembers(targetMembers)
+                  .withFenced(fenced)
+                  .withVoterPolicy(voterPolicy)
                   .withExactIndex(true)
                   .from(raftContext.getCluster().getLocalMember().memberId().id())
                   .build();
@@ -325,6 +343,31 @@ public final class ReconfigurationHelper {
                   });
         });
     return result;
+  }
+
+  /**
+   * Creates the members of a target configuration. A member keeps the incarnation it has in the
+   * current configuration: the caller only decides about types, while the incarnation changes only
+   * when the member itself joins again. A new member gets incarnation 0 until it joins.
+   */
+  private Set<RaftMember> withKnownIncarnations(final Map<MemberId, Type> members) {
+    final var now = Instant.now();
+    final var configuration = raftContext.getCluster().getConfiguration();
+    final var known =
+        configuration == null
+            ? Map.<MemberId, Long>of()
+            : configuration.allMembers().stream()
+                .collect(Collectors.toMap(RaftMember::memberId, RaftMember::getIncarnation));
+    return members.entrySet().stream()
+        .map(
+            entry ->
+                (RaftMember)
+                    new DefaultRaftMember(
+                        entry.getKey(),
+                        entry.getValue(),
+                        now,
+                        known.getOrDefault(entry.getKey(), 0L)))
+        .collect(Collectors.toCollection(HashSet::new));
   }
 
   public CompletableFuture<Void> leave() {
@@ -357,7 +400,7 @@ public final class ReconfigurationHelper {
       return;
     }
     raftContext
-        .getProtocol()
+        .getOutboundProtocol()
         .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
         .whenCompleteAsync(
             (response, error) -> {
@@ -420,22 +463,31 @@ public final class ReconfigurationHelper {
    * </pre>
    */
   public CompletableFuture<Void> forceConfigure(final Map<MemberId, Type> newMembersIds) {
+    return forceConfigure(newMembersIds, List.of());
+  }
+
+  /**
+   * Like {@link #forceConfigure(Map)}, and adds the given entries to the fence list of the forced
+   * configuration. The voter policy and the incarnations of the members stay as they are.
+   */
+  public CompletableFuture<Void> forceConfigure(
+      final Map<MemberId, Type> newMembersIds, final Collection<FenceEntry> fenced) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
 
-    threadContext.execute(() -> triggerForceConfigure(newMembersIds, future));
+    threadContext.execute(() -> triggerForceConfigure(newMembersIds, fenced, future));
     return future;
   }
 
   private void triggerForceConfigure(
-      final Map<MemberId, Type> newMembersIds, final CompletableFuture<Void> future) {
+      final Map<MemberId, Type> newMembersIds,
+      final Collection<FenceEntry> fenced,
+      final CompletableFuture<Void> future) {
     final var currentConfiguration = raftContext.getCluster().getConfiguration();
-    final Set<RaftMember> newMembers =
-        newMembersIds.entrySet().stream()
-            .map(
-                memberEntry ->
-                    new DefaultRaftMember(
-                        memberEntry.getKey(), memberEntry.getValue(), Instant.now()))
-            .collect(Collectors.toSet());
+    final Set<RaftMember> newMembers = withKnownIncarnations(newMembersIds);
+    final var newFenced =
+        new LinkedHashSet<>(
+            currentConfiguration == null ? List.<FenceEntry>of() : currentConfiguration.fenced());
+    newFenced.addAll(fenced);
 
     if (currentConfiguration == null || !currentConfiguration.force()) {
       // No need to overwrite if it is already in force configure and this is a retry
@@ -457,7 +509,9 @@ public final class ReconfigurationHelper {
               Instant.now().toEpochMilli(),
               newMembers,
               Set.of(),
-              true);
+              true,
+              List.copyOf(newFenced),
+              currentConfiguration == null ? null : currentConfiguration.voterPolicy());
 
       raftContext.getCluster().configure(newConfiguration);
     } else if (!(currentConfiguration.allMembers().equals(newMembers))) {
@@ -516,6 +570,8 @@ public final class ReconfigurationHelper {
             .withTime(configuration.time())
             // Beware that using ImmutableCollections can break Kryo serialization
             .withNewMembers(new HashSet<>(configuration.newMembers()))
+            .withFenced(configuration.fenced())
+            .withVoterPolicy(configuration.voterPolicy())
             .from(localMemberId)
             .build();
 
@@ -530,7 +586,7 @@ public final class ReconfigurationHelper {
     LOGGER.trace("Sending '{}' request to member '{}'", request, memberId);
 
     raftContext
-        .getProtocol()
+        .getOutboundProtocol()
         .forceConfigure(memberId, request)
         .whenCompleteAsync(
             (response, error) -> {
@@ -586,7 +642,7 @@ public final class ReconfigurationHelper {
     final RaftMember leader = raftContext.getLeader();
     if (leader != null) {
       raftContext
-          .getProtocol()
+          .getOutboundProtocol()
           .transfer(
               leader.memberId(), TransferRequest.builder().withMember(member.memberId()).build())
           .whenCompleteAsync(

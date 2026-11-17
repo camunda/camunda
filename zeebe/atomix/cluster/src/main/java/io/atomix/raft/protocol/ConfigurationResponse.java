@@ -21,9 +21,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.RaftError;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /** Server configuration response. */
 public abstract class ConfigurationResponse extends AbstractRaftResponse {
@@ -32,6 +37,9 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
   protected final long term;
   protected final long timestamp;
   protected final Collection<RaftMember> members;
+  // Absent (null) in responses of members that predate fencing and voter policies.
+  protected final @Nullable Collection<FenceEntry> fenced;
+  protected final @Nullable VoterPolicy voterPolicy;
 
   public ConfigurationResponse(
       final Status status,
@@ -40,11 +48,39 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
       final long term,
       final long timestamp,
       final Collection<RaftMember> members) {
+    this(status, error, index, term, timestamp, members, null, null);
+  }
+
+  public ConfigurationResponse(
+      final Status status,
+      final RaftError error,
+      final long index,
+      final long term,
+      final long timestamp,
+      final Collection<RaftMember> members,
+      final @Nullable Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy) {
     super(status, error);
     this.index = index;
     this.term = term;
     this.timestamp = timestamp;
     this.members = members;
+    this.fenced = fenced;
+    this.voterPolicy = voterPolicy;
+  }
+
+  /**
+   * @return the fence list of the configuration, never null
+   */
+  public Collection<FenceEntry> fenced() {
+    return fenced == null ? List.of() : fenced;
+  }
+
+  /**
+   * @return the voter policy of the configuration, or null if it has none
+   */
+  public @Nullable VoterPolicy voterPolicy() {
+    return voterPolicy;
   }
 
   /**
@@ -114,6 +150,8 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
           .add("term", term)
           .add("timestamp", timestamp)
           .add("members", members)
+          .add("fenced", fenced)
+          .add("voterPolicy", voterPolicy)
           .toString();
     } else {
       return toStringHelper(this).add("status", status).add("error", error).toString();
@@ -128,6 +166,21 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
     protected long term;
     protected long timestamp;
     protected Collection<RaftMember> members;
+    protected @Nullable Collection<FenceEntry> fenced;
+    protected @Nullable VoterPolicy voterPolicy;
+
+    @SuppressWarnings("unchecked")
+    public T withFenced(final Collection<FenceEntry> fenced) {
+      // Beware that immutable collections cannot be serialized by Kryo
+      this.fenced = new ArrayList<>(fenced);
+      return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
+      this.voterPolicy = voterPolicy;
+      return (T) this;
+    }
 
     /**
      * Sets the response index.

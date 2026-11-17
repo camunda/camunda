@@ -20,10 +20,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Configuration installation request.
@@ -52,6 +56,16 @@ public class ConfigureRequest extends AbstractRaftRequest {
   private final Collection<RaftMember> members;
   private final Collection<RaftMember> oldMembers;
 
+  // Absent (null) in requests of members that predate fencing and voter policies.
+  private final @Nullable Collection<FenceEntry> fenced;
+  private final @Nullable VoterPolicy voterPolicy;
+
+  /**
+   * True if the leader has committed this configuration. A member acts on finding itself on the
+   * fence list only in a committed configuration (see {@link FenceEntry}).
+   */
+  private final boolean committed;
+
   public ConfigureRequest(
       final long term,
       final String leader,
@@ -60,6 +74,30 @@ public class ConfigureRequest extends AbstractRaftRequest {
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers,
       final long configurationTerm) {
+    this(
+        term,
+        leader,
+        index,
+        timestamp,
+        newMembers,
+        oldMembers,
+        configurationTerm,
+        null,
+        null,
+        false);
+  }
+
+  public ConfigureRequest(
+      final long term,
+      final String leader,
+      final long index,
+      final long timestamp,
+      final Collection<RaftMember> newMembers,
+      final Collection<RaftMember> oldMembers,
+      final long configurationTerm,
+      final @Nullable Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy,
+      final boolean committed) {
     this.term = term;
     this.leader = leader;
     this.index = index;
@@ -67,6 +105,27 @@ public class ConfigureRequest extends AbstractRaftRequest {
     members = newMembers;
     this.oldMembers = oldMembers;
     this.configurationTerm = configurationTerm;
+    this.fenced = fenced;
+    this.voterPolicy = voterPolicy;
+    this.committed = committed;
+  }
+
+  /**
+   * @return the fence list of the configuration, never null
+   */
+  public Collection<FenceEntry> fenced() {
+    return fenced == null ? List.of() : fenced;
+  }
+
+  /**
+   * @return the voter policy of the configuration, or null if it has none
+   */
+  public @Nullable VoterPolicy voterPolicy() {
+    return voterPolicy;
+  }
+
+  public boolean committed() {
+    return committed;
   }
 
   @Override
@@ -110,6 +169,12 @@ public class ConfigureRequest extends AbstractRaftRequest {
         + oldMembers
         + ", configurationTerm="
         + configurationTerm
+        + ", fenced="
+        + fenced
+        + ", voterPolicy="
+        + voterPolicy
+        + ", committed="
+        + committed
         + '}';
   }
 
@@ -201,6 +266,26 @@ public class ConfigureRequest extends AbstractRaftRequest {
     private long timestamp;
     private Collection<RaftMember> newMembers;
     private Collection<RaftMember> oldMembers = List.of();
+    private boolean committed;
+
+    private @Nullable Collection<FenceEntry> fenced;
+    private @Nullable VoterPolicy voterPolicy;
+
+    public Builder withFenced(final Collection<FenceEntry> fenced) {
+      // Beware that immutable collections cannot be serialized by Kryo
+      this.fenced = new ArrayList<>(fenced);
+      return this;
+    }
+
+    public Builder withVoterPolicy(final @Nullable VoterPolicy voterPolicy) {
+      this.voterPolicy = voterPolicy;
+      return this;
+    }
+
+    public Builder withCommitted(final boolean committed) {
+      this.committed = committed;
+      return this;
+    }
 
     /**
      * Sets the request term.
@@ -294,7 +379,16 @@ public class ConfigureRequest extends AbstractRaftRequest {
     public ConfigureRequest build() {
       validate();
       return new ConfigureRequest(
-          term, leader, index, timestamp, newMembers, oldMembers, configurationTerm);
+          term,
+          leader,
+          index,
+          timestamp,
+          newMembers,
+          oldMembers,
+          configurationTerm,
+          fenced,
+          voterPolicy,
+          committed);
     }
 
     @Override

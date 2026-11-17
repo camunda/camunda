@@ -21,6 +21,20 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 /** Base request for all client requests. */
 public abstract class AbstractRaftRequest implements RaftRequest {
 
+  // Set by the sender just before sending, see RaftContext#getOutboundProtocol. Absent (0) in
+  // requests of members that predate incarnations, which is the incarnation of a bootstrap member.
+  private long senderIncarnation;
+
+  @Override
+  public long senderIncarnation() {
+    return senderIncarnation;
+  }
+
+  @Override
+  public void setSenderIncarnation(final long senderIncarnation) {
+    this.senderIncarnation = senderIncarnation;
+  }
+
   /**
    * Abstract request builder.
    *

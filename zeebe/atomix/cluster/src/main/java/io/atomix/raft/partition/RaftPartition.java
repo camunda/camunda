@@ -134,6 +134,20 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server.join(type).thenApply(v -> this);
   }
 
+  /**
+   * Joins with the given incarnation of the local member. A member that starts without data uses a
+   * new incarnation, see {@link io.atomix.raft.cluster.RaftCluster#join(RaftMember.Type,
+   * Collection, long)}.
+   */
+  public CompletableFuture<RaftPartition> join(
+      final RaftMember.Type type,
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore,
+      final long incarnation) {
+    initServer(managementService, snapshotStore);
+    return server.join(type, incarnation).thenApply(v -> this);
+  }
+
   public CompletableFuture<RaftPartition> leave() {
     return server.leave().thenApply(v -> this);
   }

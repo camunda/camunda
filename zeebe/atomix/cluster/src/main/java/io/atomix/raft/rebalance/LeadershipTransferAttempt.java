@@ -251,7 +251,7 @@ final class LeadershipTransferAttempt {
             .withResult(result)
             .withCorrelationId(correlationId)
             .build();
-    raft.getProtocol()
+    raft.getOutboundProtocol()
         .leadershipTransferResult(coordinator, notification)
         .whenComplete(
             (ack, notifyError) -> {

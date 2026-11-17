@@ -21,9 +21,11 @@ import static io.atomix.raft.RaftException.ConfigurationException;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
@@ -279,6 +281,24 @@ public interface RaftServer {
       Map<MemberId, Type> members, long index, long term);
 
   /**
+   * Like {@link #reconfigure(Map, long, long)}, and in the same change adds the given entries to
+   * the fence list (entries are never removed) and sets the voter policy if it is not null.
+   */
+  CompletableFuture<ReconfigureResponse> reconfigure(
+      Map<MemberId, Type> members,
+      Collection<FenceEntry> fenced,
+      VoterPolicy voterPolicy,
+      long index,
+      long term);
+
+  /**
+   * Like {@link #forceConfigure(Map)}, and adds the given entries to the fence list of the forced
+   * configuration.
+   */
+  CompletableFuture<RaftServer> forceConfigure(
+      Map<MemberId, Type> membersToRetain, Collection<FenceEntry> fenced);
+
+  /**
    * Bootstraps the cluster with typed members, see {@link
    * io.atomix.raft.cluster.RaftCluster#bootstrap(Map)}.
    *
@@ -343,6 +363,17 @@ public interface RaftServer {
    * @return A completable future to be completed once the server has joined the cluster.
    */
   CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster);
+
+  /**
+   * Joins with the given incarnation of the local member, see {@link
+   * io.atomix.raft.cluster.RaftCluster#join(Type, Collection, long)}.
+   */
+  CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster, long incarnation);
+
+  /**
+   * Adds a listener that is notified when the local member is fenced, see {@link FencedListener}.
+   */
+  void addFencedListener(FencedListener listener);
 
   /**
    * Starts this raft server by joining an existing replication group as an {@link

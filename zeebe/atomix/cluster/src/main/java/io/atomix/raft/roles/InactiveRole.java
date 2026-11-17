@@ -68,6 +68,19 @@ public class InactiveRole extends AbstractRole {
     logRequest(request);
     updateTermAndLeader(request.term(), request.leader());
 
+    // The leader sends a committed configuration that fences this member instead of entries (the
+    // "fenced notice"). Act on it before applying it: this member's log is no longer valid.
+    final var localMember = raft.getCluster().getLocalMember();
+    if (request.committed()
+        && request.fenced().stream()
+            .anyMatch(f -> f.matches(localMember.memberId(), localMember.getIncarnation()))) {
+      raft.onFenced(
+          "the leader %s sent a committed configuration that fences it"
+              .formatted(request.leader()));
+      return CompletableFuture.completedFuture(
+          logResponse(ConfigureResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+    }
+
     // Store the term that identifies the configuration, not the term it was disseminated under, so
     // that Configuration#term() means the same thing here as on the member that appended the entry.
     // A leader that predates the configurationTerm field sends 0; fall back to its current term,
@@ -80,7 +93,10 @@ public class InactiveRole extends AbstractRole {
             configurationTerm,
             request.timestamp(),
             request.newMembers(),
-            request.oldMembers() != null ? request.oldMembers() : List.of());
+            request.oldMembers() != null ? request.oldMembers() : List.of(),
+            false,
+            request.fenced(),
+            request.voterPolicy());
 
     // Configure the cluster membership. This will cause this server to transition to the
     // appropriate state if its type has changed.

@@ -28,6 +28,10 @@ public abstract class AbstractRaftResponse implements RaftResponse {
   protected final Status status;
   protected final RaftError error;
 
+  // Set by the responder, see RaftContext. Absent (0) in responses of members that predate
+  // incarnations, which is the incarnation of a bootstrap member.
+  private long senderIncarnation;
+
   protected AbstractRaftResponse(final Status status, final RaftError error) {
     this.status = status;
     this.error = error;
@@ -41,6 +45,17 @@ public abstract class AbstractRaftResponse implements RaftResponse {
   @Override
   public RaftError error() {
     return error;
+  }
+
+  /**
+   * @return the incarnation of the member that sent this response
+   */
+  public long senderIncarnation() {
+    return senderIncarnation;
+  }
+
+  public void setSenderIncarnation(final long senderIncarnation) {
+    this.senderIncarnation = senderIncarnation;
   }
 
   @Override

@@ -149,7 +149,7 @@ final class TimeoutNowPromotion implements TransferPhase {
             .withLeader(raft.getCluster().getLocalMember().memberId())
             .build();
     LOG.debug("Sending TimeoutNow to {} (attempt {})", target, attempts);
-    raft.getProtocol()
+    raft.getOutboundProtocol()
         .timeoutNow(target, request)
         .whenCompleteAsync(
             (response, error) -> {

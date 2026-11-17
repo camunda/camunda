@@ -18,8 +18,11 @@ package io.atomix.raft.storage.serializer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -27,6 +30,7 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -206,6 +210,40 @@ public class RaftEntrySBESerializerTest {
     final var configurationEntryRead = entryRead.getConfigurationEntry();
     assertThat(configurationEntryRead.timestamp()).isEqualTo(configurationEntryWritten.timestamp());
     assertThat(configurationEntryRead.toString()).isEqualTo(configurationEntryWritten.toString());
+  }
+
+  @Test
+  public void shouldWriteConfigurationEntryWithIncarnationsFenceListAndVoterPolicy() {
+    // given
+    final List<RaftMember> members =
+        List.of(
+            new DefaultRaftMember(
+                MemberId.from("a_1"), Type.ACTIVE, Instant.ofEpochMilli(123456L), 0L),
+            new DefaultRaftMember(
+                MemberId.from("b_2"), Type.PASSIVE, Instant.ofEpochMilli(123457L), 1234567L));
+    final ConfigurationEntry configurationEntryWritten =
+        new ConfigurationEntry(
+            1234L,
+            members,
+            List.of(),
+            List.of(new FenceEntry(MemberId.from("b_2"), 99L)),
+            VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 0)));
+
+    // when
+    final int writtenBytes =
+        serializer.writeConfigurationEntry(5, configurationEntryWritten, buffer, 0);
+    final RaftLogEntry entryRead = serializer.readRaftLogEntry(buffer);
+
+    // then
+    assertThat(serializer.getConfigurationEntrySerializedLength(configurationEntryWritten))
+        .isEqualTo(writtenBytes);
+    final var configurationEntryRead = entryRead.getConfigurationEntry();
+    assertThat(configurationEntryRead.newMembers())
+        .extracting(RaftMember::getIncarnation)
+        .containsExactly(0L, 1234567L);
+    assertThat(configurationEntryRead.fenced()).isEqualTo(configurationEntryWritten.fenced());
+    assertThat(configurationEntryRead.voterPolicy())
+        .isEqualTo(configurationEntryWritten.voterPolicy());
   }
 
   @Test

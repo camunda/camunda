@@ -18,12 +18,16 @@ package io.atomix.raft.storage.log.entry;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Stores a cluster configuration.
@@ -36,12 +40,24 @@ import java.util.Collections;
  * quorum of the old members and a quorum of the new members.
  */
 public record ConfigurationEntry(
-    long timestamp, Collection<RaftMember> newMembers, Collection<RaftMember> oldMembers)
+    long timestamp,
+    Collection<RaftMember> newMembers,
+    Collection<RaftMember> oldMembers,
+    Collection<FenceEntry> fenced,
+    @Nullable VoterPolicy voterPolicy)
     implements RaftEntry {
 
   public ConfigurationEntry {
     checkNotNull(newMembers, "newMembers cannot be null");
     checkNotNull(oldMembers, "oldMembers cannot be null");
+    checkNotNull(fenced, "fenced cannot be null");
+  }
+
+  public ConfigurationEntry(
+      final long timestamp,
+      final Collection<RaftMember> newMembers,
+      final Collection<RaftMember> oldMembers) {
+    this(timestamp, newMembers, oldMembers, List.of(), null);
   }
 
   public ConfigurationEntry(final long timestamp, final Collection<RaftMember> newMembers) {

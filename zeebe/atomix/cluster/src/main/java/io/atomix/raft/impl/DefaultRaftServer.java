@@ -20,11 +20,14 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.FencedListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftThreadContextFactory;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.storage.RaftStorage;
@@ -109,6 +112,17 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<RaftServer> join(
+      final Type type, final Collection<MemberId> cluster, final long incarnation) {
+    return start(() -> cluster().join(type, cluster, incarnation));
+  }
+
+  @Override
+  public void addFencedListener(final FencedListener listener) {
+    context.addFencedListener(listener);
+  }
+
+  @Override
   public CompletableFuture<RaftServer> leave() {
     return new ReconfigurationHelper(context).leave().thenApply(v -> this);
   }
@@ -127,6 +141,25 @@ public class DefaultRaftServer implements RaftServer {
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final Map<MemberId, Type> members, final long index, final long term) {
     return new ReconfigurationHelper(context).reconfigure(members, index, term);
+  }
+
+  @Override
+  public CompletableFuture<ReconfigureResponse> reconfigure(
+      final Map<MemberId, Type> members,
+      final Collection<FenceEntry> fenced,
+      final VoterPolicy voterPolicy,
+      final long index,
+      final long term) {
+    return new ReconfigurationHelper(context)
+        .reconfigure(members, fenced, voterPolicy, index, term);
+  }
+
+  @Override
+  public CompletableFuture<RaftServer> forceConfigure(
+      final Map<MemberId, Type> membersToRetain, final Collection<FenceEntry> fenced) {
+    return new ReconfigurationHelper(context)
+        .forceConfigure(membersToRetain, fenced)
+        .thenApply(v -> this);
   }
 
   @Override

@@ -20,7 +20,9 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
@@ -112,6 +114,9 @@ public final class RaftNamespaces {
           .register(LeadershipTransferResultRequest.class)
           .register(LeadershipTransferResultResponse.class)
           .register(LeadershipTransferResult.class)
+          .register(FenceEntry.class)
+          .register(VoterPolicy.class)
+          .register(VoterPolicy.ZoneVoters.class)
           .name("RaftProtocol")
           .build();
 

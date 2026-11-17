@@ -21,17 +21,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a persisted server configuration.
@@ -46,6 +51,10 @@ import java.util.stream.Stream;
  * @param oldMembers The cluster membership for the previous configuration.
  * @param force True indicates, we are skipping joint consensus and force the configuration change
  *     without a quorum.
+ * @param fenced The fence list: members with these incarnations are rejected by all members. Empty
+ *     for configurations that predate fencing.
+ * @param voterPolicy The voter policy, or null if the configuration has none. Raft only checks that
+ *     a change does not exceed it.
  */
 public record Configuration(
     long index,
@@ -53,7 +62,38 @@ public record Configuration(
     long time,
     Collection<RaftMember> newMembers,
     Collection<RaftMember> oldMembers,
-    boolean force) {
+    boolean force,
+    Collection<FenceEntry> fenced,
+    @Nullable VoterPolicy voterPolicy) {
+
+  public Configuration(
+      final long index,
+      final long term,
+      final long time,
+      final Collection<RaftMember> newMembers,
+      final Collection<RaftMember> oldMembers,
+      final boolean force,
+      final Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy) {
+    checkArgument(time > 0, "time must be positive");
+    checkNotNull(newMembers, "newMembers cannot be null");
+    checkNotNull(oldMembers, "oldMembers cannot be null");
+    checkNotNull(fenced, "fenced cannot be null");
+
+    this.index = index;
+    this.term = term;
+    this.time = time;
+    this.newMembers = copyMembers(newMembers);
+    this.oldMembers = copyMembers(oldMembers);
+    this.force = force;
+    this.fenced = List.copyOf(new LinkedHashSet<>(fenced));
+    this.voterPolicy = voterPolicy;
+
+    if (force) {
+      checkArgument(oldMembers.isEmpty(), "oldMembers must be empty when force is true");
+      checkArgument(!newMembers.isEmpty(), "newMembers must not be empty when force is true");
+    }
+  }
 
   public Configuration(
       final long index,
@@ -62,21 +102,7 @@ public record Configuration(
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers,
       final boolean force) {
-    checkArgument(time > 0, "time must be positive");
-    checkNotNull(newMembers, "newMembers cannot be null");
-    checkNotNull(oldMembers, "oldMembers cannot be null");
-
-    this.index = index;
-    this.term = term;
-    this.time = time;
-    this.newMembers = copyMembers(newMembers);
-    this.oldMembers = copyMembers(oldMembers);
-    this.force = force;
-
-    if (force) {
-      checkArgument(oldMembers.isEmpty(), "oldMembers must be empty when force is true");
-      checkArgument(!newMembers.isEmpty(), "newMembers must not be empty when force is true");
-    }
+    this(index, term, time, newMembers, oldMembers, force, List.of(), null);
   }
 
   public Configuration(
@@ -91,6 +117,21 @@ public record Configuration(
   public Configuration(
       final long index, final long term, final long time, final Collection<RaftMember> members) {
     this(index, term, time, members, Collections.emptyList());
+  }
+
+  /**
+   * @return true if the member with the given incarnation is on the fence list
+   */
+  public boolean isFenced(final MemberId member, final long incarnation) {
+    return fenced.stream().anyMatch(entry -> entry.matches(member, incarnation));
+  }
+
+  /**
+   * @return true if the member is on the fence list with the incarnation that it has in this
+   *     configuration
+   */
+  public boolean isFenced(final RaftMember member) {
+    return isFenced(member.memberId(), member.getIncarnation());
   }
 
   public boolean requiresJointConsensus() {
@@ -117,7 +158,11 @@ public record Configuration(
     final var copied = ImmutableList.<RaftMember>builderWithExpectedSize(members.size());
     for (final var member : members) {
       copied.add(
-          new DefaultRaftMember(member.memberId(), member.getType(), member.getLastUpdated()));
+          new DefaultRaftMember(
+              member.memberId(),
+              member.getType(),
+              member.getLastUpdated(),
+              member.getIncarnation()));
     }
     return copied.build();
   }

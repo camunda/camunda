@@ -111,6 +111,22 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               reloadConfigurationFromLog();
               if (configuration == null) {
                 createInitialConfig(members);
+              } else {
+                // The incarnation of the local member is part of the configuration, so that a
+                // restart keeps it.
+                configuration.allMembers().stream()
+                    .filter(member -> member.memberId().equals(localMember.memberId()))
+                    .findAny()
+                    .ifPresent(member -> localMember.setIncarnation(member.getIncarnation()));
+                final var stored = raft.getMetaStore().loadConfiguration();
+                if (stored != null && stored.isFenced(localMember)) {
+                  raft.onFenced("it is on the fence list of its stored configuration");
+                  bootstrapFuture.completeExceptionally(
+                      new IllegalStateException(
+                          "Cannot start, the local member %s with incarnation %d is fenced"
+                              .formatted(localMember.memberId(), localMember.getIncarnation())));
+                  return;
+                }
               }
               raft.transition(localMember.getType());
               bootstrapFuture.complete(null);
@@ -131,6 +147,14 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         // inactive to inactive and the actual transition to the active role will happen when the
         // leader sends the updated configuration.
         .thenRunAsync(() -> raft.transition(localMember.getType()), raft.getThreadContext());
+  }
+
+  @Override
+  public CompletableFuture<Void> join(
+      final Type type, final Collection<MemberId> cluster, final long incarnation) {
+    // The thread context runs tasks in order, so the join runs with the new incarnation.
+    raft.getThreadContext().execute(() -> localMember.setIncarnation(incarnation));
+    return join(type, cluster);
   }
 
   @Override
@@ -460,7 +484,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                   configurationEntry.timestamp(),
                   configurationEntry.newMembers(),
                   configurationEntry.oldMembers(),
-                  false);
+                  false,
+                  configurationEntry.fenced(),
+                  configurationEntry.voterPolicy());
         }
       }
       return Optional.ofNullable(newest);
@@ -592,9 +618,16 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
             member.memberId(),
             memberId ->
                 new RaftMemberContext(
-                    new DefaultRaftMember(memberId, member.getType(), time),
+                    new DefaultRaftMember(
+                        memberId, member.getType(), time, member.getIncarnation()),
                     this,
                     raft.getMaxAppendsPerFollower()));
+
+    // A member that joined again with a new incarnation has a new, empty log.
+    if (context.getMember().getIncarnation() != member.getIncarnation()) {
+      context.getMember().setIncarnation(member.getIncarnation());
+      context.resetState(raft.getLog());
+    }
 
     // If the member type has changed, update the member type and reset its state.
     if (context.getMember().getType() != member.getType()) {
@@ -632,6 +665,19 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
     // Apply the configuration to the local server state.
     raft.transition(localMember.getType());
+
+    if (configuration.isFenced(localMember)) {
+      raft.onFenced(
+          "it is on the fence list of the committed configuration " + configuration.index());
+    }
+  }
+
+  /**
+   * @return true if the given member, with the incarnation it has in the configuration, is on the
+   *     fence list of the current configuration
+   */
+  public boolean isFenced(final RaftMember member) {
+    return configuration != null && configuration.isFenced(member);
   }
 
   private void pruneMembersNotInConfiguration() {

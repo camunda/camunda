@@ -19,7 +19,10 @@ import static io.atomix.raft.storage.serializer.SerializerUtil.getRaftMemberType
 import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStoreRecord;
@@ -27,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -71,6 +75,7 @@ public class MetaStoreSerializer {
           .next()
           .type(getSBEType(member.getType()))
           .updated(member.getLastUpdated().toEpochMilli())
+          .incarnation(member.getIncarnation())
           .memberId(memberId);
     }
 
@@ -82,7 +87,22 @@ public class MetaStoreSerializer {
           .next()
           .type(getSBEType(member.getType()))
           .updated(member.getLastUpdated().toEpochMilli())
+          .incarnation(member.getIncarnation())
           .memberId(memberId);
+    }
+
+    final var fencedEncoder = configurationEncoder.fencedCount(configuration.fenced().size());
+    for (final FenceEntry fence : configuration.fenced()) {
+      fencedEncoder.next().incarnation(fence.incarnation()).memberId(fence.memberId().id());
+    }
+
+    final var policyZones =
+        configuration.voterPolicy() == null
+            ? List.<ZoneVoters>of()
+            : configuration.voterPolicy().zones();
+    final var policyEncoder = configurationEncoder.voterPolicyCount(policyZones.size());
+    for (final ZoneVoters zone : policyZones) {
+      policyEncoder.next().voters(zone.voters()).zone(zone.zone());
     }
 
     final int totalLength =
@@ -110,8 +130,12 @@ public class MetaStoreSerializer {
     for (final var member : newMembersDecoder) {
       final RaftMember.Type type = getRaftMemberType(member.type());
       final Instant updated = Instant.ofEpochMilli(member.updated());
-      final var memberId = member.memberId();
-      newMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
+      final long incarnation =
+          member.incarnation() == ConfigurationDecoder.NewMembersDecoder.incarnationNullValue()
+              ? 0
+              : member.incarnation();
+      newMembers.add(
+          new DefaultRaftMember(MemberId.from(member.memberId()), type, updated, incarnation));
     }
 
     final var oldMembersDecoder = configurationDecoder.oldMembers();
@@ -119,11 +143,29 @@ public class MetaStoreSerializer {
     for (final var member : oldMembersDecoder) {
       final RaftMember.Type type = getRaftMemberType(member.type());
       final Instant updated = Instant.ofEpochMilli(member.updated());
-      final var memberId = member.memberId();
-      oldMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
+      final long incarnation =
+          member.incarnation() == ConfigurationDecoder.OldMembersDecoder.incarnationNullValue()
+              ? 0
+              : member.incarnation();
+      oldMembers.add(
+          new DefaultRaftMember(MemberId.from(member.memberId()), type, updated, incarnation));
     }
 
-    return new Configuration(index, term, timestamp, newMembers, oldMembers, force);
+    final var fenced = new ArrayList<FenceEntry>();
+    for (final var fence : configurationDecoder.fenced()) {
+      final long incarnation = fence.incarnation();
+      fenced.add(new FenceEntry(MemberId.from(fence.memberId()), incarnation));
+    }
+
+    final var zones = new ArrayList<ZoneVoters>();
+    for (final var zone : configurationDecoder.voterPolicy()) {
+      final int voters = zone.voters();
+      zones.add(new ZoneVoters(zone.zone(), voters));
+    }
+    final var voterPolicy = zones.isEmpty() ? null : new VoterPolicy(zones);
+
+    return new Configuration(
+        index, term, timestamp, newMembers, oldMembers, force, fenced, voterPolicy);
   }
 
   public void writeTerm(final long term) {

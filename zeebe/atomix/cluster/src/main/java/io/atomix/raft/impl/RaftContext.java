@@ -24,6 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.FencedListener;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
@@ -44,6 +45,7 @@ import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.AbstractRaftResponse;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
@@ -126,6 +128,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   protected final ClusterMembershipService membershipService;
   protected final RaftClusterContext cluster;
   protected final RaftServerProtocol protocol;
+  private final RaftServerProtocol outboundProtocol;
+  private final Set<FencedListener> fencedListeners = new CopyOnWriteArraySet<>();
+  private boolean fenced;
   protected final RaftStorage storage;
   private final RaftElectionConfig electionConfig;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
@@ -196,6 +201,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
+    outboundProtocol = OutboundRaftProtocol.wrap(protocol, this);
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
@@ -411,6 +417,51 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             handleRequestOnContext(request, () -> role.onVote(request), VoteResponse::builder));
   }
 
+  /**
+   * Called when the local member learns that it is fenced: its id and incarnation are on the fence
+   * list of a committed configuration, or a member rejected one of its requests with {@link
+   * io.atomix.raft.RaftError.Type#FENCED}. The member stays inactive from now on, and the fenced
+   * listeners are notified once.
+   */
+  public void onFenced(final String reason) {
+    checkThread();
+    if (fenced) {
+      return;
+    }
+    final var incarnation = cluster.getLocalMember().getIncarnation();
+    LOGGER.warn(
+        "The local member {} with incarnation {} is fenced ({}), it stops taking part",
+        cluster.getLocalMember().memberId(),
+        incarnation,
+        reason);
+    transition(Role.INACTIVE);
+    fenced = true;
+    fencedListeners.forEach(listener -> listener.onFenced(incarnation));
+  }
+
+  /**
+   * @return true if the local member found out that it is fenced, see {@link #onFenced(String)}
+   */
+  public boolean isFenced() {
+    return fenced;
+  }
+
+  public void addFencedListener(final FencedListener listener) {
+    fencedListeners.add(listener);
+  }
+
+  public void removeFencedListener(final FencedListener listener) {
+    fencedListeners.remove(listener);
+  }
+
+  /**
+   * Returns the protocol to send requests with. Unlike {@link #getProtocol()}, it adds the
+   * incarnation of the local member to each request and applies the fence list to the responses.
+   */
+  public RaftServerProtocol getOutboundProtocol() {
+    return outboundProtocol;
+  }
+
   private <T extends Builder<T, R>, R extends RaftResponse>
       CompletableFuture<R> handleRequestOnContext(
           final RaftRequest request,
@@ -428,6 +479,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                             .whenComplete(
                                 (response, error) -> {
                                   if (error == null) {
+                                    if (response instanceof final AbstractRaftResponse r) {
+                                      r.setSenderIncarnation(
+                                          cluster.getLocalMember().getIncarnation());
+                                    }
                                     future.complete(response);
                                   } else {
                                     future.completeExceptionally(error);
@@ -737,6 +792,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     checkNotNull(role);
 
     if (this.role.role() == role) {
+      return;
+    }
+
+    if (fenced && role != Role.INACTIVE) {
+      LOGGER.debug("Not transitioning to {}, the local member is fenced", role);
       return;
     }
 

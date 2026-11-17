@@ -229,6 +229,23 @@ public class RaftError {
       PrimitiveException createException(final String message) {
         return message != null ? new PrimitiveException.Unavailable(message) : createException();
       }
+    },
+
+    /**
+     * The sender is fenced: its id and incarnation are on the fence list of a committed
+     * configuration. The sender must not take part any more, see {@link
+     * io.atomix.raft.FencedListener}. Appended at the end, because Kryo serializes the ordinal.
+     */
+    FENCED {
+      @Override
+      PrimitiveException createException() {
+        return createException("The member is fenced");
+      }
+
+      @Override
+      PrimitiveException createException(final String message) {
+        return message != null ? new PrimitiveException.Unavailable(message) : createException();
+      }
     };
 
     /**

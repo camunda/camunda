@@ -170,7 +170,7 @@ public final class FollowerRole extends ActiveRole {
               .withLastLogIndex(lastEntry != null ? lastEntry.index() : 0)
               .withLastLogTerm(lastTerm)
               .build();
-      raft.getProtocol()
+      raft.getOutboundProtocol()
           .poll(member.memberId(), request)
           .whenCompleteAsync(
               (response, error) -> handlePollResponse(complete, quorum, member, response, error),

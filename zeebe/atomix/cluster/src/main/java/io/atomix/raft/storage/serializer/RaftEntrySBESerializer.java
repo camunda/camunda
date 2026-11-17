@@ -19,20 +19,27 @@ import static io.atomix.raft.storage.serializer.SerializerUtil.getRaftMemberType
 import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.FencedDecoder;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.NewMembersDecoder;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.OldMembersDecoder;
+import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.VoterPolicyDecoder;
 import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import io.camunda.zeebe.util.SbeUtil;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -80,7 +87,25 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
         // old members header
         + OldMembersDecoder.sbeHeaderSize()
         // old member entries
-        + entry.oldMembers().stream().mapToInt(this::getOldMemberEntryLength).sum();
+        + entry.oldMembers().stream().mapToInt(this::getOldMemberEntryLength).sum()
+        + FencedDecoder.sbeHeaderSize()
+        + entry.fenced().stream()
+            .mapToInt(
+                fence ->
+                    FencedDecoder.sbeBlockLength()
+                        + FencedDecoder.memberIdHeaderLength()
+                        + utf8Length(fence.memberId().id()))
+            .sum()
+        + VoterPolicyDecoder.sbeHeaderSize()
+        + (entry.voterPolicy() == null
+            ? 0
+            : entry.voterPolicy().zones().stream()
+                .mapToInt(
+                    zone ->
+                        VoterPolicyDecoder.sbeBlockLength()
+                            + VoterPolicyDecoder.zoneHeaderLength()
+                            + utf8Length(zone.zone()))
+                .sum());
   }
 
   @Override
@@ -146,6 +171,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
           .next()
           .type(getSBEType(member.getType()))
           .updated(member.getLastUpdated().toEpochMilli())
+          .incarnation(member.getIncarnation())
           .memberId(memberId);
     }
 
@@ -157,7 +183,20 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
           .next()
           .type(getSBEType(member.getType()))
           .updated(member.getLastUpdated().toEpochMilli())
+          .incarnation(member.getIncarnation())
           .memberId(memberId);
+    }
+
+    final var fencedEncoder = configurationEntryEncoder.fencedCount(entry.fenced().size());
+    for (final FenceEntry fence : entry.fenced()) {
+      fencedEncoder.next().incarnation(fence.incarnation()).memberId(fence.memberId().id());
+    }
+
+    final var policyZones =
+        entry.voterPolicy() == null ? List.<ZoneVoters>of() : entry.voterPolicy().zones();
+    final var policyEncoder = configurationEntryEncoder.voterPolicyCount(policyZones.size());
+    for (final ZoneVoters zone : policyZones) {
+      policyEncoder.next().voters(zone.voters()).zone(zone.zone());
     }
 
     return entryOffset + headerEncoder.encodedLength() + configurationEntryEncoder.encodedLength();
@@ -255,8 +294,12 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     for (final NewMembersDecoder member : newMembersDecoder) {
       final RaftMember.Type type = getRaftMemberType(member.type());
       final Instant updated = Instant.ofEpochMilli(member.updated());
-      final var memberId = member.memberId();
-      newMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
+      final long incarnation =
+          member.incarnation() == NewMembersDecoder.incarnationNullValue()
+              ? 0
+              : member.incarnation();
+      newMembers.add(
+          new DefaultRaftMember(MemberId.from(member.memberId()), type, updated, incarnation));
     }
 
     final OldMembersDecoder oldMembersDecoder = configurationEntryDecoder.oldMembers();
@@ -264,10 +307,31 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     for (final OldMembersDecoder member : oldMembersDecoder) {
       final RaftMember.Type type = getRaftMemberType(member.type());
       final Instant updated = Instant.ofEpochMilli(member.updated());
-      final var memberId = member.memberId();
-      oldMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
+      final long incarnation =
+          member.incarnation() == OldMembersDecoder.incarnationNullValue()
+              ? 0
+              : member.incarnation();
+      oldMembers.add(
+          new DefaultRaftMember(MemberId.from(member.memberId()), type, updated, incarnation));
     }
 
-    return new ConfigurationEntry(timestamp, newMembers, oldMembers);
+    final var fenced = new ArrayList<FenceEntry>();
+    for (final var fence : configurationEntryDecoder.fenced()) {
+      final long incarnation = fence.incarnation();
+      fenced.add(new FenceEntry(MemberId.from(fence.memberId()), incarnation));
+    }
+
+    final var zones = new ArrayList<ZoneVoters>();
+    for (final var zone : configurationEntryDecoder.voterPolicy()) {
+      final int voters = zone.voters();
+      zones.add(new ZoneVoters(zone.zone(), voters));
+    }
+    final var voterPolicy = zones.isEmpty() ? null : new VoterPolicy(zones);
+
+    return new ConfigurationEntry(timestamp, newMembers, oldMembers, fenced, voterPolicy);
+  }
+
+  private static int utf8Length(final String value) {
+    return value.getBytes(StandardCharsets.UTF_8).length;
   }
 }

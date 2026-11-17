@@ -17,7 +17,9 @@
 package io.atomix.raft.protocol;
 
 import io.atomix.raft.RaftError;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
 import java.util.Collection;
 
 /** Server configuration change response. */
@@ -31,6 +33,18 @@ public class ReconfigureResponse extends ConfigurationResponse {
       final long timestamp,
       final Collection<RaftMember> members) {
     super(status, error, index, term, timestamp, members);
+  }
+
+  public ReconfigureResponse(
+      final Status status,
+      final RaftError error,
+      final long index,
+      final long term,
+      final long timestamp,
+      final Collection<RaftMember> members,
+      final Collection<FenceEntry> fenced,
+      final VoterPolicy voterPolicy) {
+    super(status, error, index, term, timestamp, members, fenced, voterPolicy);
   }
 
   /**
@@ -48,7 +62,8 @@ public class ReconfigureResponse extends ConfigurationResponse {
     @Override
     public ReconfigureResponse build() {
       validate();
-      return new ReconfigureResponse(status, error, index, term, timestamp, members);
+      return new ReconfigureResponse(
+          status, error, index, term, timestamp, members, fenced, voterPolicy);
     }
   }
 }
