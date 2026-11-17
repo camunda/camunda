@@ -44,11 +44,10 @@ public class AuthInfo extends UnpackedObject {
 
   /**
    * Returns an auth info with the same format and only the actor claims: the anonymous flag, the
-   * username and the client id.
+   * username and the client id. A JWT auth info is returned unchanged, with the full token.
    */
   public AuthInfo withActorClaimsOnly() {
     if (getFormat() == AuthDataFormat.JWT) {
-      // The claims are inside the token, so they cannot be reduced without the token.
       return this;
     }
     final var claims = getClaims();
