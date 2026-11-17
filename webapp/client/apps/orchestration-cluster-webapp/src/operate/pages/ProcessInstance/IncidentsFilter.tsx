@@ -10,27 +10,8 @@ import {useTranslation} from 'react-i18next';
 import {Button, MultiSelect} from '@carbon/react';
 import type {IncidentErrorType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useIncidentsFilter} from './useIncidentsFilter';
+import {INCIDENT_ERROR_TYPES} from './incidentErrorTypes';
 import {FilterContainer, FilterLayer, FilterStack} from './incidents.styled';
-
-const INCIDENT_ERROR_TYPES: IncidentErrorType[] = [
-	'UNSPECIFIED',
-	'UNKNOWN',
-	'IO_MAPPING_ERROR',
-	'JOB_NO_RETRIES',
-	'EXECUTION_LISTENER_NO_RETRIES',
-	'TASK_LISTENER_NO_RETRIES',
-	'CONDITION_ERROR',
-	'EXTRACT_VALUE_ERROR',
-	'CALLED_ELEMENT_ERROR',
-	'UNHANDLED_ERROR_EVENT',
-	'MESSAGE_SIZE_EXCEEDED',
-	'CALLED_DECISION_ERROR',
-	'DECISION_EVALUATION_ERROR',
-	'FORM_NOT_FOUND',
-	'RESOURCE_NOT_FOUND',
-	'AD_HOC_SUB_PROCESS_NO_RETRIES',
-	'SECRET_RESOLUTION_ERROR',
-];
 
 const IncidentsFilter: React.FC = () => {
 	const {t} = useTranslation();

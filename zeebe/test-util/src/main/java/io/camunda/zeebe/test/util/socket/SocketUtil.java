@@ -16,13 +16,15 @@ public final class SocketUtil {
   static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test.util.SocketUtil");
 
   private static final String DEFAULT_HOST = "localhost";
-  // most unix based systems reserve ports from 0-1024; picking 1025 as our base port gives us
-  // plenty of ports before we will collide with Docker's base port
-  private static final int MIN_PORT = 1025;
-  // Docker maps exposed ports to random local ports, starting at 32768; this is undocumented, but
-  // observed empirically, and is aligned with Linux conventions, e.g. see
+  // most unix based systems reserve ports from 0-1024 and ports below 10000 have common
+  // fixed defaults (e.g. 8080, 8090, 9200, 9600) that tests bind after a port was handed out;
+  // the allocator only skips ports that are already bound
+  private static final int MIN_PORT = 10000;
+  // stays below the Zeebe default ports 26500-26502 and below 32768, where Docker maps exposed
+  // ports to random local ports; this is undocumented, but observed empirically, and is aligned
+  // with Linux conventions, e.g. see
   // https://tldp.org/LDP/solrhe/Securing-Optimizing-Linux-RH-Edition-v1.3/chap6sec70.html
-  private static final int MAX_PORT = 31025;
+  private static final int MAX_PORT = 26000;
 
   private static final PortAllocator PORT_ALLOCATOR =
       new PortAllocator(

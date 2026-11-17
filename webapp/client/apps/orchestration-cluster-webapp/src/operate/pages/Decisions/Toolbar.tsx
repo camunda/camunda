@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useNavigate} from '@tanstack/react-router';
 import {Modal, TableBatchAction, TableBatchActions, TableToolbar} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
 import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -38,6 +39,7 @@ const Toolbar: React.FC<Props> = ({
 	onDiscard,
 }) => {
 	const {t} = useTranslation();
+	const navigate = useNavigate();
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 
@@ -74,9 +76,7 @@ const Toolbar: React.FC<Props> = ({
 			isActionable: true,
 			actionButtonLabel: t('operate.decisions.toolbar.deleteSuccessActionLabel'),
 			onActionButtonClick: () => {
-				// The batch operation detail route doesn't exist in the unified webapp yet, mirroring
-				// the plain-href pattern BatchOperations already uses for the same not-yet-built route.
-				window.location.assign(`/operate/batch-operations/${batchOperationKey}`);
+				void navigate({to: '/operate/batch-operations/$batchOperationKey', params: {batchOperationKey}});
 			},
 		});
 		onDeleted();

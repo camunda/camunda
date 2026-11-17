@@ -195,6 +195,72 @@ describe('<Processes />', () => {
 		await expect.element(screen.getByRole('option', {name: 'All versions'})).not.toBeInTheDocument();
 	});
 
+	it('should mark deleted versions in the version filter', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process', version: 2}),
+							createProcessDefinition({
+								name: 'Order Process',
+								processDefinitionId: 'order-process',
+								version: 1,
+								state: 'DELETED',
+							}),
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderPage({process: 'order-process'});
+		await userEvent.click(screen.getByRole('combobox', {name: 'Version'}));
+
+		await expect.element(screen.getByRole('option', {name: '2', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: '1 (Deleted)'})).toBeVisible();
+	});
+
+	it('should not mark a version as deleted while it is still deployed for another tenant', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({
+								name: 'Order Process',
+								processDefinitionId: 'order-process',
+								version: 2,
+								tenantId: 'tenant-a',
+							}),
+							createProcessDefinition({
+								name: 'Order Process',
+								processDefinitionId: 'order-process',
+								version: 1,
+								tenantId: 'tenant-a',
+								state: 'DELETED',
+							}),
+							createProcessDefinition({
+								name: 'Order Process',
+								processDefinitionId: 'order-process',
+								version: 1,
+								tenantId: 'tenant-b',
+							}),
+						],
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderPage({process: 'order-process'});
+		await userEvent.click(screen.getByRole('combobox', {name: 'Version'}));
+
+		await expect.element(screen.getByRole('option', {name: '1', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: '1 (Deleted)'})).not.toBeInTheDocument();
+	});
+
 	it('should list the process names when the reported total overestimates the definitions', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),

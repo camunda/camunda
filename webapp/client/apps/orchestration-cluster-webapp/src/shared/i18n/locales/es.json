@@ -729,6 +729,7 @@
 				"learnMore": "Más información sobre {{resources}}"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Los nombres de usuario distinguen entre mayúsculas y minúsculas. Introduzca el nombre de usuario exactamente como lo conoce el proveedor de identidad.",
 				"kinds": {
 					"users": "usuarios",
 					"groups": "grupos",
@@ -1674,6 +1675,7 @@
 					"operationsLog": "Registro de operaciones",
 					"timestamps": "Fecha de finalización",
 					"executionCount": "Número de ejecuciones",
+					"loadingMore": "Cargando más elementos",
 					"multiInstance": " (Multiinstancia)",
 					"migrated": "Migrada {{date}}",
 					"forbidden": "No tiene permiso para ver el historial de la instancia",
@@ -1778,8 +1780,10 @@
 					"table": {
 						"operationType": "Tipo de operación",
 						"entityType": "Tipo de entidad",
-						"entityKey": "Clave de entidad"
-					}
+						"entityKey": "Clave de entidad",
+						"result": "Resultado"
+					},
+					"list": "Lista del registro de operaciones"
 				},
 				"variables": {
 					"search": "Buscar variables por nombre",
@@ -1968,7 +1972,8 @@
 					"noOutput": "No hay mapeos de salida definidos",
 					"localVariableName": "Nombre de la variable local",
 					"processVariableName": "Nombre de la variable de proceso",
-					"assignmentValue": "Valor de asignación de la variable"
+					"assignmentValue": "Valor de asignación de la variable",
+					"loading": "Cargando asignaciones"
 				},
 				"listeners": {
 					"filter": {
@@ -1985,7 +1990,8 @@
 					"time": "Hora",
 					"emptyAll": "Este elemento no tiene listeners de ejecución ni listeners de tareas de usuario",
 					"emptyTask": "Este elemento no tiene listeners de tareas de usuario",
-					"emptyExecution": "Este elemento no tiene listeners de ejecución"
+					"emptyExecution": "Este elemento no tiene listeners de ejecución",
+					"loading": "Cargando listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Instancia de proceso - Modo de modificación",
@@ -2077,6 +2083,7 @@
 					"imageAlt": "Página de detalles de la instancia de proceso con la pestaña de incidentes y el diagrama"
 				},
 				"incidents": {
+					"list": "Lista de incidentes",
 					"filterByType": "Filtrar por tipo de incidente",
 					"resetFilters": "Restablecer filtros",
 					"errorMessage": "Mensaje de error",
@@ -2086,6 +2093,8 @@
 					"operations": "Operaciones",
 					"retryIncident": "Reintentar incidente",
 					"expandRow": "Expandir fila",
+					"collapseRow": "Contraer fila",
+					"selectedRow": "Seleccionado",
 					"jobId": "ID del job",
 					"more": "Más",
 					"errorModalTitle": "Error del elemento \"{{name}}\"",
@@ -2184,6 +2193,7 @@
 					"processDefinitions": "definiciones de proceso",
 					"variables": "variables"
 				},
+				"noActor": "Sin actor",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "Agente de IA en nombre de {{actorType}}",
 					"mcpToolCall": "Llamada de herramienta MCP"
@@ -2370,6 +2380,7 @@
 				},
 				"validators": {
 					"ids": "La clave debe ser un número de 16 a 19 dígitos, separado por un espacio o una coma",
+					"decisionIds": "La clave debe ser un número de 16 a 20 dígitos con un índice, p. ej. 2251799813702856-1",
 					"parentInstanceId": "La clave debe ser un número de 16 a 19 dígitos",
 					"batchOperationKey": "La clave debe ser un número de 16 a 19 dígitos o un UUID",
 					"time": "La hora debe tener el formato hh:mm:ss",
@@ -2549,6 +2560,7 @@
 						"inclusiveGateway": "pasarela inclusiva",
 						"eventBasedGateway": "pasarela basada en eventos"
 					},
+					"drillDownHint": "Pulsa Mayús+Intro para profundizar.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Usa las teclas de flecha para moverte entre elementos y Intro para seleccionar."
 				},
@@ -2583,7 +2595,9 @@
 					"active_other": "{{count}} instancias activas"
 				},
 				"sortableTable": {
-					"sortBy": "Ordenar por {{label}}"
+					"sortBy": "Ordenar por {{label}}",
+					"loadingPreviousPage": "Cargando elementos anteriores",
+					"loadingNextPage": "Cargando elementos siguientes"
 				}
 			}
 		}

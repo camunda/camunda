@@ -16,7 +16,6 @@ const PageContainer = styled.section`
 	box-sizing: border-box;
 	position: relative;
 	overflow: auto;
-	padding-top: var(--cds-spacing-09);
 	grid-template-columns: auto minmax(0, 1fr);
 	grid-template-rows: 1fr;
 `;

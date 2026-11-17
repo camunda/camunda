@@ -49,11 +49,7 @@ public final class ProbeBehavior {
     sideEffectWriter.appendSideEffect(() -> probeNotifier.notifyProbesAvailable(probeId));
   }
 
-  /**
-   * Ends the probe with {@code TIMED_OUT} and answers the client that waits for it, if it still
-   * waits: a client that is gone, e.g. because the gateway restarted, gets no answer, as for any
-   * other async request.
-   */
+  /** Ends the probe with {@code TIMED_OUT} and answers the client that waits for it. */
   public void timeOut(final long probeKey, final ProbeRecord probe, final ProbeEndReason reason) {
     writeTimedOut(probeKey, ended(probe, reason));
   }
@@ -73,14 +69,23 @@ public final class ProbeBehavior {
 
   private void writeTimedOut(final long probeKey, final ProbeRecord timedOut) {
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.TIMED_OUT, timedOut);
+    respondToClient(probeKey, ProbeIntent.TIMED_OUT, timedOut);
+  }
+
+  /**
+   * Answers the client request held since {@code CREATE}, if the client still waits: a client that
+   * is gone, e.g. because the gateway restarted, gets no answer, as for any other async request.
+   */
+  public void respondToClient(
+      final long probeKey, final ProbeIntent intent, final ProbeRecord response) {
     asyncRequestState
         .findRequest(probeKey, ValueType.PROBE, ProbeIntent.CREATE)
         .ifPresent(
             request -> {
               responseWriter.writeAcceptedResponse(
                   probeKey,
-                  ProbeIntent.TIMED_OUT,
-                  timedOut,
+                  intent,
+                  response,
                   ValueType.PROBE,
                   request.requestId(),
                   request.requestStreamId());
@@ -94,14 +99,20 @@ public final class ProbeBehavior {
    * the {@code CREATED} event already carries.
    */
   static ProbeRecord ended(final ProbeRecord probe, final ProbeEndReason reason) {
+    return withoutInput(probe).setEndReason(reason).setMessage(endMessage(probe, reason));
+  }
+
+  /**
+   * What identifies the probe and the worker that collected it, without the input, which the {@code
+   * CREATED} event already carries.
+   */
+  static ProbeRecord withoutInput(final ProbeRecord probe) {
     return new ProbeRecord()
         .setProbeId(probe.getProbeId())
         .setTenantId(probe.getTenantId())
         .setRequestTimeout(probe.getRequestTimeout())
         .setDeadline(probe.getDeadline())
-        .setWorker(probe.getWorker())
-        .setEndReason(reason)
-        .setMessage(endMessage(probe, reason));
+        .setWorker(probe.getWorker());
   }
 
   private static String endMessage(final ProbeRecord probe, final ProbeEndReason reason) {

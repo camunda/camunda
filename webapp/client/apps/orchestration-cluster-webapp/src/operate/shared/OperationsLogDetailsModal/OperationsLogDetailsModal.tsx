@@ -23,6 +23,7 @@ import {useTranslation} from 'react-i18next';
 import type {AuditLog, AuditLogEntityType} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
+import {getClientConfig} from '#/shared/config/getClientConfig';
 import {ActorIcon} from './ActorIcon';
 import {AiAgentIcon} from './AiAgentIcon';
 import {McpIcon} from './McpIcon';
@@ -166,7 +167,7 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 							</IconText>
 						</FirstColumn>
 						<SecondColumn>
-							{auditLog.entityType === 'USER_TASK' ? (
+							{auditLog.entityType === 'USER_TASK' && getClientConfig().components.active.includes('tasklist') ? (
 								<RouterLink
 									to="/tasklist/$userTaskKey"
 									params={{userTaskKey: entityKeyData.label ?? ''}}

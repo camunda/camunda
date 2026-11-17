@@ -36,6 +36,7 @@ import {DecisionsHarness} from './DecisionsHarness';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {Header} from '#/shared/header/components/Header';
+import {PageContent} from '#/shared/header/components/styled';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -54,7 +55,9 @@ function DecisionsWithHeader() {
 	return (
 		<>
 			<Header currentUser={createCurrentUser()} license={createLicense()} />
-			<DecisionsHarness />
+			<PageContent>
+				<DecisionsHarness />
+			</PageContent>
 		</>
 	);
 }
@@ -395,7 +398,62 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
 	});
 
+	it.for([
+		{label: 'Name', field: 'decisionDefinitionName'},
+		{label: 'Decision Instance Key', field: 'decisionEvaluationInstanceKey'},
+		{label: 'Version', field: 'decisionDefinitionVersion'},
+		{label: 'Process Instance Key', field: 'processInstanceKey'},
+	] as const)('should sort the instances by $label from the column header', async ({label, field}, {worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({items: [createDecisionInstance({decisionEvaluationInstanceKey: '1'})]}),
+				),
+			}),
+		);
+
+		const screen = await renderDecisionsPage();
+		await expect.element(screen.getByTitle('View decision instance 1')).toBeVisible();
+
+		worker.use(
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					sort: z.tuple([z.strictObject({field: z.literal(field), order: z.literal('DESC')})]),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({items: [createDecisionInstance({decisionEvaluationInstanceKey: '2'})]}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		await userEvent.click(screen.getByRole('columnheader', {name: `Sort by ${label}`}));
+
+		await expect.element(screen.getByTitle('View decision instance 2')).toBeVisible();
+	});
+
 	describe('legacy bookmarks', () => {
+		it('should apply a lowercase sort order from a legacy URL', async ({worker}) => {
+			worker.use(
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+				mockQueryDecisionInstancesEndpoint({
+					schema: z.looseObject({
+						sort: z.tuple([z.strictObject({field: z.literal('decisionDefinitionName'), order: z.literal('ASC')})]),
+					}),
+					successResponse: HttpResponse.json(
+						createQueryDecisionInstancesResponse({
+							items: [createDecisionInstance({decisionEvaluationInstanceKey: '1'})],
+						}),
+					),
+					failureResponse: new HttpResponse(null, {status: 400}),
+				}),
+			);
+
+			const screen = await renderDecisionsPage({sort: 'decisionDefinitionName+asc'});
+
+			await expect.element(screen.getByTitle('View decision instance 1')).toBeVisible();
+		});
+
 		it('should not query instances when a bookmarked filter has no selected states', async ({worker}) => {
 			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
 
@@ -592,7 +650,7 @@ describe('<Decisions />', () => {
 			path: '/operate/decisions',
 			initialEntry: '/operate/decisions?evaluated=true&failed=true',
 		});
-		const decisionsHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Decisions'});
+		const decisionsHeaderLink = screen.getByRole('link', {name: 'Decisions'});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));
@@ -611,5 +669,41 @@ describe('<Decisions />', () => {
 
 		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+	});
+
+	it('should validate Decision Instance Key(s) like legacy and filter by a key with an index', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+		const error = 'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1';
+		const screen = await renderDecisionsPage();
+		const keyField = screen.getByLabelText('Decision Instance Key(s)', {exact: true});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));
+		await userEvent.fill(keyField, '2251799813702856');
+
+		await expect.element(screen.getByText(error)).toBeVisible();
+
+		worker.use(
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					filter: z.looseObject({
+						decisionEvaluationInstanceKey: z.object({$in: z.tuple([z.literal('2251799813702856-1')])}).strict(),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [createDecisionInstance({decisionEvaluationInstanceKey: '2251799813702856-1'})],
+					}),
+				),
+				failureResponse: EMPTY_DECISION_INSTANCES,
+			}),
+		);
+		await userEvent.fill(keyField, '2251799813702856-1');
+
+		await expect.element(screen.getByRole('link', {name: 'View decision instance 2251799813702856-1'})).toBeVisible();
+		await expect.element(screen.getByText(error)).not.toBeInTheDocument();
 	});
 });

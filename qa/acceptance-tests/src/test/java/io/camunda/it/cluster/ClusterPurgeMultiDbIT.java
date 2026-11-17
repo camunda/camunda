@@ -19,6 +19,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -373,7 +374,14 @@ public class ClusterPurgeMultiDbIT {
   }
 
   private void assertThatChangesAreApplied(final PlannedOperationsResponse planChangeResponse) {
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     Awaitility.await("until cluster purge completes")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(actuator.getChange(planChangeResponse.getChangeId()).getStatus())
+                    .isEqualTo(ConfigurationChange.StatusEnum.COMPLETED));
+    Awaitility.await("until application is ready")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->

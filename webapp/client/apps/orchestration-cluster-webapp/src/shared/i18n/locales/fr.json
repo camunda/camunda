@@ -729,6 +729,7 @@
 				"learnMore": "En savoir plus sur : {{resources}}"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Les noms d'utilisateur sont sensibles à la casse. Saisissez le nom d'utilisateur exactement tel que le connaît le fournisseur d'identité.",
 				"kinds": {
 					"users": "utilisateurs",
 					"groups": "groupes",
@@ -1677,6 +1678,7 @@
 					"operationsLog": "Journal des opérations",
 					"timestamps": "Date de fin",
 					"executionCount": "Nombre d'exécutions",
+					"loadingMore": "Chargement d’autres éléments",
 					"multiInstance": " (Multi-instance)",
 					"migrated": "Migrée {{date}}",
 					"forbidden": "Vous n’avez pas l’autorisation de consulter l’historique de l’instance",
@@ -1781,8 +1783,10 @@
 					"table": {
 						"operationType": "Type d'opération",
 						"entityType": "Type d'entité",
-						"entityKey": "Clé d'entité"
-					}
+						"entityKey": "Clé d'entité",
+						"result": "Résultat"
+					},
+					"list": "Liste du journal des opérations"
 				},
 				"variables": {
 					"search": "Rechercher des variables par nom",
@@ -1971,7 +1975,8 @@
 					"noOutput": "Aucun mappage de sortie défini",
 					"localVariableName": "Nom de la variable locale",
 					"processVariableName": "Nom de la variable de processus",
-					"assignmentValue": "Valeur d’affectation de la variable"
+					"assignmentValue": "Valeur d’affectation de la variable",
+					"loading": "Chargement des affectations"
 				},
 				"listeners": {
 					"filter": {
@@ -1988,7 +1993,8 @@
 					"time": "Heure",
 					"emptyAll": "Cet élément n’a ni écouteur d’exécution ni écouteur de tâche utilisateur",
 					"emptyTask": "Cet élément n’a aucun écouteur de tâche utilisateur",
-					"emptyExecution": "Cet élément n’a aucun écouteur d’exécution"
+					"emptyExecution": "Cet élément n’a aucun écouteur d’exécution",
+					"loading": "Chargement des listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Instance de processus - Mode de modification",
@@ -2080,6 +2086,7 @@
 					"imageAlt": "Page de détails de l'instance de processus avec l'onglet des incidents et le diagramme"
 				},
 				"incidents": {
+					"list": "Liste des incidents",
 					"filterByType": "Filtrer par type d'incident",
 					"resetFilters": "Réinitialiser les filtres",
 					"errorMessage": "Message d'erreur",
@@ -2089,6 +2096,8 @@
 					"operations": "Opérations",
 					"retryIncident": "Relancer l'incident",
 					"expandRow": "Développer la ligne",
+					"collapseRow": "Réduire la ligne",
+					"selectedRow": "Sélectionné",
 					"jobId": "ID du job",
 					"more": "Plus",
 					"errorModalTitle": "Erreur de l'élément \"{{name}}\"",
@@ -2187,6 +2196,7 @@
 					"processDefinitions": "définitions de processus",
 					"variables": "variables"
 				},
+				"noActor": "Aucun acteur",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "Agent IA pour le compte de {{actorType}}",
 					"mcpToolCall": "Appel d'outil MCP"
@@ -2373,6 +2383,7 @@
 				},
 				"validators": {
 					"ids": "La clé doit être un nombre de 16 à 19 chiffres, séparé par un espace ou une virgule",
+					"decisionIds": "La clé doit être un nombre de 16 à 20 chiffres avec un index, par ex. 2251799813702856-1",
 					"parentInstanceId": "La clé doit être un nombre de 16 à 19 chiffres",
 					"batchOperationKey": "La clé doit être un nombre de 16 à 19 chiffres ou un UUID",
 					"time": "L'heure doit être au format hh:mm:ss",
@@ -2552,6 +2563,7 @@
 						"inclusiveGateway": "passerelle inclusive",
 						"eventBasedGateway": "passerelle basée sur les événements"
 					},
+					"drillDownHint": "Appuyez sur Maj+Entrée pour explorer en détail.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Utilisez les flèches pour passer d’un élément à l’autre et Entrée pour sélectionner."
 				},
@@ -2586,7 +2598,9 @@
 					"active_other": "{{count}} instances actives"
 				},
 				"sortableTable": {
-					"sortBy": "Trier par {{label}}"
+					"sortBy": "Trier par {{label}}",
+					"loadingPreviousPage": "Chargement des éléments précédents",
+					"loadingNextPage": "Chargement des éléments suivants"
 				}
 			}
 		}

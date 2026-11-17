@@ -26,7 +26,7 @@ type Props = {
 	batchOperationType: BatchOperationType | null | undefined;
 };
 
-const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(ItemLink);
+const RouterItemLink = createLink<React.FC<React.ComponentProps<'a'>>>(ItemLink);
 
 type ProcessInstanceKeyCellProps = {
 	/** `null` for items that do not target a process instance (e.g. decision or definition items). */
@@ -47,14 +47,14 @@ const ProcessInstanceKeyCell: React.FC<ProcessInstanceKeyCellProps> = ({
 	) : (
 		<ItemKeyCell itemKey={processInstanceKey} fallbackText={fallbackText}>
 			{disableLink ? undefined : (
-				<ProcessInstanceLink
+				<RouterItemLink
 					to="/operate/processes/$processInstanceId"
 					params={{processInstanceId: processInstanceKey}}
 					title={label}
 					aria-label={label}
 				>
 					{processInstanceKey}
-				</ProcessInstanceLink>
+				</RouterItemLink>
 			)}
 		</ItemKeyCell>
 	);
@@ -107,16 +107,18 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 					key: 'decisionInstanceKey',
 					label: t('operate.batchOperation.itemsTable.decisionInstanceKey'),
 					render: (row: BatchOperationItem) => (
-						<ItemKeyCell
-							itemKey={row.itemKey}
-							fallbackText={t('operate.batchOperation.itemsTable.noDecisionInstance')}
-							href={row.state === 'COMPLETED' ? undefined : `/operate/decisions/${row.itemKey}`}
-							label={
-								row.state === 'COMPLETED'
-									? undefined
-									: t('operate.batchOperation.itemsTable.viewDecisionInstance', {key: row.itemKey})
-							}
-						/>
+						<ItemKeyCell itemKey={row.itemKey} fallbackText={t('operate.batchOperation.itemsTable.noDecisionInstance')}>
+							{row.state === 'COMPLETED' ? undefined : (
+								<RouterItemLink
+									to="/operate/decisions/$decisionInstanceId"
+									params={{decisionInstanceId: row.itemKey}}
+									title={t('operate.batchOperation.itemsTable.viewDecisionInstance', {key: row.itemKey})}
+									aria-label={t('operate.batchOperation.itemsTable.viewDecisionInstance', {key: row.itemKey})}
+								>
+									{row.itemKey}
+								</RouterItemLink>
+							)}
+						</ItemKeyCell>
 					),
 				},
 				state,

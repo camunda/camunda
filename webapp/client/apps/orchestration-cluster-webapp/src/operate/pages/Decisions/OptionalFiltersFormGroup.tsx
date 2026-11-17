@@ -20,9 +20,9 @@ import {TextAreaField} from '#/operate/shared/TextAreaField/TextAreaField';
 import {FieldContainer, ButtonContainer} from '#/operate/shared/FiltersPanel/styled';
 import {mergeValidators} from '#/operate/shared/utils/mergeValidators';
 import {
-	validateIdsCharacters,
-	validateIdsLength,
-	validatesIdsComplete,
+	validateDecisionIdsCharacters,
+	validateDecisionIdsLength,
+	validatesDecisionIdsComplete,
 	validateParentInstanceIdCharacters,
 	validateParentInstanceIdComplete,
 	validateParentInstanceIdNotTooLong,
@@ -53,7 +53,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
 		type: 'multiline',
 		placeholderKey: 'operate.decisions.filters.decisionInstanceKeyPlaceholder',
 		rows: 1,
-		validate: mergeValidators(validateIdsCharacters, validateIdsLength, validatesIdsComplete),
+		validate: mergeValidators(validateDecisionIdsCharacters, validateDecisionIdsLength, validatesDecisionIdsComplete),
 	},
 	processInstanceKey: {
 		keys: ['processInstanceKey'],

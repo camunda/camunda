@@ -87,7 +87,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
-		expect(screen.getByTestId('table').elements()).toHaveLength(0);
+		await expect.element(screen.getByTestId('table')).not.toBeInTheDocument();
 	});
 
 	it('should render the caller-provided empty state instead of the table when given one', async () => {
@@ -100,7 +100,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		// then
 		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByTestId('custom-empty-state')).toBeVisible();
-		expect(screen.getByTestId('table').elements()).toHaveLength(0);
+		await expect.element(screen.getByTestId('table')).not.toBeInTheDocument();
 	});
 
 	it('should render every row', async () => {
@@ -148,7 +148,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		});
 
 		// then
-		expect(screen.getByRole('button', {name: 'Expand row'}).elements()).toHaveLength(1);
+		await expect.element(screen.getByRole('button', {name: 'Expand row'})).toBeVisible();
 	});
 
 	it('should not expose an expand toggle at all for a row with no expandedContents entry', async () => {
@@ -159,7 +159,8 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		});
 
 		// then
-		expect(screen.getByRole('button', {name: 'Expand row'}).elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Order process')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Expand row'})).not.toBeInTheDocument();
 	});
 
 	it('should show a loading indicator above the list while fetching the previous page', async () => {
@@ -196,8 +197,9 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		});
 
 		// then
-		expect(screen.getByTestId('list-top-sentinel').elements()).toHaveLength(0);
-		expect(screen.getByTestId('list-bottom-sentinel').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Order process')).toBeVisible();
+		await expect.element(screen.getByTestId('list-top-sentinel')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('list-bottom-sentinel')).not.toBeInTheDocument();
 	});
 
 	it('should load the next page when the bottom sentinel intersects', async () => {

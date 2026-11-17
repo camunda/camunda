@@ -5,8 +5,10 @@ import {join} from 'node:path';
 import {test} from 'node:test';
 
 import {initBoard, mergeTargets, render, setRow} from './board.mjs';
+import {cellForArtifact} from './cells.mjs';
 import {final, next} from './decide.mjs';
 import {pick} from './pick.mjs';
+import {postMerge} from './postmerge.mjs';
 import {fingerprint} from './report.mjs';
 import {score} from './score.mjs';
 
@@ -50,12 +52,17 @@ function write(path, data) {
   writeFileSync(path, JSON.stringify(data));
 }
 
+// `legs` holds the several reports one nightly can upload under one cell: the
+// RDBMS matrix runs a database version per leg, each its own artifact folder.
 function nightlyDir(runs) {
   const dir = mkdtempSync(join(tmpdir(), 'oc-flaky-pick-'));
-  for (const {version, cell, runId, createdAt, tests, opts} of runs) {
+  for (const {version, cell, runId, createdAt, tests, legs, opts} of runs) {
     const runDir = join(dir, version, cell, runId);
     write(join(runDir, 'meta.json'), {created_at: createdAt});
-    write(join(runDir, 'json-report', 'results.json'), report(tests, opts));
+    const reports = legs ?? {'json-report': tests};
+    for (const [leg, legTests] of Object.entries(reports)) {
+      write(join(runDir, leg, 'results.json'), report(legTests, opts));
+    }
   }
   return dir;
 }
@@ -128,6 +135,146 @@ test('should not count an interrupted nightly run as a failure', () => {
 
   // when / then
   assert.deepEqual(pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'}), []);
+});
+
+test('should count one night of a database matrix once, not once per leg', () => {
+  // given a 4-version Postgres matrix that was flaky on every leg of one
+  // night and clean on every leg of the next
+  const legs = (tests) => ({
+    'Postgres 15': tests,
+    'Postgres 16': tests,
+    'Postgres 17': tests,
+    'Postgres 18': tests,
+  });
+  const dir = nightlyDir([
+    {
+      version: 'main',
+      cell: 'rdbms-postgres-profiles',
+      runId: '1',
+      createdAt: '2026-11-01T00:00:00Z',
+      legs: legs([flaky]),
+    },
+    {
+      version: 'main',
+      cell: 'rdbms-postgres-profiles',
+      runId: '2',
+      createdAt: '2026-11-02T00:00:00Z',
+      legs: legs([passed]),
+    },
+  ]);
+
+  // when
+  const [candidate] = pick({
+    reportsDir: dir,
+    minScore: 1,
+    now: '2026-11-10T00:00:00Z',
+  });
+
+  // then the width of the matrix must not inflate the score
+  assert.equal(candidate.flaky, 1);
+  assert.equal(candidate.passed, 1);
+  assert.equal(candidate.score, 1);
+  assert.deepEqual(candidate.cells, ['rdbms-postgres-profiles']);
+});
+
+test("should take a night's observation from its worst database leg", () => {
+  // given one night where the family's legs disagree
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'rdbms-postgres-all-in-one',
+      runId: '1',
+      createdAt: '2026-11-01T00:00:00Z',
+      legs: {
+        'Postgres 15': [passed],
+        'Postgres 16': [flaky],
+        'Postgres 17': [failed()],
+        'Postgres 18': [passed],
+      },
+    },
+    {
+      version: '8.10',
+      cell: 'rdbms-postgres-all-in-one',
+      runId: '2',
+      createdAt: '2026-11-02T00:00:00Z',
+      legs: {'Postgres 15': [passed], 'Postgres 17': [passed]},
+    },
+  ]);
+
+  // when
+  const [candidate] = pick({
+    reportsDir: dir,
+    minScore: 1,
+    now: '2026-11-10T00:00:00Z',
+  });
+
+  // then
+  assert.equal(candidate.failed, 1);
+  assert.equal(candidate.flaky, 0);
+  assert.equal(candidate.passed, 1);
+  assert.equal(candidate.project, 'chromium');
+});
+
+test('should keep counting an Elasticsearch cell once per nightly run', () => {
+  // given the single-report shape the Elasticsearch nightlies upload
+  const dir = nightlyDir([
+    {version: '8.9', cell: 'api-profiles', runId: '1', createdAt: '2026-11-01T00:00:00Z', tests: [flaky]},
+    {version: '8.9', cell: 'api-profiles', runId: '2', createdAt: '2026-11-02T00:00:00Z', tests: [flaky]},
+    {version: '8.9', cell: 'api-profiles', runId: '3', createdAt: '2026-11-03T00:00:00Z', tests: [passed]},
+  ]);
+
+  // when
+  const [candidate] = pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'});
+
+  // then
+  assert.equal(candidate.score, 2);
+  assert.equal(candidate.passed, 1);
+});
+
+test('should map a nightly artifact name to its cell', () => {
+  // given / when / then
+  const es = {kind: 'api', safeBranch: 'stable-8.9'};
+  assert.equal(cellForArtifact('json-report-nightly-api-stable-8.9', es), 'api-profiles');
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-stable-8.9-all-in-one', es),
+    'api-all-in-one',
+  );
+  // `stable-8.9`'s dot is a literal, not a wildcard
+  assert.equal(cellForArtifact('json-report-nightly-api-stable-8x9', es), null);
+
+  const e2e = {kind: 'e2e', safeBranch: 'main'};
+  assert.equal(cellForArtifact('json-report-nightly-e2e-main', e2e), 'e2e');
+  assert.equal(cellForArtifact('json-report-nightly-e2e-main-v2', e2e), 'e2e-v2');
+
+  // The RDBMS label carries spaces and digits, and every version of one
+  // database shares its family's cell.
+  const rdbms = {kind: 'api-rdbms', safeBranch: 'main'};
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-Postgres 17-profiles', rdbms),
+    'rdbms-postgres-profiles',
+  );
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-Postgres 18-all-in-one', rdbms),
+    'rdbms-postgres-all-in-one',
+  );
+  // Families without a validation stack yet, and reports of other kinds,
+  // must not reach the ranking.
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-MariaDB 11.8-profiles', rdbms),
+    null,
+  );
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-Oracle 26ai-profiles', rdbms),
+    null,
+  );
+  assert.equal(
+    cellForArtifact('html-report-nightly-api-rdbms-main-Postgres 17-profiles', rdbms),
+    null,
+  );
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-stable-8.9-Postgres 17-profiles', rdbms),
+    null,
+  );
 });
 
 function shardDir(shards, opts) {
@@ -536,4 +683,407 @@ test('version groups are separated by a blank line', () => {
   const second = lines.findIndex((l) => l.startsWith('*8.9*'));
   assert.ok(second > 0);
   assert.equal(lines[second - 1], '');
+});
+
+// ─── post-merge survival ────────────────────────────────────────────────────
+// Did a merged fix hold? Measured against the nightlies, not the agent's own
+// validation runs.
+
+const PR = 'https://github.com/camunda/camunda/pull/42';
+const MERGED_FP = fingerprint('8.10', FILE, TITLE);
+
+const mergedLedger = (extra = {}) => ({
+  [MERGED_FP]: {
+    version: '8.10',
+    file: FILE,
+    titlePath: ['Operations', TITLE],
+    last_action: 'open_pr',
+    cooldown_until: '2026-12-01T00:00:00Z',
+    pr: PR,
+    ...extra,
+  },
+});
+
+const night = (runId, createdAt, tests) => ({
+  version: '8.10',
+  cell: 'e2e-v2',
+  runId,
+  createdAt,
+  tests,
+});
+
+test('should call a merged fix clean once nightlies have run it without flaking', () => {
+  // given
+  const dir = nightlyDir([
+    night('1', '2026-11-01T02:00:00Z', [flaky]),
+    night('2', '2026-11-03T02:00:00Z', [passed]),
+    night('3', '2026-11-04T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result, ...rest] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(rest.length, 0);
+  assert.equal(result.verdict, 'clean');
+  assert.equal(result.needs_flag, false);
+  assert.equal(result.post_merge.nightlies, 2);
+  assert.equal(result.post_merge.flaked, 0);
+  assert.equal(result.post_merge.summary, 'clean 2 night(s)');
+  assert.equal(result.post_merge.window_covers_merge, true);
+  assert.equal(result.post_merge.merged_at, '2026-11-02T09:00:00Z');
+  assert.equal(result.post_merge.checked_at, '2026-11-05T06:00:00Z');
+});
+
+test('should report a fix that re-flaked and ask for the PR to be flagged', () => {
+  // given
+  const dir = nightlyDir([
+    night('1', '2026-11-01T02:00:00Z', [flaky]),
+    night('2', '2026-11-03T02:00:00Z', [passed]),
+    night('3', '2026-11-04T02:00:00Z', [flaky]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.flaked, 1);
+  assert.equal(result.post_merge.nightlies, 2);
+  assert.equal(
+    result.post_merge.summary,
+    're-flaked in 1 of 2 night(s) since the merge',
+  );
+  assert.equal(result.post_merge.last_flake_run_id, '3');
+  assert.equal(result.needs_flag, true);
+  assert.equal(result.pr, PR);
+});
+
+test('should flag a re-flaked PR only once', () => {
+  // given
+  const dir = nightlyDir([
+    night('1', '2026-11-01T02:00:00Z', [passed]),
+    night('2', '2026-11-04T02:00:00Z', [flaky]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({post_merge: {pr_flagged_at: '2026-11-04T06:00:00Z'}}),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.needs_flag, false);
+  assert.equal(result.post_merge.pr_flagged_at, '2026-11-04T06:00:00Z');
+});
+
+test('should not claim clean when the fix merged before the report window starts', () => {
+  // given — every night we hold is newer than the merge, so the nights in
+  // between were never measured.
+  const dir = nightlyDir([
+    night('1', '2026-11-03T02:00:00Z', [passed]),
+    night('2', '2026-11-04T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-10-20T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 'clean-in-window');
+  assert.equal(result.post_merge.window_covers_merge, false);
+  assert.equal(result.post_merge.window_start, '2026-11-03T02:00:00Z');
+  assert.match(result.post_merge.summary, /^clean 2 night\(s\) — /);
+});
+
+test('should keep a re-flake after the night that showed it leaves the window', () => {
+  // given — the nights we still hold are all clean, but an earlier run of this
+  // same merge already recorded a re-flake.
+  const dir = nightlyDir([
+    night('7', '2026-11-16T02:00:00Z', [passed]),
+    night('8', '2026-11-17T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({
+      post_merge: {
+        merged_at: '2026-11-05T09:00:00Z',
+        verdict: 're-flaked',
+        confirmed: 2,
+        last_flake_run_id: '3',
+        pr_flagged_at: '2026-11-08T06:00:00Z',
+      },
+    }),
+    merged: {[MERGED_FP]: '2026-11-05T09:00:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.confirmed, 2);
+  assert.equal(result.post_merge.flaked, 0);
+  assert.equal(result.post_merge.last_flake_run_id, '3');
+  assert.match(result.post_merge.summary, /left the report window/);
+  assert.equal(result.needs_flag, false);
+});
+
+test('should not inherit a re-flake recorded for a different merge', () => {
+  // given — `decide` drops `post_merge` when it records a new PR, but a stale
+  // record from the previous fix must not condemn this one either way.
+  const dir = nightlyDir([night('9', '2026-11-17T02:00:00Z', [passed])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({
+      post_merge: {
+        merged_at: '2026-10-01T09:00:00Z',
+        verdict: 're-flaked',
+        confirmed: 3,
+        pr_flagged_at: '2026-10-02T06:00:00Z',
+      },
+    }),
+    merged: {[MERGED_FP]: '2026-11-16T09:00:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 'clean-in-window');
+  assert.equal(result.post_merge.confirmed, 0);
+  assert.equal(result.post_merge.pr_flagged_at, undefined);
+});
+
+test('should stay pending until a nightly has run the test since the merge', () => {
+  // given
+  const dir = nightlyDir([night('1', '2026-11-01T02:00:00Z', [flaky])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 'pending');
+  assert.equal(result.post_merge.nightlies, 0);
+  assert.equal(result.needs_flag, false);
+});
+
+test('should count only the nights that actually ran the test', () => {
+  // given — the api cell never runs this spec, and another version's nightly
+  // is not this fix's evidence either.
+  const dir = nightlyDir([
+    night('1', '2026-11-01T02:00:00Z', [passed]),
+    night('2', '2026-11-03T02:00:00Z', [passed]),
+    {
+      version: '8.10',
+      cell: 'api-profiles',
+      runId: '3',
+      createdAt: '2026-11-03T03:00:00Z',
+      tests: [passed],
+      opts: {file: 'api/v2/other.spec.ts', title: 'something else'},
+    },
+    {
+      version: '8.9',
+      cell: 'e2e-v2',
+      runId: '4',
+      createdAt: '2026-11-03T04:00:00Z',
+      tests: [flaky],
+    },
+  ]);
+
+  // when
+  const [result, ...rest] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(rest.length, 0);
+  assert.equal(result.post_merge.nightlies, 1);
+  assert.equal(result.verdict, 'clean');
+});
+
+test('should not count an interrupted nightly as a re-flake', () => {
+  // given
+  const dir = nightlyDir([
+    night('1', '2026-11-01T02:00:00Z', [passed]),
+    night('2', '2026-11-03T02:00:00Z', [interrupted]),
+    night('3', '2026-11-04T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 'clean');
+  assert.equal(result.post_merge.nightlies, 1, 'the interrupted night measured nothing');
+  assert.equal(result.post_merge.flaked, 0);
+});
+
+test('should ignore a PR that has not merged and an entry the ledger lost', () => {
+  // given
+  const dir = nightlyDir([night('1', '2026-11-03T02:00:00Z', [flaky])]);
+
+  // when / then
+  assert.deepEqual(
+    postMerge({reportsDir: dir, ledger: mergedLedger(), merged: {}}),
+    [],
+  );
+  assert.deepEqual(
+    postMerge({reportsDir: dir, ledger: {}, merged: {[MERGED_FP]: '2026-11-01T00:00:00Z'}}),
+    [],
+  );
+});
+
+test('the board names the fixes that did not hold and counts the rest', () => {
+  // given
+  const postMergeRows = [
+    {
+      fp: 'aaaaaaaa',
+      version: '8.10',
+      file: FILE,
+      title: `Operations › ${TITLE}`,
+      pr: PR,
+      verdict: 're-flaked',
+      post_merge: {summary: 're-flaked in 2 of 3 night(s) since the merge'},
+    },
+    {fp: 'bbbbbbbb', version: '8.9', file: FILE, title: '', pr: '', verdict: 'clean'},
+    {
+      fp: 'cccccccc',
+      version: '8.8',
+      file: FILE,
+      title: '',
+      pr: '',
+      verdict: 'clean-in-window',
+    },
+    {fp: 'dddddddd', version: 'main', file: FILE, title: '', pr: '', verdict: 'pending'},
+  ];
+  const board = initBoard({
+    targets: [],
+    date: '2026-11-17',
+    postMerge: postMergeRows,
+  });
+
+  // when
+  const text = render(board, {now: new Date('2026-11-17T06:00:00Z')});
+
+  // then
+  assert.match(text, /Merged fixes — 4 under watch/);
+  assert.match(text, /2 holding/);
+  assert.match(text, /1 re-flaked/);
+  assert.match(text, /1 not run yet/);
+  assert.match(text, /PR #42/);
+  assert.match(text, /re-flaked in 2 of 3 night\(s\) since the merge/);
+  assert.match(text, /1 of them merged before the report window starts/);
+  assert.ok(!text.includes('bbbbbbbb'), 'a fix that held needs a number, not a row');
+});
+
+test('a second pick in a day replaces the post-merge verdicts it carries', () => {
+  // given
+  const board = initBoard({
+    targets: [],
+    date: '2026-11-17',
+    postMerge: [{fp: 'aaaaaaaa', version: '8.10', file: FILE, verdict: 'clean'}],
+  });
+
+  // when
+  const merged = mergeTargets(board, [], [
+    {fp: 'aaaaaaaa', version: '8.10', file: FILE, verdict: 're-flaked'},
+  ]);
+  const kept = mergeTargets(board, []);
+
+  // then
+  assert.equal(merged.post_merge[0].verdict, 're-flaked');
+  assert.equal(merged.post_merge.length, 1);
+  assert.equal(kept.post_merge[0].verdict, 'clean');
+});
+
+test('should count one nightly that uploaded several cells as a single night', () => {
+  // given — the API nightly runs its profiles and all-in-one jobs under one
+  // run id, so the same night arrives as two reports.
+  const run = (cell, tests) => ({
+    version: '8.10',
+    cell,
+    runId: '7',
+    createdAt: '2026-11-03T02:00:00Z',
+    tests,
+  });
+  const dir = nightlyDir([run('api-profiles', [flaky]), run('api-all-in-one', [passed])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then — one night, and a night the test flaked in.
+  assert.equal(result.post_merge.nightlies, 1);
+  assert.equal(result.post_merge.flaked, 1);
+  assert.equal(
+    result.post_merge.summary,
+    're-flaked in 1 of 1 night(s) since the merge',
+  );
+});
+
+test('should start the window at the oldest night that ran the test', () => {
+  // given — a report holding nothing about this test (another cell, or the
+  // husk of a failed download) from before the merge, and two nights that did
+  // run it, both after.
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'api-profiles',
+      runId: '1',
+      createdAt: '2026-11-01T02:00:00Z',
+      tests: [],
+    },
+    night('2', '2026-11-03T02:00:00Z', [passed]),
+    night('3', '2026-11-04T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then — the nights before the merge were never measured, so this is not
+  // clean outright.
+  assert.equal(result.verdict, 'clean-in-window');
+  assert.equal(result.post_merge.window_covers_merge, false);
+  assert.equal(result.post_merge.window_start, '2026-11-03T02:00:00Z');
+  assert.equal(result.post_merge.nightlies, 2);
 });

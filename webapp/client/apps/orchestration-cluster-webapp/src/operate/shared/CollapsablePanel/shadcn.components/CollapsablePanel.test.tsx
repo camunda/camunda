@@ -46,7 +46,7 @@ describe('<CollapsablePanel />', () => {
 		const withLabel = await render(
 			<CollapsablePanel label="Filters" panelPosition="LEFT" isCollapsed onToggle={vi.fn()} maxWidth={320} />,
 		);
-		expect(withLabel.getByText('Filters', {exact: true}).elements()).toHaveLength(2);
+		await expect.poll(() => withLabel.getByText('Filters', {exact: true}).elements()).toHaveLength(2);
 		await withLabel.unmount();
 
 		const withoutLabel = await render(
@@ -59,7 +59,7 @@ describe('<CollapsablePanel />', () => {
 				hideCollapsedLabel
 			/>,
 		);
-		expect(withoutLabel.getByText('Filters', {exact: true}).elements()).toHaveLength(1);
+		await expect.element(withoutLabel.getByText('Filters', {exact: true})).toBeVisible();
 	});
 
 	it('should expand when clicking anywhere on the collapsed rail', async () => {

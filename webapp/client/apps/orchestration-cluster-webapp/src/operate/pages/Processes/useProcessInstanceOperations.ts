@@ -200,7 +200,14 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 				SUSPEND_RESUME_POLL_RETRY,
 			);
 		},
-		onSuccess: invalidateProcessInstances,
+		onSuccess: () => {
+			notificationsStore.displayNotification({
+				kind: 'info',
+				title: t('operate.processInstance.operations.suspended'),
+				isDismissable: true,
+			});
+			return invalidateProcessInstances();
+		},
 		onError: (error) =>
 			showOperationError(
 				'SUSPEND_PROCESS_INSTANCE',
@@ -223,7 +230,14 @@ function useProcessInstanceOperations(processInstanceKey: string) {
 				SUSPEND_RESUME_POLL_RETRY,
 			);
 		},
-		onSuccess: invalidateProcessInstances,
+		onSuccess: () => {
+			notificationsStore.displayNotification({
+				kind: 'info',
+				title: t('operate.processInstance.operations.resumed'),
+				isDismissable: true,
+			});
+			return invalidateProcessInstances();
+		},
 		onError: (error) =>
 			showOperationError(
 				'RESUME_PROCESS_INSTANCE',

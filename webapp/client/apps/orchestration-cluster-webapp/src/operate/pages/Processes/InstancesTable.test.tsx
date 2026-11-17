@@ -1232,6 +1232,33 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByTestId('operation-spinner')).not.toBeInTheDocument();
 	});
 
+	it.for([
+		{action: 'Suspend Instance', state: 'ACTIVE', nextState: 'SUSPENDED', notification: 'Instance suspended'},
+		{action: 'Resume Instance', state: 'SUSPENDED', nextState: 'ACTIVE', notification: 'Instance resumed'},
+	] as const)(
+		'should show "$notification" once $action takes effect',
+		async ({action, state, nextState, notification}, {worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1', state})]}),
+					),
+				}),
+				mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
+				mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockResumeProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json(createProcessInstance({processInstanceKey: '1', state: nextState})),
+				}),
+			);
+
+			const screen = await renderInstancesTable();
+			await userEvent.click(getRowAction(screen, '1', action));
+
+			await expect.element(screen.getByText(notification)).toBeVisible();
+		},
+	);
+
 	it('should notify the user when a suspend fails', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({

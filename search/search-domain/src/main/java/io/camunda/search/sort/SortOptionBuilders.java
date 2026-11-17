@@ -68,6 +68,15 @@ public final class SortOptionBuilders {
     return new UserTaskSort.Builder();
   }
 
+  public static VariableHistoryItemSort.Builder variableHistoryItem() {
+    return new VariableHistoryItemSort.Builder();
+  }
+
+  public static VariableHistoryItemSort variableHistoryItem(
+      final Function<VariableHistoryItemSort.Builder, ObjectBuilder<VariableHistoryItemSort>> fn) {
+    return fn.apply(variableHistoryItem()).build();
+  }
+
   public static VariableSort.Builder variable() {
     return new VariableSort.Builder();
   }

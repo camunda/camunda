@@ -462,6 +462,37 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByRole('link', {name: 'View decision instance item-1'})).toBeVisible();
 	});
 
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render a decision instance link for a non-completed decision instance deletion item at basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryBatchOperationItemsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: [
+								createBatchOperationItem({
+									itemKey: '2251799813702856-1',
+									state: 'FAILED',
+									operationType: 'DELETE_DECISION_INSTANCE',
+								}),
+							],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderBatchItemsTable('DELETE_DECISION_INSTANCE', basepath);
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View decision instance 2251799813702856-1'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/2251799813702856-1`);
+		},
+	);
+
 	it('should render an incident key column for a resolve incident operation', async ({worker}) => {
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({

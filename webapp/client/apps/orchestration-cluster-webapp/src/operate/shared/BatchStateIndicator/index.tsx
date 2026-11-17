@@ -15,6 +15,7 @@ import {
 	MisuseOutline,
 	PauseOutlineFilled,
 	SkipForwardFilled,
+	UnknownFilled,
 	type CarbonIconType,
 } from '@carbon/react/icons';
 import type {BatchOperationItemState, BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -43,7 +44,11 @@ type Props = {
 };
 
 const BatchStateIndicator: React.FC<Props> = ({state, ariaLabelPrefix = 'Batch operation status'}) => {
-	const {Icon, color, label} = STATE_CONFIG[state];
+	const {Icon, color, label} = STATE_CONFIG[state] ?? {
+		Icon: UnknownFilled,
+		color: 'var(--cds-status-gray)',
+		label: state,
+	};
 	return (
 		<Container role="status" aria-label={`${ariaLabelPrefix}: ${label}`}>
 			<Icon style={{color}} aria-hidden="true" focusable="false" />

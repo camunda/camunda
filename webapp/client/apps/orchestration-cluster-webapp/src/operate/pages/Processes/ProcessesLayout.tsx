@@ -12,7 +12,7 @@ import styled from 'styled-components';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 
-const Container = styled.main`
+const Container = styled.div`
 	height: 100%;
 `;
 
@@ -22,7 +22,7 @@ type ProcessesNavigationBlocker = {status: 'idle' | 'blocked'; proceed?: () => v
 function ProcessesLayout({title, ...props}: ComponentProps<typeof InstancesList> & {title?: string}) {
 	const {t} = useTranslation();
 	return (
-		<Container id="main-content" tabIndex={-1}>
+		<Container>
 			<VisuallyHiddenH1>{title ?? t('operate.processes.title')}</VisuallyHiddenH1>
 			<InstancesList {...props} />
 		</Container>

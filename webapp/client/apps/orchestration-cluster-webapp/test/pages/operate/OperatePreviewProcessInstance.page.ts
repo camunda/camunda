@@ -15,8 +15,8 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		super(page);
 	}
 
-	async goto(processInstanceId: string) {
-		return this.page.goto(`/operate-preview/processes/${processInstanceId}`);
+	async goto(processInstanceId: string, path = '') {
+		return this.page.goto(`/operate-preview/processes/${processInstanceId}${path}`);
 	}
 
 	get heading() {
@@ -47,6 +47,22 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.diagramPanel.locator(`[data-element-id="${elementId}"]`);
 	}
 
+	get historyPanel() {
+		return this.page.getByRole('region', {name: 'Instance History'});
+	}
+
+	get historyTree() {
+		return this.historyPanel.getByRole('tree', {name: 'Instance History'});
+	}
+
+	historyItem(name: string | RegExp) {
+		return this.historyTree.getByRole('treeitem', {name});
+	}
+
+	searchResultItem(name: string | RegExp) {
+		return this.historyPanel.getByRole('tree', {name: 'Search results'}).getByRole('treeitem', {name});
+	}
+
 	get variablesList() {
 		return this.page.getByRole('table', {name: 'Variable List'});
 	}
@@ -55,8 +71,32 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.variablesList.getByRole('row', {name: variableRowName(name)});
 	}
 
+	get incidentsList() {
+		return this.page.getByRole('region', {name: 'Incidents list'});
+	}
+
+	get incidentsTable() {
+		return this.incidentsList.getByRole('table');
+	}
+
 	get incidentsTab() {
 		return this.page.getByRole('tab', {name: 'Incidents'});
+	}
+
+	get listenersList() {
+		return this.page.getByRole('table', {name: 'Listeners List'});
+	}
+
+	get operationsLogTable() {
+		return this.page.getByRole('table', {name: 'Operations Log List'});
+	}
+
+	get tabPanel() {
+		return this.page.getByRole('tabpanel');
+	}
+
+	tab(name: string) {
+		return this.page.getByRole('tab', {name});
 	}
 
 	get variablesTab() {

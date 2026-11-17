@@ -25,7 +25,7 @@ class Header extends View {
 			throw new Error('No branding name configured for this page');
 		}
 
-		return this.page.getByRole('banner', {name: this.brandingName});
+		return this.page.getByRole('link', {name: this.brandingName});
 	}
 
 	get userMenuButton() {
@@ -45,27 +45,11 @@ class Header extends View {
 	}
 
 	get infoSidebarToggle() {
-		return this.page.getByRole('button', {name: /open info/i});
+		return this.page.getByRole('button', {name: 'Info', exact: true});
 	}
 
 	get logoutMenuItem() {
 		return this.page.getByRole('menuitem', {name: 'Log out'});
-	}
-
-	get documentationLink() {
-		return this.page.getByRole('button', {name: 'Documentation'});
-	}
-
-	get camundaAcademyLink() {
-		return this.page.getByRole('button', {name: 'Camunda Academy'});
-	}
-
-	get communityForumLink() {
-		return this.page.getByRole('button', {name: 'Community Forum'});
-	}
-
-	get feedbackAndSupportLink() {
-		return this.page.getByRole('button', {name: 'Feedback and Support'});
 	}
 
 	languageMenuItem(language: string) {

@@ -112,26 +112,19 @@ const DropdownLoading = styled(InlineLoading)`
 const LastModificationContainer = styled.div`
 	display: flex;
 	align-items: center;
-	height: 2rem;
+	height: 2.5rem;
 	${styles.bodyShort01};
 	background-color: var(--cds-button-secondary);
 	color: var(--cds-text-on-color);
-	padding: var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05);
+	border-radius: var(--cds-spacing-03);
+	gap: var(--cds-spacing-02);
+	padding: var(--cds-spacing-02) var(--cds-spacing-02) var(--cds-spacing-02) var(--cds-spacing-05);
 `;
 
 const LastModificationDetail = styled.div`
 	display: inline-flex;
 	position: relative;
 	padding-right: var(--cds-spacing-05);
-
-	&::after {
-		content: ' ';
-		position: absolute;
-		right: 0;
-		height: var(--cds-spacing-05);
-		width: 1px;
-		background-color: var(--cds-text-on-color);
-	}
 `;
 
 const SummaryTitle = styled.h4`

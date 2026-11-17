@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef, useEffect, useLayoutEffect, useState, useCallback, useId} from 'react';
+import React, {useRef, useEffect, useLayoutEffect, useState, useCallback, useId, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
+import {ArrowUpRight} from '@camunda/design-system/icons';
+import {createPortal} from 'react-dom';
 import {cn} from '#/shared/cn';
 import {BpmnJS, type OnElementSelection, type OnElementDoubleClick} from '../BpmnJS';
 import type {OverlayData, OverlayEntry} from '../overlayTypes';
@@ -17,6 +19,27 @@ import {DiagramOverlayContext} from '../DiagramOverlayContext';
 import {useFullscreen} from '../useFullscreen';
 
 type OnRootChange = (rootElementId: string, getSelectionRootId: (elementId: string) => string | undefined) => void;
+
+const DRILL_DOWN_OVERLAY_TYPE = 'op-drilldown-icon';
+const DRILL_DOWN_OVERLAY_POSITION = {top: 4, right: 18};
+
+type DrillDownIconProps = {
+	container: HTMLElement;
+	isLoading: boolean;
+};
+
+function DrillDownIcon({container, isLoading}: DrillDownIconProps) {
+	return createPortal(
+		<ArrowUpRight
+			aria-hidden
+			className={cn(
+				'op-drilldown-icon text-neutral-foreground-subtle size-3.5',
+				isLoading && 'motion-safe:animate-[op-drilldown-pulse_1s_ease-in-out_infinite]',
+			)}
+		/>,
+		container,
+	);
+}
 
 type SelectedElementOverlayProps = {
 	selectedElementRef: SVGElement;
@@ -129,6 +152,7 @@ function Diagram({
 }: Props) {
 	const {t} = useTranslation();
 	const keyboardHintId = useId();
+	const drillDownHintId = useId();
 	const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
 	const diagramRef = useRef<HTMLDivElement | null>(null);
 	const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -142,6 +166,22 @@ function Diagram({
 	const [isViewboxChanging, setIsViewboxChanging] = useState(false);
 	const [isKeyboardFocused, setIsKeyboardFocused] = useState(false);
 	const [tooltipAnchor, setTooltipAnchor] = useState<{x: number; y: number} | null>(null);
+	const drillDownOverlaysData = useMemo(
+		() =>
+			(customElementClasses ?? [])
+				.filter(([, className]) => className === 'op-drilldown')
+				.map(([elementId]): OverlayData => ({
+					type: DRILL_DOWN_OVERLAY_TYPE,
+					elementId,
+					position: DRILL_DOWN_OVERLAY_POSITION,
+					isZoomFixed: true,
+				})),
+		[customElementClasses],
+	);
+	const allOverlaysData = useMemo(
+		() => [...(overlaysData ?? []), ...drillDownOverlaysData],
+		[overlaysData, drillDownOverlaysData],
+	);
 	const [activeOverlays, setActiveOverlays] = useState<OverlayEntry[]>([]);
 	const [selectedElement, setSelectedElement] = useState<SVGGraphicsElement | undefined>(undefined);
 
@@ -232,7 +272,7 @@ function Diagram({
 		}
 
 		const canvas = diagramCanvasRef.current;
-		canvas.querySelector('svg')?.setAttribute('tabindex', '-1');
+		canvas.querySelector('.djs-container > svg')?.setAttribute('tabindex', '-1');
 		canvas
 			.querySelectorAll('[role="img"][data-element-id]:not(.op-non-selectable)')
 			.forEach((element) => ['role', 'aria-label'].forEach((attribute) => element.removeAttribute(attribute)));
@@ -261,7 +301,7 @@ function Diagram({
 
 		const canvas = diagramCanvasRef.current;
 		canvas.querySelectorAll('[role="button"]:not(.op-selectable)').forEach((element) => {
-			['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby'].forEach((attribute) =>
+			['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby', 'aria-busy'].forEach((attribute) =>
 				element.removeAttribute(attribute),
 			);
 		});
@@ -275,8 +315,14 @@ function Diagram({
 			element.setAttribute('tabindex', element === tabStop ? '0' : '-1');
 			element.setAttribute('role', 'button');
 			element.setAttribute('aria-pressed', String(element.classList.contains('op-selected')));
+			const isDrillDown = element.classList.contains('op-drilldown');
+			element.setAttribute('aria-describedby', isDrillDown ? `${keyboardHintId} ${drillDownHintId}` : keyboardHintId);
 			element.setAttribute('aria-label', getElementLabel(element));
-			element.setAttribute('aria-describedby', keyboardHintId);
+			if (isDrillDown && element.classList.contains('op-drilldown-loading')) {
+				element.setAttribute('aria-busy', 'true');
+			} else {
+				element.removeAttribute('aria-busy');
+			}
 		});
 	}, [
 		isDiagramRendered,
@@ -285,12 +331,20 @@ function Diagram({
 		selectedElementIds,
 		customElementClasses,
 		keyboardHintId,
+		drillDownHintId,
 		getElementLabel,
 	]);
 
 	const handleCanvasKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
 		const target = event.target instanceof Element ? event.target.closest<SVGElement>('.op-selectable') : null;
 		if (target === null) {
+			return;
+		}
+
+		const elementId = target.getAttribute('data-element-id');
+		if (event.key === 'Enter' && event.shiftKey && elementId !== null && target.matches('.op-drilldown')) {
+			event.preventDefault();
+			handlersRef.current.onElementDoubleClick?.(elementId);
 			return;
 		}
 
@@ -414,7 +468,7 @@ function Diagram({
 					xml,
 					selectableElements,
 					selectedElementIds,
-					overlaysData,
+					overlaysData: allOverlaysData,
 					highlightedSequenceFlows,
 					highlightedElementIds,
 					nonSelectableNodeTooltipText,
@@ -445,7 +499,7 @@ function Diagram({
 		xml,
 		selectableElements,
 		selectedElementIds,
-		overlaysData,
+		allOverlaysData,
 		highlightedSequenceFlows,
 		highlightedElementIds,
 		nonSelectableNodeTooltipText,
@@ -497,6 +551,9 @@ function Diagram({
 				>
 					{t('operate.shared.diagram.keyboardHint')}
 				</span>
+				<span id={drillDownHintId} className="sr-only">
+					{t('operate.shared.diagram.drillDownHint')}
+				</span>
 				{nonSelectableNodeTooltipText !== undefined && (
 					<Tooltip
 						open={tooltipAnchor !== null}
@@ -516,6 +573,18 @@ function Diagram({
 						<TooltipContent side="top">{nonSelectableNodeTooltipText}</TooltipContent>
 					</Tooltip>
 				)}
+				{isDiagramRendered &&
+					activeOverlays
+						.filter(({type}) => type === DRILL_DOWN_OVERLAY_TYPE)
+						.map(({container, elementId}) => (
+							<DrillDownIcon
+								key={elementId}
+								container={container}
+								isLoading={(customElementClasses ?? []).some(
+									([id, className]) => id === elementId && className === 'op-drilldown-loading',
+								)}
+							/>
+						))}
 				{isDiagramRendered && (
 					<>
 						<DiagramControls

@@ -15,6 +15,10 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
+	mockGetElementInstanceEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockQueryProcessInstanceIncidentsEndpoint,
+	mockQueryElementInstanceIncidentsEndpoint,
 	mockQueryVariablesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -24,6 +28,11 @@ import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/o
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
+import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
@@ -94,6 +103,157 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await expect(operatePreviewProcessInstancePage.variableRow('amount')).toContainText('100');
 	});
 
+	test.describe('Incidents tab', () => {
+		test.beforeEach(({network}) => {
+			network.use(
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
+					),
+				}),
+			);
+		});
+
+		test('should select the failing element on row click and clear it on a second click', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const incident = createIncident({errorMessage: 'Payment failed'});
+			const incidents = HttpResponse.json(
+				createPaginatedResponse({
+					items: [incident],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			);
+			network.use(
+				mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockQueryElementInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockGetElementInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createElementInstance({
+							elementInstanceKey: incident.elementInstanceKey,
+							elementId: incident.elementId,
+							processInstanceKey: PROCESS_INSTANCE_ID,
+						}),
+					),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+			await operatePreviewProcessInstancePage.incidentsTab.click();
+			const row = operatePreviewProcessInstancePage.incidentsTable.getByRole('row').filter({hasText: 'Payment failed'});
+			await expect(row).toBeVisible();
+			await expect(row).not.toContainText('Selected');
+
+			await row.click();
+
+			await expect(page).toHaveURL(/elementId=/);
+			await expect(row).toContainText('Selected');
+
+			await row.click();
+
+			await expect(page).not.toHaveURL(/elementId=/);
+			await expect(row).not.toContainText('Selected');
+		});
+
+		test('should select the failing element with the keyboard', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const incident = createIncident({errorMessage: 'Payment failed'});
+			const incidents = HttpResponse.json(
+				createPaginatedResponse({
+					items: [incident],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			);
+			network.use(
+				mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockQueryElementInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockGetElementInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createElementInstance({
+							elementInstanceKey: incident.elementInstanceKey,
+							elementId: incident.elementId,
+							processInstanceKey: PROCESS_INSTANCE_ID,
+						}),
+					),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+			await operatePreviewProcessInstancePage.incidentsTab.click();
+			const row = operatePreviewProcessInstancePage.incidentsTable.getByRole('row').filter({hasText: 'Payment failed'});
+
+			await row.getByRole('button', {name: 'Payment failed'}).press('Enter');
+
+			await expect(page).toHaveURL(/elementId=/);
+			await expect(row).toContainText('Selected');
+		});
+
+		test('should select a multi-instance body incident as the body', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const incident = createIncident({errorMessage: 'Payment failed'});
+			const incidents = HttpResponse.json(
+				createPaginatedResponse({
+					items: [incident],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			);
+			network.use(
+				mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockQueryElementInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockGetElementInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createElementInstance({
+							elementInstanceKey: incident.elementInstanceKey,
+							elementId: incident.elementId,
+							processInstanceKey: PROCESS_INSTANCE_ID,
+							type: 'MULTI_INSTANCE_BODY',
+							hasIncident: true,
+						}),
+					),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+			await operatePreviewProcessInstancePage.incidentsTab.click();
+
+			await operatePreviewProcessInstancePage.incidentsTable
+				.getByRole('row')
+				.filter({hasText: 'Payment failed'})
+				.getByRole('button', {name: 'Payment failed'})
+				.press('Enter');
+
+			await expect(page).toHaveURL(/isMultiInstanceBody=true/);
+		});
+
+		test('should put the sort of the clicked column in the URL', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			network.use(
+				mockQueryProcessInstanceIncidentsEndpoint({
+					successResponse: HttpResponse.json(
+						createPaginatedResponse({
+							items: [createIncident({errorMessage: 'Payment failed'})],
+							page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						}),
+					),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+			await operatePreviewProcessInstancePage.incidentsTab.click();
+
+			await operatePreviewProcessInstancePage.incidentsTable.getByRole('button', {name: 'Type'}).click();
+
+			await expect(page).toHaveURL(/sort=errorType/);
+		});
+	});
+
 	test('should keep the selected element in the URL and clear it on a second canvas click', async ({
 		operatePreviewProcessInstancePage,
 		page,
@@ -110,18 +270,34 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await expect(page).not.toHaveURL(/elementId=/);
 	});
 
-	test('should redirect to the default tab and switch tabs through the URL', async ({
+	test('should open the Incidents tab for an instance with incidents and switch tabs through the URL', async ({
+		network,
 		operatePreviewProcessInstancePage,
 		page,
 	}) => {
+		network.use(
+			mockGetProcessInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
+				),
+			}),
+			mockQueryProcessInstanceIncidentsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createIncident()],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
-		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
-
-		await operatePreviewProcessInstancePage.incidentsTab.click();
-
 		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/incidents`);
-		await expect(operatePreviewProcessInstancePage.incidentsTab).toHaveAttribute('aria-selected', 'true');
+
+		await page.getByRole('tab', {name: 'Variables'}).click();
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
+		await expect(page.getByRole('tab', {name: 'Variables'})).toHaveAttribute('aria-selected', 'true');
 	});
 
 	test('should redirect to the details tab when the instance waits at process level', async ({
@@ -173,6 +349,27 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		expect(statisticsRequests).toHaveLength(0);
 	});
 
+	test('should leave the mapping tab when the selection is cleared and the flag is off', async ({
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+		await operatePreviewProcessInstancePage.tab('Input Mappings').click();
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toHaveAttribute('aria-selected', 'true');
+
+		await operatePreviewProcessInstancePage.diagram.click({position: {x: 5, y: 5}});
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
+		await expect(operatePreviewProcessInstancePage.variablesTab).toHaveAttribute('aria-selected', 'true');
+	});
+
 	test('should not render a breadcrumb for a root instance', async ({network, operatePreviewProcessInstancePage}) => {
 		network.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
 
@@ -202,5 +399,96 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 				name: 'View Process Parent Process - Instance 1',
 			}),
 		).toBeVisible();
+	});
+
+	test('should show the instance history tree and select an element from it', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		const task = createElementInstance({
+			elementId: 'task-1',
+			elementInstanceKey: '2251799813685290',
+			elementName: 'Task 1',
+		});
+		network.use(
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstancesResponse([
+						createElementInstance({elementId: 'task-1', elementInstanceKey: '2251799813685290', elementName: 'Task 1'}),
+					]),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.historyItem('Task 1').click();
+
+		await expect(page).toHaveURL(/elementInstanceKey=%222251799813685290%22/);
+		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toHaveAttribute('aria-selected', 'true');
+	});
+	test('should show the variables tab when the history path is opened on a wide viewport', async ({
+		operatePreviewProcessInstancePage,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/history');
+
+		await expect(operatePreviewProcessInstancePage.tab('Variables')).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test.describe('on a narrow viewport', () => {
+		test.beforeEach(async ({page}) => {
+			await page.setViewportSize({width: 800, height: 900});
+		});
+
+		test('should leave the history tab for the details tab when an element is selected', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const task = createElementInstance({elementInstanceKey: '2251799813685290', elementName: 'Task 1'});
+			network.use(
+				mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(createQueryElementInstancesResponse([task])),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/history');
+
+			await page.getByRole('treeitem', {name: /Task 1/}).click();
+
+			await expect(operatePreviewProcessInstancePage.tab('Details')).toHaveAttribute('aria-selected', 'true');
+		});
+
+		test('should leave the history tab for the incidents tab when an element with an incident is selected', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const task = createElementInstance({
+				elementInstanceKey: '2251799813685290',
+				elementName: 'Task 1',
+				hasIncident: true,
+			});
+			const incidents = HttpResponse.json(createPaginatedResponse({items: [createIncident()]}));
+			network.use(
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
+					),
+				}),
+				mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockQueryElementInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(createQueryElementInstancesResponse([task])),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/history');
+
+			await page.getByRole('treeitem', {name: /Task 1/}).click();
+
+			await expect(operatePreviewProcessInstancePage.tab('Incidents')).toHaveAttribute('aria-selected', 'true');
+		});
 	});
 });

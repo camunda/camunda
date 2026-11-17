@@ -64,7 +64,8 @@ public final class ValueTypes {
           ValueType.EXPRESSION,
           ValueType.GLOBAL_LISTENER,
           ValueType.AGENT_INSTANCE,
-          ValueType.PROBE);
+          ValueType.PROBE,
+          ValueType.PROBE_BATCH);
 
   private ValueTypes() {}
 

@@ -152,6 +152,28 @@ describe('<DiagramPanel />', () => {
 		await expect.element(screen.getByTestId('state-overlay-startEvent_1-active')).toHaveTextContent('3');
 	});
 
+	it('should offer the BPMN XML download for a single selected version', async ({worker}) => {
+		worker.use(
+			...PROCESS_OPERATIONS_HANDLERS,
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		const screen = await renderDiagramPanel({
+			processDefinitionSelection: {kind: 'single-version', definition: DEFINITION},
+			onElementSelection: () => {},
+			active: true,
+			incidents: true,
+			completed: false,
+			canceled: false,
+			suspended: false,
+		});
+
+		await expect.element(screen.getByRole('button', {name: 'Download XML'})).toBeVisible();
+	});
+
 	it('should count the instances the list filters select, including variables and business ID', async ({worker}) => {
 		worker.use(
 			...PROCESS_OPERATIONS_HANDLERS,

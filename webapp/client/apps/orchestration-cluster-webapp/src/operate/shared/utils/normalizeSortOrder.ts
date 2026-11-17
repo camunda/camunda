@@ -6,13 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.userDetails {
-	display: flex;
-	flex-direction: column;
-	padding: var(--cds-spacing-03) var(--cds-spacing-05);
+function normalizeSortOrder(sort: string | undefined) {
+	return sort?.replace(/\+(asc|desc)$/i, (order) => order.toUpperCase());
 }
 
-.email {
-	font-size: var(--cds-label-01-font-size);
-	color: var(--cds-text-secondary);
-}
+export {normalizeSortOrder};

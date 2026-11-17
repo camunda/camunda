@@ -85,6 +85,7 @@ final class IntentEncodingDecodingTest {
             ProbeIntent.CANCELED);
     assertThat(batchEvents).containsExactly(ProbeBatchIntent.ACTIVATED);
     assertThat(Intent.fromProtocolValue(ValueType.PROBE, "ANSWER")).isSameAs(ProbeIntent.ANSWER);
+    assertThat(Intent.fromProtocolValue(ValueType.PROBE, "RESPOND")).isSameAs(ProbeIntent.RESPOND);
     assertThat(Intent.fromProtocolValue(ValueType.PROBE_BATCH, "ACTIVATE"))
         .isSameAs(ProbeBatchIntent.ACTIVATE);
   }
@@ -106,6 +107,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(
             BatchOperationExecutionIntent.class, BatchOperationExecutionIntent::from));
+    result.addAll(buildParameterSets(CaseIntent.class, CaseIntent::from));
     result.addAll(buildParameterSets(CheckpointIntent.class, CheckpointIntent::from));
     result.addAll(buildParameterSets(ClockIntent.class, ClockIntent::from));
     result.addAll(buildParameterSets(ClusterBehaviorIntent.class, ClusterBehaviorIntent::from));

@@ -729,6 +729,7 @@
 				"learnMore": "Mehr über {{resources}} erfahren"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Benutzernamen unterscheiden zwischen Groß- und Kleinschreibung. Geben Sie den Benutzernamen genau so ein, wie er beim Identity-Provider bekannt ist.",
 				"kinds": {
 					"users": "Benutzer",
 					"groups": "Gruppen",
@@ -1674,6 +1675,7 @@
 					"operationsLog": "Operationsprotokoll",
 					"timestamps": "Enddatum",
 					"executionCount": "Ausführungsanzahl",
+					"loadingMore": "Weitere Elemente werden geladen",
 					"multiInstance": " (Multi-Instanz)",
 					"migrated": "Migriert {{date}}",
 					"forbidden": "Sie haben keine Berechtigung, die Instanzhistorie anzuzeigen",
@@ -1778,8 +1780,10 @@
 					"table": {
 						"operationType": "Vorgangstyp",
 						"entityType": "Entitätstyp",
-						"entityKey": "Entitätsschlüssel"
-					}
+						"entityKey": "Entitätsschlüssel",
+						"result": "Ergebnis"
+					},
+					"list": "Operationsprotokoll-Liste"
 				},
 				"variables": {
 					"search": "Variablen nach Namen suchen",
@@ -1968,7 +1972,8 @@
 					"noOutput": "Keine Ausgabezuordnungen definiert",
 					"localVariableName": "Name der lokalen Variable",
 					"processVariableName": "Name der Prozessvariable",
-					"assignmentValue": "Wert der Variablenzuweisung"
+					"assignmentValue": "Wert der Variablenzuweisung",
+					"loading": "Zuweisungen werden geladen"
 				},
 				"listeners": {
 					"filter": {
@@ -1985,7 +1990,8 @@
 					"time": "Zeit",
 					"emptyAll": "Dieses Element hat weder Ausführungs-Listener noch Benutzeraufgaben-Listener",
 					"emptyTask": "Dieses Element hat keine Benutzeraufgaben-Listener",
-					"emptyExecution": "Dieses Element hat keine Ausführungs-Listener"
+					"emptyExecution": "Dieses Element hat keine Ausführungs-Listener",
+					"loading": "Listener werden geladen"
 				},
 				"modification": {
 					"pageHeading": "Operate Prozessinstanz - Änderungsmodus",
@@ -2077,6 +2083,7 @@
 					"imageAlt": "Detailseite der Prozessinstanz mit Incidents-Tab und Diagramm"
 				},
 				"incidents": {
+					"list": "Incident-Liste",
 					"filterByType": "Nach Incident-Typ filtern",
 					"resetFilters": "Filter zurücksetzen",
 					"errorMessage": "Fehlermeldung",
@@ -2086,6 +2093,8 @@
 					"operations": "Operationen",
 					"retryIncident": "Incident wiederholen",
 					"expandRow": "Zeile erweitern",
+					"collapseRow": "Zeile reduzieren",
+					"selectedRow": "Ausgewählt",
 					"jobId": "Job-ID",
 					"more": "Mehr",
 					"errorModalTitle": "Fehler im Element \"{{name}}\"",
@@ -2184,6 +2193,7 @@
 					"processDefinitions": "Prozessdefinitionen",
 					"variables": "Variablen"
 				},
+				"noActor": "Kein Akteur",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "KI-Agent im Auftrag von {{actorType}}",
 					"mcpToolCall": "MCP-Tool-Aufruf"
@@ -2370,6 +2380,7 @@
 				},
 				"validators": {
 					"ids": "Schlüssel muss eine 16- bis 19-stellige Zahl sein, getrennt durch Leerzeichen oder Komma",
+					"decisionIds": "Schlüssel muss eine 16- bis 20-stellige Zahl mit einem Index sein, z. B. 2251799813702856-1",
 					"parentInstanceId": "Schlüssel muss eine 16- bis 19-stellige Zahl sein",
 					"batchOperationKey": "Schlüssel muss eine 16- bis 19-stellige Zahl oder eine UUID sein",
 					"time": "Die Zeit muss im Format hh:mm:ss angegeben werden",
@@ -2549,6 +2560,7 @@
 						"inclusiveGateway": "Inklusives Gateway",
 						"eventBasedGateway": "Ereignisbasiertes Gateway"
 					},
+					"drillDownHint": "Mit Umschalt+Eingabetaste die Details öffnen.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Mit den Pfeiltasten zwischen Elementen wechseln und mit der Eingabetaste auswählen."
 				},
@@ -2583,7 +2595,9 @@
 					"active_other": "{{count}} aktive Instanzen"
 				},
 				"sortableTable": {
-					"sortBy": "Sortieren nach {{label}}"
+					"sortBy": "Sortieren nach {{label}}",
+					"loadingPreviousPage": "Vorherige Einträge werden geladen",
+					"loadingNextPage": "Nächste Einträge werden geladen"
 				}
 			}
 		}

@@ -148,6 +148,14 @@ public final class AuthInfo implements BufferWriter {
     return new AuthInfo(format, anonymous, username, clientId, tenants, groups, tokenClaims, null);
   }
 
+  /**
+   * Returns an auth info with the same format and only the actor claims: the anonymous flag, the
+   * username and the client id.
+   */
+  public AuthInfo withActorClaimsOnly() {
+    return new AuthInfo(format, anonymous, username, clientId, null, null, null, null);
+  }
+
   public AuthDataFormat getFormat() {
     return format;
   }

@@ -8,11 +8,17 @@
 //
 // <dir> layout, written by the pick job:
 //   <dir>/<version>/<cell>/<run_id>/meta.json      {"created_at": "<iso>"}
-//   <dir>/<version>/<cell>/<run_id>/**/results.json
+//   <dir>/<version>/<cell>/<run_id>/<artifact>/**/results.json
 //
 // A test is a candidate when, across the window, it both failed (a `flaky`
 // retry or an `unexpected` result) and passed at least once. A test that never
 // passed is a hard failure and belongs to the nightly fix agent, not here.
+//
+// One nightly contributes at most one observation per cell: a cell is a
+// database family plus a mode, and the RDBMS nightlies run a matrix of
+// database versions per family, each uploading its own report under that one
+// cell. Counting every leg would score an RDBMS flake by the width of that
+// matrix. The night's observation is the worst leg (failed > flaky > passed).
 //
 // Prints a JSON array of candidates, highest score first. One candidate is one
 // test on one version, carrying every cell it was flaky in.
@@ -22,11 +28,12 @@ import {
   fingerprint,
   parseArgs,
   readJson,
+  testOutcome,
   walkSpecs,
 } from './report.mjs';
 import {readdirSync} from 'node:fs';
 
-const ATTEMPT_FAILED = new Set(['failed', 'timedOut']);
+const OBSERVATION_RANK = {passed: 0, flaky: 1, failed: 2};
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
@@ -50,6 +57,9 @@ export function pick({reportsDir, ledger = {}, max = 3, minScore = 2, now}) {
     for (const cell of listDirs(join(reportsDir, version))) {
       for (const runId of listDirs(join(reportsDir, version, cell))) {
         const runDir = join(reportsDir, version, cell, runId);
+        // This night's verdict per test, folded into the cell below so that a
+        // matrix of database versions counts once.
+        const observed = new Map();
         for (const resultsFile of findFiles(runDir, 'results.json')) {
           const report = readJson(resultsFile, null);
           if (!report) continue;
@@ -68,27 +78,29 @@ export function pick({reportsDir, ledger = {}, max = 3, minScore = 2, now}) {
                 cells: {},
               });
             }
-            const entry = byTest.get(key);
             for (const test of spec.tests ?? []) {
-              const counts = (entry.cells[cell] ??= {
-                flaky: 0,
-                failed: 0,
-                passed: 0,
-              });
-              // `unexpected` also covers interrupted runs (a cancelled
-              // nightly); only an attempt that actually failed counts.
-              const attemptFailed = (test.results ?? []).some((r) =>
-                ATTEMPT_FAILED.has(r.status),
-              );
-              if (test.status === 'flaky') counts.flaky += 1;
-              else if (test.status === 'unexpected' && attemptFailed) {
-                counts.failed += 1;
-              } else if (test.status === 'expected') counts.passed += 1;
-              else continue;
-              entry.projects[test.projectName] =
-                (entry.projects[test.projectName] ?? 0) + 1;
+              const status = testOutcome(test);
+              if (!status) continue;
+              const previous = observed.get(key);
+              if (
+                previous &&
+                OBSERVATION_RANK[previous.status] >= OBSERVATION_RANK[status]
+              ) {
+                continue;
+              }
+              observed.set(key, {status, project: test.projectName});
             }
           }
+        }
+        for (const [key, {status, project}] of observed) {
+          const entry = byTest.get(key);
+          const counts = (entry.cells[cell] ??= {
+            flaky: 0,
+            failed: 0,
+            passed: 0,
+          });
+          counts[status] += 1;
+          entry.projects[project] = (entry.projects[project] ?? 0) + 1;
         }
       }
     }

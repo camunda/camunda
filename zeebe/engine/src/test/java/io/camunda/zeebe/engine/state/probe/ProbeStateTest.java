@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,6 +82,75 @@ final class ProbeStateTest {
     // then
     assertThat(visited).containsExactly(2L, 3L);
     assertThat(nextDeadline).isEqualTo(3_000);
+  }
+
+  @Test
+  void shouldVisitTheActivatableProbesOfTheProbeIdAndTenantsOldestFirst() {
+    // given
+    probeState.create(1L, probe("probe-a", 1_000).setTenantId("tenant-a"));
+    probeState.create(2L, probe("probe-ab", 1_000).setTenantId("tenant-a"));
+    probeState.create(3L, probe("probe-a", 1_000).setTenantId("tenant-b"));
+    probeState.create(4L, probe("probe-a", 1_000).setTenantId("tenant-c"));
+    final List<Long> visited = new ArrayList<>();
+
+    // when
+    probeState.forEachActivatableProbe(
+        BufferUtil.wrapString("probe-a"),
+        List.of("tenant-a", "tenant-b"),
+        (key, probe) -> visited.add(key));
+
+    // then
+    assertThat(visited).containsExactly(1L, 3L);
+  }
+
+  @Test
+  void shouldActivateTheProbeWithItsWorkerAndNoLongerVisitIt() {
+    // given
+    probeState.create(1L, probe("probe-a", 1_000));
+
+    // when
+    probeState.activate(1L, BufferUtil.wrapString("worker-a"));
+
+    // then
+    assertThat(probeState.getState(1L)).isEqualTo(State.ACTIVATED);
+    assertThat(probeState.getProbe(1L)).extracting(ProbeRecord::getWorker).isEqualTo("worker-a");
+    assertThat(activatableKeys("probe-a")).isEmpty();
+  }
+
+  @Test
+  void shouldMakeAnActivatedProbeActivatableAgainWithoutWorker() {
+    // given
+    probeState.create(1L, probe("probe-a", 1_000));
+    probeState.activate(1L, BufferUtil.wrapString("worker-a"));
+
+    // when
+    probeState.makeActivatable(1L);
+
+    // then
+    assertThat(probeState.getState(1L)).isEqualTo(State.ACTIVATABLE);
+    assertThat(probeState.getProbe(1L)).extracting(ProbeRecord::getWorker).isEqualTo("");
+    assertThat(activatableKeys("probe-a")).containsExactly(1L);
+  }
+
+  @Test
+  void shouldRemoveAnActivatedProbe() {
+    // given
+    probeState.create(1L, probe("probe-a", 1_000));
+    probeState.activate(1L, BufferUtil.wrapString("worker-a"));
+
+    // when
+    probeState.remove(1L);
+
+    // then
+    assertThat(probeState.getState(1L)).isEqualTo(State.NOT_FOUND);
+    assertThat(probeState.forEachTimedOutProbe(Long.MAX_VALUE, (key, probe) -> true)).isEqualTo(-1);
+  }
+
+  private List<Long> activatableKeys(final String probeId) {
+    final List<Long> keys = new ArrayList<>();
+    probeState.forEachActivatableProbe(
+        BufferUtil.wrapString(probeId), List.of("<default>"), (key, probe) -> keys.add(key));
+    return keys;
   }
 
   private static ProbeRecord probe(final String probeId, final long deadline) {

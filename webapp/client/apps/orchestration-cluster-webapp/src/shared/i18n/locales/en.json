@@ -729,6 +729,7 @@
 				"learnMore": "Learn more about {{resources}}"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Usernames are case-sensitive. Enter the username exactly as it is known to the identity provider.",
 				"kinds": {
 					"users": "users",
 					"groups": "groups",
@@ -1686,6 +1687,7 @@
 					"operationsLog": "Operations Log",
 					"timestamps": "End date",
 					"executionCount": "Execution count",
+					"loadingMore": "Loading more elements",
 					"multiInstance": " (Multi Instance)",
 					"migrated": "Migrated {{date}}",
 					"forbidden": "You do not have permission to view instance history",
@@ -1790,8 +1792,10 @@
 					"table": {
 						"operationType": "Operation Type",
 						"entityType": "Entity Type",
-						"entityKey": "Entity Key"
-					}
+						"entityKey": "Entity Key",
+						"result": "Result"
+					},
+					"list": "Operations Log List"
 				},
 				"variables": {
 					"search": "Search variables by name",
@@ -1980,7 +1984,8 @@
 					"noOutput": "No Output Mappings defined",
 					"localVariableName": "Local Variable Name",
 					"processVariableName": "Process Variable Name",
-					"assignmentValue": "Variable Assignment Value"
+					"assignmentValue": "Variable Assignment Value",
+					"loading": "Loading mappings"
 				},
 				"listeners": {
 					"filter": {
@@ -1997,7 +2002,8 @@
 					"time": "Time",
 					"emptyAll": "This element has no execution listeners nor user task listeners",
 					"emptyTask": "This element has no user task listeners",
-					"emptyExecution": "This element has no execution listeners"
+					"emptyExecution": "This element has no execution listeners",
+					"loading": "Loading listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Process Instance - Modification Mode",
@@ -2089,6 +2095,7 @@
 					"imageAlt": "Process instance details page with incidents tab and diagram"
 				},
 				"incidents": {
+					"list": "Incidents list",
 					"filterByType": "Filter by Incident Type",
 					"resetFilters": "Reset Filters",
 					"errorMessage": "Error message",
@@ -2098,6 +2105,8 @@
 					"operations": "Operations",
 					"retryIncident": "Retry Incident",
 					"expandRow": "Expand row",
+					"collapseRow": "Collapse row",
+					"selectedRow": "Selected",
 					"jobId": "Job ID",
 					"more": "More",
 					"errorModalTitle": "Element \"{{name}}\" Error",
@@ -2196,6 +2205,7 @@
 					"processDefinitions": "process definitions",
 					"variables": "variables"
 				},
+				"noActor": "No actor",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "AI Agent on behalf of {{actorType}}",
 					"mcpToolCall": "MCP tool call"
@@ -2382,6 +2392,7 @@
 				},
 				"validators": {
 					"ids": "Key has to be a 16 to 19 digit number, separated by a space or a comma",
+					"decisionIds": "Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1",
 					"parentInstanceId": "Key has to be a 16 to 19 digit number",
 					"batchOperationKey": "Key has to be a 16 to 19 digit number or a UUID",
 					"time": "Time has to be in the format hh:mm:ss",
@@ -2561,6 +2572,7 @@
 						"inclusiveGateway": "inclusive gateway",
 						"eventBasedGateway": "event-based gateway"
 					},
+					"drillDownHint": "Press Shift+Enter to drill down.",
 					"elementLabel": "{{name}} ({{type}})",
 					"keyboardHint": "Use the arrow keys to move between elements and Enter to select."
 				},
@@ -2595,7 +2607,9 @@
 					"active_other": "{{count}} active instances"
 				},
 				"sortableTable": {
-					"sortBy": "Sort by {{label}}"
+					"sortBy": "Sort by {{label}}",
+					"loadingPreviousPage": "Loading previous items",
+					"loadingNextPage": "Loading next items"
 				}
 			}
 		}
