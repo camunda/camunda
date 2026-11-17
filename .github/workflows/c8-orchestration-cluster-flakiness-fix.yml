@@ -226,7 +226,8 @@ jobs:
             echo "|---|---|---|---|---|---|"
             jq -r '.[] | "| \(.version) | `\(.file)` › \(.title) | \(.post_merge.merged_at[0:10]) | \(.post_merge.nightlies) | \(.post_merge.flaked) | \(.post_merge.summary) |"' \
               "$RUNNER_TEMP/postmerge.json"
-          } >> "$GITHUB_STEP_SUMMARY" || echo "::warning::could not write the post-merge summary"
+          } | tee -a "$GITHUB_STEP_SUMMARY" \
+            || echo "::warning::could not write the post-merge summary"
 
           exit 0
 
