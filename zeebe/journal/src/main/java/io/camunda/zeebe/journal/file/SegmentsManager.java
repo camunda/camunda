@@ -407,7 +407,13 @@ final class SegmentsManager implements AutoCloseable {
       return createSegmentFile(descriptor, lastWrittenAsqn);
     } catch (final OutOfDiskSpace e) {
       // callers compact on out of disk space and retry at once, before the deletion frees space
-      deleteQueuedSegmentsNow();
+      try {
+        deleteQueuedSegmentsNow();
+      } catch (final RuntimeException deletionError) {
+        // callers handle out of disk space in a special way, so the type must not change
+        e.addSuppressed(deletionError);
+        throw e;
+      }
       return createSegmentFile(descriptor, lastWrittenAsqn);
     }
   }
