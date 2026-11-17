@@ -85,7 +85,7 @@ public class ProcessEventsClaimsTest {
   }
 
   @Test
-  public void shouldKeepOnlyActorClaimsOnFollowUpEvents() {
+  public void shouldKeepOnlyActorClaimsOnFollowUpRecords() {
     // given
     deployProcess();
     final var authInfo =
@@ -113,17 +113,22 @@ public class ProcessEventsClaimsTest {
                         && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
             .toList();
     assertThat(records)
-        .filteredOn(r -> r.getRecordType() == RecordType.EVENT)
-        .isNotEmpty()
+        .extracting(Record::getRecordType)
+        .contains(RecordType.COMMAND, RecordType.EVENT);
+    assertThat(records)
         .allSatisfy(
             r ->
                 assertThat(r.getAuthorizations())
                     .isEqualTo(
                         Map.of(Authorization.AUTHORIZED_USERNAME, DEFAULT_USER.getUsername())));
-    assertThat(records)
-        .filteredOn(r -> r.getRecordType() == RecordType.COMMAND)
-        .isNotEmpty()
-        .allSatisfy(r -> assertThat(r.getAuthorizations()).isEqualTo(authInfo.getClaims()));
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATE)
+                .onlyCommands()
+                .getFirst()
+                .getAuthorizations())
+        .as("client command")
+        .isEqualTo(authInfo.getClaims());
   }
 
   @Test
