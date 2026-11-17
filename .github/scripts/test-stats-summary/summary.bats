@@ -173,7 +173,7 @@ block() {
   grep -qx -- '--parameter=triggers:ARRAY<STRING>:\["push","merge_group"\]' fixtures/bq-parameters.txt
   [ "$(jq -r '.[0].text' "$MESSAGES")" = "Failing tests last week" ]
   [ "$(jq '.[0].blocks | length' "$MESSAGES")" -eq 2 ]
-  [ "$(block 0 0)" = ":fire: *\`main\`*: top 5 failing tests last week (<${GRAFANA}?orgId=1&from=now-1w%2Fw&to=now-1w%2Fw&timezone=browser&var-branch=main|Grafana>)
+  [ "$(block 0 0)" = ":fire: *\`main\`*: top 5 failing tests last week (<${GRAFANA}?orgId=1&from=now-7d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana>)
 
 *data-layer* (1 of 1 test) :arrow_right:  ${DATA_LAYER_MEDIC}
 • 3x \`FooIT.shouldFoo\`

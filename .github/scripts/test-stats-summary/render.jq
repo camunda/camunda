@@ -10,13 +10,15 @@
 # thread replies, one per branch with tests. "shortened" is true when the section did not fit
 # into one Slack section block and lost links or name characters.
 
+# from and to are the Grafana time range of the query window: the last full days before today.
+# The weekly range is the last 7 days, not now-1w/w, which is the previous calendar week.
 def config:
   if $mode == "flaky" then
     {emoji: "🥇", title: "flaky tests yesterday", none: "no flaky tests yesterday",
-     noun: "flaky test", window: "now-1d%2Fd", text: "Flaky tests yesterday"}
+     noun: "flaky test", from: "now-1d%2Fd", to: "now-1d%2Fd", text: "Flaky tests yesterday"}
   else
     {emoji: ":fire:", title: "failing tests last week", none: "no failing tests last week",
-     noun: "failing test", window: "now-1w%2Fw", text: "Failing tests last week"}
+     noun: "failing test", from: "now-7d%2Fd", to: "now-1d%2Fd", text: "Failing tests last week"}
   end;
 
 def top($branch): if $branch == $branches[0] then $top_main else $top_stable end;
@@ -32,7 +34,7 @@ def truncate($n): if $n > 0 and length > $n then .[:$n - 1] + "…" else . end;
 
 def grafana_url($branch):
   "https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo"
-  + "?orgId=1&from=\(config.window)&to=\(config.window)&timezone=browser&var-branch=\($branch | @uri)";
+  + "?orgId=1&from=\(config.from)&to=\(config.to)&timezone=browser&var-branch=\($branch | @uri)";
 
 # The job when its ID is known, else the run attempt, marked "(run)" so readers know to look for
 # the job in the run
