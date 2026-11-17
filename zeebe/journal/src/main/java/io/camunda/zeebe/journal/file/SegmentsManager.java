@@ -194,6 +194,7 @@ final class SegmentsManager implements AutoCloseable {
   boolean deleteUntil(final long index) {
     final Map.Entry<Long, Segment> segmentEntry = segments.floorEntry(index);
     if (segmentEntry == null) {
+      scheduleQueuedDeletion();
       return false;
     }
 
@@ -204,6 +205,8 @@ final class SegmentsManager implements AutoCloseable {
           "No segments can be deleted with index < {} (first log index: {})",
           index,
           getFirstIndex());
+      // a previous deletion can have failed, and no new segment may become compactable soon
+      scheduleQueuedDeletion();
       return false;
     }
 
@@ -223,10 +226,17 @@ final class SegmentsManager implements AutoCloseable {
 
     journalIndex.deleteUntil(index);
 
-    // file deletion is slow, and appends and readers wait for the journal lock
-    pendingDeletion = pendingDeletion.thenRunAsync(this::tryDeleteQueuedSegments, deletionExecutor);
+    scheduleQueuedDeletion();
 
     return true;
+  }
+
+  private void scheduleQueuedDeletion() {
+    if (!segmentsToDelete.isEmpty()) {
+      // file deletion is slow, and appends and readers wait for the journal lock
+      pendingDeletion =
+          pendingDeletion.thenRunAsync(this::tryDeleteQueuedSegments, deletionExecutor);
+    }
   }
 
   private void tryDeleteQueuedSegments() {
@@ -395,9 +405,6 @@ final class SegmentsManager implements AutoCloseable {
     try {
       return createSegmentFile(descriptor, lastWrittenAsqn);
     } catch (final OutOfDiskSpace e) {
-      if (segmentsToDelete.isEmpty()) {
-        throw e;
-      }
       // callers compact on out of disk space and retry at once, before the deletion frees space
       deleteQueuedSegmentsNow();
       return createSegmentFile(descriptor, lastWrittenAsqn);
