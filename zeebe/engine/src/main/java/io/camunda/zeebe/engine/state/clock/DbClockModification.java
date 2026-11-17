@@ -54,5 +54,5 @@ final class DbClockModification extends UnpackedObject implements DbValue {
     NONE,
     PIN,
     OFFSET
-  };
+  }
 }
