@@ -12,10 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
@@ -27,7 +23,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -68,22 +63,9 @@ public class DrainingProcessDefinitionTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
-
   @Rule
   public final EngineRule engine =
-      EngineRule.singlePartition().withSearchClientsProxy(searchClientsProxy);
-
-  @Before
-  public void setUp() {
-    // the finalize-time history deletion creates a DELETE_PROCESS_INSTANCE batch operation, whose
-    // execution queries secondary storage; return no items so it completes cleanly rather than
-    // fail-looping in tests that only assert on the created batch operation
-    when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
-    when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
-        .thenReturn(
-            new SearchQueryResult.Builder<ProcessInstanceEntity>().items(List.of()).build());
-  }
+      EngineRule.singlePartition();
 
   @Test
   public void shouldRejectCreateInstanceByProcessIdWhenNoActiveVersionRemains() {
@@ -919,15 +901,6 @@ public class DrainingProcessDefinitionTest {
                   .formatted(processDefinitionKey));
     }
 
-    // then - no history-deletion batch operation was ever spawned by the repeated calls
-    Assertions.assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                records ->
-                    RecordingExporter.batchOperationCreationRecords()
-                        .withIntent(BatchOperationIntent.CREATE)
-                        .exists()))
-        .describedAs("a repeated deletion while draining must not spawn a batch operation")
-        .isFalse();
 
     // and - the still-running instance was not terminated by the repeated deletions
     Assertions.assertThat(

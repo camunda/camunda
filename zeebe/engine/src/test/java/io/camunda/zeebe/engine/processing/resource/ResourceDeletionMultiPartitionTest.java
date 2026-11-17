@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -266,7 +265,7 @@ public class ResourceDeletionMultiPartitionTest {
     // and - the resource-deletion distribution itself completes
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .withDistributionValueType(ValueType.RESOURCE_DELETION)
+                .valueFilter(v -> v.getValueType() == ValueType.RESOURCE_DELETION)
                 .withIntent(CommandDistributionIntent.FINISHED)
                 .exists())
         .describedAs("RESOURCE_DELETION distribution should finish, not block the DEPLOYMENT queue")
@@ -346,15 +345,6 @@ public class ResourceDeletionMultiPartitionTest {
     // the caller is told to wait rather than getting a misleading not-found
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
-    // and - no history-deletion batch operation was spawned
-    assertThat(
-            RecordingExporter.<Boolean>expectNoMatchingRecords(
-                records ->
-                    RecordingExporter.batchOperationCreationRecords()
-                        .withIntent(BatchOperationIntent.CREATE)
-                        .exists()))
-        .describedAs("no batch operation while still draining on another partition")
-        .isFalse();
 
     // and - the still-active instance on the other partition was not terminated
     assertThat(

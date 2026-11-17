@@ -11,10 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -47,19 +43,9 @@ public class PendingDeletionAsActiveTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
-
   @Rule
   public final EngineRule engine =
-      EngineRule.singlePartition().withSearchClientsProxy(searchClientsProxy);
-
-  @Before
-  public void setUp() {
-    when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
-    when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
-        .thenReturn(
-            new SearchQueryResult.Builder<ProcessInstanceEntity>().items(List.of()).build());
-  }
+      EngineRule.singlePartition();
 
   @Test
   public void shouldTreatPendingDeletionLatestAsDuplicateOnIdenticalRedeploy() {
