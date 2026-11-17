@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 # Tests for build.sh and post.sh. No network: stubs on PATH answer bq from fixture files, gh from
-# a table of issue searches, git and codeowners-cli for the medic lookup, and curl for Slack.
+# a table of issue searches, git and codeowners-cli for the team lookup, and curl for Slack.
 
 BUILD="${BATS_TEST_DIRNAME}/build.sh"
 POST="${BATS_TEST_DIRNAME}/post.sh"
@@ -10,6 +10,7 @@ GRAFANA="https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-
 RUNS="https://github.com/camunda/camunda/actions/runs"
 ISSUES="https://github.com/camunda/camunda/issues"
 DATA_LAYER_MEDIC="<!subteam^S08P2CSC06S|data-layer-medic>"
+CORE_FEATURES_MEDIC="<!subteam^S08P2CU9V8W|core-features-medic>"
 
 setup() {
   cd "${BATS_TEST_TMPDIR}"
@@ -52,9 +53,11 @@ EOF
 echo "${2#\*\*/}"
 EOF
 
+  # codeowners-cli owner <file>: the owner listed for the file in fixtures/owners.tsv
   cat > bin/codeowners-cli <<'EOF'
 #!/usr/bin/env bash
-jq -n --arg f "${*: -1}" '{($f): {required: ["@camunda/data-layer"]}}'
+owner="$(awk -F'\t' -v f="${*: -1}" '$1 == f { print $2 }' "${FIXTURES}/owners.tsv")"
+jq -n --arg f "${*: -1}" --arg o "$owner" '{($f): {required: [$o]}}'
 EOF
 
   # curl to chat.postMessage: logs the request body, answers ok with a ts, or the error in
@@ -72,22 +75,28 @@ fi
 EOF
   chmod +x bin/*
   echo '[]' > fixtures/top-tests.json
+  touch fixtures/owners.tsv
 }
 
 # top_tests <branch>|<class>|<test>|<count>|<tests on branch>|<run>:<attempt>:<job>[:<job id>],...
+# The rows of a branch are ranked in the given order.
 top_tests() {
   printf '%s\n' "$@" | jq -R -s -c '
     split("\n") | map(select(. != "") | split("|")) | map({
       branch: .[0], test_class_name: .[1], test_name: .[2], occurrences: .[3], tests_on_branch: .[4],
       links: (.[5] | split(",") | map(split(":") | {run_id: .[0], run_attempt: .[1], job_name: .[2], job_id: .[3]}))
-    })' > fixtures/top-tests.json
+    })
+    | group_by(.branch) | map(to_entries | map(.value + {test_rank: (.key + 1 | tostring)})) | flatten' \
+    > fixtures/top-tests.json
 }
 
-# owned_test <fully qualified class name>: makes the medic lookup find the test source file
+# owned_test <fully qualified class name> [<team>]: makes the team lookup find the test source
+# file and its owner, @camunda/data-layer by default
 owned_test() {
   local path="src/test/java/${1//.//}.java"
   mkdir -p "$(dirname "$path")"
   touch "$path"
+  printf '%s\t%s\n' "$path" "${2:-@camunda/data-layer}" >> fixtures/owners.tsv
 }
 
 issue() {
@@ -122,16 +131,19 @@ block() {
   [ "$(jq -r '.[0].text' "$MESSAGES")" = "Flaky tests yesterday" ]
   [ "$(block 0 0)" = "📈 ~0.3% of jobs had flaky tests yesterday (6 from total of 2000 jobs)." ]
   [ "$(jq -r '.[0].blocks[1].type' "$MESSAGES")" = "divider" ]
-  [ "$(block 0 2)" = "🥇 *\`main\`*: top 3 flaky tests yesterday (<${GRAFANA}?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana>)
+  [ "$(block 0 2)" = "🥇 *\`main\`*: top 5 flaky tests yesterday (<${GRAFANA}?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana>)
+
+*data-layer* (2 of 2 tests) :arrow_right:  ${DATA_LAYER_MEDIC}
 • 12x \`FooIT.shouldFoo\`
       ↳ \`integration-tests/es\` <${RUNS}/101/job/9001|#1> <${RUNS}/103/job/9003|#3> · \`integration-tests/os\` <${RUNS}/102/attempts/2|#2 (run)>
-:arrow_right:  ${DATA_LAYER_MEDIC}
 • 4x \`BarIT.shouldBar\` (<${ISSUES}/4711|GH issue>)
       ↳ \`unit-tests\` <${RUNS}/104/job/9004|#1>" ]
   [ "$(block 0 3)" = ":thread: Stable branches in the thread: \`stable/8.10\` (none) · \`stable/8.9\` (1 flaky test) · \`stable/8.8\` (none)" ]
 
   [ "$(jq -r '.[1].text' "$MESSAGES")" = "Flaky tests yesterday on stable/8.9" ]
   [ "$(block 1 0)" = "🥇 *\`stable/8.9\`*: top 3 flaky tests yesterday (<${GRAFANA}?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=stable%2F8.9|Grafana>)
+
+*data-layer* (1 of 1 test)
 • 1x \`FooIT.shouldFoo\`
       ↳ \`integration-tests/es\` <${RUNS}/105/job/9005|#1>" ]
 }
@@ -145,7 +157,6 @@ block() {
   grep -qx -- '--parameter=test_status:STRING:flaky' fixtures/bq-parameters.txt
   grep -qx -- '--parameter=triggers:ARRAY<STRING>:\["push","merge_group","pull_request"\]' fixtures/bq-parameters.txt
   grep -qx -- '--parameter=branches:ARRAY<STRING>:\["main","stable/8.10","stable/8.9","stable/8.8"\]' fixtures/bq-parameters.txt
-  grep -qx -- '--parameter=top:INT64:3' fixtures/bq-parameters.txt
 }
 
 @test "should count failed tests of push and merge queue runs of the previous 7 days" {
@@ -162,10 +173,11 @@ block() {
   grep -qx -- '--parameter=triggers:ARRAY<STRING>:\["push","merge_group"\]' fixtures/bq-parameters.txt
   [ "$(jq -r '.[0].text' "$MESSAGES")" = "Failing tests last week" ]
   [ "$(jq '.[0].blocks | length' "$MESSAGES")" -eq 2 ]
-  [ "$(block 0 0)" = ":fire: *\`main\`*: top 3 failing tests last week (<${GRAFANA}?orgId=1&from=now-1w%2Fw&to=now-1w%2Fw&timezone=browser&var-branch=main|Grafana>)
+  [ "$(block 0 0)" = ":fire: *\`main\`*: top 5 failing tests last week (<${GRAFANA}?orgId=1&from=now-1w%2Fw&to=now-1w%2Fw&timezone=browser&var-branch=main|Grafana>)
+
+*data-layer* (1 of 1 test) :arrow_right:  ${DATA_LAYER_MEDIC}
 • 3x \`FooIT.shouldFoo\`
-      ↳ \`integration-tests/es\` <${RUNS}/101/attempts/1|#1 (run)>
-:arrow_right:  ${DATA_LAYER_MEDIC}" ]
+      ↳ \`integration-tests/es\` <${RUNS}/101/attempts/1|#1 (run)>" ]
   [ "$(block 0 1)" = ":thread: Stable branches in the thread: \`stable/8.10\` (none) · \`stable/8.9\` (none) · \`stable/8.8\` (none)" ]
   ! grep -q "flake" fixtures/gh-searches.txt
 }
@@ -191,6 +203,105 @@ block() {
   # then
   [ "$(cat fixtures/gh-searches.txt)" = "in:title FooIT AND in:title shouldFoo AND (label:kind/flake OR in:title flaky)
 in:title FooIT AND (label:kind/flake OR in:title flaky)" ]
+}
+
+@test "should group the tests of a branch by team with one medic ping per team" {
+  # given
+  top_tests \
+    "main|io.camunda.it.FooIT|shouldFoo|15|4|101:1:job-a" \
+    "main|io.camunda.it.BarIT|shouldBar|12|4|102:1:job-b" \
+    "main|io.camunda.it.BazIT|shouldBaz|11|4|103:1:job-a" \
+    "main|io.camunda.it.QuxIT|shouldQux|2|4|104:1:job-c"
+  owned_test io.camunda.it.FooIT @camunda/core-features
+  owned_test io.camunda.it.BarIT
+  owned_test io.camunda.it.BazIT @camunda/core-features
+
+  # when
+  build flaky
+
+  # then
+  [ "$(block 0 2)" = "🥇 *\`main\`*: top 5 flaky tests yesterday (<${GRAFANA}?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana>)
+
+*core-features* (2 of 2 tests) :arrow_right:  ${CORE_FEATURES_MEDIC}
+• 15x \`FooIT.shouldFoo\`
+      ↳ \`job-a\` <${RUNS}/101/attempts/1|#1 (run)>
+• 11x \`BazIT.shouldBaz\`
+      ↳ \`job-a\` <${RUNS}/103/attempts/1|#1 (run)>
+
+*data-layer* (1 of 1 test) :arrow_right:  ${DATA_LAYER_MEDIC}
+• 12x \`BarIT.shouldBar\`
+      ↳ \`job-b\` <${RUNS}/102/attempts/1|#1 (run)>
+
+*No owner* (1 of 1 test)
+• 2x \`QuxIT.shouldQux\`
+      ↳ \`job-c\` <${RUNS}/104/attempts/1|#1 (run)>" ]
+}
+
+@test "should show the top 5 tests on main and the top 3 on stable branches" {
+  # given
+  top_tests \
+    "main|io.camunda.it.FooIT|shouldA|6|6|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldB|5|6|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldC|4|6|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldD|3|6|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldE|2|6|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldF|1|6|101:1:job" \
+    "stable/8.9|io.camunda.it.FooIT|shouldA|4|4|102:1:job" \
+    "stable/8.9|io.camunda.it.FooIT|shouldB|3|4|102:1:job" \
+    "stable/8.9|io.camunda.it.FooIT|shouldC|2|4|102:1:job" \
+    "stable/8.9|io.camunda.it.FooIT|shouldD|1|4|102:1:job"
+  owned_test io.camunda.it.FooIT
+
+  # when
+  build flaky
+
+  # then
+  [[ "$(block 0 2)" == *"top 5 flaky tests yesterday"*"*data-layer* (5 of 6 tests)"*"shouldE"* ]]
+  [[ "$(block 0 2)" != *"shouldF"* ]]
+  [[ "$(block 1 0)" == *"top 3 flaky tests yesterday"*"*data-layer* (3 of 4 tests)"*"shouldC"* ]]
+  [[ "$(block 1 0)" != *"shouldD"* ]]
+  [ "$(block 0 3)" = ":thread: Stable branches in the thread: \`stable/8.10\` (none) · \`stable/8.9\` (4 flaky tests) · \`stable/8.8\` (none)" ]
+  ! grep -q "shouldF" fixtures/gh-searches.txt
+  # shouldA to shouldE, two searches each; stable/8.9 shows the same tests
+  [ "$(wc -l < fixtures/gh-searches.txt)" -eq 10 ]
+}
+
+@test "should ping the team of a due test outside the top and name the test" {
+  # given
+  top_tests \
+    "main|io.camunda.it.FooIT|shouldA|30|7|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldB|29|7|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldC|28|7|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldD|27|7|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldE|26|7|101:1:job" \
+    "main|io.camunda.it.WaitIT|shouldWait|12|7|102:1:job" \
+    "main|io.camunda.it.WaitIT|shouldIdle|1|7|103:1:job"
+  owned_test io.camunda.it.FooIT
+  owned_test io.camunda.it.WaitIT @camunda/core-features
+  issue "in:title FooIT AND (label:kind/flake OR in:title flaky)" 4711
+
+  # when
+  build flaky
+
+  # then
+  [[ "$(block 0 2)" == *"*data-layer* (5 of 5 tests)"$'\n'"• 30x"* ]]
+  [[ "$(block 0 2)" == *$'\n\n'"*core-features* (0 of 2 tests) :arrow_right:  ${CORE_FEATURES_MEDIC} (also due: \`WaitIT.shouldWait\` 12x)" ]]
+  [[ "$(block 0 2)" != *"${DATA_LAYER_MEDIC}"* ]]
+  grep -q "shouldWait" fixtures/gh-searches.txt
+  ! grep -q "shouldIdle" fixtures/gh-searches.txt
+}
+
+@test "should show a team without a medic by name and not ping it" {
+  # given
+  top_tests "main|io.camunda.it.FooIT|shouldFoo|15|1|101:1:job"
+  owned_test io.camunda.it.FooIT @camunda/c8-api-team
+
+  # when
+  build flaky
+
+  # then
+  [[ "$(block 0 2)" == *$'\n\n'"*c8-api-team* (1 of 1 test)"$'\n'"• 15x"* ]]
+  [[ "$(block 0 2)" != *":arrow_right:"* ]]
 }
 
 @test "should not ping the medic below the threshold or when a GH issue exists" {

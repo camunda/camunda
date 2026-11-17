@@ -1,8 +1,10 @@
 # Renders the Slack messages of the flaky or failed test summary.
 #
-# Args: $mode ("flaky" or "failure"), $header (mrkdwn, may be empty), $top (tests per branch),
+# Args: $mode ("flaky" or "failure"), $header (mrkdwn, may be empty),
+#       $top_main and $top_stable (tests shown on the first branch and on the others),
 #       $branches (first one goes in the top-level message, the others in its thread),
-#       $tests (rows from build.sh: branch, count, tests_on_branch, name, issue, medic, links).
+#       $tests (rows from build.sh, all tests of each branch: branch, count, tests_on_branch, rank,
+#       shown, name, team, issue, medic, links).
 #
 # Output: array of {text, blocks, shortened}. The first is the top-level message, the others are
 # thread replies, one per branch with tests. "shortened" is true when the section did not fit
@@ -10,12 +12,16 @@
 
 def config:
   if $mode == "flaky" then
-    {emoji: "🥇", title: "top \($top) flaky tests yesterday", none: "no flaky tests yesterday",
+    {emoji: "🥇", title: "flaky tests yesterday", none: "no flaky tests yesterday",
      noun: "flaky test", window: "now-1d%2Fd", text: "Flaky tests yesterday"}
   else
-    {emoji: ":fire:", title: "top \($top) failing tests last week", none: "no failing tests last week",
+    {emoji: ":fire:", title: "failing tests last week", none: "no failing tests last week",
      noun: "failing test", window: "now-1w%2Fw", text: "Failing tests last week"}
   end;
+
+def top($branch): if $branch == $branches[0] then $top_main else $top_stable end;
+
+def plural($n; $word): if $n == 1 then "1 \($word)" else "\($n) \($word)s" end;
 
 # Slack's limit for the text of one section block
 def max_section_length: 3000;
@@ -49,15 +55,46 @@ def links_line($max_links):
 def test_lines($max_links; $max_name):
   "• \(.count)x `\(.name | truncate($max_name) | escape)`"
   + (if .issue then " (<https://github.com/camunda/camunda/issues/\(.issue)|GH issue>)" else "" end),
-  links_line($max_links),
-  (if .medic then ":arrow_right:  \(.medic)" else empty end);
+  links_line($max_links);
+
+def team_key: .team // "";
+
+def team_label: if . == "" then "No owner" else sub("^@camunda/"; "") end;
+
+# One group per team with a shown test or a due medic ping: teams with shown tests first, by their
+# highest count, "No owner" last among them. A due test that is not shown is named in the header,
+# so its team still gets the ping.
+def team_groups($rows):
+  [$rows[] | select(.shown or .medic)]
+  | group_by(team_key)
+  | map((.[0] | team_key) as $key | {
+      key: $key,
+      shown: (map(select(.shown)) | sort_by(.rank)),
+      also_due: map(select(.medic and (.shown | not))),
+      medic: (map(.medic // empty) | first),
+      total: ([$rows[] | select(team_key == $key)] | length)
+    })
+  | sort_by((.shown == []), (.key == ""), -(.shown | map(.count) | max // 0), .key);
+
+def team_header($max_name):
+  "*\(.key | team_label | escape)* (\(.shown | length) of \(plural(.total; "test")))"
+  + (if .medic then
+       " :arrow_right:  \(.medic)"
+       + (if .also_due == [] then ""
+          else " (also due: "
+            + (.also_due | map("`\(.name | truncate($max_name) | escape)` \(.count)x") | join(", "))
+            + ")"
+          end)
+     else "" end);
 
 def section($branch; $max_links; $max_name):
   [$tests[] | select(.branch == $branch)] as $rows
   | "\(config.emoji) *`\($branch)`*: "
-    + (if $rows == [] then config.none else config.title end)
+    + (if $rows == [] then config.none else "top \(top($branch)) \(config.title)" end)
     + " (<\(grafana_url($branch))|Grafana>)"
-    + ([$rows[] | test_lines($max_links; $max_name)] | map("\n" + .) | join(""));
+    + (team_groups($rows)
+       | map("\n\n" + ([team_header($max_name), (.shown[] | test_lines($max_links; $max_name))] | join("\n")))
+       | join(""));
 
 # The section with as many links and as much of each test name as fit
 def fitted_section($branch):
@@ -69,8 +106,6 @@ def fitted_section($branch):
 
 def tests_on($branch):
   [$tests[] | select(.branch == $branch) | .tests_on_branch] | first // 0;
-
-def plural($n; $word): if $n == 1 then "1 \($word)" else "\($n) \($word)s" end;
 
 def section_block: {type: "section", text: {type: "mrkdwn", text: .}};
 

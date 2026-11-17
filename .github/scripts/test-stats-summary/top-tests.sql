@@ -1,11 +1,12 @@
--- Top tests per branch for the flaky and failed test summaries, with up to 3 jobs per test.
+-- All tests per branch for the flaky and failed test summaries, ranked by count, with up to 3
+-- jobs per test. build.sh picks the top tests to show; it needs the others for the number of
+-- tests per team and for the medic pings of tests outside the top.
 --
 -- Parameters:
 --   @days         window: the last @days full days (UTC)
 --   @test_status  "flaky" or "failure"
 --   @triggers     build triggers to count, e.g. ["push", "merge_group", "pull_request"]
 --   @branches     branches to report, e.g. ["main", "stable/8.10"]
---   @top          tests per branch
 --
 -- A run counts under its base branch: build_ref for a push, build_base_ref for a merge queue or
 -- PR run. This is how the Grafana flaky tests dashboard and the CI alert rules group runs.
@@ -34,11 +35,11 @@ per_test AS (
     test_class_name,
     test_name,
     COUNT(*) AS occurrences,
-    COUNT(*) OVER (PARTITION BY branch) AS tests_on_branch
+    COUNT(*) OVER (PARTITION BY branch) AS tests_on_branch,
+    ROW_NUMBER() OVER (PARTITION BY branch ORDER BY COUNT(*) DESC, test_class_name, test_name) AS test_rank
   FROM test_rows
   WHERE branch IN UNNEST(@branches)
   GROUP BY branch, test_class_name, test_name
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY branch ORDER BY COUNT(*) DESC, test_class_name, test_name) <= @top
 ),
 -- One row per job, so a test row joined to a repeated build row does not repeat a link
 jobs AS (
@@ -55,6 +56,7 @@ SELECT
   p.test_name,
   p.occurrences,
   p.tests_on_branch,
+  p.test_rank,
   ARRAY_AGG(
     STRUCT(
       SPLIT(j.build_id, "/")[SAFE_OFFSET(0)] AS run_id,
@@ -68,5 +70,5 @@ SELECT
   ) AS links
 FROM per_test p
 JOIN jobs j USING (branch, test_class_name, test_name)
-GROUP BY p.branch, p.test_class_name, p.test_name, p.occurrences, p.tests_on_branch
-ORDER BY p.branch, p.occurrences DESC, p.test_class_name, p.test_name
+GROUP BY p.branch, p.test_class_name, p.test_name, p.occurrences, p.tests_on_branch, p.test_rank
+ORDER BY p.branch, p.test_rank
