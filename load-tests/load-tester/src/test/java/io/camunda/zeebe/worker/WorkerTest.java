@@ -10,6 +10,7 @@ package io.camunda.zeebe.worker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,64 @@ class WorkerTest {
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
+
+  @Test
+  void shouldNotBlockWhileAwaitingTopology() throws Exception {
+    // given — a connection monitor that does not return until released
+    final var release = new CountDownLatch(1);
+    final var started = new CountDownLatch(1);
+    final var connectionMonitor = mock(ConnectionMonitor.class);
+    doAnswer(
+            invocation -> {
+              started.countDown();
+              release.await();
+              return null;
+            })
+        .when(connectionMonitor)
+        .awaitAndPrintTopology();
+    final var worker =
+        newWorker(mock(CamundaClient.class), new WorkerProperties(), connectionMonitor);
+
+    // when
+    worker.connect();
+
+    // then — connect() returned while the topology wait is still running
+    assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
+    release.countDown();
+    worker.shutdown();
+  }
+
+  @Test
+  void shouldInterruptTopologyWaitOnShutdown() throws Exception {
+    // given — a connection monitor that waits until interrupted
+    final var interrupted = new CountDownLatch(1);
+    final var started = new CountDownLatch(1);
+    final var connectionMonitor = mock(ConnectionMonitor.class);
+    doAnswer(
+            invocation -> {
+              started.countDown();
+              try {
+                Thread.sleep(Duration.ofSeconds(30).toMillis());
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                interrupted.countDown();
+                throw new RuntimeException(e);
+              }
+              return null;
+            })
+        .when(connectionMonitor)
+        .awaitAndPrintTopology();
+    final var worker =
+        newWorker(mock(CamundaClient.class), new WorkerProperties(), connectionMonitor);
+    worker.connect();
+    assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
+
+    // when
+    worker.shutdown();
+
+    // then
+    assertThat(interrupted.await(5, TimeUnit.SECONDS)).isTrue();
+  }
 
   @Test
   void shouldApplyCompletionDelayWhenPublishMessageFails() throws Exception {
@@ -108,11 +168,17 @@ class WorkerTest {
   }
 
   private static Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
+    return newWorker(client, workerProps, mock(ConnectionMonitor.class));
+  }
+
+  private static Worker newWorker(
+      final CamundaClient client,
+      final WorkerProperties workerProps,
+      final ConnectionMonitor connectionMonitor) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
-    final var connectionMonitor = mock(ConnectionMonitor.class);
     return new Worker(client, properties, payloadReader, connectionMonitor);
   }
 

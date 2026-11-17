@@ -45,7 +45,8 @@ Both roles serve `/health/readiness` and `/health/liveness` on port 9600 (no `/a
 - **Readiness (starter):** ready once the cluster topology was retrieved and the benchmark process
   was deployed. The web server, and with it both health endpoints, starts only after that.
 - **Readiness (worker):** ready once the cluster topology was retrieved. The topology request
-  retries every error, so a pod that cannot authenticate stays not ready.
+  retries every error, so a pod that cannot authenticate stays not ready. The web server starts
+  before the connection, so the endpoint answers 503 while connecting.
 - **Liveness (starter):** DOWN when no start request succeeded for
   `load-tester.starter.liveness-max-no-success-age` (default 2 minutes). The clock starts once
   connected, and the age has to exceed the interval between two requests. Backpressure answers

@@ -25,7 +25,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -43,6 +45,7 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private volatile Thread connectThread;
 
   public Worker(
       final CamundaClient client,
@@ -57,9 +60,26 @@ public class Worker {
   }
 
   @PostConstruct
-  void awaitTopologyAndLogConfig() {
+  void startResponseChecker() {
     responseChecker.start();
-    connectionMonitor.awaitAndPrintTopology();
+  }
+
+  @EventListener(ApplicationReadyEvent.class)
+  void connect() {
+    connectThread = new Thread(this::awaitTopologyAndLogConfig, "worker-connect");
+    connectThread.setDaemon(true);
+    connectThread.start();
+  }
+
+  private void awaitTopologyAndLogConfig() {
+    try {
+      connectionMonitor.awaitAndPrintTopology();
+    } catch (final RuntimeException e) {
+      if (Thread.currentThread().isInterrupted()) {
+        return;
+      }
+      throw e;
+    }
     LOGGER.info(
         "Worker config: completionDelay={}, sendMessage={}, messageName={}, "
             + "correlationKeyVariable={}, payloadPath={}",
@@ -72,6 +92,10 @@ public class Worker {
 
   @PreDestroy
   void shutdown() {
+    final var connecting = connectThread;
+    if (connecting != null) {
+      connecting.interrupt();
+    }
     // ResponseChecker extends Thread with a default (non-daemon) factory, so without
     // an explicit close() it keeps the JVM alive after the Spring context stops —
     // tests appear to pass but the forked process never exits on IDE runners.
