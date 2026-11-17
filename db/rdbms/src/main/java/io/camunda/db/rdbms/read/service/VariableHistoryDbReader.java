@@ -12,6 +12,7 @@ import io.camunda.search.entities.VariableHistoryItemEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableHistoryItemQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import org.jspecify.annotations.Nullable;
 
 public class VariableHistoryDbReader implements VariableHistoryReader {
 
@@ -24,7 +25,7 @@ public class VariableHistoryDbReader implements VariableHistoryReader {
   }
 
   @Override
-  public VariableHistoryItemEntity getByKey(
+  public @Nullable VariableHistoryItemEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     throw new UnsupportedOperationException(
         "VariableHistoryDbReader#getByKey() not implemented yet, see"
