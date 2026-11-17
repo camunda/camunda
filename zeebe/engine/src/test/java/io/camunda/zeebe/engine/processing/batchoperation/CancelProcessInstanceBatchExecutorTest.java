@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -131,6 +132,45 @@ public final class CancelProcessInstanceBatchExecutorTest extends AbstractBatchO
                             && r.getValue().getBpmnElementType() == BpmnElementType.PROCESS))
         .extracting(Record::getIntent)
         .containsSequence(ProcessInstanceIntent.CANCEL, ProcessInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  @Test
+  public void shouldKeepFullClaimsOnFollowUpCommandsOfItemCommand() {
+    // given
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.CANCEL_PROCESS_INSTANCE);
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, user.getUsername(), USER_GROUPS_CLAIMS, List.of("group"));
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .subProcess(
+                    "subProcess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    final var batchOperationKey =
+        createNewCancelProcessInstanceBatchOperation(Set.of(processInstanceKey), claims);
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED)
+                .filter(r -> r.getBatchOperationReference() == batchOperationKey)
+                .filter(r -> r.getRecordType() == RecordType.COMMAND)
+                .filter(r -> r.getIntent() == ProcessInstanceIntent.TERMINATE_ELEMENT))
+        .isNotEmpty()
+        .allSatisfy(r -> assertThat(r.getAuthorizations()).isEqualTo(claims));
   }
 
   @Test
