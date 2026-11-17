@@ -9,12 +9,16 @@
 // Keep in sync with `io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX`
 // (from the `camunda-security-library-validation`/`-spring-boot-starter` artifacts), which
 // `IdentifierValidator` applies to every admin-managed identifier server-side — mapping rule IDs,
-// global task listener IDs and types, role/group/tenant IDs, etc.
-// Temporary: this ignores a customized `camunda.security.id-validation-pattern`; tracked in #64657.
-const ID_PATTERN = /^[a-zA-Z0-9_~@.+-]{1,256}$/;
+// global task listener IDs and types, role/group/tenant IDs, etc. A deployment can replace it with
+// `camunda.security.id-validation-pattern`, which the Admin client config serves as `idPattern`.
+const DEFAULT_ID_PATTERN = /^[a-zA-Z0-9_~@.+-]{1,256}$/;
 
-function isValidId(value: string): boolean {
-	return ID_PATTERN.test(value);
+function getIdPattern(configuredPattern?: string | null): RegExp {
+	return configuredPattern ? new RegExp(configuredPattern) : DEFAULT_ID_PATTERN;
 }
 
-export {isValidId};
+function isValidId(value: string, configuredPattern?: string | null): boolean {
+	return getIdPattern(configuredPattern).test(value);
+}
+
+export {getIdPattern, isValidId};

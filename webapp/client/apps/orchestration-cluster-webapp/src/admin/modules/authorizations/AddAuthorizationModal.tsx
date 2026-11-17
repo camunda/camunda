@@ -34,11 +34,10 @@ import {
 	AUTHORIZATION_WILDCARD,
 	SECRET_NAME_PATTERN,
 	SECRET_REFERENCE_PREFIX,
-	getIdPattern,
-	isValidId,
 	isValidResourceId,
 	isValidSecretResourceId,
 } from './authorizationValidation';
+import {getIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
 import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
 import {getResourceTypeLabel} from './resourceTypes';
 
