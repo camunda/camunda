@@ -53,7 +53,7 @@ Both roles serve `/health/readiness` and `/health/liveness` on port 9600 (no `/a
 - **Liveness (worker):** none. A worker without jobs cannot be told apart from one without load.
 
 A startup probe on `/health/readiness` restarts a pod that never connects. Reference configuration
-for the Helm chart, which does not apply it yet:
+for the Helm chart:
 
 ```yaml
 startupProbe:
