@@ -17,7 +17,7 @@ import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfi
 public interface ExporterEntityCacheProvider {
 
   CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
-      String batchOperationIndexName);
+      String batchOperationReadIndices);
 
   CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
       String processIndexName, ExtensionPropertyConfiguration extensionPropertiesConfiguration);

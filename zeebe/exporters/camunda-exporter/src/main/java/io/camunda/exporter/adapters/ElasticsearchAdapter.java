@@ -73,8 +73,8 @@ class ElasticsearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
-        final String batchOperationIndexName) {
-      return new ElasticSearchBatchOperationCacheLoader(client, batchOperationIndexName);
+        final String batchOperationReadIndices) {
+      return new ElasticSearchBatchOperationCacheLoader(client, batchOperationReadIndices);
     }
 
     @Override
