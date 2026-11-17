@@ -10,6 +10,7 @@ package io.atomix.raft.partition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -100,20 +101,18 @@ final class RaftPartitionJoinTest {
     partition.close().join();
 
     // when - the join creates a new server; the mocked management service cannot start it
-    final var failure =
-        catchThrowable(
-            () ->
-                partition
-                    .join(
-                        Type.PASSIVE,
-                        mock(PartitionManagementService.class),
-                        mock(ReceivableSnapshotStore.class),
-                        JoinOptions.withIncarnation(7))
-                    .join());
+    final var managementService = mock(PartitionManagementService.class);
+    catchThrowable(
+        () ->
+            partition
+                .join(
+                    Type.PASSIVE,
+                    managementService,
+                    mock(ReceivableSnapshotStore.class),
+                    JoinOptions.withIncarnation(7))
+                .join());
 
-    // then - the guard did not reject it: the partition tried to create a new server
-    assertThat(failure)
-        .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("getMembershipService");
+    // then - the guard did not reject the join: the partition started to create a new server
+    verify(managementService, atLeastOnce()).getMembershipService();
   }
 }
