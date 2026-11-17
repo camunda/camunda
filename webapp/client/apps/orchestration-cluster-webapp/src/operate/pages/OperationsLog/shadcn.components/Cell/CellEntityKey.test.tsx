@@ -12,8 +12,8 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createAuditLog} from '#/shared-test-modules/api-mocks/audit-logs';
 import {CellEntityKey} from './CellEntityKey';
 
-function renderEntityKey(item: ReturnType<typeof createAuditLog>) {
-	return renderWithRouter(() => <CellEntityKey item={item} />, {
+function renderEntityKey(item: ReturnType<typeof createAuditLog>, tenantId?: string) {
+	return renderWithRouter(() => <CellEntityKey item={item} tenantId={tenantId} />, {
 		path: '/operate-preview/operations-log',
 		initialEntry: '/operate-preview/operations-log',
 	});
@@ -61,5 +61,16 @@ describe('<CellEntityKey /> (design system)', () => {
 		);
 
 		await expect.element(screen.getByRole('link', {name: testCase.linkName})).toHaveAttribute('href', testCase.href);
+	});
+
+	it('should link to the process instance within its tenant', async () => {
+		const screen = await renderEntityKey(
+			createAuditLog({entityType: 'PROCESS_INSTANCE', operationType: 'MODIFY', entityKey: '2251799813685280'}),
+			'tenant-a',
+		);
+
+		await expect
+			.element(screen.getByRole('link', {name: 'View process instance 2251799813685280'}))
+			.toHaveAttribute('href', '/operate-preview/processes/2251799813685280?tenantId=tenant-a');
 	});
 });
