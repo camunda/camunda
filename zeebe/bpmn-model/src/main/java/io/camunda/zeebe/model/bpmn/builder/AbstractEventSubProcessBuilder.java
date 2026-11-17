@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeStage;
 import java.util.function.Consumer;
 
 public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBuilder<B>>
@@ -145,5 +146,15 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
   @Override
   public B zeebeProperty(final String name, final String value) {
     return zeebePropertiesBuilder.zeebeProperty(name, value);
+  }
+
+  /**
+   * Marks the event sub process as a stage of a case. The marker is only valid on a top-level sub
+   * process of a process that is marked as a case.
+   *
+   * @return the builder object
+   */
+  public B zeebeStage() {
+    return addExtensionElement(ZeebeStage.class, stage -> {});
   }
 }
