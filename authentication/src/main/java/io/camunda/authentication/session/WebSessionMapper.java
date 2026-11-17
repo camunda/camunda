@@ -96,7 +96,10 @@ public class WebSessionMapper {
         final GenericConversionService conversionService) {
       this.conversionService = conversionService;
       conversionService.addConverter(Object.class, byte[].class, new SerializingConverter());
-      conversionService.addConverter(byte[].class, Object.class, new DeserializingConverter());
+      conversionService.addConverter(
+          byte[].class,
+          Object.class,
+          new DeserializingConverter(new FilteringSessionAttributeDeserializer()));
     }
 
     @Override
