@@ -6,60 +6,129 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import '@camunda/design-system/styles.css';
+import './Header.css';
+import {useEffect, useLayoutEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
-import {C3Navigation} from '@camunda/camunda-composite-components';
+import {Link} from '@tanstack/react-router';
+import {
+	preview_C3ToolsArea as C3ToolsArea,
+	preview_useCamundaTools as useCamundaTools,
+	useC3Profile,
+	type UseCamundaToolsOptions,
+} from '@camunda/camunda-composite-components';
+import {
+	AppHeader as DsAppHeader,
+	AppSidebar,
+	C4Provider,
+	CamundaLogo,
+	Label,
+	RadioGroup,
+	RadioGroupItem,
+	SidebarProvider,
+	Text,
+	TooltipProvider,
+	useSidebar,
+	type UserMenuItem,
+} from '@camunda/design-system';
 import type {AuthenticatedCurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.11';
 import {authenticationStore} from '#/shared/auth/authentication.store';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getBootConfig} from '#/shared/config/getBootConfig';
-import C3InfoSidebar from '@camunda/camunda-composite-components/lib/esm/src/components/c3-navigation/c3-navigation-sidebar/c3-info-sidebar.js';
-import {C3NotificationSidebar} from '@camunda/camunda-composite-components/lib/esm/src/components/c3-navigation/c3-navigation-sidebar/c3-notification-sidebar.js';
-import {UserMenu} from './UserMenu';
-import {Link} from '@tanstack/react-router';
-import {useNavbar} from '#/shared/header/useNavbar';
+import {getClientConfig} from '#/shared/config/getClientConfig';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {getC4Dictionary, getC4Locale} from '#/shared/i18n/shadcn.components/c4-dictionaries';
+import {themeStore} from '#/shared/theme/theme';
+import {HeaderBadges} from './HeaderBadges';
+import {InfoMenu} from './InfoMenu';
+import {LogoutAwareUserMenu} from './LogoutAwareUserMenu';
+import {useBreadcrumbs} from './useBreadcrumbs';
+import {useCurrentPage} from './useCurrentPage';
+import {useSidebarChildren} from './useSidebarChildren';
 
-function getInfoSidebarItems(isPaidPlan: boolean) {
-	const BASE_INFO_SIDEBAR_ITEMS = [
-		{
-			key: 'docs',
-			label: t('headerSidebarDocumentationLink'),
-			onClick: () => {
-				window.open('https://docs.camunda.io/', '_blank');
-			},
-		},
-		{
-			key: 'academy',
-			label: t('headerSidebarCamundaAcademyLink'),
-			onClick: () => {
-				window.open('https://academy.camunda.com/', '_blank');
-			},
-		},
-	];
+const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
+const CURRENT_YEAR = new Date().getFullYear();
+const LOGOUT_DELAY = 1000;
 
-	const FEEDBACK_AND_SUPPORT_ITEM = {
-		key: 'feedbackAndSupport',
-		label: t('headerSidebarFeedbackAndSupportLink'),
-		onClick: () => {
-			window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
-		},
-	} as const;
+const THEME_OPTIONS = [
+	{value: 'light', labelKey: 'headerThemeLight'},
+	{value: 'system', labelKey: 'headerThemeSystem'},
+	{value: 'dark', labelKey: 'headerThemeDark'},
+] as const;
 
-	const COMMUNITY_FORUM_ITEM = {
-		key: 'communityForum',
-		label: t('headerSidebarCommunityForumLink'),
-		onClick: () => {
-			window.open('https://forum.camunda.io', '_blank');
-		},
-	};
+const SidebarBodySync: React.FC<{hasSidebar: boolean}> = ({hasSidebar}) => {
+	const ctx = useSidebar();
+	const sidebarWidth = !hasSidebar || !ctx || ctx.isMobile ? '0px' : ctx.expanded ? ctx.width : '3rem';
 
-	return isPaidPlan
-		? [...BASE_INFO_SIDEBAR_ITEMS, FEEDBACK_AND_SUPPORT_ITEM, COMMUNITY_FORUM_ITEM]
-		: [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
-}
+	useLayoutEffect(() => {
+		document.body.style.setProperty('--app-sidebar-width', sidebarWidth);
+		return () => {
+			document.body.style.removeProperty('--app-sidebar-width');
+		};
+	}, [sidebarWidth]);
+
+	return null;
+};
+
+const ThemeSelector: React.FC = observer(() => {
+	const {t} = useTranslation();
+	const {selectedTheme, changeTheme} = themeStore;
+	const {onThemeChange} = useC3Profile();
+
+	return (
+		<div className="px-2 py-1.5">
+			<Text as="span" variant="label-sm" className="text-neutral-foreground-subtle">
+				{t('headerThemeLabel')}
+			</Text>
+			<RadioGroup
+				aria-label={t('headerThemeLabel')}
+				value={selectedTheme}
+				onValueChange={(value) => {
+					const theme = value as typeof selectedTheme;
+					changeTheme(theme);
+					onThemeChange?.(theme);
+				}}
+				className="mt-2 gap-2"
+			>
+				{THEME_OPTIONS.map((option) => (
+					<Label key={option.value} className="flex items-center gap-2">
+						<RadioGroupItem value={option.value} />
+						{t(option.labelKey)}
+					</Label>
+				))}
+			</RadioGroup>
+		</div>
+	);
+});
+
+const VersionFooter: React.FC = () => {
+	const {t} = useTranslation();
+
+	return (
+		<div className="px-2 py-1.5 text-xs text-neutral-foreground-subtle">
+			{import.meta.env.VITE_VERSION ? (
+				<div>{t('headerVersionLabel', {version: import.meta.env.VITE_VERSION})}</div>
+			) : null}
+			<div>© Camunda Services GmbH {CURRENT_YEAR}. All rights reserved.</div>
+		</div>
+	);
+};
+
+const SkipLinkFocus: React.FC = () => {
+	useEffect(() => {
+		const focusMainContent = (event: MouseEvent) => {
+			if (event.target instanceof Element && event.target.closest(`a[href="#${SKIP_TO_CONTENT_TARGET_ID}"]`) !== null) {
+				event.preventDefault();
+				document.getElementById(SKIP_TO_CONTENT_TARGET_ID)?.focus();
+			}
+		};
+
+		document.addEventListener('click', focusMainContent);
+		return () => document.removeEventListener('click', focusMainContent);
+	}, []);
+
+	return null;
+};
 
 type Props = {
 	currentUser: AuthenticatedCurrentUser;
@@ -67,71 +136,126 @@ type Props = {
 };
 
 const Header: React.FC<Props> = observer(({currentUser, license}) => {
-	const {t} = useTranslation();
-	const isSaas = getBootConfig().organizationId !== null;
+	const {t, i18n} = useTranslation();
+	const locale = getC4Locale(i18n.resolvedLanguage);
+	const {currentPage} = useCurrentPage();
+	const sidebarChildren = useSidebarChildren(currentUser);
+	const hasSidebar = sidebarChildren.length > 0;
 	const {canLogout} = getClientConfig().authentication;
-	const {displayName, email, salesPlanType} = currentUser;
-	const [isAppBarOpen, setIsAppBarOpen] = useState(false);
-	const {app, elements} = useNavbar(currentUser);
-
-	const logoutWithNotification = () => {
-		notificationsStore.displayNotification({
-			kind: 'info',
-			title: t('notificationLogOutTitle'),
-			subtitle: t('notificationLogOutSubtitle'),
-			isDismissable: true,
-		});
-		setTimeout(authenticationStore.handleLogout, 1000);
-	};
+	const isSaas = getBootConfig().organizationId !== null;
+	const toolsOptions = useMemo(
+		() => ({
+			notifications: isSaas ? {title: t('headerNotificationsLabel')} : undefined,
+		}),
+		[isSaas, t],
+	) satisfies UseCamundaToolsOptions;
+	const {tools, ToolsProvider} = useCamundaTools(toolsOptions);
+	const breadcrumb = useBreadcrumbs({isSaas, webappLinks: currentUser.c8Links});
+	const isPaidPlan = ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '');
+	const userMenuItems: UserMenuItem[] = [
+		...(window.Osano?.cm === undefined
+			? []
+			: [
+					{
+						key: 'cookie',
+						label: t('headerCookiePreferencesLabel'),
+						onClick: () => {
+							window.Osano?.cm?.showDrawer('osano-cm-dom-info-dialog-open');
+						},
+					},
+				]),
+		{
+			key: 'terms',
+			label: t('headerTermsOfUseLabel'),
+			onClick: () => {
+				window.open('https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/', '_blank');
+			},
+		},
+		{
+			key: 'privacy',
+			label: t('headerPrivacyPolicyLabel'),
+			onClick: () => {
+				window.open('https://camunda.com/legal/privacy/', '_blank');
+			},
+		},
+		{
+			key: 'imprint',
+			label: t('headerImprintLabel'),
+			onClick: () => {
+				window.open('https://camunda.com/legal/imprint/', '_blank');
+			},
+		},
+	];
 
 	return (
-		<C3Navigation
-			toggleAppbar={(open) => setIsAppBarOpen(open)}
-			appBar={{
-				ariaLabel: t('headerAppBarLabel'),
-				isOpen: isAppBarOpen,
-				appTeaserRouteProps: isSaas ? {} : undefined,
-				elements: isSaas ? undefined : [],
-			}}
-			app={app}
-			// @ts-expect-error - C3 types don't support Tanstack Router links
-			forwardRef={Link}
-			navbar={{
-				elements,
-				licenseTag: {
-					show: license.licenseType !== 'saas',
-					isProductionLicense: license.validLicense,
-					isCommercial: license.isCommercial,
-					expiresAt: license.expiresAt ?? undefined,
-				},
-			}}
-			actionButtons={[
-				...(isSaas ? [{element: <C3NotificationSidebar key="notifications" sideBar={{type: 'notifications'}} />}] : []),
-				{
-					element: (
-						<C3InfoSidebar
-							key="info"
-							sideBar={{
-								type: 'info',
-								ariaLabel: t('headerInfoLabel'),
-								elements: getInfoSidebarItems(['paid-cc', 'enterprise'].includes(salesPlanType ?? '')),
-							}}
+		<ToolsProvider>
+			<C4Provider theme={themeStore.actualTheme} dictionary={getC4Dictionary(locale)} locale={locale}>
+				<TooltipProvider>
+					<SidebarProvider>
+						<SidebarBodySync hasSidebar={hasSidebar} />
+						<SkipLinkFocus />
+						<DsAppHeader
+							skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
+							showSidebarTrigger={hasSidebar}
+							logo={
+								<Link to="/operate" aria-label="Camunda Operate">
+									<CamundaLogo className="operate-nav-v2-logo block" />
+								</Link>
+							}
+							breadcrumb={breadcrumb}
+							trailing={<HeaderBadges license={license} />}
+							globalActions={[
+								...(isSaas
+									? [
+											{
+												key: 'notifications',
+												label: t('headerNotificationsLabel'),
+												element: <C3ToolsArea tools={tools} />,
+											},
+										]
+									: []),
+								{
+									key: 'info',
+									label: t('headerInfoLabel'),
+									element: <InfoMenu isPaidPlan={isPaidPlan} />,
+								},
+							]}
+							actions={
+								<LogoutAwareUserMenu
+									userName={currentUser.displayName ?? currentUser.username}
+									userEmail={currentUser.email ?? ''}
+									canLogout={canLogout}
+									customSection={
+										<>
+											<ThemeSelector />
+											<VersionFooter />
+										</>
+									}
+									items={userMenuItems}
+									onLogout={() => {
+										notificationsStore.displayNotification({
+											kind: 'info',
+											title: t('notificationLogOutTitle'),
+											subtitle: t('notificationLogOutSubtitle'),
+											isDismissable: true,
+										});
+										setTimeout(authenticationStore.handleLogout, LOGOUT_DELAY);
+									}}
+								/>
+							}
 						/>
-					),
-				},
-				{
-					element: (
-						<UserMenu
-							key="user-menu"
-							userName={displayName ?? currentUser.username}
-							email={email}
-							canLogout={canLogout}
-							onLogout={logoutWithNotification}
-						/>
-					),
-				},
-			]}
-		/>
+						{hasSidebar && (
+							<AppSidebar
+								ariaLabel="Camunda Operate"
+								items={sidebarChildren}
+								activeItemKey={currentPage ?? ''}
+								linkComponent={Link}
+							/>
+						)}
+					</SidebarProvider>
+				</TooltipProvider>
+			</C4Provider>
+		</ToolsProvider>
 	);
 });
 

@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.userDetails {
-	display: flex;
-	flex-direction: column;
-	padding: var(--cds-spacing-03) var(--cds-spacing-05);
-}
+import styled from 'styled-components';
 
-.email {
-	font-size: var(--cds-label-01-font-size);
-	color: var(--cds-text-secondary);
-}
+const PageContent = styled.main.attrs({id: 'main-content', tabIndex: -1})`
+	padding-top: 0;
+	padding-left: var(--app-sidebar-width, 0);
+	transition: padding-left 0.15s ease-out;
+	height: calc(100% - var(--cds-spacing-09));
+`;
+
+export {PageContent};

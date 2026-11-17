@@ -11,9 +11,8 @@ import {styles} from '@carbon/type';
 import {Tile as BaseTile} from '@carbon/react';
 import {Link} from '@tanstack/react-router';
 
-const Container = styled.main`
+const Container = styled.div`
 	height: 100%;
-	padding-top: var(--cds-spacing-09);
 	box-sizing: border-box;
 	overflow: hidden;
 `;
@@ -53,6 +52,7 @@ const Tile = styled(BaseTile)`
 	display: flex;
 	flex-direction: column;
 	border: 1px solid var(--cds-border-subtle-01);
+	border-radius: calc(var(--cds-spacing-03) + var(--spacing, 0.25rem));
 `;
 
 const TileTitle = styled.h2`

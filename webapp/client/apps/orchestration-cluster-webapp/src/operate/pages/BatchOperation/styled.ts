@@ -14,7 +14,7 @@ const PageContainer = styled(Stack)`
 	flex-direction: column;
 	height: 100%;
 	box-sizing: border-box;
-	padding: var(--cds-spacing-09) var(--cds-spacing-05) 0;
+	padding: 0 var(--cds-spacing-05);
 	background-color: var(--cds-layer);
 `;
 

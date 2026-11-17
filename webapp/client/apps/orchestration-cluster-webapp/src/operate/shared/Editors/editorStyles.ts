@@ -73,7 +73,9 @@ const CopyLoadingIndicator = styled(InlineLoading)`
 `;
 const WriteModeEditor = styled.div<{$invalid: boolean}>`
 	position: relative;
-	border-block-end: 1px solid var(--cds-border-strong);
+	border: 1px solid var(--cds-border-subtle-01);
+	border-radius: var(--cds-spacing-03);
+	overflow: hidden;
 	&:focus-within {
 		outline: 2px solid var(--cds-focus);
 		outline-offset: -2px;
