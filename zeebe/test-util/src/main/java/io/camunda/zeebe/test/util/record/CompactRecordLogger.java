@@ -90,6 +90,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecord
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -318,6 +319,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(USER_TASK_LOOKUP, this::summarizeUserTaskLookup);
+    valueLoggers.put(ValueType.CASE, this::summarizeCase);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
@@ -1130,6 +1132,24 @@ public class CompactRecordLogger {
   String summarizeUserTaskLookup(final Record<?> record) {
     final var value = (UserTaskLookupRecordValue) record.getValue();
     return "fetchVariables:" + value.getFetchVariables() + formatTenant(value);
+  }
+
+  String summarizeCase(final Record<?> record) {
+    final var value = (CaseRecordValue) record.getValue();
+    final var result =
+        new StringBuilder("processInstanceKey:")
+            .append(shortenKey(value.getProcessInstanceKey()))
+            .append(" title:")
+            .append(value.getTitle());
+    if (!value.getStages().isEmpty()) {
+      result
+          .append(" stages:")
+          .append(
+              value.getStages().stream()
+                  .map(stage -> stage.getElementId() + "=" + stage.getStatus())
+                  .collect(Collectors.joining(", ", "[", "]")));
+    }
+    return result.toString();
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.CaseIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
@@ -84,6 +85,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue
 import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
+import io.camunda.zeebe.protocol.record.value.CaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -544,6 +546,14 @@ public final class RecordingExporter implements Exporter {
 
   public static ProbeBatchRecordStream probeBatchRecords(final ProbeBatchIntent intent) {
     return probeBatchRecords().withIntent(intent);
+  }
+
+  public static CaseRecordStream caseRecords() {
+    return new CaseRecordStream(records(ValueType.CASE, CaseRecordValue.class));
+  }
+
+  public static CaseRecordStream caseRecords(final CaseIntent intent) {
+    return caseRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {
