@@ -57,6 +57,11 @@ final class Segment implements AutoCloseable, FlushableSegment {
   private volatile boolean open = true;
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
+  // The last index a force covered, and whether records were truncated since; guarded by this, as
+  // the writing thread truncates and forces, and other threads may force concurrently. Records
+  // loaded from disk count as forced, as they survived a restart.
+  private long forcedIndex;
+  private boolean truncatedSinceForce;
 
   Segment(
       final SegmentFile file,
@@ -74,6 +79,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
     this.metrics = metrics;
 
     writer = createWriter(lastWrittenAsqn, metrics);
+    forcedIndex = writer.getLastIndex();
   }
 
   /**
@@ -136,11 +142,41 @@ final class Segment implements AutoCloseable, FlushableSegment {
       return;
     }
 
+    markForced(lastIndex);
     LOG.trace(
         "Flushed segment {} from index {} to index {}",
         descriptor.id(),
         descriptor.index(),
         lastIndex);
+  }
+
+  /**
+   * Records that a force covering all records up to the given index succeeded. The force must have
+   * started after the last truncation, which holds as truncations and flushes never interleave.
+   */
+  private synchronized void markForced(final long lastIndex) {
+    forcedIndex = Math.max(forcedIndex, lastIndex);
+    truncatedSinceForce = false;
+  }
+
+  /** Records that the records after the given index were truncated, and not forced yet. */
+  synchronized void markTruncated(final long index) {
+    forcedIndex = Math.min(forcedIndex, index);
+    truncatedSinceForce = true;
+  }
+
+  /** Returns true if records were truncated from this segment since it was last forced. */
+  synchronized boolean hasUnforcedTruncation() {
+    return truncatedSinceForce;
+  }
+
+  /**
+   * Returns true if all records of this segment up to the given index were forced, and no
+   * truncation is pending. Used to verify the journal's flushed index in tests, see {@link
+   * SegmentsManager#firstSegmentNotForcedUpTo(long)}.
+   */
+  synchronized boolean isForcedUpTo(final long index) {
+    return !truncatedSinceForce && forcedIndex >= Math.min(lastIndex(), index);
   }
 
   /**

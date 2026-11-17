@@ -241,9 +241,9 @@ final class JournalTest {
     // when
     journal.deleteAfter(1);
 
-    // then
+    // then - nothing was flushed, so truncating must not report record 1 as flushed
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    assertThat(metaStore.loadLastFlushedIndex()).isOne();
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
     assertThat(reader.hasNext()).isFalse();
   }
 

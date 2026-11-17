@@ -286,4 +286,19 @@ public class ClusterRaftTest {
           .returns(false, ExperimentalRaftCfg::isPreallocateSegmentFiles);
     }
   }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.cluster.raft.flush-coalesced=true"})
+  class WithFlushCoalescedSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithFlushCoalescedSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetFlushCoalesced() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().coalesced()).isTrue();
+    }
+  }
 }
