@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.shared.security;
 
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.net.InetSocketAddress;
 import java.security.cert.CertificateException;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,7 +35,21 @@ final class ClusterApiDedicatedPortTlsIT {
   @TestZeebe(awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
+          // the dedicated port only opens alongside a cluster-admin security chain, and Basic
+          // authentication requires secondary storage
+          .withBasicAuth()
           .withUnauthenticatedAccess()
+          .withSecondaryStorageType(SecondaryStorageType.rdbms)
+          .withUnifiedConfig(
+              cfg -> {
+                final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+                rdbms.setUrl(
+                    "jdbc:h2:mem:cluster-api-tls-"
+                        + UUID.randomUUID()
+                        + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+                rdbms.setUsername("sa");
+                rdbms.setPassword("");
+              })
           .withProperty("server.ssl.enabled", true)
           .withProperty("server.ssl.certificate", CERTIFICATE.certificate().getAbsolutePath())
           .withProperty(

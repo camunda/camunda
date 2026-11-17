@@ -25,15 +25,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.savedrequest.NullRequestCache;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * Unauthenticated chain for the cluster-admin API, active when {@code
  * camunda.security.cluster-admin.authentication.method=none}.
  *
- * <p>Only allowed together with a dedicated cluster API port ({@code camunda.api.cluster.port}):
- * access control is then network reachability of that port, as for the actuator port (ADR
- * management/002 D1). On the shared REST port, disabling authentication would expose cluster-wide
- * destructive operations to every caller that can reach the public API, so startup fails instead.
+ * <p>Only allowed together with a dedicated cluster API port ({@code camunda.api.cluster.port}) and
+ * an explicit bind address ({@code camunda.api.cluster.address}): access control is then network
+ * reachability of that address and port, as for the actuator port (ADR management/002 D1). Requests
+ * issued by a browser on behalf of a web page are refused (see {@link #BROWSER_REQUEST}). On the
+ * shared REST port, disabling authentication would expose cluster-wide destructive operations to
+ * every caller that can reach the public API, so startup fails instead.
  *
  * <p>Every request is treated as a cluster admin: the anonymous principal carries {@link
  * ClusterAdminBasicSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY}, so {@link
@@ -46,26 +49,43 @@ public class ClusterAdminNoAuthSecurityConfiguration {
 
   static final String ANONYMOUS_CLUSTER_ADMIN = "anonymous-cluster-admin";
 
+  /**
+   * Matches requests a browser sends on behalf of a web page. Without credentials, the only thing
+   * keeping a page an operator happens to open from triggering cluster operations (e.g. a no-cors
+   * {@code POST /cluster/v2/exporting/pause}, or via DNS rebinding) is refusing them: browsers set
+   * {@code Origin} on cross-origin and non-GET requests and {@code Sec-Fetch-Site} on every fetch,
+   * while operator tooling (curl, scripts, the Java client) sends neither, or {@code
+   * Sec-Fetch-Site: none} for a URL typed into the address bar.
+   */
+  static final RequestMatcher BROWSER_REQUEST =
+      request -> {
+        final String fetchSite = request.getHeader("Sec-Fetch-Site");
+        return request.getHeader("Origin") != null
+            || (fetchSite != null && !"none".equals(fetchSite));
+      };
+
   private static final Logger LOG =
       LoggerFactory.getLogger(ClusterAdminNoAuthSecurityConfiguration.class);
 
-  @Bean
+  @Bean(ClusterApiSettings.NO_AUTH_CHAIN_BEAN)
   @Order(ORDER_API)
   public SecurityFilterChain clusterAdminNoAuthSecurityFilterChain(
       final HttpSecurity http,
       final Environment environment,
       final CamundaSecurityLibraryProperties properties)
       throws Exception {
-    // load() refuses NONE without a dedicated port
+    // load() refuses NONE without a dedicated port and an explicit bind address
     final ClusterApiSettings settings = ClusterApiSettings.load(environment);
     LOG.warn(
-        "Cluster-admin authentication is disabled: {} on port {} is reachable without "
-            + "credentials. Restrict network access to this port.",
+        "Cluster-admin authentication is disabled: {} on {}:{} is reachable without "
+            + "credentials. Restrict network access to this address and port.",
         ClusterApiSettings.CLUSTER_API_PATTERN,
+        settings.address(),
         settings.port());
 
     http.securityMatcher(settings.dedicatedPortMatcher())
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        .authorizeHttpRequests(
+            auth -> auth.requestMatchers(BROWSER_REQUEST).denyAll().anyRequest().permitAll())
         .anonymous(
             anonymous ->
                 anonymous

@@ -125,6 +125,7 @@ class ClusterApiSettingsTest {
         new MockEnvironment()
             .withProperty("camunda.security.authentication.method", "oidc")
             .withProperty("camunda.api.cluster.port", "9700")
+            .withProperty("camunda.api.cluster.address", "127.0.0.1")
             .withProperty("camunda.security.cluster-admin.authentication.method", "none");
 
     // when
@@ -140,6 +141,49 @@ class ClusterApiSettingsTest {
     assertThatThrownBy(() -> load("camunda.security.cluster-admin.authentication.method", "none"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("camunda.api.cluster.port");
+  }
+
+  @Test
+  void shouldRejectNoAuthenticationWithoutExplicitAddress() {
+    // given — without an address the port would bind like server.address, usually all interfaces
+    final var environment =
+        new MockEnvironment()
+            .withProperty("camunda.api.cluster.port", "9700")
+            .withProperty("camunda.security.cluster-admin.authentication.method", "none");
+
+    // when / then
+    assertThatThrownBy(() -> ClusterApiSettings.load(environment))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("camunda.api.cluster.address");
+  }
+
+  @Test
+  void shouldRejectUnresolvableAddress() {
+    // given — Tomcat would silently keep the wildcard address for a value it cannot resolve
+    final var environment =
+        new MockEnvironment()
+            .withProperty("camunda.api.cluster.port", "9700")
+            .withProperty("camunda.api.cluster.address", "no-such-host.invalid");
+
+    // when / then
+    assertThatThrownBy(() -> ClusterApiSettings.load(environment))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no-such-host.invalid");
+  }
+
+  @Test
+  void shouldResolveAddressToLiteral() {
+    // given
+    final var environment =
+        new MockEnvironment()
+            .withProperty("camunda.api.cluster.port", "9700")
+            .withProperty("camunda.api.cluster.address", " 127.0.0.1 ");
+
+    // when
+    final var settings = ClusterApiSettings.load(environment);
+
+    // then
+    assertThat(settings.address()).isEqualTo("127.0.0.1");
   }
 
   @Test

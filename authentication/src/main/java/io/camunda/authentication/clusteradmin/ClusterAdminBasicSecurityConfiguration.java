@@ -76,7 +76,7 @@ public class ClusterAdminBasicSecurityConfiguration {
   private static final Logger LOG =
       LoggerFactory.getLogger(ClusterAdminBasicSecurityConfiguration.class);
 
-  @Bean
+  @Bean(ClusterApiSettings.BASIC_CHAIN_BEAN)
   @Order(ORDER_API)
   public SecurityFilterChain clusterAdminSecurityFilterChain(
       final HttpSecurity http,

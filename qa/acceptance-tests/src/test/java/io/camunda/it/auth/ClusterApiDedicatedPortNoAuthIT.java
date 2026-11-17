@@ -25,6 +25,8 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * The cluster API on a dedicated port with cluster-admin authentication turned off, while the
@@ -43,6 +45,7 @@ public class ClusterApiDedicatedPortNoAuthIT {
           .withBasicAuth()
           .withAuthenticatedAccess()
           .withProperty("camunda.api.cluster.port", CLUSTER_PORT)
+          .withProperty("camunda.api.cluster.address", "127.0.0.1")
           .withProperty("camunda.security.cluster-admin.authentication.method", "none");
 
   private static CamundaClient camundaClient;
@@ -56,6 +59,41 @@ public class ClusterApiDedicatedPortNoAuthIT {
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
     assertThat(new ObjectMapper().readTree(response.body()).get("brokers")).isNotEmpty();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"Origin, https://evil.example", "Sec-Fetch-Site, cross-site"})
+  void shouldRefuseBrowserRequestsFromWebPages(final String header, final String value)
+      throws Exception {
+    // given — what a browser attaches when a web page fires a request at the unauthenticated port
+    final HttpRequest request =
+        HttpRequest.newBuilder(
+                clusterPortUri(camundaClient, CLUSTER_PORT, "cluster/v2/exporting/pause"))
+            .header(header, value)
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+
+    // when
+    final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_FORBIDDEN);
+  }
+
+  @Test
+  void shouldServeRequestTypedIntoAddressBar() throws Exception {
+    // given — a top-level navigation by the operator, not a request from a web page
+    final HttpRequest request =
+        HttpRequest.newBuilder(clusterPortUri(camundaClient, CLUSTER_PORT, "cluster/v2/topology"))
+            .header("Sec-Fetch-Site", "none")
+            .GET()
+            .build();
+
+    // when
+    final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test

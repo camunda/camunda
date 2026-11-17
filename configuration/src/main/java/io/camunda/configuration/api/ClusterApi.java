@@ -25,7 +25,10 @@ public class ClusterApi {
    */
   private @Nullable Integer port;
 
-  /** Bind address of the dedicated cluster API port. Defaults to all interfaces. */
+  /**
+   * Bind address of the dedicated cluster API port. Defaults to {@code server.address}. Required
+   * when cluster-admin authentication is {@code none}. Startup fails if it cannot be resolved.
+   */
   private @Nullable String address;
 
   public @Nullable Integer getPort() {

@@ -8,12 +8,14 @@
 package io.camunda.application.commons.rest;
 
 import io.camunda.authentication.clusteradmin.ClusterApiSettings;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.lang.reflect.Method;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.connector.Connector;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.Ssl;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -41,10 +43,14 @@ import org.springframework.util.ReflectionUtils;
  * every {@link WebServerFactoryCustomizer} has run, so customizers registered later are not missed.
  * Without {@value ClusterApiSettings#ADDRESS_PROPERTY}, the connector binds to {@code
  * server.address} like the main one.
+ *
+ * <p>Only active with the REST gateway, and startup fails unless a cluster-admin security chain is
+ * defined: the dedicated port never serves the cluster API unprotected.
  */
 @NullMarked
 @Configuration(proxyBeanMethods = false)
 @Conditional(ClusterApiSettings.DedicatedPortCondition.class)
+@ConditionalOnRestGatewayEnabled
 public class ClusterApiServerConfiguration {
 
   // Before PhysicalTenantFilter (-101) and Spring Security (-100): a request on the wrong port is
@@ -58,8 +64,9 @@ public class ClusterApiServerConfiguration {
 
   @Bean
   public WebServerFactoryCustomizer<TomcatServletWebServerFactory> clusterApiConnectorCustomizer(
-      final Environment environment) {
+      final Environment environment, final ListableBeanFactory beanFactory) {
     final ClusterApiSettings settings = ClusterApiSettings.load(environment);
+    requireClusterAdminChain(beanFactory);
     return factory -> {
       final Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
       connector.addLifecycleListener(
@@ -97,8 +104,11 @@ public class ClusterApiServerConfiguration {
     ReflectionUtils.invokeMethod(CUSTOMIZE_CONNECTOR, factory, connector);
 
     connector.setPort(settings.requireDedicatedPort());
-    if (settings.address() != null) {
-      connector.setProperty("address", settings.address());
+    // load() resolved the address, so Tomcat can only refuse it for a reason it would otherwise
+    // hide by keeping the wildcard address it already has.
+    if (settings.address() != null && !connector.setProperty("address", settings.address())) {
+      throw new IllegalStateException(
+          "Cannot bind the dedicated cluster API port to %s".formatted(settings.address()));
     }
 
     final Ssl ssl = factory.getSsl();
@@ -107,6 +117,21 @@ public class ClusterApiServerConfiguration {
         ClusterApiSettings.CLUSTER_API_PATTERN,
         settings.requireDedicatedPort(),
         ssl != null && Ssl.isEnabled(ssl) ? "https" : "http");
+  }
+
+  /**
+   * Refuses to open the dedicated port unless a cluster-admin security chain exists. The chains are
+   * registered only in the consolidated authentication setup; without one, the port would serve the
+   * cluster-wide admin API with no authentication at all, and an explicitly configured
+   * cluster-admin authentication method would be silently ignored.
+   */
+  private static void requireClusterAdminChain(final ListableBeanFactory beanFactory) {
+    if (ClusterApiSettings.CHAIN_BEANS.stream().noneMatch(beanFactory::containsBeanDefinition)) {
+      throw new IllegalStateException(
+          "%s is set, but no cluster-admin security chain is configured for this application; "
+                  .formatted(ClusterApiSettings.PORT_PROPERTY)
+              + "the dedicated cluster API port requires the consolidated authentication setup");
+    }
   }
 
   private static Method findCustomizeConnector() {

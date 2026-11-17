@@ -8,6 +8,8 @@
 package io.camunda.authentication.clusteradmin;
 
 import io.camunda.authentication.config.AuthenticationProperties;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
@@ -31,7 +33,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * cluster-admin authentication independently of the global method.
  *
  * @param port the dedicated port, or {@code null} when the cluster API shares {@code server.port}
- * @param address the dedicated port's bind address, or {@code null} for the connector default
+ * @param address the dedicated port's resolved bind address, or {@code null} to bind like {@code
+ *     server.address}
  * @param authenticationMethod the effective cluster-admin authentication method
  */
 @NullMarked
@@ -55,6 +58,17 @@ public record ClusterApiSettings(
   public static final Set<String> PUBLIC_CLUSTER_API_PATHS =
       Set.of(CLUSTER_API_PREFIX + "/status", CLUSTER_API_PREFIX + "/status/upgrade");
 
+  /**
+   * Names of the cluster-admin {@code SecurityFilterChain} beans. The dedicated port only opens
+   * when one of them is defined, so it can never serve the cluster API without its security chain.
+   */
+  public static final String BASIC_CHAIN_BEAN = "clusterAdminSecurityFilterChain";
+
+  public static final String OIDC_CHAIN_BEAN = "clusterAdminOidcSecurityFilterChain";
+  public static final String NO_AUTH_CHAIN_BEAN = "clusterAdminNoAuthSecurityFilterChain";
+  public static final Set<String> CHAIN_BEANS =
+      Set.of(BASIC_CHAIN_BEAN, OIDC_CHAIN_BEAN, NO_AUTH_CHAIN_BEAN);
+
   private static final Set<String> COLLIDING_PORT_PROPERTIES =
       Set.of("server.port", "management.server.port", "camunda.api.grpc.port");
 
@@ -66,14 +80,23 @@ public record ClusterApiSettings(
    */
   public static ClusterApiSettings load(final Environment environment) {
     final Integer port = parsePort(environment);
-    final String address = trimToNull(environment.getProperty(ADDRESS_PROPERTY));
+    final String address = parseAddress(environment);
     final ClusterAdminAuthenticationMethod method = parseMethod(environment);
-    if (method == ClusterAdminAuthenticationMethod.NONE && port == null) {
+    if (method == ClusterAdminAuthenticationMethod.NONE) {
       // On the shared REST port, disabling authentication would expose cluster-wide destructive
       // operations to every caller that can reach the public API.
-      throw new IllegalStateException(
-          "%s=none requires the cluster API on a dedicated port; set %s"
-              .formatted(AUTHENTICATION_METHOD_PROPERTY, PORT_PROPERTY));
+      if (port == null) {
+        throw new IllegalStateException(
+            "%s=none requires the cluster API on a dedicated port; set %s"
+                .formatted(AUTHENTICATION_METHOD_PROPERTY, PORT_PROPERTY));
+      }
+      // Without an explicit address the port would bind wherever server.address does — usually
+      // every interface — exposing unauthenticated destructive operations to the whole network.
+      if (address == null) {
+        throw new IllegalStateException(
+            "%s=none requires an explicit bind address for the dedicated port; set %s (e.g. 127.0.0.1)"
+                .formatted(AUTHENTICATION_METHOD_PROPERTY, ADDRESS_PROPERTY));
+      }
     }
     return new ClusterApiSettings(port, address, method);
   }
@@ -140,6 +163,25 @@ public record ClusterApiSettings(
       }
     }
     return port;
+  }
+
+  /**
+   * Resolves the bind address once at startup. Tomcat silently keeps its previous (wildcard)
+   * address when it cannot resolve the value, so a typo would otherwise widen the exposure.
+   *
+   * @return the resolved IP literal, or {@code null} when no address is configured
+   */
+  private static @Nullable String parseAddress(final Environment environment) {
+    final String raw = trimToNull(environment.getProperty(ADDRESS_PROPERTY));
+    if (raw == null) {
+      return null;
+    }
+    try {
+      return InetAddress.getByName(raw).getHostAddress();
+    } catch (final UnknownHostException e) {
+      throw new IllegalStateException(
+          "%s '%s' cannot be resolved to an address".formatted(ADDRESS_PROPERTY, raw), e);
+    }
   }
 
   private static ClusterAdminAuthenticationMethod parseMethod(final Environment environment) {

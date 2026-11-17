@@ -47,7 +47,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 @ConditionalOnClusterAdminAuthenticationMethod(ClusterAdminAuthenticationMethod.OIDC)
 public class ClusterAdminOidcSecurityConfiguration {
 
-  @Bean
+  @Bean(ClusterApiSettings.OIDC_CHAIN_BEAN)
   @Order(ORDER_API)
   public SecurityFilterChain clusterAdminOidcSecurityFilterChain(
       final HttpSecurity http,

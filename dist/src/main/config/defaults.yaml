@@ -11,7 +11,8 @@
 camunda: # Type: io.camunda.configuration.Camunda  
   api: # Type: io.camunda.configuration.Api  
     cluster: # Type: io.camunda.configuration.api.ClusterApi  
-      # Bind address of the dedicated cluster API port. Defaults to all interfaces.
+      # Bind address of the dedicated cluster API port. Defaults to `server.address`. Required when
+      # cluster-admin authentication is `none`. Startup fails if it cannot be resolved.
       address: null # Type: String, Env: CAMUNDA_API_CLUSTER_ADDRESS
       # Dedicated port for the cluster API. When unset, the cluster API shares `server.port` with the rest
       # of the REST API. When set, the cluster API is served only on this port (except its public status
