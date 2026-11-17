@@ -112,10 +112,13 @@ final class SegmentedJournalWriter {
   }
 
   void deleteAfter(final long index) {
-    // reset the last flushed index first to avoid corruption on restart in case of partial
-    // truncation (e.g. the node crashed while deleting segments)
-    lastFlushedIndex = index;
-    metaStore.storeLastFlushedIndex(index);
+    // lower the last flushed index first to avoid corruption on restart in case of partial
+    // truncation (e.g. the node crashed while deleting segments); never raise it, otherwise
+    // entries before the truncation index that were not flushed yet are skipped by later flushes
+    if (index < lastFlushedIndex) {
+      lastFlushedIndex = index;
+      metaStore.storeLastFlushedIndex(index);
+    }
 
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
