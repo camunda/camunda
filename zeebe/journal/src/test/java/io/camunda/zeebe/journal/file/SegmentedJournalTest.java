@@ -56,6 +56,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.CloseHelper;
@@ -530,13 +531,20 @@ class SegmentedJournalTest {
 
     // when
     Files.move(movedFirstSegment, firstSegment);
-    journal.deleteUntil(7);
+    journal.deleteUntil(5);
     deletions.poll().run();
 
     // then
     assertThat(logDirectory)
         .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-1.log"))
-        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+
+    // when
+    journal.deleteUntil(7);
+    deletions.poll().run();
+
+    // then
+    assertThat(logDirectory)
         .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-3.log"))
         .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-4.log"));
     journal.close();
@@ -573,6 +581,85 @@ class SegmentedJournalTest {
     journal = openJournal(2);
     assertThat(journal.getFirstIndex()).isEqualTo(100);
     assertThat(journal.getLastIndex()).isEqualTo(100);
+  }
+
+  @Test
+  void shouldRetrySegmentCreationWhenDeletionFreesSpaceConcurrently() {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    final AtomicBoolean diskFull = new AtomicBoolean();
+    final AtomicInteger allocations = new AtomicInteger();
+    final SegmentAllocator allocator =
+        (channel, fd, segmentSize) -> {
+          if (diskFull.get()) {
+            final int allocation = allocations.incrementAndGet();
+            if (allocation <= 2) {
+              if (allocation == 2) {
+                // the deletion completes after the disk check, but before the caller reacts
+                deletions.poll().run();
+              }
+              throw new OutOfDiskSpace("Disk is full");
+            }
+          }
+          SegmentAllocator.posix(SegmentAllocator.noop()).allocate(channel, fd, segmentSize);
+        };
+    journalFactory = new TestJournalFactory("test", 2, allocator);
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory, deletions::add));
+    closeables.add(journal);
+    for (int i = 0; i < 4; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.deleteUntil(3);
+    diskFull.set(true);
+
+    // when
+    for (int i = 0; i < 2; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final var record = journal.append(journalFactory.entry());
+
+    // then
+    assertThat(record.index()).isEqualTo(7);
+  }
+
+  @Test
+  void shouldWaitForRunningSegmentDeletionOnClose() throws Exception {
+    // given
+    final CountDownLatch deletionStarted = new CountDownLatch(1);
+    final CountDownLatch releaseDeletion = new CountDownLatch(1);
+    final Executor blockingExecutor =
+        task ->
+            new Thread(
+                    () -> {
+                      deletionStarted.countDown();
+                      try {
+                        releaseDeletion.await();
+                      } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
+                      task.run();
+                    })
+                .start();
+    closeables.add(releaseDeletion::countDown);
+    journal = openJournal(2, blockingExecutor);
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.deleteUntil(5);
+    assertThat(deletionStarted.await(10, TimeUnit.SECONDS)).isTrue();
+
+    // when
+    final var closed = CompletableFuture.runAsync(journal::close);
+
+    // then
+    assertThatThrownBy(() -> closed.get(200, TimeUnit.MILLISECONDS))
+        .isInstanceOf(TimeoutException.class);
+    releaseDeletion.countDown();
+    closed.get(10, TimeUnit.SECONDS);
+    assertThat(directory.resolve("data"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-1.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"));
   }
 
   @Test
