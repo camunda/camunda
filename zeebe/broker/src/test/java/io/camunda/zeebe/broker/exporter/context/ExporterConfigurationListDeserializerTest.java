@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.exporter.context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -73,6 +75,25 @@ final class ExporterConfigurationListDeserializerTest {
 
     // then
     assertThat(instance.items()).containsExactly("a", "b");
+  }
+
+  @Test
+  void shouldDeserializeMapWithMoreThanTenNumericKeysInNumericOrder() {
+    // given — with 11+ entries, a lexicographic key order ("0", "1", "10", "2", ...) would try to
+    // insert at index 10 before index 2 exists
+    final var items = new HashMap<String, Object>();
+    final var expected = new ArrayList<String>();
+    for (int i = 0; i < 12; i++) {
+      items.put(String.valueOf(i), "item" + i);
+      expected.add("item" + i);
+    }
+    final var args = Map.<String, Object>of("items", items);
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(StringListConfig.class, args);
+
+    // then
+    assertThat(instance.items()).containsExactlyElementsOf(expected);
   }
 
   // ---------------------------------------------------------------------------
