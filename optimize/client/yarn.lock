@@ -5688,13 +5688,13 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@18.31.1:
-  version "18.31.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.31.1.tgz#c1ef6fbb5fc3dc7ad8f39b6cb421c576e939622c"
-  integrity sha512-Hc7LzrgwfcBRUAdI/380Q2v1MJ115atGEVGadawLfDbHdo+r+IkmNj8fuYPFmWglUYt1KYIaC46OeX16HGTKQw==
+bpmn-js@18.33.0:
+  version "18.33.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.33.0.tgz#276537fc413e69482b895811018049ce35218378"
+  integrity sha512-CxwEmK+rNh6nTW7JaLDc3J6n7FwjxcnQxZvmCOhVHknJaGv9wUey3jRThOqev7vUc2pMgOWz4wyHuwt2iYLUqA==
   dependencies:
     bpmn-moddle "^10.3.1"
-    diagram-js "^15.28.0"
+    diagram-js "^15.30.0"
     diagram-js-direct-editing "^3.6.0"
     ids "^3.0.2"
     inherits-browser "^0.1.0"
@@ -7087,14 +7087,14 @@ diagram-js-direct-editing@^3.6.0:
     min-dash "^5.0.0"
     min-dom "^5.3.0"
 
-diagram-js@^15.28.0:
-  version "15.28.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.28.0.tgz#9a8bb5cd80fba82ef2ece92995b2a87d266b67f3"
-  integrity sha512-szp5V8ipbwMNB2aR1c7ABvN1N4bVdl5K1uO6Lpcn+LQ/Sw5C9fKwo6GOaV0ZVX8rWoZKb4ki34Qt6UZ8Z/Ig9w==
+diagram-js@^15.30.0:
+  version "15.30.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.30.0.tgz#b579c001f99a24821ef40c512619ba0c4334f0b1"
+  integrity sha512-DDlekJvMs7iPJ+Bv85xpfFycMiUkpm8LpD63fqos/04Obw7cDxdxU20wQzo4s2ubc7fGK99Q5ADJhihLw5HAkg==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.4"
     clsx "^2.1.1"
-    didi "^11.0.0"
+    didi "^12.0.0"
     inherits-browser "^0.1.0"
     min-dash "^5.1.0"
     min-dom "^5.3.0"
@@ -7117,10 +7117,10 @@ diagram-js@^7.8.2:
     path-intersection "^2.2.1"
     tiny-svg "^2.2.2"
 
-didi@^11.0.0:
-  version "11.0.0"
-  resolved "https://registry.npmjs.org/didi/-/didi-11.0.0.tgz"
-  integrity sha512-PzCfRzQttvFpVcYMbSF7h8EsWjeJpVjWH4qDhB5LkMi1ILvHq4Ob0vhM2wLFziPkbUBi+PAo7ODbe2sacR7nJQ==
+didi@^12.0.0:
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-12.0.0.tgz#b77e2aac91af885284bf92752996ebcc1205688a"
+  integrity sha512-zn4AVarmnjgEHyBb3j5yc3KSMPkfkoj+D6nt8qisyvxG/NkmQuHsgQB54Wdc4tITUkJRqU1EvGuNe8RuHWIh6g==
 
 didi@^5.2.1:
   version "5.2.1"
