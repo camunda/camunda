@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -135,7 +137,7 @@ final class ClusterConfigurationInitializerTest {
             topologyNotifier,
             persistedClusterConfiguration::getConfiguration,
             ignore -> {},
-            new TestConcurrencyControl());
+            new TestConcurrencyControl(true));
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -146,6 +148,62 @@ final class ClusterConfigurationInitializerTest {
 
     // then
     assertThat(initializeFuture.join().isUninitialized()).isFalse();
+  }
+
+  @Test
+  void shouldLogWarningsThenErrorWhileWaitingForGossip() {
+    // given
+    final var executor = new TestConcurrencyControl(true);
+    final var notifier = new TestClusterConfigurationNotifier();
+    final var initializer =
+        new GossipInitializer(
+            notifier,
+            persistedClusterConfiguration::getConfiguration,
+            ignore -> {},
+            executor,
+            Duration.ofSeconds(1));
+
+    try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
+      // when
+      initializer.initialize();
+      for (int i = 0; i < GossipInitializer.ERROR_LOG_THRESHOLD; i++) {
+        executor.runAll();
+      }
+
+      // then
+      assertThat(logCapturer.messagesAt(Level.WARN))
+          .hasSize(GossipInitializer.ERROR_LOG_THRESHOLD - 1)
+          .allMatch(m -> m.contains("Still waiting for the coordinator"));
+      assertThat(logCapturer.messagesAt(Level.ERROR))
+          .singleElement()
+          .asString()
+          .contains("Still waiting for the coordinator");
+    }
+  }
+
+  @Test
+  void shouldStopLoggingOnceGossipIsReceived() {
+    // given
+    final var executor = new TestConcurrencyControl(true);
+    final var notifier = new TestClusterConfigurationNotifier();
+    final var initializer =
+        new GossipInitializer(
+            notifier,
+            persistedClusterConfiguration::getConfiguration,
+            ignore -> {},
+            executor,
+            Duration.ofSeconds(1));
+
+    try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
+      initializer.initialize();
+      notifier.updateCurrentClusterConfiguration(initialClusterConfiguration);
+
+      // when
+      executor.runAll();
+
+      // then
+      assertThat(logCapturer.messages()).isEmpty();
+    }
   }
 
   @Test
@@ -502,7 +560,7 @@ final class ClusterConfigurationInitializerTest {
                       new TestClusterConfigurationNotifier(),
                       persistedClusterConfiguration::getConfiguration,
                       ignore -> {},
-                      new TestConcurrencyControl()));
+                      new TestConcurrencyControl(true)));
       // write initial configuration to the file
       persistedClusterConfiguration.update(initialClusterConfiguration);
       // when
@@ -526,7 +584,7 @@ final class ClusterConfigurationInitializerTest {
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedConfiguration::set,
-                      new TestConcurrencyControl()));
+                      new TestConcurrencyControl(true)));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -556,7 +614,7 @@ final class ClusterConfigurationInitializerTest {
                       topologyUpdateNotifier,
                       persistedClusterConfiguration::getConfiguration,
                       gossipedConfiguration::set,
-                      new TestConcurrencyControl()));
+                      new TestConcurrencyControl(true)));
       // Corrupt file
       Files.write(
           topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
