@@ -103,20 +103,32 @@ const bad = outcomes.filter(
   (o) => o.outcome !== 'passed' && o.outcome !== 'flaky',
 );
 const flaky = outcomes.filter((o) => o.outcome === 'flaky');
+const runErrors = Array.isArray(report?.errors) ? report.errors : [];
+const firstRunError = runErrors[0];
+const runErrorMessage = String(firstRunError?.message ?? firstRunError?.value ?? '')
+  .split(/\r?\n/, 1)[0]
+  .trim()
+  .slice(0, 200);
+const runFailure = runErrors.length > 0
+  ? `Playwright reported ${runErrors.length} run-level error(s)` +
+    (runErrorMessage ? `: ${runErrorMessage}` : '')
+  : null;
 
+// Playwright reports runner and lifecycle errors separately from test outcomes.
 const verdict = {
   case: caseId,
   ran: specs.length,
   matched: matched.length,
   flaky: flaky.length,
-  ok: matched.length > 0 && bad.length === 0,
-  reason:
+  ok: runFailure === null && matched.length > 0 && bad.length === 0,
+  reason: runFailure ?? (
     matched.length === 0
       ? `no test titled "${caseId}: ..." ran — the scope selected nothing`
       : bad.length === 0
         ? `${matched.length} test(s) passed` +
           (flaky.length > 0 ? ` (${flaky.length} only on retry)` : '')
-        : `did not pass: ${bad.map((o) => `${o.title} (${o.outcome})`).join(', ')}`,
+        : `did not pass: ${bad.map((o) => `${o.title} (${o.outcome})`).join(', ')}`
+  ),
 };
 
 const rendered = JSON.stringify(verdict, null, 2);

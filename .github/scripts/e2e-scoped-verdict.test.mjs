@@ -44,7 +44,10 @@ const spec = (title, status = 'expected') => ({
 });
 
 test('a matched, passing case exits 0', () => {
-  const r = runVerdict({suites: [{specs: [spec('AL-UI-01: works')]}]}, 'AL-UI-01');
+  const r = runVerdict(
+    {suites: [{specs: [spec('AL-UI-01: works')]}], errors: []},
+    'AL-UI-01',
+  );
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /"ok": true/);
 });
@@ -99,6 +102,19 @@ test('an unrelated failure does not fail a passing case', () => {
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /"ran": 2/);
   assert.match(r.stdout, /"matched": 1/);
+});
+
+test('run-level errors invalidate a report with a passing case', () => {
+  const r = runVerdict(
+    {
+      suites: [{specs: [spec('AL-UI-01: fine')]}],
+      errors: [{message: 'The test run could not complete global teardown'}],
+    },
+    'AL-UI-01',
+  );
+  assert.strictEqual(r.status, 1);
+  assert.match(r.stdout, /"ok": false/);
+  assert.match(r.stderr, /1 run-level error\(s\): The test run could not complete global teardown/);
 });
 
 test('matches on the id prefix, not a substring', () => {
