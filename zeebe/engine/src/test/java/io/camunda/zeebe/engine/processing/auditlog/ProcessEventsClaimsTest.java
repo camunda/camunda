@@ -131,6 +131,31 @@ public class ProcessEventsClaimsTest {
   }
 
   @Test
+  public void shouldKeepOnlyActorClaimsOnRejections() {
+    // given
+    final var authInfo =
+        AuthInfo.ofClaims(
+            Map.of(
+                Authorization.AUTHORIZED_USERNAME,
+                DEFAULT_USER.getUsername(),
+                Authorization.USER_GROUPS_CLAIMS,
+                List.of("group"),
+                Authorization.USER_TOKEN_CLAIMS,
+                Map.of("sub", DEFAULT_USER.getUsername())));
+
+    // when
+    engine.processInstance().ofBpmnProcessId("unknownProcess").expectRejection().create(authInfo);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .getFirst()
+                .getAuthorizations())
+        .isEqualTo(Map.of(Authorization.AUTHORIZED_USERNAME, DEFAULT_USER.getUsername()));
+  }
+
+  @Test
   public void shouldIncludeClaimsInProcessInstanceCreationCreatedEventsForMessageCorrelation() {
     // given
     deployMessageStartProcess();
