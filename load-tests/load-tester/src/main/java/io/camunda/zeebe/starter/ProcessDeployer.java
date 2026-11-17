@@ -16,8 +16,11 @@ import io.camunda.zeebe.metrics.Connected;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -27,11 +30,12 @@ import org.springframework.stereotype.Component;
 /**
  * Deploys the benchmark process once the cluster is {@link Connected}, retries until it succeeds,
  * then publishes {@link ProcessDeployed}. The deployment is asynchronous, so the thread that
- * published {@link Connected} is not blocked.
+ * published {@link Connected} is not blocked. It is part of the readiness of the starter, which is
+ * ready only once the process is deployed.
  */
-@Component
+@Component("processDeployed")
 @Profile("starter")
-public class ProcessDeployer {
+public class ProcessDeployer implements HealthIndicator {
 
   private static final Duration RETRY_DELAY = Duration.ofMillis(200);
   private static final Logger THROTTLED_LOGGER =
@@ -43,6 +47,7 @@ public class ProcessDeployer {
   private final StarterLivenessIndicator livenessIndicator;
   private final ApplicationEventPublisher eventPublisher;
   private final TaskScheduler scheduler;
+  private final AtomicBoolean deployed = new AtomicBoolean();
 
   public ProcessDeployer(
       final CamundaClient loaderClient,
@@ -55,6 +60,11 @@ public class ProcessDeployer {
     this.livenessIndicator = livenessIndicator;
     this.eventPublisher = eventPublisher;
     this.scheduler = scheduler;
+  }
+
+  @Override
+  public Health health() {
+    return deployed.get() ? Health.up().build() : Health.outOfService().build();
   }
 
   @EventListener(Connected.class)
@@ -76,6 +86,7 @@ public class ProcessDeployer {
                         .map(Process::getProcessDefinitionKey)
                         .orElse(0L);
                 eventPublisher.publishEvent(new ProcessDeployed(processDefinitionKey));
+                deployed.set(true);
               } else {
                 THROTTLED_LOGGER.warn("Failed to deploy process, retrying", error);
                 scheduler.schedule(() -> deploy(deployCmd), Instant.now().plus(RETRY_DELAY));

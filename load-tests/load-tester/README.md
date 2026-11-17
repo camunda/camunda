@@ -43,7 +43,7 @@ To build the docker images for the load test application, run the following comm
 Both roles serve `/health/readiness` and `/health/liveness` on port 9600 (no `/actuator` prefix).
 
 - **Readiness (starter):** ready once the cluster topology was retrieved and the benchmark process
-  was deployed. The web server, and with it both health endpoints, starts only after that.
+  was deployed. Until then `/health/readiness` answers 503.
 - **Readiness (worker):** ready once the cluster topology was retrieved. The topology request
   retries every error, so a pod that cannot authenticate stays not ready.
 - **Liveness (starter):** DOWN when no start request succeeded for

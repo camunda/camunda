@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.health.contributor.Status;
 import org.springframework.scheduling.TaskScheduler;
 
 class ProcessDeployerTest {
@@ -67,6 +68,21 @@ class ProcessDeployerTest {
 
     // then
     assertThat(events).containsExactly(new ProcessDeployed(7L));
+  }
+
+  @Test
+  void shouldBeReadyOnlyOnceTheProcessIsDeployed() {
+    // given
+    final var pending = new CompletableFuture<DeploymentEvent>();
+    final var deployer = newDeployer(deployFutures(pending), mock(TaskScheduler.class));
+    deployer.onConnected();
+    assertThat(deployer.health().getStatus()).isEqualTo(Status.OUT_OF_SERVICE);
+
+    // when
+    pending.complete(deployment(42L));
+
+    // then
+    assertThat(deployer.health().getStatus()).isEqualTo(Status.UP);
   }
 
   private ProcessDeployer newDeployer(final CamundaClient client, final TaskScheduler scheduler) {

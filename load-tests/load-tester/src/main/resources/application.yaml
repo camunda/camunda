@@ -158,6 +158,8 @@ management:
       group:
         liveness:
           include: starterLiveness
+        readiness:
+          include: readinessState,connectionReady,processDeployed
 
 # Worker-profile override: worker pods actually handle jobs, so they need a real
 # thread pool. Matches the old HOCON app.worker.threads=10 default.
