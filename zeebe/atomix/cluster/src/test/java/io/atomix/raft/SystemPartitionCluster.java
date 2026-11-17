@@ -422,7 +422,7 @@ final class SystemPartitionCluster implements AutoCloseable {
                     return leave;
                   }
                   if (leave.get().replacement() != null
-                      && response.error().message().contains("not caught up")) {
+                      && response.error().message().contains("Cannot promote")) {
                     unavailable.add(leave.get().replacement());
                   }
                   return null;

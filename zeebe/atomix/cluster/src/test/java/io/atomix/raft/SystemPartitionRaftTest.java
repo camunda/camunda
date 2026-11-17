@@ -1348,37 +1348,69 @@ final class SystemPartitionRaftTest {
       assertThat(m3.getRole()).isEqualTo(Role.PASSIVE);
     }
 
-    @Test
-    void shouldNotPromoteMemberThatDidNotAnswerRecently() {
-      // given - the passive member caught up, then went down
-      final var cluster = bootstrapTwoVotersOnePassive();
-      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
-      final var m3 = cluster.get(2);
+    /** Two voters and a passive member that caught up, then went down. */
+    private RaftServer bootstrapWithDownPassiveMember(final VoterPolicy policy) {
+      final var members = twoVotersOnePassive();
+      final var m1 = createServer(id1, id2, id3);
+      final var m2 = createServer(id2, id1, id3);
+      final var m3 = createServer(id3, id1, id2);
+      CompletableFuture.allOf(
+              policy == null ? m1.bootstrap(members) : m1.bootstrap(members, policy),
+              policy == null ? m2.bootstrap(members) : m2.bootstrap(members, policy),
+              policy == null ? m3.bootstrap(members) : m3.bootstrap(members, policy))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      final var leader = awaitLeader(m1, m2, m3);
       final var index = appendEntry(leader);
       Awaitility.await("passive member caught up")
           .untilAsserted(() -> assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(index));
       m3.shutdown().join();
+      return leader;
+    }
 
-      // when - promoted after more than an election timeout without an answer
-      final var response =
-          Awaitility.await("leader answers after an election timeout")
-              .pollDelay(Duration.ofSeconds(1))
-              .until(
-                  () -> {
-                    final var current = configurationId(leader);
-                    return leader
-                        .reconfigure(
-                            Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE),
-                            current.index(),
-                            current.term())
-                        .orTimeout(10, TimeUnit.SECONDS)
-                        .join();
-                  },
-                  r -> r.error() == null || r.error().message().contains("not caught up"));
+    /** Promotes member 3 once more than an election timeout passed since it went down. */
+    private ReconfigureResponse promoteMember3Later(final RaftServer leader) {
+      return Awaitility.await("leader answers after an election timeout")
+          .pollDelay(Duration.ofSeconds(1))
+          .until(
+              () -> {
+                final var current = configurationId(leader);
+                return leader
+                    .reconfigure(
+                        Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE),
+                        current.index(),
+                        current.term())
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .join();
+              },
+              r -> r.error() == null || !r.error().message().contains("Another configuration"));
+    }
+
+    @Test
+    void shouldNotPromoteMemberThatDidNotAnswerRecently() {
+      // given - the policy allows three voters
+      final var leader = bootstrapWithDownPassiveMember(VoterPolicy.of(new ZoneVoters("", 3)));
+
+      // when
+      final var response = promoteMember3Later(leader);
+
+      // then - member 3 is caught up, but it did not answer
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().message())
+          .contains("did not answer within the election timeout")
+          .doesNotContain("not caught up");
+    }
+
+    @Test
+    void shouldPromoteMemberThatDidNotAnswerRecentlyWithoutVoterPolicy() {
+      // given - a data partition, which has no voter policy, keeps its behavior
+      final var leader = bootstrapWithDownPassiveMember(null);
+
+      // when
+      final var response = promoteMember3Later(leader);
 
       // then
-      assertThat(response.status()).isEqualTo(Status.ERROR);
-      assertThat(response.error().message()).contains("did not answer recently");
+      assertThat(response.status()).isEqualTo(Status.OK);
     }
 
     @Test
