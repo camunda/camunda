@@ -200,7 +200,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             configuration.getBatchOperationCache().getMaxCacheSize(),
             entityCacheProvider.getBatchOperationCacheLoader(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(BatchOperationTemplate.class).getActiveNames()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", meterRegistry));
 
     processCache =

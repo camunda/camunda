@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -513,6 +514,20 @@ public class DefaultExporterResourceProviderTest {
     assertThat(resourceProvider.getExportHandlers())
         .isNotEmpty()
         .noneMatch(exportHandlersByIdentity::contains);
+  }
+
+  @Test
+  void shouldLoadBatchOperationsIntoCacheFromActiveIndices() {
+    // given
+    final var cacheProvider = mock(ExporterEntityCacheProvider.class);
+
+    // when
+    final var resourceProvider = initializedProvider(cacheProvider);
+
+    // then - batch operations can live in ordinal indices as well as the main index
+    final var batchOperationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    verify(cacheProvider).getBatchOperationCacheLoader(batchOperationTemplate.getActiveNames());
   }
 
   @Test
