@@ -419,7 +419,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   private List<TaskSearchView> queryTasks(final TaskQuery query, final String taskId) {
     List<String> tasksIds = null;
     if (query.getTaskVariables() != null && query.getTaskVariables().length > 0) {
-      tasksIds = getTasksContainsVarNameAndValue(query.getTaskVariables());
+      tasksIds = getTasksContainsVarNameAndValue(query.getTaskVariables(), query.getState());
       if (tasksIds.isEmpty()) {
         return new ArrayList<>();
       }
@@ -754,7 +754,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   private List<String> getTasksContainsVarNameAndValue(
-      final TaskByVariables[] taskVariablesFilter) {
+      final TaskByVariables[] taskVariablesFilter, final TaskState taskState) {
     final List<String> varNames =
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
     final List<String> varValues =
@@ -770,8 +770,11 @@ public class TaskStoreElasticSearch implements TaskStore {
     final List<String> tasksIdsCreatedFiltered =
         retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
 
+    // a CREATED search is restricted to runtime indices, so completed task ids can never match
     final List<String> taskIdsCompletedFiltered =
-        getTasksIdsCompletedWithMatchingVars(varNames, varValues);
+        TaskState.CREATED == taskState
+            ? List.of()
+            : getTasksIdsCompletedWithMatchingVars(varNames, varValues);
 
     return Stream.concat(tasksIdsCreatedFiltered.stream(), taskIdsCompletedFiltered.stream())
         .distinct()
@@ -790,7 +793,8 @@ public class TaskStoreElasticSearch implements TaskStore {
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
               .query(boolQuery)
-              .fetchSource(SnapshotTaskVariableTemplate.TASK_ID, null);
+              .fetchSource(SnapshotTaskVariableTemplate.TASK_ID, null)
+              .size(tasklistProperties.getElasticsearch().getBatchSize());
 
       final SearchRequest searchRequest =
           new SearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
