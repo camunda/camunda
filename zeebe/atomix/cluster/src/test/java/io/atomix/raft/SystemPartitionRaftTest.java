@@ -611,9 +611,9 @@ final class SystemPartitionRaftTest {
       // given
       final var cluster = bootstrapThreeVoters();
       final var m3 = cluster.get(2);
-      final var leader = fenceMember3(cluster);
       final var fenced = new CompletableFuture<Long>();
       m3.addFencedListener(fenced::complete);
+      final var leader = fenceMember3(cluster);
       fenced.orTimeout(30, TimeUnit.SECONDS).join();
 
       // when - member 3 deletes its data and joins with a new incarnation
