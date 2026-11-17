@@ -1,5 +1,4 @@
-# description: Non-blocking Gradle build validation (compile, distribution, parity with Maven). Lives outside
-#   the Unified CI until the Gradle build is deemed inclusion-worthy.
+# description: Non-blocking experimental Gradle check for isolated-project compatibility.
 # test location: /
 # type: CI
 # owner: @camunda/engineering-operations
@@ -44,29 +43,22 @@ env:
   SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
 
 jobs:
-  gradle-compile-check:
-    name: "Gradle / Compile Check"
+  gradle-experimental-checks:
+    name: "Gradle / Experimental Checks"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
-      pull-requests: read  # paths-filter
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      # Parity with Maven only matters when the Gradle or Maven build definitions change, so the
-      # expensive Maven build below is skipped for plain source changes.
-      - name: Detect changes
-        uses: ./.github/actions/paths-filter
-        id: filter
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: gradle-compile
           locale: C.UTF-8
-          skip-maven-cache: ${{ !(github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true') }}
+          skip-maven-cache: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -83,50 +75,11 @@ jobs:
                 )
               )
             }}
-      - name: Compile
-        run: |
-          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
-            testClasses
-      - name: Package distribution
-        run: |
-          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
-            :camunda-zeebe:distZip
-      - name: Verify Gradle cache reuse
-        run: |
-          verification_log="$RUNNER_TEMP/gradle-cache-verification.log"
-          ./gradlew --console=plain --parallel -Pskip.fe.build \
-            testClasses 2>&1 | tee "$verification_log"
-
-          summary="$(grep -E '^[0-9]+ actionable tasks?:' "$verification_log" | tail -1 || true)"
-
-          if ! grep -q '^BUILD SUCCESSFUL' "$verification_log"; then
-            echo "Cache verification failed: BUILD SUCCESSFUL was not found"
-            exit 1
-          fi
-
-          if [[ -z "$summary" ]]; then
-            echo "Cache verification failed: Gradle task summary was not found"
-            exit 1
-          fi
-
-          if [[ "$summary" =~ [[:space:]][1-9][0-9]*[[:space:]]executed ]]; then
-            echo "Cache verification failed: tasks were executed"
-            echo "$summary"
-            exit 1
-          fi
-
-          echo "Cache verification passed: $summary"
-
       - name: Verify Gradle isolated-project compatibility
         run: |
           set -euo pipefail
-          ./gradlew --isolated-projects --console=plain -Pskip.fe.build \
+          ./gradlew --profile --isolated-projects --console=plain -Pskip.fe.build \
             testClasses
-
-      - name: Write distribution dependency report
-        run: |
-          ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
-            :camunda-zeebe:writeDistDependencyReport
 
       - name: Upload Gradle build reports
         if: always()
@@ -136,21 +89,6 @@ jobs:
           path: build/reports/profile/
           retention-days: 14
           if-no-files-found: warn
-
-      - name: Build Maven distribution
-        if: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true' }}
-        run: ./mvnw -B -T4 -DskipTests -DskipChecks -PskipFrontendBuild package -pl dist -am
-
-      - name: Compare Gradle and Maven distributions
-        if: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.gradle-changes == 'true' }}
-        run: |
-          set -euo pipefail
-          gradle_zip=$(find dist/build/distributions -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
-          maven_zip=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.zip' -print -quit)
-          test -n "$gradle_zip" && test -n "$maven_zip"
-          python3 .github/scripts/gradle/compare-dist.py \
-            "$gradle_zip" "$maven_zip" \
-            --gradle-manifest dist/build/reports/dist-dependencies.json
 
       - name: Observe build status
         if: always()
@@ -162,8 +100,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  # This workflow is a soft integration: it is not part of the Unified CI check-results, so it never
-  # blocks a PR or merge group. Failures on main are reported to Slack instead.
+  # Experimental checks stay outside Unified CI and do not block pull requests or merge groups.
+  # Failures on main are reported to Slack instead.
   gradle-notify-failure:
     name: "Gradle / Notify on failure"
     if: >-
@@ -171,8 +109,8 @@ jobs:
       github.repository == 'camunda/camunda' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      needs.gradle-compile-check.result == 'failure'
-    needs: [ gradle-compile-check ]
+      needs.gradle-experimental-checks.result == 'failure'
+    needs: [ gradle-experimental-checks ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -208,7 +146,7 @@ jobs:
           webhook: ${{ steps.secrets.outputs.GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           payload: |
-            text: "Gradle build on main failed (${{ needs.gradle-compile-check.result }})"
+            text: "Gradle experimental checks on main failed (${{ needs.gradle-experimental-checks.result }})"
             commit: "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
             pr: "${{ steps.pr.outputs.number && format('{0}/{1}/pull/{2}', github.server_url, github.repository, steps.pr.outputs.number) || 'n/a' }}"
             run_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -7,13 +7,17 @@ The original mode compares JAR names in a Gradle distTar with an exploded Maven
 
     python3 compare-dist.py <gradle-tar.gz> <maven-dist-dir>
 
-When both arguments are ZIP archives, the tool compares the versioned distribution
-root and JAR names/versions under `lib/`; other file contents are intentionally ignored.
-If a Gradle dependency manifest is available, patch-only version differences are ignored
-only for artifacts marked transitive. Narrow Maven-only metadata-variant exceptions are listed
-in the adjacent `distribution-parity-exceptions.json` file:
+When both arguments are ZIP archives or gzipped TAR archives, the tool compares the
+versioned distribution root and JAR names/versions under `lib/`; other file contents are
+intentionally ignored. If a Gradle dependency manifest is available, patch-only version
+differences are ignored only for artifacts marked transitive. Narrow Maven-only
+metadata-variant exceptions are listed in the adjacent
+`distribution-parity-exceptions.json` file:
 
     python3 compare-dist.py <gradle-zip> <maven-zip> \\
+        --gradle-manifest dist/build/reports/dist-dependencies.json
+
+    python3 compare-dist.py <gradle-tar.gz> <maven-tar.gz> \\
         --gradle-manifest dist/build/reports/dist-dependencies.json
 """
 
@@ -80,6 +84,20 @@ def archive_inventory(path: str) -> tuple[str, list[str]]:
     """Return the archive root and member names without reading member payloads."""
     with ZipFile(path) as archive:
         files = [name.rstrip("/") for name in archive.namelist() if not name.endswith("/")]
+
+    roots = {name.split("/", 1)[0] for name in files}
+    if len(roots) != 1:
+        raise ValueError(f"expected one distribution root in {path}, found {sorted(roots)}")
+
+    root = roots.pop()
+    relative_files = [name.split("/", 1)[1] if "/" in name else "" for name in files]
+    return root, relative_files
+
+
+def tar_archive_inventory(path: str) -> tuple[str, list[str]]:
+    """Return the archive root and member names without reading member payloads."""
+    with tarfile.open(path, "r:gz") as archive:
+        files = [member.name.rstrip("/") for member in archive.getmembers() if member.isfile()]
 
     roots = {name.split("/", 1)[0] for name in files}
     if len(roots) != 1:
@@ -258,6 +276,24 @@ def compare_archives(
     )
 
 
+def compare_tar_archives(
+    gradle_path: str,
+    maven_path: str,
+    gradle_manifest: str | None = None,
+) -> int:
+    gradle_root, gradle_files = tar_archive_inventory(gradle_path)
+    maven_root, maven_files = tar_archive_inventory(maven_path)
+    manifest_bases, direct_bases = load_gradle_manifest(gradle_manifest)
+    return compare_inventories(
+        jars_from_archive(gradle_files),
+        jars_from_archive(maven_files),
+        gradle_root,
+        maven_root,
+        manifest_bases,
+        direct_bases,
+    )
+
+
 def compare(
     gradle_path: str,
     maven_path: str,
@@ -266,6 +302,8 @@ def compare(
     gradle_manifest = gradle_manifest or default_gradle_manifest_path(gradle_path)
     if gradle_path.lower().endswith(".zip") and maven_path.lower().endswith(".zip"):
         return compare_archives(gradle_path, maven_path, gradle_manifest)
+    if gradle_path.lower().endswith(".tar.gz") and maven_path.lower().endswith(".tar.gz"):
+        return compare_tar_archives(gradle_path, maven_path, gradle_manifest)
 
     manifest_bases, direct_bases = load_gradle_manifest(gradle_manifest)
     return compare_inventories(
