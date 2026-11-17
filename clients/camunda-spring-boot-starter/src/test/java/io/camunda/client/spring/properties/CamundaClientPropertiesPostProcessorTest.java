@@ -22,6 +22,8 @@ import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
