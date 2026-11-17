@@ -196,6 +196,27 @@ public class ClusterRaftTest {
   }
 
   @Nested
+  @TestPropertySource(properties = {"zeebe.broker.cluster.raft.flush.delayTime=15s"})
+  class WithOnlyLegacyFlushDelayTimeSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyLegacyFlushDelayTimeSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldKeepFlushEnabled() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().enabled()).isTrue();
+    }
+
+    @Test
+    void shouldSetFlushDelayFromLegacyDelayTime() {
+      assertThat(brokerCfg.getCluster().getRaft().getFlush().delayTime())
+          .isEqualTo(Duration.ofSeconds(15));
+    }
+  }
+
+  @Nested
   @TestPropertySource(
       properties = {
         // new
