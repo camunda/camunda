@@ -20,16 +20,16 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
- * Finalizes local deletion of a {@link PersistedProcessState#DRAINING} definition once its last
- * active instance completes or terminates. On this partition it appends the ordinary {@link
- * ProcessIntent#DELETING}/{@link ProcessIntent#DELETED} follow-up events (physically removing the
- * definition locally, reusing the existing appliers), then emits a {@link
- * ProcessIntent#DELETE_COMPLETE} command so {@code ProcessDeleteCompleteProcessor} can aggregate
- * the per-partition reports cluster-wide.
+ * Finalizes local deletion of {@link PersistedProcessState#DRAINING} definitions. A definition is
+ * finalized either when
  *
- * <p>Known limitation: {@link ElementInstanceState#hasActiveProcessInstances} excludes banned
- * instances, which never complete/terminate, so a definition whose last instance is banned stays
- * {@code DRAINING} until that instance is resolved.
+ * <ul>
+ *   <li>its last active instance completes or terminates ({@link #finalizeDeletionIfDraining})
+ *   <li>the last instance is migrated away
+ * </ul>
+ *
+ * <p>Banned instances are excluded from the active-instance check, as they never complete or
+ * terminate.
  */
 public final class BpmnProcessDeletionBehavior {
 
@@ -67,9 +67,11 @@ public final class BpmnProcessDeletionBehavior {
       return;
     }
 
-    final var process =
-        processState.getProcessByKeyAndTenant(
-            context.getProcessDefinitionKey(), context.getTenantId());
+    finalizeDeletionIfDraining(context.getProcessDefinitionKey(), context.getTenantId());
+  }
+
+  public void finalizeDeletionIfDraining(final long processDefinitionKey, final String tenantId) {
+    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
     if (process == null || process.getState() != PersistedProcessState.DRAINING) {
       return;
     }
@@ -89,6 +91,16 @@ public final class BpmnProcessDeletionBehavior {
             .setResourceName(process.getResourceName())
             .setTenantId(process.getTenantId())
             .setDeploymentKey(process.getDeploymentKey());
+    finalizeDeletion(processRecord);
+  }
+
+  /**
+   * Removes the definition from local state ({@link ProcessIntent#DELETING} / {@link
+   * ProcessIntent#DELETED}) and reports the drain to the deployment partition ({@link
+   * ProcessIntent#DELETE_COMPLETE}). Callers must ensure the definition has no remaining active
+   * instances on this partition.
+   */
+  public void finalizeDeletion(final ProcessRecord processRecord) {
     // the locally-minted key identifies the reporting partition to ProcessDeleteCompleteProcessor
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
