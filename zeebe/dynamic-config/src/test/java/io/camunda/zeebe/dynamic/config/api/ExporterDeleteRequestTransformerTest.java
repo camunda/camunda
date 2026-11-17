@@ -67,12 +67,10 @@ final class ExporterDeleteRequestTransformerTest {
     final var transformer = new ExporterDeleteRequestTransformer(exporterId);
     final var withExporter =
         new DynamicPartitionConfig(
-            new ExportingConfig(
-                ExportingState.EXPORTING,
+            new ExportersConfig(
                 Map.of(
                     exporterId, new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
-    final var withoutExporter =
-        new DynamicPartitionConfig(new ExportingConfig(ExportingState.EXPORTING, Map.of()));
+    final var withoutExporter = new DynamicPartitionConfig(ExportersConfig.empty());
 
     final var clusterConfiguration =
         ClusterConfiguration.init()

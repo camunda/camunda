@@ -29,8 +29,7 @@ import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
-import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -142,9 +141,7 @@ final class ConfigurationChangeCoordinatorImplTest {
 
   private static DynamicPartitionConfig exporterConfig(final State state) {
     return new DynamicPartitionConfig(
-        new ExportingConfig(
-            ExportingState.EXPORTING,
-            Map.of("exporterA", new ExporterState(1, state, Optional.empty()))));
+        new ExportersConfig(Map.of("exporterA", new ExporterState(1, state, Optional.empty()))));
   }
 
   private ConfigurationChangeRequest getTransformer(
