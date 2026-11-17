@@ -212,9 +212,14 @@ function Diagram({
 		}
 
 		hasObservedInitialSizeRef.current = false;
-		const observer = new ResizeObserver(() => {
-			if (!hasObservedInitialSizeRef.current) {
-				hasObservedInitialSizeRef.current = true;
+		const initialSize = container.getBoundingClientRect();
+		const observer = new ResizeObserver(([entry]) => {
+			const isInitialSize =
+				!hasObservedInitialSizeRef.current &&
+				entry?.contentRect.width === initialSize.width &&
+				entry.contentRect.height === initialSize.height;
+			hasObservedInitialSizeRef.current = true;
+			if (isInitialSize) {
 				return;
 			}
 			cancelAnimationFrame(resizeFrameRef.current);
