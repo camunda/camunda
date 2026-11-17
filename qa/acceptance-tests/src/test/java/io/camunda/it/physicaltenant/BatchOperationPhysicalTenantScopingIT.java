@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.ToLongFunction;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -116,6 +117,9 @@ final class BatchOperationPhysicalTenantScopingIT {
   private static final Duration UNTOUCHED_HOLD = Duration.ofSeconds(5);
   private static final int ITEMS_PER_TENANT = 2;
 
+  // TODO remove this once archiverless support for history deletion batch operations is fully
+  // implemented in https://github.com/camunda/camunda/issues/69617
+  @Tag("archiverless-wip")
   @Test
   void shouldScopeDeleteProcessInstanceBatchToCreatingTenant() {
     // given — the same completed instances exist in all three tenants
@@ -285,6 +289,9 @@ final class BatchOperationPhysicalTenantScopingIT {
         "active incidents", admin -> activeIncidentCount(admin, processId), ITEMS_PER_TENANT);
   }
 
+  // TODO remove this once archiverless support for history deletion batch operations is fully
+  // implemented in https://github.com/camunda/camunda/issues/69617
+  @Tag("archiverless-wip")
   @Test
   void shouldScopeDeleteDecisionInstanceBatchToCreatingTenant() {
     // given — DecisionInstanceItemProvider. This is the only provider whose filter never mentions a
