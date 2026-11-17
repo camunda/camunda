@@ -12,21 +12,16 @@ import {it} from '#/vitest-modules/test-extend';
 import {EmptyMessage} from './EmptyMessage';
 
 describe('<EmptyMessage />', () => {
-	it('should render the message', async () => {
+	it('should render only the message when no additional info is given', async () => {
 		const screen = await render(<EmptyMessage message="No data available" />);
 
 		await expect.element(screen.getByText('No data available')).toBeVisible();
+		await expect.element(screen.getByText('Try again later')).not.toBeInTheDocument();
 	});
 
 	it('should render the additional info when provided', async () => {
 		const screen = await render(<EmptyMessage message="No data available" additionalInfo="Try again later" />);
 
 		await expect.element(screen.getByText('Try again later')).toBeVisible();
-	});
-
-	it('should not render additional info when not provided', async () => {
-		const screen = await render(<EmptyMessage message="No data available" />);
-
-		expect(screen.getByText('Try again later').elements()).toHaveLength(0);
 	});
 });

@@ -284,7 +284,7 @@ describe('<InstancesByProcess /> pagination', () => {
 
 		// then
 		await expect.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME})).toBeVisible();
-		expect(screen.getByTestId('instances-by-process-list-bottom-sentinel').elements()).toHaveLength(0);
-		expect(screen.getByTestId('instances-by-process-list-top-sentinel').elements()).toHaveLength(0);
+		await expect.element(screen.getByTestId('instances-by-process-list-bottom-sentinel')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instances-by-process-list-top-sentinel')).not.toBeInTheDocument();
 	});
 });
