@@ -150,7 +150,7 @@ storage, create a new namespace via `./newLoadTest.sh <new-name> <newStorage>`.
 The load-test-setup chart owns all the resources deployed for a single load tests:
 * the namespace (labels, AZ pinning, TTL annotation)
 * the `camunda-credentials` secret
-* the leader-balancer cronjob
+* the leader-balancer cronjob (optional, disabled by default, enabled for the `max` scenario)
 * the chaos-killer cronjob (optional, disabled by default)
 * the Elasticsearch ECK custom resource (optional, disabled by default but auto-enabled when using the `elasticsearch` secondary storage, or by Optimize, when the secondary storage is not directly usable by Optimize)
 * the Prometheus exporter for Elasticsearch (optional, disabled by default but auto-enabled whenever the ECK Elasticsearch resource above or OpenSearch is enabled — see [the chart's README](charts/load-test-setup/README.md#dependencies))
@@ -289,12 +289,12 @@ To install/upgrade both the [Camunda Platform Helm](https://github.com/camunda/c
 make install
 ```
 
-`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadlineDate` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `install-load-test-setup` which `helm upgrade --install`s the local load-test-setup chart. The load-test-setup release creates the namespace, the `camunda-credentials` secret, the leader-balancer cronjob, and the Optimize indices cleanup job in a single, idempotent Helm release — so reruns after a TTL deletion reapply the same credentials and the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
+`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadlineDate` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `install-load-test-setup` which `helm upgrade --install`s the local load-test-setup chart. The load-test-setup release creates the namespace, the `camunda-credentials` secret, the leader-balancer cronjob (only when enabled), and the Optimize indices cleanup job in a single, idempotent Helm release — so reruns after a TTL deletion reapply the same credentials and the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
 
 Or install/upgrade them separately:
 
 ```shell
-# Install/upgrade the load-test-setup chart (namespace, credentials secret, leader balancer cronjob, cleanup job)
+# Install/upgrade the load-test-setup chart (namespace, credentials secret, leader balancer cronjob if enabled, cleanup job)
 make install-load-test-setup
 
 # Install/upgrade the Camunda Platform
@@ -310,7 +310,7 @@ To bump the deadline of an existing namespace without re-scaffolding, edit `dead
 make install-load-test-setup
 ```
 
-The load-test-setup chart deploys a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
+The load-test-setup chart can deploy a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders. It is off by default, so the long running tests run without it, and the `max` scenario (regression and performance tests) turns it on.
 
 #### Optional chaos-killer
 

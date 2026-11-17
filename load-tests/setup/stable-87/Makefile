@@ -18,4 +18,6 @@ prefer_rest = false
 cluster_rebalance_supported = false
 k6_data_read_supported = false
 
+# No Camunda Exporter helm value for the archiver wait in this version.
+scenario_max_archive_wait_flag =
 include ../common.mk

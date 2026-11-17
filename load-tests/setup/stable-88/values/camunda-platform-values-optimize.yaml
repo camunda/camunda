@@ -55,6 +55,7 @@ optimize:
     - name: OPTIMIZE_LOG_APPENDER
       value: Stackdriver
 
+    # CUSTOMIZATION: 3 shards instead of the Optimize default of 1, tracked in https://github.com/camunda/camunda/issues/69690.
     # Configure Optimize to use the full size of the ES/OS cluster it connects
     # to. Otherwise, the default configuration of 1 primary + 1 replica creates
     # bottlenecks on 2 nodes and doesn't spread the disk usage correctly across
@@ -66,6 +67,7 @@ optimize:
     - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
       value: "3" # default 1
 
+    # CUSTOMIZATION: import page size 1000 instead of the Optimize default of 200, tracked in https://github.com/camunda/camunda/issues/69690.
     # Improve performances of Optimize for the load tests.
     # This is load-test specific and different configuration of cluster
     # configuration (different hardware resources for instance) and/or type of
