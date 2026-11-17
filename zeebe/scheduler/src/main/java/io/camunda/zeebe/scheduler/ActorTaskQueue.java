@@ -15,6 +15,9 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 public final class ActorTaskQueue extends ActorTaskQueueHead {
+  // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
+  static final int MIN_STALE_NODES_TO_SKIP = 16;
+
   private static final VarHandle HEAD;
   private static final VarHandle TAIL;
 
@@ -63,21 +66,65 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * Attempts to steal a task from this list. The operation does not actually remove the task.
    * Instead, it modifies the task's state.
    *
+   * <p>Nodes whose task was already claimed stay in the list until the owner pops them. A claim
+   * only ever increments the task's state count, so such a node can never be claimed again. To
+   * avoid walking long runs of them on every attempt (e.g. while the owner is blocked and the list
+   * keeps growing), such runs are unlinked from the {@code prev} chain, which is only used for
+   * stealing. Short runs are left in place, so that the common case does not write to shared nodes.
+   *
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    ActorTaskQueueNode node = tail;
+    final ActorTaskQueueNode newest = tail;
+    // A thief only ever rewrites the prev of the second-newest node: the tail may still be linked
+    // by its producer. Stale nodes walked below it are counted, and if there are enough, its prev
+    // is pointed at the node where the walk stops.
+    ActorTaskQueueNode anchor = null;
+    ActorTaskQueueNode anchorPrev = null;
+    int stale = 0;
 
+    ActorTaskQueueNode node = newest;
     while (node != null && node != empty) {
       final ActorTask task = node.task;
       if (task.claim(node.stateCount)) {
+        skipStaleNodes(anchor, anchorPrev, node, stale);
         return task;
       }
 
-      node = node.prev;
+      final ActorTaskQueueNode older = node.prev;
+      if (older == null) {
+        // still being appended, or popped after the walk read the link to it: nothing older to
+        // steal
+        skipStaleNodes(anchor, anchorPrev, node, stale);
+        return null;
+      }
+
+      if (anchor != null) {
+        stale++;
+      } else if (node != newest) {
+        anchor = node;
+        anchorPrev = older;
+      }
+      node = older;
     }
 
+    skipStaleNodes(anchor, anchorPrev, node, stale);
     return null;
+  }
+
+  /**
+   * Points {@code anchor} past {@code stale} claimed nodes to {@code next}, if that saves a long
+   * walk. Does nothing if its prev changed since the walk read it: another thief may have unlinked
+   * further in the meantime, and overwriting that would bring back the nodes it skipped.
+   */
+  static void skipStaleNodes(
+      final ActorTaskQueueNode anchor,
+      final ActorTaskQueueNode anchorPrev,
+      final ActorTaskQueueNode next,
+      final int stale) {
+    if (anchor != null && stale >= MIN_STALE_NODES_TO_SKIP && next != null) {
+      anchor.casPrev(anchorPrev, next);
+    }
   }
 
   public ActorTask pop() {
@@ -155,12 +202,13 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
 
 class ActorTaskQueueNode {
   private static final VarHandle NEXT;
+  private static final VarHandle PREV;
 
   static {
     try {
-      NEXT =
-          MethodHandles.lookup()
-              .findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
+      final var lookup = MethodHandles.lookup();
+      NEXT = lookup.findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
+      PREV = lookup.findVarHandle(ActorTaskQueueNode.class, "prev", ActorTaskQueueNode.class);
     } catch (final ReflectiveOperationException ex) {
       throw new ExceptionInInitializerError(ex);
     }
@@ -184,6 +232,10 @@ class ActorTaskQueueNode {
   void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
     prev = t;
+  }
+
+  boolean casPrev(final ActorTaskQueueNode expected, final ActorTaskQueueNode update) {
+    return PREV.compareAndSet(this, expected, update);
   }
 
   public void setTask(final ActorTask task) {
