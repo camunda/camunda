@@ -40,9 +40,10 @@ public interface ProcessDefinitionMapper {
   List<ProcessDefinitionInstanceVersionStatisticsEntity> processInstanceVersionStatistics(
       ProcessDefinitionInstanceVersionStatisticsDbQuery filter);
 
-  void markDeleted(Long processDefinitionKey);
-
-  void markDraining(Long processDefinitionKey);
+  void updateState(ProcessDefinitionStateDto dto);
 
   void deleteByKeys(List<Long> processDefinitionKeys);
+
+  record ProcessDefinitionStateDto(
+      Long processDefinitionKey, ProcessDefinitionEntity.ProcessDefinitionState state) {}
 }

@@ -830,7 +830,7 @@ public class ProcessDefinitionIT {
   public void shouldMarkDeletedWhenDrainedAndDeletedInSameFlush(
       final CamundaRdbmsTestApplication testApplication) {
     // given a process definition deleted with zero active instances emits DRAINING and
-    // FULLY_DELETED back-to-back, so markDraining and markDeleted are queued into the same flush
+    // FULLY_DELETED back-to-back, so both state updates are queued into the same flush
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
@@ -840,8 +840,8 @@ public class ProcessDefinitionIT {
     final var key = processDefinition.processDefinitionKey();
 
     // when both state transitions are flushed together
-    rdbmsWriters.getProcessDefinitionWriter().markDraining(key);
-    rdbmsWriters.getProcessDefinitionWriter().markDeleted(key);
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.DRAINING);
+    rdbmsWriters.getProcessDefinitionWriter().updateState(key, ProcessDefinitionState.DELETED);
     rdbmsWriters.flush();
 
     // then the terminal state wins and the row is DELETED, not stuck at DRAINING

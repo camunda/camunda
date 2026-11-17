@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
@@ -83,7 +84,8 @@ class ProcessExportHandlerTest {
     underTest.export(record);
 
     // then
-    verify(processDefinitionWriter).markDraining(processDefinitionKey);
+    verify(processDefinitionWriter)
+        .updateState(processDefinitionKey, ProcessDefinitionState.DRAINING);
   }
 
   @Test
@@ -103,6 +105,7 @@ class ProcessExportHandlerTest {
     underTest.export(record);
 
     // then
-    verify(processDefinitionWriter).markDeleted(processDefinitionKey);
+    verify(processDefinitionWriter)
+        .updateState(processDefinitionKey, ProcessDefinitionState.DELETED);
   }
 }
