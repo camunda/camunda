@@ -466,7 +466,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
-        run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
+        run: npm run build:test -w @camunda/orchestration-cluster-webapp
       - name: Visual regression tests
         run: npm run test:visual -w @camunda/orchestration-cluster-webapp -- test/visual/${{ matrix.component }}/
       - name: Upload Playwright report
