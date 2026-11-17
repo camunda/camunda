@@ -87,8 +87,8 @@ public abstract class AbstractRole implements RaftRole {
       return true;
     }
     // Fence entries are never removed, thus an entry in the stored (committed) configuration is
-    // committed too. Only read on this rare path.
-    final var stored = raft.getMetaStore().loadConfiguration();
+    // committed too.
+    final var stored = raft.getCluster().getStoredConfiguration();
     return stored != null && stored.isFenced(member, incarnation);
   }
 

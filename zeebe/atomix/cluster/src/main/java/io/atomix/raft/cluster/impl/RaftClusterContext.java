@@ -64,6 +64,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private boolean hasRemoteActiveMembers = false;
   // Volatile: the outbound protocol reads the fence list off the Raft thread, see isFenced
   private volatile Configuration configuration;
+  // The configuration in the meta store, loaded on first use; see getStoredConfiguration
+  private @Nullable Configuration storedConfiguration;
+  private boolean storedConfigurationLoaded;
 
   public RaftClusterContext(final MemberId localMemberId, final RaftContext raft) {
     final Instant time = Instant.now();
@@ -692,12 +695,27 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
   }
 
+  /**
+   * @return the committed configuration that is stored in the meta store, without reading the disk
+   *     after the first call; null if none is stored
+   */
+  public @Nullable Configuration getStoredConfiguration() {
+    raft.checkThread();
+    if (!storedConfigurationLoaded) {
+      storedConfiguration = raft.getMetaStore().loadConfiguration();
+      storedConfigurationLoaded = true;
+    }
+    return storedConfiguration;
+  }
+
   /** Commit the current configuration to disk. */
   public void commitCurrentConfiguration() {
     // If the local stored configuration is older than the committed configuration, overwrite it.
     final var storedConfiguration = raft.getMetaStore().loadConfiguration();
     if (storedConfiguration == null || storedConfiguration.index() < configuration.index()) {
       raft.getMetaStore().storeConfiguration(configuration);
+      this.storedConfiguration = configuration;
+      storedConfigurationLoaded = true;
     }
 
     // Members kept alive as replication targets while the configuration was appended but not yet
