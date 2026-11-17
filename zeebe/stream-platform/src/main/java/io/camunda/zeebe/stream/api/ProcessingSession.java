@@ -44,8 +44,7 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // Events need only the actor, for example for the audit log. The full claims make nearly
-      // each record much larger. Commands keep the full claims for the authorization checks.
+      // On events, only the actor has a reader. Commands need the full claims for authorization.
       final var actorAuthInfo = authInfo.withActorClaimsOnly();
       appendMetadataToFollowUps(
           metadata ->
