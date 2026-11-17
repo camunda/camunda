@@ -1,7 +1,8 @@
 # description: Reusable workflow — one validation pass of the OC flakiness fix agent.
 #              Each shard runs the matching nightly's whole test selection on its own
 #              docker-compose stack started the way that nightly starts it, for every cell
-#              (e2e-v1 / e2e-v2 / e2e / api-profiles / api-all-in-one) the test was
+#              (e2e-v1 / e2e-v2 / e2e / api-profiles / api-all-in-one /
+#              rdbms-postgres-profiles / rdbms-postgres-all-in-one) the test was
 #              flaky in. Called only by c8-orchestration-cluster-flakiness-fix.yml.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
@@ -21,7 +22,7 @@ on:
         required: true
         type: string
       cells:
-        description: 'JSON array of cells, e.g. ["e2e-v1","e2e-v2"]'
+        description: 'JSON array of cells, e.g. ["e2e-v1","rdbms-postgres-profiles"]'
         required: true
         type: string
       shards:
@@ -128,6 +129,10 @@ jobs:
           fi
 
           start_optimize=false
+          # Which compose files the stack steps below use, and which service
+          # (plus envs/.env.database.<name> file) DATABASE selects for them.
+          compose_files="-f docker-compose.yml"
+          compose_database=elasticsearch
           case "$CELL" in
             e2e|e2e-v1|e2e-v2)
               start_optimize=true
@@ -148,11 +153,33 @@ jobs:
                 echo "CAMUNDA_MODE=all-in-one" >> "$GITHUB_ENV"
               fi
               ;;
+            # Mirrors the run step of
+            # c8-orchestration-cluster-reusable-rdbms-api-tests.yml. DB_NAME is
+            # that nightly's matrix label: the cell stands for the whole
+            # Postgres family, the stack pins one image version of it, so the
+            # label and RDBMS_IMAGE_VERSION have to stay in step.
+            rdbms-postgres-profiles|rdbms-postgres-all-in-one)
+              compose_files="-f docker-compose.yml -f docker-compose.rdbms.yml"
+              compose_database=rdbms-postgres
+              {
+                echo "API_TESTS_ONLY=true"
+                echo "DATABASE=RDBMS"
+                echo "DB_NAME=Postgres 17"
+                echo "DATABASE_CONTAINER=rdbms-postgres"
+                echo "RDBMS_IMAGE_VERSION=17-alpine"
+                echo "CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED=true"
+              } >> "$GITHUB_ENV"
+              if [[ "$CELL" == "rdbms-postgres-all-in-one" ]]; then
+                echo "CAMUNDA_MODE=all-in-one" >> "$GITHUB_ENV"
+              fi
+              ;;
             *) echo "::error::unsupported cell: $CELL"; exit 1 ;;
           esac
           {
             echo "STACK_SERVICES=${services}"
             echo "START_OPTIMIZE=${start_optimize}"
+            echo "COMPOSE_FILES=${compose_files}"
+            echo "COMPOSE_DATABASE=${compose_database}"
           } >> "$GITHUB_ENV"
 
       - name: Import Docker Hub secrets
@@ -181,18 +208,22 @@ jobs:
           read -ra services <<< "$STACK_SERVICES"
           delay=15
           for attempt in 1 2 3 4 5; do
-            if DATABASE=elasticsearch docker compose pull --include-deps "${services[@]}"; then
+            # shellcheck disable=SC2086 # COMPOSE_FILES is a -f flag list
+            if DATABASE=$COMPOSE_DATABASE docker compose $COMPOSE_FILES pull --include-deps "${services[@]}"; then
               break
             fi
             [[ "$attempt" -eq 5 ]] && { echo "::error::image pull failed 5 times"; exit 1; }
             sleep "$delay"; delay=$(( delay * 2 ))
           done
-          DATABASE=elasticsearch docker compose up -d "${services[@]}"
+          # shellcheck disable=SC2086 # COMPOSE_FILES is a -f flag list
+          DATABASE=$COMPOSE_DATABASE docker compose $COMPOSE_FILES up -d "${services[@]}"
 
+          # shellcheck disable=SC2086 # COMPOSE_FILES is a -f flag list
           if [[ "$START_OPTIMIZE" == "true" ]] \
-              && DATABASE=elasticsearch docker compose config --services | grep -qx optimize; then
+              && DATABASE=$COMPOSE_DATABASE docker compose $COMPOSE_FILES config --services | grep -qx optimize; then
             for attempt in 1 2 3; do
-              DATABASE=elasticsearch docker compose up -d optimize && break
+              # shellcheck disable=SC2086 # COMPOSE_FILES is a -f flag list
+              DATABASE=$COMPOSE_DATABASE docker compose $COMPOSE_FILES up -d optimize && break
               [[ "$attempt" -eq 3 ]] && { echo "::error::Optimize did not start"; exit 1; }
               sleep 15
             done
@@ -218,7 +249,8 @@ jobs:
             fi
             if [[ "$i" -eq 90 ]]; then
               echo "::error::stack not ready after 15 minutes"
-              DATABASE=elasticsearch docker compose logs --tail 200 || true
+              # shellcheck disable=SC2086 # COMPOSE_FILES is a -f flag list
+              DATABASE=$COMPOSE_DATABASE docker compose $COMPOSE_FILES logs --tail 200 || true
               exit 1
             fi
             sleep 10
@@ -296,7 +328,7 @@ jobs:
           # and c8-orchestration-cluster-reusable-api-tests.yml.
           args=()
           case "$CELL" in
-            api-*) args=(--project=api-tests) ;;
+            api-*|rdbms-*) args=(--project=api-tests) ;;
             *)
               args=(--project=chromium)
               if docker ps --format '{{.Names}}' | grep -qx optimize; then

@@ -41,7 +41,7 @@ on:
         required: false
         type: string
       cells:
-        description: 'JSON array of cells: e2e-v1, e2e-v2, e2e (main), api-profiles, api-all-in-one'
+        description: 'JSON array of cells: e2e-v1, e2e-v2, e2e (main), api-profiles, api-all-in-one, rdbms-postgres-profiles, rdbms-postgres-all-in-one (8.9+)'
         required: false
         type: string
       shards:
@@ -104,7 +104,8 @@ jobs:
       # Nightly runs per workflow that are read. Older runs say little about
       # the test as it is today.
       WINDOW: '7'
-      # workflow | version | kind. RDBMS is not covered yet.
+      # workflow | version | kind. `kind` picks the artifact-name shape in
+      # cells.mjs. Only 8.9, 8.10 and main have an RDBMS nightly.
       NIGHTLIES: |
         c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e
         c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api
@@ -112,10 +113,13 @@ jobs:
         c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api
         c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e
         c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api
+        c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api-rdbms
         c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e
         c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api
+        c8-orchestration-cluster-nightly-8.10-api-rdbms.yml|8.10|api-rdbms
         c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e
         c8-orchestration-cluster-nightly-main-api-es.yml|main|api
+        c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api-rdbms
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -138,27 +142,17 @@ jobs:
               --limit "$WINDOW" --json databaseId,createdAt \
               --jq '.[] | "\(.databaseId) \(.createdAt)"' |
             while read -r run_id created_at; do
+              # One RDBMS nightly uploads a report per database version, all
+              # under the one cell of its family, so each lands in its own
+              # folder under the run instead of overwriting the last.
               gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
                 --jq '.artifacts[] | select(.expired | not) | .name' |
-              while read -r name; do
-                cell=""
-                if [[ "$kind" == "e2e" ]]; then
-                  case "$name" in
-                    "json-report-nightly-e2e-${safe}-v1") cell=e2e-v1 ;;
-                    "json-report-nightly-e2e-${safe}-v2") cell=e2e-v2 ;;
-                    "json-report-nightly-e2e-${safe}") cell=e2e ;;
-                  esac
-                else
-                  case "$name" in
-                    "json-report-nightly-api-${safe}-all-in-one") cell=api-all-in-one ;;
-                    "json-report-nightly-api-${safe}-profiles"|"json-report-nightly-api-${safe}") cell=api-profiles ;;
-                  esac
-                fi
-                [[ -z "$cell" ]] && continue
+              node .github/scripts/oc-flakiness/cells.mjs --kind "$kind" --safe-branch "$safe" |
+              while IFS=$'\t' read -r cell name; do
                 dir="${reports}/${version}/${cell}/${run_id}"
                 mkdir -p "$dir"
                 jq -n --arg c "$created_at" '{created_at: $c}' > "${dir}/meta.json"
-                gh run download "$run_id" --repo "$REPO" --name "$name" --dir "$dir" \
+                gh run download "$run_id" --repo "$REPO" --name "$name" --dir "${dir}/${name// /_}" \
                   || echo "::warning::could not download ${name} from run ${run_id}"
               done
             done
@@ -435,11 +429,11 @@ jobs:
         run: |
           set -euo pipefail
           case "$VERSION" in
-            main) target_ref=main; allowed='["e2e","api-profiles","api-all-in-one"]' ;;
+            main) target_ref=main; allowed='["e2e","api-profiles","api-all-in-one","rdbms-postgres-profiles","rdbms-postgres-all-in-one"]' ;;
             8.7)  target_ref=stable/8.7; allowed='["e2e-v1","api-profiles"]' ;;
             8.8)  target_ref=stable/8.8; allowed='["e2e-v1","e2e-v2","api-profiles"]' ;;
-            8.9)  target_ref=stable/8.9; allowed='["e2e-v1","e2e-v2","api-profiles","api-all-in-one"]' ;;
-            8.10) target_ref=stable/8.10; allowed='["e2e-v2","api-profiles","api-all-in-one"]' ;;
+            8.9)  target_ref=stable/8.9; allowed='["e2e-v1","e2e-v2","api-profiles","api-all-in-one","rdbms-postgres-profiles","rdbms-postgres-all-in-one"]' ;;
+            8.10) target_ref=stable/8.10; allowed='["e2e-v2","api-profiles","api-all-in-one","rdbms-postgres-profiles","rdbms-postgres-all-in-one"]' ;;
             *) echo "::error::version must be 8.7, 8.8, 8.9, 8.10 or main"; exit 1 ;;
           esac
           jq -e 'type == "array" and length > 0 and all(type == "string")' <<< "$TITLE_PATH" > /dev/null \

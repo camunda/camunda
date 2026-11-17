@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import {test} from 'node:test';
 
 import {initBoard, mergeTargets, render, setRow} from './board.mjs';
+import {cellForArtifact} from './cells.mjs';
 import {final, next} from './decide.mjs';
 import {pick} from './pick.mjs';
 import {fingerprint} from './report.mjs';
@@ -50,12 +51,17 @@ function write(path, data) {
   writeFileSync(path, JSON.stringify(data));
 }
 
+// `legs` holds the several reports one nightly can upload under one cell: the
+// RDBMS matrix runs a database version per leg, each its own artifact folder.
 function nightlyDir(runs) {
   const dir = mkdtempSync(join(tmpdir(), 'oc-flaky-pick-'));
-  for (const {version, cell, runId, createdAt, tests, opts} of runs) {
+  for (const {version, cell, runId, createdAt, tests, legs, opts} of runs) {
     const runDir = join(dir, version, cell, runId);
     write(join(runDir, 'meta.json'), {created_at: createdAt});
-    write(join(runDir, 'json-report', 'results.json'), report(tests, opts));
+    const reports = legs ?? {'json-report': tests};
+    for (const [leg, legTests] of Object.entries(reports)) {
+      write(join(runDir, leg, 'results.json'), report(legTests, opts));
+    }
   }
   return dir;
 }
@@ -128,6 +134,146 @@ test('should not count an interrupted nightly run as a failure', () => {
 
   // when / then
   assert.deepEqual(pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'}), []);
+});
+
+test('should count one night of a database matrix once, not once per leg', () => {
+  // given a 4-version Postgres matrix that was flaky on every leg of one
+  // night and clean on every leg of the next
+  const legs = (tests) => ({
+    'Postgres 15': tests,
+    'Postgres 16': tests,
+    'Postgres 17': tests,
+    'Postgres 18': tests,
+  });
+  const dir = nightlyDir([
+    {
+      version: 'main',
+      cell: 'rdbms-postgres-profiles',
+      runId: '1',
+      createdAt: '2026-11-01T00:00:00Z',
+      legs: legs([flaky]),
+    },
+    {
+      version: 'main',
+      cell: 'rdbms-postgres-profiles',
+      runId: '2',
+      createdAt: '2026-11-02T00:00:00Z',
+      legs: legs([passed]),
+    },
+  ]);
+
+  // when
+  const [candidate] = pick({
+    reportsDir: dir,
+    minScore: 1,
+    now: '2026-11-10T00:00:00Z',
+  });
+
+  // then the width of the matrix must not inflate the score
+  assert.equal(candidate.flaky, 1);
+  assert.equal(candidate.passed, 1);
+  assert.equal(candidate.score, 1);
+  assert.deepEqual(candidate.cells, ['rdbms-postgres-profiles']);
+});
+
+test("should take a night's observation from its worst database leg", () => {
+  // given one night where the family's legs disagree
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'rdbms-postgres-all-in-one',
+      runId: '1',
+      createdAt: '2026-11-01T00:00:00Z',
+      legs: {
+        'Postgres 15': [passed],
+        'Postgres 16': [flaky],
+        'Postgres 17': [failed()],
+        'Postgres 18': [passed],
+      },
+    },
+    {
+      version: '8.10',
+      cell: 'rdbms-postgres-all-in-one',
+      runId: '2',
+      createdAt: '2026-11-02T00:00:00Z',
+      legs: {'Postgres 15': [passed], 'Postgres 17': [passed]},
+    },
+  ]);
+
+  // when
+  const [candidate] = pick({
+    reportsDir: dir,
+    minScore: 1,
+    now: '2026-11-10T00:00:00Z',
+  });
+
+  // then
+  assert.equal(candidate.failed, 1);
+  assert.equal(candidate.flaky, 0);
+  assert.equal(candidate.passed, 1);
+  assert.equal(candidate.project, 'chromium');
+});
+
+test('should keep counting an Elasticsearch cell once per nightly run', () => {
+  // given the single-report shape the Elasticsearch nightlies upload
+  const dir = nightlyDir([
+    {version: '8.9', cell: 'api-profiles', runId: '1', createdAt: '2026-11-01T00:00:00Z', tests: [flaky]},
+    {version: '8.9', cell: 'api-profiles', runId: '2', createdAt: '2026-11-02T00:00:00Z', tests: [flaky]},
+    {version: '8.9', cell: 'api-profiles', runId: '3', createdAt: '2026-11-03T00:00:00Z', tests: [passed]},
+  ]);
+
+  // when
+  const [candidate] = pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'});
+
+  // then
+  assert.equal(candidate.score, 2);
+  assert.equal(candidate.passed, 1);
+});
+
+test('should map a nightly artifact name to its cell', () => {
+  // given / when / then
+  const es = {kind: 'api', safeBranch: 'stable-8.9'};
+  assert.equal(cellForArtifact('json-report-nightly-api-stable-8.9', es), 'api-profiles');
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-stable-8.9-all-in-one', es),
+    'api-all-in-one',
+  );
+  // `stable-8.9`'s dot is a literal, not a wildcard
+  assert.equal(cellForArtifact('json-report-nightly-api-stable-8x9', es), null);
+
+  const e2e = {kind: 'e2e', safeBranch: 'main'};
+  assert.equal(cellForArtifact('json-report-nightly-e2e-main', e2e), 'e2e');
+  assert.equal(cellForArtifact('json-report-nightly-e2e-main-v2', e2e), 'e2e-v2');
+
+  // The RDBMS label carries spaces and digits, and every version of one
+  // database shares its family's cell.
+  const rdbms = {kind: 'api-rdbms', safeBranch: 'main'};
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-Postgres 17-profiles', rdbms),
+    'rdbms-postgres-profiles',
+  );
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-Postgres 18-all-in-one', rdbms),
+    'rdbms-postgres-all-in-one',
+  );
+  // Families without a validation stack yet, and reports of other kinds,
+  // must not reach the ranking.
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-MariaDB 11.8-profiles', rdbms),
+    null,
+  );
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-main-Oracle 26ai-profiles', rdbms),
+    null,
+  );
+  assert.equal(
+    cellForArtifact('html-report-nightly-api-rdbms-main-Postgres 17-profiles', rdbms),
+    null,
+  );
+  assert.equal(
+    cellForArtifact('json-report-nightly-api-rdbms-stable-8.9-Postgres 17-profiles', rdbms),
+    null,
+  );
 });
 
 function shardDir(shards, opts) {
