@@ -30,6 +30,27 @@ import {CONFIG, CURRENT_VERSION, getAvailableVersions, resolveVersions} from './
  */
 const pluginOutput = (outputPath) => ({output: {path: outputPath, banner: '// @ts-nocheck'}});
 
+/** @typedef {NonNullable<NonNullable<Parameters<typeof pluginZod>[0]>['macros']>[number]} Macro */
+
+/**
+ * Drops the `base64` encoding from string schemas, so that Kubb emits `z.string()` instead of `z.base64()`.
+ * The spec marks the search cursors with `format: base64`, which the OAS adapter turns into
+ * `content.encoding`. Cursors are opaque tokens that the frontend only sends back. Like `pattern`
+ * (see `preprocess-spec.js`), format validation is the backend's job.
+ * @type {Macro}
+ */
+const macroOpaqueBase64 = {
+	name: 'opaque-base64',
+	schema(node) {
+		if (node.type !== 'string' || node.content?.encoding?.toLowerCase() !== 'base64') {
+			return undefined;
+		}
+		const {content, ...rest} = node;
+		const {encoding: _encoding, ...otherContent} = content;
+		return Object.keys(otherContent).length > 0 ? {...rest, content: otherContent} : rest;
+	},
+};
+
 /**
  * Generates Zod schemas and TypeScript types for a specific version.
  * @param {string} version - The API version (e.g., '8.9')
@@ -65,7 +86,7 @@ async function generateSchemas(version, config) {
 				barrel: {type: 'named'},
 			},
 			parsers: [parserTs({extension: {'.ts': '.js'}})],
-			plugins: [pluginTs(pluginOutput('./types')), pluginZod(pluginOutput('./zod'))],
+			plugins: [pluginTs(pluginOutput('./types')), pluginZod({...pluginOutput('./zod'), macros: [macroOpaqueBase64]})],
 		}),
 	).build();
 
