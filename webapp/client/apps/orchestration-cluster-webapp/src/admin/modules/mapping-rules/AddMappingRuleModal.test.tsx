@@ -61,7 +61,9 @@ describe('<AddMappingRuleModal />', () => {
 			}),
 		);
 
-		const screen = await render(<AddMappingRuleModal isOpen onClose={mockOnClose} />, {wrapper: getWrapper()});
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={mockOnClose} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'my-rule');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
@@ -73,7 +75,9 @@ describe('<AddMappingRuleModal />', () => {
 	});
 
 	it('should show validation errors when submitting with empty fields', async () => {
-		const screen = await render(<AddMappingRuleModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
@@ -86,7 +90,9 @@ describe('<AddMappingRuleModal />', () => {
 	});
 
 	it('should show a validation error for an invalid mapping rule ID', async () => {
-		const screen = await render(<AddMappingRuleModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'invalid id!');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
@@ -97,6 +103,59 @@ describe('<AddMappingRuleModal />', () => {
 		await expect
 			.element(screen.getByText('ID must be 256 characters or fewer, using only letters, numbers, and _ ~ @ . + -'))
 			.toBeVisible();
+	});
+
+	it('should keep the readable message when the server serves the default pattern', async () => {
+		// given
+		const screen = await render(<AddMappingRuleModal idPattern="^[a-zA-Z0-9_~@.+-]+$" isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
+
+		// when
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'invalid id!');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		// then
+		await expect
+			.element(screen.getByText('ID must be 256 characters or fewer, using only letters, numbers, and _ ~ @ . + -'))
+			.toBeVisible();
+	});
+
+	it('should reject an ID that does not match the configured pattern', async () => {
+		// given
+		const screen = await render(<AddMappingRuleModal idPattern="^[a-z]+$" isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
+
+		// when
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'rule1');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		// then
+		await expect
+			.element(
+				screen.getByText(
+					'Must be at most 256 characters and match the ID pattern configured for this cluster: ^[a-z]+$',
+				),
+			)
+			.toBeVisible();
+	});
+
+	it('should accept an ID that only the configured pattern allows', async () => {
+		// given
+		const screen = await render(<AddMappingRuleModal idPattern="^[a-z ]+$" isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
+
+		// when
+		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'my rule');
+		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+
+		// then
+		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveAttribute('aria-invalid', 'true');
+		await expect
+			.element(screen.getByRole('textbox', {name: 'Mapping rule ID'}))
+			.not.toHaveAttribute('aria-invalid', 'true');
 	});
 
 	it('should show an inline error when the mapping rule ID already exists', async ({worker}) => {
@@ -116,7 +175,9 @@ describe('<AddMappingRuleModal />', () => {
 			}),
 		);
 
-		const screen = await render(<AddMappingRuleModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'my-rule');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
@@ -144,7 +205,9 @@ describe('<AddMappingRuleModal />', () => {
 			}),
 		);
 
-		const screen = await render(<AddMappingRuleModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={() => {}} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Mapping rule ID'}), 'my-rule');
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'My rule');
@@ -164,7 +227,9 @@ describe('<AddMappingRuleModal />', () => {
 
 	it('should call onClose when cancelled', async () => {
 		const mockOnClose = vi.fn();
-		const screen = await render(<AddMappingRuleModal isOpen onClose={mockOnClose} />, {wrapper: getWrapper()});
+		const screen = await render(<AddMappingRuleModal idPattern={null} isOpen onClose={mockOnClose} />, {
+			wrapper: getWrapper(),
+		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}).last());
 

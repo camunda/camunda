@@ -9,16 +9,33 @@
 // Keep in sync with `io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX`
 // (from the `camunda-security-library-validation`/`-spring-boot-starter` artifacts), which
 // `IdentifierValidator` applies to every admin-managed identifier server-side — mapping rule IDs,
-// global task listener IDs and types, role/group/tenant IDs, etc. A deployment can replace it with
-// `camunda.security.id-validation-pattern`, which the Admin client config serves as `idPattern`.
-const DEFAULT_ID_PATTERN = /^[a-zA-Z0-9_~@.+-]{1,256}$/;
+// global task listener IDs and types, role/group/tenant IDs, etc. The Admin client config serves
+// it as `idPattern` unless a deployment replaces it with `camunda.security.id-validation-pattern`.
+const DEFAULT_ID_PATTERN = '^[a-zA-Z0-9_~@.+-]+$';
+// The server caps IDs separately from the pattern, so a configured pattern need not bound the length.
+const ID_MAX_LENGTH = 256;
 
-function getIdPattern(configuredPattern?: string | null): RegExp {
-	return configuredPattern ? new RegExp(configuredPattern) : DEFAULT_ID_PATTERN;
+function isCustomIdPattern(configuredPattern?: string | null): configuredPattern is string {
+	return Boolean(configuredPattern) && configuredPattern !== DEFAULT_ID_PATTERN;
+}
+
+function getIdPatternText(configuredPattern?: string | null): string {
+	return configuredPattern || DEFAULT_ID_PATTERN;
+}
+
+// Unicode mode makes classes such as `\p{L}` mean what they mean in Java. A pattern the browser
+// still cannot parse, such as one using Java-only syntax, is left to the server.
+function compileIdPattern(source: string): RegExp | null {
+	try {
+		return new RegExp(source, 'u');
+	} catch {
+		return null;
+	}
 }
 
 function isValidId(value: string, configuredPattern?: string | null): boolean {
-	return getIdPattern(configuredPattern).test(value);
+	const pattern = compileIdPattern(getIdPatternText(configuredPattern));
+	return value.length <= ID_MAX_LENGTH && (pattern === null || pattern.test(value));
 }
 
-export {getIdPattern, isValidId};
+export {getIdPatternText, isCustomIdPattern, isValidId};

@@ -31,7 +31,7 @@ import type {
 	GlobalTaskListenerEventType,
 	UpdateGlobalTaskListenerRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {isValidId} from '#/admin/modules/shared/identifierPattern';
+import {isCustomIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
 import {useGlobalTaskListenerMutations} from './useGlobalTaskListenerMutations';
 import {getEventTypeOptions, syncAllEventType, toFormEventTypes, toRequestEventTypes} from './eventTypes';
 
@@ -55,10 +55,11 @@ function toFormValues(globalTaskListener: GlobalTaskListener): FormValues {
 
 type Props = {
 	globalTaskListener: GlobalTaskListener | null;
+	idPattern: string | null | undefined;
 	onClose: () => void;
 };
 
-const EditGlobalTaskListenerModal: React.FC<Props> = ({globalTaskListener, onClose}) => {
+const EditGlobalTaskListenerModal: React.FC<Props> = ({globalTaskListener, idPattern, onClose}) => {
 	const {t} = useTranslation();
 	const {update} = useGlobalTaskListenerMutations();
 	const isOpen = globalTaskListener !== null;
@@ -96,9 +97,11 @@ const EditGlobalTaskListenerModal: React.FC<Props> = ({globalTaskListener, onClo
 						validate={({type, eventTypes, retries, priority}) => ({
 							type: !type
 								? t('admin.globalTaskListeners.listenerTypeRequiredError')
-								: isValidId(type)
+								: isValidId(type, idPattern)
 									? undefined
-									: t('admin.globalTaskListeners.listenerTypeInvalidError'),
+									: isCustomIdPattern(idPattern)
+										? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+										: t('admin.globalTaskListeners.listenerTypeInvalidError'),
 							eventTypes: eventTypes.length > 0 ? undefined : t('admin.globalTaskListeners.eventTypeRequiredError'),
 							retries:
 								Number.isInteger(retries) && retries >= 1 ? undefined : t('admin.globalTaskListeners.retriesMinError'),

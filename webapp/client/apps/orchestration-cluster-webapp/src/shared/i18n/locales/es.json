@@ -84,6 +84,7 @@
 		"relativeDateYearsFmt_time_speech": "d 'de' MMMM, yyyy 'a las' p",
 		"relativeDateUnknown": "'Desconocido'",
 		"admin": {
+			"configuredIdPatternInvalidError": "Debe tener como máximo 256 caracteres y coincidir con el patrón de ID configurado para este clúster: {{pattern}}",
 			"adminPanelNavAria": "Navegación de Admin",
 			"headerNavItemUsers": "Usuarios",
 			"headerNavItemGroups": "Grupos",

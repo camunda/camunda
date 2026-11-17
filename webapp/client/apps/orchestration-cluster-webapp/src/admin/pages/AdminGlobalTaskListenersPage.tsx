@@ -44,6 +44,7 @@ const EMPTY_CELL = '-';
 type AdminGlobalTaskListenersPageProps = {
 	globalTaskListeners: GlobalTaskListener[];
 	totalItems: number;
+	idPattern: string | null | undefined;
 	search: GlobalTaskListenersSearch;
 	onSearchChange: (next: Partial<GlobalTaskListenersSearch>) => void;
 };
@@ -51,6 +52,7 @@ type AdminGlobalTaskListenersPageProps = {
 const AdminGlobalTaskListenersPage: React.FC<AdminGlobalTaskListenersPageProps> = ({
 	globalTaskListeners,
 	totalItems,
+	idPattern,
 	search,
 	onSearchChange,
 }) => {
@@ -209,9 +211,10 @@ const AdminGlobalTaskListenersPage: React.FC<AdminGlobalTaskListenersPageProps> 
 					</div>
 				)}
 			</div>
-			<AddGlobalTaskListenerModal isOpen={modal?.type === 'add'} onClose={() => setModal(null)} />
+			<AddGlobalTaskListenerModal isOpen={modal?.type === 'add'} idPattern={idPattern} onClose={() => setModal(null)} />
 			<EditGlobalTaskListenerModal
 				globalTaskListener={modal?.type === 'edit' ? modal.globalTaskListener : null}
+				idPattern={idPattern}
 				onClose={() => setModal(null)}
 			/>
 			<DeleteGlobalTaskListenerModal

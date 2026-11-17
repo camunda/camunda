@@ -22,7 +22,8 @@ import {
 	createQueryGlobalTaskListenersResponse,
 } from '#/shared-test-modules/api-mocks/global-task-listeners';
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminGlobalTaskListenersPage}) => {
+	await adminGlobalTaskListenersPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

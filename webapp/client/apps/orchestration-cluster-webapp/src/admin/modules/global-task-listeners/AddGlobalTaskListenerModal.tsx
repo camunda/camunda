@@ -31,7 +31,7 @@ import type {
 	GlobalTaskListenerEventType,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {useGlobalTaskListenerMutations} from './useGlobalTaskListenerMutations';
-import {isValidId} from '#/admin/modules/shared/identifierPattern';
+import {isCustomIdPattern, isValidId} from '#/admin/modules/shared/identifierPattern';
 import {getEventTypeOptions, syncAllEventType, toRequestEventTypes} from './eventTypes';
 
 type FormValues = {
@@ -54,10 +54,11 @@ const INITIAL_VALUES: FormValues = {
 
 type Props = {
 	isOpen: boolean;
+	idPattern: string | null | undefined;
 	onClose: () => void;
 };
 
-const AddGlobalTaskListenerModal: React.FC<Props> = ({isOpen, onClose}) => {
+const AddGlobalTaskListenerModal: React.FC<Props> = ({isOpen, idPattern, onClose}) => {
 	const {t} = useTranslation();
 	const {create} = useGlobalTaskListenerMutations();
 	const eventTypeOptions = getEventTypeOptions(t);
@@ -95,14 +96,18 @@ const AddGlobalTaskListenerModal: React.FC<Props> = ({isOpen, onClose}) => {
 						validate={({id, type, eventTypes, retries, priority}) => ({
 							id: !id
 								? t('admin.globalTaskListeners.globalTaskListenerIdRequiredError')
-								: isValidId(id)
+								: isValidId(id, idPattern)
 									? undefined
-									: t('admin.globalTaskListeners.globalTaskListenerIdInvalidError'),
+									: isCustomIdPattern(idPattern)
+										? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+										: t('admin.globalTaskListeners.globalTaskListenerIdInvalidError'),
 							type: !type
 								? t('admin.globalTaskListeners.listenerTypeRequiredError')
-								: isValidId(type)
+								: isValidId(type, idPattern)
 									? undefined
-									: t('admin.globalTaskListeners.listenerTypeInvalidError'),
+									: isCustomIdPattern(idPattern)
+										? t('admin.configuredIdPatternInvalidError', {pattern: idPattern})
+										: t('admin.globalTaskListeners.listenerTypeInvalidError'),
 							eventTypes: eventTypes.length > 0 ? undefined : t('admin.globalTaskListeners.eventTypeRequiredError'),
 							retries:
 								Number.isInteger(retries) && retries >= 1 ? undefined : t('admin.globalTaskListeners.retriesMinError'),

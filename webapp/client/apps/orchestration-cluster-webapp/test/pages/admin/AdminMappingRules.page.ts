@@ -8,6 +8,7 @@
 
 import {type Page} from '@playwright/test';
 import {BasePage, View} from '#/pages/BasePage';
+import {createAdminClientConfigScript} from '#/shared-test-modules/api-mocks/authorizations';
 
 class AddMappingRuleModal extends View {
 	get dialog() {
@@ -77,6 +78,13 @@ class AdminMappingRulesPage extends BasePage {
 		this.addModal = new AddMappingRuleModal(page);
 		this.editModal = new EditMappingRuleModal(page);
 		this.deleteModal = new DeleteMappingRuleModal(page);
+	}
+
+	// MSW's Playwright integration skips `.js` URLs as static assets, so the script is stubbed via `page.route`.
+	async mockClientConfig(script = createAdminClientConfigScript()) {
+		await this.page.route('**/admin/config.js', (route) =>
+			route.fulfill({status: 200, contentType: 'text/javascript', body: script}),
+		);
 	}
 
 	async goto() {

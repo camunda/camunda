@@ -61,9 +61,11 @@ test.describe('Admin section access', () => {
 
 	test('should not serve groups once the identity provider owns group membership', async ({
 		adminIndexPage,
+		adminGroupsPage,
 		notFoundPage,
 		network,
 	}) => {
+		await adminGroupsPage.mockClientConfig();
 		network.use(mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createQueryGroupsResponse())}));
 
 		await adminIndexPage.gotoSection('groups');
@@ -93,9 +95,11 @@ test.describe('Admin section access', () => {
 
 	test('should serve mapping rules instead of users when login is delegated', async ({
 		adminIndexPage,
+		adminMappingRulesPage,
 		notFoundPage,
 		network,
 	}) => {
+		await adminMappingRulesPage.mockClientConfig();
 		network.use(
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(
