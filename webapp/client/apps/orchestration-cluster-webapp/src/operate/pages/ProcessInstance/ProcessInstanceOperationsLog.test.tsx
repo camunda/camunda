@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {http, HttpResponse} from 'msw';
@@ -27,6 +27,7 @@ import {
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceOperationsLog} from './ProcessInstanceOperationsLog';
@@ -35,8 +36,13 @@ import {processInstanceOperationsLogSearchSchema} from './processInstanceOperati
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
+beforeEach(() => {
+	sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+});
+
 afterEach(async () => {
 	await cleanup();
+	sessionStorage.clear();
 	notificationsStore.reset();
 });
 

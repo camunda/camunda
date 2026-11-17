@@ -1250,4 +1250,24 @@ test.describe('Operate processes page', () => {
 		await expect(page.getByRole('columnheader', {name: 'End Date'})).toHaveCount(0);
 		await expect(page.getByRole('columnheader', {name: 'Called Instances'})).toHaveCount(0);
 	});
+
+	test('should apply a lowercase sort order from a legacy URL', async ({network, page, operateProcessesPage}) => {
+		network.use(
+			mockQueryProcessInstancesEndpoint({
+				schema: z.looseObject({
+					sort: z.tuple([z.strictObject({field: z.literal('processDefinitionName'), order: z.literal('ASC')})]),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [createProcessInstance({processInstanceKey: '2001', processDefinitionName: 'Order Process'})],
+					}),
+				),
+				failureResponse: HttpResponse.json(createQueryProcessInstancesResponse()),
+			}),
+		);
+
+		await operateProcessesPage.goto('?active=true&incidents=true&sort=processDefinitionName%2Basc');
+
+		await expect(page.getByRole('link', {name: 'View instance 2001', exact: true})).toBeVisible();
+	});
 });

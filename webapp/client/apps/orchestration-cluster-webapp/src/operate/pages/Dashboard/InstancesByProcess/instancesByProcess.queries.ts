@@ -135,7 +135,10 @@ const instancesByProcessVersionsQuery = (processDefinitionId: string, tenantId: 
 			const {response, error} = await request(
 				endpoints.getProcessDefinitionInstanceVersionStatistics({
 					filter: {processDefinitionId, tenantId: tenantId ?? undefined},
-					sort: [{field: 'processDefinitionVersion', order: 'DESC'}],
+					sort: [
+						{field: 'activeInstancesWithIncidentCount', order: 'DESC'},
+						{field: 'activeInstancesWithoutIncidentCount', order: 'DESC'},
+					],
 				}),
 			);
 			if (error !== null) {

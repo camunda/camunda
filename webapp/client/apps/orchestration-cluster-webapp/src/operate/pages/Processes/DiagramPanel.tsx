@@ -7,6 +7,7 @@
  */
 
 import {useContext} from 'react';
+import kebabCase from 'lodash/kebabCase';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Diagram} from '#/operate/shared/Diagram';
@@ -236,6 +237,14 @@ const DiagramPanel: React.FC<Props> = ({
 					<Diagram
 						key={selectedDefinitionKey}
 						xml={diagramData.xml}
+						download={
+							processDefinitionSelection.kind === 'single-version'
+								? {
+										xml: diagramData.xml,
+										filename: `${kebabCase(processDefinitionSelection.definition.name || processDefinitionSelection.definition.processDefinitionId)}_v${processDefinitionSelection.definition.version}.bpmn`,
+									}
+								: undefined
+						}
 						selectedElementIds={
 							isModificationMode
 								? [elementId, selectedTargetElementId].filter((id): id is string => id !== undefined)

@@ -485,7 +485,11 @@ const Processes: React.FC<Props> = ({
 												itemToString={(item) =>
 													item === 'all' || item === undefined || item === null
 														? t('operate.processes.filters.allVersions')
-														: String(item)
+														: matchingDefinitions
+																	.filter((definition) => definition.version === item)
+																	.every((definition) => definition.state === 'DELETED')
+															? t('operate.operationsLog.filters.deletedVersion', {version: item})
+															: String(item)
 												}
 												selectedItem={process ? selectedVersion : version}
 												disabled={!isDefinitionsReady || versionNumbers.length === 0 || mode !== 'list'}

@@ -17,6 +17,7 @@ import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
+import {normalizeSortOrder} from '#/operate/shared/utils/normalizeSortOrder';
 
 type BatchOperationsSearch = {
 	page: number;
@@ -28,8 +29,7 @@ const DEFAULT_SORT = {field: 'endDate', order: 'DESC'} as const;
 const sortSearchParamSchema = createSortSearchParamSchema(batchOperationSortFieldEnum);
 
 function parseBatchOperationsSort(value: string | undefined) {
-	const normalized = value?.replace(/\+(asc|desc)$/i, (order) => order.toUpperCase());
-	return sortSearchParamSchema.safeParse(normalized).data ?? DEFAULT_SORT;
+	return sortSearchParamSchema.safeParse(normalizeSortOrder(value)).data ?? DEFAULT_SORT;
 }
 
 const batchOperationsSearchSchema = z.object({
