@@ -35,6 +35,10 @@ public class CamundaProcessTestClusterSecretsIT {
   private static final String SECRET_KEY = "MY_API_KEY";
   private static final String SECRET_VALUE = "test-key";
   private static final String SECRET_VARIABLE_NAME = "apiKey";
+  private static final String LF_SECRET_KEY = "LF_SECRET";
+  private static final String LF_SECRET_VALUE = "line\n";
+  private static final String CRLF_SECRET_KEY = "CRLF_SECRET";
+  private static final String CRLF_SECRET_VALUE = "line\r\n";
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -49,7 +53,10 @@ public class CamundaProcessTestClusterSecretsIT {
 
   @RegisterExtension
   private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension().withClusterSecret(SECRET_KEY, SECRET_VALUE);
+      new CamundaProcessTestExtension()
+          .withClusterSecret(SECRET_KEY, SECRET_VALUE)
+          .withClusterSecret(LF_SECRET_KEY, LF_SECRET_VALUE)
+          .withClusterSecret(CRLF_SECRET_KEY, CRLF_SECRET_VALUE);
 
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
@@ -107,5 +114,46 @@ public class CamundaProcessTestClusterSecretsIT {
 
     assertThat(mockedJobWorker.getActivatedJobs().get(0).getVariablesAsMap())
         .containsEntry(SECRET_VARIABLE_NAME, SECRET_VALUE);
+  }
+
+  @Test
+  void shouldResolveClusterSecretWithTrailingLineTerminator() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("cluster-secrets-line-terminator-process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType("cluster-secrets-line-terminator-job")
+                        .zeebeInputExpression("=camunda.secrets." + LF_SECRET_KEY, "lf")
+                        .zeebeInputExpression("=camunda.secrets." + CRLF_SECRET_KEY, "crlf"))
+            .endEvent()
+            .done();
+
+    final JobWorkerMock mockedJobWorker =
+        processTestContext.mockJobWorker("cluster-secrets-line-terminator-job").thenComplete();
+
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(process, "cluster-secrets-line-terminator-process.bpmn")
+        .send()
+        .join();
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("cluster-secrets-line-terminator-process")
+            .latestVersion()
+            .send()
+            .join();
+
+    // then
+    CamundaAssert.assertThatProcessInstance(processInstance).isCompleted();
+
+    assertThat(mockedJobWorker.getActivatedJobs().get(0).getVariablesAsMap())
+        .containsEntry("lf", LF_SECRET_VALUE)
+        .containsEntry("crlf", CRLF_SECRET_VALUE);
   }
 }
