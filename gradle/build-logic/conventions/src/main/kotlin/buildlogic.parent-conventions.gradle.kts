@@ -14,6 +14,7 @@
  * for that behaviour so the server and client conventions cannot drift apart.
  */
 
+import buildlogic.bomManagedForcedModules
 import buildlogic.requiredVersion
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
@@ -71,6 +72,21 @@ val forcedModules =
     .map { (module, versionKey) -> "$module:${versionCatalog.requiredVersion(versionKey)}" }
     .toTypedArray()
 
+// Modules that Maven resolves to the version managed by the Spring Boot BOM, but that Gradle would
+// resolve higher because a transitive dependency requests a newer one (see
+// bomManagedForcedModules). Enforcing the whole BOM is not an option: it also downgrades the
+// libraries that the parent POM imports before Spring Boot (opentelemetry, jackson, netty, ...).
+val bomManagedModules =
+  listOf(
+    // mcp-core requests a pre-release; the Spring Boot BOM manages it through reactor-bom.
+    "io.projectreactor:reactor-core"
+  )
+val bomManagedVersions =
+  bomManagedForcedModules(
+    versionCatalog.findLibrary("org-springframework-boot-spring-boot-dependencies").get(),
+    bomManagedModules,
+  )
+
 dependencies {
   // Mirror the parent POM's imported BOMs. Platforms add version constraints only; they do not
   // add the managed libraries to a module's runtime classpath.
@@ -116,7 +132,7 @@ dependencies {
 // Force versions in the same way they are pinned by maven.
 // Either explicitly or implicitly by the order of the dependencies being listed in the pom.
 configurations.configureEach {
-  resolutionStrategy.force(*forcedModules)
+  resolutionStrategy.force(*forcedModules, *bomManagedVersions)
   resolutionStrategy.eachDependency {
     if (requested.group == "org.springframework.boot") {
       useVersion(springBootVersion)
