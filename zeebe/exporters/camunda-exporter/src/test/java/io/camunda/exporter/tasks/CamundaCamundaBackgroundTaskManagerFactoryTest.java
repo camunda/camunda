@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
@@ -60,7 +61,8 @@ class CamundaCamundaBackgroundTaskManagerFactoryTest {
             mock(ExporterMetadata.class),
             new ObjectMapper(),
             mock(ExporterEntityCacheImpl.class),
-            InstantSource.system());
+            InstantSource.system(),
+            new TargetIndexLocator());
   }
 
   @Test

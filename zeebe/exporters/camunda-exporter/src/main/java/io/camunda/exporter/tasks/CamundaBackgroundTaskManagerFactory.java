@@ -99,6 +99,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
+  private final TargetIndexLocator indexLocator;
 
   public CamundaBackgroundTaskManagerFactory(
       final int partitionId,
@@ -110,7 +111,8 @@ public final class CamundaBackgroundTaskManagerFactory {
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
       final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TargetIndexLocator indexLocator) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -121,6 +123,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     this.objectMapper = objectMapper;
     this.processCache = processCache;
     this.clock = clock;
+    this.indexLocator = indexLocator;
   }
 
   public CamundaBackgroundTaskManager build() {
@@ -305,7 +308,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         partitionId,
         config.getHistoryDeletion(),
         clock,
-        new TargetIndexLocator());
+        indexLocator);
   }
 
   private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
@@ -318,7 +321,7 @@ public final class CamundaBackgroundTaskManagerFactory {
         partitionId,
         config.getHistoryDeletion(),
         clock,
-        new TargetIndexLocator());
+        indexLocator);
   }
 
   private OpensearchAuditLogArchiverRepository createAuditLogArchiverRepository(
