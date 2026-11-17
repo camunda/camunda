@@ -1,0 +1,562 @@
+<title>System Partition Scenarios</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one reading column; mechanism figures, then scenario timelines that each show the Raft configuration after every step. */
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --fg: #18202b;
+  --muted: #586374;
+  --line: #d3dae3;
+  --voter: #2350b8;
+  --voter-ink: #ffffff;
+  --auto: #17784f;
+  --api: #a65a00;
+  --ops: #6b7380;
+  --rule: #6a45c0;
+  --fence: #b9332a;
+  --soft: #e9eef5;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #151c26; --fg: #e3e8ef; --muted: #98a3b3; --line: #2b3544;
+    --voter: #7ea3ff; --voter-ink: #0e131a; --auto: #4cc38a; --api: #f0a24b; --ops: #9aa3b0;
+    --rule: #ab8dff; --fence: #ff7d70; --soft: #1b2430; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #151c26; --fg: #e3e8ef; --muted: #98a3b3; --line: #2b3544;
+  --voter: #7ea3ff; --voter-ink: #0e131a; --auto: #4cc38a; --api: #f0a24b; --ops: #9aa3b0;
+  --rule: #ab8dff; --fence: #ff7d70; --soft: #1b2430; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.9em; }
+a { color: var(--voter); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--voter); outline-offset: 2px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+header { display: flex; flex-direction: column; gap: 12px; }
+.note { background: var(--soft); border-radius: 6px; padding: 12px 14px; color: var(--muted); max-width: 72ch; }
+section { display: flex; flex-direction: column; gap: 14px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.toc a { text-decoration: none; font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--fg); background: var(--surface); }
+nav.toc a:hover { border-color: var(--voter); }
+
+/* Legend */
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.legend > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.legend-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+
+/* Broker chips */
+.chip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px; border: 1.5px solid var(--voter); line-height: 1.4; white-space: nowrap; }
+.chip.V { background: var(--voter); color: var(--voter-ink); }
+.chip.P { background: transparent; color: var(--voter); }
+.chip.down { opacity: 0.45; text-decoration: line-through; border-style: dashed; }
+.chip.fenced { border-color: var(--fence); color: var(--fence); background: transparent; }
+.chip .t { font-size: 10px; opacity: 0.85; }
+
+/* Trigger badges */
+.badge { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px; color: var(--surface); white-space: nowrap; }
+.badge.auto { background: var(--auto); }
+.badge.api { background: var(--api); }
+.badge.ops { background: var(--ops); }
+.badge.rule { background: var(--rule); }
+.badge.state { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+
+/* Figures */
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.figscroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 640px; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 72ch; }
+svg text { fill: currentColor; font-family: var(--font-body); font-size: 12.5px; }
+svg .small { font-size: 11px; fill: var(--muted); }
+svg .head { font-weight: 600; font-size: 12px; letter-spacing: 0.06em; }
+svg .bx { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+svg .q { fill: var(--soft); stroke: var(--line); stroke-width: 1.2; }
+svg .ln { stroke: currentColor; stroke-width: 1.3; fill: none; }
+svg .dash { stroke-dasharray: 5 4; }
+svg .api-s { stroke: var(--api); } svg .api-t { fill: var(--api); }
+svg .auto-s { stroke: var(--auto); } svg .auto-t { fill: var(--auto); }
+svg .rule-s { stroke: var(--rule); } svg .rule-t { fill: var(--rule); }
+svg .rec { fill: var(--voter); stroke: var(--voter); }
+svg .rec-t { fill: var(--voter-ink); }
+svg .fence-s { stroke: var(--fence); } svg .fence-t { fill: var(--fence); }
+svg .arrowhead { fill: currentColor; }
+
+/* Matrix table */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+
+/* Scenarios */
+.topo-head { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 2px solid var(--fg); }
+.scenario { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
+.scenario > p { color: var(--muted); }
+ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+ol.steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 12px; position: relative; padding-bottom: 16px; }
+ol.steps li:last-child { padding-bottom: 0; }
+ol.steps li::before { content: ""; position: absolute; left: 10px; top: 18px; bottom: 0; width: 2px; background: var(--line); }
+ol.steps li:last-child::before { display: none; }
+.dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--surface); position: relative; z-index: 1; font-family: var(--font-mono); }
+.dot.auto { background: var(--auto); } .dot.api { background: var(--api); } .dot.ops { background: var(--ops); }
+.dot.rule { background: var(--rule); } .dot.state { background: var(--surface); color: var(--muted); border: 2px solid var(--line); }
+.step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.step-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
+.step-text { color: var(--muted); font-size: 14px; max-width: 72ch; }
+.cfg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; background: var(--soft); border-radius: 6px; padding: 8px 10px; }
+.zone { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.zone .zl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
+.quorum { font-size: 12.5px; font-family: var(--font-mono); color: var(--fg); margin-left: auto; white-space: nowrap; }
+.quorum.lost { color: var(--fence); font-weight: 600; }
+.fencelist { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.fencelist .zl { font-size: 11px; color: var(--fence); text-transform: uppercase; letter-spacing: 0.06em; }
+@media (max-width: 560px) { .quorum { margin-left: 0; } h1 { font-size: 25px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Companion to the solution design · pdp-3723 issue #42</span>
+  <h1>System partition scenarios</h1>
+  <p>This page shows how the system partition changes its voters and passive members, scenario by scenario. Each step shows who starts it and the Raft configuration after it. The rules, the decisions and the rejected alternatives are in the design document <code>system-partition-reconfiguration.md</code> (revision 5). Section numbers in brackets point to it.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#legend">Legend</a>
+    <a href="#writers">Who changes the configuration</a>
+    <a href="#start">Start decision</a>
+    <a href="#phase0">Force-remove, phase 0</a>
+    <a href="#fence">Fenced brokers</a>
+    <a href="#matrix">Automatic or operator</a>
+    <a href="#topo25">2.5 regions</a>
+    <a href="#topo2">Dual-region</a>
+  </nav>
+</header>
+
+<section id="legend" aria-labelledby="legend-h">
+  <h2 id="legend-h">Legend</h2>
+  <div class="legend">
+    <div>
+      <span class="eyebrow">Members</span>
+      <div class="legend-row"><span class="chip V">B1 <span class="t">V</span></span> Voter (Raft <code>ACTIVE</code>)</div>
+      <div class="legend-row"><span class="chip P">B3 <span class="t">P</span></span> Passive member, committed entries only</div>
+      <div class="legend-row"><span class="chip V down">A1 <span class="t">V</span></span> Member that is down</div>
+      <div class="legend-row"><span class="chip fenced">C1#0</span> Fence entry: broker C1, incarnation 0. A broker that rejoins gets a new incarnation, so the entry no longer matches it</div>
+    </div>
+    <div>
+      <span class="eyebrow">Who starts a step</span>
+      <div class="legend-row"><span class="badge auto">Automatic</span> The cluster does it</div>
+      <div class="legend-row"><span class="badge api">Operator API</span> A management API call</div>
+      <div class="legend-row"><span class="badge ops">Operator</span> Outside the cluster (verify, fence)</div>
+      <div class="legend-row"><span class="badge rule">Broker rule</span> A broker fixes its own membership</div>
+    </div>
+    <div>
+      <span class="eyebrow">Example clusters</span>
+      <div class="legend-row">2.5 regions: zones A, B (3 brokers each), control C (1). Policy A 2, B 2, C 1.</div>
+      <div class="legend-row">Dual-region: zones A, B (4 brokers each). Policy A 2, B 2.</div>
+    </div>
+  </div>
+</section>
+
+<section id="writers" aria-labelledby="writers-h">
+  <h2 id="writers-h">Who changes the configuration</h2>
+  <figure>
+    <div class="figscroll">
+    <svg viewBox="0 0 900 400" role="img" aria-label="All triggers go through one component that calculates the target from the leader's configuration, which also holds the voter policy. A normal change goes to the Raft leader; a forced change goes to the new voters. Both end in the Raft configuration, the only record. The dynamic configuration does not store system partition members.">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text x="20" y="30" class="head api-t">OPERATOR API</text>
+      <rect class="bx api-s" x="20" y="42" width="270" height="30" rx="4"/><text x="32" y="62">Add / remove brokers (MemberJoin/Leave)</text>
+      <rect class="bx api-s" x="20" y="80" width="270" height="30" rx="4"/><text x="32" y="100">Force-remove brokers or zone (phase 0)</text>
+      <rect class="bx api-s" x="20" y="118" width="270" height="30" rx="4"/><text x="32" y="138">Force system partition voters</text>
+      <rect class="bx api-s" x="20" y="156" width="270" height="30" rx="4"/><text x="32" y="176">Update voter policy</text>
+      <text x="20" y="218" class="head auto-t">AUTOMATIC</text>
+      <rect class="bx auto-s" x="20" y="230" width="270" height="30" rx="4"/><text x="32" y="250">Region failover (force-remove, phase 0)</text>
+      <rect class="bx auto-s" x="20" y="268" width="270" height="30" rx="4"/><text x="32" y="288">Leader demotes extra voters</text>
+      <text x="20" y="330" class="head rule-t">BROKER RULE</text>
+      <rect class="bx rule-s" x="20" y="342" width="270" height="30" rx="4"/><text x="32" y="362">Self-promotion · self-join · rejoin</text>
+      <g class="ln">
+        <line x1="290" y1="57" x2="330" y2="57"/><line x1="290" y1="95" x2="330" y2="95"/>
+        <line x1="290" y1="133" x2="330" y2="133"/><line x1="290" y1="171" x2="330" y2="171"/>
+        <line x1="290" y1="245" x2="330" y2="245"/><line x1="290" y1="283" x2="330" y2="283"/>
+        <line x1="290" y1="357" x2="330" y2="357"/>
+        <line x1="330" y1="57" x2="330" y2="357"/>
+        <line x1="330" y1="185" x2="368" y2="185" marker-end="url(#a1)"/>
+      </g>
+      <rect class="bx" x="370" y="150" width="200" height="70" rx="6"/>
+      <text x="470" y="175" text-anchor="middle" style="font-weight:600">Calculate target</text>
+      <text x="470" y="193" text-anchor="middle" class="small">leader's configuration</text>
+      <text x="470" y="208" text-anchor="middle" class="small">incl. voter policy</text>
+      <line class="ln" x1="570" y1="168" x2="618" y2="92" marker-end="url(#a1)"/>
+      <text x="560" y="118" class="small" text-anchor="end">normal</text>
+      <line class="ln fence-s" x1="570" y1="200" x2="618" y2="200" marker-end="url(#a1)"/>
+      <text x="594" y="192" class="small" text-anchor="middle">no quorum</text>
+      <rect class="bx" x="620" y="60" width="250" height="60" rx="6"/>
+      <text x="636" y="84" style="font-weight:600">reconfigure(members, index, term)</text>
+      <text x="636" y="104" class="small">leader checks exact index · joint consensus</text>
+      <rect class="bx fence-s" x="620" y="172" width="200" height="60" rx="6"/>
+      <text x="636" y="196" style="font-weight:600">forceConfigure</text>
+      <text x="636" y="216" class="small">only the new voters answer</text>
+      <line class="ln" x1="855" y1="120" x2="855" y2="298" marker-end="url(#a1)"/>
+      <line class="ln" x1="720" y1="232" x2="720" y2="298" marker-end="url(#a1)"/>
+      <rect class="rec" x="620" y="300" width="250" height="56" rx="6"/>
+      <text x="745" y="324" text-anchor="middle" class="rec-t" style="font-weight:600">Raft configuration (.conf)</text>
+      <text x="745" y="342" text-anchor="middle" class="rec-t" style="font-size:11px">members, types, incarnations, fence list, policy</text>
+      <line class="ln dash" x1="470" y1="220" x2="470" y2="296"/>
+      <line class="ln fence-s" x1="461" y1="250" x2="479" y2="268"/><line class="ln fence-s" x1="479" y1="250" x2="461" y2="268"/>
+      <text x="484" y="264" class="small">not written</text>
+      <rect class="bx dash" x="370" y="300" width="200" height="56" rx="6" style="stroke:var(--muted)"/>
+      <text x="470" y="324" text-anchor="middle" style="font-weight:600">ClusterConfiguration</text>
+      <text x="470" y="342" text-anchor="middle" class="small">no system partition members</text>
+    </svg>
+    </div>
+    <figcaption>Every trigger goes through one calculation. It reads the leader's configuration, which holds the members, their types and incarnations, the fence list and the voter policy. A normal change goes to the Raft leader, which accepts it only if the configuration index and term are still current, so two brokers cannot fill the same slot. A forced change is used only without a quorum. The dynamic configuration never stores the system partition members [5.5, D1, D4].</figcaption>
+  </figure>
+</section>
+
+<section id="start" aria-labelledby="start-h">
+  <h2 id="start-h">Start decision of a broker</h2>
+  <figure>
+    <div class="figscroll">
+    <svg viewBox="0 0 820 370" role="img" aria-label="Before the dynamic configuration starts, a broker checks three conditions in order: stored Raft configuration, probe finds an existing system partition, all static brokers report no system partition. A join is admitted later by the leader only for cluster members.">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <text x="20" y="22" class="head" style="fill:var(--muted)">RUNS BEFORE THE DYNAMIC CONFIGURATION STARTS</text>
+      <rect class="q" x="20" y="36" width="380" height="46" rx="6"/><text x="36" y="64">1 · Stored Raft configuration (.conf)?</text>
+      <rect class="q" x="20" y="112" width="380" height="46" rx="6"/><text x="36" y="140">2 · Probe: a broker has index &gt; 0?</text>
+      <rect class="q" x="20" y="188" width="380" height="46" rx="6"/><text x="36" y="210">3 · All static brokers answered:</text><text x="36" y="226" class="small">no data or index 0, same hash?</text>
+      <g class="ln">
+        <line x1="400" y1="59" x2="458" y2="59" marker-end="url(#a2)"/>
+        <line x1="400" y1="135" x2="458" y2="135" marker-end="url(#a2)"/>
+        <line x1="400" y1="211" x2="458" y2="211" marker-end="url(#a2)"/>
+        <line x1="210" y1="82" x2="210" y2="110" marker-end="url(#a2)"/>
+        <line x1="210" y1="158" x2="210" y2="186" marker-end="url(#a2)"/>
+        <polyline points="210,234 210,268 10,268 10,135 18,135" marker-end="url(#a2)"/>
+        <line x1="630" y1="158" x2="630" y2="290" marker-end="url(#a2)"/>
+      </g>
+      <text x="426" y="53" class="small">yes</text><text x="426" y="129" class="small">yes</text><text x="426" y="205" class="small">yes</text>
+      <text x="218" y="100" class="small">no</text><text x="218" y="176" class="small">no</text>
+      <text x="110" y="284" class="small">no: retry the probe (no timeout fallback)</text>
+      <rect class="bx" x="460" y="36" width="340" height="46" rx="6"/><text x="476" y="56">Start from the stored configuration</text><text x="476" y="72" class="small">a fenced broker is rejected by the members</text>
+      <rect class="bx" x="460" y="112" width="340" height="46" rx="6"/><text x="476" y="132">Delete data, ask to join as passive</text><text x="476" y="148" class="small">with the empty-start guard, retries in the background</text>
+      <rect class="bx" x="460" y="188" width="340" height="46" rx="6"/><text x="476" y="208">Bootstrap the typed initial configuration</text><text x="476" y="224" class="small">same on every broker, index 0</text>
+      <rect class="bx auto-s" x="460" y="292" width="340" height="56" rx="6"/><text x="476" y="314" style="font-weight:600">Leader admits the join</text><text x="476" y="332" class="small">only if the broker is JOINING, ACTIVE or LEAVING</text>
+      <text x="640" y="276" class="small">checked by the leader</text>
+    </svg>
+    </div>
+    <figcaption>The dynamic configuration starts after the system partition, so a starting broker does not know if it is a cluster member. The leader checks that when the broker asks to join. A restart normally ends at check 1. A removed broker that starts with old data is rejected because it is on the fence list. It deletes its data and asks to join, and the leader refuses until the cluster adds it again [5.4, 5.4.4, D16].</figcaption>
+  </figure>
+</section>
+
+<section id="phase0" aria-labelledby="phase0-h">
+  <h2 id="phase0-h">Force-remove plans: phase 0</h2>
+  <figure>
+    <div class="figscroll">
+    <svg viewBox="0 0 820 360" role="img" aria-label="Phase 0 collects configurations and logs, resends a forced configuration that is already in progress, makes a normal joint change if the remaining voters are a quorum, and otherwise makes a forced change where the members with the most recent log become voters and the removed brokers go on the fence list.">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="bx" x="20" y="20" width="380" height="46" rx="6"/><text x="36" y="40">Collect configurations and logs</text><text x="36" y="56" class="small">from reachable members that are not removed</text>
+      <rect class="q" x="20" y="100" width="380" height="46" rx="6"/><text x="36" y="120">Forced configuration with these brokers</text><text x="36" y="136" class="small">already on the fence list?</text>
+      <rect class="q" x="20" y="180" width="380" height="46" rx="6"/><text x="36" y="200">Remaining voters a quorum of</text><text x="36" y="216" class="small">the current voters?</text>
+      <rect class="bx fence-s" x="20" y="262" width="380" height="80" rx="6"/>
+      <text x="36" y="284" style="font-weight:600">Forced change</text>
+      <text x="36" y="302" class="small">voters = members with the most recent log</text>
+      <text x="36" y="318" class="small">removed brokers → fence list</text>
+      <text x="36" y="334" class="small">forceConfigure, only the new voters answer</text>
+      <rect class="bx" x="460" y="100" width="340" height="46" rx="6"/><text x="476" y="128">Send it again unchanged (safe retry)</text>
+      <rect class="bx auto-s" x="460" y="180" width="340" height="46" rx="6"/><text x="476" y="200">Normal change: remove all in one</text><text x="476" y="216" class="small">joint change · 2.5-region failover</text>
+      <text x="476" y="292" class="small">Example: dual-region, zone B lost</text>
+      <text x="476" y="308" class="small">(2 of 4 voters remain)</text>
+      <g class="ln">
+        <line x1="210" y1="66" x2="210" y2="98" marker-end="url(#a3)"/>
+        <line x1="210" y1="146" x2="210" y2="178" marker-end="url(#a3)"/>
+        <line x1="210" y1="226" x2="210" y2="260" marker-end="url(#a3)"/>
+        <line x1="400" y1="123" x2="458" y2="123" marker-end="url(#a3)"/>
+        <line x1="400" y1="203" x2="458" y2="203" marker-end="url(#a3)"/>
+      </g>
+      <text x="426" y="117" class="small">yes</text><text x="426" y="197" class="small">yes</text>
+      <text x="218" y="164" class="small">no</text><text x="218" y="246" class="small">no</text>
+    </svg>
+    </div>
+    <figcaption>Phase 0 is the first phase of "force-remove brokers" and "remove zone" with <code>force=true</code>. It decides only from the Raft configuration and the request, so a retry makes the same decision. In a 2.5-region cluster, the removal of one data zone is always a normal change [5.6.3, D11, D13].</figcaption>
+  </figure>
+</section>
+
+<section id="fence" aria-labelledby="fence-h">
+  <h2 id="fence-h">How a fenced broker comes back</h2>
+  <figure>
+    <div class="figscroll">
+    <svg viewBox="0 0 900 130" role="img" aria-label="A fenced broker that starts with old data is rejected by the survivors, deletes its system partition data, joins as passive with a new incarnation that the old fence entry no longer matches, catches up, and promotes itself if its zone has an empty slot.">
+      <defs>
+        <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="bx fence-s" x="10" y="30" width="155" height="64" rx="6"/><text x="22" y="56">Fenced broker</text><text x="22" y="74" class="small">starts with old data</text>
+      <rect class="bx" x="190" y="30" width="155" height="64" rx="6"/><text x="202" y="56">Survivors reject</text><text x="202" y="74" class="small">reply "fenced", no term bump</text>
+      <rect class="bx" x="370" y="30" width="155" height="64" rx="6"/><text x="382" y="56">Delete system</text><text x="382" y="74" class="small">partition data</text>
+      <rect class="bx" x="550" y="30" width="155" height="64" rx="6"/><text x="562" y="56">Join, new incarnation</text><text x="562" y="74" class="small">old fence entry no longer matches</text>
+      <rect class="bx rule-s" x="730" y="30" width="160" height="64" rx="6"/><text x="742" y="56">Catch up, then</text><text x="742" y="74" class="small">self-promote if slot empty</text>
+      <g class="ln">
+        <line x1="165" y1="62" x2="188" y2="62" marker-end="url(#a4)"/>
+        <line x1="345" y1="62" x2="368" y2="62" marker-end="url(#a4)"/>
+        <line x1="525" y1="62" x2="548" y2="62" marker-end="url(#a4)"/>
+        <line x1="705" y1="62" x2="728" y2="62" marker-end="url(#a4)"/>
+      </g>
+    </svg>
+    </div>
+    <figcaption>A forced change puts the failed brokers on a fence list in the Raft configuration. Survivors reject their votes, polls and appends, so an old voter cannot make the real leader step down. The fence list cannot protect a group of fenced brokers that cannot reach any survivor. The operator keeps those down [5.6.6, Q1].</figcaption>
+  </figure>
+</section>
+
+<section id="matrix" aria-labelledby="matrix-h">
+  <h2 id="matrix-h">What is automatic and what the operator starts</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Event</th><th>Started by</th><th>System partition change</th><th>Raft change</th></tr></thead>
+      <tbody>
+        <tr><td>First start of the cluster</td><td><span class="badge auto">Automatic</span></td><td>Typed initial configuration from the policy</td><td>Bootstrap</td></tr>
+        <tr><td>Restart of one broker or of all brokers</td><td><span class="badge auto">Automatic</span></td><td>None. Stored configuration is used</td><td>—</td></tr>
+        <tr><td>Add brokers, add a zone</td><td><span class="badge api">Operator API</span></td><td>MemberJoin: join as passive</td><td>Normal</td></tr>
+        <tr><td>Remove brokers (scale-down)</td><td><span class="badge api">Operator API</span></td><td>MemberLeave: remove, swap in a replacement voter in the same change, fence list</td><td>Normal</td></tr>
+        <tr><td>Region failover (2.5 regions)</td><td><span class="badge auto">Automatic</span></td><td>Phase 0 removes the failed zone</td><td>Normal</td></tr>
+        <tr><td>Force-remove a zone (dual-region)</td><td><span class="badge ops">Operator</span> + <span class="badge api">Operator API</span></td><td>Phase 0 removes the zone, fence list</td><td>Forced</td></tr>
+        <tr><td>No quorum, failed brokers stay members (2.5 regions)</td><td><span class="badge ops">Operator</span> + <span class="badge api">Operator API</span></td><td>Force system partition voters: survivors vote, all others passive, fence list</td><td>Forced</td></tr>
+        <tr><td>Change the voter counts (for example, add the control zone)</td><td><span class="badge api">Operator API</span></td><td>Update the voter policy in the Raft configuration</td><td>Normal</td></tr>
+        <tr><td>Empty voter slot, caught-up passive broker</td><td><span class="badge rule">Broker rule</span></td><td>Self-promotion</td><td>Normal</td></tr>
+        <tr><td>Broker without system partition data, or fenced</td><td><span class="badge rule">Broker rule</span></td><td>Deletes data and asks to join; the leader admits only cluster members</td><td>Normal</td></tr>
+        <tr><td>Removed broker starts with old data</td><td><span class="badge rule">Broker rule</span></td><td>Rejected (fence list), deletes data; join refused until added again</td><td>—</td></tr>
+        <tr><td>Fenced broker comes back</td><td><span class="badge rule">Broker rule</span></td><td>Delete data, join with a new incarnation</td><td>Normal</td></tr>
+        <tr><td>Zone has more voters than slots</td><td><span class="badge auto">Automatic</span></td><td>Leader demotes one extra voter for each change</td><td>Normal</td></tr>
+        <tr><td>A voter is down</td><td>—</td><td>None. Liveness never changes the voters</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="topo-head" id="topo25">
+  <span class="eyebrow">Topology 1</span>
+  <h2>2.5 regions: zones A and B, control zone C</h2>
+  <p class="step-text">3 + 3 + 1 brokers, voter policy A 2, B 2, C 1. C1 has the highest election priority, then zone A, then zone B.</p>
+</div>
+<div id="scenarios-25" class="wrap" style="gap:20px"></div>
+
+<div class="topo-head" id="topo2">
+  <span class="eyebrow">Topology 2</span>
+  <h2>Dual-region without a control zone</h2>
+  <p class="step-text">4 + 4 brokers, voter policy A 2, B 2. Automatic failover is not available in this setup (decision of Oct 29, #20).</p>
+</div>
+<div id="scenarios-2" class="wrap" style="gap:20px"></div>
+
+</div>
+
+<script>
+(function () {
+  // A configuration is written as "C1V A1V A2P"; down and fence are space-separated broker ids.
+  var ZONE_NAMES = { C: "control", A: "zone A", B: "zone B" };
+  var ZONE_ORDER = ["C", "A", "B"];
+  var KIND_LABEL = { auto: "Automatic", api: "Operator API", ops: "Operator", rule: "Broker rule", state: "State" };
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function renderCfg(cfg) {
+    var box = el("div", "cfg");
+    var down = (cfg.down || "").split(" ").filter(Boolean);
+    var fence = (cfg.fence || "").split(" ").filter(Boolean);
+    var groups = {};
+    cfg.m.split(" ").filter(Boolean).forEach(function (tok) {
+      var id = tok.slice(0, -1), type = tok.slice(-1), z = id.charAt(0);
+      (groups[z] = groups[z] || []).push({ id: id, type: type });
+    });
+    ZONE_ORDER.forEach(function (z) {
+      if (!groups[z]) return;
+      var g = el("div", "zone");
+      g.appendChild(el("span", "zl", ZONE_NAMES[z]));
+      groups[z].forEach(function (b) {
+        var c = el("span", "chip " + b.type + (down.indexOf(b.id) >= 0 ? " down" : ""));
+        c.appendChild(document.createTextNode(b.id + " "));
+        c.appendChild(el("span", "t", b.type));
+        c.title = b.id + (b.type === "V" ? " voter" : " passive") + (down.indexOf(b.id) >= 0 ? ", down" : "");
+        g.appendChild(c);
+      });
+      box.appendChild(g);
+    });
+    if (fence.length) {
+      var f = el("div", "fencelist");
+      f.appendChild(el("span", "zl", "fence"));
+      fence.forEach(function (id) { f.appendChild(el("span", "chip fenced", id.indexOf("#") >= 0 ? id : id + "#0")); });
+      box.appendChild(f);
+    }
+    if (cfg.q) box.appendChild(el("span", "quorum" + (cfg.lost ? " lost" : ""), cfg.q));
+    return box;
+  }
+
+  function renderScenario(s) {
+    var sec = el("article", "scenario");
+    sec.id = s.id;
+    sec.appendChild(el("h3", null, s.title));
+    if (s.intro) sec.appendChild(el("p", null, s.intro));
+    var ol = el("ol", "steps");
+    s.steps.forEach(function (st, i) {
+      var li = el("li");
+      li.appendChild(el("span", "dot " + st.k, String(i + 1)));
+      var body = el("div", "step-body");
+      var t = el("div", "step-title");
+      t.appendChild(el("span", "badge " + st.k, KIND_LABEL[st.k]));
+      t.appendChild(el("span", null, st.t));
+      body.appendChild(t);
+      if (st.d) body.appendChild(el("div", "step-text", st.d));
+      if (st.c) body.appendChild(renderCfg(st.c));
+      li.appendChild(body);
+      ol.appendChild(li);
+    });
+    sec.appendChild(ol);
+    if (s.ref) sec.appendChild(el("p", "step-text", "Design document: " + s.ref));
+    return sec;
+  }
+
+  var FULL25 = "C1V A1V A2V B1V B2V A3P B3P";
+
+  var S25 = [
+    { id: "s-boot25", title: "Bootstrap of a new cluster", ref: "5.4, 5.4.1, 5.4.2",
+      steps: [
+        { k: "auto", t: "Each broker starts and probes all 7 static brokers", d: "A broker waits until every static broker answers. All answers are \"no data\" or index 0, with the same policy hash." },
+        { k: "auto", t: "Each broker bootstraps the same typed configuration", d: "The lowest node indexes of each zone fill the voter slots. Brokers that start a little later get index 0 answers and bootstrap the same configuration.",
+          c: { m: FULL25, q: "quorum 3 of 5" } },
+        { k: "auto", t: "C1 becomes leader and appends a configuration entry", d: "C1 has priority 5. The entry carries the voter policy, so the configuration index is now above 0. A broker that later loses its disk sees this in the probe and joins instead of bootstrapping." }
+      ] },
+    { id: "s-restart25", title: "Restart of the whole cluster", ref: "5.6.7, 5.6.8",
+      steps: [
+        { k: "auto", t: "Every broker starts from its stored configuration", d: "Start check 1. No probe, no static configuration. Priorities come from the stored configuration, which holds the voter policy.",
+          c: { m: FULL25, q: "quorum 3 of 5" } },
+        { k: "auto", t: "Voters elect a leader", d: "Passive members do not start elections. A broker that missed the last change gets the current configuration from the leader." }
+      ] },
+    { id: "s-add25", title: "Add a broker (scale-up of zone B)", ref: "5.6.1",
+      steps: [
+        { k: "api", t: "Operator adds B4", d: "B4 has no data. Its start step finds the system partition and asks to join in the background. The leader refuses until the plan marks B4 JOINING." },
+        { k: "auto", t: "MemberJoin: the leader admits B4 as passive", d: "Zone B has no empty slot, so B4 stays passive. MemberJoin does not wait for a promotion.",
+          c: { m: FULL25 + " B4P", q: "quorum 3 of 5" } }
+      ] },
+    { id: "s-remove25", title: "Remove a voter (scale-down of zone B)", ref: "5.6.2, D9",
+      steps: [
+        { k: "api", t: "Operator removes B2", d: "After the data partitions are moved, the plan applies MemberLeave on B2." },
+        { k: "auto", t: "One joint change: B2 out, B3 promoted", d: "B3 has caught up and answered recently. Joint consensus keeps the quorum of the old and the new voters. Zone B never has more than 2 voters.",
+          c: { m: "C1V A1V A2V B1V B3V A3P", fence: "B2", q: "quorum 3 of 5" } }
+      ] },
+    { id: "s-failover25", title: "Zone A fails: automatic failover and failback", ref: "5.6.3, 5.10.2",
+      steps: [
+        { k: "state", t: "Zone A goes down", d: "3 of 5 voters are alive. The system partition keeps its quorum. The failure detector commits the failover decision.",
+          c: { m: FULL25, down: "A1 A2 A3", q: "3 of 5 alive" } },
+        { k: "auto", t: "Failover runs the force-remove plan for zone A", d: "Phase 0: B1, B2 and C1 are a quorum of 5, so this is a normal joint change, not a forced change. Then phases 1 and 2 change the data partitions and the dynamic configuration.",
+          c: { m: "C1V B1V B2V B3P", fence: "A1 A2 A3 C1#0", q: "quorum 2 of 3" } },
+        { k: "rule", t: "Zone A brokers start again before the failback", d: "A1 and A2 have only 2 of 5 old votes, so they cannot elect a leader. The survivors reject them (fence list). They delete their data and ask to join. The leader refuses, because they are LEFT." },
+        { k: "auto", t: "Failback adds zone A again", d: "Zone A brokers are now JOINING, so the leader admits their joins. They join as passive with an empty log and a new incarnation. Their old fence entries no longer match them.",
+          c: { m: "C1V B1V B2V B3P A1P A2P A3P", fence: "A1#0 A2#0 A3#0", q: "quorum 2 of 3" } },
+        { k: "rule", t: "A1 and A2 promote themselves", d: "Zone A has 2 empty slots. A1 and A2 promote themselves when they have caught up, one change each. The bootstrap voters are back.",
+          c: { m: FULL25, fence: "A1#0 A2#0 A3#0", q: "quorum 3 of 5" } }
+      ] },
+    { id: "s-control25", title: "The control zone fails", ref: "5.10.2, D6",
+      steps: [
+        { k: "state", t: "C1 goes down", d: "4 of 5 voters are alive. The cluster does nothing (#21). The leader moves to A1, the voter with the next priority.",
+          c: { m: FULL25, down: "C1", q: "4 of 5 alive" } },
+        { k: "auto", t: "C1 comes back with its disk", d: "It catches up as a voter and becomes leader again." },
+        { k: "auto", t: "Or C1 comes back with an empty disk", d: "It probes and asks to join. The leader admits it, because it is still a cluster member. It is still a voter in the configuration. The empty-start guard stops it from voting until it has caught up with a leader of the current term." }
+      ] },
+    { id: "s-double25", title: "The control zone and zone A fail", ref: "5.6.5, 5.6.6, 5.10.2, D14",
+      intro: "Preferred recovery: bring C1 back with its disk. Then the system partition has a quorum again, and the normal failover runs. The steps below are for the case in which C1 cannot come back.",
+      steps: [
+        { k: "state", t: "No quorum: processing stops", d: "Only B1 and B2 of 5 voters are alive. No failover decision can be committed.",
+          c: { m: FULL25, down: "C1 A1 A2 A3", q: "2 of 5: no quorum", lost: true } },
+        { k: "ops", t: "Operator verifies and fences zone A and C1", d: "These brokers must stay down until they can reach the survivors." },
+        { k: "api", t: "Force system partition voters (down: A1 A2 A3 C1)", d: "B1 and B2 have the most recent log, so they are the voters. All other members stay members, as passive. The down brokers go on the fence list. No member is removed.",
+          c: { m: "B1V B2V A1P A2P A3P B3P C1P", down: "C1 A1 A2 A3", fence: "A1 A2 A3 C1", q: "quorum 2 of 2" } },
+        { k: "auto", t: "Automatic failover removes zone A", d: "The detector sees zone A failed. Phase 0 is a normal change. The failover state and the failback reference are recorded. Automatic failover is now unavailable, because the control zone has no voter.",
+          c: { m: "B1V B2V B3P C1P", down: "C1", fence: "A1 A2 A3 C1", q: "quorum 2 of 2" } },
+        { k: "auto", t: "If the cluster restarts now", d: "B1 and B2 load the stored configuration with the fence list and elect a leader. Fenced brokers that start are rejected." },
+        { k: "rule", t: "C1 comes back and is rejected as fenced", d: "C1 deletes its old data and asks to join with an empty log. It is still a cluster member, so the leader admits it with a new incarnation. Its old fence entry no longer matches it.",
+          c: { m: "B1V B2V B3P C1P", fence: "A1 A2 A3 C1#0", q: "quorum 2 of 2" } },
+        { k: "rule", t: "C1 promotes itself", d: "The control slot is empty and C1 has caught up. Automatic failover is available again.",
+          c: { m: "C1V B1V B2V B3P", fence: "A1 A2 A3 C1#0", q: "quorum 2 of 3" } },
+        { k: "api", t: "Operator starts the failback", d: "The failback is manual, because #21 counts the forced change as a configuration change. Zone A brokers join with an empty log and a new incarnation, and fill their slots by self-promotion. The old fence entries stay, but they no longer match.",
+          c: { m: FULL25, fence: "A1#0 A2#0 A3#0 C1#0", q: "quorum 3 of 5" } }
+      ] },
+    { id: "s-disk25", title: "A voter loses its disk", ref: "5.4.3, 5.6.9, D15",
+      steps: [
+        { k: "auto", t: "A1 starts with an empty disk", d: "Start check 2: the probe finds a system partition. A1 writes an empty-start marker and remembers the highest term that a quorum of voters reported." },
+        { k: "auto", t: "The leader admits A1, which is still a voter", d: "A1 is a cluster member. The leader does not demote it. While the marker exists, A1 does not vote and does not start elections.",
+          c: { m: FULL25, q: "quorum 3 of 5" } },
+        { k: "auto", t: "The marker goes away", d: "This happens when A1's commit index reaches the commit index from a leader of that term or later. A deposed leader cannot release it." }
+      ] },
+    { id: "s-convert", title: "Rolling conversion from dual-region to 2.5 regions", ref: "5.1, 5.6.10",
+      intro: "Starts from a dual-region cluster with zones A and B (3 brokers each).",
+      steps: [
+        { k: "state", t: "Dual-region cluster", c: { m: "A1V A2V B1V B2V A3P B3P", q: "quorum 3 of 4" } },
+        { k: "api", t: "Operator adds the control zone", d: "AddZone adds C1 with MemberJoin. The control zone is not in the policy record yet, so C1 stays passive.",
+          c: { m: "A1V A2V B1V B2V A3P B3P C1P", q: "quorum 3 of 4" } },
+        { k: "api", t: "Operator updates the voter policy: control 1", d: "The new policy is a normal Raft configuration change. The target priority changes with it." },
+        { k: "rule", t: "C1 promotes itself", d: "C1 gets the highest priority and becomes leader.",
+          c: { m: FULL25, q: "quorum 3 of 5" } }
+      ] }
+  ];
+
+  var FULL2 = "A1V A2V B1V B2V A3P A4P B3P B4P";
+
+  var S2 = [
+    { id: "s-boot2", title: "Bootstrap and restart", ref: "5.4, 5.10.1",
+      steps: [
+        { k: "auto", t: "All 8 brokers probe, then bootstrap the same configuration", c: { m: FULL2, q: "quorum 3 of 4" } },
+        { k: "auto", t: "Restart of one broker or of all brokers", d: "Each broker starts from its stored configuration. If one voter is down, 3 of 4 voters still have a quorum." }
+      ] },
+    { id: "s-zoneb2", title: "Zone B fails: force-remove, restart and failback", ref: "5.6.3, 5.10.1, D13",
+      steps: [
+        { k: "state", t: "Zone B goes down", d: "2 of 4 voters are alive. There is no quorum and no automatic failover. The data partitions also have no quorum.",
+          c: { m: FULL2, down: "B1 B2 B3 B4", q: "2 of 4: no quorum", lost: true } },
+        { k: "ops", t: "Operator verifies and fences zone B" },
+        { k: "api", t: "Operator: remove zone B with force=true", d: "Phase 0: A1 and A2 are not a quorum of 4, so this is a forced change. A1 and A2 have the most recent log and become the voters. Zone B goes on the fence list. Then phases 1 and 2 change the data partitions and the dynamic configuration.",
+          c: { m: "A1V A2V A3P A4P", fence: "B1 B2 B3 B4", q: "quorum 2 of 2" } },
+        { k: "state", t: "If A3 had the most recent log", d: "The forced configuration would be A3 as the only voter. Then A1 promotes itself, and zone A has 2 voters again." },
+        { k: "auto", t: "Restart of the cluster after the forced change", d: "A1 and A2 load the forced configuration with the fence list and elect a leader. Zone B brokers that start with old data are rejected (fence list). They delete their data and ask to join, and the leader refuses, because they are LEFT." },
+        { k: "api", t: "Operator adds zone B again (failback)", d: "Zone B brokers are now JOINING, so the leader admits their joins. Each joins as passive with an empty log and a new incarnation. The old fence entries no longer match.",
+          c: { m: "A1V A2V A3P A4P B1P B2P B3P B4P", fence: "B1#0 B2#0 B3#0 B4#0", q: "quorum 2 of 2" } },
+        { k: "rule", t: "B1 and B2 promote themselves", d: "One change each, when caught up.",
+          c: { m: FULL2, fence: "B1#0 B2#0 B3#0 B4#0", q: "quorum 3 of 4" } }
+      ] },
+    { id: "s-split2", title: "Network partition between the zones", ref: "5.10.1",
+      steps: [
+        { k: "state", t: "Both zones run, neither has a quorum", d: "Each side has 2 of 4 voters. The system partition commits nothing on either side.",
+          c: { m: FULL2, q: "2 of 4 each side", lost: true } },
+        { k: "api", t: "Forced change on one side", d: "It is safe for the system partition, because the other side cannot get a quorum of the old configuration. The data partitions still need the fencing." }
+      ] }
+  ];
+
+  var t25 = document.getElementById("scenarios-25");
+  S25.forEach(function (s) { t25.appendChild(renderScenario(s)); });
+  var t2 = document.getElementById("scenarios-2");
+  S2.forEach(function (s) { t2.appendChild(renderScenario(s)); });
+})();
+</script>
