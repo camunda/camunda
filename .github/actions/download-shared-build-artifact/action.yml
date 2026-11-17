@@ -1,0 +1,64 @@
+# owner: @camunda/engineering-operations
+name: Download shared build artifact
+description: >-
+  Download this run's distball or installed Maven SNAPSHOT archive from GCS,
+  falling back to the GitHub artifact for fork PRs. GCS authentication must
+  already be configured by the calling workflow.
+inputs:
+  artifact:
+    description: Shared artifact to download (distball or m2-installed)
+    required: true
+  path:
+    description: Destination directory
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Prepare download
+      id: artifact
+      shell: bash
+      env:
+        ARTIFACT: ${{ inputs.artifact }}
+        DOWNLOAD_PATH: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+        if [[ -z "$DOWNLOAD_PATH" ]]; then
+          echo "::error::A destination path is required"
+          exit 1
+        fi
+        case "$ARTIFACT" in
+          distball)
+            object='camunda-zeebe-*.tar.gz'
+            timeout_minutes=2
+            ;;
+          m2-installed)
+            object='m2-installed.tar'
+            timeout_minutes=1
+            ;;
+          *)
+            echo "::error::Expected artifact to be distball or m2-installed"
+            exit 1
+            ;;
+        esac
+        mkdir -p "$DOWNLOAD_PATH"
+        printf 'object=%s\ntimeout-minutes=%s\n' "$object" "$timeout_minutes" >> "$GITHUB_OUTPUT"
+    - name: Download from GCS
+      if: github.event.pull_request.head.repo.fork != true
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      env:
+        ARTIFACT_OBJECT: ${{ steps.artifact.outputs.object }}
+        DOWNLOAD_PATH: ${{ inputs.path }}
+      with:
+        max_attempts: 5
+        retry_wait_seconds: 10
+        timeout_minutes: ${{ steps.artifact.outputs.timeout-minutes }}
+        shell: bash
+        command: |
+          set -euo pipefail
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/${ARTIFACT_OBJECT}" "${DOWNLOAD_PATH}/"
+    - name: Download from GitHub for fork PRs
+      if: github.event.pull_request.head.repo.fork == true
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: ${{ inputs.artifact }}-${{ github.run_id }}
+        path: ${{ inputs.path }}

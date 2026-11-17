@@ -1724,19 +1724,12 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Download the shared distball tarball; restore-shared-m2 below handles the SNAPSHOTs.
-      - name: Create dist/target
-        if: steps.is-fork.outputs.is-fork != 'true'
-        shell: bash
-        run: mkdir -p dist/target
       - name: Download distball from GCS
         if: steps.is-fork.outputs.is-fork != 'true'
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        uses: ./.github/actions/download-shared-build-artifact
         with:
-          max_attempts: 5
-          retry_wait_seconds: 10
-          timeout_minutes: 2
-          shell: bash
-          command: gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+          artifact: distball
+          path: dist/target
       # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
       # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
       - uses: ./.github/actions/restore-shared-m2
