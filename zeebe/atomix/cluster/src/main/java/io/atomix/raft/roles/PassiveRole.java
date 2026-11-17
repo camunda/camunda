@@ -1187,10 +1187,17 @@ public class PassiveRole extends InactiveRole {
 
   /**
    * Resets the log so that it starts at the given index. No entry remains, so a configuration that
-   * came from one of them is dropped too.
+   * came from one of them is dropped too. If the log was already empty, no entry is deleted, and a
+   * configuration that the leader sent before its entry stays: otherwise a member with an empty log
+   * that received a configuration before its first append falls back to its stored configuration,
+   * and if that has index 0, the leader never sends it the newer one again (it ignores a reported
+   * configuration index of 0).
    */
   private void resetLog(final long firstIndex) {
+    final var deletesEntries = !raft.getLog().isEmpty();
     raft.getLog().reset(firstIndex);
-    raft.getCluster().reloadStoredConfiguration();
+    if (deletesEntries) {
+      raft.getCluster().reloadStoredConfiguration();
+    }
   }
 }
