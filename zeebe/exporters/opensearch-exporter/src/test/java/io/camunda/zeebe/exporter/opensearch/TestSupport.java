@@ -162,7 +162,9 @@ final class TestSupport {
             ValueType.USER_TASK_LOOKUP,
             // no templates yet, they come with the probe export (#68870)
             ValueType.PROBE,
-            ValueType.PROBE_BATCH);
+            ValueType.PROBE_BATCH,
+            // the behavior version commit, exporting it is not part of 8.11
+            ValueType.CLUSTER_BEHAVIOR);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

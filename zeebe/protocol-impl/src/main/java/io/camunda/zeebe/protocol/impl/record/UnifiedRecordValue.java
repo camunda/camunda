@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clusterbehavior.ClusterBehaviorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
@@ -249,6 +250,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.SECRET_REFERENCE -> new SecretReferenceRecord();
       case ValueType.POLICY_UPDATE -> new PolicyUpdateRecord();
       case ValueType.PROCESS_DEFINITION_SUSPENSION -> new ProcessDefinitionSuspensionRecord();
+      case ValueType.CLUSTER_BEHAVIOR -> new ClusterBehaviorRecord();
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

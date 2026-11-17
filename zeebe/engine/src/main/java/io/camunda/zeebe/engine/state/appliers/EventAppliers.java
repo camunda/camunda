@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterBehaviorIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -190,6 +191,7 @@ public final class EventAppliers implements EventApplier {
     registerPolicyUpdateAppliers(state);
     registerProbeAppliers(state);
     registerProcessDefinitionSuspensionAppliers(state);
+    registerClusterBehaviorAppliers();
     return this;
   }
 
@@ -240,6 +242,12 @@ public final class EventAppliers implements EventApplier {
   private void registerProcessDefinitionSuspensionAppliers(final MutableProcessingState state) {
     register(ProcessDefinitionSuspensionIntent.SUSPENDED, NOOP_EVENT_APPLIER);
     register(ProcessDefinitionSuspensionIntent.RESUMED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerClusterBehaviorAppliers() {
+    // the engine does not write this event yet; the real applier (#68931) replaces this no-op
+    // before the first release
+    register(ClusterBehaviorIntent.COMMITTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

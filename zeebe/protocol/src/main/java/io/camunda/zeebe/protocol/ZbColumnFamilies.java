@@ -440,7 +440,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * Global, so a partition added by scaling starts with the current policy version. An update that
    * is still being applied is not part of it: that only exists on partition 1.
    */
-  POLICY(172, GLOBAL);
+  POLICY(172, GLOBAL),
+
+  /**
+   * Reserved for the committed cluster behavior: a single entry, the set of enabled capabilities
+   * and the behavior version. Global, so a partition added by scaling starts with the current set;
+   * each partition still commits independently. Not used yet.
+   */
+  COMMITTED_CLUSTER_BEHAVIOR(173, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
