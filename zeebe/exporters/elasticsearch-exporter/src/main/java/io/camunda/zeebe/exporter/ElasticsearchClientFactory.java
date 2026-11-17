@@ -96,6 +96,12 @@ final class ElasticsearchClientFactory {
       }
     }
 
+    // a value made only of separators, such as ",", splits into nothing. The connector would fall
+    // back to its default host (localhost:9200) instead of rejecting it
+    if (parsed.isEmpty()) {
+      throw new IllegalArgumentException("Invalid Elasticsearch url: no host is configured");
+    }
+
     return parsed;
   }
 

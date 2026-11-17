@@ -67,6 +67,18 @@ final class ElasticsearchClientFactoryTest {
   }
 
   @Test
+  void shouldRejectAUrlWithoutAnyHost() {
+    // given - a value made only of separators splits into no host at all; the connector would
+    // silently use its default host (localhost:9200) instead of failing
+    config.url = ",";
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid Elasticsearch url: no host is configured");
+  }
+
+  @Test
   void shouldConfigureMultipleHosts() throws URISyntaxException {
     // given
     config.url = "http://localhost:9201,https://localhost:9202";
