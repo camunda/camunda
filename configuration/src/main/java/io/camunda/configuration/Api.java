@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.api.ClusterApi;
 import io.camunda.configuration.api.Grpc;
 import io.camunda.configuration.api.LongPolling;
 import io.camunda.configuration.api.Rest;
@@ -28,6 +29,9 @@ public class Api {
 
   /** Configuration for rest behavior */
   @NestedConfigurationProperty private Rest rest = new Rest();
+
+  /** Configuration for the cluster-wide REST API ({@code /cluster/v2/**}) */
+  @NestedConfigurationProperty private ClusterApi cluster = new ClusterApi();
 
   /**
    * Enables the gateway (gRPC, REST and MCP API). For a broker with an embedded gateway, disables
@@ -60,6 +64,14 @@ public class Api {
 
   public void setRest(final Rest rest) {
     this.rest = rest;
+  }
+
+  public ClusterApi getCluster() {
+    return cluster;
+  }
+
+  public void setCluster(final ClusterApi cluster) {
+    this.cluster = cluster;
   }
 
   public boolean isEnabled() {

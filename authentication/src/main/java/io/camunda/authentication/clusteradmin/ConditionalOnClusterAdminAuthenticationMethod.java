@@ -21,7 +21,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
  * Matches when the effective cluster-admin authentication method (see {@link
- * ClusterApiSettings#authenticationMethod}) equals {@link #value()}.
+ * ClusterApiSettings#load}) equals {@link #value()}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
@@ -41,7 +41,7 @@ public @interface ConditionalOnClusterAdminAuthenticationMethod {
         return false;
       }
       return attributes.get("value")
-          == ClusterApiSettings.authenticationMethod(context.getEnvironment());
+          == ClusterApiSettings.load(context.getEnvironment()).authenticationMethod();
     }
   }
 }

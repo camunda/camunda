@@ -29,11 +29,11 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
  * OIDC security chain for the cluster-admin API under {@code /cluster/v2/**}, active only when the
- * effective cluster-admin method is OIDC (see {@link ClusterApiSettings#authenticationMethod}).
- * OIDC requires the deployment itself to run OIDC, as the chain reuses its {@link JwtDecoder}.
- * Bearer tokens are validated against the deployment's default OIDC provider (the shared {@link
- * JwtDecoder}); a token is granted access only if it matches a configured cluster-admin client id,
- * group, or claim (see {@link ClusterAdminJwtAuthenticationConverter}).
+ * effective cluster-admin method is OIDC (see {@link ClusterApiSettings#load}). OIDC requires the
+ * deployment itself to run OIDC, as the chain reuses its {@link JwtDecoder}. Bearer tokens are
+ * validated against the deployment's default OIDC provider (the shared {@link JwtDecoder}); a token
+ * is granted access only if it matches a configured cluster-admin client id, group, or claim (see
+ * {@link ClusterAdminJwtAuthenticationConverter}).
  *
  * <p>This chain, the Basic chain ({@link ClusterAdminBasicSecurityConfiguration}) and the no-auth
  * chain ({@link ClusterAdminNoAuthSecurityConfiguration}) are mutually exclusive — only one is
@@ -71,7 +71,8 @@ public class ClusterAdminOidcSecurityConfiguration {
         new ClusterAdminJwtAuthenticationConverter(
             oidcProperties, oidc.getClientIdClaim(), oidc.getGroupsClaim());
 
-    http.securityMatcher(ClusterApiSettings.clusterApiMatcher(environment))
+    // Path-only, on every port: see ClusterAdminBasicSecurityConfiguration.
+    http.securityMatcher(ClusterApiSettings.load(environment).clusterApiMatcher())
         .authorizeHttpRequests(
             auth ->
                 auth.anyRequest()

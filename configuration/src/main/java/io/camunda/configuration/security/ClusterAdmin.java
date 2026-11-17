@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.security;
 
+import io.camunda.configuration.security.clusteradmin.ClusterAdminAuthentication;
 import io.camunda.configuration.security.clusteradmin.ClusterAdminBasic;
 import io.camunda.configuration.security.clusteradmin.ClusterAdminOidc;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -16,11 +17,24 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  */
 public class ClusterAdmin {
 
+  /** Which authentication protects the cluster-admin API. */
+  @NestedConfigurationProperty
+  private ClusterAdminAuthentication authentication = new ClusterAdminAuthentication();
+
   /** HTTP Basic authentication for the cluster-admin API. */
   @NestedConfigurationProperty private ClusterAdminBasic basic = new ClusterAdminBasic();
 
   /** OIDC authorization for the cluster-admin API. */
   @NestedConfigurationProperty private ClusterAdminOidc oidc = new ClusterAdminOidc();
+
+  public ClusterAdminAuthentication getAuthentication() {
+    return authentication;
+  }
+
+  public void setAuthentication(final ClusterAdminAuthentication authentication) {
+    this.authentication =
+        authentication == null ? new ClusterAdminAuthentication() : authentication;
+  }
 
   public ClusterAdminBasic getBasic() {
     return basic;

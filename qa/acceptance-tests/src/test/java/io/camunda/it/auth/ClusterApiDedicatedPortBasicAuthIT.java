@@ -152,6 +152,33 @@ public class ClusterApiDedicatedPortBasicAuthIT {
     assertThat(status).isEqualTo(HttpURLConnection.HTTP_NOT_FOUND);
   }
 
+  @Test
+  void shouldRejectDotSegmentPathsBeforeTheyCanCrossPorts() throws Exception {
+    // given — raw paths that Tomcat would resolve into the other port's API
+    final URI main = mainPortUri("");
+    final String credentials = basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD);
+
+    // when
+    final int onMainPort =
+        rawGetStatus(
+            main.getHost(),
+            main.getPort(),
+            "/v2/../cluster/v2/topology",
+            main.getHost() + ":" + main.getPort(),
+            credentials);
+    final int onClusterPort =
+        rawGetStatus(
+            main.getHost(),
+            CLUSTER_PORT,
+            "/cluster/v2/../../v2/authentication/me",
+            main.getHost() + ":" + CLUSTER_PORT,
+            basicAuth(DB_USERNAME, DB_PASSWORD));
+
+    // then
+    assertThat(onMainPort).isEqualTo(HttpURLConnection.HTTP_BAD_REQUEST);
+    assertThat(onClusterPort).isEqualTo(HttpURLConnection.HTTP_BAD_REQUEST);
+  }
+
   private HttpResponse<String> get(final URI uri, final String authorization) throws Exception {
     final HttpRequest.Builder builder = HttpRequest.newBuilder(uri).GET();
     if (authorization != null) {

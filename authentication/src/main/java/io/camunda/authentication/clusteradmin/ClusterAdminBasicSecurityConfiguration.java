@@ -41,7 +41,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * <p>All paths under {@code /cluster/v2/**} require HTTP Basic authentication against the
  * statically configured cluster-admin users ({@code camunda.security.cluster-admin.basic.users}).
  * Registered when the effective cluster-admin method is basic (see {@link
- * ClusterApiSettings#authenticationMethod}): explicitly via {@code
+ * ClusterApiSettings#load}): explicitly via {@code
  * camunda.security.cluster-admin.authentication.method}, or by following the global method.
  *
  * <p><strong>Isolation:</strong> keep the cluster-admin user store isolated as a plain in-memory
@@ -92,7 +92,9 @@ public class ClusterAdminBasicSecurityConfiguration {
             PasswordEncoderFactories::createDelegatingPasswordEncoder);
     http.authenticationManager(clusterAdminAuthenticationManager(environment, passwordEncoder));
 
-    http.securityMatcher(ClusterApiSettings.clusterApiMatcher(environment))
+    // Path-only, on every port: credentials are required wherever /cluster/v2/** is reachable,
+    // independently of the port gate that confines it to a dedicated port when one is set.
+    http.securityMatcher(ClusterApiSettings.load(environment).clusterApiMatcher())
         .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
         .httpBasic(Customizer.withDefaults())
         .exceptionHandling(

@@ -11,6 +11,7 @@ import static io.camunda.security.spring.security.CamundaSecurityFilterChainCons
 
 import io.camunda.authentication.clusteradmin.ClusterApiSettings.ClusterAdminAuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.handler.AuthFailureHandler;
 import io.camunda.security.spring.security.SecurityFilterChainSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,29 +56,49 @@ public class ClusterAdminNoAuthSecurityConfiguration {
       final Environment environment,
       final CamundaSecurityLibraryProperties properties)
       throws Exception {
-    final int port =
-        ClusterApiSettings.dedicatedPort(environment)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "%s=none requires the cluster API on a dedicated port; set %s"
-                            .formatted(
-                                ClusterApiSettings.AUTHENTICATION_METHOD_PROPERTY,
-                                ClusterApiSettings.PORT_PROPERTY)));
+    // load() refuses NONE without a dedicated port
+    final ClusterApiSettings settings = ClusterApiSettings.load(environment);
     LOG.warn(
         "Cluster-admin authentication is disabled: {} on port {} is reachable without "
             + "credentials. Restrict network access to this port.",
         ClusterApiSettings.CLUSTER_API_PATTERN,
-        port);
+        settings.port());
 
-    http.securityMatcher(ClusterApiSettings.clusterApiMatcher(environment))
+    http.securityMatcher(settings.dedicatedPortMatcher())
         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
         .anonymous(
             anonymous ->
                 anonymous
                     .principal(ANONYMOUS_CLUSTER_ADMIN)
-                    .authorities(ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))
-        .httpBasic(AbstractHttpConfigurer::disable)
+                    .authorities(ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY));
+    return statelessWithoutLogin(http, properties);
+  }
+
+  /**
+   * Denies the cluster API on every other port. The port gate already answers 404 there; this keeps
+   * the unauthenticated access confined to the dedicated port even without the gate.
+   */
+  @Bean
+  @Order(ORDER_API)
+  public SecurityFilterChain clusterAdminNoAuthOtherPortsSecurityFilterChain(
+      final HttpSecurity http,
+      final Environment environment,
+      final AuthFailureHandler authFailureHandler,
+      final CamundaSecurityLibraryProperties properties)
+      throws Exception {
+    http.securityMatcher(ClusterApiSettings.load(environment).otherPortsMatcher())
+        .authorizeHttpRequests(auth -> auth.anyRequest().denyAll())
+        .anonymous(AbstractHttpConfigurer::disable)
+        .exceptionHandling(
+            eh ->
+                eh.authenticationEntryPoint(authFailureHandler)
+                    .accessDeniedHandler(authFailureHandler));
+    return statelessWithoutLogin(http, properties);
+  }
+
+  private static SecurityFilterChain statelessWithoutLogin(
+      final HttpSecurity http, final CamundaSecurityLibraryProperties properties) throws Exception {
+    http.httpBasic(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .cors(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -85,9 +106,7 @@ public class ClusterAdminNoAuthSecurityConfiguration {
             sc -> sc.securityContextRepository(new RequestAttributeSecurityContextRepository()))
         .requestCache(cache -> cache.requestCache(new NullRequestCache()))
         .csrf(AbstractHttpConfigurer::disable);
-
     SecurityFilterChainSupport.setupSecureHeaders(http, properties.getHttpHeaders());
-
     return http.build();
   }
 }
