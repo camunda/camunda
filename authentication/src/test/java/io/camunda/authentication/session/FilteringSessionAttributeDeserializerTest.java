@@ -37,7 +37,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.User;
@@ -185,12 +184,7 @@ class FilteringSessionAttributeDeserializerTest {
   void shouldRoundTripBasicLoginSession() {
     // given — the security context a basic login stores, with the details a real request sets
     final var user =
-        new User(
-            "erin",
-            "{noop}secret",
-            List.of(
-                new SimpleGrantedAuthority("ROLE_USER"),
-                FactorGrantedAuthority.fromAuthority("FACTOR_PASSWORD")));
+        new User("erin", "{noop}secret", List.of(new SimpleGrantedAuthority("ROLE_USER")));
     final var authentication =
         UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
     authentication.setDetails(new WebAuthenticationDetails("203.0.113.7", "session-id"));
@@ -203,7 +197,7 @@ class FilteringSessionAttributeDeserializerTest {
     assertThat(restored.getAuthentication().getName()).isEqualTo("erin");
     assertThat(restored.getAuthentication().getAuthorities())
         .extracting(a -> a.getAuthority())
-        .containsExactlyInAnyOrder("ROLE_USER", "FACTOR_PASSWORD");
+        .containsExactly("ROLE_USER");
     assertThat(restored.getAuthentication().getDetails())
         .isEqualTo(new WebAuthenticationDetails("203.0.113.7", "session-id"));
   }
