@@ -267,6 +267,10 @@ def collect_export(query: QueryFn, namespace: str, window_s: int, at: float, ten
             if name is None or partition is None or (v := sample_value(r)) is None:
                 continue
             tenants.setdefault(name, Tenant(name)).export_partitions.setdefault(partition, {})[attribute] = v
+    for t in tenants.values():
+        rates = [v["rate"] for v in t.export_partitions.values() if "rate" in v]
+        if rates:  # the slowest exporter of each partition, so the exporters of a partition are not added up
+            t.export_rate = sum(rates)
     if not found:
         notes.append(
             "No export queue with a `physicalTenant` label was found: the broker metrics of this build or "
@@ -420,6 +424,39 @@ def fmt(value: float | None, unit: str = "", digits: int = 1) -> str:
     return f"{value:.{digits}f}" if abs(value) < 1000 else f"{value:,.0f}"
 
 
+def export_throughput_section(ordered: list[Tenant]) -> list[str]:
+    """Export rate of every tenant and partition, and the total over all the tenants."""
+    rated = [t for t in ordered if any("rate" in v for v in t.export_partitions.values())]
+    if not rated:
+        return []
+    partitions = sorted({p for t in rated for p in t.export_partitions}, key=lambda p: int(p) if p.isdigit() else 0)
+
+    def rate(t: Tenant, partition: str) -> float | None:
+        return t.export_partitions.get(partition, {}).get("rate")
+
+    out = [
+        "## Export throughput",
+        "",
+        "Positions exported per second, averaged over the window, by the slowest exporter of each partition.",
+        "",
+        "| Tenant | " + " | ".join(f"Partition {p}" for p in partitions) + " | Total |",
+        "| --- | " + " | ".join("---" for _ in partitions) + " | --- |",
+    ]
+    for t in rated:
+        out.append(f"| {t.name} | " + " | ".join(fmt(rate(t, p)) for p in partitions) + f" | {fmt(t.export_rate)} |")
+    totals = [sum(rate(t, p) or 0 for t in rated) for p in partitions]
+    out.append("| **All tenants** | " + " | ".join(fmt(v) for v in totals) + f" | {fmt(sum(totals))} |")
+    per_tenant = [t.export_rate for t in rated if t.export_rate is not None]
+    stats = spread(per_tenant)
+    if stats and len(per_tenant) > 1:
+        out += [
+            "",
+            f"Per tenant: mean {fmt(stats['mean'])}/s, min {fmt(stats['min'])}/s, max {fmt(stats['max'])}/s, CV {stats['cv']:.2f}.",
+        ]
+    out.append("")
+    return out
+
+
 def render(
     namespace: str,
     window: str,
@@ -474,6 +511,8 @@ def render(
             f"{fmt(t.pending_avg, digits=0)} | {queue} | {fmt(t.export_lag_seconds, 's')} | {fmt(t.jobs_handled)} |"
         )
     out += ["", "Served is the share of the offered load answered with success. Rejected is the share of answered requests that failed (backpressure is `resource exhausted` or HTTP 503/429). Skipped is load the starter could not even send. The export queue is records committed but not yet exported, with its change over the window in brackets.", ""]
+
+    out += export_throughput_section(ordered)
 
     partitioned = [t for t in ordered if t.role == "saturating" and t.export_partitions]
     if partitioned:

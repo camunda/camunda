@@ -29,7 +29,7 @@ EXPORT = {"default": (100, 100, 500), "pt1": (4000, 500, 400), "pt2": (3000, 100
 
 
 # tenant -> {partition: (queue, exported records per second)}; the summed rate hides the slow partition
-PARTITIONS = {"pt1": {"1": (1000, 1700), "2": (15000, 176)}}
+PARTITIONS = {"pt1": {"1": (1000, 1700), "2": (15000, 176)}, "pt2": {"1": (3000, 500), "2": (2000, 300)}}
 
 
 def fake(with_tenant_label=True):
@@ -206,6 +206,13 @@ class RenderTest(unittest.TestCase):
         self.assertIn("**2 of 5** tenants meet all of them", markdown)  # default and pt3
         self.assertIn("`pt6`", markdown)  # the lagging tenant is named, although it has no load tester
         self.assertEqual(data["failing"]["pt2"], ["served", "availability", "export"])
+
+    def test_export_throughput_per_tenant_partition_and_in_total(self):
+        markdown, data = report.build_report(fake(), args())
+        self.assertIn("## Export throughput", markdown)
+        self.assertIn("| pt1 | 1,700 | 176.0 | 1,876 |", markdown)
+        self.assertIn("| **All tenants** | 2,200 | 476.0 | 2,676 |", markdown)
+        self.assertEqual(data["tenants"]["pt2"]["export_rate"], 800)  # the sum of its partitions
 
     def test_the_noisy_tenant_gets_a_table_per_partition(self):
         markdown, _ = report.build_report(fake(), args())
