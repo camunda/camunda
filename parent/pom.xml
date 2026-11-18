@@ -344,7 +344,7 @@
       line with -Dpit.<name>=... Mutation testing is never bound to a lifecycle phase.
     -->
     <pit.threads>8</pit.threads>
-    <pit.timeoutConstant>4000</pit.timeoutConstant>
+    <pit.timeoutConstant>30000</pit.timeoutConstant>
     <pit.engine>gregor</pit.engine>
     <pit.crossModule>true</pit.crossModule>
 
