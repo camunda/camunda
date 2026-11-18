@@ -15,6 +15,8 @@ import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreException;
+import io.camunda.secretstore.refresh.ClientCheckException.Outcome;
+import io.camunda.secretstore.refresh.ClientRefreshException;
 import io.camunda.secretstore.refresh.RefreshableClient;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -50,8 +52,8 @@ import org.slf4j.LoggerFactory;
 final class TenantSecretRefresh {
 
   static final Duration INITIAL_BACKOFF = Duration.ofSeconds(10);
-  static final Duration MAX_REJECTED_BACKOFF = Duration.ofHours(1);
   static final String STARTUP = "startup";
+  static final Duration MAX_REJECTED_BACKOFF = Duration.ofHours(1);
 
   private static final Logger LOG = LoggerFactory.getLogger(TenantSecretRefresh.class);
 
@@ -236,19 +238,24 @@ final class TenantSecretRefresh {
           changed,
           client.name());
     } catch (final RuntimeException e) {
+      final var outcome =
+          e instanceof final ClientRefreshException refresh ? refresh.outcome() : Outcome.FAILED;
+      final var reason =
+          switch (outcome) {
+            case AUTHENTICATION_FAILED -> Reason.AUTHENTICATION_FAILED;
+            case UNREACHABLE -> Reason.SERVICE_UNREACHABLE;
+            case FAILED -> Reason.REJECTED_BY_CHECK;
+          };
       LOG.warn(
-          "Physical tenant '{}' failed to apply a change of {} to its {} client; keeping the current one",
+          "Physical tenant '{}' failed to apply a change of {} to its {} client ({}); keeping the current one",
           physicalTenantId,
           changed,
           client.name(),
+          describe(reason),
           e);
-      changed.forEach(
-          reference ->
-              failures.add(new Failure(reference, client.name(), Reason.REJECTED_BY_CHECK)));
+      changed.forEach(reference -> failures.add(new Failure(reference, client.name(), reason)));
       final var delay = repeated != null ? nextRejectedDelay(repeated.delay()) : interval;
-      rejected.put(
-          client,
-          new Rejected(wanted, Reason.REJECTED_BY_CHECK, delay, clock.instant().plus(delay)));
+      rejected.put(client, new Rejected(wanted, reason, delay, clock.instant().plus(delay)));
     }
   }
 
@@ -269,6 +276,14 @@ final class TenantSecretRefresh {
       }
     }
     return values;
+  }
+
+  private static String describe(final Reason reason) {
+    return switch (reason) {
+      case AUTHENTICATION_FAILED -> "the service rejected the new credentials";
+      case SERVICE_UNREACHABLE -> "the service couldn't be reached";
+      default -> "the new client failed its check";
+    };
   }
 
   private Map<String, String> values(final RefreshableClient client) {
