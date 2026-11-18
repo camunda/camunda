@@ -210,6 +210,7 @@ zeebe:
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: benchmark-ssd-zonal-v1
   # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
+  # CUSTOMIZATION: privileged with NET_ADMIN, because the load tests and chaos experiments need them.
   containerSecurityContext:
     ## @param securityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: true

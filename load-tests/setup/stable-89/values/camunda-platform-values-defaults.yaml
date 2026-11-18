@@ -178,6 +178,7 @@ orchestration:
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: benchmark-ssd-zonal-v1
   # @extra core.containerSecurityContext defines the security options the container should be run with
+  # CUSTOMIZATION: privileged with NET_ADMIN, because the load tests and chaos experiments need them.
   containerSecurityContext:
     ## @param core.containerSecurityContext.allowPrivilegeEscalation
     allowPrivilegeEscalation: true
@@ -234,11 +235,13 @@ orchestration:
   # Retention for the Camunda Exporter
   history:
     ## @param core.history.rolloverBatchSize defines the maximum number of process instances per batch during archiving.
+    # CUSTOMIZATION: 500, the application default, because the chart default is 100.
     rolloverBatchSize: 500
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: true
       ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      # CUSTOMIZATION: short retention bounds disk usage, otherwise the long running tests cannot keep up.
       minimumAge: 1d
       policyName: "camunda-retention-policy"
   # @param core.env can be used to set extra environment variables in each broker container

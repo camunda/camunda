@@ -17,6 +17,7 @@ optimize:
       content: |
         historyCleanup:
           cronTrigger: '*/30 * * * *'
+          # CUSTOMIZATION: short retention bounds disk usage, otherwise the long running tests cannot keep up.
           ttl: 'P1D'
           processDataCleanup:
             enabled: true
