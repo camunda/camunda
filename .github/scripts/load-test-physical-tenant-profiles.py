@@ -16,15 +16,15 @@ Tenants are the default tenant and pt1..ptN. Roles:
 Pinned tenants are never rescaled. When `total-rate` is set, the quiet tenants are scaled by one
 common factor so that all rates sum to it; it is an error when that cannot be reached.
 
-The cluster capacity is the throughput the daily `max` stress test validates every day, read from
-`load-tests/docs/scripts/optimal.json`. It exists for Elasticsearch only; for any other secondary
-storage the capacity must be given explicitly, as no tested maximum exists there yet.
+The cluster capacity is the throughput at which the cluster saturates. The daily `max` stress test
+(300 PI/s, `load-tests/docs/scripts/optimal.json`) is not that: it is a rate the cluster sustains with
+CPU at about half of its limit. Until a calibration run measures the capacity, an estimate exists for
+Elasticsearch only (see ESTIMATED_CAPACITY); for any other secondary storage it must be given.
 
 Environment (set by the workflow):
   TENANT_COUNT, SATURATING_COUNT, SATURATING_CAPACITY_RATIO, QUIET_MULTIPLIER,
   TENANT_WEIGHTS ("pt2=3,default=2" or empty), TENANT_OVERRIDES ("pt3=4,default=0.1" or empty),
-  TOTAL_RATE (0 disables), STORAGE (secondary storage type), CAPACITY_RATE (empty = the tested
-  maximum), GITHUB_OUTPUT, GITHUB_STEP_SUMMARY.
+  TOTAL_RATE (0 disables), STORAGE (secondary storage type), CAPACITY_RATE (empty = the estimate), GITHUB_OUTPUT, GITHUB_STEP_SUMMARY.
 
 Writes the step outputs `profiles` (the physical_tenant_profiles make variable, one rate per tenant),
 `default-tenant-flags` (Helm flag of the default tenant) and `overload` (true when one tenant alone
@@ -33,16 +33,15 @@ offers at least the cluster capacity), and a Markdown table to the step summary.
 
 from __future__ import annotations
 
-import json
 import math
 import os
-import pathlib
 import sys
 from dataclasses import dataclass
 
-OPTIMAL_JSON = pathlib.Path(__file__).resolve().parents[2] / "load-tests/docs/scripts/optimal.json"
-# Storages for which the daily stress test validates the throughput in optimal.json.
-TESTED_STORAGES = ("elasticsearch",)
+# PI/s per secondary storage at which the max scenario saturates the cluster.
+# TODO: replace with the result of a calibration run. This is an extrapolation: the daily stress test
+# runs 300 PI/s at about 50% of the CPU limit, and the exporters make up the rest of the load.
+ESTIMATED_CAPACITY = {"elasticsearch": 600.0}
 
 
 class InputError(ValueError):
@@ -80,17 +79,16 @@ def parse_map(raw: str, tenants: list[str], what: str) -> dict[str, float]:
     return result
 
 
-def tested_capacity(storage: str, given: str, optimal_json: pathlib.Path = OPTIMAL_JSON) -> float:
-    """The given capacity, or the throughput the daily stress test validates for this storage."""
+def capacity_of(storage: str, given: str) -> float:
+    """The given capacity, or the estimate for this storage."""
     if given.strip():
         return float(given)
-    if storage not in TESTED_STORAGES:
+    if storage not in ESTIMATED_CAPACITY:
         raise InputError(
-            f"cluster-capacity-rate is required for secondary storage '{storage}': "
-            f"no tested maximum exists (only for {', '.join(TESTED_STORAGES)}). Calibrate it first."
+            f"cluster-capacity-rate is required for secondary storage '{storage}': no estimate exists "
+            f"(only for {', '.join(ESTIMATED_CAPACITY)}). Calibrate it first."
         )
-    with open(optimal_json, encoding="utf-8") as file:
-        return float(json.load(file)["metrics"]["throughput-per-second"]["expected"])
+    return ESTIMATED_CAPACITY[storage]
 
 
 def compute(
@@ -192,7 +190,7 @@ def render(tenants: list[Tenant], capacity: float) -> tuple[str, str, bool, str]
 def main() -> int:
     env = os.environ
     try:
-        capacity = tested_capacity(env["STORAGE"], env.get("CAPACITY_RATE", ""))
+        capacity = capacity_of(env["STORAGE"], env.get("CAPACITY_RATE", ""))
         tenants = compute(
             tenant_count=int(env["TENANT_COUNT"]),
             saturating_count=int(env["SATURATING_COUNT"]),
@@ -213,7 +211,7 @@ def main() -> int:
         out.write(f"default-tenant-flags={default_flags}\n")
         out.write(f"overload={str(overload).lower()}\n")
     with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-        source = "given" if env.get("CAPACITY_RATE", "").strip() else "tested maximum of the daily stress test"
+        source = "given" if env.get("CAPACITY_RATE", "").strip() else "estimate, not yet calibrated"
         summary.write(f"## Physical tenants load\n\nCluster capacity: {capacity:g} PI/s ({source}).\n\n{table}\n")
     return 0
 

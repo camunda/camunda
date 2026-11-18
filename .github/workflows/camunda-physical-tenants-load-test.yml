@@ -4,8 +4,7 @@
 #              tenant is a multiplier of its allowance (its weighted share of the cluster
 #              capacity), computed by .github/scripts/load-test-physical-tenant-profiles.py, and
 #              the deployment is delegated to camunda-load-test.yml. Use the same inputs on every
-#              solution to compare results. It runs the max scenario of the daily stress test,
-#              whose capacity is validated every day (load-tests/docs/scripts/optimal.json).
+#              solution to compare results. It runs the max scenario of the daily stress test.
 #              saturating-tenant-count 0 is the reference run
 #              without a noisy neighbour, tenant-count 0 with total-rate the single tenant one.
 # calls: camunda-load-test.yml
@@ -23,7 +22,7 @@ on:
         type: string
         required: true
       cluster-capacity-rate:
-        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses the maximum the daily stress test validates (Elasticsearch only); other storages need a calibrated value'
+        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses an estimate (Elasticsearch only, not yet calibrated); other storages need a calibrated value'
         type: string
         default: ""
         required: false
@@ -142,9 +141,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: |
-            .github/scripts
-            load-tests/docs/scripts/optimal.json
+          sparse-checkout: .github/scripts
 
       - name: Compute profiles
         id: profiles
@@ -187,8 +184,8 @@ jobs:
       orchestration-tag: ${{ inputs.orchestration-tag }}
       reuse-tag: ${{ inputs.reuse-tag }}
       ttl: ${{ inputs.ttl }}
-      # The scenario of the daily stress test, whose throughput is validated every day. More scenarios
-      # (e.g. realistic) need a tested maximum of their own first.
+      # The scenario of the daily stress test, which is validated every day. More scenarios (e.g.
+      # realistic) need a measured capacity of their own first.
       scenario: max
       secondary-storage-type: ${{ inputs.secondary-storage-type }}
       use-pgbouncer: ${{ needs.prepare.outputs.use-pgbouncer == 'true' }}

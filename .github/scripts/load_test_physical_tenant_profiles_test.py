@@ -3,7 +3,6 @@
 import importlib.util
 import pathlib
 import sys
-import tempfile
 import unittest
 
 _spec = importlib.util.spec_from_file_location(
@@ -98,22 +97,15 @@ class RenderTest(unittest.TestCase):
 
 
 class CapacityTest(unittest.TestCase):
-    def setUp(self):
-        self.optimal = pathlib.Path(tempfile.mkdtemp()) / "optimal.json"
-        self.optimal.write_text('{"metrics": {"throughput-per-second": {"expected": 300}}}')
-
-    def test_elasticsearch_uses_the_tested_maximum(self):
-        self.assertEqual(profiles.tested_capacity("elasticsearch", "", self.optimal), 300)
+    def test_elasticsearch_uses_the_estimate(self):
+        self.assertEqual(profiles.capacity_of("elasticsearch", ""), profiles.ESTIMATED_CAPACITY["elasticsearch"])
 
     def test_a_given_capacity_wins(self):
-        self.assertEqual(profiles.tested_capacity("postgresql", "120", self.optimal), 120)
+        self.assertEqual(profiles.capacity_of("postgresql", "120"), 120)
 
-    def test_storage_without_tested_maximum_needs_a_given_capacity(self):
+    def test_storage_without_an_estimate_needs_a_given_capacity(self):
         with self.assertRaisesRegex(profiles.InputError, "required for secondary storage 'postgresql'"):
-            profiles.tested_capacity("postgresql", "", self.optimal)
-
-    def test_checked_in_optimal_json_has_the_tested_maximum(self):
-        self.assertGreater(profiles.tested_capacity("elasticsearch", ""), 0)
+            profiles.capacity_of("postgresql", "")
 
 
 if __name__ == "__main__":
