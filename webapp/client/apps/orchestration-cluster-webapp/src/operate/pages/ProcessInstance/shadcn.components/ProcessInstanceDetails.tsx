@@ -10,8 +10,12 @@ import {useQuery} from '@tanstack/react-query';
 import {Link as RouterLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
-import {Alert, Heading, Link, linkVariants, Skeleton, Text} from '@camunda/design-system';
-import type {ProcessInstance, QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import {Alert, Heading, Link, linkVariants, Skeleton} from '@camunda/design-system';
+import type {
+	ProcessInstance,
+	QueryDecisionInstancesResponseBody,
+	QueryProcessInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getOperateClientConfig} from '#/shared/config/getOperateClientConfig';
@@ -19,6 +23,7 @@ import {mergePathname} from '#/shared/http/mergePathname';
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {isCamundaUserTask, isMessageEventElement} from '#/operate/shared/utils/elements';
@@ -97,6 +102,32 @@ const CalledProcessInstanceValue: React.FC<{
 	return count === 0 ? t('operate.processInstance.details.none') : null;
 };
 
+const CalledDecisionInstanceValue: React.FC<{
+	calledDecisionInstance: QueryDecisionInstancesResponseBody['items'][number] | null | undefined;
+}> = ({calledDecisionInstance}) => {
+	const {t} = useTranslation();
+
+	if (!calledDecisionInstance) {
+		return '-';
+	}
+
+	const label = t('operate.processInstance.details.viewInstance', {
+		name: calledDecisionInstance.decisionDefinitionName,
+		key: calledDecisionInstance.decisionEvaluationInstanceKey,
+	});
+	return (
+		<RouterLink
+			to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
+			params={{decisionInstanceId: calledDecisionInstance.decisionEvaluationInstanceKey}}
+			title={label}
+			aria-label={label}
+			className={linkVariants()}
+		>
+			{`${calledDecisionInstance.decisionDefinitionName} - ${calledDecisionInstance.decisionEvaluationInstanceKey}`}
+		</RouterLink>
+	);
+};
+
 const ElementInstanceSkeleton: React.FC = () => (
 	<div className="flex flex-col gap-3" aria-hidden>
 		{Array.from({length: SKELETON_ROW_COUNT}, (_, index) => (
@@ -115,6 +146,7 @@ const ProcessInstanceDetails: React.FC = () => {
 		selectedElementInstanceCount,
 		anchorElementId,
 		isFetchingElement,
+		isFetchingElementError,
 	} = useProcessInstanceElementSelection();
 	const {data: diagram} = useDiagramXml(processInstance.processDefinitionKey);
 
@@ -174,6 +206,16 @@ const ProcessInstanceDetails: React.FC = () => {
 	}
 
 	const hasMultipleInstances = selectedElementInstanceCount !== null && selectedElementInstanceCount > 1;
+
+	if (isFetchingElementError) {
+		return (
+			<div role="region" aria-label={t('operate.processInstance.details.title')} className="flex h-full min-h-0">
+				<CenteredContent className="flex-1">
+					<ErrorMessage />
+				</CenteredContent>
+			</div>
+		);
+	}
 
 	if (resolvedElementInstance === null && !isFetchingElement) {
 		return (
@@ -266,25 +308,7 @@ const ProcessInstanceDetails: React.FC = () => {
 							{
 								key: 'called-decision-instance',
 								label: t('operate.processInstance.details.calledDecisionInstance'),
-								value: calledDecisionInstance ? (
-									<RouterLink
-										to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
-										params={{decisionInstanceId: calledDecisionInstance.decisionEvaluationInstanceKey}}
-										title={t('operate.processInstance.details.viewInstance', {
-											name: calledDecisionInstance.decisionDefinitionName,
-											key: calledDecisionInstance.decisionEvaluationInstanceKey,
-										})}
-										aria-label={t('operate.processInstance.details.viewInstance', {
-											name: calledDecisionInstance.decisionDefinitionName,
-											key: calledDecisionInstance.decisionEvaluationInstanceKey,
-										})}
-										className={linkVariants()}
-									>
-										{`${calledDecisionInstance.decisionDefinitionName} - ${calledDecisionInstance.decisionEvaluationInstanceKey}`}
-									</RouterLink>
-								) : (
-									'-'
-								),
+								value: <CalledDecisionInstanceValue calledDecisionInstance={calledDecisionInstance} />,
 							},
 						]
 					: []),
@@ -341,13 +365,6 @@ const ProcessInstanceDetails: React.FC = () => {
 		if (isFetchingElement) {
 			return <ElementInstanceSkeleton />;
 		}
-		if (resolvedElementInstance === null) {
-			return (
-				<Text as="p" className="m-0 text-sm text-neutral-foreground-subtle">
-					{getMultipleInstancesMessage(t, hasMultipleInstances, 'operate.processInstance.details.noElementInstance')}
-				</Text>
-			);
-		}
 		return (
 			<StructuredList
 				label={t('operate.processInstance.details.listLabel')}
@@ -367,7 +384,7 @@ const ProcessInstanceDetails: React.FC = () => {
 			aria-label={t('operate.processInstance.details.title')}
 			className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-4 [&>*]:shrink-0"
 		>
-			{resolvedElementType === 'USER_TASK' && !isCamundaUserTask(businessObject) && (
+			{resolvedElementType === 'USER_TASK' && diagram !== undefined && !isCamundaUserTask(businessObject) && (
 				<Alert
 					variant="warning"
 					title={t('operate.processInstance.details.deprecatedUserTask')}
@@ -375,7 +392,7 @@ const ProcessInstanceDetails: React.FC = () => {
 				/>
 			)}
 			<ProcessInstanceWaitingStatus waitStates={waitStates} />
-			<section className="flex flex-col gap-2">
+			<section className="flex flex-col gap-2" aria-busy={isFetchingElement}>
 				<Heading as="h2" variant="heading-sm" className="m-0">
 					{t('operate.processInstance.details.elementInstance')}
 				</Heading>

@@ -19,6 +19,7 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryElementInstancesEndpoint,
+	mockQueryDecisionInstancesEndpoint,
 	mockQueryJobsEndpoint,
 	mockQueryMessageSubscriptionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
@@ -36,6 +37,11 @@ import {
 	createElementInstanceInspection,
 	createQueryElementInstanceInspectionResponse,
 } from '#/shared-test-modules/api-mocks/element-instance-inspection';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
+import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {
@@ -56,6 +62,7 @@ const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:userTask id="camunda-task"><bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements></bpmn:userTask>
     <bpmn:userTask id="worker-task" />
     <bpmn:callActivity id="call-activity" />
+    <bpmn:businessRuleTask id="rule-task" />
     <bpmn:intermediateCatchEvent id="message-event"><bpmn:messageEventDefinition /></bpmn:intermediateCatchEvent>
   </bpmn:process>
 </bpmn:definitions>`;
@@ -188,6 +195,33 @@ describe('<ProcessInstanceDetails /> (design system)', () => {
 		const screen = await renderDetails(selected('call-activity'));
 
 		await expect.element(screen.getByRole('link', {name: 'View Child instance 2251799813685777'})).toBeVisible();
+	});
+
+	it('should link to the decision instance evaluated by a business rule task', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [createDecisionInstance()]})),
+			}),
+			...handlers(instanceOf('rule-task', 'BUSINESS_RULE_TASK')),
+		);
+		const screen = await renderDetails(selected('rule-task'));
+
+		const link = screen.getByRole('link', {name: 'View Invoice Classification instance 123567'});
+		await expect.element(link).toBeVisible();
+		await expect.element(link).toHaveAttribute('href', '/operate-preview/decisions/123567');
+	});
+
+	it('should show an error instead of the empty message when the element instance fails to load', async ({worker}) => {
+		worker.use(
+			mockGetElementInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+			...handlers(),
+		);
+		const screen = await renderDetails(selected('service-task'));
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(screen.getByText('There is no element selected.')).not.toBeInTheDocument();
 	});
 
 	it('should show the user task properties and a Tasklist link for a Camunda user task', async ({worker}) => {

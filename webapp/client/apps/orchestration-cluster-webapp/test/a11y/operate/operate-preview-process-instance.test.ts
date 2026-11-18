@@ -24,6 +24,7 @@ import {
 	mockQueryVariablesEndpoint,
 	mockGetVariableEndpoint,
 	mockGetElementInstanceEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -39,6 +40,7 @@ import {
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createJob, createListenerJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
@@ -280,6 +282,11 @@ test.describe('Details tab', () => {
 			mockQueryJobsEndpoint({
 				successResponse: HttpResponse.json(createQueryJobsResponse([createJob({retries: 2, worker: 'email-worker'})])),
 			}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({items: [createUserTask({assignee: 'demo', candidateGroups: ['sales']})]}),
+				),
+			}),
 		);
 
 		await page.goto(
@@ -287,6 +294,7 @@ test.describe('Details tab', () => {
 		);
 		await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList).toContainText('email-worker');
+		await expect(page.getByRole('link', {name: 'Open Tasklist'})).toBeVisible();
 
 		const results = await makeAxeBuilder().analyze();
 		expect(results.violations).toEqual([]);
