@@ -68,6 +68,11 @@ chaos ?= false
 # by REST-routing/authorization only).
 # Pass directly: make install physical_tenant_count=3 secondary_storage=postgresql
 physical_tenant_count ?= 0
+# Optional per-tenant traffic profiles for pt1..ptN: a space-separated list of
+# <starter-rate>:<worker-replicas> entries, the i-th entry applying to pt<i>. A tenant without an
+# entry keeps the scenario defaults. The default tenant is configured via the usual load test flags.
+# Pass directly: make install physical_tenant_count=3 physical_tenant_profiles="150:6 50:3 5:1"
+physical_tenant_profiles ?=
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -334,14 +339,24 @@ generate-physical-tenant-values:
 # overwrite it instead of adding a new entry — bump this index if that file's list grows.
 .PHONY: install-load-test-physical-tenants
 install-load-test-physical-tenants:
-	@for i in $$(seq 1 $(physical_tenant_count)); do \
+	@profiles="$(physical_tenant_profiles)"; \
+	for i in $$(seq 1 $(physical_tenant_count)); do \
 	  tenant="pt$$i"; \
-	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace)..."; \
+	  profile=$$(echo "$$profiles" | awk -v n="$$i" '{print $$n}'); \
+	  profile_flags=""; \
+	  if [ -n "$$profile" ]; then \
+	    if ! echo "$$profile" | grep -Eq '^[0-9]+:[0-9]+$$'; then \
+	      echo "Error: physical_tenant_profiles entry '$$profile' for $$tenant must look like <rate>:<worker-replicas>" >&2; exit 1; \
+	    fi; \
+	    profile_flags="--set load-tester.starter.rate=$${profile%%:*} --set load-tester.workers.worker.replicas=$${profile##*:}"; \
+	  fi; \
+	  echo "Deploying the $$tenant physical-tenant load tester for namespace $(namespace) (profile: $${profile:-scenario default})..."; \
 	  helm template load-test-setup $(helm_chart_load_test_setup) \
 	      --namespace $(namespace) \
 	      -s charts/load-tester/templates/starter.yaml \
 	      -s charts/load-tester/templates/workers.yaml \
 	      $(load_test_setup_flags) \
+	      $$profile_flags \
 	      --set load-tester.enabled=true \
 	      --set-string 'global.extraEnvVars[4].name=CAMUNDA_CLIENT_PHYSICAL_TENANT_ID' \
 	      --set-string "global.extraEnvVars[4].value=$$tenant" \
