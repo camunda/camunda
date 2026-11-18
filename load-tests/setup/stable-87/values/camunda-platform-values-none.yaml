@@ -13,6 +13,15 @@
 global:
   elasticsearch:
     disableExporter: true
+  identity:
+    auth:
+      # Keep this even with Optimize disabled. The Optimize values file that normally
+      # pins the secret is not scaffolded for storage=none, so the chart would generate
+      # a random value on every render, breaking golden tests and helm upgrades.
+      optimize:
+        clientId: optimize
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-optimize-client-token
 
 identity:
   enabled: true

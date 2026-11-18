@@ -83,7 +83,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: c8-golden-stable-87-none-optimize-optimize-identity-secret
-                  key: optimize-secret
+                  key: identity-optimize-client-token
             - name: KEYCLOAK_INIT_CONNECTORS_SECRET
               valueFrom:
                 secretKeyRef:
