@@ -44,6 +44,8 @@ public final class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
+  private static final String ES8_MEDIA_TYPE =
+      "application/vnd.elasticsearch+json;compatible-with=8";
   private static final int DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS = 180_000;
   private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5_000;
   private static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30_000;
@@ -51,6 +53,7 @@ public final class ElasticsearchConnector {
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
   private final PluginRepository pluginRepository;
+  private final boolean compatibleWithElasticsearch8;
 
   public ElasticsearchConnector(final ConnectConfiguration configuration) {
     this(
@@ -63,9 +66,31 @@ public final class ElasticsearchConnector {
       final ConnectConfiguration configuration,
       final ObjectMapper objectMapper,
       final PluginRepository pluginRepository) {
+    this(configuration, objectMapper, pluginRepository, false);
+  }
+
+  private ElasticsearchConnector(
+      final ConnectConfiguration configuration,
+      final ObjectMapper objectMapper,
+      final PluginRepository pluginRepository,
+      final boolean compatibleWithElasticsearch8) {
     this.configuration = configuration;
     this.objectMapper = objectMapper;
     this.pluginRepository = pluginRepository;
+    this.compatibleWithElasticsearch8 = compatibleWithElasticsearch8;
+  }
+
+  /**
+   * Creates a connector for an Elasticsearch 8 server. The client of this version sends {@code
+   * compatible-with=9} in its media types, which an Elasticsearch 8 server rejects, so every
+   * request asks for the version 8 REST API instead.
+   */
+  public static ElasticsearchConnector forElasticsearch8(final ConnectConfiguration configuration) {
+    return new ElasticsearchConnector(
+        configuration,
+        new JacksonConfiguration(configuration).createObjectMapper(),
+        new PluginRepository(),
+        true);
   }
 
   public ElasticsearchClient createClient() {
@@ -134,9 +159,24 @@ public final class ElasticsearchConnector {
                 configureConnectionManager(connectionManagerBuilder, configuration))
         .setHttpClientConfigCallback(
             httpClientBuilder ->
-                configureHttpClient(
-                    httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
+                configureHttpClient(httpClientBuilder, configuration, requestInterceptors()))
         .build();
+  }
+
+  private HttpRequestInterceptor[] requestInterceptors() {
+    final var pluginInterceptor = pluginRepository.asRequestInterceptor();
+    if (!compatibleWithElasticsearch8) {
+      return new HttpRequestInterceptor[] {pluginInterceptor};
+    }
+    // The client puts its own version into these headers, so they are overwritten right before
+    // the request is sent.
+    return new HttpRequestInterceptor[] {
+      pluginInterceptor,
+      (request, entity, context) -> {
+        request.setHeader("Accept", ES8_MEDIA_TYPE);
+        request.setHeader("Content-Type", ES8_MEDIA_TYPE);
+      }
+    };
   }
 
   @VisibleForTesting
