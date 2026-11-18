@@ -27,7 +27,8 @@ class RateLimitedInputStreamTest {
 
   private final FakeClock clock = new FakeClock();
   private final BackupReadRateLimiter limiter =
-      new BackupReadRateLimiter(BYTES_PER_SECOND, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+      new BackupReadRateLimiter(
+          BYTES_PER_SECOND, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
 
   @AfterEach
   void clearInterruptFlag() {
@@ -156,7 +157,8 @@ class RateLimitedInputStreamTest {
             BYTES_PER_SECOND,
             UNBOUNDED_STREAMS,
             clock::nanos,
-            nanos -> waitedWhileWaiting.set(stream.get().waited()));
+            nanos -> waitedWhileWaiting.set(stream.get().waited()),
+            clock::schedule);
     stream.set(observingLimiter.wrap(new ByteArrayInputStream(new byte[200])));
     stream.get().read(new byte[100]);
 
@@ -177,7 +179,8 @@ class RateLimitedInputStreamTest {
             clock::nanos,
             nanos -> {
               throw new InterruptedException("interrupted while waiting");
-            });
+            },
+            clock::schedule);
     final var stream = interruptingLimiter.wrap(new ByteArrayInputStream(new byte[10]));
     stream.read(new byte[5]);
 

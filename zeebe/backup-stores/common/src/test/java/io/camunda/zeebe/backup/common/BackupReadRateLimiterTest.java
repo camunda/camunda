@@ -59,7 +59,8 @@ class BackupReadRateLimiterTest {
   void shouldWaitProportionallyToTheBytesRead() throws InterruptedException {
     // given
     final var limiter =
-        new BackupReadRateLimiter(10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+        new BackupReadRateLimiter(
+            10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
 
     // when - 30 MiB in chunks of 1 MiB; each chunk is paid for by the next read
     for (int i = 0; i < 30; i++) {
@@ -74,7 +75,8 @@ class BackupReadRateLimiterTest {
   void shouldNotAccumulateCreditWhileIdle() throws InterruptedException {
     // given
     final var limiter =
-        new BackupReadRateLimiter(10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+        new BackupReadRateLimiter(
+            10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
     acquire(limiter, MIB);
 
     // when - idle for a minute, then read a burst
@@ -91,7 +93,8 @@ class BackupReadRateLimiterTest {
   void shouldWaitForASingleReadLargerThanOneSecondOfBudget() throws InterruptedException {
     // given
     final var limiter =
-        new BackupReadRateLimiter(MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+        new BackupReadRateLimiter(
+            MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
 
     // when
     acquire(limiter, 5 * MIB);
@@ -105,7 +108,8 @@ class BackupReadRateLimiterTest {
   void shouldShareTheBudgetBetweenAllCallers() throws Exception {
     // given - two files are read concurrently through the same limiter
     final var limiter =
-        new BackupReadRateLimiter(10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+        new BackupReadRateLimiter(
+            10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
     final var first = limiter.wrap(new ZeroInputStream(10 * MIB));
     final var second = limiter.wrap(new ZeroInputStream(10 * MIB));
     final var buffer = new byte[(int) MIB];
@@ -123,9 +127,11 @@ class BackupReadRateLimiterTest {
   void shouldNotShareTheBudgetBetweenLimiters() throws InterruptedException {
     // given - two limiters of the same rate, as two brokers in one JVM would create them
     final var first =
-        new BackupReadRateLimiter(10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+        new BackupReadRateLimiter(
+            10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
     final var second =
-        new BackupReadRateLimiter(10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
+        new BackupReadRateLimiter(
+            10 * MIB, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule);
     acquire(first, 10 * MIB);
 
     // when
@@ -156,7 +162,9 @@ class BackupReadRateLimiterTest {
   void shouldRejectZeroRate() {
     // when - then
     assertThatThrownBy(
-            () -> new BackupReadRateLimiter(0, UNBOUNDED_STREAMS, clock::nanos, clock::sleep))
+            () ->
+                new BackupReadRateLimiter(
+                    0, UNBOUNDED_STREAMS, clock::nanos, clock::sleep, clock::schedule))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("positive");
   }
@@ -189,7 +197,8 @@ class BackupReadRateLimiterTest {
   @Test
   void shouldWaitToOpenAStreamUntilAnotherOneIsClosed() throws Exception {
     // given
-    final var limiter = new BackupReadRateLimiter(MIB, 2, clock::nanos, clock::sleep);
+    final var limiter =
+        new BackupReadRateLimiter(MIB, 2, clock::nanos, clock::sleep, clock::schedule);
     final var first = limiter.wrap(new ByteArrayInputStream(new byte[1]));
     limiter.wrap(new ByteArrayInputStream(new byte[1]));
 
@@ -206,7 +215,8 @@ class BackupReadRateLimiterTest {
   @Test
   void shouldLetOnlyOneStreamOpenWhenAStreamIsClosedTwice() throws Exception {
     // given
-    final var limiter = new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep);
+    final var limiter =
+        new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep, clock::schedule);
     final var first = limiter.wrap(new ByteArrayInputStream(new byte[1]));
     first.close();
     first.close();
@@ -224,9 +234,62 @@ class BackupReadRateLimiterTest {
   }
 
   @Test
+  void shouldKeepTheSlotOfAClosedStreamUntilItsLastReadIsPaid() throws Exception {
+    // given - a single slot, held by a stream that closes right after a read of 62.5 ms of budget
+    final var limiter =
+        new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep, clock::schedule);
+    final var first = limiter.wrap(new ZeroInputStream(MIB));
+    assertThat(first.read(new byte[MAX_BYTES_PER_READ])).isEqualTo(MAX_BYTES_PER_READ);
+    first.close();
+
+    // when
+    final var second = CompletableFuture.supplyAsync(() -> wrapUnchecked(limiter));
+
+    // then - a stream opened now would wait for that read on top of the reads of all open streams
+    assertThatThrownBy(() -> second.get(100, TimeUnit.MILLISECONDS))
+        .isInstanceOf(TimeoutException.class);
+    clock.advance(Duration.ofNanos(62_500_000));
+    assertThat(second).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldKeepTheSlotOfAStreamInterruptedWhileWaitingUntilItsReadIsPaid() throws Exception {
+    // given - a stream that is interrupted while it waits for the 62.5 ms read of another stream
+    final var limiter =
+        new BackupReadRateLimiter(
+            MIB,
+            2,
+            clock::nanos,
+            nanos -> {
+              throw new InterruptedException("interrupted while waiting");
+            },
+            clock::schedule);
+    final var other = limiter.wrap(new ZeroInputStream(MIB));
+    assertThat(other.read(new byte[MAX_BYTES_PER_READ])).isEqualTo(MAX_BYTES_PER_READ);
+    final var interrupted = limiter.wrap(new ZeroInputStream(MIB));
+    assertThatThrownBy(() -> interrupted.read(new byte[MAX_BYTES_PER_READ]))
+        .isInstanceOf(InterruptedIOException.class);
+    assertThat(Thread.interrupted()).isTrue();
+    interrupted.close();
+
+    // when
+    final var next = CompletableFuture.supplyAsync(() -> wrapUnchecked(limiter));
+
+    // then - its read was never done, but it holds the budget until 125 ms all the same
+    assertThatThrownBy(() -> next.get(100, TimeUnit.MILLISECONDS))
+        .isInstanceOf(TimeoutException.class);
+    clock.advance(Duration.ofNanos(62_500_000));
+    assertThatThrownBy(() -> next.get(100, TimeUnit.MILLISECONDS))
+        .isInstanceOf(TimeoutException.class);
+    clock.advance(Duration.ofNanos(62_500_000));
+    assertThat(next).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  @Test
   void shouldCloseTheGivenStreamWhenInterruptedWhileWaitingToOpen() throws Exception {
     // given
-    final var limiter = new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep);
+    final var limiter =
+        new BackupReadRateLimiter(MIB, 1, clock::nanos, clock::sleep, clock::schedule);
     limiter.wrap(new ByteArrayInputStream(new byte[1]));
     final var closed = new AtomicBoolean();
     final InputStream waiting =
