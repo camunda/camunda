@@ -57,8 +57,8 @@ const DiagramHeader: React.FC<Props> = ({processDefinitionSelection}) => {
 			<HeaderColumn title={t('operate.processes.diagramHeader.processId')} className="shrink">
 				<CopiableContent
 					className="-ml-3 min-w-0 shrink [&>button]:h-5! [&>button]:min-w-0 [&_code]:min-w-0 [&_code]:truncate"
-					copyButtonDescription={t('operate.processes.diagramHeader.copyButtonDescription')}
-					title={t('operate.processes.diagramHeader.copyButtonTitle', {id: definition.processDefinitionId})}
+					copyButtonDescription={t('operate.processes.ds.diagramHeader.copyButtonDescription')}
+					title={t('operate.processes.ds.diagramHeader.copyButtonTitle', {id: definition.processDefinitionId})}
 					content={definition.processDefinitionId}
 				/>
 			</HeaderColumn>

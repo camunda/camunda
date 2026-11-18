@@ -44,7 +44,7 @@ const OperationRenderer: React.FC<Props> = ({operation, processInstanceKey}) => 
 				<OperationItem
 					type="ENTER_MODIFICATION_MODE"
 					onClick={operation.onExecute}
-					title={operation.label || t('operate.shared.operations.modifyTitle', {processInstanceKey})}
+					title={operation.label || t('operate.shared.ds.operations.modifyTitle', {processInstanceKey})}
 					disabled={operation.disabled}
 					size="sm"
 				/>

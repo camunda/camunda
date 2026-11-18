@@ -91,9 +91,9 @@ describe('<Processes /> (design system)', () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
 		await expect.element(screen.getByRole('heading', {name: 'Processes'})).toBeInTheDocument();
-		await expect.element(screen.getByRole('region', {name: 'Diagram Panel'})).toBeVisible();
-		await expect.element(screen.getByText('There is no Process selected')).toBeVisible();
-		await expect.element(screen.getByRole('region', {name: 'Process Instances Panel'})).toBeVisible();
+		await expect.element(screen.getByRole('region', {name: 'Diagram panel'})).toBeVisible();
+		await expect.element(screen.getByText('There is no process selected')).toBeVisible();
+		await expect.element(screen.getByRole('region', {name: 'Process instances panel'})).toBeVisible();
 	});
 
 	it('should write the selected process to the URL', async () => {
@@ -111,14 +111,14 @@ describe('<Processes /> (design system)', () => {
 			initialEntry: `${PATH}?active=true&incidents=true&suspended=true`,
 		});
 
-		await expect.element(screen.getByRole('checkbox', {name: 'Running Instances'})).toBeChecked();
-		await expect.element(screen.getByRole('checkbox', {name: 'Finished Instances'})).not.toBeChecked();
+		await expect.element(screen.getByRole('checkbox', {name: 'Running instances'})).toBeChecked();
+		await expect.element(screen.getByRole('checkbox', {name: 'Finished instances'})).not.toBeChecked();
 	});
 
-	it('should check both finished states when Finished Instances is checked', async () => {
+	it('should check both finished states when Finished instances is checked', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
-		await userEvent.click(screen.getByRole('checkbox', {name: 'Finished Instances'}));
+		await userEvent.click(screen.getByRole('checkbox', {name: 'Finished instances'}));
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({completed: true, canceled: true});
 	});
@@ -127,8 +127,8 @@ describe('<Processes /> (design system)', () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Error Message'}));
-		await userEvent.fill(screen.getByLabelText('Error Message'), 'timeout');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Error message'}));
+		await userEvent.fill(screen.getByLabelText('Error message'), 'timeout');
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({errorMessage: 'timeout'});
 	});
@@ -244,33 +244,33 @@ describe('<Processes /> (design system)', () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Start Date Range'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Start date range'}));
 
-		await expect.element(screen.getByRole('group', {name: 'Start Date Range'})).toHaveFocus();
+		await expect.element(screen.getByRole('group', {name: 'Start date range'})).toHaveFocus();
 	});
 
 	it('should keep an unrelated invalid draft when an active optional filter is removed', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: `${PATH}?errorMessage=timeout`});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key(s)'}));
-		await userEvent.fill(screen.getByLabelText('Process Instance Key(s)'), 'abc');
-		await userEvent.click(screen.getByRole('button', {name: 'Remove Error Message Filter'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key(s)'}));
+		await userEvent.fill(screen.getByLabelText('Process instance key(s)'), 'abc');
+		await userEvent.click(screen.getByRole('button', {name: 'Remove filter: Error message'}));
 
 		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('errorMessage');
-		await expect.element(screen.getByLabelText('Process Instance Key(s)')).toHaveValue('abc');
+		await expect.element(screen.getByLabelText('Process instance key(s)')).toHaveValue('abc');
 	});
 
 	it('should discard an invalid draft when the filters are reset', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: `${PATH}?errorMessage=timeout`});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key(s)'}));
-		await userEvent.fill(screen.getByLabelText('Process Instance Key(s)'), 'abc');
-		await userEvent.click(screen.getByRole('button', {name: 'Remove Error Message Filter'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process instance key(s)'}));
+		await userEvent.fill(screen.getByLabelText('Process instance key(s)'), 'abc');
+		await userEvent.click(screen.getByRole('button', {name: 'Remove filter: Error message'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 
-		await expect.element(screen.getByLabelText('Process Instance Key(s)')).not.toBeInTheDocument();
+		await expect.element(screen.getByLabelText('Process instance key(s)')).not.toBeInTheDocument();
 	});
 
 	it('should move focus to the variables group when it is added from the menu', async () => {
