@@ -31,13 +31,16 @@ public final class SecretReferenceRecord extends UnifiedRecordValue
       new EnumProperty<>("resolutionState", ResolutionState.class, ResolutionState.UNSPECIFIED);
   private final ArrayProperty<LongValue> jobKeysProp =
       new ArrayProperty<>("jobKeys", LongValue::new);
+  private final ArrayProperty<LongValue> probeKeysProp =
+      new ArrayProperty<>("probeKeys", LongValue::new);
 
   public SecretReferenceRecord() {
-    super(4);
+    super(5);
     declareProperty(storeIdProp)
         .declareProperty(secretReferenceProp)
         .declareProperty(resolutionStateProp)
-        .declareProperty(jobKeysProp);
+        .declareProperty(jobKeysProp)
+        .declareProperty(probeKeysProp);
   }
 
   @Override
@@ -79,6 +82,18 @@ public final class SecretReferenceRecord extends UnifiedRecordValue
 
   public SecretReferenceRecord addJobKey(final long jobKey) {
     jobKeysProp.add().setValue(jobKey);
+    return this;
+  }
+
+  @Override
+  public List<Long> getProbeKeys() {
+    return StreamSupport.stream(probeKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  public SecretReferenceRecord addProbeKey(final long probeKey) {
+    probeKeysProp.add().setValue(probeKey);
     return this;
   }
 }

@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.probe;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
@@ -30,6 +32,7 @@ public final class ProbeBehavior {
   private final ProbeNotifier probeNotifier;
   private final AsyncRequestState asyncRequestState;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final SideEffectWriter sideEffectWriter;
 
@@ -40,6 +43,7 @@ public final class ProbeBehavior {
     this.probeNotifier = probeNotifier;
     this.asyncRequestState = asyncRequestState;
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
   }
@@ -70,6 +74,30 @@ public final class ProbeBehavior {
   private void writeTimedOut(final long probeKey, final ProbeRecord timedOut) {
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.TIMED_OUT, timedOut);
     respondToClient(probeKey, ProbeIntent.TIMED_OUT, timedOut);
+  }
+
+  /**
+   * Ends the probe with {@code CANCELED} because its secrets cannot be injected, and appends the
+   * internal {@code RESPOND} that answers the client waiting for it: a command carries one
+   * response, and the processors that cancel probes answer their own requester or cancel several
+   * (D74). The message names the secret, never its value.
+   *
+   * @return {@code false}, with nothing written, if the batch has no room left for it
+   */
+  public boolean tryCancelForSecretResolutionError(
+      final long probeKey, final ProbeRecord probe, final String message) {
+    final var canceled =
+        withoutInput(probe)
+            .setEndReason(ProbeEndReason.SECRET_RESOLUTION_ERROR)
+            .setMessage(message);
+    // the event and the RESPOND command carry the same value
+    if (!stateWriter.canWriteEventOfLength(
+        2 * canceled.getLength() + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER)) {
+      return false;
+    }
+    stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.CANCELED, canceled);
+    commandWriter.appendFollowUpCommand(probeKey, ProbeIntent.RESPOND, canceled);
+    return true;
   }
 
   /**
