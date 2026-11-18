@@ -306,7 +306,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
           Duration.between(waitStarted, Instant.now()).truncatedTo(ChronoUnit.SECONDS);
       final var message =
           "Still waiting for the coordinator to provide the initial cluster configuration via"
-              + " gossip after {}. Check that the coordinator (broker 0) is up and healthy.";
+              + " gossip after {}. Check that the coordinator is up and healthy.";
       if (waitLogCount >= ERROR_LOG_THRESHOLD) {
         LOGGER.error(message, waited);
       } else {
