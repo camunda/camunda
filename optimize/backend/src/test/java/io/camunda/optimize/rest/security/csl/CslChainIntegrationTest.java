@@ -98,10 +98,15 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class CslChainIntegrationTest {
 
   private static final Map<String, Session> SESSION_STORE = new ConcurrentHashMap<>();
-  // the default 'api.audience' of Self-Managed, and the cloud API audience set in
-  // cloudConfiguration()
-  private static final String CCSM_PUBLIC_API_AUDIENCE = "optimize";
-  private static final String CCSAAS_PUBLIC_API_AUDIENCE = "optimize-public-api";
+  // The client id claims deployments configure, so the public API sees the classification it gets
+  // in production: the claim the 8.10 upgrade notes tell a Self-Managed (Keycloak) operator to set,
+  // and the claim the SaaS operator sets.
+  private static final String CCSM_CLIENT_ID_CLAIM = "client_id";
+  private static final String CCSAAS_CLIENT_ID_CLAIM = "https://camunda.com/clientId";
+  // The audiences public API clients' tokens carry: the Helm chart's Optimize audience, and the
+  // SaaS one. Neither is configured on the filter, which must not depend on it.
+  private static final String CCSM_TOKEN_AUDIENCE = "optimize-api";
+  private static final String CCSAAS_TOKEN_AUDIENCE = "optimize.example.com";
   private static final MapSessionRepository SESSION_REPO = new MapSessionRepository(SESSION_STORE);
   private static JwksTestServer server;
 
@@ -173,15 +178,18 @@ class CslChainIntegrationTest {
   }
 
   @Test
-  void shouldRejectBearerTokenWithoutPublicApiAudienceForCcsm() throws Exception {
-    assertBearerRejectedOnPublicApi(
-        ccsmRunner(), signBearerToken(), "bearer token without the public API audience");
+  void shouldAuthenticateClientTokenOnPublicApiForCcsm() throws Exception {
+    // the Helm chart's audience is not the 'api.audience' default: the public API recognizes the
+    // client by its client id claim, whatever audience the chain accepted
+    assertBearerAuthenticatesOnPublicApi(
+        ccsmRunner(), clientToken(CCSM_CLIENT_ID_CLAIM, CCSM_TOKEN_AUDIENCE, null));
   }
 
   @Test
-  void shouldAuthenticateBearerTokenWithPublicApiAudienceForCcsm() throws Exception {
-    assertBearerAuthenticatesOnPublicApi(
-        ccsmRunner(), signBearerToken(CCSM_PUBLIC_API_AUDIENCE, null));
+  void shouldRejectUserTokenOnPublicApiForCcsm() throws Exception {
+    // a user's token with the very audience the former audience check accepted
+    assertBearerRejectedOnPublicApi(
+        ccsmRunner(), userToken("optimize", null), "a user's bearer token");
   }
 
   // The two tests below pin that OptimizePublicApiAccessFilter is what rejects these requests:
@@ -194,9 +202,9 @@ class CslChainIntegrationTest {
   }
 
   @Test
-  void shouldReachPublicApiPathWithoutPublicApiAudienceWhenFilterAbsentForCcsm() throws Exception {
+  void shouldReachPublicApiPathWithUserTokenWhenFilterAbsentForCcsm() throws Exception {
     assertBearerAuthenticatesOnPublicApi(
-        ccsmRunnerWithoutPublicApiFilter(baseRunner()), signBearerToken());
+        ccsmRunnerWithoutPublicApiFilter(baseRunner()), userToken("optimize", null));
   }
 
   @Test
@@ -274,29 +282,31 @@ class CslChainIntegrationTest {
   }
 
   @Test
-  void shouldRejectBearerTokenWithoutPublicApiAudienceForCcsaas() throws Exception {
-    assertBearerRejectedOnPublicApi(
-        ccsaasRunner(), signBearerToken(), "bearer token without the public API audience");
+  void shouldAuthenticateClientTokenOnPublicApiForCcsaas() throws Exception {
+    // camunda/camunda#69726: an API client's token as SaaS issues it, on an Optimize that the
+    // operator configures without a public API audience
+    assertBearerAuthenticatesOnPublicApi(
+        ccsaasRunner(), clientToken(CCSAAS_CLIENT_ID_CLAIM, CCSAAS_TOKEN_AUDIENCE, "cluster-1"));
   }
 
   @Test
-  void shouldRejectBearerTokenWithoutClusterIdOnPublicApiForCcsaas() throws Exception {
+  void shouldRejectUserTokenOnPublicApiForCcsaas() throws Exception {
+    // a user's token that carries this cluster's id, so only the client check can reject it
+    assertBearerRejectedOnPublicApi(
+        ccsaasRunner(), userToken(CCSAAS_TOKEN_AUDIENCE, "cluster-1"), "a user's bearer token");
+  }
+
+  @Test
+  void shouldRejectClientTokenWithoutClusterIdOnPublicApiForCcsaas() throws Exception {
     // the shared chain accepts a token without the cluster id claim; the public API does not
     assertBearerRejectedOnPublicApi(
         ccsaasRunner(),
-        signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, null),
-        "public API token without the cluster id claim");
+        clientToken(CCSAAS_CLIENT_ID_CLAIM, CCSAAS_TOKEN_AUDIENCE, null),
+        "client token without the cluster id claim");
   }
 
-  @Test
-  void shouldAuthenticateBearerTokenWithPublicApiAudienceForCcsaas() throws Exception {
-    assertBearerAuthenticatesOnPublicApi(
-        ccsaasRunner(), signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, "cluster-1"));
-  }
-
-  // As for CCSM, these pin OptimizePublicApiAccessFilter as the sole cause of the rejections above
-  // —
-  // including the SaaS-only cluster-id check, which the shared chain's lenient validator does not
+  // As for CCSM, these pin OptimizePublicApiAccessFilter as the sole cause of the rejections above,
+  // including the SaaS-only cluster id check, which the shared chain's lenient validator does not
   // enforce.
 
   @Test
@@ -305,17 +315,16 @@ class CslChainIntegrationTest {
   }
 
   @Test
-  void shouldReachPublicApiPathWithoutPublicApiAudienceWhenFilterAbsentForCcsaas()
-      throws Exception {
-    assertBearerAuthenticatesOnPublicApi(ccsaasRunnerWithoutPublicApiFilter(), signBearerToken());
+  void shouldReachPublicApiPathWithUserTokenWhenFilterAbsentForCcsaas() throws Exception {
+    assertBearerAuthenticatesOnPublicApi(
+        ccsaasRunnerWithoutPublicApiFilter(), userToken(CCSAAS_TOKEN_AUDIENCE, "cluster-1"));
   }
 
   @Test
   void shouldReachPublicApiPathWithoutClusterIdWhenFilterAbsentForCcsaas() throws Exception {
-    // the token carries the public API audience but no cluster id claim; the shared chain's cluster
-    // validator is lenient on absence, so only the filter would reject it
     assertBearerAuthenticatesOnPublicApi(
-        ccsaasRunnerWithoutPublicApiFilter(), signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, null));
+        ccsaasRunnerWithoutPublicApiFilter(),
+        clientToken(CCSAAS_CLIENT_ID_CLAIM, CCSAAS_TOKEN_AUDIENCE, null));
   }
 
   @Test
@@ -688,19 +697,22 @@ class CslChainIntegrationTest {
         });
   }
 
-  /** A token without the public API audience, such as a user's login token. */
+  /**
+   * A bearer token that the public API must reject, such as a user's. Bound to the request context,
+   * as a deployment always is, so CSL can classify the token rather than fail and deny it for the
+   * wrong reason.
+   */
   private void assertBearerRejectedOnPublicApi(
       final WebApplicationContextRunner runner, final String token, final String description) {
     runner.run(
         ctx -> {
-          final Filter proxy = resolveSecurityFilter(ctx);
           final MockHttpServletRequest request =
               new MockHttpServletRequest("GET", "/api/public/collection");
           request.addHeader("Authorization", "Bearer " + token);
           final MockHttpServletResponse response = new MockHttpServletResponse();
           final MockFilterChain downstream = new MockFilterChain();
 
-          proxy.doFilter(request, response, downstream);
+          doFilterWithRequestContext(ctx, request, response, downstream);
 
           assertThat(response.getStatus())
               .as("%s, body: %s", description, response.getContentAsString())
@@ -734,24 +746,24 @@ class CslChainIntegrationTest {
         });
   }
 
-  /** The control for the rejections above: a public API client still gets through. */
+  /**
+   * The control for the rejections above: the bearer token reaches the public API. Bound to the
+   * request context, as {@link #assertBearerRejectedOnPublicApi} is.
+   */
   private void assertBearerAuthenticatesOnPublicApi(
       final WebApplicationContextRunner runner, final String token) {
     runner.run(
         ctx -> {
-          final Filter proxy = resolveSecurityFilter(ctx);
           final MockHttpServletRequest request =
               new MockHttpServletRequest("GET", "/api/public/collection");
           request.addHeader("Authorization", "Bearer " + token);
           final MockHttpServletResponse response = new MockHttpServletResponse();
           final MockFilterChain downstream = new MockFilterChain();
 
-          proxy.doFilter(request, response, downstream);
+          doFilterWithRequestContext(ctx, request, response, downstream);
 
           assertThat(response.getStatus())
-              .as(
-                  "bearer token with the public API audience, body: %s",
-                  response.getContentAsString())
+              .as("bearer token on the public API, body: %s", response.getContentAsString())
               .isEqualTo(200);
           assertThat(downstream.getRequest()).isNotNull();
         });
@@ -1097,7 +1109,9 @@ class CslChainIntegrationTest {
    */
   private WebApplicationContextRunner ccsmRunnerWithoutPublicApiFilter(
       final WebApplicationContextRunner base) {
-    return base.withPropertyValues("spring.profiles.active=ccsm")
+    return base.withPropertyValues(
+            "spring.profiles.active=ccsm",
+            "camunda.security.authentication.oidc.client-id-claim=" + CCSM_CLIENT_ID_CLAIM)
         .withBean(
             ConfigurationService.class, ConfigurationServiceBuilder::createDefaultConfiguration)
         .withBean(
@@ -1118,7 +1132,11 @@ class CslChainIntegrationTest {
   /** The CCSaaS counterpart of {@link #ccsmRunnerWithoutPublicApiFilter}. */
   private WebApplicationContextRunner ccsaasRunnerWithoutPublicApiFilter() {
     return baseRunner()
-        .withPropertyValues("spring.profiles.active=cloud")
+        .withPropertyValues(
+            "spring.profiles.active=cloud",
+            // the principal claims the SaaS operator sets on Optimize
+            "camunda.security.authentication.oidc.username-claim=sub",
+            "camunda.security.authentication.oidc.client-id-claim=" + CCSAAS_CLIENT_ID_CLAIM)
         .withBean(ConfigurationService.class, CslChainIntegrationTest::cloudConfiguration)
         .withBean(
             CustomPreAuthenticatedAuthenticationProvider.class,
@@ -1143,7 +1161,8 @@ class CslChainIntegrationTest {
     // access control must not silently fail open), so both must be set for the chain to build.
     cloudAuthConfiguration.setOrganizationId("org-1");
     cloudAuthConfiguration.setClusterId("cluster-1");
-    cloudAuthConfiguration.setAudience(CCSAAS_PUBLIC_API_AUDIENCE);
+    // No cloud audience: the SaaS operator strips CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE from Optimize
+    // images that run CSL (camunda/camunda#69726).
     return configurationService;
   }
 
@@ -1260,26 +1279,47 @@ class CslChainIntegrationTest {
     }
   }
 
+  /** A user's bearer token without an audience or a cluster id. */
   private static String signBearerToken() throws Exception {
-    return signBearerToken(null, null);
+    return userToken(null, null);
   }
 
   /**
-   * A signed bearer token with the given audience and SaaS cluster id claim, each left out when it
-   * is null.
+   * An API client's bearer token, recognized as a client by the given client id claim, as the SaaS
+   * operator or a Self-Managed operator configures it. The SaaS cluster id claim is left out when
+   * it is null.
    */
-  private static String signBearerToken(final String audience, final String clusterId)
+  private static String clientToken(
+      final String clientIdClaim, final String audience, final String clusterId) throws Exception {
+    return signBearerToken(
+        "client-1@clients", audience, Map.of(clientIdClaim, "client-1"), clusterId);
+  }
+
+  /**
+   * A user's bearer token: it carries no client id claim. The audience and the SaaS cluster id
+   * claim are left out when they are null.
+   */
+  private static String userToken(final String audience, final String clusterId) throws Exception {
+    return signBearerToken("alice", audience, Map.of(), clusterId);
+  }
+
+  private static String signBearerToken(
+      final String subject,
+      final String audience,
+      final Map<String, Object> extraClaims,
+      final String clusterId)
       throws Exception {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
-    final var claims =
+    final var builder =
         new JWTClaimsSet.Builder()
-            .subject("alice")
+            .subject(subject)
             .issuer(server.issuerUri())
             .audience(audience)
             .issueTime(Date.from(Instant.now()))
             .expirationTime(Date.from(Instant.now().plusSeconds(60)))
-            .claim(OptimizeCloudClusterValidator.CLUSTER_CLAIM, clusterId)
-            .build();
+            .claim(OptimizeCloudClusterValidator.CLUSTER_CLAIM, clusterId);
+    extraClaims.forEach(builder::claim);
+    final var claims = builder.build();
     final var jwt = new SignedJWT(header, claims);
     jwt.sign(server.signer());
     return jwt.serialize();
