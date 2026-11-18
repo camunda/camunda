@@ -38,8 +38,8 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
       "Expected to create user with username '%s', but a user with this username already exists";
   public static final String ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to create admin user, but role with id '%s' does not exist";
-  public static final String ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE =
-      "Expected to create admin user, but role with id '%s' already has one or more user assigned to it";
+  public static final String ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE =
+      "Expected to create admin user, but role with id '%s' already has one or more members assigned to it";
 
   private final KeyGenerator keyGenerator;
   private final UserState userState;
@@ -76,7 +76,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
         .flatMap(ignored -> checkRoleUpdateAuthorization(command))
         .flatMap(ignored -> checkUserDoesNotExist(record.getUsername()))
         .flatMap(ignored -> checkAdminRoleExists(adminRoleId))
-        .flatMap(ignored -> checkAdminRoleHasNoUsers(adminRoleId))
+        .flatMap(ignored -> checkAdminRoleHasNoMembers(adminRoleId))
         .ifRightOrLeft(
             ignored -> {
               final var key = keyGenerator.nextKey();
@@ -138,22 +138,18 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
             });
   }
 
-  private Either<String, Void> checkAdminRoleHasNoUsers(final String adminRoleId) {
-    final AtomicBoolean hasUsers = new AtomicBoolean(false);
+  private Either<String, Void> checkAdminRoleHasNoMembers(final String adminRoleId) {
+    final AtomicBoolean hasMembers = new AtomicBoolean(false);
     membershipState.forEachMember(
         RelationType.ROLE,
         adminRoleId,
         (entityType, entityId) -> {
-          if (entityType != EntityType.USER) {
-            return true; // Continue iteration for non-user entities
-          }
-
-          hasUsers.set(true);
-          return false; // Stop iteration if any member is found
+          hasMembers.set(true);
+          return false; // Stop iteration, any member of any type is enough
         });
 
-    if (hasUsers.get()) {
-      final var message = ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId);
+    if (hasMembers.get()) {
+      final var message = ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE.formatted(adminRoleId);
       return Either.left(message);
     } else {
       return Either.right(null);

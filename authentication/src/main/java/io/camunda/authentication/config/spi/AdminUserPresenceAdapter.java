@@ -9,21 +9,21 @@ package io.camunda.authentication.config.spi;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Host-supplied {@link AdminUserPresencePort}. Mirrors the presence check formerly performed by the
- * host {@code AdminUserCheckFilter}: an admin user is considered provisioned when either the
- * configured admin role carries a non-empty user-members list in the initialization config, or the
- * admin role has at least one user member in the live store.
+ * host {@code AdminUserCheckFilter}: an admin is considered provisioned when either the configured
+ * admin role carries a non-empty member list of any type (users, groups, clients, mapping rules) in
+ * the initialization config, or the admin role has at least one member of any type in the live
+ * store. This matches the rule the initial admin setup endpoint enforces, so the UI is never
+ * redirected to a setup page that would reject the request.
  *
  * <p>Errors raised while consulting the live store (e.g. secondary storage outage) are logged and
  * answered as {@code true} so the library's setup-redirect filter does not block traffic during
@@ -33,7 +33,6 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
 
   private static final Logger LOG = LoggerFactory.getLogger(AdminUserPresenceAdapter.class);
   private static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
-  private static final String USER_MEMBERS = "users";
 
   private final ServiceRegistry serviceRegistry;
   private final InitializationConfiguration initializationConfiguration;
@@ -48,11 +47,12 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
   @Override
   public boolean adminUserExists() {
     final var hasConfiguredAdminUser =
-        !initializationConfiguration
+        initializationConfiguration
             .getDefaultRoles()
             .getOrDefault(ADMIN_ROLE_ID, Map.of())
-            .getOrDefault(USER_MEMBERS, Set.of())
-            .isEmpty();
+            .values()
+            .stream()
+            .anyMatch(members -> !members.isEmpty());
     if (hasConfiguredAdminUser) {
       return true;
     }
@@ -60,7 +60,7 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
     try {
       return serviceRegistry
           .roleServices(PhysicalTenantContext.current())
-          .hasMembersOfType(ADMIN_ROLE_ID, EntityType.USER, CamundaAuthentication.anonymous());
+          .hasMembers(ADMIN_ROLE_ID, CamundaAuthentication.anonymous());
     } catch (final RuntimeException ex) {
       LOG.error(
           "Error while searching for admin role members. This might indicate that secondary storage is down.",

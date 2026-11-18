@@ -19,7 +19,6 @@ import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.RoleServices;
@@ -147,7 +146,7 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createAdminUserShouldReturnForbiddenWhenAdminUserExists() {
+  void createAdminUserShouldReturnForbiddenWhenAdminRoleHasAnyMember() {
     final var dto = validCreateUserRequest(UUID.randomUUID().toString());
     whenAdminUserExists();
 
@@ -355,13 +354,11 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private void whenNoAdminUserExists() {
-    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
-        .thenReturn(false);
+    when(roleServices.hasMembers(eq(DefaultRole.ADMIN.getId()), any())).thenReturn(false);
   }
 
   private void whenAdminUserExists() {
-    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
-        .thenReturn(true);
+    when(roleServices.hasMembers(eq(DefaultRole.ADMIN.getId()), any())).thenReturn(true);
   }
 
   private UserDTO validCreateUserRequest(final String username) {

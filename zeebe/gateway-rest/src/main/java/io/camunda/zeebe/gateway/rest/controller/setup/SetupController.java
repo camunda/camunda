@@ -14,7 +14,6 @@ import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.DefaultRole;
-import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
@@ -73,7 +72,7 @@ public class SetupController {
     final var anonymousAuth = authenticationProvider.getAnonymousCamundaAuthentication();
     if (serviceRegistry
         .roleServices(physicalTenantId)
-        .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth)) {
+        .hasMembers(DefaultRole.ADMIN.getId(), anonymousAuth)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
           GatewayErrorMapper.mapErrorToProblem(exception));
