@@ -72,8 +72,8 @@ public class ObjectValue extends BaseValue {
   public void writeJSON(final StringBuilder builder) {
     builder.append("{");
 
-    writeJson(builder, declaredProperties, false);
-    writeJson(builder, undeclaredProperties, false);
+    final boolean empty = writeJson(builder, declaredProperties, false, true);
+    writeJson(builder, undeclaredProperties, false, empty);
 
     builder.append("}");
   }
@@ -148,8 +148,8 @@ public class ObjectValue extends BaseValue {
     final StringBuilder builder = new StringBuilder();
     builder.append("{");
 
-    writeJson(builder, declaredProperties, true);
-    writeJson(builder, undeclaredProperties, true);
+    final boolean empty = writeJson(builder, declaredProperties, true, true);
+    writeJson(builder, undeclaredProperties, true, empty);
 
     builder.append("}");
     return builder.toString();
@@ -164,19 +164,32 @@ public class ObjectValue extends BaseValue {
     }
   }
 
-  private <T extends BaseProperty<?>> void writeJson(
-      final StringBuilder builder, final List<T> properties, final boolean maskSanitized) {
-    for (int i = 0; i < properties.size(); i++) {
-      if (i > 0) {
+  /**
+   * Appends the properties that have a value, separated by commas. A property without a value is
+   * left out, so its separator is left out too: {@code ObjectValue} is printed without the
+   * properties that were never set.
+   *
+   * @param empty whether no property was written before, which the first one needs to know, as the
+   *     declared and the undeclared properties share one builder
+   * @return whether no property was written also after the call, for the next list of properties
+   */
+  private <T extends BaseProperty<?>> boolean writeJson(
+      final StringBuilder builder,
+      final List<T> properties,
+      final boolean maskSanitized,
+      boolean empty) {
+    for (final BaseProperty<? extends BaseValue> prop : properties) {
+      if (!prop.hasValue()) {
+        continue;
+      }
+
+      if (!empty) {
         builder.append(",");
       }
-
-      final BaseProperty<? extends BaseValue> prop = properties.get(i);
-
-      if (prop.hasValue()) {
-        prop.writeJSON(builder, maskSanitized);
-      }
+      empty = false;
+      prop.writeJSON(builder, maskSanitized);
     }
+    return empty;
   }
 
   private <T extends BaseProperty<?>> int write(
