@@ -60,8 +60,10 @@ public class JobCommandPreconditionValidator {
 
   /**
    * Looks the job up without a tenant filter when the command is internal. The broker writes such
-   * commands (e.g. YIELD after a failed job push) without authorization claims, which resolve to no
-   * tenant at all when multi-tenancy checks are enabled.
+   * commands (e.g. YIELD after a failed job push) without authorization claims. With multi-tenancy
+   * checks enabled, {@link CslTenantCheck#resolveAuthorizedTenants(TypedRecord)} already grants
+   * such commands every tenant. With the checks disabled, it grants only the default tenant, so
+   * this flag still removes that filter.
    */
   JobCommandPreconditionValidator skipTenantFilterForInternalCommands() {
     skipTenantFilterForInternalCommands = true;
@@ -111,7 +113,7 @@ public class JobCommandPreconditionValidator {
 
   private Either<Rejection, JobRecord> checkJobExists(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
     final var storedJob =
         (skipTenantFilterForInternalCommands && command.isInternalCommand())
                 || authorizedTenants.wildcard()

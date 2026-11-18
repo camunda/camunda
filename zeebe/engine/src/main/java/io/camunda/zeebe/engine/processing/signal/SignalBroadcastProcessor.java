@@ -103,8 +103,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
-      final var authorizedTenants =
-          tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+      final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
       final var tenantCheckResult =
           tenantCheck.checkTenantsRequiringPrincipal(
               List.of(signalRecord.getTenantId()),

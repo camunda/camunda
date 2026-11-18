@@ -96,7 +96,7 @@ public class ConditionalEvaluationEvaluateProcessor
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
     final var tenantCheckResult =
         tenantCheck.checkTenantsRequiringPrincipal(
             List.of(record.getTenantId()),

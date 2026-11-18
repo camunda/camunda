@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
@@ -115,6 +116,12 @@ public final class RecordToWrite implements LogAppendEntry {
   /** Like a command written by the broker itself: no authorization claims, no request. */
   public static RecordToWrite commandWithoutClaims() {
     return new RecordToWrite(new RecordMetadata().recordType(RecordType.COMMAND));
+  }
+
+  /** Like a follow-up command written by the engine: copied claims, but no request metadata. */
+  public static RecordToWrite commandWithClaims(final AuthInfo authInfo) {
+    return new RecordToWrite(
+        new RecordMetadata().recordType(RecordType.COMMAND).authorization(authInfo));
   }
 
   /** Like a command sent by a client through the gateway: user claims and request metadata. */
