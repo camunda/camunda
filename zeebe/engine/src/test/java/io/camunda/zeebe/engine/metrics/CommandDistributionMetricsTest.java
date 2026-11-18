@@ -33,6 +33,10 @@ import org.junit.rules.TestWatcher;
 
 public class CommandDistributionMetricsTest {
 
+  // values of the bounded queue tag which are not declared in DistributionQueue
+  private static final String NO_QUEUE = "NONE";
+  private static final String OTHER_QUEUE = "OTHER";
+
   private final TestWatcher watcher = new RecordingExporterTestWatcher();
   private final EngineRule engine = EngineRule.multiplePartition(2);
 
@@ -198,11 +202,13 @@ public class CommandDistributionMetricsTest {
   }
 
   @Test
-  public void shouldNotTagWithUserControlledQueueIds() {
+  public void shouldTrackClusterVariableDistributionsUnderOtherQueue() {
     // given - cluster variables use their (user-supplied) name as distribution queue id
     engine.pauseProcessing(2);
     final var names =
-        IntStream.range(0, 3).mapToObj(i -> "var_" + UUID.randomUUID().toString().replace("-", ""));
+        IntStream.range(0, 3)
+            .mapToObj(i -> "var_" + UUID.randomUUID().toString().replace("-", ""))
+            .toList();
 
     // when
     names.forEach(
@@ -214,19 +220,80 @@ public class CommandDistributionMetricsTest {
                 .withValue("\"value\"")
                 .create());
 
-    // then
+    // then - all user-controlled queue ids share the bounded OTHER tag
     final var pending = DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName();
-    assertThat(getGaugeValue(1, pending, 2, "OTHER")).isEqualTo(3);
+    final var inflight = DistributionMetricsDoc.INFLIGHT_COMMAND_DISTRIBUTIONS.getName();
+    assertThat(getGaugeValue(1, pending, 2, OTHER_QUEUE)).isEqualTo(3);
+    assertThat(getGaugeValue(1, inflight, 2, OTHER_QUEUE)).isEqualTo(3);
 
     final var allowedQueues =
         Stream.concat(
                 Arrays.stream(DistributionQueue.getValues()).map(DistributionQueue::getQueueId),
-                Stream.of("NONE", "OTHER"))
+                Stream.of(NO_QUEUE, OTHER_QUEUE))
             .toList();
     assertThat(engine.getMeterRegistry(1).find(pending).gauges())
         .extracting(gauge -> gauge.getId().getTag(DistributionMetricKeyNames.QUEUE.asString()))
         .isNotEmpty()
         .are(new Condition<>(allowedQueues::contains, "a bounded queue tag"));
+
+    // when
+    engine.resumeProcessing(2);
+
+    // then
+    RecordingExporter.await()
+        .untilAsserted(
+            () -> {
+              assertThat(getGaugeValue(1, pending, 2, OTHER_QUEUE)).isZero();
+              assertThat(getGaugeValue(1, inflight, 2, OTHER_QUEUE)).isZero();
+              assertThat(
+                      getCounterValue(
+                          1,
+                          DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
+                              .getName(),
+                          2,
+                          OTHER_QUEUE))
+                  .isEqualTo(3);
+            });
+  }
+
+  @Test
+  public void shouldTrackDistributionWithoutQueueUnderNoneQueue() {
+    // given
+    engine.pauseProcessing(2);
+
+    // when - signals are distributed without a queue
+    final var signal =
+        engine.signal().withSignalName("signal_" + UUID.randomUUID().toString()).broadcast();
+
+    // then
+    final var pending = DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName();
+    assertThat(getGaugeValue(1, pending, 2, NO_QUEUE)).isOne();
+
+    // when
+    engine.resumeProcessing(2);
+
+    // then - the acknowledgement is received on the origin, and sent from the target partition
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, signal.getKey());
+    RecordingExporter.await()
+        .untilAsserted(
+            () -> {
+              assertThat(getGaugeValue(1, pending, 2, NO_QUEUE)).isZero();
+              assertThat(
+                      getCounterValue(
+                          1,
+                          DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
+                              .getName(),
+                          2,
+                          NO_QUEUE))
+                  .isOne();
+              assertThat(
+                      getCounterValue(
+                          2,
+                          DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName(),
+                          1,
+                          NO_QUEUE))
+                  .isOne();
+            });
   }
 
   private long triggerQueuedDistribution() {
@@ -286,6 +353,17 @@ public class CommandDistributionMetricsTest {
     return engine.getMeterRegistry(partition).find(metricName).gauges().stream()
         .mapToDouble(Gauge::value)
         .sum();
+  }
+
+  private double getCounterValue(
+      final int partition, final String metricName, final int targetPartition, final String queue) {
+    final var counter =
+        engine
+            .getMeterRegistry(partition)
+            .find(metricName)
+            .tags(DistributionMetricKeyNames.tags(targetPartition, queue))
+            .counter();
+    return counter != null ? counter.count() : 0.0;
   }
 
   private double getGaugeValue(
