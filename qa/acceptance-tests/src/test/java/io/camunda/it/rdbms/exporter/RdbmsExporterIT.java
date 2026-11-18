@@ -76,6 +76,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -104,6 +105,7 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -297,6 +299,55 @@ class RdbmsExporterIT {
     assertThat(processDefinition).isNotEmpty();
     assertThat(processDefinition).map(ProcessDefinitionEntity::bpmnXml).isPresent();
     assertThat(processDefinition).map(ProcessDefinitionEntity::formId).contains("test");
+  }
+
+  @Test
+  public void shouldKeepDrainingVersionWhenAllVersionsAreSuspended() {
+    // given - an older draining version and a newer active one
+    final var drainingVersion = FIXTURES.getProcessDefinitionCreatedRecord();
+    exporter.export(drainingVersion);
+    exporter.export(FIXTURES.getProcessDefinitionDrainingRecord(drainingVersion));
+    final var activeVersion =
+        FIXTURES.getNextProcessDefinitionVersionCreatedRecord(drainingVersion);
+    exporter.export(activeVersion);
+
+    // when
+    exporter.export(
+        FIXTURES.getProcessDefinitionSuspensionRecord(
+            ProcessDefinitionSuspensionIntent.SUSPENDED,
+            FIXTURES.resolvedVersion(drainingVersion, ProcessDefinitionSuspensionOutcome.DRAINING),
+            FIXTURES.resolvedVersion(activeVersion, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
+
+    // then
+    assertThat(processDefinitionState(drainingVersion))
+        .isEqualTo(ProcessDefinitionEntity.ProcessDefinitionState.DRAINING);
+    assertThat(processDefinitionState(activeVersion))
+        .isEqualTo(ProcessDefinitionEntity.ProcessDefinitionState.SUSPENDED);
+  }
+
+  @Test
+  public void shouldMarkSuspendedVersionDrainingWhenDeleted() {
+    // given
+    final var processDefinitionRecord = FIXTURES.getProcessDefinitionCreatedRecord();
+    exporter.export(processDefinitionRecord);
+    exporter.export(
+        FIXTURES.getProcessDefinitionSuspensionRecord(
+            ProcessDefinitionSuspensionIntent.SUSPENDED,
+            FIXTURES.resolvedVersion(
+                processDefinitionRecord, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
+
+    // when
+    exporter.export(FIXTURES.getProcessDefinitionDrainingRecord(processDefinitionRecord));
+
+    // then
+    assertThat(processDefinitionState(processDefinitionRecord))
+        .isEqualTo(ProcessDefinitionEntity.ProcessDefinitionState.DRAINING);
+  }
+
+  private ProcessDefinitionEntity.ProcessDefinitionState processDefinitionState(
+      final Record<RecordValue> processDefinitionRecord) {
+    final var key = ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
+    return rdbmsService.getProcessDefinitionReader().findOne(key).orElseThrow().state();
   }
 
   @Test
