@@ -1,9 +1,11 @@
 # description: Deploys the shared physical-tenants load test (mixed scenario of the noisy neighbour
-#              epic): a few saturating tenants next to many quiet tenants, each tenant with
-#              its own starter and worker. Computes the per-tenant traffic profiles from simple
-#              inputs and delegates the deployment to camunda-load-test.yml. Use the same inputs
-#              on every solution to compare results; a run without saturating tenants
-#              (saturating-tenant-count: 0) is the "no noisy neighbour" reference.
+#              epic): quiet tenants next to saturating tenants that offer more than the cluster
+#              can process, each tenant with its own starter and worker. The traffic of every
+#              tenant is a multiplier of its allowance (its weighted share of the cluster
+#              capacity), computed by .github/scripts/load-test-physical-tenant-profiles.py, and
+#              the deployment is delegated to camunda-load-test.yml. Use the same inputs on every
+#              solution to compare results; saturating-tenant-count 0 is the reference run
+#              without a noisy neighbour, tenant-count 0 with total-rate the single tenant one.
 # calls: camunda-load-test.yml
 # monitoring: https://dashboard.benchmark.camunda.cloud/
 # type: CI
@@ -18,30 +20,47 @@ on:
         description: 'Name of the load test (namespace suffix, c8- is added). Use a unique name per run, e.g. pt-baseline-<yyyymmdd>-<hhmm>'
         type: string
         required: true
+      cluster-capacity-rate:
+        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%), measured by a calibration run. The allowance of each tenant is its weighted share of it'
+        type: number
+        # TODO: placeholder, the throughput of the max scenario (load-tests/docs/scripts/optimal.json).
+        # Replace with the calibrated value of the typical scenario on the default sizing.
+        default: 300
+        required: false
       tenant-count:
-        description: '── Tenants ───────────────────────── Number of physical tenants (pt1..ptN) next to the default tenant'
+        description: 'Number of physical tenants (pt1..ptN) next to the default tenant. 0 runs the default tenant only'
         type: number
         default: 10
         required: false
       saturating-tenant-count:
-        description: 'How many tenants exceed their allowance (the noisy neighbours, pt1..). Use 0 for the reference run without noise'
+        description: 'How many tenants offer more than the cluster can process (the noisy neighbours, pt1..). 0 is the reference run without noise'
         type: number
         default: 1
         required: false
-      allowance-rate:
-        description: '── Traffic ───────────────────────── Process instances/s a tenant is allowed (100%). Percentages below are relative to it'
+      saturating-capacity-ratio:
+        description: 'Load each saturating tenant offers, in multiples of the cluster capacity (above 1 overloads the cluster)'
         type: number
-        default: 50
+        default: 1.5
         required: false
-      quiet-percent:
-        description: 'Load of each quiet tenant (and the default tenant), in % of the allowance'
+      quiet-multiplier:
+        description: 'Load of each quiet tenant (and the default tenant), as a multiple of its allowance (0.2 = 20%)'
         type: number
-        default: 20
+        default: 0.2
         required: false
-      saturating-percent:
-        description: 'Load of each saturating tenant, in % of the allowance (200-500 matches 2-5x over the allowance)'
+      tenant-weights:
+        description: 'Relative share of tenants, e.g. pt2=3,default=2. Unlisted tenants have weight 1'
+        type: string
+        default: ""
+        required: false
+      tenant-overrides:
+        description: 'Fixed load of single tenants as a multiple of their allowance, e.g. pt3=4,pt5=0.5,default=0.1. Never rescaled'
+        type: string
+        default: ""
+        required: false
+      total-rate:
+        description: 'Keep the total load at this many PI/s by scaling the quiet tenants (to compare with the single tenant run). 0 disables. Not for overload runs'
         type: number
-        default: 300
+        default: 0
         required: false
       secondary-storage-type:
         description: '── Cluster ───────────────────────── Secondary storage shared by all tenants'
@@ -68,7 +87,7 @@ on:
         default: 'main'
         required: false
       target-version:
-        description: 'Setup folder under load-tests/setup/ (main, stable-810, ...). Baseline on 8.10: stable-810 together with orchestration-tag'
+        description: 'Setup folder under load-tests/setup/ (main, stable-810, ...). Needs orchestration-tag when not main'
         type: string
         default: 'main'
         required: false
@@ -99,93 +118,56 @@ jobs:
     name: Compute tenant profiles
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      contents: read
     outputs:
       profiles: ${{ steps.profiles.outputs.profiles }}
       default-tenant-flags: ${{ steps.profiles.outputs.default-tenant-flags }}
-      use-pgbouncer: ${{ steps.profiles.outputs.use-pgbouncer }}
-    env:
-      TENANT_COUNT: ${{ inputs.tenant-count }}
-      SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
-      ALLOWANCE_RATE: ${{ inputs.allowance-rate }}
-      QUIET_PERCENT: ${{ inputs.quiet-percent }}
-      SATURATING_PERCENT: ${{ inputs.saturating-percent }}
-      STORAGE: ${{ inputs.secondary-storage-type }}
-      USE_PGBOUNCER: ${{ inputs.use-pgbouncer }}
-      ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
-      REUSE_TAG: ${{ inputs.reuse-tag }}
-      REF: ${{ inputs.ref }}
-      TARGET_VERSION: ${{ inputs.target-version }}
+      use-pgbouncer: ${{ steps.pgbouncer.outputs.use-pgbouncer }}
     steps:
-      - name: Compute profiles
-        id: profiles
+      - name: Validate version inputs
+        env:
+          ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
+          REUSE_TAG: ${{ inputs.reuse-tag }}
+          REF: ${{ inputs.ref }}
+          TARGET_VERSION: ${{ inputs.target-version }}
         run: |-
-          for var in TENANT_COUNT SATURATING_COUNT ALLOWANCE_RATE QUIET_PERCENT SATURATING_PERCENT; do
-            if [[ ! "${!var}" =~ ^[0-9]+$ ]]; then
-              echo "::error::${var} must be a non-negative integer, got '${!var}'"
-              exit 1
-            fi
-          done
-          if (( TENANT_COUNT < 1 )); then
-            echo "::error::tenant-count must be at least 1"
-            exit 1
-          fi
-          if (( SATURATING_COUNT > TENANT_COUNT )); then
-            echo "::error::saturating-tenant-count (${SATURATING_COUNT}) exceeds tenant-count (${TENANT_COUNT})"
-            exit 1
-          fi
-          if (( ALLOWANCE_RATE < 1 || QUIET_PERCENT < 1 || SATURATING_PERCENT < 1 )); then
-            echo "::error::allowance-rate and the percentages must be at least 1"
-            exit 1
-          fi
-          # A target-version other than main runs setup scripts of main with an older setup folder,
+          # A target-version other than main runs the setup scripts of ref with an older setup folder,
           # so the image must not be built from main.
           if [[ "${TARGET_VERSION}" != "main" && -z "${ORCHESTRATION_TAG}" && -z "${REUSE_TAG}" && "${REF}" == "main" ]]; then
             echo "::error::target-version '${TARGET_VERSION}' needs orchestration-tag (or reuse-tag, or a matching ref): building main would not match the setup folder"
             exit 1
           fi
 
-          # Rates are rounded up and at least 1 PI/s.
-          rate_of() { echo $(( (ALLOWANCE_RATE * $1 + 99) / 100 )); }
-          QUIET_RATE=$(rate_of "${QUIET_PERCENT}")
-          SATURATING_RATE=$(rate_of "${SATURATING_PERCENT}")
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
 
-          # Worker replicas scale with the rate, using the ratio of the typical scenario (6 workers for 50 PI/s).
-          replicas() { echo $(( ($1 * 6 + 49) / 50 )); }
+      - name: Compute profiles
+        id: profiles
+        env:
+          TENANT_COUNT: ${{ inputs.tenant-count }}
+          SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
+          CAPACITY_RATE: ${{ inputs.cluster-capacity-rate }}
+          SATURATING_CAPACITY_RATIO: ${{ inputs.saturating-capacity-ratio }}
+          QUIET_MULTIPLIER: ${{ inputs.quiet-multiplier }}
+          TENANT_WEIGHTS: ${{ inputs.tenant-weights }}
+          TENANT_OVERRIDES: ${{ inputs.tenant-overrides }}
+          TOTAL_RATE: ${{ inputs.total-rate }}
+        run: python3 .github/scripts/load-test-physical-tenant-profiles.py
 
-          profiles=()
-          for ((i = 1; i <= TENANT_COUNT; i++)); do
-            if (( i <= SATURATING_COUNT )); then
-              rate=${SATURATING_RATE}
-            else
-              rate=${QUIET_RATE}
-            fi
-            profiles+=("${rate}:$(replicas "${rate}")")
-          done
-
-          use_pgbouncer=false
+      - name: Resolve PgBouncer
+        id: pgbouncer
+        env:
+          STORAGE: ${{ inputs.secondary-storage-type }}
+          USE_PGBOUNCER: ${{ inputs.use-pgbouncer }}
+        run: |-
           if [[ "${STORAGE}" == "postgresql" && "${USE_PGBOUNCER}" == "true" ]]; then
-            use_pgbouncer=true
+            echo "use-pgbouncer=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "use-pgbouncer=false" >> "$GITHUB_OUTPUT"
           fi
-
-          {
-            echo "profiles=${profiles[*]}"
-            # The default tenant is quiet; these flags come after the scenario flags, so they win.
-            echo "default-tenant-flags=--set load-tester.starter.rate=${QUIET_RATE} --set load-tester.workers.worker.replicas=$(replicas "${QUIET_RATE}")"
-            echo "use-pgbouncer=${use_pgbouncer}"
-          } >> "$GITHUB_OUTPUT"
-
-          {
-            echo "## Physical tenants load test: \`${{ inputs.name }}\`"
-            echo
-            echo "| Tenant | Role | Rate (PI/s) |"
-            echo "| --- | --- | --- |"
-            echo "| default | quiet | ${QUIET_RATE} |"
-            for ((i = 1; i <= TENANT_COUNT; i++)); do
-              if (( i <= SATURATING_COUNT )); then role=saturating; else role=quiet; fi
-              echo "| pt${i} | ${role} | ${profiles[i-1]%%:*} |"
-            done
-          } >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Deploy load test

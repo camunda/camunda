@@ -414,10 +414,11 @@ make install physical_tenant_count=3 physical_tenant_profiles="150:18 50:6 5:1" 
 ```
 
 The [`Camunda physical tenants load test`](../../.github/workflows/camunda-physical-tenants-load-test.yml)
-workflow builds these profiles from simple inputs (number of tenants, how many are saturating or heavy,
-and their rates). It deploys the mixed scenario of the noisy neighbour epic: saturating and heavy
-tenants next to quiet ones. Run it with `saturating-tenant-count: 0` for the reference without a noisy
-neighbour, and with the same inputs for every build you compare.
+workflow builds these profiles from the cluster capacity: every tenant runs at a multiple of its
+allowance (its weighted share of the capacity), and saturating tenants offer more than the whole
+cluster can process. It deploys the mixed scenario of the noisy neighbour epic. Run it with
+`saturating-tenant-count: 0` for the reference without a noisy neighbour, and with the same inputs for
+every build you compare. The job summary lists the rate of every tenant.
 
 Verify the tenants receive writes — for rdbms, table names fold to the RDBMS's default identifier
 case (e.g. Postgres lowercases unquoted identifiers):
