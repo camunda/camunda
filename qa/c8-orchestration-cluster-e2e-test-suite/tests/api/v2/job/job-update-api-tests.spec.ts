@@ -22,9 +22,15 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Update API Tests', () => {
+  // Use a dedicated process definition and job type unique to this file. The
+  // job API specs run in parallel (one worker per file) and activation grabs
+  // any available job of a given type across the cluster, so sharing a single
+  // 'jobApiTaskType' across job specs let another spec consume or cancel the
+  // job this test just activated — surfacing as a persistent 404 on the update.
+  // A per-file type keeps this file's job pool isolated.
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
-    'job_api_process',
-    'jobApiProcess',
+    'job_update_api_process',
+    'jobUpdateApiProcess',
   );
 
   test.beforeAll(beforeAll);
@@ -40,7 +46,7 @@ test.describe('Job Update API Tests', () => {
     );
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
-      'jobApiTaskType',
+      'jobUpdateApiTaskType',
     );
 
     await test.step('PATCH update the job', async () => {
