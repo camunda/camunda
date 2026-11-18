@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.db.schema.index.AlertIndex.CHECK_INTER
 import static io.camunda.optimize.service.db.schema.index.AlertIndex.INTERVAL_UNIT;
 import static io.camunda.optimize.service.db.schema.index.AlertIndex.THRESHOLD_OPERATOR;
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.bpm.engine.EntityTypes.REPORT;
 
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
@@ -418,7 +417,7 @@ public class AlertService implements ReportReferencingService {
           "Alerts cannot be created for private reports, only for reports within a collection.");
     }
 
-    ValidationHelper.ensureNotEmpty(REPORT, report);
+    ValidationHelper.ensureNotEmpty("Report", report);
 
     ValidationHelper.validateEntityName(
         "Alert",

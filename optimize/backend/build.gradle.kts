@@ -51,10 +51,6 @@ dependencies {
   implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
   implementation(project(":optimize-commons"))
   implementation(libs.org.camunda.bpm.model.camunda.dmn.model)
-  implementation(libs.org.camunda.bpm.camunda.engine) {
-    exclude(group = "org.camunda.feel", module = "feel-engine")
-    exclude(group = "commons-logging", module = "commons-logging")
-  }
   implementation(project(":camunda-search-client-connect"))
   implementation(project(":zeebe-protocol"))
   implementation(libs.io.camunda.identity.spring.boot.starter)

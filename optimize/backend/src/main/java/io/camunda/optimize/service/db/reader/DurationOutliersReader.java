@@ -7,50 +7,8 @@
  */
 package io.camunda.optimize.service.db.reader;
 
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_CANCEL;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_COMPENSATION;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_CONDITIONAL;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_ERROR;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_ESCALATION;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_MESSAGE;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_SIGNAL;
-import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_TIMER;
-import static org.camunda.bpm.engine.ActivityTypes.CALL_ACTIVITY;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_CANCEL;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_COMPENSATION;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_ERROR;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_ESCALATION;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_MESSAGE;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_NONE;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_SIGNAL;
-import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_TERMINATE;
-import static org.camunda.bpm.engine.ActivityTypes.GATEWAY_COMPLEX;
-import static org.camunda.bpm.engine.ActivityTypes.GATEWAY_EVENT_BASED;
-import static org.camunda.bpm.engine.ActivityTypes.GATEWAY_EXCLUSIVE;
-import static org.camunda.bpm.engine.ActivityTypes.GATEWAY_INCLUSIVE;
-import static org.camunda.bpm.engine.ActivityTypes.GATEWAY_PARALLEL;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_CATCH;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_COMPENSATION_THROW;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_CONDITIONAL;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_ESCALATION_THROW;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_LINK;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_MESSAGE;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_MESSAGE_THROW;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_NONE_THROW;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_SIGNAL;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_SIGNAL_THROW;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_THROW;
-import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_TIMER;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_COMPENSATION;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_CONDITIONAL;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_ERROR;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_ESCALATION;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_MESSAGE;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_SIGNAL;
-import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_TIMER;
-import static org.camunda.bpm.engine.ActivityTypes.TASK_MANUAL_TASK;
-import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_MANUAL_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
 import io.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import io.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
@@ -202,56 +160,6 @@ public interface DurationOutliersReader {
   }
 
   default List<String> generateListOfHumanTasks() {
-    return List.of(TASK_USER_TASK, TASK_MANUAL_TASK);
-  }
-
-  default List<String> generateListOfStandardExcludedFlowNodeTypes() {
-    /* This list contains all the node types that we always want to exclude because they add no value to the outlier
-    analysis. Please note that non-user task nodes that do add value to the analysis (e.g. service tasks) shall not
-    be included in this list, as they shall also undergo an outlier analysis.
-     */
-    return List.of(
-        GATEWAY_EXCLUSIVE,
-        GATEWAY_INCLUSIVE,
-        GATEWAY_PARALLEL,
-        GATEWAY_COMPLEX,
-        GATEWAY_EVENT_BASED,
-        CALL_ACTIVITY,
-        BOUNDARY_TIMER,
-        BOUNDARY_MESSAGE,
-        BOUNDARY_SIGNAL,
-        BOUNDARY_COMPENSATION,
-        BOUNDARY_ERROR,
-        BOUNDARY_ESCALATION,
-        BOUNDARY_CANCEL,
-        BOUNDARY_CONDITIONAL,
-        START_EVENT,
-        START_EVENT_TIMER,
-        START_EVENT_MESSAGE,
-        START_EVENT_SIGNAL,
-        START_EVENT_ESCALATION,
-        START_EVENT_COMPENSATION,
-        START_EVENT_ERROR,
-        START_EVENT_CONDITIONAL,
-        INTERMEDIATE_EVENT_CATCH,
-        INTERMEDIATE_EVENT_MESSAGE,
-        INTERMEDIATE_EVENT_TIMER,
-        INTERMEDIATE_EVENT_LINK,
-        INTERMEDIATE_EVENT_SIGNAL,
-        INTERMEDIATE_EVENT_CONDITIONAL,
-        INTERMEDIATE_EVENT_THROW,
-        INTERMEDIATE_EVENT_SIGNAL_THROW,
-        INTERMEDIATE_EVENT_COMPENSATION_THROW,
-        INTERMEDIATE_EVENT_MESSAGE_THROW,
-        INTERMEDIATE_EVENT_NONE_THROW,
-        INTERMEDIATE_EVENT_ESCALATION_THROW,
-        END_EVENT_ERROR,
-        END_EVENT_CANCEL,
-        END_EVENT_TERMINATE,
-        END_EVENT_MESSAGE,
-        END_EVENT_SIGNAL,
-        END_EVENT_COMPENSATION,
-        END_EVENT_ESCALATION,
-        END_EVENT_NONE);
+    return List.of(FLOW_NODE_TYPE_USER_TASK, FLOW_NODE_TYPE_MANUAL_TASK);
   }
 }

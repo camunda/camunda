@@ -178,8 +178,6 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     )
     .versionRef("tomcat")
   library("org-aspectj-aspectjweaver", "org.aspectj", "aspectjweaver").versionRef("aspectjweaver")
-  library("org-camunda-bpm-camunda-engine", "org.camunda.bpm", "camunda-engine")
-    .versionRef("camunda")
   library("org-camunda-bpm-camunda-license-check", "org.camunda.bpm", "camunda-license-check")
     .versionRef("org-camunda-bpm-camunda-license-check")
   library(
