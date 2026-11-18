@@ -21,6 +21,8 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.TestTemplate;
 @TestInstance(Lifecycle.PER_CLASS)
 class ProcessInstanceDeleterJobIT extends BackgroundTaskIT<ProcessInstanceDeleterJob> {
   private static final int STORAGE_ORDINAL1 = 1;
+  private static final int STORAGE_ORDINAL2 = 2;
 
   @TestTemplate
   void shouldDeleteLoneProcessInstance(
@@ -49,13 +52,168 @@ class ProcessInstanceDeleterJobIT extends BackgroundTaskIT<ProcessInstanceDelete
           client.refresh(testPrefix);
 
           // when
-          final var archived = job.execute();
+          final var deleted = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+          assertThat(deleted).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
-          // check that the process is no longer in the main index
+          // check that the process is no longer in the index
           verifyDeleted(listViewTemplate, STORAGE_ORDINAL1, client, processInstance);
+        });
+  }
+
+  @TestTemplate
+  void shouldDeleteFromOneOrdinalAtATime(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance1 =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00", STORAGE_ORDINAL1);
+          final ProcessInstanceForListViewEntity processInstance2 =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00", STORAGE_ORDINAL2);
+
+          store(listViewTemplate, STORAGE_ORDINAL1, client, processInstance1);
+          store(listViewTemplate, STORAGE_ORDINAL2, client, processInstance2);
+
+          verifyExists(listViewTemplate, STORAGE_ORDINAL1, client, processInstance1);
+          verifyExists(listViewTemplate, STORAGE_ORDINAL2, client, processInstance2);
+
+          client.refresh(testPrefix);
+
+          // when
+          final var deleted1 = job.execute();
+
+          // then
+          assertThat(deleted1).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          // check that the process is no longer in the index
+          verifyDeleted(listViewTemplate, STORAGE_ORDINAL1, client, processInstance1);
+          // but the other process instance should still exist
+          verifyExists(listViewTemplate, STORAGE_ORDINAL2, client, processInstance2);
+
+          // now run the job again to delete the second process instance
+          // given
+          client.refresh(testPrefix);
+
+          // when
+          final var deleted2 = job.execute();
+
+          // then
+          assertThat(deleted2).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          // now both should be gone
+          verifyDeleted(listViewTemplate, STORAGE_ORDINAL1, client, processInstance1);
+        });
+  }
+
+  @TestTemplate
+  void shouldOnlyDeleteOneBatchAtATime(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    final int batchSize = 5;
+    config.getHistory().getRetention().getDeleter().setEntityBatchSize(batchSize);
+    withTask(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final List<ProcessInstanceForListViewEntity> processInstances = new ArrayList<>();
+          for (var i = 0; i < batchSize; i++) {
+            processInstances.add(
+                processInstanceForListViewEntity("2020-01-01T00:00:00+00:00", STORAGE_ORDINAL1));
+          }
+          // slightly later end date, so should not be in first batch
+          processInstances.add(
+              processInstanceForListViewEntity("2020-01-01T00:00:10+00:00", STORAGE_ORDINAL1));
+
+          for (final var processInstance : processInstances) {
+            store(listViewTemplate, STORAGE_ORDINAL1, client, processInstance);
+          }
+
+          client.refresh(testPrefix);
+
+          // when
+          final var deleted = job.execute();
+
+          // then
+          assertThat(deleted).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(5);
+
+          // check that the first batch of processes are no longer in the main index
+          for (var i = 0; i < batchSize; i++) {
+            verifyDeleted(listViewTemplate, STORAGE_ORDINAL1, client, processInstances.get(i));
+          }
+          // but the last doc is still there
+          verifyExists(listViewTemplate, STORAGE_ORDINAL1, client, processInstances.getLast());
+        });
+  }
+
+  @TestTemplate
+  void shouldOnlyDeleteFinishedProcessInstances(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity finishedInstance =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00", STORAGE_ORDINAL1);
+          final ProcessInstanceForListViewEntity unfinishedInstance =
+              processInstanceForListViewEntity(null, STORAGE_ORDINAL1);
+
+          store(listViewTemplate, STORAGE_ORDINAL1, client, finishedInstance);
+          store(listViewTemplate, STORAGE_ORDINAL1, client, unfinishedInstance);
+
+          client.refresh(testPrefix);
+
+          // when
+          final var deleted = job.execute();
+
+          // then
+          assertThat(deleted).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          // check that the finished process is no longer in the index
+          verifyDeleted(listViewTemplate, STORAGE_ORDINAL1, client, finishedInstance);
+          verifyExists(listViewTemplate, STORAGE_ORDINAL1, client, unfinishedInstance);
+        });
+  }
+
+  @TestTemplate
+  void shouldOnlyDeleteProcessInstancesCompletedRetentionPeriod(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity finishedInstance =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00", STORAGE_ORDINAL1);
+          final ProcessInstanceForListViewEntity notOldEnoughInstance =
+              processInstanceForListViewEntity("2099-01-01T00:00:00+00:00", STORAGE_ORDINAL1);
+
+          store(listViewTemplate, STORAGE_ORDINAL1, client, finishedInstance);
+          store(listViewTemplate, STORAGE_ORDINAL1, client, notOldEnoughInstance);
+
+          client.refresh(testPrefix);
+
+          // when
+          final var deleted = job.execute();
+
+          // then
+          assertThat(deleted).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
+
+          // check that the finished process is no longer in the main index
+          verifyDeleted(listViewTemplate, STORAGE_ORDINAL1, client, finishedInstance);
+          verifyExists(listViewTemplate, STORAGE_ORDINAL1, client, notOldEnoughInstance);
         });
   }
 
