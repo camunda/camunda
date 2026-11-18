@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.primarystorage.backup;
 
+import io.camunda.configuration.AcceptsSecretReference;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
@@ -112,14 +113,14 @@ public class S3 {
    * will be determined as documented in <a
    * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
    */
-  private String accessKey;
+  @AcceptsSecretReference private String accessKey;
 
   /**
    * Configure access credentials. If either accessKey or secretKey is not provided, the credentials
    * will be determined as documented in <a
    * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
    */
-  private String secretKey;
+  @AcceptsSecretReference private String secretKey;
 
   /**
    * Configure a maximum duration for all S3 client API calls. Lower values will ensure that failed
@@ -182,7 +183,7 @@ public class S3 {
    * the brokers and on the restore application; S3 does not store the key and cannot decrypt
    * objects without it.
    */
-  private String ssecKey;
+  @AcceptsSecretReference private String ssecKey;
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
