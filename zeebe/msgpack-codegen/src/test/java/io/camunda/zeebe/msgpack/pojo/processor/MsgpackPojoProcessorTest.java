@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.pojo.processor;
 
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.compile;
+import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.copy;
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.encoded;
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.get;
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.pojo;
@@ -312,6 +313,10 @@ final class MsgpackPojoProcessorTest {
     // then the unknown key is skipped, and it is not written back
     assertThat(get(read, "key")).isEqualTo(1L);
     assertThat(get(read, "count")).isEqualTo(2);
+    assertThat(read).hasToString("{\"key\":1,\"count\":2}");
+    final var copy = codec.newInstance();
+    copy(read, copy);
+    assertThat(copy).isEqualTo(read).hasSameHashCodeAs(read);
     assertThat(written)
         .isEqualTo(
             encoded(
@@ -701,6 +706,36 @@ final class MsgpackPojoProcessorTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("items")
         .hasMessageContaining("must start empty");
+  }
+
+  @Test
+  void shouldNotChangeTheStoredFormatOfSanitizedFields() throws Exception {
+    // given the same fields with and without the mark
+    final var fields =
+        """
+        %1$slong a = 3;
+        %1$sDirectBuffer b = new UnsafeBuffer(new byte[] {1});
+        %1$s@Document DirectBuffer c = new UnsafeBuffer(new byte[] {(byte) 0x80});
+        %1$sfinal List<DirectBuffer> d = new ArrayList<>();
+        %1$sfinal List<Inner> e = new ArrayList<>();
+        """;
+    final var plain = codecOf(fields.formatted(""), inner());
+    final var sanitized = codecOf(fields.formatted("@Sanitized "), inner());
+    final var source = plain.newInstance();
+    final var marked = sanitized.newInstance();
+    for (final var value : List.of(source, marked)) {
+      set(value, "a", 42L);
+      ((List<DirectBuffer>) get(value, "d")).add(utf8("x"));
+    }
+
+    // when
+    final var bytes = plain.write(source);
+
+    // then
+    assertThat(sanitized.write(marked)).isEqualTo(bytes);
+    final var read = sanitized.newInstance();
+    sanitized.read(read, bytes);
+    assertThat(get(read, "a")).isEqualTo(42L);
   }
 
   // ---------------------------------------------------------------- helpers

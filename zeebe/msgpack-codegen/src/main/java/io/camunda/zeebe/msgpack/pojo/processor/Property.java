@@ -15,6 +15,9 @@ import org.jspecify.annotations.Nullable;
  * @param javaType the type of the field in generated code; of the innermost elements for a list
  * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
  *     being replaced by a new view
+ * @param sanitized the value must not appear in a string representation
+ * @param pojo a nested value is a generated POJO, whose {@code <Name>Ops} is called directly;
+ *     otherwise it is a {@code BaseValue}
  * @param element the element of a {@link Type#LIST}, null for the other types
  */
 record Property(
@@ -23,6 +26,8 @@ record Property(
     String field,
     String javaType,
     boolean inPlace,
+    boolean sanitized,
+    boolean pojo,
     @Nullable ListElement element) {
 
   ListElement listElement() {

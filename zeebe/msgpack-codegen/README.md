@@ -24,9 +24,9 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackPojo` (`write`, `getLength`, `read`). The caller owns the `MsgPackWriter`/`MsgPackReader`.
 - Defaults are the field initializers. The processor also generates a `<Name>Ops` with the other
   operations on the class: `reset`, which copies the defaults from a prototype instance (plain field
-  assignments, no reflection). The operations are static methods, so generated code calls them
-  directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>` for code that
-  is generic in the type. It is separate from the codec.
+  assignments, no reflection), `copy`, `equals`, `hashCode` and `toString`. The operations are static methods, so generated
+  code calls them directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>`
+  for code that is generic in the type. It is separate from the codec.
 - Resetting belongs to the class: it must be `Recyclable`, and `reset()` is called before every
   read, so properties missing in the input keep their default. `MsgpackBufferValue` implements it by
   calling the generated ops. `MsgpackCodec<T extends Recyclable>` and the processor make a class
@@ -73,6 +73,28 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `MsgpackBufferValue` does no look-up: it declares abstract `codec()` and `ops()`, which every
   POJO overrides to return `FooCodec.INSTANCE` and `FooOps.INSTANCE`. They must not be called from
   the constructor: `FooOps` creates its defaults with `new Foo()` in its static initializer.
+- `copyFrom(source)` of `MsgpackBufferValue` (`NameOps.copy(source, target)`) is a deep copy of the
+  stored properties: the target loses its previous ones, shares nothing with the source, and does
+  not depend on the buffer the source was read from. It allocates a copy of every string, binary,
+  raw value and document, and one object per item of a list of nested objects. A nested value that
+  is not a POJO and has no copy of its own is copied by writing it to a new array and reading it
+  back. `@Ignore`d fields are not copied: a class with such state overrides `copyFrom` and
+  calls `super`.
+- `equals` and `hashCode` of `MsgpackBufferValue` (`NameOps.equals`/`hashCode`) compare the stored
+  properties by content, like `UnpackedObject` does: buffers by their bytes, lists by
+  their elements, unknown properties by their bytes. A nested `BaseValue` is compared with its
+  own `equals`, like `UnpackedObject` does. `hashCode` does not look inside a nested
+  `BaseValue` (an `UnpackedObject`), only at the size of a list of them: their own `hashCode` is not
+  consistent with their `equals`, and equal values must hash alike. Unlike `UnpackedObject`, an instance is
+  only equal to one of exactly the same class. `@Ignore`d fields are not compared: a class with such
+  state overrides both methods.
+- `toString` of `MsgpackBufferValue` prints the stored properties as JSON in the format of
+  `UnpackedObject`: `{"key":value,...}` in declaration order, strings and enums quoted, binaries and
+  documents as quoted base64, raw values as `[packed value (length=n)]`, and the entries of unknown
+  properties last, in the same form. Unlike `UnpackedObject`, which leaves out the comma before the
+  first unknown entry, the result is valid JSON. A field annotated `@Sanitized` prints
+  `"***"` instead of its value, also when its POJO is nested in another one (a nested
+  `UnpackedObject` only masks at the top level). The stored format is not affected.
 - Keys of a newer version that this class does not declare are unknown properties. The class keeps
   them in `UnknownProperties`, and the codec writes them back. Thus a read-modify-write by an older
   version does not drop them. `UnpackedObject` also keeps them. By default, a `@MsgpackPojo` must
@@ -98,10 +120,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `build/generated/sources/annotationProcessor/java/main/` (Gradle); `FooCodec` declares the keys
   in the stored order.
 - Field initializers must not have side effects, and the class should not need a constructor. If it
-  has one, it must not call `reset`, `codec()` or `ops()`: `FooOps` creates its defaults with `new Foo()` in its static initializer, so such a call
+  has one, it must not call `reset`, `copyFrom`, `equals`, `hashCode`, `toString`, `codec()` or
+  `ops()`: `FooOps` creates its defaults with `new Foo()` in its static initializer, so such a call
   throws a `NullPointerException` there, and every later use of the class fails with
   `NoClassDefFoundError`. A no-argument constructor must stay reachable from the package.
 - A class with `@Ignore`d state overrides `reset()` as `super.reset()` followed by the reset
-  of that state.
+  of that state, like `copyFrom`, `equals` and `hashCode`.
 - A `@MsgpackPojo` is not a `BaseValue`, so an `UnpackedObject` cannot hold it in an
   `ObjectProperty` or `ArrayProperty`. The class that holds it must be a `@MsgpackPojo` too.

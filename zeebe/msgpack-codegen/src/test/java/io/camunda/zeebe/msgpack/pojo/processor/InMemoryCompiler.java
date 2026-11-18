@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo.processor;
 
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.ByteArrayOutputStream;
@@ -100,6 +101,12 @@ final class InMemoryCompiler {
     final var buffer = new ExpandableArrayBuffer();
     final int length = ((BufferWriter) value).write(buffer, 0);
     return Arrays.copyOf(buffer.byteArray(), length);
+  }
+
+  /** {@code target.copyFrom(source)} for two instances of the same generated class. */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  static void copy(final Object source, final Object target) {
+    ((MsgpackBufferValue) target).copyFrom((MsgpackBufferValue) source);
   }
 
   /** The bytes that the body writes. */

@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.pojo.annotation.Ignore;
 import io.camunda.zeebe.msgpack.pojo.annotation.Key;
 import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.annotation.Raw;
+import io.camunda.zeebe.msgpack.pojo.annotation.Sanitized;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -239,6 +240,7 @@ final class ModelBuilder {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
+      final var sanitized = field.getAnnotation(Sanitized.class) != null;
       final var element = kind == Type.LIST ? elementOf(mirror, fieldName) : null;
       if (element != null && !element.unboxed()) {
         switch (element.kind()) {
@@ -248,7 +250,11 @@ final class ModelBuilder {
         }
       }
       final var javaType = element != null ? element.leaf().javaType() : javaType(mirror, kind);
-      properties.add(new Property(keyLiteral, kind, fieldName, javaType, inPlace, element));
+      final var pojo =
+          kind == Type.NESTED
+              && ((DeclaredType) mirror).asElement().getAnnotation(MsgpackPojo.class) != null;
+      properties.add(
+          new Property(keyLiteral, kind, fieldName, javaType, inPlace, sanitized, pojo, element));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no stored fields");
@@ -330,10 +336,10 @@ final class ModelBuilder {
    */
   private @Nullable ListElement elementOf(final TypeMirror list, final String field) {
     if (isType(list, INT_ARRAY_LIST)) {
-      return new ListElement(ListElement.Kind.INT, "int", true, null);
+      return new ListElement(ListElement.Kind.INT, "int", true, false, null);
     }
     if (isType(list, LONG_ARRAY_LIST)) {
-      return new ListElement(ListElement.Kind.LONG, "long", true, null);
+      return new ListElement(ListElement.Kind.LONG, "long", true, false, null);
     }
     final var arguments = ((DeclaredType) list).getTypeArguments();
     if (arguments.size() != 1) {
@@ -342,13 +348,13 @@ final class ModelBuilder {
     // compares the erased element, so type annotations like @Nullable do not matter
     final var argument = arguments.get(0);
     if (isType(argument, DIRECT_BUFFER)) {
-      return new ListElement(ListElement.Kind.STRING, DIRECT_BUFFER, false, null);
+      return new ListElement(ListElement.Kind.STRING, DIRECT_BUFFER, false, false, null);
     }
     if (isType(argument, "java.lang.Long")) {
-      return new ListElement(ListElement.Kind.LONG, "java.lang.Long", false, null);
+      return new ListElement(ListElement.Kind.LONG, "java.lang.Long", false, false, null);
     }
     if (isType(argument, "java.lang.Integer")) {
-      return new ListElement(ListElement.Kind.INT, "java.lang.Integer", false, null);
+      return new ListElement(ListElement.Kind.INT, "java.lang.Integer", false, false, null);
     }
     if (argument.getKind() != TypeKind.DECLARED) {
       return null;
@@ -358,13 +364,14 @@ final class ModelBuilder {
       return inner == null
           ? null
           : new ListElement(
-              ListElement.Kind.LIST, LIST + "<" + inner.javaType() + ">", false, inner);
+              ListElement.Kind.LIST, LIST + "<" + inner.javaType() + ">", false, false, inner);
     }
     final var item = (TypeElement) ((DeclaredType) argument).asElement();
-    if (item.getAnnotation(MsgpackPojo.class) != null || isBaseValue(item)) {
+    final var pojo = item.getAnnotation(MsgpackPojo.class) != null;
+    if (pojo || isBaseValue(item)) {
       requirePublicConstructor(item, field);
       return new ListElement(
-          ListElement.Kind.ITEM, item.getQualifiedName().toString(), false, null);
+          ListElement.Kind.ITEM, item.getQualifiedName().toString(), false, pojo, null);
     }
     return null;
   }

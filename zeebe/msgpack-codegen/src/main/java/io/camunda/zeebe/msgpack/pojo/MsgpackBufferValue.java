@@ -8,7 +8,9 @@
 package io.camunda.zeebe.msgpack.pojo;
 
 import io.camunda.zeebe.msgpack.Recyclable;
+import io.camunda.zeebe.msgpack.pojo.annotation.Ignore;
 import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.annotation.Sanitized;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -69,6 +71,45 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
             e);
       }
     }
+  }
+
+  /**
+   * Replaces the stored properties by a deep copy of the ones of {@code source}: nothing is shared
+   * with it, so it may be modified or its buffer reused afterwards. Allocates a copy of every
+   * string, binary, raw value and document. State that is not stored ({@link Ignore}) is not
+   * copied: override this method to copy it as well, and call {@code super}.
+   */
+  public void copyFrom(final T source) {
+    ops().copy(source, self());
+  }
+
+  /**
+   * Equal if the other is of the same class and has the same stored properties, compared by
+   * content. State that is not stored ({@link Ignore}) is not compared: override {@code equals} and
+   * {@code hashCode} together to include it.
+   */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || o.getClass() != getClass()) {
+      return false;
+    }
+    @SuppressWarnings("unchecked")
+    final T other = (T) o;
+    return ops().equals(self(), other);
+  }
+
+  @Override
+  public int hashCode() {
+    return ops().hashCode(self());
+  }
+
+  /** The stored properties as JSON, with {@link Sanitized} ones masked. */
+  @Override
+  public String toString() {
+    return ops().toString(self());
   }
 
   /** Restores the field initializers. Override to also reset state that is not stored. */

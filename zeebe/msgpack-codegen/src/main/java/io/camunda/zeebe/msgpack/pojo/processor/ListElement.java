@@ -20,9 +20,12 @@ import org.jspecify.annotations.Nullable;
  *     {@code java.util.List<java.lang.Long>}
  * @param unboxed a primitive in an agrona {@code IntArrayList} or {@code LongArrayList}, which has
  *     methods that do not box it
+ * @param pojo an item that is a generated POJO, whose {@code <Name>Ops} is called directly;
+ *     otherwise it is a {@code BaseValue}
  * @param element the element of an element that is a list, null for the other kinds
  */
-record ListElement(Kind kind, String javaType, boolean unboxed, @Nullable ListElement element) {
+record ListElement(
+    Kind kind, String javaType, boolean unboxed, boolean pojo, @Nullable ListElement element) {
 
   ListElement inner() {
     return Objects.requireNonNull(element);
