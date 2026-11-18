@@ -31,6 +31,8 @@
 # Cross-repo usage (add to other repos in the org):
 #   jobs:
 #     urgency:
+#       permissions:
+#         id-token: write
 #       uses: camunda/camunda/.github/workflows/assign-urgency-to-issue.yml@main
 #       with:
 #         issue_number: ${{ github.event.issue.number }}
@@ -70,7 +72,8 @@ concurrency:
 jobs:
   assign-urgency-to-issue:
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      id-token: write # Vault JWT login
     timeout-minutes: 10
     env:
       OWNER: ${{ github.repository_owner }}
@@ -96,9 +99,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - name: Dump event issue JSON
         env:
