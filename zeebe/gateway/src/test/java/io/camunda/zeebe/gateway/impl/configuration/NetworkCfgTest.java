@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.system.configuration;
+package io.camunda.zeebe.gateway.impl.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import java.net.InetSocketAddress;
 import org.junit.jupiter.api.Test;
 
