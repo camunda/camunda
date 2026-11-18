@@ -1,5 +1,5 @@
 # description: Deploys the shared physical-tenants load test (mixed scenario of the noisy neighbour
-#              epic): a few saturating/heavy tenants next to many quiet tenants, each tenant with
+#              epic): a few saturating tenants next to many quiet tenants, each tenant with
 #              its own starter and worker. Computes the per-tenant traffic profiles from simple
 #              inputs and delegates the deployment to camunda-load-test.yml. Use the same inputs
 #              on every solution to compare results; a run without saturating tenants
@@ -24,29 +24,24 @@ on:
         default: 10
         required: false
       saturating-tenant-count:
-        description: 'How many tenants send saturating-rate (the noisy neighbours, pt1..). Use 0 for the reference run without noise'
+        description: 'How many tenants exceed their allowance (the noisy neighbours, pt1..). Use 0 for the reference run without noise'
         type: number
         default: 1
         required: false
-      heavy-tenant-count:
-        description: 'How many tenants send heavy-rate (placed after the saturating tenants). All remaining tenants and the default tenant are quiet'
-        type: number
-        default: 2
-        required: false
-      quiet-rate:
-        description: '── Traffic ───────────────────────── Process instances/s started by each quiet tenant'
-        type: number
-        default: 5
-        required: false
-      heavy-rate:
-        description: 'Process instances/s started by each heavy tenant'
+      allowance-rate:
+        description: '── Traffic ───────────────────────── Process instances/s a tenant is allowed (100%). Percentages below are relative to it'
         type: number
         default: 50
         required: false
-      saturating-rate:
-        description: 'Process instances/s started by each saturating tenant (2-5x the allowance of a heavy tenant)'
+      quiet-percent:
+        description: 'Load of each quiet tenant (and the default tenant), in % of the allowance'
         type: number
-        default: 150
+        default: 20
+        required: false
+      saturating-percent:
+        description: 'Load of each saturating tenant, in % of the allowance (200-500 matches 2-5x over the allowance)'
+        type: number
+        default: 300
         required: false
       secondary-storage-type:
         description: '── Cluster ───────────────────────── Secondary storage shared by all tenants'
@@ -112,10 +107,9 @@ jobs:
     env:
       TENANT_COUNT: ${{ inputs.tenant-count }}
       SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
-      HEAVY_COUNT: ${{ inputs.heavy-tenant-count }}
-      QUIET_RATE: ${{ inputs.quiet-rate }}
-      HEAVY_RATE: ${{ inputs.heavy-rate }}
-      SATURATING_RATE: ${{ inputs.saturating-rate }}
+      ALLOWANCE_RATE: ${{ inputs.allowance-rate }}
+      QUIET_PERCENT: ${{ inputs.quiet-percent }}
+      SATURATING_PERCENT: ${{ inputs.saturating-percent }}
       STORAGE: ${{ inputs.secondary-storage-type }}
       USE_PGBOUNCER: ${{ inputs.use-pgbouncer }}
       ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
@@ -126,7 +120,7 @@ jobs:
       - name: Compute profiles
         id: profiles
         run: |-
-          for var in TENANT_COUNT SATURATING_COUNT HEAVY_COUNT QUIET_RATE HEAVY_RATE SATURATING_RATE; do
+          for var in TENANT_COUNT SATURATING_COUNT ALLOWANCE_RATE QUIET_PERCENT SATURATING_PERCENT; do
             if [[ ! "${!var}" =~ ^[0-9]+$ ]]; then
               echo "::error::${var} must be a non-negative integer, got '${!var}'"
               exit 1
@@ -136,12 +130,12 @@ jobs:
             echo "::error::tenant-count must be at least 1"
             exit 1
           fi
-          if (( SATURATING_COUNT + HEAVY_COUNT > TENANT_COUNT )); then
-            echo "::error::saturating-tenant-count + heavy-tenant-count (${SATURATING_COUNT} + ${HEAVY_COUNT}) exceeds tenant-count (${TENANT_COUNT})"
+          if (( SATURATING_COUNT > TENANT_COUNT )); then
+            echo "::error::saturating-tenant-count (${SATURATING_COUNT}) exceeds tenant-count (${TENANT_COUNT})"
             exit 1
           fi
-          if (( QUIET_RATE < 1 || HEAVY_RATE < 1 || SATURATING_RATE < 1 )); then
-            echo "::error::rates must be at least 1"
+          if (( ALLOWANCE_RATE < 1 || QUIET_PERCENT < 1 || SATURATING_PERCENT < 1 )); then
+            echo "::error::allowance-rate and the percentages must be at least 1"
             exit 1
           fi
           # A target-version other than main runs setup scripts of main with an older setup folder,
@@ -151,6 +145,11 @@ jobs:
             exit 1
           fi
 
+          # Rates are rounded up and at least 1 PI/s.
+          rate_of() { echo $(( (ALLOWANCE_RATE * $1 + 99) / 100 )); }
+          QUIET_RATE=$(rate_of "${QUIET_PERCENT}")
+          SATURATING_RATE=$(rate_of "${SATURATING_PERCENT}")
+
           # Worker replicas scale with the rate, using the ratio of the typical scenario (6 workers for 50 PI/s).
           replicas() { echo $(( ($1 * 6 + 49) / 50 )); }
 
@@ -158,8 +157,6 @@ jobs:
           for ((i = 1; i <= TENANT_COUNT; i++)); do
             if (( i <= SATURATING_COUNT )); then
               rate=${SATURATING_RATE}
-            elif (( i <= SATURATING_COUNT + HEAVY_COUNT )); then
-              rate=${HEAVY_RATE}
             else
               rate=${QUIET_RATE}
             fi
@@ -185,9 +182,7 @@ jobs:
             echo "| --- | --- | --- |"
             echo "| default | quiet | ${QUIET_RATE} |"
             for ((i = 1; i <= TENANT_COUNT; i++)); do
-              if (( i <= SATURATING_COUNT )); then role=saturating
-              elif (( i <= SATURATING_COUNT + HEAVY_COUNT )); then role=heavy
-              else role=quiet; fi
+              if (( i <= SATURATING_COUNT )); then role=saturating; else role=quiet; fi
               echo "| pt${i} | ${role} | ${profiles[i-1]%%:*} |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
