@@ -29,6 +29,7 @@ const RELIABILITY =
 const MEDIC = {
   '@camunda/test-automation-team': '<!subteam^S09UF0EV0HG|test-automation-medic>',
   '@camunda/distribution': '<!subteam^S0CBB7Y72SV|smx-medic>',
+  '@camunda/smx': '<!subteam^S0CBB7Y72SV|smx-medic>',
   '@camunda/engineering-operations': '<!subteam^S07D6C6B18T|monorepo-ci-medic>',
   '@camunda/core-features': '<!subteam^S08P2CU9V8W|core-features-medic>',
 };
