@@ -55,7 +55,7 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
 
   @Override
   public void thenReturn(final Object decisionOutput) {
-    if (decisionId == null) {
+    if (decisionId == null || decisionId.trim().isEmpty()) {
       throw new IllegalStateException(
           "No decision ID set. Use withDecisionId(String) to set a decision ID before calling thenReturn().");
     }
