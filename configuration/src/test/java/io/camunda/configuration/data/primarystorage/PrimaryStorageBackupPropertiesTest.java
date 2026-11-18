@@ -240,8 +240,8 @@ public class PrimaryStorageBackupPropertiesTest {
   class MaxReadRateStartupValidation {
 
     @ParameterizedTest
-    @ValueSource(strings = {"0", "-1MB"})
-    void shouldFailToStartWithMaxReadRateThatIsNotPositive(final String maxReadRate) {
+    @ValueSource(strings = {"0", "-1MB", "6553B"})
+    void shouldFailToStartWithMaxReadRateBelowTheMinimum(final String maxReadRate) {
       // given
       final Map<String, Object> properties =
           Map.of(
@@ -261,7 +261,7 @@ public class PrimaryStorageBackupPropertiesTest {
       // when/then - application startup should fail
       assertThatThrownBy(app::run)
           .hasRootCauseInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("BackupStore maxReadRate must be positive");
+          .hasMessageContaining("BackupStore maxReadRate must be at least 6554 bytes per second");
     }
   }
 
