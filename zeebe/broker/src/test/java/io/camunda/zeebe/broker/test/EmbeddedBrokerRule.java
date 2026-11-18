@@ -10,13 +10,9 @@ package io.camunda.zeebe.broker.test;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
-import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
-import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
@@ -35,19 +31,15 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
-import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,7 +50,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.LangUtil;
 import org.assertj.core.util.Files;
-import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -127,8 +118,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
-    setGatewayApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
-    setGatewayClusterPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setCommandApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setInternalApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
   }
@@ -181,14 +170,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   public AtomixCluster getAtomixCluster() {
     return atomixCluster;
-  }
-
-  public InetSocketAddress getGatewayAddress() {
-    return brokerCfg.getGateway().getNetwork().toSocketAddress();
-  }
-
-  public URI getGrpcAddress() {
-    return AddressUtil.composeGrpcAddress(NetUtil.toSocketAddressString(getGatewayAddress()), true);
   }
 
   public Broker getBroker() {
@@ -274,27 +255,11 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       Thread.currentThread().interrupt();
     }
 
-    if (brokerCfg.getGateway().isEnable()) {
-      try (final var client =
-          CamundaClient.newClientBuilder()
-              .preferRestOverGrpc(false)
-              .grpcAddress(
-                  AddressUtil.composeGrpcAddress(
-                      NetUtil.toSocketAddressString(getGatewayAddress()), true))
-              .build()) {
-        Awaitility.await("until we have a complete topology")
-            .ignoreExceptions()
-            .untilAsserted(
-                () -> {
-                  final var topology = client.newTopologyRequest().send().join();
-                  TopologyAssert.assertThat(topology)
-                      .isComplete(
-                          brokerCfg.getCluster().getClusterSize(),
-                          brokerCfg.getCluster().getPartitionsCount(),
-                          brokerCfg.getCluster().getReplicationFactor());
-                });
-      }
-    }
+    TestBrokerClientFactory.awaitCompleteTopology(
+        systemContext.getBrokerClient(),
+        brokerCfg.getCluster().getClusterSize(),
+        brokerCfg.getCluster().getPartitionsCount(),
+        brokerCfg.getCluster().getReplicationFactor());
 
     dataDirectory = broker.getSystemContext().getBrokerConfiguration().getData().getDirectory();
   }

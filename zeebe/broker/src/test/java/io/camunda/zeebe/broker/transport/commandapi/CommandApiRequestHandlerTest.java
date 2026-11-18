@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.broker.test.TestPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -139,7 +139,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -162,7 +162,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -188,7 +188,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -213,7 +213,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -239,7 +239,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -260,7 +260,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -280,7 +280,7 @@ public class CommandApiRequestHandlerTest {
     when(logStreamWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(false);
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when

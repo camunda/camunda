@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
@@ -23,17 +22,15 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
+import io.camunda.zeebe.broker.test.TestPublishMessageRequest;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
-import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -81,24 +78,15 @@ final class PartitionLeaveTest {
             CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
         .join();
 
-    try (final var client =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(
-                URI.create(
-                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
-            .build()) {
-      Awaitility.await()
-          .untilAsserted(
-              () ->
-                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                      .isComplete(2, 1, 2));
+    try {
+      final var client = broker0.getSystemContext().getBrokerClient();
+      TestBrokerClientFactory.awaitCompleteTopology(client, 2, 1, 2);
 
       // when -- one broker leaves partition 1
       ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
 
       // then -- request can still be processed because quorum is still available
-      client.newPublishMessageCommand().messageName("msg").correlationKey("key").send().join();
+      client.sendRequestWithRetry(new TestPublishMessageRequest("msg", "key")).join();
     } finally {
       broker0.close();
       broker1.close();
@@ -133,18 +121,9 @@ final class PartitionLeaveTest {
             CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
         .join();
 
-    try (final var client =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(
-                URI.create(
-                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
-            .build()) {
-      Awaitility.await()
-          .untilAsserted(
-              () ->
-                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                      .isComplete(2, 2, 2));
+    try {
+      final var client = broker0.getSystemContext().getBrokerClient();
+      TestBrokerClientFactory.awaitCompleteTopology(client, 2, 2, 2);
 
       // when -- one broker leaves partition 1
       ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
@@ -189,18 +168,9 @@ final class PartitionLeaveTest {
             CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
         .join();
 
-    try (final var client =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(
-                URI.create(
-                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
-            .build()) {
-      Awaitility.await()
-          .untilAsserted(
-              () ->
-                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                      .isComplete(2, 2, 2));
+    try {
+      final var client = broker0.getSystemContext().getBrokerClient();
+      TestBrokerClientFactory.awaitCompleteTopology(client, 2, 2, 2);
 
       // when -- broker 0 stops and thus broker 1 fails to leave
       broker0.close();
