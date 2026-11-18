@@ -64,7 +64,7 @@ jobs:
   consume-distball:
     permissions:
       contents: read
-      id-token: write  # required for WIF auth
+      id-token: write  # required for WIF auth and the Vault JWT login
     steps:
       - uses: actions/checkout@v6
       - name: Authenticate to GCS build-cache
