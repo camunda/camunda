@@ -85,15 +85,26 @@ class ComputeTest(unittest.TestCase):
 class RenderTest(unittest.TestCase):
     def test_profiles_and_default_flags(self):
         tenants = profiles.compute(**{**DEFAULTS, "tenant_count": 2})
-        out, default_flags, overload, table = profiles.render(tenants, 300)
-        self.assertEqual(out, "450 20")
-        self.assertEqual(default_flags, "--set load-tester.starter.rate=20")
+        out, default_flags, overload, table = profiles.render(tenants, 300, 4)
+        self.assertEqual(out, "450:18 20:1")
+        self.assertEqual(
+            default_flags, "--set load-tester.starter.rate=20 --set load-tester.workers.worker.replicas=1"
+        )
         self.assertTrue(overload)
         self.assertIn("overload", table)
 
     def test_run_within_capacity_is_not_flagged(self):
         tenants = profiles.compute(**{**DEFAULTS, "saturating_count": 0})
-        self.assertFalse(profiles.render(tenants, 300)[2])
+        self.assertFalse(profiles.render(tenants, 300, 4)[2])
+
+
+class WorkersTest(unittest.TestCase):
+    def test_workers_scale_linearly_with_the_rate_and_round_up(self):
+        self.assertEqual(profiles.workers(900, 4), 36)
+        self.assertEqual(profiles.workers(901, 4), 37)
+
+    def test_every_tenant_has_at_least_one_worker(self):
+        self.assertEqual(profiles.workers(1, 4), 1)
 
 
 class CapacityTest(unittest.TestCase):

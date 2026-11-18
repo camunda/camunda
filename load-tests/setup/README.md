@@ -410,7 +410,7 @@ is configured through the usual load test flags.
 
 ```sh
 # pt1 saturates, pt2 is heavy, pt3 is quiet
-make install physical_tenant_count=3 physical_tenant_profiles="150 50 5" scenario=max
+make install physical_tenant_count=3 physical_tenant_profiles="150:6 50:2 5:1" scenario=max
 ```
 
 The [`Camunda physical tenants load test`](../../.github/workflows/camunda-physical-tenants-load-test.yml)

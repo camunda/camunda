@@ -21,13 +21,16 @@ The cluster capacity is the throughput at which the cluster saturates. The daily
 CPU at about half of its limit. Until a calibration run measures the capacity, an estimate exists for
 Elasticsearch only (see ESTIMATED_CAPACITY); for any other secondary storage it must be given.
 
+Worker replicas scale linearly with the rate (WORKER_REPLICAS_PER_100_PI, at least one), so workers
+never limit a tenant; overprovisioning them is deliberate.
+
 Environment (set by the workflow):
-  TENANT_COUNT, SATURATING_COUNT, SATURATING_CAPACITY_RATIO, QUIET_MULTIPLIER,
+  TENANT_COUNT, WORKER_REPLICAS_PER_100_PI, SATURATING_COUNT, SATURATING_CAPACITY_RATIO, QUIET_MULTIPLIER,
   TENANT_WEIGHTS ("pt2=3,default=2" or empty), TENANT_OVERRIDES ("pt3=4,default=0.1" or empty),
   TOTAL_RATE (0 disables), STORAGE (secondary storage type), CAPACITY_RATE (empty = the estimate), GITHUB_OUTPUT, GITHUB_STEP_SUMMARY.
 
-Writes the step outputs `profiles` (the physical_tenant_profiles make variable, one rate per tenant),
-`default-tenant-flags` (Helm flag of the default tenant) and `overload` (true when one tenant alone
+Writes the step outputs `profiles` (the physical_tenant_profiles make variable, one rate:replicas entry per tenant),
+`default-tenant-flags` (Helm flags of the default tenant) and `overload` (true when one tenant alone
 offers at least the cluster capacity), and a Markdown table to the step summary.
 """
 
@@ -160,21 +163,30 @@ def whole_rate(rate: float) -> int:
     return max(1, math.ceil(rate))
 
 
-def render(tenants: list[Tenant], capacity: float) -> tuple[str, str, bool, str]:
+def workers(rate: int, per_100_pi: float) -> int:
+    return max(1, math.ceil(rate * per_100_pi / 100))
+
+
+def render(tenants: list[Tenant], capacity: float, per_100_pi: float) -> tuple[str, str, bool, str]:
     rates = {t.name: whole_rate(t.rate) for t in tenants}
-    profiles = " ".join(str(rates[t.name]) for t in tenants if t.name != "default")
-    default_flags = f"--set load-tester.starter.rate={rates['default']}"
+    profiles = " ".join(
+        f"{rates[t.name]}:{workers(rates[t.name], per_100_pi)}" for t in tenants if t.name != "default"
+    )
+    default_flags = (
+        f"--set load-tester.starter.rate={rates['default']} "
+        f"--set load-tester.workers.worker.replicas={workers(rates['default'], per_100_pi)}"
+    )
     total = sum(rates.values())
     overload = any(rates[t.name] >= capacity for t in tenants)
 
     lines = [
-        "| Tenant | Role | Weight | Multiplier | Rate (PI/s) | Offered load (% of capacity) | Derivation |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Tenant | Role | Weight | Multiplier | Rate (PI/s) | Offered load (% of capacity) | Workers | Derivation |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for t in tenants:
         lines.append(
             f"| {t.name} | {t.role} | {t.weight:g} | {t.multiplier:.2f} | {rates[t.name]} "
-            f"| {100 * rates[t.name] / capacity:.0f}% | {'scaled' if t.scaled else 'pinned' if t.pinned else 'derived'} |"
+            f"| {100 * rates[t.name] / capacity:.0f}% | {workers(rates[t.name], per_100_pi)} | {'scaled' if t.scaled else 'pinned' if t.pinned else 'derived'} |"
         )
     lines += [
         "",
@@ -205,7 +217,7 @@ def main() -> int:
         print(f"::error::{error}")
         return 1
 
-    profiles, default_flags, overload, table = render(tenants, capacity)
+    profiles, default_flags, overload, table = render(tenants, capacity, float(env["WORKER_REPLICAS_PER_100_PI"]))
     with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
         out.write(f"profiles={profiles}\n")
         out.write(f"default-tenant-flags={default_flags}\n")

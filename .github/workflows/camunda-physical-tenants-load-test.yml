@@ -46,6 +46,11 @@ on:
         type: number
         default: 0.2
         required: false
+      worker-replicas-per-100-pi:
+        description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). Overprovisioned so workers never limit a tenant'
+        type: number
+        default: 4
+        required: false
       tenant-weights:
         description: 'Relative share of tenants, e.g. pt2=3,default=2. Unlisted tenants have weight 1'
         type: string
@@ -152,6 +157,7 @@ jobs:
           CAPACITY_RATE: ${{ inputs.cluster-capacity-rate }}
           SATURATING_CAPACITY_RATIO: ${{ inputs.saturating-capacity-ratio }}
           QUIET_MULTIPLIER: ${{ inputs.quiet-multiplier }}
+          WORKER_REPLICAS_PER_100_PI: ${{ inputs.worker-replicas-per-100-pi }}
           TENANT_WEIGHTS: ${{ inputs.tenant-weights }}
           TENANT_OVERRIDES: ${{ inputs.tenant-overrides }}
           TOTAL_RATE: ${{ inputs.total-rate }}
