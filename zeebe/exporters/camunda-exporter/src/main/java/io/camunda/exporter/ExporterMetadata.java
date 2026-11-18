@@ -36,6 +36,7 @@ public final class ExporterMetadata {
   @JsonIgnore private final ObjectWriter objectWriter;
   @JsonIgnore private final ObjectReader objectReader;
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
+  @JsonIgnore private volatile long lastFlushedPosition = UNSET_POSITION;
   private Map<TaskImplementation, Long> firstUserTaskKeys =
       new HashMap<>() {
         {
@@ -58,6 +59,16 @@ public final class ExporterMetadata {
     INCIDENT_POSITION_SETTER.updateAndGet(
         this,
         prev -> updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
+  }
+
+  @JsonIgnore
+  public long getLastFlushedPosition() {
+    return lastFlushedPosition;
+  }
+
+  @JsonIgnore
+  public void setLastFlushedPosition(final long lastFlushedPosition) {
+    this.lastFlushedPosition = lastFlushedPosition;
   }
 
   public long getFirstUserTaskKey(final TaskImplementation implementation) {
