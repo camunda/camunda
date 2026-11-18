@@ -21,13 +21,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Everything {@link SecretStoreConfiguration} creates that nothing else owns: the stores, the
- * per-tenant concurrency pools and the per-tenant wrapped meter registries. {@link
+ * Everything {@link SecretStoreConfiguration} creates for one physical tenant that nothing else
+ * owns: the stores, the concurrency pool and the wrapped meter registry. {@link
  * io.camunda.secretstore.CachingSecretStore} and {@link
  * io.camunda.secretstore.ConcurrentSecretStore} deliberately do not close what they wrap or share,
  * so releasing these falls to whoever built them.
  *
- * <p>Closed both to roll back a failed startup and when the application context shuts down.
+ * <p>Closed to roll back a failed build, when the tenant's stores are replaced or removed, and when
+ * the application context shuts down.
  */
 public final class SecretStoreResources implements AutoCloseable {
 

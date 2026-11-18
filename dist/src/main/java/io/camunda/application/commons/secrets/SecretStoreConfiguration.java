@@ -89,30 +89,45 @@ public class SecretStoreConfiguration {
       final PhysicalTenantResolver resolver,
       final ActorClockService clockService,
       final MeterRegistry meterRegistry) {
-    final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
-    // tracks everything built across all tenants processed so far, so a failure partway through
-    // (e.g. a later tenant's AWS store failing to build) can release it instead of leaking clients,
-    // pools and meters; on success it moves into the returned registries, which release it on close
-    final var resources = new SecretStoreResources();
     final var timeSource = new ActorClockInstantSource(clockService);
+    final var registries =
+        new SecretStoreRegistries(
+            (tenantId, secrets) -> build(tenantId, secrets, timeSource, meterRegistry));
     try {
-      resolver
-          .mapValues(Camunda::getSecrets)
-          .forEach(
-              (tenantId, secrets) ->
-                  registries.put(
-                      tenantId,
-                      buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry)));
+      resolver.mapValues(Camunda::getSecrets).forEach(registries::put);
     } catch (final Throwable e) {
       try {
-        resources.close();
+        registries.close();
       } catch (final Throwable closeFailure) {
         // keeps the startup failure as the root cause an operator sees
         e.addSuppressed(closeFailure);
       }
       throw e;
     }
-    return new SecretStoreRegistries(registries, resources);
+    return registries;
+  }
+
+  /**
+   * Builds the secret stores of one physical tenant. If this fails partway through, whatever it
+   * built so far is released before the failure is thrown.
+   */
+  static TenantSecretStores build(
+      final String tenantId,
+      final Secrets secrets,
+      final InstantSource timeSource,
+      final MeterRegistry meterRegistry) {
+    final var resources = new SecretStoreResources();
+    try {
+      return new TenantSecretStores(
+          buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry), resources);
+    } catch (final Throwable e) {
+      try {
+        resources.close();
+      } catch (final Throwable closeFailure) {
+        e.addSuppressed(closeFailure);
+      }
+      throw e;
+    }
   }
 
   private static SecretStoreRegistry buildRegistry(
