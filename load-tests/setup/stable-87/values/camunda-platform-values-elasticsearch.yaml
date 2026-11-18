@@ -24,11 +24,26 @@ global:
 
 
 ########################################################################################
-################################################### Orchestration cluster configuration
+################################################### Zeebe exporter configuration
 ########################################################################################
-orchestration:
-  # We need to explicitly set the secondary storage type to ELS
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES
-  data:
-    secondaryStorage:
-      type: elasticsearch
+zeebe:
+  env:
+    ## The values below are duplicated from camunda-platform-values-defaults.yaml
+    ## because Helm replaces lists as a whole. Keep them in sync.
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
+      value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+      value: "1"

@@ -299,6 +299,27 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 	}
 }
 
+// TestShouldIgnoreCommandLineEnableOptimizeWhenStorageIsNone simulates stable-branch
+// workflows (stable/8.7, stable/8.8, stable/8.9), which pass
+// `secondary_storage=none enable_optimize=true` on the make command line when the
+// user leaves enable-optimize at its default. Command-line origin overrides the
+// `enable_optimize ?= false` baked by newLoadTest.sh, so common.mk itself must
+// skip the un-scaffolded camunda-platform-values-optimize*.yaml files for none.
+func TestShouldIgnoreCommandLineEnableOptimizeWhenStorageIsNone(t *testing.T) {
+	for _, version := range versions {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			ns := Scaffold(t, version, "c8-golden-none-cli-opt-"+version, "none", "true")
+			defer ns.Cleanup()
+
+			// when / then: helm template succeeds without looking for optimize values files
+			ns.Render(t, "template", "", "secondary_storage=none", "enable_optimize=true")
+		})
+	}
+}
+
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and
 // compares (or writes) the resulting manifest tree against the golden directory.
 // pathFilter, when non-empty, restricts the comparison to that subset of
