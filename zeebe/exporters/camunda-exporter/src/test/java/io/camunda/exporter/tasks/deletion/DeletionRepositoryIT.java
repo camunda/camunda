@@ -27,6 +27,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
@@ -127,16 +128,18 @@ abstract class DeletionRepositoryIT {
   void shouldReturnExpiredProcessInstancesFromOrdinalIndicesOnly() throws IOException {
     // given
     final var expired = OffsetDateTime.now().minusHours(2);
-    indexProcessInstance(ordinalIndex(1), 1L, PARTITION_ID, expired);
-    indexProcessInstance(ordinalIndex(2), 2L, PARTITION_ID, expired);
+    indexProcessInstance(1, 1L, PARTITION_ID, expired);
+    indexProcessInstance(1, 2L, PARTITION_ID, expired);
     // not past the retention period
-    indexProcessInstance(ordinalIndex(1), 3L, PARTITION_ID, OffsetDateTime.now());
+    indexProcessInstance(1, 3L, PARTITION_ID, OffsetDateTime.now());
     // still running
-    indexProcessInstance(ordinalIndex(1), 4L, PARTITION_ID, null);
+    indexProcessInstance(1, 4L, PARTITION_ID, null);
     // main index is not targeted
-    indexProcessInstance(listViewTemplate.getFullQualifiedName(), 5L, PARTITION_ID, expired);
+    final var inMainIndex = processInstance(5L, PARTITION_ID, expired);
+    searchClientAdapter.index(
+        inMainIndex.getId(), listViewTemplate.getFullQualifiedName(), inMainIndex);
     // other partition
-    indexProcessInstance(ordinalIndex(1), 6L, PARTITION_ID + 1, expired);
+    indexProcessInstance(1, 6L, PARTITION_ID + 1, expired);
     searchClientAdapter.refresh(listViewTemplate.getFullQualifiedName());
 
     // when
@@ -147,6 +150,7 @@ abstract class DeletionRepositoryIT {
         .succeedsWithin(REQUEST_TIMEOUT)
         .satisfies(
             batch -> {
+              assertThat(batch.storageOrdinal()).isEqualTo(1);
               assertThat(batch.processInstanceKeys()).containsExactlyInAnyOrder(1L, 2L);
               assertThat(batch.rootProcessInstanceKeys()).isEmpty();
             });
@@ -157,10 +161,10 @@ abstract class DeletionRepositoryIT {
     // given
     deleterConfig.setEntityBatchSize(2);
     final var now = OffsetDateTime.now();
-    indexProcessInstance(ordinalIndex(1), 1L, PARTITION_ID, now.minusHours(3));
-    indexProcessInstance(ordinalIndex(1), 2L, PARTITION_ID, now.minusHours(5));
-    indexProcessInstance(ordinalIndex(2), 3L, PARTITION_ID, now.minusHours(2));
-    indexProcessInstance(ordinalIndex(2), 4L, PARTITION_ID, now.minusHours(4));
+    indexProcessInstance(1, 1L, PARTITION_ID, now.minusHours(3));
+    indexProcessInstance(1, 2L, PARTITION_ID, now.minusHours(5));
+    indexProcessInstance(1, 3L, PARTITION_ID, now.minusHours(2));
+    indexProcessInstance(1, 4L, PARTITION_ID, now.minusHours(4));
     searchClientAdapter.refresh(listViewTemplate.getFullQualifiedName());
 
     // when
@@ -171,6 +175,68 @@ abstract class DeletionRepositoryIT {
         .succeedsWithin(REQUEST_TIMEOUT)
         .extracting(ProcessInstanceDeletionBatch::processInstanceKeys)
         .isEqualTo(List.of(2L, 4L));
+  }
+
+  @Test
+  void shouldOnlyReturnProcessInstancesFromLowestStorageOrdinal() throws IOException {
+    // given
+    final var now = OffsetDateTime.now();
+    // older, but in a higher storage ordinal
+    indexProcessInstance(2, 1L, PARTITION_ID, now.minusHours(5));
+    indexProcessInstance(1, 2L, PARTITION_ID, now.minusHours(2));
+    indexProcessInstance(1, 3L, PARTITION_ID, now.minusHours(3));
+    searchClientAdapter.refresh(listViewTemplate.getFullQualifiedName());
+
+    // when
+    final var result = createRepository().getProcessInstancesNextBatch();
+
+    // then
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .satisfies(
+            batch -> {
+              assertThat(batch.storageOrdinal()).isEqualTo(1);
+              assertThat(batch.processInstanceKeys()).containsExactly(3L, 2L);
+            });
+  }
+
+  @Test
+  void shouldTreatProcessInstancesWithoutStorageOrdinalAsMainIndex() throws IOException {
+    // given
+    final var now = OffsetDateTime.now();
+    final var withoutOrdinal = processInstance(1L, PARTITION_ID, now.minusHours(2));
+    searchClientAdapter.index(withoutOrdinal.getId(), ordinalIndex(1), withoutOrdinal);
+    // older, but has a storage ordinal so sorts after those without one
+    indexProcessInstance(1, 2L, PARTITION_ID, now.minusHours(5));
+    searchClientAdapter.refresh(listViewTemplate.getFullQualifiedName());
+
+    // when
+    final var result = createRepository().getProcessInstancesNextBatch();
+
+    // then
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .satisfies(
+            batch -> {
+              assertThat(batch.storageOrdinal()).isEqualTo(StorageOrdinalRelated.MAIN_INDEX);
+              assertThat(batch.processInstanceKeys()).containsExactly(1L);
+            });
+  }
+
+  @Test
+  void shouldReturnEmptyBatchWhenNothingToDelete() {
+    // when
+    final var result = createRepository().getProcessInstancesNextBatch();
+
+    // then
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .satisfies(
+            batch -> {
+              assertThat(batch.isEmpty()).isTrue();
+              assertThat(batch.storageOrdinal())
+                  .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+            });
   }
 
   @Test
@@ -185,6 +251,7 @@ abstract class DeletionRepositoryIT {
             .setParentProcessInstanceKey(1L);
     final var legacy = processInstance(3L, PARTITION_ID, expired);
     for (final var pi : List.of(root, child, legacy)) {
+      pi.setStorageOrdinal(1);
       searchClientAdapter.index(pi.getId(), ordinalIndex(1), pi);
     }
     searchClientAdapter.refresh(listViewTemplate.getFullQualifiedName());
@@ -209,10 +276,10 @@ abstract class DeletionRepositoryIT {
   }
 
   private void indexProcessInstance(
-      final String indexName, final long key, final int partitionId, final OffsetDateTime endDate)
+      final int storageOrdinal, final long key, final int partitionId, final OffsetDateTime endDate)
       throws IOException {
-    final var pi = processInstance(key, partitionId, endDate);
-    searchClientAdapter.index(pi.getId(), indexName, pi);
+    final var pi = processInstance(key, partitionId, endDate).setStorageOrdinal(storageOrdinal);
+    searchClientAdapter.index(pi.getId(), ordinalIndex(storageOrdinal), pi);
   }
 
   private ProcessInstanceForListViewEntity processInstance(

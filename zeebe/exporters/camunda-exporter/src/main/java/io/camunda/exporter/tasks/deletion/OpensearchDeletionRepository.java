@@ -19,13 +19,15 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -78,18 +80,39 @@ public class OpensearchDeletionRepository extends OpensearchRepository
                     "now-" + retention.getMinimumAge(), partitionId, retentionMode))
             .size(config.getEntityBatchSize())
             .source(
-                s -> s.filter(f -> f.includes(List.of(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY))))
+                s ->
+                    s.filter(
+                        f ->
+                            f.includes(
+                                List.of(
+                                    ListViewTemplate.KEY,
+                                    ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY,
+                                    ListViewTemplate.STORAGE_ORDINAL))))
             .sort(
-                sort ->
-                    sort.field(
-                        field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc)))
+                // a batch only covers one storage ordinal, so sort by it first to fill batches;
+                // documents without one are treated as being in the main index
+                SortOptions.of(
+                    sort ->
+                        sort.field(
+                            field ->
+                                field
+                                    .field(ListViewTemplate.STORAGE_ORDINAL)
+                                    .order(SortOrder.Asc)
+                                    .missing(FieldValue.of(StorageOrdinalRelated.MAIN_INDEX)))),
+                SortOptions.of(
+                    sort ->
+                        sort.field(
+                            field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
             .build();
 
     try {
       return client
           .search(request, ProcessInstanceForListViewEntity.class)
           .thenApplyAsync(
-              response -> toProcessInstanceDeletionBatch(response.hits().hits()), executor);
+              response ->
+                  ProcessInstanceDeletionBatch.from(
+                      response.hits().hits().stream().map(Hit::source).toList(), retentionMode),
+              executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -187,22 +210,5 @@ public class OpensearchDeletionRepository extends OpensearchRepository
 
     // only count DELETE bulk operation where result was `deleted`
     return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
-  }
-
-  private ProcessInstanceDeletionBatch toProcessInstanceDeletionBatch(
-      final List<Hit<ProcessInstanceForListViewEntity>> hits) {
-    final List<Long> processInstanceKeys = new ArrayList<>();
-    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
-
-    for (final var hit : hits) {
-      final var rootKey = hit.source() == null ? null : hit.source().getRootProcessInstanceKey();
-      if (retentionMode != ProcessInstanceRetentionMode.PI && rootKey != null) {
-        rootProcessInstanceKeys.add(rootKey);
-      } else {
-        processInstanceKeys.add(Long.valueOf(hit.id()));
-      }
-    }
-
-    return new ProcessInstanceDeletionBatch(processInstanceKeys, rootProcessInstanceKeys);
   }
 }
