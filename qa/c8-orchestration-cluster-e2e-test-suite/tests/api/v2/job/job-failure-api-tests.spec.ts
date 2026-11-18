@@ -22,9 +22,17 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Fail API Tests', () => {
+  // This file deploys its own process and uses its own task type rather than
+  // the shared `jobApiProcess`/`jobApiTaskType`. The four job API spec files
+  // run in parallel on the `api-tests` project's workers, and all activate
+  // jobs purely by type, so a type shared across files lets one file activate
+  // a job owned by another file's process instance. When that foreign instance
+  // is cancelled by its own `afterEach`, the job is deleted — making the second
+  // `fail` below return 404 (NOT_FOUND) instead of 409. An isolated type keeps
+  // every job this file touches owned by this file (whose tests run serially).
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
-    'job_api_process',
-    'jobApiProcess',
+    'job_failure_api_process',
+    'jobFailureApiProcess',
   );
 
   test.beforeAll(beforeAll);
@@ -36,7 +44,7 @@ test.describe('Job Fail API Tests', () => {
   test('Fail Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
-      'jobApiTaskType',
+      'jobFailureApiTaskType',
     );
 
     // Now fail the job.
@@ -90,7 +98,7 @@ test.describe('Job Fail API Tests', () => {
     await test.step('First activate a job', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'jobApiTaskType',
+        'jobFailureApiTaskType',
       );
     });
 
