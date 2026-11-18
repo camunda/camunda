@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.secondarystorage;
 
+import io.camunda.configuration.AcceptsSecretReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,10 +34,11 @@ public abstract class SecondaryStorageDatabase<T> {
   private List<String> urls = new ArrayList<>();
 
   /** Username for the database configured as secondary storage. */
+  @AcceptsSecretReference(credential = false)
   private String username = "";
 
   /** Password for the database configured as secondary storage. */
-  private String password = "";
+  @AcceptsSecretReference private String password = "";
 
   public String getUrl() {
     return url;
