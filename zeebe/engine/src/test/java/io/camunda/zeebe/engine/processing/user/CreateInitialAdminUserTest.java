@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
@@ -132,7 +132,7 @@ public class CreateInitialAdminUserTest {
   }
 
   @Test
-  public void shouldRejectIfAdminRoleAlreadyHasUsers() {
+  public void shouldRejectIfAdminRoleAlreadyHasUserMember() {
     // given
     final var adminRoleId = DefaultRole.ADMIN.getId();
     engine.role().newRole(adminRoleId).withName(adminRoleId).create();
@@ -164,6 +164,103 @@ public class CreateInitialAdminUserTest {
 
     assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
-        .hasRejectionReason(ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId));
+        .hasRejectionReason(ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE.formatted(adminRoleId));
+  }
+
+  @Test
+  public void shouldRejectIfAdminRoleHasOnlyGroupMember() {
+    // given
+    final var adminRoleId = DefaultRole.ADMIN.getId();
+    engine.role().newRole(adminRoleId).withName(adminRoleId).create();
+    final var groupId = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(groupId).create();
+    engine
+        .role()
+        .addEntity(adminRoleId)
+        .withEntityId(groupId)
+        .withEntityType(EntityType.GROUP)
+        .add();
+
+    // when
+    final var rejection =
+        engine
+            .user()
+            .newInitialAdminUser(UUID.randomUUID().toString())
+            .withName("name")
+            .withEmail("email")
+            .withPassword("password")
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE.formatted(adminRoleId));
+  }
+
+  @Test
+  public void shouldRejectIfAdminRoleHasOnlyClientMember() {
+    // given
+    final var adminRoleId = DefaultRole.ADMIN.getId();
+    engine.role().newRole(adminRoleId).withName(adminRoleId).create();
+    engine
+        .role()
+        .addEntity(adminRoleId)
+        .withEntityId(UUID.randomUUID().toString())
+        .withEntityType(EntityType.CLIENT)
+        .add();
+
+    // when
+    final var rejection =
+        engine
+            .user()
+            .newInitialAdminUser(UUID.randomUUID().toString())
+            .withName("name")
+            .withEmail("email")
+            .withPassword("password")
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE.formatted(adminRoleId));
+  }
+
+  @Test
+  public void shouldRejectIfAdminRoleHasOnlyMappingRuleMember() {
+    // given
+    final var adminRoleId = DefaultRole.ADMIN.getId();
+    engine.role().newRole(adminRoleId).withName(adminRoleId).create();
+    final var mappingRuleId = UUID.randomUUID().toString();
+    engine
+        .mappingRule()
+        .newMappingRule(mappingRuleId)
+        .withClaimName("claim")
+        .withClaimValue("value")
+        .withName(mappingRuleId)
+        .create();
+    engine
+        .role()
+        .addEntity(adminRoleId)
+        .withEntityId(mappingRuleId)
+        .withEntityType(EntityType.MAPPING_RULE)
+        .add();
+
+    // when
+    final var rejection =
+        engine
+            .user()
+            .newInitialAdminUser(UUID.randomUUID().toString())
+            .withName("name")
+            .withEmail("email")
+            .withPassword("password")
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(ADMIN_ROLE_HAS_MEMBERS_ERROR_MESSAGE.formatted(adminRoleId));
   }
 }

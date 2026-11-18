@@ -26,7 +26,6 @@ import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -143,7 +142,7 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createAdminUserShouldReturnForbiddenWhenAdminUserExists() {
+  void createAdminUserShouldReturnForbiddenWhenAdminRoleHasAnyMember() {
     final var dto = validCreateUserRequest(UUID.randomUUID().toString());
     whenAdminUserExists();
 
@@ -351,13 +350,11 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private void whenNoAdminUserExists() {
-    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
-        .thenReturn(false);
+    when(roleServices.hasMembers(eq(DefaultRole.ADMIN.getId()), any())).thenReturn(false);
   }
 
   private void whenAdminUserExists() {
-    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
-        .thenReturn(true);
+    when(roleServices.hasMembers(eq(DefaultRole.ADMIN.getId()), any())).thenReturn(true);
   }
 
   private UserDTO validCreateUserRequest(final String username) {
