@@ -103,13 +103,23 @@ public class ModelInstanceImpl implements ModelInstance {
     return model;
   }
 
+  /**
+   * Returns the type of the model for the given name, and adds a generic type for it first if the
+   * model doesn't have one yet.
+   *
+   * <p>All model instances of a model share its model builder, and they can be read from several
+   * threads at the same time. The type is looked up and added while holding the lock of the model
+   * builder, so each name gets exactly one type.
+   */
   public ModelElementType registerGenericType(String namespaceUri, String localName) {
-    ModelElementType elementType = model.getTypeForName(namespaceUri, localName);
-    if (elementType == null) {
-      elementType = modelBuilder.defineGenericType(localName, namespaceUri);
-      model = (ModelImpl) modelBuilder.build();
+    synchronized (modelBuilder) {
+      ModelElementType elementType = model.getTypeForName(namespaceUri, localName);
+      if (elementType == null) {
+        elementType = modelBuilder.defineGenericType(localName, namespaceUri);
+        model = (ModelImpl) modelBuilder.build();
+      }
+      return elementType;
     }
-    return elementType;
   }
 
   @SuppressWarnings("unchecked")

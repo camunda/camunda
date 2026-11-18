@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.impl.util.ModelUtil;
@@ -40,9 +41,12 @@ public class ModelImpl implements Model {
       new HashMap<String, Set<String>>();
   protected final Map<String, String> alternativeNsToActual = new HashMap<String, String>();
 
-  private final Map<QName, ModelElementType> typesByName = new HashMap<QName, ModelElementType>();
+  // Generic types are added while other threads look up types, see
+  // ModelInstanceImpl#registerGenericType
+  private final Map<QName, ModelElementType> typesByName =
+      new ConcurrentHashMap<QName, ModelElementType>();
   private final Map<Class<? extends ModelElementInstance>, ModelElementType> typesByClass =
-      new HashMap<Class<? extends ModelElementInstance>, ModelElementType>();
+      new ConcurrentHashMap<Class<? extends ModelElementInstance>, ModelElementType>();
   private final String modelName;
 
   /**
@@ -110,6 +114,10 @@ public class ModelImpl implements Model {
   }
 
   public ModelElementType getType(Class<? extends ModelElementInstance> instanceClass) {
+    if (instanceClass == null) {
+      // ConcurrentHashMap rejects null keys; keep returning null like the former HashMap
+      return null;
+    }
     return typesByClass.get(instanceClass);
   }
 
