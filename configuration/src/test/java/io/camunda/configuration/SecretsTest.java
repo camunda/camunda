@@ -41,6 +41,27 @@ class SecretsTest {
       Math.max(
           EXPECTED_MIN_DEFAULT_MAX_CONCURRENCY, Runtime.getRuntime().availableProcessors() * 2);
 
+  @Test
+  void shouldDefaultTheRefreshIntervalToFiveMinutes() {
+    // when
+    final var interval = new Secrets().getRefreshInterval();
+
+    // then
+    assertThat(interval).isEqualTo(Duration.ofMinutes(5));
+  }
+
+  @Test
+  void shouldRejectARefreshIntervalBelowThirtySeconds() {
+    // given
+    final var secrets = new Secrets();
+    secrets.setRefreshInterval(Duration.ofSeconds(29));
+
+    // when / then
+    assertThatThrownBy(secrets::getRefreshInterval)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.secrets.refresh-interval");
+  }
+
   @Nested
   @TestPropertySource(
       properties = {"camunda.secrets.stores.file.mystore.path=/etc/camunda/secrets.txt"})

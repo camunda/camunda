@@ -2079,6 +2079,9 @@ camunda: # Type: io.camunda.configuration.Camunda
     # chunk ceiling at 20; for a batched store it is `ceil(20 / batchSize)`.
     # Defaults to twice the available processor count, and never below `8`.
     max-concurrency: null # Type: Integer, Env: CAMUNDA_SECRETS_MAXCONCURRENCY
+    # How often each node reads the secrets that configuration values refer to again, and passes changed
+    # values on to the clients that use them. At least 30 seconds, and 5 minutes by default.
+    refresh-interval: "5m" # Type: Duration, Env: CAMUNDA_SECRETS_REFRESHINTERVAL
     stores: # Type: io.camunda.configuration.Secrets$Stores  
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
       # Azure Key Vault stores, keyed by store id; the only supported id is `default`. Only one store per

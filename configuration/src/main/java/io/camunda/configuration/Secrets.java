@@ -26,6 +26,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.cache.ttl}
  *   <li>{@code camunda.secrets.cache.max-size}
  *   <li>{@code camunda.secrets.max-concurrency}
+ *   <li>{@code camunda.secrets.refresh-interval}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
@@ -85,6 +86,9 @@ public class Secrets {
 
   private static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
 
+  private static final Duration DEFAULT_REFRESH_INTERVAL = Duration.ofMinutes(5);
+  private static final Duration MIN_REFRESH_INTERVAL = Duration.ofSeconds(30);
+
   /**
    * Twice the core count, not once: the permits bound blocking backend round trips rather than CPU
    * work, and staying clear of the virtual-thread carrier pool (sized to the core count) leaves
@@ -111,6 +115,12 @@ public class Secrets {
   @NestedConfigurationProperty private Stores stores = new Stores();
   @NestedConfigurationProperty private Cache cache = new Cache();
   @NestedConfigurationProperty private InternalConfig internalConfig = new InternalConfig();
+
+  /**
+   * How often each node reads the secrets that configuration values refer to again, and passes
+   * changed values on to the clients that use them. At least 30 seconds, and 5 minutes by default.
+   */
+  private Duration refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
   /**
    * How many sequential backend calls a store whose cost scales with call count ({@code
@@ -159,6 +169,24 @@ public class Secrets {
 
   public void setCache(final Cache cache) {
     this.cache = cache;
+  }
+
+  /**
+   * @throws IllegalArgumentException if the refresh interval is below 30 seconds
+   */
+  public Duration getRefreshInterval() {
+    if (refreshInterval.compareTo(MIN_REFRESH_INTERVAL) < 0) {
+      throw new IllegalArgumentException(
+          "camunda.secrets.refresh-interval must be at least "
+              + MIN_REFRESH_INTERVAL
+              + ", but was "
+              + refreshInterval);
+    }
+    return refreshInterval;
+  }
+
+  public void setRefreshInterval(final @Nullable Duration refreshInterval) {
+    this.refreshInterval = refreshInterval == null ? DEFAULT_REFRESH_INTERVAL : refreshInterval;
   }
 
   public InternalConfig getInternalConfig() {
