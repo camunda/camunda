@@ -111,6 +111,10 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.page.getByRole('table', {name: 'Listeners List'});
 	}
 
+	get elementInstanceDetailsList() {
+		return this.page.getByRole('table', {name: 'Element Instance Details'});
+	}
+
 	get operationsLogTable() {
 		return this.page.getByRole('table', {name: 'Operations Log List'});
 	}

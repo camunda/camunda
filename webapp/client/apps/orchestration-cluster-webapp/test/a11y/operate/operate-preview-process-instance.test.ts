@@ -23,6 +23,7 @@ import {
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryVariablesEndpoint,
 	mockGetVariableEndpoint,
+	mockGetElementInstanceEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -36,7 +37,7 @@ import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
-import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
+import {createJob, createListenerJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
@@ -249,6 +250,43 @@ test.describe('Listeners tab', () => {
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 		await operatePreviewProcessInstancePage.tab('Listeners').click();
 		await expect(operatePreviewProcessInstancePage.listenersList).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
+});
+
+test.describe('Details tab', () => {
+	test('should have no accessibility violations with the element instance details listed', async ({
+		network,
+		page,
+		operatePreviewProcessInstancePage,
+		makeAxeBuilder,
+	}) => {
+		const elementInstanceKey = '2251799813685281';
+		network.use(
+			...processInstanceDiagramHandlers(),
+			...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
+		);
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate', 'tasklist']}})),
+			}),
+			mockGetElementInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createElementInstance({elementInstanceKey, elementId: 'task-1', type: 'USER_TASK'}),
+				),
+			}),
+			mockQueryJobsEndpoint({
+				successResponse: HttpResponse.json(createQueryJobsResponse([createJob({retries: 2, worker: 'email-worker'})])),
+			}),
+		);
+
+		await page.goto(
+			`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details?elementId=task-1&elementInstanceKey=${elementInstanceKey}`,
+		);
+		await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList).toContainText('email-worker');
 
 		const results = await makeAxeBuilder().analyze();
 		expect(results.violations).toEqual([]);
