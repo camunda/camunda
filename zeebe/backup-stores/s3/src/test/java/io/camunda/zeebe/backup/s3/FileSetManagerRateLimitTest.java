@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static io.camunda.zeebe.backup.common.RateLimitedInputStream.MAX_BYTES_PER_READ;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,12 +98,13 @@ final class FileSetManagerRateLimitTest {
   @Test
   void shouldNotFailLimitedUploadThatWaitsLongerThanTheApiCallTimeoutForTheReadLimit()
       throws Exception {
-    // given - another backup of the broker has used up the budget of the next 2.5 seconds; it read
-    // all of it at once, as only the reads after it have to wait
-    final var limiter = BackupReadRateLimiter.of(MIB);
-    final var otherBackup = new byte[(int) (2.5 * MIB)];
-    assertThat(limiter.wrap(new ByteArrayInputStream(otherBackup)).read(otherBackup))
-        .isEqualTo(otherBackup.length);
+    // given - another backup of the broker has used up the budget of the next 2.5 seconds with a
+    // single read, as only the reads after it have to wait
+    final var limiter = BackupReadRateLimiter.of(MAX_BYTES_PER_READ * 2 / 5);
+    try (final var otherBackup =
+        limiter.wrap(new ByteArrayInputStream(new byte[MAX_BYTES_PER_READ]))) {
+      assertThat(otherBackup.read(new byte[MAX_BYTES_PER_READ])).isEqualTo(MAX_BYTES_PER_READ);
+    }
     final var content = randomBytes(UNCOMPRESSED_FILE_SIZE);
     final var file = Files.write(directory.resolve("segment-1.log"), content);
     final var manager = new FileSetManager(client, configWithApiCallTimeout(1), limiter);
@@ -279,7 +281,7 @@ final class FileSetManagerRateLimitTest {
   }
 
   /** A limiter that never waits and counts the bytes that are read through its streams. */
-  private BackupReadRateLimiter countingLimiter() {
+  private BackupReadRateLimiter countingLimiter() throws IOException {
     final var realLimiter = BackupReadRateLimiter.of(1L << 40);
     final var limiter = mock(BackupReadRateLimiter.class);
     when(limiter.wrap(any()))

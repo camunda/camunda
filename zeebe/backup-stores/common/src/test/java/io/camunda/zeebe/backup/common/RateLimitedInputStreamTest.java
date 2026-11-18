@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.common;
 
+import static io.camunda.zeebe.backup.common.BackupReadRateLimiter.UNBOUNDED_STREAMS;
+import static io.camunda.zeebe.backup.common.RateLimitedInputStream.MAX_BYTES_PER_READ;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -25,7 +27,7 @@ class RateLimitedInputStreamTest {
 
   private final FakeClock clock = new FakeClock();
   private final BackupReadRateLimiter limiter =
-      new BackupReadRateLimiter(BYTES_PER_SECOND, clock::nanos, clock::sleep);
+      new BackupReadRateLimiter(BYTES_PER_SECOND, UNBOUNDED_STREAMS, clock::nanos, clock::sleep);
 
   @AfterEach
   void clearInterruptFlag() {
@@ -61,6 +63,20 @@ class RateLimitedInputStreamTest {
     // then - the next read waits for the 100 bytes read, not for the buffer size
     assertThat(firstRead).isEqualTo(100);
     assertThat(clock.slept()).isEqualTo(Duration.ofMillis(100));
+  }
+
+  @Test
+  void shouldReadAtMostMaxBytesPerReadAtOnce() throws Exception {
+    // given - a single read of a large buffer would make every other stream wait for all of it
+    final var stream = limiter.wrap(new ZeroInputStream(10L * MAX_BYTES_PER_READ));
+
+    // when
+    final int read = stream.read(new byte[10 * MAX_BYTES_PER_READ]);
+    final long skipped = stream.skip(10L * MAX_BYTES_PER_READ);
+
+    // then
+    assertThat(read).isEqualTo(MAX_BYTES_PER_READ);
+    assertThat(skipped).isEqualTo(MAX_BYTES_PER_READ);
   }
 
   @Test
@@ -137,7 +153,10 @@ class RateLimitedInputStreamTest {
     final var stream = new AtomicReference<RateLimitedInputStream>();
     final var observingLimiter =
         new BackupReadRateLimiter(
-            BYTES_PER_SECOND, clock::nanos, nanos -> waitedWhileWaiting.set(stream.get().waited()));
+            BYTES_PER_SECOND,
+            UNBOUNDED_STREAMS,
+            clock::nanos,
+            nanos -> waitedWhileWaiting.set(stream.get().waited()));
     stream.set(observingLimiter.wrap(new ByteArrayInputStream(new byte[200])));
     stream.get().read(new byte[100]);
 
@@ -154,6 +173,7 @@ class RateLimitedInputStreamTest {
     final var interruptingLimiter =
         new BackupReadRateLimiter(
             BYTES_PER_SECOND,
+            UNBOUNDED_STREAMS,
             clock::nanos,
             nanos -> {
               throw new InterruptedException("interrupted while waiting");

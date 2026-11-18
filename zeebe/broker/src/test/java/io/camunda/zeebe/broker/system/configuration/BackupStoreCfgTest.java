@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -218,15 +219,15 @@ final class BackupStoreCfgTest {
   }
 
   @Test
-  void shouldRejectMaxReadRateThatIsNotPositive() {
-    // given
+  void shouldRejectMaxReadRateBelowTheMinimum() {
+    // given - a rate at which a single read would pause an upload for longer than allowed
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
-    backup.setMaxReadRate(DataSize.ofBytes(0));
+    backup.setMaxReadRate(DataSize.ofBytes(BackupReadRateLimiter.MIN_BYTES_PER_SECOND - 1));
 
     // when - then
     assertThatThrownBy(() -> BackupStoreFactory.createReadRateLimiter(backup))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("positive");
+        .hasMessageContaining("at least " + BackupReadRateLimiter.MIN_BYTES_PER_SECOND);
   }
 
   /** The S3 and GCS store configs reject a missing bucket name, which is unset by default. */

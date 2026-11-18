@@ -12,13 +12,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Pays for every byte read from or skipped in the wrapped stream with a shared limiter. */
 public final class RateLimitedInputStream extends FilterInputStream {
 
+  /**
+   * The most bytes a single read or skip returns. A read waits for what the reads of all other
+   * streams paid for before it, so this bounds how long it waits; see {@link
+   * BackupReadRateLimiter}. Larger than the chunks the AWS SDK and buffered streams read anyway.
+   */
+  public static final int MAX_BYTES_PER_READ = 64 * 1024;
+
   private final BackupReadRateLimiter limiter;
   private final AtomicLong waitedNanos = new AtomicLong();
+  private final AtomicBoolean closed = new AtomicBoolean();
 
   RateLimitedInputStream(final InputStream in, final BackupReadRateLimiter limiter) {
     super(in);
@@ -45,7 +54,7 @@ public final class RateLimitedInputStream extends FilterInputStream {
 
   @Override
   public int read(final byte[] buffer, final int offset, final int length) throws IOException {
-    final int count = super.read(buffer, offset, length);
+    final int count = super.read(buffer, offset, Math.min(length, MAX_BYTES_PER_READ));
     if (count > 0) {
       pay(count);
     }
@@ -54,11 +63,22 @@ public final class RateLimitedInputStream extends FilterInputStream {
 
   @Override
   public long skip(final long count) throws IOException {
-    final long skipped = super.skip(count);
+    final long skipped = super.skip(Math.min(count, MAX_BYTES_PER_READ));
     if (skipped > 0) {
       pay(skipped);
     }
     return skipped;
+  }
+
+  @Override
+  public void close() throws IOException {
+    try {
+      super.close();
+    } finally {
+      if (closed.compareAndSet(false, true)) {
+        limiter.streamClosed();
+      }
+    }
   }
 
   private void pay(final long bytes) throws InterruptedIOException {
