@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.InMemorySecretCache;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -752,6 +753,83 @@ public class SecretServicesTest {
     // then every name the store holds is listed as a reference, in a stable sorted order
     assertThat(references)
         .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldListEverySecretOfAStoreWithoutStatesWhenFilteringByActive() {
+    // given a store that cannot report states, so every secret counts as ACTIVE
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+
+    // when
+    final var references = services.list(authentication, SecretStatus.ACTIVE).join();
+
+    // then
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldListNothingOfAStoreWithoutStatesWhenFilteringByAnyOtherStatus() {
+    // given a store that cannot report states
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+
+    // when / then
+    for (final var status : SecretStatus.values()) {
+      if (status != SecretStatus.ACTIVE) {
+        assertThat(services.list(authentication, status).join()).as(status.name()).isEmpty();
+      }
+    }
+  }
+
+  @Test
+  void shouldListOnlySecretsInTheRequestedStatus() {
+    // given a store reporting a different state for each secret
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", SecretStatus.DISABLED).reportsStatus("b", SecretStatus.EXPIRED);
+
+    // when
+    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var notYetActive = services.list(authentication, SecretStatus.NOT_YET_ACTIVE).join();
+
+    // then
+    assertThat(disabled).containsExactly("camunda.secrets.a");
+    assertThat(active).containsExactly("camunda.secrets.token");
+    assertThat(notYetActive).isEmpty();
+  }
+
+  @Test
+  void shouldListSecretsOfEveryStateWhenNoStatusIsRequested() {
+    // given a store reporting a different state for each secret
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    store.reportsStatus("a", SecretStatus.DISABLED).reportsStatus("b", SecretStatus.EXPIRED);
+
+    // when
+    final var references = services.list(authentication, null).join();
+
+    // then the filter is optional: nothing is left out
+    assertThat(references)
+        .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldApplyTheAuthorizationFilterAfterTheStatusFilter() {
+    // given a disabled and an active secret, the caller may read only the disabled one
+    authorizationsConfig.setEnabled(true);
+    grantRead("camunda.secrets.a");
+    store.reportsStatus("a", SecretStatus.DISABLED);
+
+    // when
+    final var active = services.list(authentication, SecretStatus.ACTIVE).join();
+    final var disabled = services.list(authentication, SecretStatus.DISABLED).join();
+
+    // then the status filter drops what the caller may read, and never adds what they may not
+    assertThat(active).isEmpty();
+    assertThat(disabled).containsExactly("camunda.secrets.a");
   }
 
   @Test

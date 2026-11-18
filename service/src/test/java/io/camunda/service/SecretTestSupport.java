@@ -10,7 +10,9 @@ package io.camunda.service;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.secretstore.SecretListEntry;
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ final class SecretTestSupport {
     // names this store lists but holds no value for, so a test can list one the SPI's nullness
     // contract forbids
     private final List<String> additionalListedNames = new ArrayList<>();
+    private final Map<String, SecretStatus> statuses = new HashMap<>();
     private int listCalls;
     private boolean unavailable;
     private boolean omitResults;
@@ -80,6 +83,21 @@ final class SecretTestSupport {
       final List<String> names = new ArrayList<>(values.keySet());
       names.addAll(additionalListedNames);
       return names;
+    }
+
+    @Override
+    public List<SecretListEntry> listEntries() {
+      return list().stream()
+          .map(name -> new SecretListEntry(name, statuses.getOrDefault(name, SecretStatus.ACTIVE)))
+          .toList();
+    }
+
+    /**
+     * Makes the store report the given state for a secret it lists, as a store with states does.
+     */
+    TestSecretStore reportsStatus(final String name, final SecretStatus status) {
+      statuses.put(name, status);
+      return this;
     }
 
     TestSecretStore holds(final String name, final String value) {

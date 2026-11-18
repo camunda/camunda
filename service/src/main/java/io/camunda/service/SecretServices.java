@@ -11,6 +11,7 @@ import static io.camunda.service.authorization.Authorizations.SECRET_READ_AUTHOR
 import static io.camunda.service.authorization.Authorizations.SECRET_REVEAL_AUTHORIZATION;
 
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreException;
 import io.camunda.secretstore.SecretStoreRegistry;
@@ -350,6 +351,18 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * <p>Runs the enumeration on the API executor, for the same reason {@link #resolve} does.
    */
   public CompletableFuture<List<String>> list(final CamundaAuthentication authentication) {
+    return list(authentication, null);
+  }
+
+  /**
+   * Lists the references the caller holds {@code SECRET:READ} on, like {@link
+   * #list(CamundaAuthentication)}, narrowed to the secrets whose store reports {@code status}. A
+   * store that cannot report states reports every secret as {@link SecretStatus#ACTIVE}.
+   *
+   * @param status the state to keep, or {@code null} to list every secret whatever its state
+   */
+  public CompletableFuture<List<String>> list(
+      final CamundaAuthentication authentication, final @Nullable SecretStatus status) {
     try {
       final var authorizedScopes =
           retrieveAuthorizedScopes(authentication, SECRET_READ_AUTHORIZATION);
@@ -357,7 +370,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
         return CompletableFuture.completedFuture(List.of());
       }
       return CompletableFuture.supplyAsync(
-          () -> listFromStores().stream().filter(authorizedScopes::authorizes).toList(),
+          () -> listFromStores(status).stream().filter(authorizedScopes::authorizes).toList(),
           executorProvider.getExecutor());
     } catch (final Exception ex) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(ex));
@@ -374,11 +387,15 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * be backtick-escaped there, {@code =camunda.secrets.`db-password`}. The endpoint's description
    * in {@code secrets.yaml} says so, since the caller cannot see this method.
    */
-  private List<String> listFromStores() {
+  private List<String> listFromStores(final @Nullable SecretStatus status) {
     final var references = new TreeSet<String>();
     try {
       for (final var store : secretStoreRegistry.getStores().entrySet()) {
-        for (final var name : store.getValue().list()) {
+        for (final var entry : store.getValue().listEntries()) {
+          final var name = entry.name();
+          if (status != null && entry.status() != status) {
+            continue;
+          }
           if (isResolvableName(name)) {
             references.add(REFERENCE_PREFIX + name);
           } else {
