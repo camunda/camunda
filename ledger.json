@@ -84,11 +84,12 @@
       "Job Fail API Tests",
       "Fail Job - 409"
     ],
-    "last_action": "not_reproduced",
-    "last_reason": "baseline passed all 40 runs; the nightly flake did not reproduce",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43565887059",
-    "updated_at": "2026-11-14T06:37:02Z",
-    "cooldown_until": "2026-11-17T06:37:02Z"
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 95% (+5pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44251184445",
+    "updated_at": "2026-11-18T07:26:09Z",
+    "cooldown_until": "2026-12-02T07:26:09Z",
+    "pr": "https://github.com/camunda/camunda/pull/69729"
   },
   "50982ae8": {
     "version": "8.10",
