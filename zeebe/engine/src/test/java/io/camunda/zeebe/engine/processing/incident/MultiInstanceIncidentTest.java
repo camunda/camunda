@@ -387,6 +387,68 @@ public final class MultiInstanceIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfCompletionConditionAssertionFails() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("multi-task")
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.parallel()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT)
+                                        .completionCondition("=assert(x, x != null)")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("multi-task")
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    // when
+    completeNthJob(processInstanceKey, 1);
+
+    // then
+    final Record<ProcessInstanceRecordValue> activityEvent =
+        RecordingExporter.processInstanceRecords()
+            .withElementId(ELEMENT_ID)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression 'assert(x, x != null)': \
+            The condition is not fulfilled \
+            (completion condition expression of multi-instance activity 'task') \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'x'
+            [NO_VARIABLE_FOUND] No variable found with name 'x'
+            [ASSERT_FAILURE] The condition is not fulfilled""")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementInstanceKey(activityEvent.getKey())
+        .hasVariableScopeKey(activityEvent.getKey());
+  }
+
+  @Test
   public void shouldResolveIncidentDueToCompletionCondition() {
     // given
     ENGINE

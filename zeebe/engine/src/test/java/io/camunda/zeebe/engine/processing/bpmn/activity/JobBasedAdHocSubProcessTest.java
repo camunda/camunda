@@ -928,6 +928,52 @@ public class JobBasedAdHocSubProcessTest {
   }
 
   @Test
+  public void shouldRaiseIncidentIfOutputElementExpressionEvaluationFails() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            jobType,
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.zeebeOutputCollection("outputCollection");
+              adHocSubProcess.zeebeOutputElementExpression(
+                  "=assert(undefined_var, undefined_var != null)");
+            });
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    RecordingExporter.jobRecords(JobIntent.CREATED).exists();
+    final var jobKey =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult()
+            .setActivateElements(List.of(new JobResultActivateElement().setElementId("A")));
+    ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId(AHSP_INNER_ELEMENT_ID)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression \
+            'assert(undefined_var, undefined_var != null)': \
+            The condition is not fulfilled \
+            (output element expression of ad-hoc sub-process 'ad-hoc') \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'undefined_var'
+            [NO_VARIABLE_FOUND] No variable found with name 'undefined_var'
+            [ASSERT_FAILURE] The condition is not fulfilled""");
+  }
+
+  @Test
   public void shouldTriggerNonInterruptingEventSubProcess() {
     // given
     final var correlationKey = UUID.randomUUID().toString();
