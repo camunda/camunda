@@ -95,6 +95,70 @@ class ProcessDefinitionFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryNameWithCaseInsensitiveWildcardForLikeIgnoreCase() {
+    // given
+    final var filter =
+        FilterBuilders.processDefinition(f -> f.nameOperations(Operation.likeIgnoreCase("Inv*")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            w -> {
+              assertThat(w.field()).isEqualTo("name");
+              assertThat(w.value()).isEqualTo("Inv*");
+              assertThat(w.caseInsensitive()).isTrue();
+            });
+  }
+
+  @Test
+  void shouldKeepLikeOnNameCaseSensitive() {
+    // given
+    final var filter =
+        FilterBuilders.processDefinition(f -> f.nameOperations(Operation.like("Inv*")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            w -> {
+              assertThat(w.field()).isEqualTo("name");
+              assertThat(w.caseInsensitive()).isFalse();
+            });
+  }
+
+  @Test
+  void shouldApplyLikeAndLikeIgnoreCaseOnNameTogether() {
+    // given
+    final var filter =
+        FilterBuilders.processDefinition(
+            f -> f.nameOperations(Operation.like("Inv*"), Operation.likeIgnoreCase("*ce")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              assertThat(bool.must()).hasSize(2);
+              assertThat(bool.must().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class, w -> assertThat(w.caseInsensitive()).isFalse());
+              assertThat(bool.must().getLast().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class, w -> assertThat(w.caseInsensitive()).isTrue());
+            });
+  }
+
+  @Test
   void shouldMatchIdOrNameCombinedWithTopLevelFilter() {
     // given
     final var filter =

@@ -82,4 +82,19 @@ public class WildcardQueryTransformerTest {
     assertThatThrownBy(() -> SearchQueryBuilders.wildcard().build())
         .isInstanceOf(NullPointerException.class);
   }
+
+  @Test
+  public void shouldSetCaseInsensitiveOnlyWhenRequested() {
+    // given
+    final var insensitive = SearchQueryBuilders.wildcardQuery("foo", "*bar*", true);
+    final var sensitive = SearchQueryBuilders.wildcardQuery("foo", "*bar*");
+
+    // when
+    final var insensitiveResult = transformer.apply(insensitive);
+    final var sensitiveResult = transformer.apply(sensitive);
+
+    // then
+    assertThat(insensitiveResult.wildcard().caseInsensitive()).isTrue();
+    assertThat(sensitiveResult.wildcard().caseInsensitive()).isNull();
+  }
 }

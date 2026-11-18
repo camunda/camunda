@@ -10,12 +10,14 @@ package io.camunda.search.clients.query;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 
-public record SearchWildcardQuery(String field, String value) implements SearchQueryOption {
+public record SearchWildcardQuery(String field, String value, boolean caseInsensitive)
+    implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchWildcardQuery> {
 
     private String field;
     private String value;
+    private boolean caseInsensitive;
 
     public Builder field(final String value) {
       field = value;
@@ -27,9 +29,14 @@ public record SearchWildcardQuery(String field, String value) implements SearchQ
       return this;
     }
 
+    public Builder caseInsensitive(final boolean value) {
+      caseInsensitive = value;
+      return this;
+    }
+
     @Override
     public SearchWildcardQuery build() {
-      return new SearchWildcardQuery(Objects.requireNonNull(field), value);
+      return new SearchWildcardQuery(Objects.requireNonNull(field), value, caseInsensitive);
     }
   }
 }

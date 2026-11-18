@@ -18,7 +18,8 @@ public enum Operator {
   LOWER_THAN_EQUALS("lte"),
   IN("in"),
   NOT_IN("notIn"),
-  LIKE("like");
+  LIKE("like"),
+  LIKE_IGNORE_CASE("likeIgnoreCase");
 
   private final String value;
 

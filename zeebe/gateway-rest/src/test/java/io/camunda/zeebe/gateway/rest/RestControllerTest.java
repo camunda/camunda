@@ -200,6 +200,7 @@ public abstract class RestControllerTest extends RestTest {
                                   ? op.values().stream().map(implicitTpl::formatted).toList()
                                   : op.values());
                       case LIKE -> explicitTpl.formatted("$like", op.value());
+                      case LIKE_IGNORE_CASE -> explicitTpl.formatted("$likeIgnoreCase", op.value());
                     })
             .collect(Collectors.joining(","));
     if (operations.size() == 1 && operations.getFirst().operator().equals(Operator.EQUALS)) {
