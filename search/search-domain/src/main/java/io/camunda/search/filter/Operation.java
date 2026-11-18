@@ -70,6 +70,10 @@ public record Operation<T>(Operator operator, List<T> values) {
     return new Operation<>(Operator.LIKE, value);
   }
 
+  public static <T> Operation<T> likeIgnoreCase(final T value) {
+    return new Operation<>(Operator.LIKE_IGNORE_CASE, value);
+  }
+
   public T value() {
     if (values == null || values.isEmpty()) {
       return null;

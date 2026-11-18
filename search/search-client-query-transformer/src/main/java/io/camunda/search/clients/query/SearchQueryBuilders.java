@@ -509,6 +509,7 @@ public final class SearchQueryBuilders {
                   case IN -> stringTerms(field, op.values());
                   case NOT_IN -> mustNot(stringTerms(field, op.values()));
                   case LIKE -> wildcardQuery(field, op.value());
+                  case LIKE_IGNORE_CASE -> wildcardQuery(field, op.value(), true);
                   default -> throw unexpectedOperation("String", op.operator());
                 });
           });
@@ -716,7 +717,13 @@ public final class SearchQueryBuilders {
           }
           // Handled by the numeric-range and string-specific blocks below; listed explicitly
           // (not via a default) so a new Operator constant fails to compile here until handled.
-          case GREATER_THAN, GREATER_THAN_EQUALS, LOWER_THAN, LOWER_THAN_EQUALS, LIKE -> null;
+          case GREATER_THAN,
+              GREATER_THAN_EQUALS,
+              LOWER_THAN,
+              LOWER_THAN_EQUALS,
+              LIKE,
+              LIKE_IGNORE_CASE ->
+              null;
         };
     if (res != null) {
       return res;
