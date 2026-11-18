@@ -224,8 +224,15 @@ final class FileSetManager {
   }
 
   private Path compressFile(final Path file, final String algorithm) {
+    final Path compressedFile;
     try {
-      final var compressedFile = Files.createTempFile(TMP_COMPRESSION_PREFIX, null);
+      compressedFile = Files.createTempFile(TMP_COMPRESSION_PREFIX, null);
+    } catch (final IOException e) {
+      throw new BackupCompressionFailed(
+          "Failed to create a temporary file to compress %s".formatted(file), e);
+    }
+
+    try {
       LOG.trace("Compressing file {} to {} using {}", file, compressedFile, algorithm);
       // Limiting the read of the source also paces the write of the compressed copy, which cannot
       // be faster than the data it is compressed from.
@@ -246,8 +253,12 @@ final class FileSetManager {
         return compressedFile;
       }
     } catch (final IOException e) {
+      cleanupCompressedFile(compressedFile);
       throw new BackupCompressionFailed(
           "Failed to compress file %s using %s".formatted(file, algorithm), e);
+    } catch (final RuntimeException e) {
+      cleanupCompressedFile(compressedFile);
+      throw e;
     }
   }
 
