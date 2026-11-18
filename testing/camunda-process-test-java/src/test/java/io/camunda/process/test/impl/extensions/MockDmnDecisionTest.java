@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -179,6 +180,14 @@ public class MockDmnDecisionTest {
               assertThat(decision.getId()).isEqualTo(decisionId);
               assertThat(zeebeVersionTag(decision)).contains("1.3.0");
             });
+  }
+
+  @Test
+  void shouldRejectMockDmnDecisionWithoutDecisionId() {
+    // when/then
+    assertThatThrownBy(() -> processTestContext.mockDmnDecision().thenReturn("approved"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("withDecisionId");
   }
 
   private static Optional<String> zeebeVersionTag(final Decision decision) {
