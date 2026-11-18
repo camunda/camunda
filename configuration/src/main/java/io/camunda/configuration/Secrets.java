@@ -45,6 +45,11 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.azure.<id>.max-retries}
  *   <li>{@code camunda.secrets.stores.azure.<id>.call-timeout}
  *   <li>{@code camunda.secrets.stores.azure.<id>.attempt-timeout}
+ *   <li>{@code camunda.secrets.internal-config.file.path}
+ *   <li>{@code camunda.secrets.internal-config.aws.*}
+ *   <li>{@code camunda.secrets.internal-config.gcp.*}
+ *   <li>{@code camunda.secrets.internal-config.env.prefix}
+ *   <li>{@code camunda.secrets.internal-config.azure.*}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -105,6 +110,7 @@ public class Secrets {
 
   @NestedConfigurationProperty private Stores stores = new Stores();
   @NestedConfigurationProperty private Cache cache = new Cache();
+  @NestedConfigurationProperty private InternalConfig internalConfig = new InternalConfig();
 
   /**
    * How many sequential backend calls a store whose cost scales with call count ({@code
@@ -153,6 +159,14 @@ public class Secrets {
 
   public void setCache(final Cache cache) {
     this.cache = cache;
+  }
+
+  public InternalConfig getInternalConfig() {
+    return internalConfig;
+  }
+
+  public void setInternalConfig(final InternalConfig internalConfig) {
+    this.internalConfig = internalConfig;
   }
 
   /**
@@ -207,7 +221,7 @@ public class Secrets {
      *     secret id means only one secret is ever fetched)
      */
     public Map<String, AwsSecretsManagerStore> getAws() {
-      aws.forEach((id, store) -> store.validate(id));
+      aws.forEach((id, store) -> store.validate("camunda.secrets.stores.aws." + id));
       return aws;
     }
 
@@ -221,7 +235,7 @@ public class Secrets {
      *     effective container secret id longer than 255 characters (GCP secret-id rules)
      */
     public Map<String, GcpSecretManagerStore> getGcp() {
-      gcp.forEach((id, store) -> store.validate(id));
+      gcp.forEach((id, store) -> store.validate("camunda.secrets.stores.gcp." + id));
       return gcp;
     }
 
@@ -244,6 +258,81 @@ public class Secrets {
 
     public void setAzure(final Map<String, AzureKeyVaultStore> azure) {
       this.azure = azure;
+    }
+  }
+
+  /**
+   * The store that configuration values refer to as {@code secret:<name>}, configured apart from
+   * the stores that processes and jobs read. At most one type can be configured, and no job store
+   * of the same type, of any tenant, may reach its secrets. A tenant that configures its own
+   * replaces the root's as a whole.
+   */
+  public static class InternalConfig {
+
+    private static final String PREFIX = "camunda.secrets.internal-config";
+
+    private @Nullable FileStore file;
+    private @Nullable AwsSecretsManagerStore aws;
+    private @Nullable GcpSecretManagerStore gcp;
+    private @Nullable EnvStore env;
+    private @Nullable AzureKeyVaultStore azure;
+
+    public @Nullable FileStore getFile() {
+      return file;
+    }
+
+    public void setFile(final @Nullable FileStore file) {
+      this.file = file;
+    }
+
+    /**
+     * @throws IllegalArgumentException under the same conditions as {@link Stores#getAws()}
+     */
+    public @Nullable AwsSecretsManagerStore getAws() {
+      if (aws != null) {
+        aws.validate(PREFIX + ".aws");
+      }
+      return aws;
+    }
+
+    public void setAws(final @Nullable AwsSecretsManagerStore aws) {
+      this.aws = aws;
+    }
+
+    /**
+     * @throws IllegalArgumentException under the same conditions as {@link Stores#getGcp()}
+     */
+    public @Nullable GcpSecretManagerStore getGcp() {
+      if (gcp != null) {
+        gcp.validate(PREFIX + ".gcp");
+      }
+      return gcp;
+    }
+
+    public void setGcp(final @Nullable GcpSecretManagerStore gcp) {
+      this.gcp = gcp;
+    }
+
+    public @Nullable EnvStore getEnv() {
+      return env;
+    }
+
+    public void setEnv(final @Nullable EnvStore env) {
+      this.env = env;
+    }
+
+    /** Not validated here, see {@link AzureKeyVaultStore#validate(String)}. */
+    public @Nullable AzureKeyVaultStore getAzure() {
+      return azure;
+    }
+
+    public void setAzure(final @Nullable AzureKeyVaultStore azure) {
+      this.azure = azure;
+    }
+
+    /** Whether a store is configured. */
+    public boolean isConfigured() {
+      return file != null || aws != null || gcp != null || env != null || azure != null;
     }
   }
 
@@ -546,43 +635,31 @@ public class Secrets {
      *     (the two are contradictory: batching fetches multiple distinct secrets in one call, while
      *     a container secret id means only one secret is ever fetched)
      */
-    void validate(final String storeId) {
+    void validate(final String property) {
       if (batchSize < 1 || batchSize > 20) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws."
-                + storeId
-                + ".batch-size must be between 1 and 20, but was "
-                + batchSize);
+            property + ".batch-size must be between 1 and 20, but was " + batchSize);
       }
       if (containerSecretId != null && containerSecretId.isBlank()) {
-        throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws." + storeId + ".container-secret-id must not be blank");
+        throw new IllegalArgumentException(property + ".container-secret-id must not be blank");
       }
       if (batchEnabled && containerSecretId != null) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws."
-                + storeId
+            property
                 + ".batch-enabled and .container-secret-id are mutually exclusive, but both were "
                 + "configured");
       }
       if (!callTimeout.isPositive()) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws."
-                + storeId
-                + ".call-timeout must be positive, but was "
-                + callTimeout);
+            property + ".call-timeout must be positive, but was " + callTimeout);
       }
       if (!attemptTimeout.isPositive()) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws."
-                + storeId
-                + ".attempt-timeout must be positive, but was "
-                + attemptTimeout);
+            property + ".attempt-timeout must be positive, but was " + attemptTimeout);
       }
       if (attemptTimeout.compareTo(callTimeout) > 0) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws."
-                + storeId
+            property
                 + ".attempt-timeout must not be longer than .call-timeout ("
                 + callTimeout
                 + "), but was "
@@ -719,23 +796,19 @@ public class Secrets {
      *     [a-zA-Z0-9_-]}, or if the effective container secret id (path-prefix +
      *     container-secret-id) exceeds 255 characters
      */
-    void validate(final String storeId) {
+    void validate(final String property) {
       if (projectId != null && projectId.isBlank()) {
-        throw new IllegalArgumentException(
-            "camunda.secrets.stores.gcp." + storeId + ".project-id must not be blank");
+        throw new IllegalArgumentException(property + ".project-id must not be blank");
       }
       if (containerSecretId != null && containerSecretId.isBlank()) {
-        throw new IllegalArgumentException(
-            "camunda.secrets.stores.gcp." + storeId + ".container-secret-id must not be blank");
+        throw new IllegalArgumentException(property + ".container-secret-id must not be blank");
       }
       if (endpoint != null && endpoint.isBlank()) {
-        throw new IllegalArgumentException(
-            "camunda.secrets.stores.gcp." + storeId + ".endpoint must not be blank");
+        throw new IllegalArgumentException(property + ".endpoint must not be blank");
       }
       if (pathPrefix != null && !SECRET_ID_PATTERN.matcher(pathPrefix).matches()) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.gcp."
-                + storeId
+            property
                 + ".path-prefix must contain only [a-zA-Z0-9_-] to form valid GCP secret ids, but "
                 + "was '"
                 + pathPrefix
@@ -743,8 +816,7 @@ public class Secrets {
       }
       if (containerSecretId != null && !SECRET_ID_PATTERN.matcher(containerSecretId).matches()) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.gcp."
-                + storeId
+            property
                 + ".container-secret-id must contain only [a-zA-Z0-9_-] to be a valid GCP secret "
                 + "id, but was '"
                 + containerSecretId
@@ -752,18 +824,14 @@ public class Secrets {
       }
       if (!callTimeout.isPositive()) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.gcp."
-                + storeId
-                + ".call-timeout must be positive, but was "
-                + callTimeout);
+            property + ".call-timeout must be positive, but was " + callTimeout);
       }
       if (containerSecretId != null) {
         final int fullLength =
             (pathPrefix == null ? 0 : pathPrefix.length()) + containerSecretId.length();
         if (fullLength > MAX_SECRET_ID_LENGTH) {
           throw new IllegalArgumentException(
-              "camunda.secrets.stores.gcp."
-                  + storeId
+              property
                   + " effective container secret id (path-prefix + container-secret-id) must be at "
                   + "most "
                   + MAX_SECRET_ID_LENGTH
