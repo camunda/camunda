@@ -1,0 +1,215 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useMemo, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Combobox, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@camunda/design-system';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
+import {Diagram} from '#/operate/shared/Diagram/shadcn.components/Diagram';
+import type {OverlayData} from '#/operate/shared/Diagram/overlayTypes';
+import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
+import {getProcessDefinitionName} from '../getProcessDefinitionName';
+import type {MigrationElements} from '../migrationMapping';
+import type {useDiagramXml} from '../useDiagramXml';
+import {useAvailableMigrationTargets, useMigrationTargetVersions} from '../useMigrationTargetDefinitions';
+import {anchorStateOverlaysToCorners} from '#/operate/shared/StateOverlay/shadcn.components/anchorStateOverlaysToCorners';
+import {StatisticsOverlays} from './DiagramPanel';
+
+type DiagramXmlQuery = ReturnType<typeof useDiagramXml>;
+
+type Props = {
+	source: ProcessDefinition;
+	target: ProcessDefinition | null;
+	sourceXml: DiagramXmlQuery;
+	targetXml: DiagramXmlQuery;
+	sourceElements: MigrationElements;
+	targetElements?: MigrationElements;
+	selectedSourceElementIds?: string[];
+	selectedTargetElementId?: string;
+	onSourceElementSelection: (elementId?: string) => void;
+	onTargetElementSelection: (elementId?: string) => void;
+	onTargetChange: (definition: ProcessDefinition | null) => void;
+	isSummaryStep: boolean;
+	sourceOverlays: OverlayData[];
+	targetOverlays: OverlayData[];
+};
+
+function getSelectableElementIds({elements, sequenceFlows}: MigrationElements) {
+	return [...elements, ...sequenceFlows].map(({id}) => id);
+}
+
+function getDiagramStatus({isLoading, isError, data}: DiagramXmlQuery, failedXml?: string) {
+	if (isLoading) {
+		return 'loading';
+	}
+	return isError || data?.xml === '' || (failedXml !== undefined && failedXml === data?.xml) ? 'error' : 'content';
+}
+
+const HeaderField: React.FC<{label: string; htmlFor?: string; children: React.ReactNode}> = ({
+	label,
+	htmlFor,
+	children,
+}) => (
+	<div className="flex items-center gap-3">
+		<Label htmlFor={htmlFor} className="font-bold">
+			{label}
+		</Label>
+		{children}
+	</div>
+);
+
+const MigrationDiagrams: React.FC<Props> = ({
+	source,
+	target,
+	sourceXml,
+	targetXml,
+	sourceElements,
+	targetElements,
+	selectedSourceElementIds,
+	selectedTargetElementId,
+	onSourceElementSelection,
+	onTargetElementSelection,
+	onTargetChange,
+	isSummaryStep,
+	sourceOverlays,
+	targetOverlays,
+}) => {
+	const {t} = useTranslation();
+	const availableTargets = useAvailableMigrationTargets(source);
+	const {data: targetVersions} = useMigrationTargetVersions(source, target);
+	const processOptions = useMemo(
+		() =>
+			availableTargets.map((definition) => ({
+				value: definition.processDefinitionKey,
+				label: getProcessDefinitionName(definition),
+			})),
+		[availableTargets],
+	);
+	const selectedProcessKey = availableTargets.find(
+		({processDefinitionId}) => processDefinitionId === target?.processDefinitionId,
+	)?.processDefinitionKey;
+	const [failedSourceXml, setFailedSourceXml] = useState<string>();
+	const [failedTargetXml, setFailedTargetXml] = useState<string>();
+	const targetStatus = getDiagramStatus(targetXml, failedTargetXml);
+	const sourceSelectableIds = useMemo(() => getSelectableElementIds(sourceElements), [sourceElements]);
+	const targetSelectableIds = useMemo(
+		() => (targetElements === undefined ? undefined : getSelectableElementIds(targetElements)),
+		[targetElements],
+	);
+	const selectedTargetElementIds = useMemo(
+		() => (selectedTargetElementId ? [selectedTargetElementId] : undefined),
+		[selectedTargetElementId],
+	);
+	const anchoredSourceOverlays = useMemo(() => anchorStateOverlaysToCorners(sourceOverlays), [sourceOverlays]);
+	const anchoredTargetOverlays = useMemo(() => anchorStateOverlaysToCorners(targetOverlays), [targetOverlays]);
+
+	return (
+		<div className="grid h-full grid-cols-2">
+			<section className="flex h-full min-w-0 flex-col">
+				{!isSummaryStep && (
+					<div className="flex h-12 items-center gap-6 border-b px-4 text-sm">
+						<HeaderField label={t('operate.processes.migration.source')}>
+							<span>{getProcessDefinitionName(source)}</span>
+						</HeaderField>
+						<HeaderField label={t('operate.processes.migration.version')}>
+							<span>{source.version}</span>
+						</HeaderField>
+					</div>
+				)}
+				<div className="isolate min-h-0 flex-1">
+					<DiagramShell
+						status={getDiagramStatus(sourceXml, failedSourceXml)}
+						contentLabel={t('operate.processes.migration.source')}
+					>
+						{sourceXml.data?.xml && (
+							<Diagram
+								ariaLabel={`${t('operate.processes.migration.source')} ${t('operate.shared.diagram.label')}`}
+								xml={sourceXml.data.xml}
+								selectableElements={sourceSelectableIds}
+								selectedElementIds={selectedSourceElementIds}
+								onElementSelection={onSourceElementSelection}
+								overlaysData={isSummaryStep ? anchoredSourceOverlays : undefined}
+								onRenderError={() => setFailedSourceXml(sourceXml.data?.xml)}
+							>
+								<StatisticsOverlays businessObjects={sourceXml.data.businessObjects} />
+							</Diagram>
+						)}
+					</DiagramShell>
+				</div>
+			</section>
+			<section className="flex h-full min-w-0 flex-col border-l">
+				{!isSummaryStep && (
+					<div className="flex h-12 items-center gap-6 border-b px-4 text-sm">
+						<HeaderField label={t('operate.processes.migration.target')} htmlFor="targetProcess">
+							<Combobox
+								id="targetProcess"
+								size="sm"
+								aria-label={t('operate.processes.migration.target')}
+								placeholder={t('operate.processes.migration.searchProcess')}
+								searchPlaceholder={t('operate.processes.migration.searchProcess')}
+								options={processOptions}
+								value={selectedProcessKey}
+								disabled={processOptions.length === 0}
+								onValueChange={(value) => {
+									onTargetChange(
+										availableTargets.find(({processDefinitionKey}) => processDefinitionKey === value) ?? null,
+									);
+								}}
+							/>
+						</HeaderField>
+						<HeaderField label={t('operate.processes.migration.version')}>
+							<Select
+								value={target === null ? '' : String(target.version)}
+								disabled={target === null && (targetVersions?.length ?? 0) === 0}
+								onValueChange={(value) => {
+									onTargetChange(targetVersions?.find(({version}) => String(version) === value) ?? null);
+								}}
+							>
+								<SelectTrigger size="sm" aria-label={t('operate.processes.migration.targetVersion')}>
+									<SelectValue placeholder="-" />
+								</SelectTrigger>
+								<SelectContent>
+									{(targetVersions ?? []).map(({version}) => (
+										<SelectItem key={version} value={String(version)}>
+											{version}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</HeaderField>
+					</div>
+				)}
+				<div className="isolate min-h-0 flex-1">
+					<DiagramShell
+						status={targetStatus === 'content' && target === null ? 'empty' : targetStatus}
+						contentLabel={t('operate.processes.migration.target')}
+						emptyMessage={{message: t('operate.processes.migration.selectTarget')}}
+						messagePosition="center"
+					>
+						{targetXml.data?.xml && targetElements !== undefined && (
+							<Diagram
+								key={target?.processDefinitionKey}
+								ariaLabel={`${t('operate.processes.migration.target')} ${t('operate.shared.diagram.label')}`}
+								xml={targetXml.data.xml}
+								selectableElements={targetSelectableIds}
+								selectedElementIds={selectedTargetElementIds}
+								onElementSelection={onTargetElementSelection}
+								overlaysData={isSummaryStep ? anchoredTargetOverlays : undefined}
+								onRenderError={() => setFailedTargetXml(targetXml.data?.xml)}
+							>
+								<StatisticsOverlays businessObjects={targetXml.data.businessObjects} />
+							</Diagram>
+						)}
+					</DiagramShell>
+				</div>
+			</section>
+		</div>
+	);
+};
+
+export {MigrationDiagrams};

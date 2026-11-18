@@ -18,6 +18,7 @@ import type {
 	BatchOperationItem,
 	BatchOperationItemState,
 	BatchOperationType,
+	ProcessDefinition,
 	ProcessInstance,
 	ProcessInstanceState,
 	QueryBatchOperationItemsRequestBody,
@@ -38,9 +39,13 @@ import {processBulkOperationMachine} from '../processBulkOperationMachine';
 import {InstanceOperations} from './InstanceOperations';
 import {ProcessBulkActionDialog} from './ProcessBulkActionDialog';
 import {useProcessBulkActions} from './useProcessBulkActions';
+import type {ProcessDefinitionSelection} from './processDefinitionSelection';
+import type {MigrationScope} from '../getMigrationFilter';
 
 type Props = {
 	search: ProcessesSearch;
+	processDefinitionSelection: ProcessDefinitionSelection;
+	onMigrationEnter: (source: ProcessDefinition, scope: MigrationScope) => void;
 };
 
 const TABLE_CONTAINER_CLASSES = [
@@ -103,7 +108,7 @@ function getActiveOperationsByInstance(items: BatchOperationItem[]) {
 
 const NO_INSTANCES: ProcessInstance[] = [];
 
-const InstancesTable: React.FC<Props> = ({search}) => {
+const InstancesTable: React.FC<Props> = ({search, processDefinitionSelection, onMigrationEnter}) => {
 	const {t} = useTranslation();
 	const {
 		processInstances: loadedInstances,
@@ -150,6 +155,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		isSubmitting,
 		onSubmit: (action) =>
 			send({type: 'submit', action, body: selection.getRequest(action), filterIdentity: selection.filterIdentity}),
+		migration: {search, processDefinitionSelection, onEnter: onMigrationEnter},
 	});
 	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 
@@ -414,6 +420,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				data-testid="process-instances-table"
 			/>
 			<ProcessBulkActionDialog {...bulkActions.dialogProps} />
+			{bulkActions.migrationHelper}
 		</section>
 	);
 };

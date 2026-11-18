@@ -51,7 +51,14 @@ function getMigrationStatisticsFilter({
 	excludeIds,
 }: SelectionParams): GetProcessDefinitionStatisticsRequestBody['filter'] {
 	const keyCriterion = buildInstanceKeyCriterion(includeIds, excludeIds);
-	return {...getStatisticsFilter(search), ...(keyCriterion ? {processInstanceKey: keyCriterion} : {})};
+	const statisticsFilter = getStatisticsFilter(search);
+	const baseKey = statisticsFilter?.processInstanceKey;
+	const baseKeyCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
+
+	return {
+		...statisticsFilter,
+		...(keyCriterion ? {processInstanceKey: {...baseKeyCriterion, ...keyCriterion}} : {}),
+	};
 }
 
 type MigrationScope = {

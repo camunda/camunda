@@ -12,6 +12,7 @@ import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from '#/operate/shared/Diagram/shadcn.components/Diagram';
 import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayContext';
 import {DiagramShell} from '#/operate/shared/DiagramShell/shadcn.components/DiagramShell';
+import {ModificationBadgeOverlay} from '#/operate/shared/ModificationBadgeOverlay/shadcn.components/ModificationBadgeOverlay';
 import {StateOverlay} from '#/operate/shared/StateOverlay/shadcn.components/StateOverlay';
 import {anchorStateOverlaysToCorners} from '#/operate/shared/StateOverlay/shadcn.components/anchorStateOverlaysToCorners';
 import {useDiagramXml} from '../useDiagramXml';
@@ -33,10 +34,29 @@ function isStatisticsPayload(payload: unknown): payload is StatisticsPayload {
 	);
 }
 
+function isModificationBadgePayload(
+	payload: unknown,
+): payload is {newTokenCount?: number; cancelledTokenCount?: number} {
+	return (
+		typeof payload === 'object' && payload !== null && ('newTokenCount' in payload || 'cancelledTokenCount' in payload)
+	);
+}
+
 const StatisticsOverlays: React.FC<{businessObjects?: BusinessObjects}> = ({businessObjects}) => {
 	const overlays = useContext(DiagramOverlayContext);
 
-	return overlays.map(({container, payload, elementId}) => {
+	return overlays.map(({container, payload, elementId, type}) => {
+		if (type === 'batchModificationsBadge' && isModificationBadgePayload(payload)) {
+			return (
+				<ModificationBadgeOverlay
+					key={`${elementId}-${type}`}
+					container={container}
+					newTokenCount={payload.newTokenCount ?? 0}
+					cancelledTokenCount={payload.cancelledTokenCount ?? 0}
+					elementName={businessObjects?.[elementId]?.name ?? elementId}
+				/>
+			);
+		}
 		if (!isStatisticsPayload(payload)) {
 			return null;
 		}
@@ -47,7 +67,7 @@ const StatisticsOverlays: React.FC<{businessObjects?: BusinessObjects}> = ({busi
 				state={payload.elementState}
 				count={payload.count}
 				container={container}
-				elementName={businessObjects?.[elementId]?.name}
+				elementName={businessObjects?.[elementId]?.name ?? elementId}
 			/>
 		);
 	});
@@ -152,4 +172,4 @@ const DiagramPanel: React.FC<Props> = ({
 	);
 };
 
-export {DiagramPanel};
+export {DiagramPanel, StatisticsOverlays};

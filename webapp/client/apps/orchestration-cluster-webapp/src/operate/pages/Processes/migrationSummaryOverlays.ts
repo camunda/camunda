@@ -23,16 +23,13 @@ function getTargetSummaryOverlays(
 	statistics: GetProcessDefinitionStatisticsResponseBody,
 	mapping: Record<string, string>,
 ): OverlayData[] {
-	const countByTargetId = Object.entries(mapping).reduce<Record<string, number>>(
-		(counts, [sourceElementId, targetElementId]) => {
-			const statistic = statistics.items.find(({elementId}) => elementId === sourceElementId);
-			const count = (statistic?.active ?? 0) + (statistic?.incidents ?? 0);
-			return {...counts, [targetElementId]: (counts[targetElementId] ?? 0) + count};
-		},
-		{},
-	);
+	const countByTargetId = Object.entries(mapping).reduce((counts, [sourceElementId, targetElementId]) => {
+		const statistic = statistics.items.find(({elementId}) => elementId === sourceElementId);
+		const count = (statistic?.active ?? 0) + (statistic?.incidents ?? 0);
+		return counts.set(targetElementId, (counts.get(targetElementId) ?? 0) + count);
+	}, new Map<string, number>());
 
-	return Object.entries(countByTargetId).map(([elementId, newTokenCount]) => ({
+	return [...countByTargetId].map(([elementId, newTokenCount]) => ({
 		payload: {newTokenCount},
 		type: 'batchModificationsBadge',
 		elementId,

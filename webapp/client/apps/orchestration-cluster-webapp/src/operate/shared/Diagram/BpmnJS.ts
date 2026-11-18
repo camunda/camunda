@@ -459,7 +459,10 @@ class BpmnJS {
 		const canvas = this.#navigatedViewer?.get('canvas');
 		if (canvas !== undefined) {
 			canvas.resized();
-			canvas.zoom('fit-viewport', 'auto');
+			const {width, height} = canvas.getSize();
+			if (width > 0 && height > 0) {
+				canvas.zoom('fit-viewport', 'auto');
+			}
 		}
 	};
 
