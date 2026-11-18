@@ -451,10 +451,7 @@ public final class CamundaBackgroundTaskManagerFactory {
   }
 
   private ReschedulingTask buildProcessInstanceDeleterJob() {
-    final var history = config.getHistory();
-    final var retention = history.getRetention();
-    final var deleter = retention.getDeleter();
-
+    final var deleter = config.getHistory().getRetention().getDeleter();
     final var dependantTemplates = findProcessInstanceDependantTemplates();
 
     final var task =
@@ -470,9 +467,8 @@ public final class CamundaBackgroundTaskManagerFactory {
     return new ReschedulingTask(
         task,
         deleter.getEntityBatchSize(),
-        // TODO change these to be deleter specific
-        history.getDelayBetweenRuns(),
-        history.getMaxDelayBetweenRuns(),
+        deleter.getDelayBetweenRuns(),
+        deleter.getMaxDelayBetweenRuns(),
         executor,
         logger);
   }

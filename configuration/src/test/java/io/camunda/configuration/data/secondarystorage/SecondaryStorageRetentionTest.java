@@ -298,6 +298,8 @@ public class SecondaryStorageRetentionTest {
         "camunda.data.secondary-storage.retention.deleter.entity-batch-size=200",
         "camunda.data.secondary-storage.retention.deleter.max-retry-attempts=5",
         "camunda.data.secondary-storage.retention.deleter.retry-delay=3s",
+        "camunda.data.secondary-storage.retention.deleter.delay-between-runs=5s",
+        "camunda.data.secondary-storage.retention.deleter.max-delay-between-runs=2m",
       })
   class WithDeleterSet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -320,7 +322,9 @@ public class SecondaryStorageRetentionTest {
           .returns(1000, DeleterConfiguration::getDocumentBatchSize)
           .returns(200, DeleterConfiguration::getEntityBatchSize)
           .returns(5, DeleterConfiguration::getMaxRetryAttempts)
-          .returns(3000, DeleterConfiguration::getRetryDelayMs);
+          .returns(3000, DeleterConfiguration::getRetryDelayMs)
+          .returns(5000, DeleterConfiguration::getDelayBetweenRuns)
+          .returns(120000, DeleterConfiguration::getMaxDelayBetweenRuns);
     }
   }
 
@@ -347,7 +351,9 @@ public class SecondaryStorageRetentionTest {
           .returns(2500, DeleterConfiguration::getDocumentBatchSize)
           .returns(500, DeleterConfiguration::getEntityBatchSize)
           .returns(3, DeleterConfiguration::getMaxRetryAttempts)
-          .returns(1000, DeleterConfiguration::getRetryDelayMs);
+          .returns(1000, DeleterConfiguration::getRetryDelayMs)
+          .returns(2000, DeleterConfiguration::getDelayBetweenRuns)
+          .returns(60000, DeleterConfiguration::getMaxDelayBetweenRuns);
     }
   }
 }

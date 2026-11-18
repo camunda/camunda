@@ -1348,11 +1348,16 @@ camunda: # Type: io.camunda.configuration.Camunda
       
       retention: # Type: io.camunda.configuration.data.secondarystorage.Retention  
         deleter: # Type: io.camunda.configuration.data.secondarystorage.RetentionDeleter  
+          # how long to wait before the next deleter run. While there is nothing to delete, the delay grows up
+          # to max-delay-between-runs.
+          delay-between-runs: "2s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_DELAYBETWEENRUNS
           # how many documents are deleted in a single bulk delete request
           document-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_DOCUMENTBATCHSIZE
           # how many entities (e.g. process instances or decision instances) are read at once when finding data
           # whose retention period has expired
           entity-batch-size: 500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_ENTITYBATCHSIZE
+          # the maximum time to wait between deleter runs while there is nothing to delete
+          max-delay-between-runs: "60s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_MAXDELAYBETWEENRUNS
           # how many times a failed delete is retried before giving up
           max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_MAXRETRYATTEMPTS
           # how long to wait before retrying a failed delete

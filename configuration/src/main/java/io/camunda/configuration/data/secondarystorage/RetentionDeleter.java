@@ -26,6 +26,15 @@ public class RetentionDeleter {
   /** how long to wait before retrying a failed delete */
   private Duration retryDelay = Duration.ofSeconds(1);
 
+  /**
+   * how long to wait before the next deleter run. While there is nothing to delete, the delay grows
+   * up to max-delay-between-runs.
+   */
+  private Duration delayBetweenRuns = Duration.ofSeconds(2);
+
+  /** the maximum time to wait between deleter runs while there is nothing to delete */
+  private Duration maxDelayBetweenRuns = Duration.ofSeconds(60);
+
   public int getDocumentBatchSize() {
     return documentBatchSize;
   }
@@ -56,5 +65,21 @@ public class RetentionDeleter {
 
   public void setRetryDelay(final Duration retryDelay) {
     this.retryDelay = retryDelay;
+  }
+
+  public Duration getDelayBetweenRuns() {
+    return delayBetweenRuns;
+  }
+
+  public void setDelayBetweenRuns(final Duration delayBetweenRuns) {
+    this.delayBetweenRuns = delayBetweenRuns;
+  }
+
+  public Duration getMaxDelayBetweenRuns() {
+    return maxDelayBetweenRuns;
+  }
+
+  public void setMaxDelayBetweenRuns(final Duration maxDelayBetweenRuns) {
+    this.maxDelayBetweenRuns = maxDelayBetweenRuns;
   }
 }
