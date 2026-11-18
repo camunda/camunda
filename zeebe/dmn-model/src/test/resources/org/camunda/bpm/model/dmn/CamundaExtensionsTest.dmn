@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/DMN/20151101/dmn.xsd"
+             xmlns:camunda="http://camunda.org/schema/1.0/dmn"
+             id="definitions"
+             name="definitions"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision" name="Check Order" camunda:historyTimeToLive="5" camunda:versionTag="1.0.0">
+    <decisionTable id="decisionTable">
+      <input id="input" camunda:inputVariable="myVariable">
+        <inputExpression/>
+      </input>
+      <output/>
+    </decisionTable>
+  </decision>
+</definitions>

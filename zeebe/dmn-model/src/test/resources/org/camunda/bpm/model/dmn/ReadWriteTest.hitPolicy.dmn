@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             id="definitions"
+             name="definitions"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision1" name="decision1">
+    <decisionTable id="decisionTable1">
+      <output id="output1" />
+    </decisionTable>
+  </decision>
+  <decision id="decision2" name="decision2">
+    <decisionTable id="decisionTable2" hitPolicy="UNIQUE">
+      <output id="output2" />
+    </decisionTable>
+  </decision>
+  <decision id="decision3" name="decision3">
+    <decisionTable id="decisionTable3" hitPolicy="FIRST">
+      <output id="output3" />
+    </decisionTable>
+  </decision>
+  <decision id="decision4" name="decision4">
+    <decisionTable id="decisionTable4" hitPolicy="PRIORITY">
+      <output id="output4" />
+    </decisionTable>
+  </decision>
+  <decision id="decision5" name="decision5">
+    <decisionTable id="decisionTable5" hitPolicy="ANY">
+      <output id="output5" />
+    </decisionTable>
+  </decision>
+  <decision id="decision6" name="decision6">
+    <decisionTable id="decisionTable6" hitPolicy="COLLECT">
+      <output id="output6" />
+    </decisionTable>
+  </decision>
+  <decision id="decision7" name="decision7">
+    <decisionTable id="decisionTable7" hitPolicy="RULE ORDER">
+      <output id="output7" />
+    </decisionTable>
+  </decision>
+  <decision id="decision8" name="decision8">
+    <decisionTable id="decisionTable8" hitPolicy="OUTPUT ORDER">
+      <output id="output8" />
+    </decisionTable>
+  </decision>
+</definitions>

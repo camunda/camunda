@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<definitions id="definitions" name="definitions" namespace="http://camunda.org/schema/1.0/dmn" xmlns="http://www.omg.org/spec/DMN/20151101/dmn.xsd">
+  <decision id="decision" name="Check Order">
+    <decisionTable id="decisionTable">
+      <input id="input1">
+        <inputExpression id="inputExpression1" typeRef="string"/>
+      </input>
+      <output id="output1"/>
+      <rule id="rule1">
+        <inputEntry id="inputEntry1">
+          <text>
+            <![CDATA[>= 1000]]>
+          </text>
+        </inputEntry>
+        <outputEntry id="outputEntry1">
+          <text>"notok"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
