@@ -41,11 +41,14 @@ Always set `timeout-minutes` (e.g. `3`) on the call site.
 
 ### Inputs
 
-|      Input      |                     Description                     | Required | Default |
-|-----------------|-----------------------------------------------------|----------|---------|
-| vault-addr      | Vault address (`secrets.VAULT_ADDR`)                | true     |         |
-| vault-role-id   | Vault AppRole role id (`secrets.VAULT_ROLE_ID`)     | true     |         |
-| vault-secret-id | Vault AppRole secret id (`secrets.VAULT_SECRET_ID`) | true     |         |
+|       Input        |                                                       Description                                                        | Required | Default |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------|----------|---------|
+| vault-addr         | Vault address (`secrets.VAULT_ADDR`)                                                                                     | true     |         |
+| vault-role-id      | Deprecated Vault AppRole role id (`secrets.VAULT_ROLE_ID`)                                                               | false    |         |
+| vault-secret-id    | Deprecated Vault AppRole secret id (`secrets.VAULT_SECRET_ID`)                                                           | false    |         |
+| vault-jwt-role     | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | false    |         |
+| vault-jwt-path     | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`)                                                                   | false    |         |
+| vault-jwt-audience | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`)                                              | false    |         |
 
 ### Outputs
 
@@ -67,8 +70,9 @@ jobs:
         uses: ./.github/actions/gcs-build-cache-auth
         with:
           vault-addr: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
       - name: Download distball from GCS
         shell: bash
         run: |

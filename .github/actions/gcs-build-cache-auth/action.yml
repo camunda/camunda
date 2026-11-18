@@ -11,10 +11,19 @@ inputs:
     required: true
   vault-role-id:
     description: Vault AppRole role id (secrets.VAULT_ROLE_ID)
-    required: true
+    required: false
   vault-secret-id:
     description: Vault AppRole secret id (secrets.VAULT_SECRET_ID)
-    required: true
+    required: false
+  vault-jwt-role:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
+    required: false
+  vault-jwt-path:
+    description: 'Vault JWT auth backend path'
+    required: false
+  vault-jwt-audience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
+    required: false
 runs:
   using: composite
   steps:
@@ -27,9 +36,12 @@ runs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ inputs.vault-addr }}
-        method: approle
-        roleId: ${{ inputs.vault-role-id }}
-        secretId: ${{ inputs.vault-secret-id }}
+        method: ${{ inputs.vault-jwt-role != '' && 'jwt' || 'approle' }}
+        path: ${{ inputs.vault-jwt-path }}
+        role: ${{ inputs.vault-jwt-role }}
+        jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
+        roleId: ${{ inputs.vault-jwt-role == '' && inputs.vault-role-id || '' }}
+        secretId: ${{ inputs.vault-jwt-role == '' && inputs.vault-secret-id || '' }}
         exportEnv: false
         secrets: |
           secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;

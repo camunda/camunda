@@ -39,10 +39,19 @@ inputs:
     required: true
   secret_vault_roleId:
     description: 'Secret vault roleId'
-    required: true
+    required: false
   secret_vault_secretId:
     description: 'Secret vault ID'
-    required: true
+    required: false
+  secret_vault_jwtRole:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
+    required: false
+  secret_vault_jwtPath:
+    description: 'Vault JWT auth backend path'
+    required: false
+  secret_vault_jwtAudience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
+    required: false
 
 runs:
   using: composite
@@ -52,9 +61,12 @@ runs:
       uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
       with:
         url: ${{ inputs.secret_vault_address }}
-        method: approle
-        roleId: ${{ inputs.secret_vault_roleId }}
-        secretId: ${{ inputs.secret_vault_secretId }}
+        method: ${{ inputs.secret_vault_jwtRole != '' && 'jwt' || 'approle' }}
+        path: ${{ inputs.secret_vault_jwtPath }}
+        role: ${{ inputs.secret_vault_jwtRole }}
+        jwtGithubAudience: ${{ inputs.secret_vault_jwtAudience }}
+        roleId: ${{ inputs.secret_vault_jwtRole == '' && inputs.secret_vault_roleId || '' }}
+        secretId: ${{ inputs.secret_vault_jwtRole == '' && inputs.secret_vault_secretId || '' }}
         exportEnv: false
         secrets: |
           ${{ inputs.fossa-api-key-vault-path }} ${{ inputs.fossa-api-key-vault-key }} | FOSSA_API_KEY;
