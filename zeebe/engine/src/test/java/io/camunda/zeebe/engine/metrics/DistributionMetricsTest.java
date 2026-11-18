@@ -67,17 +67,18 @@ final class DistributionMetricsTest {
   }
 
   @Test
-  void shouldNotTagSentAcknowledgementsWithQueue() {
+  void shouldTagSentAcknowledgementsAsNone() {
     // when
-    metrics.sentAcknowledgeDistribution(1);
     metrics.sentAcknowledgeDistribution(1);
 
     // then
-    final var counter = registry.find("zeebe.command.distributions.acknowledged.sent").counter();
-    assertThat(counter).isNotNull();
-    assertThat(counter.count()).isEqualTo(2.0);
-    assertThat(counter.getId().getTag("queue")).isNull();
-    assertThat(counter.getId().getTag("targetPartition")).isEqualTo("1");
+    assertThat(
+            registry
+                .get(DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
+                .tag("queue", DistributionMetrics.NO_QUEUE)
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   private double pending(final int targetPartition, final String queue) {

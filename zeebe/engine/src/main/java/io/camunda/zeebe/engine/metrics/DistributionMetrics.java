@@ -15,9 +15,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -44,12 +42,6 @@ public final class DistributionMetrics {
   /** Metrics by target partition id and (bounded) queue tag. */
   private final Table<Integer, String, PartitionDistributionMetrics> partitionMetrics =
       Table.concurrent();
-
-  /**
-   * The receiving partition does not know the queue of a distribution, so this counter is only
-   * tagged by partition.
-   */
-  private final Map<Integer, Counter> sentAcknowledgeCounters = new ConcurrentHashMap<>();
 
   /** All created entries of {@link #partitionMetrics}, as a table cannot be iterated. */
   private final List<PartitionDistributionMetrics> allPartitionMetrics =
@@ -116,27 +108,14 @@ public final class DistributionMetrics {
    * This method is called on the target partition when a distribution command has been successfully
    * processed and an acknowledgement is sent back to the origin partition.
    *
-   * <p>Not tagged by queue: the queue is only known to the origin partition.
+   * <p>The queue is only known to the origin partition, so this is always tagged with {@link
+   * #NO_QUEUE}.
    *
    * @param originPartitionId the source partition id of the distribution (where the distribution
    *     was started)
    */
   public void sentAcknowledgeDistribution(final int originPartitionId) {
-    sentAcknowledgeCounters
-        .computeIfAbsent(
-            originPartitionId,
-            id ->
-                Counter.builder(
-                        DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
-                    .description(
-                        DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
-                            .getDescription())
-                    .tag(
-                        DistributionMetricsDoc.DistributionMetricKeyNames.TARGET_PARTITION
-                            .asString(),
-                        String.valueOf(id))
-                    .register(meterRegistry))
-        .increment();
+    getPartitionMetrics(originPartitionId, null).sentAcknowledgeDistribution();
   }
 
   /**
@@ -195,6 +174,7 @@ public final class DistributionMetrics {
     private final StatefulGauge inflightDistributionsGauge;
     private final Counter retryInflightDistributionsCounter;
     private final Counter receivedAcknowledgeDistributionsCounter;
+    private final Counter sentAcknowledgeDistributionsCounter;
 
     public PartitionDistributionMetrics(
         final int targetPartitionId, final String queueId, final MeterRegistry meterRegistry) {
@@ -218,6 +198,13 @@ public final class DistributionMetrics {
           Counter.builder(DistributionMetricsDoc.RETRY_INFLIGHT_COMMAND_DISTRIBUTIONS.getName())
               .description(
                   DistributionMetricsDoc.RETRY_INFLIGHT_COMMAND_DISTRIBUTIONS.getDescription())
+              .tags(tags())
+              .register(meterRegistry);
+
+      sentAcknowledgeDistributionsCounter =
+          Counter.builder(DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
+              .description(
+                  DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getDescription())
               .tags(tags())
               .register(meterRegistry);
 
@@ -258,6 +245,10 @@ public final class DistributionMetrics {
 
     public void retryInflightDistribution() {
       retryInflightDistributionsCounter.increment();
+    }
+
+    public void sentAcknowledgeDistribution() {
+      sentAcknowledgeDistributionsCounter.increment();
     }
 
     public void receivedAcknowledgeDistribution() {

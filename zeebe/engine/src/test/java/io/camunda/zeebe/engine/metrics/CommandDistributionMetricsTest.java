@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.DistributionMetricsDoc.DistributionMetricKeyNames;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -118,14 +119,14 @@ public class CommandDistributionMetricsTest {
     assertThat(
             getGaugeValue(
                 1,
-                "zeebe.command.distributions.pending",
+                DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName(),
                 2,
                 DistributionQueue.DEPLOYMENT.getQueueId()))
         .isEqualTo(2);
     assertThat(
             getGaugeValue(
                 1,
-                "zeebe.command.distributions.inflight",
+                DistributionMetricsDoc.INFLIGHT_COMMAND_DISTRIBUTIONS.getName(),
                 2,
                 DistributionQueue.DEPLOYMENT.getQueueId()))
         .isOne();
@@ -256,7 +257,7 @@ public class CommandDistributionMetricsTest {
         engine
             .getMeterRegistry(partition)
             .find(metricName)
-            .tags("targetPartition", String.valueOf(targetPartition), "queue", queue)
+            .tags(DistributionMetricKeyNames.tags(targetPartition, queue))
             .gauge();
     return gauge != null ? gauge.value() : 0.0;
   }
