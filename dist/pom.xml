@@ -842,6 +842,11 @@
       <artifactId>debug-cli</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>es9-index-migrator</artifactId>
+    </dependency>
+
     <!-- /end -->
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -1114,6 +1119,10 @@
               <id>cdbg</id>
               <mainClass>io.camunda.debug.cli.Main</mainClass>
             </program>
+            <program>
+              <id>es9-migrator</id>
+              <mainClass>io.camunda.migration.es9.Es9MigratorApp</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -1230,6 +1239,9 @@
           <usedDependencies>
             <!-- Needed for the debug CLI tool -->
             <dependency>io.camunda:debug-cli</dependency>
+
+            <!-- Needed for the ES9 index migrator Job -->
+            <dependency>io.camunda:es9-index-migrator</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>

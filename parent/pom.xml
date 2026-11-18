@@ -393,6 +393,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>es9-index-migrator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>

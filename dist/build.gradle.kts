@@ -141,6 +141,7 @@ val startupPrograms =
     "backup-webapps" to "io.camunda.application.StandaloneBackupManager",
     "camunda" to "io.camunda.application.StandaloneCamunda",
     "cdbg" to "io.camunda.debug.cli.Main",
+    "es9-migrator" to "io.camunda.migration.es9.Es9MigratorApp",
   )
 
 val generateDistReadme =
@@ -483,6 +484,7 @@ dependencies {
   implementation(project(":zeebe-protocol-impl"))
   implementation(libs.io.netty.netty.transport)
   implementation(project(":debug-cli"))
+  implementation(project(":es9-index-migrator"))
   implementation(libs.org.apache.commons.commons.lang3)
   implementation(libs.org.apache.httpcomponents.client5.httpclient5)
   implementation(libs.org.apache.httpcomponents.core5.httpcore5)
