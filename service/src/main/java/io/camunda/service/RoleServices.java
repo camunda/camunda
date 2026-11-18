@@ -87,6 +87,12 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return members.total() > 0;
   }
 
+  public boolean hasMembers(final String roleId, final CamundaAuthentication authentication) {
+    final var query =
+        RoleMemberQuery.of(builder -> builder.filter(filter -> filter.roleId(roleId)));
+    return searchMembers(query, authentication).total() > 0;
+  }
+
   public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds,
       final CamundaAuthentication authentication) {
