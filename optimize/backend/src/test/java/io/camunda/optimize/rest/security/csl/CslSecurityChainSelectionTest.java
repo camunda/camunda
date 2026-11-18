@@ -22,6 +22,7 @@ import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import org.junit.jupiter.api.Test;
@@ -275,6 +276,9 @@ class CslSecurityChainSelectionTest {
   void shouldRegisterCcsmPublicApiAccessFilterForCcsm() {
     ccsmRunner
         .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        // the filter reads CSL's classification; the bean needs a live request to build
+        .withBean(
+            CamundaAuthenticationProvider.class, () -> mock(CamundaAuthenticationProvider.class))
         .withUserConfiguration(OptimizePublicApiAccessConfiguration.class)
         .run(
             context -> {
@@ -288,6 +292,9 @@ class CslSecurityChainSelectionTest {
   void shouldRegisterCcsaasPublicApiAccessFilterForCcsaas() {
     ccsaasRunner
         .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        // the filter reads CSL's classification; the bean needs a live request to build
+        .withBean(
+            CamundaAuthenticationProvider.class, () -> mock(CamundaAuthenticationProvider.class))
         .withUserConfiguration(OptimizePublicApiAccessConfiguration.class)
         .run(
             context -> {
@@ -302,6 +309,9 @@ class CslSecurityChainSelectionTest {
     // Legacy mode keeps the public API on its own bearer-only chain.
     ccsmRunner
         .withPropertyValues(CSL_FLAG_DISABLED)
+        // the filter reads CSL's classification; the bean needs a live request to build
+        .withBean(
+            CamundaAuthenticationProvider.class, () -> mock(CamundaAuthenticationProvider.class))
         .withUserConfiguration(OptimizePublicApiAccessConfiguration.class)
         .run(
             context -> {

@@ -36,8 +36,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class ExpressionProcessor {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
@@ -128,7 +131,8 @@ public final class ExpressionProcessor {
    * @return a new secret-aware processor; this one is left unchanged
    * @see SecretReferenceEvaluationContext
    */
-  public ExpressionProcessor withSecretReferenceContext(final ReferencedSecretCollector collector) {
+  public ExpressionProcessor withSecretReferenceContext(
+      final @Nullable ReferencedSecretCollector collector) {
     return new ExpressionProcessor(
         expressionLanguage,
         new SecretReferenceEvaluationContext(scopedEvaluationContext, collector),
@@ -481,9 +485,20 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
-    return evaluationResult
-        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
+    return evaluateArrayExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateArrayExpression(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel}.
+   */
+  public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey, label))
         .map(EvaluationResult::getList);
   }
 
@@ -499,9 +514,21 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
+    return evaluateArrayOfStringsExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateArrayOfStringsExpression(Expression, long, String)}, but labels the
+   * failure message, if any, with the given {@link ExpressionLabel}.
+   */
+  public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId, label);
     return evaluationResult
-        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
+        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey, label))
         .map(EvaluationResult::getListOfStrings)
         .flatMap(
             list -> {
@@ -512,9 +539,9 @@ public final class ExpressionProcessor {
                   createFailureMessage(
                       evaluationResult.get(),
                       String.format(
-                          "Expected result of the expression '%s' to be 'ARRAY' containing 'STRING' items,"
+                          "Expected result of the %s '%s'%s to be 'ARRAY' containing 'STRING' items,"
                               + " but was 'ARRAY' containing at least one non-'STRING' item.",
-                          expression.getExpression()),
+                          describeKind(label), expression.getExpression(), label.describeTarget()),
                       scopeKey));
             });
   }
@@ -640,7 +667,7 @@ public final class ExpressionProcessor {
               result,
               "Expected result of the %s '%s'%s to be '%s', but was '%s'."
                   .formatted(
-                      label.hasKind() ? label.kind() : "expression",
+                      describeKind(label),
                       result.getExpression(),
                       label.describeTarget(),
                       expectedResultType,
@@ -672,7 +699,7 @@ public final class ExpressionProcessor {
                     result,
                     "Expected result of the %s '%s'%s to be one of '%s', but was '%s'."
                         .formatted(
-                            label.hasKind() ? label.kind() : "expression",
+                            describeKind(label),
                             result.getExpression(),
                             label.describeTarget(),
                             expectedResultTypes,
@@ -746,7 +773,7 @@ public final class ExpressionProcessor {
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression,
       final long variableScopeKey,
-      final String tenantId,
+      @Nullable final String tenantId,
       final ExpressionLabel label) {
     final EvaluationContext context;
     if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
@@ -844,6 +871,15 @@ public final class ExpressionProcessor {
   }
 
   /**
+   * Describes what a failing expression is for use in a sentence like "Expected result of the
+   * {kind} 'x' ...", falling back to the generic "expression" for {@link ExpressionLabel#NONE}.
+   */
+  private static String describeKind(final ExpressionLabel label) {
+    final var kind = label.kind();
+    return kind != null ? kind : "expression";
+  }
+
+  /**
    * Describes what a failing expression is for use in a sentence like "for the due date expression
    * 'x'", falling back to the generic "expression" for {@link ExpressionLabel#NONE}.
    */
@@ -919,7 +955,7 @@ public final class ExpressionProcessor {
       super(message);
     }
 
-    public EvaluationException(final String message, final Throwable cause) {
+    public EvaluationException(final String message, final @Nullable Throwable cause) {
       super(message, cause);
     }
   }

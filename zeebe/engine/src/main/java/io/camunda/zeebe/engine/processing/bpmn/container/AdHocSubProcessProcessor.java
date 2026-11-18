@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -36,8 +37,11 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
 
@@ -161,7 +165,8 @@ public class AdHocSubProcessProcessor
   }
 
   private AdHocSubProcessBehavior behaviorFor(final ExecutableAdHocSubProcess adHocSubProcess) {
-    return adHocSubProcessBehaviors.get(adHocSubProcess.getImplementationType());
+    return Objects.requireNonNull(
+        adHocSubProcessBehaviors.get(adHocSubProcess.getImplementationType()));
   }
 
   private void terminate(
@@ -201,12 +206,10 @@ public class AdHocSubProcessProcessor
     } else {
       return expressionProcessor
           .evaluateArrayOfStringsExpression(
-              activeElementsCollection, context.getElementInstanceKey(), context.getTenantId())
-          .mapLeft(
-              failure ->
-                  new Failure(
-                      "Failed to activate ad-hoc elements. " + failure.getMessage(),
-                      ErrorType.EXTRACT_VALUE_ERROR))
+              activeElementsCollection,
+              context.getElementInstanceKey(),
+              context.getTenantId(),
+              ExpressionLabel.adHocActiveElementsCollectionExpression(adHocSubProcess.getId()))
           .flatMap(
               elements ->
                   AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
@@ -237,14 +240,14 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext childContext) {
     return adHocSubProcess
         .getOutputCollection()
-        .map(
+        .<Either<Failure, ?>>map(
             outputCollectionVariableName ->
                 updateOutputCollection(
                     adHocSubProcess,
                     outputCollectionVariableName,
                     adHocSubProcessContext,
                     childContext))
-        .orElse(Either.right(null))
+        .orElse(Either.rightVoid())
         .flatMap(
             ok ->
                 behaviorFor(adHocSubProcess)
@@ -300,7 +303,8 @@ public class AdHocSubProcessProcessor
         .evaluateAnyExpressionToBuffer(
             outputElementExpression,
             childContext.getElementInstanceKey(),
-            childContext.getTenantId())
+            childContext.getTenantId(),
+            ExpressionLabel.adHocOutputElementExpression(adHocSubProcess.getId()))
         .flatMap(
             outputElementValue -> {
               final DirectBuffer outputCollectionValue =
@@ -360,19 +364,18 @@ public class AdHocSubProcessProcessor
         final BpmnElementContext childContext) {
       final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
       if (completionConditionExpression == null) {
-        return Either.right(null);
+        return Either.rightVoid();
       }
 
       return expressionProcessor
           .evaluateBooleanExpression(
               completionConditionExpression,
               adHocSubProcessContext.getElementInstanceKey(),
-              adHocSubProcessContext.getTenantId())
-          .mapLeft(
-              failure ->
-                  new Failure(
-                      "Failed to evaluate completion condition. " + failure.getMessage(),
-                      ErrorType.EXTRACT_VALUE_ERROR));
+              adHocSubProcessContext.getTenantId(),
+              ExpressionLabel.adHocCompletionConditionExpression(adHocSubProcess.getId()))
+          // the incident is raised for the completing child: drop the evaluation's scope key
+          // (the ad-hoc sub-process) so the incident keeps the child's scope
+          .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.EXTRACT_VALUE_ERROR));
     }
 
     @Override

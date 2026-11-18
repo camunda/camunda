@@ -7,7 +7,9 @@
 #   flaky    previous day, push, merge queue and PR runs, medic ping at FLAKY_TEST_THRESHOLD
 #   failure  previous 7 days, push and merge queue runs, medic ping at FAILED_TEST_THRESHOLD
 #
-# Runs count under their base branch. A medic is pinged only when no GH issue matches the test.
+# Runs count under their base branch. Each branch shows its top tests, grouped by the team that
+# owns them. A team's medic is pinged once when one of its tests is over the threshold and no GH
+# issue matches it, also when that test is not in the top.
 #
 # Writes a JSON array of Slack messages ({text, blocks}): the top-level message with the first
 # branch in SUPPORTED_BRANCHES, then one thread reply per other branch with tests. post.sh posts
@@ -25,10 +27,13 @@ if [[ ! "$MODE" =~ ^(flaky|failure)$ || -z "$OUT_FILE" ]]; then
   exit 2
 fi
 
-# main goes in the top-level message, the stable branches in its thread. Update this list at each
-# minor release: add the new stable/8.x branch and remove branches that move to ESUP.
-SUPPORTED_BRANCHES=(main stable/8.10 stable/8.9 stable/8.8)
-TOP_TESTS_PER_BRANCH=3
+# MAINTAINED_BRANCHES is the JSON array of the list-maintained-branches action, in any order. main
+# goes in the top-level message, the stable branches in its thread, newest first.
+: "${MAINTAINED_BRANCHES:?set MAINTAINED_BRANCHES to a JSON array of the maintained branches}"
+SUPPORTED_BRANCHES=(main)
+mapfile -t -O 1 SUPPORTED_BRANCHES < <(jq -r '.[] | select(. != "main")' <<< "$MAINTAINED_BRANCHES" | sort -rV)
+TOP_TESTS_MAIN=5
+TOP_TESTS_STABLE=3
 FLAKY_TEST_THRESHOLD=10
 FAILED_TEST_THRESHOLD=3
 
@@ -57,13 +62,14 @@ bq_query() {
 }
 
 top_tests() {
-  # bq would read a leading "--" comment line as a flag, so drop the comment lines
+  # bq would read a leading "--" comment line as a flag, so drop the comment lines. The query
+  # returns all tests of all branches, more than the 100 rows bq returns by default.
   bq_query \
+    --max_rows=100000 \
     --parameter="days:INT64:${DAYS}" \
     --parameter="test_status:STRING:${MODE}" \
     --parameter="triggers:ARRAY<STRING>:$(json_array "${TRIGGERS[@]}")" \
     --parameter="branches:ARRAY<STRING>:$(json_array "${SUPPORTED_BRANCHES[@]}")" \
-    --parameter="top:INT64:${TOP_TESTS_PER_BRANCH}" \
     "$(sed '/^[[:space:]]*--/d' "${SCRIPT_DIR}/top-tests.sql")"
 }
 
@@ -80,33 +86,42 @@ flaky_header() {
   echo "📈 ~${flaky_pct}% of jobs had flaky tests yesterday ($flaky_jobs from total of $all_jobs jobs)."
 }
 
-# Prints the first open or closed GH issue number for the search, or nothing.
+# Prints the first open GH issue number for the search, or nothing. gh issue list searches open
+# issues only, so a test whose issue was closed is pinged again when it is over the threshold.
 find_issue() {
   gh issue list -R camunda/camunda --search "$1" --limit 1 --json number --jq '.[0].number // empty' \
     || { echo "::warning::gh issue lookup failed for $2" >&2; }
 }
 
-# Prints the medic of the team that owns the test class, or nothing.
-find_medic() {
-  local source_file owner
+# Prints the team that owns the test class (e.g. @camunda/data-layer), or nothing.
+find_team() {
+  local source_file
   source_file="$(resolve_test_source_file "$1")"
   [[ -n "$source_file" ]] || return 0
-  owner="$(resolve_codeowners_team "$source_file")"
-  if [[ -n "$owner" && -n "${lookupTeamMedic["$owner"]+x}" ]]; then
-    echo "${lookupTeamMedic["$owner"]}"
-  fi
+  resolve_codeowners_team "$source_file"
 }
 
-# Reads the rows of top-tests.sql and prints each with its display name, GH issue and due medic.
-# A test on several branches is looked up once.
+# Reads the rows of top-tests.sql and prints each with its display name, team, and whether the
+# branch shows it. Tests that are shown or over the threshold also get their GH issue and, when
+# the ping is due, their team's medic. A test or class on several rows is looked up once.
 enrich() {
-  local row fqcn test_name count class_name name fallback_search key issue medic
-  declare -A issues medics
+  local row fields branch fqcn count rank test_name top shown class_name name fallback_search key
+  local issue team medic
+  declare -A issues teams
 
   while read -r row; do
-    fqcn="$(jq -r '.test_class_name' <<< "$row")"
+    mapfile -t fields < <(jq -r '.branch, .test_class_name, .occurrences, .test_rank' <<< "$row")
+    branch="${fields[0]}"
+    fqcn="${fields[1]}"
+    count="${fields[2]}"
+    rank="${fields[3]}"
+    # Read on its own, as a test name can have a newline
     test_name="$(jq -r '.test_name' <<< "$row")"
-    count="$(jq -r '.occurrences' <<< "$row")"
+
+    top="$TOP_TESTS_STABLE"
+    [[ "$branch" == "${SUPPORTED_BRANCHES[0]}" ]] && top="$TOP_TESTS_MAIN"
+    shown=false
+    [[ "$rank" -le "$top" ]] && shown=true
 
     if [[ "$fqcn" == *.ts || "$fqcn" == *.tsx ]]; then
       # Spec path (e.g. src/foo/Bar.test.tsx) -> Bar, as flaky-test issue titles name it
@@ -130,32 +145,41 @@ enrich() {
       name="$class_name (class setup)"
     fi
 
-    key="$fqcn#$test_name"
-    if [[ -z "${issues["$key"]+x}" ]]; then
-      issue=""
-      if [[ -n "$test_name" ]]; then
-        issue="$(find_issue "in:title $class_name AND in:title $test_name$ISSUE_FILTER" "$class_name")"
-      fi
-      if [[ -z "$issue" ]]; then
-        issue="$(find_issue "$fallback_search" "$class_name")"
-      fi
-      issues["$key"]="$issue"
+    if [[ -z "${teams["$fqcn"]+x}" ]]; then
+      teams["$fqcn"]="$(find_team "$fqcn")"
     fi
-    issue="${issues["$key"]}"
+    team="${teams["$fqcn"]}"
+
+    issue=""
+    if [[ "$shown" == true || "$count" -ge "$THRESHOLD" ]]; then
+      key="$fqcn#$test_name"
+      if [[ -z "${issues["$key"]+x}" ]]; then
+        if [[ -n "$test_name" ]]; then
+          issue="$(find_issue "in:title $class_name AND in:title $test_name$ISSUE_FILTER" "$class_name")"
+        fi
+        if [[ -z "$issue" ]]; then
+          issue="$(find_issue "$fallback_search" "$class_name")"
+        fi
+        issues["$key"]="$issue"
+      fi
+      issue="${issues["$key"]}"
+    fi
 
     medic=""
-    if [[ "$count" -ge "$THRESHOLD" && -z "$issue" ]]; then
-      if [[ -z "${medics["$fqcn"]+x}" ]]; then
-        medics["$fqcn"]="$(find_medic "$fqcn")"
-      fi
-      medic="${medics["$fqcn"]}"
+    if [[ "$count" -ge "$THRESHOLD" && -z "$issue" && -n "$team" \
+      && -n "${lookupTeamMedic["$team"]+x}" ]]; then
+      medic="${lookupTeamMedic["$team"]}"
     fi
 
-    jq -c --arg name "$name" --arg issue "$issue" --arg medic "$medic" '{
+    jq -c --arg name "$name" --arg issue "$issue" --arg team "$team" --arg medic "$medic" \
+      --argjson shown "$shown" '{
       branch,
       count: (.occurrences | tonumber),
       tests_on_branch: (.tests_on_branch | tonumber),
+      rank: (.test_rank | tonumber),
+      shown: $shown,
       name: $name,
+      team: (if $team == "" then null else $team end),
       issue: (if $issue == "" then null else $issue end),
       medic: (if $medic == "" then null else $medic end),
       links
@@ -173,7 +197,8 @@ tests="$(top_tests | enrich | jq -s -c '.')"
 messages="$(jq -n \
   --arg mode "$MODE" \
   --arg header "$header" \
-  --argjson top "$TOP_TESTS_PER_BRANCH" \
+  --argjson top_main "$TOP_TESTS_MAIN" \
+  --argjson top_stable "$TOP_TESTS_STABLE" \
   --argjson branches "$(json_array "${SUPPORTED_BRANCHES[@]}")" \
   --argjson tests "$tests" \
   -f "${SCRIPT_DIR}/render.jq")"

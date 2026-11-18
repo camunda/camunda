@@ -1646,7 +1646,8 @@
 					},
 					"variablesPanel": {
 						"tabsLabel": "Onglets du panneau des variables",
-						"inputsAndOutputs": "Entrées et sorties"
+						"inputsAndOutputs": "Entrées et sorties",
+						"loadingResult": "Chargement du résultat"
 					},
 					"forbidden": {
 						"heading": "Vous n'avez pas la permission de consulter ces informations"
@@ -2003,6 +2004,7 @@
 					"discard": "Abandonner",
 					"discardDescription": "Toutes les modifications ajoutées pour l'instance {{processInstanceKey}} vont être abandonnées.",
 					"discardHint": "Cliquez sur « Abandonner » pour continuer.",
+					"applying": "Application des modifications",
 					"leaveTitle": "Quitter le mode de modification",
 					"stay": "Rester",
 					"leave": "Quitter",

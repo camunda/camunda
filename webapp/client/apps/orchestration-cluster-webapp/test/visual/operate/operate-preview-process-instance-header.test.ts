@@ -34,15 +34,6 @@ function incidentHandlers() {
 	];
 }
 
-function callHierarchyOf(names: string[]) {
-	return names.map((name, index) =>
-		createCallHierarchy({
-			processInstanceKey: index === names.length - 1 ? PROCESS_INSTANCE_ID : String(index + 1),
-			processDefinitionName: name,
-		}),
-	);
-}
-
 test('should match the header snapshot of a running instance with an incident', async ({
 	network,
 	operatePreviewProcessInstancePage,
@@ -57,7 +48,7 @@ test('should match the header snapshot of a running instance with an incident', 
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
-	await expect(operatePreviewProcessInstancePage.header.getByText('My Process')).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.headerText('My Process')).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
@@ -78,7 +69,7 @@ test('should match the header snapshot of a completed instance', async ({
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
-	await expect(operatePreviewProcessInstancePage.header.getByText('My Process')).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.headerText('My Process')).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
@@ -87,17 +78,20 @@ test('should match the header snapshot with the breadcrumb of a called instance'
 	operatePreviewProcessInstancePage,
 	page,
 }) => {
+	network.use(...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})));
 	network.use(
 		mockGetProcessInstanceCallHierarchyEndpoint({
-			successResponse: HttpResponse.json(callHierarchyOf(['Parent Process', 'Child Process'])),
+			successResponse: HttpResponse.json([
+				createCallHierarchy({processInstanceKey: '1', processDefinitionName: 'Parent Process'}),
+				createCallHierarchy({processInstanceKey: PROCESS_INSTANCE_ID, processDefinitionName: 'Child Process'}),
+			]),
 		}),
-		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 	);
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 	await expect(
-		operatePreviewProcessInstancePage.breadcrumb.getByRole('link', {name: 'View Process Parent Process - Instance 1'}),
+		operatePreviewProcessInstancePage.breadcrumbLink('View Process Parent Process - Instance 1'),
 	).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
@@ -107,26 +101,24 @@ test('should match the header snapshot with the overflow menu of a deep breadcru
 	operatePreviewProcessInstancePage,
 	page,
 }) => {
+	network.use(...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})));
 	network.use(
 		mockGetProcessInstanceCallHierarchyEndpoint({
-			successResponse: HttpResponse.json(
-				callHierarchyOf([
-					'Root Process',
-					'Second Process',
-					'Third Process',
-					'Fourth Process',
-					'Fifth Process',
-					'Current Process',
-				]),
-			),
+			successResponse: HttpResponse.json([
+				createCallHierarchy({processInstanceKey: '1', processDefinitionName: 'Root Process'}),
+				createCallHierarchy({processInstanceKey: '2', processDefinitionName: 'Second Process'}),
+				createCallHierarchy({processInstanceKey: '3', processDefinitionName: 'Third Process'}),
+				createCallHierarchy({processInstanceKey: '4', processDefinitionName: 'Fourth Process'}),
+				createCallHierarchy({processInstanceKey: '5', processDefinitionName: 'Fifth Process'}),
+				createCallHierarchy({processInstanceKey: PROCESS_INSTANCE_ID, processDefinitionName: 'Current Process'}),
+			]),
 		}),
-		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 	);
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-	await operatePreviewProcessInstancePage.breadcrumb.getByRole('button', {name: 'More'}).click();
+	await operatePreviewProcessInstancePage.breadcrumbMoreButton.click();
 
-	await expect(page.getByRole('menuitem', {name: 'Third Process'})).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.menuItem('Third Process')).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
@@ -144,8 +136,8 @@ test('should match the header snapshot with the collapsed operations menu open',
 	await page.setViewportSize(NARROW_VIEWPORT);
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-	await operatePreviewProcessInstancePage.header.getByRole('button', {name: 'Actions'}).click();
+	await operatePreviewProcessInstancePage.actionsButton.click();
 
-	await expect(page.getByRole('menuitem', {name: /Cancel/})).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.menuItem(/Cancel/)).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });

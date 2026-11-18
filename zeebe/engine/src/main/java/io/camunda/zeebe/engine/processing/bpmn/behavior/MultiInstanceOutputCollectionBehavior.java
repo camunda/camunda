@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -23,7 +24,9 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class MultiInstanceOutputCollectionBehavior {
 
   private final MsgPackReader outputCollectionReader = new MsgPackReader();
@@ -67,7 +70,7 @@ public final class MultiInstanceOutputCollectionBehavior {
         .map(
             variableName ->
                 updateOutputCollection(element, childContext, flowScopeContext, variableName))
-        .orElse(Either.right(null));
+        .orElse(Either.rightVoid());
   }
 
   private Either<Failure, Void> updateOutputCollection(
@@ -102,11 +105,11 @@ public final class MultiInstanceOutputCollectionBehavior {
                       elementVariable,
                       flowScopeContext.getElementInstanceKey(),
                       variableName)
-                  .map(
+                  .flatMap(
                       updatedCollection -> {
                         stateBehavior.setLocalVariable(
                             flowScopeContext, variableName, updatedCollection);
-                        return null;
+                        return Either.rightVoid();
                       });
             });
   }
@@ -115,7 +118,10 @@ public final class MultiInstanceOutputCollectionBehavior {
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     final var expression = element.getLoopCharacteristics().getOutputElement().orElseThrow();
     return expressionProcessor.evaluateAnyExpressionToBuffer(
-        expression, context.getElementInstanceKey(), context.getTenantId());
+        expression,
+        context.getElementInstanceKey(),
+        context.getTenantId(),
+        ExpressionLabel.multiInstanceOutputElementExpression(context.getElementId()));
   }
 
   private Either<Failure, DirectBuffer> replaceAt(

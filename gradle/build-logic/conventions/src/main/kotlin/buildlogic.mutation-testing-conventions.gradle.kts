@@ -16,7 +16,7 @@
  *                            a default in the `mutationTesting` extension
  *   pit.targetTests          comma-separated test class globs to run (default: PIT derives them)
  *   pit.threads              PIT worker threads (default 8)
- *   pit.timeoutConstant      PIT timeout constant in milliseconds (default: PIT default)
+ *   pit.timeoutConstant      PIT timeout constant in milliseconds (default: parent/pom.xml)
  *   pit.engine               mutation engine, `gregor` or `descartes` (default `gregor`)
  *
  * The property names and defaults match the Maven setup in parent/pom.xml.
@@ -26,6 +26,8 @@
 import buildlogic.requiredVersion
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 import info.solidsoft.gradle.pitest.PitestTask
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 
 plugins {
   id("buildlogic.java-conventions")
@@ -51,6 +53,12 @@ fun String.csv(): Set<String> = split(",").map { it.trim() }.filter { it.isNotEm
 
 fun pitProperty(name: String): Provider<String> =
   providers.gradleProperty("pit.$name").map { it.trim() }.filter { it.isNotEmpty() }
+
+// The Maven default is the single source of truth, so both builds use the same timeout.
+val defaultTimeoutConstant =
+  providers.fileContents(layout.settingsDirectory.file("parent/pom.xml")).asText.map { pomXml ->
+    resolvePomProperty("pit.timeoutConstant", PomResolver(pomXml).properties()).toInt()
+  }
 
 val engine = pitProperty("engine").getOrElse("gregor")
 val crossModule = pitProperty("crossModule").map { it.toBoolean() }.getOrElse(true)
@@ -82,7 +90,8 @@ extensions.configure<PitestPluginExtension> {
     setOf("performance", "randomized", "slow", "strace", "io.camunda.zeebe.test.util.junit.SlowTest")
 
   threads = pitProperty("threads").map { it.toInt() }.getOrElse(8)
-  pitProperty("timeoutConstant").orNull?.let { timeoutConstInMillis = it.toInt() }
+  timeoutConstInMillis =
+    pitProperty("timeoutConstant").map { it.toInt() }.orElse(defaultTimeoutConstant)
   mutationEngine = engine
 
   // No exportLineCoverage (hundreds of MB) and no history files: open-source PIT cannot read them

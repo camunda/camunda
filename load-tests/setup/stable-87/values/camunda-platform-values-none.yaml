@@ -1,0 +1,27 @@
+# Values for Camunda Platform Chart 8.7 without secondary storage.
+# https://github.com/camunda/camunda-platform-helm
+#
+# 8.7 has no `noSecondaryStorage` switch: disable Elasticsearch globally (which turns off the
+# Zeebe Elasticsearch exporter and `camunda.database` config) and disable the components that
+# read from Elasticsearch (Operate, Tasklist, Optimize, Connectors).
+
+global:
+  elasticsearch:
+    enabled: false
+
+operate:
+  enabled: false
+
+tasklist:
+  enabled: false
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+zeebe:
+  # The ILM policy for the Elasticsearch indices is not needed.
+  retention:
+    enabled: false

@@ -403,7 +403,7 @@ paths:
         - Process definition
       operationId: suspendProcessDefinitions
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -463,7 +463,7 @@ paths:
         - Process definition
       operationId: resumeProcessDefinitions
       x-required-permissions:
-        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []

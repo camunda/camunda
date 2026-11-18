@@ -185,8 +185,8 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 			}
 
 			if v == "stable-87" {
-				if s.Storage != "elasticsearch" {
-					// Only elasticsearch is supported on 8.7
+				if s.Storage != "elasticsearch" && s.Storage != "none" {
+					// Only elasticsearch and none are supported on 8.7
 					continue
 				}
 			}
@@ -295,6 +295,27 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 				strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
 				strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
 			)
+		})
+	}
+}
+
+// TestShouldIgnoreCommandLineEnableOptimizeWhenStorageIsNone simulates stable-branch
+// workflows (stable/8.7, stable/8.8, stable/8.9), which pass
+// `secondary_storage=none enable_optimize=true` on the make command line when the
+// user leaves enable-optimize at its default. Command-line origin overrides the
+// `enable_optimize ?= false` baked by newLoadTest.sh, so common.mk itself must
+// skip the un-scaffolded camunda-platform-values-optimize*.yaml files for none.
+func TestShouldIgnoreCommandLineEnableOptimizeWhenStorageIsNone(t *testing.T) {
+	for _, version := range versions {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			ns := Scaffold(t, version, "c8-golden-none-cli-opt-"+version, "none", "true")
+			defer ns.Cleanup()
+
+			// when / then: helm template succeeds without looking for optimize values files
+			ns.Render(t, "template", "", "secondary_storage=none", "enable_optimize=true")
 		})
 	}
 }

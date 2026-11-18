@@ -1,0 +1,46 @@
+---
+# Source: camunda-platform/templates/camunda/configmap-release.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-golden-stable-87-none-optimize-camunda-platform-release
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-87-none-optimize
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+  annotations:
+    {}
+data:
+  info: |-
+    - name: c8-golden-stable-87-none-optimize
+      namespace: c8-golden-stable-87-none-optimize
+      version: 12.14.3
+      components:
+      - name: Keycloak
+        id: keycloak
+        version: 26.3.3
+        url: 
+      - name: Identity
+        id: identity
+        version: 8.7.29
+        url: http://localhost:8080
+        readiness: http://identity.c8-golden-stable-87-none-optimize:82/actuator/health
+        metrics: http://identity.c8-golden-stable-87-none-optimize:82/actuator/prometheus
+      - name: Zeebe Gateway
+        id: zeebeGateway
+        version: 8.7.45
+        urls:
+          grpc: http://localhost:26500
+          http: http://localhost:8088
+        readiness: http://zeebe-gateway.c8-golden-stable-87-none-optimize:9600/actuator/health/readiness
+        metrics: http://zeebe-gateway.c8-golden-stable-87-none-optimize:9600/actuator/prometheus
+      - name: Zeebe
+        id: zeebe
+        version: 8.7.45
+        readiness: http://zeebe.c8-golden-stable-87-none-optimize:9600/actuator/health/readiness
+        metrics: http://zeebe.c8-golden-stable-87-none-optimize:9600/actuator/prometheus
