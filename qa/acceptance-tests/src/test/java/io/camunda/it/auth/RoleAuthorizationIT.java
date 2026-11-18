@@ -56,6 +56,7 @@ class RoleAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restrictedUser2";
+  private static final String RESTRICTED_WITH_SCOPED_READ = "restrictedUser3";
   private static final String DEFAULT_PASSWORD = "password";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
@@ -88,6 +89,10 @@ class RoleAuthorizationIT {
   private static final TestUser RESTRICTED_USER_WITH_READ_PERMISSION =
       new TestUser(RESTRICTED_WITH_READ, DEFAULT_PASSWORD, Collections.emptyList());
 
+  @UserDefinition
+  private static final TestUser RESTRICTED_USER_WITH_SCOPED_READ_PERMISSION =
+      new TestUser(RESTRICTED_WITH_SCOPED_READ, DEFAULT_PASSWORD, Collections.emptyList());
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createRole(adminClient, ROLE_ID_1, ROLE_NAME_1);
@@ -115,6 +120,15 @@ class RoleAuthorizationIT {
                     .permissionTypes(PermissionType.READ)
                     .send()
                     .join());
+    adminClient
+        .newCreateAuthorizationCommand()
+        .ownerId(RESTRICTED_WITH_SCOPED_READ)
+        .ownerType(OwnerType.USER)
+        .resourceId(ROLE_ID_1)
+        .resourceType(ResourceType.ROLE)
+        .permissionTypes(PermissionType.READ)
+        .send()
+        .join();
     waitForAuthorizationsCreated(adminClient);
   }
 
@@ -688,6 +702,49 @@ class RoleAuthorizationIT {
     assertThat(response.items()).isEmpty();
   }
 
+  @Test
+  void searchClientsByRoleShouldOnlyReturnMembersOfAuthorizedRoles(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(RESTRICTED_WITH_SCOPED_READ) final CamundaClient scopedClient) {
+    // given
+    final String clientInAuthorizedRole = Strings.newRandomValidIdentityId();
+    final String clientInOtherRole = Strings.newRandomValidIdentityId();
+    adminClient
+        .newAssignRoleToClientCommand()
+        .roleId(ROLE_ID_1)
+        .clientId(clientInAuthorizedRole)
+        .send()
+        .join();
+    adminClient
+        .newAssignRoleToClientCommand()
+        .roleId(ROLE_ID_2)
+        .clientId(clientInOtherRole)
+        .send()
+        .join();
+    Awaitility.await("Clients are assigned to the roles")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              assertThat(adminClient.newClientsByRoleSearchRequest(ROLE_ID_1).send().join().items())
+                  .anyMatch(c -> clientInAuthorizedRole.equals(c.getClientId()));
+              assertThat(adminClient.newClientsByRoleSearchRequest(ROLE_ID_2).send().join().items())
+                  .anyMatch(c -> clientInOtherRole.equals(c.getClientId()));
+            });
+
+    // when
+    final var membersOfAuthorizedRole =
+        scopedClient.newClientsByRoleSearchRequest(ROLE_ID_1).send().join();
+    final var membersOfOtherRole =
+        scopedClient.newClientsByRoleSearchRequest(ROLE_ID_2).send().join();
+
+    // then
+    assertThat(membersOfAuthorizedRole.items())
+        .map(Client::getClientId)
+        .contains(clientInAuthorizedRole);
+    assertThat(membersOfOtherRole.items()).isEmpty();
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
     createRole(adminClient, roleId, roleName, null);
@@ -805,6 +862,23 @@ class RoleAuthorizationIT {
   }
 
   private static void waitForAuthorizationsCreated(final CamundaClient adminClient) {
+    Awaitility.await("should create scoped role authorization and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        adminClient
+                            .newAuthorizationSearchRequest()
+                            .filter(
+                                new AuthorizationFilterImpl()
+                                    .ownerId(RESTRICTED_WITH_SCOPED_READ)
+                                    .resourceType(ResourceType.ROLE))
+                            .send()
+                            .join()
+                            .items())
+                    .map(Authorization::getResourceId)
+                    .containsExactly(ROLE_ID_1));
     Awaitility.await("should create authorizations and import in ES")
         .atMost(AWAIT_TIMEOUT)
         .ignoreExceptions()
