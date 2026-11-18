@@ -62,6 +62,8 @@ public final class ManagedScriptsImage {
   private static final int MIN_CONNECTORS_MAJOR_VERSION = 8;
   private static final int MIN_CONNECTORS_MINOR_VERSION = 11;
 
+  private static final String CONNECTORS_BUNDLE_REPOSITORY = "camunda/connectors-bundle";
+
   private static final Pattern CONNECTORS_VERSION = Pattern.compile("(\\d+)\\.(\\d+)(?:[.-]|$)");
   private static final Pattern PYTHON_VERSION = Pattern.compile("3\\.(\\d+)");
   private static final Pattern NODE_VERSION = Pattern.compile("(\\d+)");
@@ -190,11 +192,13 @@ public final class ManagedScriptsImage {
 
   /**
    * Rejects a Connectors version without managed scripts, instead of a test that waits for script
-   * jobs nobody handles. A version that is not a release version, such as {@code latest} or a
-   * custom tag, is accepted.
+   * jobs nobody handles. Only the {@code camunda/connectors-bundle} image is checked, from any
+   * registry: a custom image can have its own version scheme. A version that is not a release
+   * version, such as {@code latest}, is accepted.
    */
-  public static void checkConnectorsVersion(final String connectorsVersion) {
-    if (connectorsVersion == null) {
+  public static void checkConnectorsVersion(
+      final String connectorsImageName, final String connectorsVersion) {
+    if (connectorsVersion == null || !isConnectorsBundle(connectorsImageName)) {
       return;
     }
     final Matcher matcher = CONNECTORS_VERSION.matcher(connectorsVersion.trim());
@@ -212,6 +216,12 @@ public final class ManagedScriptsImage {
                   + " withConnectorsDockerImageVersion().",
               MIN_CONNECTORS_MAJOR_VERSION, MIN_CONNECTORS_MINOR_VERSION, connectorsVersion));
     }
+  }
+
+  private static boolean isConnectorsBundle(final String imageName) {
+    return imageName != null
+        && CONNECTORS_BUNDLE_REPOSITORY.equals(
+            DockerImageName.parse(imageName.trim()).getRepository());
   }
 
   private static String pythonPackage(final String version) {

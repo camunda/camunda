@@ -213,7 +213,7 @@ public class CamundaProcessTestContainerRuntime
           .createConnectorsContainer(imageName, imageVersion)
           .withImagePullPolicy(getImagePullPolicy(imageVersion));
     }
-    ManagedScriptsImage.checkConnectorsVersion(imageVersion);
+    ManagedScriptsImage.checkConnectorsVersion(imageName, imageVersion);
     // The image is built locally: the pull policy applies to its base image only.
     final ManagedScriptsImage image =
         new ManagedScriptsImage(

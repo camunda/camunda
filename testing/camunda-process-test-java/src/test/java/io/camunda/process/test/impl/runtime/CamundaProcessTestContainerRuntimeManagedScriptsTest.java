@@ -170,4 +170,18 @@ class CamundaProcessTestContainerRuntimeManagedScriptsTest {
         .hasMessageContaining("Managed scripts need Connectors 8.11 or later");
     verify(containerFactory, never()).createManagedScriptsConnectorsContainer(any(), anyBoolean());
   }
+
+  @Test
+  void shouldAcceptACustomConnectorsImageWithItsOwnVersionScheme() {
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withManagedScriptsEnabled(true)
+        .withConnectorsDockerImageName("myco/connectors")
+        .withConnectorsDockerImageVersion("2.4.0")
+        .build();
+
+    // then
+    verify(containerFactory).createManagedScriptsConnectorsContainer(any(), anyBoolean());
+  }
 }

@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.containers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -32,6 +33,8 @@ import org.testcontainers.utility.DockerImageName;
 class ManagedScriptsImageTest {
 
   private static final String BASE_IMAGE = "camunda/connectors-bundle:8.11.0";
+
+  private static final String CONNECTORS_BUNDLE = "camunda/connectors-bundle";
 
   private static final String CONNECTORS_USER = "1001:1001";
 
@@ -188,10 +191,23 @@ class ManagedScriptsImageTest {
   @ParameterizedTest
   @ValueSource(strings = {"8.10.2", "8.10-SNAPSHOT", "8.9.0", "7.22.0"})
   void shouldRejectAConnectorsVersionWithoutManagedScripts(final String version) {
-    assertThatThrownBy(() -> ManagedScriptsImage.checkConnectorsVersion(version))
+    assertThatThrownBy(() -> ManagedScriptsImage.checkConnectorsVersion(CONNECTORS_BUNDLE, version))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Managed scripts need Connectors 8.11 or later")
         .hasMessageContaining("'" + version + "'");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "docker.io/camunda/connectors-bundle",
+        "mirror.example.com/camunda/connectors-bundle",
+        "mirror.example.com:5000/camunda/connectors-bundle"
+      })
+  void shouldRejectAnOldConnectorsVersionFromAnotherRegistry(final String imageName) {
+    assertThatThrownBy(() -> ManagedScriptsImage.checkConnectorsVersion(imageName, "8.10.2"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Managed scripts need Connectors 8.11 or later");
   }
 
   @ParameterizedTest
@@ -207,7 +223,16 @@ class ManagedScriptsImageTest {
         "custom"
       })
   void shouldAcceptAConnectorsVersionWithManagedScripts(final String version) {
-    ManagedScriptsImage.checkConnectorsVersion(version);
+    assertThatNoException()
+        .isThrownBy(() -> ManagedScriptsImage.checkConnectorsVersion(CONNECTORS_BUNDLE, version));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"2.4.0", "1.0.0-myco", "8.10.2"})
+  void shouldAcceptAnyVersionOfACustomImage(final String version) {
+    // a custom image can have its own version scheme, unrelated to the Connectors version
+    assertThatNoException()
+        .isThrownBy(() -> ManagedScriptsImage.checkConnectorsVersion("myco/connectors", version));
   }
 
   @Test
