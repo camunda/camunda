@@ -75,6 +75,15 @@ inputs:
   vault-secret-id:
     description: Vault Secret ID to use
     required: false
+  vault-jwt-role:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
+    required: false
+  vault-jwt-path:
+    description: 'Vault JWT auth backend path'
+    required: false
+  vault-jwt-audience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
+    required: false
 
 outputs: {}
 
@@ -143,9 +152,12 @@ runs:
     uses: ./.github/actions/vault-action-with-retry
     with:
       url: ${{ inputs.vault-address }}
-      method: approle
-      roleId: ${{ inputs.vault-role-id }}
-      secretId: ${{ inputs.vault-secret-id }}
+      method: ${{ inputs.vault-jwt-role != '' && 'jwt' || 'approle' }}
+      path: ${{ inputs.vault-jwt-path }}
+      role: ${{ inputs.vault-jwt-role }}
+      jwtGithubAudience: ${{ inputs.vault-jwt-audience }}
+      roleId: ${{ inputs.vault-jwt-role == '' && inputs.vault-role-id || '' }}
+      secretId: ${{ inputs.vault-jwt-role == '' && inputs.vault-secret-id || '' }}
       secrets: |
         secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
