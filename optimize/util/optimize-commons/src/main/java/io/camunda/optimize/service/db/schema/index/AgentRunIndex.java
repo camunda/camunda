@@ -135,7 +135,10 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
                             .properties(TOOL_CALLS_TOOL_NAME, np -> np.keyword(k -> k))
                             .properties(TOOL_CALLS_COUNT, np -> np.long_(k -> k))))
         .properties(HAS_INCIDENT, p -> p.boolean_(k -> k))
-        .properties(LAST_RECORD_POSITION, p -> p.long_(k -> k))
+        // only the import's merge script reads it from _source; no query filters or sorts on it
+        .properties(
+            LAST_RECORD_POSITION,
+            p -> p.long_(k -> k.index(false).docValues(d -> d.enabled(false))))
         .properties(ENRICHED_AT, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
         .properties(ENRICHED, p -> p.boolean_(k -> k))
         .properties(ACTIVE_DURATION_MS, p -> p.long_(k -> k))

@@ -115,6 +115,16 @@ class AgentRunIndexMappingTest {
   }
 
   @Test
+  void shouldKeepTheLastRecordPositionOutOfTheSearchIndex() {
+    // when
+    final var position = mapping.properties().get(AgentRunIndex.LAST_RECORD_POSITION).long_();
+
+    // then the import's merge script still reads it from _source, but no query can use it
+    assertThat(position.index()).isFalse();
+    assertThat(position.docValues().enabled()).isFalse();
+  }
+
+  @Test
   void shouldStartAtVersionOne() {
     assertThat(new AgentRunIndexES().getVersion()).isEqualTo(1);
   }
