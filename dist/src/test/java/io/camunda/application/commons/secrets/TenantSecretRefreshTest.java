@@ -18,6 +18,7 @@ import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
+import io.camunda.secretstore.refresh.ClientCheckException;
 import io.camunda.secretstore.refresh.ClientRefreshException;
 import io.camunda.secretstore.refresh.RefreshableClient;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -254,6 +255,38 @@ class TenantSecretRefreshTest {
   }
 
   @Test
+  void shouldReportAClientWhoseNewCredentialsAreRejected() {
+    // given
+    final var refresh = refresh();
+    store.values.put("es-password", new Resolved("new-password"));
+    client.failures = 1;
+    client.failure = ClientCheckException.authenticationFailed("rejected", null);
+
+    // when
+    refresh.run();
+
+    // then
+    assertThat(report.failing().get("tenanta"))
+        .containsExactly(new Failure("secret:es-password", "fake", Reason.AUTHENTICATION_FAILED));
+  }
+
+  @Test
+  void shouldReportAClientThatCantReachItsService() {
+    // given
+    final var refresh = refresh();
+    store.values.put("es-password", new Resolved("new-password"));
+    client.failures = 1;
+    client.failure = ClientCheckException.unreachable("unreachable", null);
+
+    // when
+    refresh.run();
+
+    // then
+    assertThat(report.failing().get("tenanta"))
+        .containsExactly(new Failure("secret:es-password", "fake", Reason.SERVICE_UNREACHABLE));
+  }
+
+  @Test
   void shouldRecordWhenAChangeWasApplied() {
     // given
     final var refresh = refresh();
@@ -313,6 +346,7 @@ class TenantSecretRefreshTest {
     private final List<Map<String, String>> refreshes = new ArrayList<>();
     private int failures;
     private boolean unexpected;
+    private Exception failure = new IllegalStateException("rejected");
 
     private FakeClient(final Set<String> properties, final Set<Path> files) {
       this.properties = properties;
@@ -342,7 +376,7 @@ class TenantSecretRefreshTest {
       }
       if (failures > 0) {
         failures--;
-        throw new ClientRefreshException("rejected", new IllegalStateException("rejected"));
+        throw new ClientRefreshException("rejected", failure);
       }
     }
   }

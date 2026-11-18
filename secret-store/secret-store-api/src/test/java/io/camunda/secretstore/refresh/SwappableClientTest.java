@@ -9,7 +9,9 @@ package io.camunda.secretstore.refresh;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
+import io.camunda.secretstore.refresh.ClientCheckException.Outcome;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -86,6 +88,19 @@ final class SwappableClientTest {
   }
 
   @Test
+  void shouldTellAWrongCredentialFromAnUnreachableService() {
+    // when
+    final var rejected = catchRefreshFailure("rejected-credentials");
+    final var unreachable = catchRefreshFailure("unreachable");
+    final var failed = catchRefreshFailure("wrong");
+
+    // then
+    assertThat(rejected.outcome()).isEqualTo(Outcome.AUTHENTICATION_FAILED);
+    assertThat(unreachable.outcome()).isEqualTo(Outcome.UNREACHABLE);
+    assertThat(failed.outcome()).isEqualTo(Outcome.FAILED);
+  }
+
+  @Test
   void shouldKeepTheCurrentClientWhenTheBuildTimesOut() throws Exception {
     // given
     final var slow = new TestClient(initial, Duration.ofMillis(100), TIMEOUT);
@@ -103,6 +118,11 @@ final class SwappableClientTest {
       assertThat(lease.client()).isSameAs(initial);
     }
     slow.close();
+  }
+
+  private ClientRefreshException catchRefreshFailure(final String password) {
+    return catchThrowableOfType(
+        ClientRefreshException.class, () -> client.refresh(Map.of("password", password)));
   }
 
   private static final class FakeClient implements AutoCloseable {
@@ -142,9 +162,13 @@ final class SwappableClientTest {
     }
 
     @Override
-    protected void check(final FakeClient client) {
-      if ("wrong".equals(client.password)) {
-        throw new IllegalStateException("rejected");
+    protected void check(final FakeClient client) throws ClientCheckException {
+      switch (client.password) {
+        case "wrong" -> throw new IllegalStateException("rejected");
+        case "rejected-credentials" ->
+            throw ClientCheckException.authenticationFailed("rejected", null);
+        case "unreachable" -> throw ClientCheckException.unreachable("unreachable", null);
+        default -> {}
       }
     }
   }

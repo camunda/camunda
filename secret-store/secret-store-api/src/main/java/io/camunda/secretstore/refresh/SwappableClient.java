@@ -66,7 +66,11 @@ public abstract class SwappableClient<C extends AutoCloseable>
   /** Builds a new client from the given values. */
   protected abstract C build(Map<String, String> values) throws Exception;
 
-  /** Checks the client against the real service, and throws if it can't be used. */
+  /**
+   * Checks the client against the real service, and throws if it can't be used: a {@link
+   * ClientCheckException} where it can tell whether the service rejected the credentials or
+   * couldn't be reached.
+   */
   protected abstract void check(C client) throws Exception;
 
   @Override

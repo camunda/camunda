@@ -103,6 +103,8 @@ public final class ConfigurationSecretRefreshReport {
     ACCESS_DENIED,
     NOT_FOUND,
     UNREADABLE,
+    AUTHENTICATION_FAILED,
+    SERVICE_UNREACHABLE,
     REJECTED_BY_CHECK;
 
     String tag() {

@@ -36,7 +36,8 @@ public interface RefreshableClient {
    * stays in use.
    *
    * @param values the current value of each of {@link #properties()}
-   * @throws ClientRefreshException if the new client couldn't be built or failed its check
+   * @throws ClientRefreshException if the new client couldn't be built or failed its check, with
+   *     the {@link ClientRefreshException#outcome() outcome} of the check where it can tell
    */
   void refresh(Map<String, String> values);
 }
