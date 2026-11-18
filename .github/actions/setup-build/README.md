@@ -35,26 +35,26 @@ Vault/WIF hang (see that action's README).
 
 ### Inputs
 
-|               Input               |                               Description                                | Required |  Default  |
-|-----------------------------------|--------------------------------------------------------------------------|----------|-----------|
-| camunda-nexus                     | Use Camunda Nexus as a Maven mirror (disabled for fork PRs)              | false    | `"true"`  |
-| dockerhub                         | Log into DockerHub with a CI account (disabled for fork PRs)             | false    | `"false"` |
-| dockerhub-readonly                | Log into DockerHub with a read-only account to avoid rate limits         | false    | `"false"` |
-| harbor                            | Log into Harbor with a Harbor robot account (disabled for fork PRs)      | false    | `"false"` |
-| minimus                           | Log into Minimus with a CI account (disabled for fork PRs)               | false    | `"false"` |
-| java-distribution                 | Java distribution to install                                             | false    | `temurin` |
-| java-version                      | JDK version to install                                                   | false    | `"21"`    |
-| maven-cache-key-modifier          | Modifier for the Maven cache key                                         | false    | `shared`  |
-| maven-cache-download-timeout-mins | Minutes the Maven cache restore may spend on one segment before aborting | false    | `"3"`     |
-| maven-mirrors                     | JSON list of extra Maven mirrors (merged with Nexus, extras win)         | false    | `'[]'`    |
-| maven-servers                     | JSON list of extra Maven servers (merged with Nexus, extras win)         | false    | `'[]'`    |
-| time-zone                         | TZ identifier for the build env, e.g. `Europe/Berlin` (Linux only)       | false    |           |
-| vault-address                     | Vault URL to retrieve secrets from                                       | false    |           |
-| vault-role-id                     | Vault AppRole role id                                                    | false    |           |
-| vault-secret-id                   | Vault AppRole secret id                                                  | false    |           |
-| vault-jwt-role | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | false | |
-| vault-jwt-path | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`) | false | |
-| vault-jwt-audience | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`) | false | |
+|               Input               |                                                       Description                                                        | Required |  Default  |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------|----------|-----------|
+| camunda-nexus                     | Use Camunda Nexus as a Maven mirror (disabled for fork PRs)                                                              | false    | `"true"`  |
+| dockerhub                         | Log into DockerHub with a CI account (disabled for fork PRs)                                                             | false    | `"false"` |
+| dockerhub-readonly                | Log into DockerHub with a read-only account to avoid rate limits                                                         | false    | `"false"` |
+| harbor                            | Log into Harbor with a Harbor robot account (disabled for fork PRs)                                                      | false    | `"false"` |
+| minimus                           | Log into Minimus with a CI account (disabled for fork PRs)                                                               | false    | `"false"` |
+| java-distribution                 | Java distribution to install                                                                                             | false    | `temurin` |
+| java-version                      | JDK version to install                                                                                                   | false    | `"21"`    |
+| maven-cache-key-modifier          | Modifier for the Maven cache key                                                                                         | false    | `shared`  |
+| maven-cache-download-timeout-mins | Minutes the Maven cache restore may spend on one segment before aborting                                                 | false    | `"3"`     |
+| maven-mirrors                     | JSON list of extra Maven mirrors (merged with Nexus, extras win)                                                         | false    | `'[]'`    |
+| maven-servers                     | JSON list of extra Maven servers (merged with Nexus, extras win)                                                         | false    | `'[]'`    |
+| time-zone                         | TZ identifier for the build env, e.g. `Europe/Berlin` (Linux only)                                                       | false    |           |
+| vault-address                     | Vault URL to retrieve secrets from                                                                                       | false    |           |
+| vault-role-id                     | Vault AppRole role id                                                                                                    | false    |           |
+| vault-secret-id                   | Vault AppRole secret id                                                                                                  | false    |           |
+| vault-jwt-role                    | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | false    |           |
+| vault-jwt-path                    | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`)                                                                   | false    |           |
+| vault-jwt-audience                | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`)                                              | false    |           |
 
 ### Outputs
 

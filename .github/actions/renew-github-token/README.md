@@ -28,18 +28,18 @@ header with the renewed token.
 
 ## Inputs
 
-|                Name                 | Required |                Description                |
-|-------------------------------------|----------|-------------------------------------------|
-| `vault-url`                         | Yes      | Vault server URL                          |
-| `vault-role-id`                     | No       | Deprecated Vault AppRole role ID          |
-| `vault-secret-id`                   | No       | Deprecated Vault AppRole secret ID        |
-| `vault-jwt-role` | No | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` |
-| `vault-jwt-path` | No | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`) |
-| `vault-jwt-audience` | No | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`) |
-| `github-app-id-vault-key`           | Yes      | Vault key for the GitHub App ID           |
-| `github-app-id-vault-path`          | Yes      | Vault path for the GitHub App ID          |
-| `github-app-private-key-vault-key`  | Yes      | Vault key for the GitHub App private key  |
-| `github-app-private-key-vault-path` | Yes      | Vault path for the GitHub App private key |
+|                Name                 | Required |                                                       Description                                                        |
+|-------------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------|
+| `vault-url`                         | Yes      | Vault server URL                                                                                                         |
+| `vault-role-id`                     | No       | Deprecated Vault AppRole role ID                                                                                         |
+| `vault-secret-id`                   | No       | Deprecated Vault AppRole secret ID                                                                                       |
+| `vault-jwt-role`                    | No       | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` |
+| `vault-jwt-path`                    | No       | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`)                                                                   |
+| `vault-jwt-audience`                | No       | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`)                                              |
+| `github-app-id-vault-key`           | Yes      | Vault key for the GitHub App ID                                                                                          |
+| `github-app-id-vault-path`          | Yes      | Vault path for the GitHub App ID                                                                                         |
+| `github-app-private-key-vault-key`  | Yes      | Vault key for the GitHub App private key                                                                                 |
+| `github-app-private-key-vault-path` | Yes      | Vault path for the GitHub App private key                                                                                |
 
 ## Outputs
 

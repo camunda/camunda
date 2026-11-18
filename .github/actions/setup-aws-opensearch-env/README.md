@@ -6,15 +6,15 @@ for subsequent steps.
 
 ## Inputs
 
-|        Input         |                    Description                    | Required |
-|----------------------|---------------------------------------------------|----------|
-| `vault-address`      | Vault URL to retrieve secrets from                | Yes      |
-| `vault-role-id`      | Deprecated Vault AppRole role ID                  | No       |
-| `vault-secret-id`    | Deprecated Vault AppRole secret ID                | No       |
-| `vault-jwt-role` | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | No |
-| `vault-jwt-path` | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`) | No |
-| `vault-jwt-audience` | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`) | No |
-| `opensearch-version` | OpenSearch version to configure (`2.19` or `3.7`) | Yes      |
+|        Input         |                                                       Description                                                        | Required |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------|----------|
+| `vault-address`      | Vault URL to retrieve secrets from                                                                                       | Yes      |
+| `vault-role-id`      | Deprecated Vault AppRole role ID                                                                                         | No       |
+| `vault-secret-id`    | Deprecated Vault AppRole secret ID                                                                                       | No       |
+| `vault-jwt-role`     | Vault JWT role (`secrets.VAULT_JWT_ROLE`); when set, the action logs in via JWT/OIDC and the job needs `id-token: write` | No       |
+| `vault-jwt-path`     | Vault JWT auth backend path (`secrets.VAULT_JWT_PATH`)                                                                   | No       |
+| `vault-jwt-audience` | GitHub OIDC audience for the Vault JWT login (`secrets.VAULT_JWT_AUDIENCE`)                                              | No       |
+| `opensearch-version` | OpenSearch version to configure (`2.19` or `3.7`)                                                                        | Yes      |
 
 ## Outputs
 
