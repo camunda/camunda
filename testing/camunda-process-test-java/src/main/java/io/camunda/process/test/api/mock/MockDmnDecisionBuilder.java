@@ -21,8 +21,15 @@ package io.camunda.process.test.api.mock;
  * <p>Example usage:
  *
  * <pre>
- *   // Mock a decision that returns a fixed output
+ *   // Simple mock without version tag
  *   processTestContext.mockDmnDecision().withDecisionId("my-decision").thenReturn("approved");
+ *
+ *   // Mock with a version tag (for business rule tasks using bindingType="versionTag")
+ *   processTestContext
+ *       .mockDmnDecision()
+ *       .withDecisionId("my-decision")
+ *       .withVersionTag("1.7.1")
+ *       .thenReturn("approved");
  * </pre>
  */
 public interface MockDmnDecisionBuilder {
@@ -34,6 +41,15 @@ public interface MockDmnDecisionBuilder {
    * @return this builder
    */
   MockDmnDecisionBuilder withDecisionId(String decisionId);
+
+  /**
+   * Sets the version tag for the mocked DMN decision. This is required when the business rule task
+   * uses {@code bindingType="versionTag"}.
+   *
+   * @param versionTag the version tag to assign to the deployed stub decision
+   * @return this builder
+   */
+  MockDmnDecisionBuilder withVersionTag(String versionTag);
 
   /**
    * Deploys the mocked DMN decision and sets the provided output as its result.

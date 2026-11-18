@@ -45,6 +45,11 @@ public class MockDmnDecisionBuilderImpl implements MockDmnDecisionBuilder {
   }
 
   @Override
+  public MockDmnDecisionBuilder withVersionTag(final String versionTag) {
+    return this;
+  }
+
+  @Override
   public void thenReturn(final Object decisionOutput) {
     final String jsonOutput = client.getConfiguration().getJsonMapper().toJson(decisionOutput);
 

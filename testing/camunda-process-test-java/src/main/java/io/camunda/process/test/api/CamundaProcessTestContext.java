@@ -382,13 +382,22 @@ public interface CamundaProcessTestContext {
 
   /**
    * Returns a builder for constructing a mock DMN decision. Use {@link
-   * MockDmnDecisionBuilder#withDecisionId(String)} to set the decision ID and {@link
+   * MockDmnDecisionBuilder#withDecisionId(String)} to set the decision ID, optionally {@link
+   * MockDmnDecisionBuilder#withVersionTag(String)} for version-tag binding, and {@link
    * MockDmnDecisionBuilder#thenReturn(Object)} to deploy the stub.
    *
    * <p>Example usage:
    *
    * <pre>
+   *   // Simple mock without version tag
    *   processTestContext.mockDmnDecision().withDecisionId("my-decision").thenReturn("approved");
+   *
+   *   // Mock with a version tag (for business rule tasks using bindingType="versionTag")
+   *   processTestContext
+   *       .mockDmnDecision()
+   *       .withDecisionId("my-decision")
+   *       .withVersionTag("1.7.1")
+   *       .thenReturn("approved");
    * </pre>
    *
    * @return a builder for configuring and deploying the mock

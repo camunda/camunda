@@ -151,6 +151,36 @@ public class MockDmnDecisionTest {
             });
   }
 
+  @Test
+  void shouldMockDmnDecisionWithVersionTag() {
+    // given
+    final String decisionId = "mock-dmn-decision-with-version-tag";
+    when(camundaClient.getConfiguration().getJsonMapper().toJson("approved"))
+        .thenReturn("\"approved\"");
+
+    // when
+    processTestContext
+        .mockDmnDecision()
+        .withDecisionId(decisionId)
+        .withVersionTag("1.3.0")
+        .thenReturn("approved");
+
+    // then
+    verify(camundaClient.newDeployResourceCommand())
+        .addResourceStream(dmnStreamCaptor.capture(), eq(decisionId + ".dmn"));
+
+    final DmnModelInstance deployedModel = Dmn.readModelFromStream(dmnStreamCaptor.getValue());
+
+    assertThat(deployedModel.getModelElementsByType(Decision.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            decision -> {
+              assertThat(decision.getId()).isEqualTo(decisionId);
+              assertThat(zeebeVersionTag(decision)).contains("1.3.0");
+            });
+  }
+
   private static Optional<String> zeebeVersionTag(final Decision decision) {
     return Optional.ofNullable(decision.getUniqueChildElementByType(ExtensionElements.class))
         .map(
