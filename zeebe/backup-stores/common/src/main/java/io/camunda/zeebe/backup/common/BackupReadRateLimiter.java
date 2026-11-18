@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
@@ -35,7 +36,8 @@ import org.jspecify.annotations.Nullable;
  * streams paid for before it, so the limiter only lets as many streams be open at once as keep this
  * pause within {@link #MAX_READ_PAUSE}. Further streams wait in {@link #wrap(InputStream)} until
  * one is closed; they have not started their upload yet, so no client counts that time against
- * them.
+ * them. A closed stream keeps its slot until the budget of its last read is used up, even when it
+ * was interrupted before that read happened, as later reads still wait for that budget.
  */
 public final class BackupReadRateLimiter {
 
@@ -54,11 +56,16 @@ public final class BackupReadRateLimiter {
 
   private static final BackupReadRateLimiter UNLIMITED =
       new BackupReadRateLimiter(
-          Long.MAX_VALUE, UNBOUNDED_STREAMS, System::nanoTime, Sleeper.THREAD_SLEEP);
+          Long.MAX_VALUE,
+          UNBOUNDED_STREAMS,
+          System::nanoTime,
+          Sleeper.THREAD_SLEEP,
+          Scheduler.DELAYED);
 
   private final long bytesPerSecond;
   private final LongSupplier nanoClock;
   private final Sleeper sleeper;
+  private final Scheduler scheduler;
   private final @Nullable Semaphore openStreams;
   private long nextFreeNanos;
 
@@ -66,7 +73,8 @@ public final class BackupReadRateLimiter {
       final long bytesPerSecond,
       final int maxOpenStreams,
       final LongSupplier nanoClock,
-      final Sleeper sleeper) {
+      final Sleeper sleeper,
+      final Scheduler scheduler) {
     if (bytesPerSecond <= 0) {
       throw new IllegalArgumentException(
           "Expected backup read rate to be positive, but was %d bytes per second"
@@ -80,6 +88,7 @@ public final class BackupReadRateLimiter {
     this.bytesPerSecond = bytesPerSecond;
     this.nanoClock = nanoClock;
     this.sleeper = sleeper;
+    this.scheduler = scheduler;
     openStreams = maxOpenStreams == UNBOUNDED_STREAMS ? null : new Semaphore(maxOpenStreams, true);
     nextFreeNanos = nanoClock.getAsLong();
   }
@@ -103,7 +112,11 @@ public final class BackupReadRateLimiter {
               .formatted(MIN_BYTES_PER_SECOND, MAX_READ_PAUSE, bytesPerSecond));
     }
     return new BackupReadRateLimiter(
-        bytesPerSecond, maxOpenStreams(bytesPerSecond), System::nanoTime, Sleeper.THREAD_SLEEP);
+        bytesPerSecond,
+        maxOpenStreams(bytesPerSecond),
+        System::nanoTime,
+        Sleeper.THREAD_SLEEP,
+        Scheduler.DELAYED);
   }
 
   /**
@@ -151,7 +164,13 @@ public final class BackupReadRateLimiter {
    * @param reservedUntilNanos when the budget of the last read of the stream is used up
    */
   void streamClosed(final long reservedUntilNanos) {
-    if (openStreams != null) {
+    if (openStreams == null) {
+      return;
+    }
+    final long remainingNanos = reservedUntilNanos - nanoClock.getAsLong();
+    if (remainingNanos > 0) {
+      scheduler.schedule(remainingNanos, openStreams::release);
+    } else {
       openStreams.release();
     }
   }
@@ -210,5 +229,14 @@ public final class BackupReadRateLimiter {
     Sleeper THREAD_SLEEP = TimeUnit.NANOSECONDS::sleep;
 
     void sleep(long nanos) throws InterruptedException;
+  }
+
+  @FunctionalInterface
+  interface Scheduler {
+    Scheduler DELAYED =
+        (delayNanos, task) ->
+            CompletableFuture.delayedExecutor(delayNanos, TimeUnit.NANOSECONDS).execute(task);
+
+    void schedule(long delayNanos, Runnable task);
   }
 }

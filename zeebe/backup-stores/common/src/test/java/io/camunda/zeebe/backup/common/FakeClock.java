@@ -8,27 +8,46 @@
 package io.camunda.zeebe.backup.common;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
-/** A manually driven clock whose sleeps advance time instead of blocking. */
+/**
+ * A manually driven clock whose sleeps advance time instead of blocking, and that runs scheduled
+ * tasks once time has advanced past them.
+ */
 final class FakeClock {
 
+  private final List<ScheduledTask> scheduled = new ArrayList<>();
   private long nanos;
   private long sleptNanos;
 
-  long nanos() {
+  synchronized long nanos() {
     return nanos;
   }
 
   void sleep(final long sleepNanos) {
-    nanos += sleepNanos;
-    sleptNanos += sleepNanos;
+    synchronized (this) {
+      sleptNanos += sleepNanos;
+    }
+    advance(Duration.ofNanos(sleepNanos));
   }
 
   void advance(final Duration duration) {
-    nanos += duration.toNanos();
+    final List<Runnable> due = new ArrayList<>();
+    synchronized (this) {
+      nanos += duration.toNanos();
+      scheduled.removeIf(task -> task.dueNanos() <= nanos && due.add(task.task()));
+    }
+    due.forEach(Runnable::run);
   }
 
-  Duration slept() {
+  synchronized void schedule(final long delayNanos, final Runnable task) {
+    scheduled.add(new ScheduledTask(nanos + delayNanos, task));
+  }
+
+  synchronized Duration slept() {
     return Duration.ofNanos(sleptNanos);
   }
+
+  private record ScheduledTask(long dueNanos, Runnable task) {}
 }
