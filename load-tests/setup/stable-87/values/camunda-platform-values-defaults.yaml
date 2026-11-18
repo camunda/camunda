@@ -47,6 +47,10 @@ global:
         clientId: connectors
         existingSecret: camunda-credentials
         existingSecretKey: identity-connectors-client-token
+      optimize:
+        clientId: optimize
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-optimize-client-token
 
     keycloak:
       auth:
@@ -288,9 +292,6 @@ zeebe:
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
-
-    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
-      value: "1"
 
 zeebeGateway:
   # Replicas defines how many standalone gateways are deployed

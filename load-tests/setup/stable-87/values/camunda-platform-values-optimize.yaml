@@ -1,11 +1,3 @@
-global:
-  identity:
-    auth:
-      optimize:
-        clientId: optimize
-        existingSecret: camunda-credentials
-        existingSecretKey: identity-optimize-client-token
-
 optimize:
   enabled: true
   fullnameOverride: optimize # we override the names for simplicity of the deployment
