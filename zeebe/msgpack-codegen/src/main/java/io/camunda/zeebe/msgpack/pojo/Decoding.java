@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -24,7 +26,85 @@ import org.jspecify.annotations.Nullable;
 public final class Decoding {
   public static final DirectBuffer EMPTY = new UnsafeBuffer(new byte[0]);
 
+  /**
+   * The array behind {@link #UNSET}. A {@code @Required final UnsafeBuffer} is unset while it is
+   * wrapped around this exact array: reading wraps it around the message, and no value that is set
+   * or copied uses it.
+   */
+  public static final byte[] UNSET_BYTES = new byte[0];
+
+  /** The initializer of a {@code @Required final UnsafeBuffer}: {@code new UnsafeBuffer(UNSET)}. */
+  public static final DirectBuffer UNSET = new UnsafeBuffer(UNSET_BYTES);
+
   private Decoding() {}
+
+  /**
+   * Returns the value of a property without a default, for the non-null getter of a
+   * {@code @Nullable} field: {@code return Decoding.required(field, "key");}. Fails like the {@code
+   * getValue()} of a legacy property that was never set.
+   *
+   * @throws MsgpackPropertyException if the value is null, which means that it is unset
+   */
+  public static <T> T required(final @Nullable T value, final String key) {
+    if (value == null) {
+      throw new MsgpackPropertyException(
+          new StringValue(key),
+          "Expected a value or default value to be specified, but has nothing");
+    }
+    return value;
+  }
+
+  /**
+   * Returns the value of a {@code @Required} long, for its getter: {@code return
+   * Decoding.required(field, FooOps.SENTINEL_field, "key");}. Fails like the {@code getValue()} of
+   * a legacy property that was never set if the field still holds its sentinel.
+   *
+   * @throws MsgpackPropertyException if the value is the sentinel, which means that it is unset
+   */
+  public static long required(final long value, final long sentinel, final String key) {
+    if (value == sentinel) {
+      throw unset(key);
+    }
+    return value;
+  }
+
+  /** Like {@link #required(long, long, String)}, for a {@code @Required} int. */
+  public static int required(final int value, final int sentinel, final String key) {
+    if (value == sentinel) {
+      throw unset(key);
+    }
+    return value;
+  }
+
+  /**
+   * Returns a {@code @Required final UnsafeBuffer}, for its getter. Fails like the {@code
+   * getValue()} of a legacy property that was never set.
+   *
+   * @throws MsgpackPropertyException if the buffer is still wrapped around {@link #UNSET_BYTES}
+   */
+  public static <B extends DirectBuffer> B requiredBuffer(final B value, final String key) {
+    if (value.byteArray() == UNSET_BYTES) {
+      throw unset(key);
+    }
+    return value;
+  }
+
+  /**
+   * Called when the ops class is loaded: the initializer of a {@code @Required} buffer is unset.
+   */
+  public static void requireUnsetInitializer(final DirectBuffer initial, final String field) {
+    if (initial.byteArray() != UNSET_BYTES) {
+      throw new IllegalStateException(
+          "The initializer of @Required field %s must be new UnsafeBuffer(Decoding.UNSET)"
+              .formatted(field));
+    }
+  }
+
+  /** The exception of the {@code getValue()} of a legacy property that is unset. */
+  public static MsgpackPropertyException unset(final String key) {
+    return new MsgpackPropertyException(
+        new StringValue(key), "Expected a value or default value to be specified, but has nothing");
+  }
 
   /**
    * Compares two buffers by their bytes, whatever their class, like the {@code StringValue}, {@code

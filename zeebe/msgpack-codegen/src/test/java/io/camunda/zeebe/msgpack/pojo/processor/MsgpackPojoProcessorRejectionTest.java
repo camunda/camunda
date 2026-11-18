@@ -145,7 +145,25 @@ final class MsgpackPojoProcessorRejectionTest {
                 pojo("Second", "final List<List<First>> items = new ArrayList<>();"),
                 pojo("Sample", "long key;")),
             "must not contain themselves",
-            "First -> Second -> First"));
+            "First -> Second -> First"),
+        // properties without a default
+        fields("@Nullable long key;", "key", "@Nullable"),
+        fields("Long key;", "key", "@Nullable"),
+        fields("Integer count;", "count", "@Nullable"),
+        fields("@Required boolean flag = false;", "flag", "@Required only applies"),
+        fields("@Required @Nullable Long flag;", "flag", "@Required only applies"),
+        fields("@Required @Nullable DirectBuffer flag;", "flag", "@Required only applies"),
+        fields(
+            "@Required final RequiredLong flag = new RequiredLong();",
+            "flag",
+            "@Required only applies"),
+        fields("@Nullable final RequiredLong key = new RequiredLong();", "key", "@Nullable"),
+        fields("RequiredLong key = new RequiredLong();", "key", "final"),
+        fields("Boolean accepting;", "accepting", "@Nullable"),
+        fields(
+            "@Nullable final UnsafeBuffer name = new UnsafeBuffer(new byte[0]);",
+            "name",
+            "@Nullable"));
   }
 
   @Test

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.msgpack.pojo.processor.Templates.HEADER;
 import static io.camunda.zeebe.msgpack.pojo.processor.Templates.fill;
 import static io.camunda.zeebe.msgpack.pojo.processor.Templates.loop;
 
+import io.camunda.zeebe.msgpack.pojo.annotation.Required;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -23,20 +24,22 @@ final class CodecRenderer {
     final var unknown = m.unknownField();
     final var count =
         m.properties().size() + (unknown != null ? " + v." + unknown + ".count()" : "");
+    final var hasUnset = m.properties().stream().anyMatch(Property::canBeUnset);
+    final var hasWriteCheck = m.properties().stream().anyMatch(Property::checkedOnWrite);
 
     final var write = new StringBuilder();
     int i = 0;
     for (final var p : m.properties()) {
       final var value =
           switch (p.type()) {
-            case LONG, INT -> "    n += w.writeInteger($value);\n";
-            case BOOLEAN -> "    n += w.writeBoolean($value);\n";
+            case LONG, INT, BOXED_LONG, BOXED_INT, REQUIRED_LONG, REQUIRED_INT ->
+                "    n += w.writeInteger($value);\n";
+            case BOOLEAN, BOXED_BOOLEAN -> "    n += w.writeBoolean($value);\n";
             case STRING -> "    n += w.writeString($value);\n";
             case BINARY -> "    n += w.writeBinary($value);\n";
             case RAW -> "    n += w.writeRaw(requireRaw($value, $key));\n";
             case DOCUMENT -> "    n += w.writeBinary(Decoding.document($value));\n";
-            case ENUM ->
-                "    n += w.writeString(ENUM_NAMES_$i[requireEnum($value, $key).ordinal()]);\n";
+            case ENUM -> "    n += w.writeString(ENUM_NAMES_$i[$value.ordinal()]);\n";
             case LIST -> "$list";
             case NESTED -> "    n += CODEC_$i.write(w, $value);\n";
           };
@@ -51,7 +54,7 @@ final class CodecRenderer {
               "$i",
               i,
               "$value",
-              "v." + p.field(),
+              p.value("v"),
               "$list",
               list.indent(4)));
       i++;
@@ -73,8 +76,10 @@ final class CodecRenderer {
     for (final var p : m.properties()) {
       final var value =
           switch (p.type()) {
-            case LONG, INT -> "    n += MsgPackWriter.getEncodedLongValueLength($value);\n";
-            case BOOLEAN -> "    n += MsgPackWriter.getEncodedBooleanValueLength();\n";
+            case LONG, INT, BOXED_LONG, BOXED_INT, REQUIRED_LONG, REQUIRED_INT ->
+                "    n += MsgPackWriter.getEncodedLongValueLength($value);\n";
+            case BOOLEAN, BOXED_BOOLEAN ->
+                "    n += MsgPackWriter.getEncodedBooleanValueLength();\n";
             case STRING -> "    n += MsgPackWriter.getEncodedStringLength($value.capacity());\n";
             case BINARY ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength($value.capacity());\n";
@@ -82,7 +87,7 @@ final class CodecRenderer {
             case DOCUMENT ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength(Decoding.document($value).capacity());\n";
             case ENUM ->
-                "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_$i[requireEnum($value, $key).ordinal()].capacity());\n";
+                "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_$i[$value.ordinal()].capacity());\n";
             case LIST -> "$list";
             case NESTED -> "    n += CODEC_$i.getLength($value);\n";
           };
@@ -97,7 +102,7 @@ final class CodecRenderer {
               "$i",
               i,
               "$value",
-              "v." + p.field(),
+              p.value("v"),
               "$list",
               list.indent(4)));
       i++;
@@ -111,9 +116,11 @@ final class CodecRenderer {
     for (final var p : m.properties()) {
       final var statement =
           switch (p.type()) {
-            case LONG -> "target.$field = r.readInteger();";
-            case INT -> "target.$field = Decoding.readInt(r);";
-            case BOOLEAN -> "target.$field = r.readBoolean();";
+            case LONG, BOXED_LONG -> "target.$field = r.readInteger();";
+            case INT, BOXED_INT -> "target.$field = Decoding.readInt(r);";
+            case BOOLEAN, BOXED_BOOLEAN -> "target.$field = r.readBoolean();";
+            case REQUIRED_LONG -> "target.$field.set(r.readInteger());";
+            case REQUIRED_INT -> "target.$field.set(Decoding.readInt(r));";
             case STRING ->
                 p.inPlace()
                     ? "Decoding.readString(r, target.$field);"
@@ -160,20 +167,6 @@ final class CodecRenderer {
                 "$field",
                 unknown)
             : "        default -> r.skipValue();\n");
-    // an enum field holds no value if neither the input nor its initializer gave it one
-    final var requireEnums = new StringBuilder();
-    for (final var p : m.properties()) {
-      if (p.type() == Type.ENUM) {
-        requireEnums.append(
-            fill(
-                p,
-                """
-                    if (target.$field == null) {
-                      throw missing($key);
-                    }
-                """));
-      }
-    }
 
     return HEADER
         + fill(
@@ -193,11 +186,13 @@ final class CodecRenderer {
               public static final $pojoCodec INSTANCE = new $pojoCodec();
 
             $constants\
+            $sentinels\
 
               private $pojoCodec() {}
 
               @Override
               public int write(final MsgPackWriter w, final $pojo v) {
+            $verifyOnWrite\
                 int n = w.writeMapHeader($count);
             $write\
                 return n;
@@ -205,6 +200,7 @@ final class CodecRenderer {
 
               @Override
               public int getLength(final $pojo v) {
+            $verifyOnLength\
                 int n = MsgPackWriter.getEncodedMapHeaderLength($count);
             $length\
                 return n;
@@ -226,9 +222,10 @@ final class CodecRenderer {
                     throw Decoding.propertyFailure(r.getBuffer(), keyOffset, keyLength, e);
                   }
                 }
-            $requireEnums\
+            $requireSet\
               }
 
+            $unsetChecks\
               /** Keys are written in declaration order, so the expected index is tried first. */
               private static int indexOf(
                   final DirectBuffer buffer, final int offset, final int length, final int hint) {
@@ -249,16 +246,6 @@ final class CodecRenderer {
                 return value;
               }
 
-              private static IllegalStateException missing(final String key) {
-                return new IllegalStateException("Property '" + key + "' has no valid value");
-              }
-
-              private static <E> E requireEnum(final E value, final String key) {
-                if (value == null) {
-                  throw new IllegalStateException("Property '" + key + "' has no value");
-                }
-                return value;
-              }
             }
             """,
             "$pkg",
@@ -267,18 +254,86 @@ final class CodecRenderer {
             m.name(),
             "$constants",
             constants(m),
+            "$sentinels",
+            sentinels(m, false),
             "$count",
             count,
+            "$verifyOnWrite",
+            hasWriteCheck ? "    verifyFieldsAreSet(v, UNSET_ON_WRITE);\n" : "",
             "$write",
             write,
+            "$verifyOnLength",
+            hasWriteCheck ? "    verifyFieldsAreSet(v, UNSET_ON_LENGTH);\n" : "",
             "$length",
             length,
             "$entryStart",
             unknown != null ? "      final int entryStart = r.getOffset();\n" : "",
             "$cases",
             cases,
-            "$requireEnums",
-            requireEnums);
+            // like ObjectValue, a property without default must be in the input
+            "$requireSet",
+            hasUnset
+                ? """
+                      final String unset = firstUnset(target, false);
+                      if (unset != null) {
+                        throw new RuntimeException("Property '" + unset + "' has no valid value");
+                      }
+                  """
+                : "",
+            "$unsetChecks",
+            hasWriteCheck ? unsetChecks(m) : "");
+  }
+
+  /**
+   * The check of the properties that can be unset, in the order of declaration, with the messages
+   * of {@code ObjectValue}: one for writing, one for the length, and the one used after reading.
+   */
+  private static String unsetChecks(final Model m) {
+    final var checks = new StringBuilder();
+    for (final var p : m.properties()) {
+      if (p.checkedOnWrite()) {
+        final var unset = p.canBeUnset() ? p.unset("v") : fill(p, "write && v.$field == null");
+        checks.append(
+            fill(
+                p,
+                """
+                    if ($unset) {
+                      return $key;
+                    }
+                """,
+                "$unset",
+                unset));
+      }
+    }
+    return fill(
+        """
+          private static final String UNSET_ON_WRITE =
+              "Expected a value or default value to be set before writing, but has nothing";
+          private static final String UNSET_ON_LENGTH =
+              "Expected a value or default value to be specified, but has nothing";
+
+          private static void verifyFieldsAreSet(final $pojo v, final String message) {
+            final String unset = firstUnset(v, true);
+            if (unset != null) {
+              throw new io.camunda.zeebe.msgpack.MsgpackPropertyException(
+                  new io.camunda.zeebe.msgpack.value.StringValue(unset), message);
+            }
+          }
+
+          /**
+           * The key of the first property without a value, or null. A non-nullable enum is only
+           * checked when writing, as it has a default unless it is assigned null.
+           */
+          private static String firstUnset(final $pojo v, final boolean write) {
+        $checks\
+            return null;
+          }
+
+        """,
+        "$pojo",
+        m.name(),
+        "$checks",
+        checks);
   }
 
   /**
@@ -372,6 +427,40 @@ final class CodecRenderer {
         "i" + depth,
         "$element",
         element.indent(2));
+  }
+
+  /**
+   * The initializers of the {@link Required} fields, the values that mean unset, as static finals:
+   * the JIT folds them into the comparison like a literal.
+   */
+  static String sentinels(final Model m, final boolean inOps) {
+    final var s = new StringBuilder();
+    for (final var p : m.properties()) {
+      if (p.presence() == Presence.SENTINEL && p.inPlace()) {
+        if (inOps) {
+          s.append(
+              fill(
+                  p,
+                  "  static {\n    Decoding.requireUnsetInitializer(DEFAULTS.$field, \"$field\");\n  }\n"));
+        }
+      } else if (p.presence() == Presence.SENTINEL) {
+        final var template =
+            inOps
+                ? "  static final $primitive $sentinel = DEFAULTS.$field;\n"
+                : "  static final $primitive $sentinel = $pojoOps.$sentinel;\n";
+        s.append(
+            fill(
+                p,
+                template,
+                "$primitive",
+                p.type() == Type.LONG ? "long" : "int",
+                "$sentinel",
+                p.sentinelName(),
+                "$pojo",
+                m.name()));
+      }
+    }
+    return s.isEmpty() ? "" : s + "\n";
   }
 
   private static String constants(final Model m) {

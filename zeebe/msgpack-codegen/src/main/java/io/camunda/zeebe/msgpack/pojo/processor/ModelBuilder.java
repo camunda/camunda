@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.pojo.annotation.Ignore;
 import io.camunda.zeebe.msgpack.pojo.annotation.Key;
 import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.annotation.Raw;
+import io.camunda.zeebe.msgpack.pojo.annotation.Required;
 import io.camunda.zeebe.msgpack.pojo.annotation.Sanitized;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -42,6 +44,9 @@ final class ModelBuilder {
   private static final String LIST = "java.util.List";
   private static final String INT_ARRAY_LIST = "org.agrona.collections.IntArrayList";
   private static final String LONG_ARRAY_LIST = "org.agrona.collections.LongArrayList";
+  private static final String REQUIRED_LONG = "io.camunda.zeebe.msgpack.pojo.RequiredLong";
+  private static final String REQUIRED_INT = "io.camunda.zeebe.msgpack.pojo.RequiredInt";
+  private static final String NULLABLE = "org.jspecify.annotations.Nullable";
   private static final String UNKNOWN_PROPERTIES =
       "io.camunda.zeebe.msgpack.pojo.UnknownProperties";
 
@@ -223,12 +228,45 @@ final class ModelBuilder {
             "Field %s: document requires a DirectBuffer or UnsafeBuffer field"
                 .formatted(fieldName));
       }
+      final var nullable = isNullable(field);
+      if (nullable && !kind.nullable) {
+        throw new IllegalArgumentException(
+            ("Field %s must not be @Nullable: only a string, binary, raw, document, enum, Boolean, "
+                    + "Long or Integer field can be unset. Use Long, Integer, RequiredLong or "
+                    + "RequiredInt for a long or int")
+                .formatted(fieldName));
+      }
+      if (!nullable && (kind == Type.BOXED_LONG || kind == Type.BOXED_INT)) {
+        throw new IllegalArgumentException(
+            "Field %s must be @Nullable, null is its unset state. Use %s for a default"
+                .formatted(fieldName, kind == Type.BOXED_LONG ? "long" : "int"));
+      }
+      if (!nullable && kind == Type.BOXED_BOOLEAN) {
+        throw new IllegalArgumentException(
+            "Field %s must be @Nullable, null is its unset state. Use boolean for a default"
+                .formatted(fieldName));
+      }
+      final var inPlace = isUnsafeBuffer(mirror);
+      final var sentinel = field.getAnnotation(Required.class) != null;
+      final var bufferKind =
+          kind == Type.STRING || kind == Type.RAW || kind == Type.BINARY || kind == Type.DOCUMENT;
+      if (sentinel && kind != Type.LONG && kind != Type.INT && !(inPlace && bufferKind)) {
+        throw new IllegalArgumentException(
+            ("Field %s: @Required only applies to a long or int, or to a final UnsafeBuffer, whose "
+                    + "initializer is the sentinel for unset. Use a @Nullable field for the other "
+                    + "types")
+                .formatted(fieldName));
+      }
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       if (!isFinal && kind.container) {
         throw new IllegalArgumentException(
             "Field %s must be final: it is read into and reset in place".formatted(fieldName));
       }
-      final var inPlace = isUnsafeBuffer(mirror);
+      if (nullable && inPlace) {
+        throw new IllegalArgumentException(
+            "Field %s must not be @Nullable: an UnsafeBuffer is final and never null"
+                .formatted(fieldName));
+      }
       if (!isFinal && inPlace) {
         throw new IllegalArgumentException(
             ("Field %s must be final: an UnsafeBuffer is wrapped in place, which would modify the "
@@ -253,8 +291,17 @@ final class ModelBuilder {
       final var pojo =
           kind == Type.NESTED
               && ((DeclaredType) mirror).asElement().getAnnotation(MsgpackPojo.class) != null;
+      final var presence =
+          sentinel
+              ? Presence.SENTINEL
+              : nullable
+                  ? Presence.NULLABLE
+                  : kind == Type.REQUIRED_LONG || kind == Type.REQUIRED_INT
+                      ? Presence.HOLDER
+                      : Presence.DEFAULT;
       properties.add(
-          new Property(keyLiteral, kind, fieldName, javaType, inPlace, sanitized, pojo, element));
+          new Property(
+              keyLiteral, kind, fieldName, javaType, inPlace, presence, sanitized, pojo, element));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no stored fields");
@@ -287,6 +334,21 @@ final class ModelBuilder {
         final var name = element.getQualifiedName().toString();
         if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
           return raw ? Type.RAW : binary ? Type.BINARY : document ? Type.DOCUMENT : Type.STRING;
+        }
+        if (name.equals(REQUIRED_LONG)) {
+          return Type.REQUIRED_LONG;
+        }
+        if (name.equals(REQUIRED_INT)) {
+          return Type.REQUIRED_INT;
+        }
+        if (name.equals("java.lang.Boolean")) {
+          return Type.BOXED_BOOLEAN;
+        }
+        if (name.equals("java.lang.Long")) {
+          return Type.BOXED_LONG;
+        }
+        if (name.equals("java.lang.Integer")) {
+          return Type.BOXED_INT;
         }
         if (name.equals(INT_ARRAY_LIST)
             || name.equals(LONG_ARRAY_LIST)
@@ -397,6 +459,17 @@ final class ModelBuilder {
     final var types = processingEnv.getTypeUtils();
     return expected != null
         && types.isSameType(types.erasure(mirror), types.erasure(expected.asType()));
+  }
+
+  /** {@code @Nullable} on the field itself, or on its type (jspecify's is a type annotation). */
+  private static boolean isNullable(final Element field) {
+    return Stream.concat(
+            field.getAnnotationMirrors().stream(), field.asType().getAnnotationMirrors().stream())
+        .anyMatch(
+            a ->
+                ((TypeElement) a.getAnnotationType().asElement())
+                    .getQualifiedName()
+                    .contentEquals(NULLABLE));
   }
 
   private boolean isUnsafeBuffer(final TypeMirror mirror) {

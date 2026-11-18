@@ -66,19 +66,25 @@ public final class UnknownProperties {
   }
 
   /**
-   * Appends every entry as {@code ,"key":[packed value (length=n)]}, the form in which an {@code
-   * UnpackedObject} prints properties it does not declare.
+   * Appends every entry as {@code "key":[packed value (length=n)]}, the form in which an {@code
+   * UnpackedObject} prints properties it does not declare, with a comma before each entry.
+   *
+   * @param empty whether nothing was printed before in the object, so that the first entry needs no
+   *     comma
    */
-  public void appendJson(final StringBuilder builder) {
+  public void appendJson(final StringBuilder builder, final boolean empty) {
     final var reader = new MsgPackReader().wrap(entries, 0, length);
     for (int i = 0; i < count; i++) {
+      if (i > 0 || !empty) {
+        builder.append(',');
+      }
       final int keyLength = reader.readStringLength();
       final String key = entries.getStringWithoutLengthUtf8(reader.getOffset(), keyLength);
       reader.skipBytes(keyLength);
       final int start = reader.getOffset();
       reader.skipValue();
       builder
-          .append(",\"")
+          .append('"')
           .append(key)
           .append("\":[packed value (length=")
           .append(reader.getOffset() - start)

@@ -48,7 +48,8 @@ public interface MsgpackOps<T extends Recyclable> {
    * The stored properties as JSON, like {@code ObjectValue#toString}: {@code {"key":value,...}}
    * with strings and enums quoted, binaries and documents as quoted base64, raw values as {@code
    * [packed value (length=n)]}, and the entries of unknown properties in the same form after the
-   * declared ones. Properties marked {@link Sanitized} print {@code "***"}.
+   * declared ones. Properties marked {@link Sanitized} print {@code "***"}, and a property without
+   * a value is omitted.
    */
   String toString(T value);
 }

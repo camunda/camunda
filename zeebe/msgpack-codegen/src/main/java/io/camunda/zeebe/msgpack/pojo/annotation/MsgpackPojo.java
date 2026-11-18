@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.msgpack.pojo.annotation;
 
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -42,6 +44,11 @@ import java.lang.annotation.Target;
  * map that references the source buffer), and {@code final List}s of those (also nested), stored as
  * an array of maps. A list of them starts empty and its items need a public constructor without
  * parameters.
+ *
+ * <p>A property without default, like a legacy property declared without one, is a {@link
+ * RequiredLong} or {@link RequiredInt}, a {@link Required} {@code long} or {@code int}, or a
+ * {@code @Nullable} {@code DirectBuffer}, enum, {@code Boolean}, {@code Long} or {@code Integer}.
+ * Writing it while unset, and reading a message without its key, fails.
  *
  * <p>String, binary and raw fields need an initializer, which is the default of every instance: the
  * default buffer is shared, so it must never be modified.

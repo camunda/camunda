@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.msgpack.pojo.processor;
 
+import static io.camunda.zeebe.msgpack.pojo.processor.Templates.fill;
+
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -15,6 +17,7 @@ import org.jspecify.annotations.Nullable;
  * @param javaType the type of the field in generated code; of the innermost elements for a list
  * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
  *     being replaced by a new view
+ * @param presence whether and how the property can be unset
  * @param sanitized the value must not appear in a string representation
  * @param pojo a nested value is a generated POJO, whose {@code <Name>Ops} is called directly;
  *     otherwise it is a {@code BaseValue}
@@ -26,11 +29,45 @@ record Property(
     String field,
     String javaType,
     boolean inPlace,
+    Presence presence,
     boolean sanitized,
     boolean pojo,
     @Nullable ListElement element) {
 
   ListElement listElement() {
     return Objects.requireNonNull(element);
+  }
+
+  /** Holders, sentinels and {@code @Nullable} fields can be unset, a property without default. */
+  boolean canBeUnset() {
+    return presence != Presence.DEFAULT;
+  }
+
+  /** The constant holding the initializer of a {@code @Required} field. */
+  String sentinelName() {
+    return "SENTINEL_" + field;
+  }
+
+  /** A non-nullable enum that is null cannot be written, whatever the reason. */
+  boolean checkedOnWrite() {
+    return canBeUnset() || type == Type.ENUM;
+  }
+
+  /** Java condition that is true if the property is unset in the object {@code v}. */
+  String unset(final String v) {
+    final var condition =
+        switch (presence) {
+          case SENTINEL ->
+              inPlace ? "$v.$field.byteArray() == Decoding.UNSET_BYTES" : "$v.$field == $sentinel";
+          case HOLDER -> "!$v.$field.isSet()";
+          case NULLABLE, DEFAULT -> "$v.$field == null";
+        };
+    return fill(condition, "$v", v, "$field", field, "$sentinel", sentinelName());
+  }
+
+  /** Java expression for the value of the property, which must not be unset. */
+  String value(final String v) {
+    return fill(
+        presence == Presence.HOLDER ? "$v.$field.get()" : "$v.$field", "$v", v, "$field", field);
   }
 }

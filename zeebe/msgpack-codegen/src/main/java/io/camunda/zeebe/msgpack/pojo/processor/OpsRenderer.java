@@ -38,6 +38,7 @@ final class OpsRenderer {
 
               private static final $pojo DEFAULTS = new $pojo();
 
+            $sentinels\
               private $pojoOps() {}
 
               /** Restores the field initializers. */
@@ -98,6 +99,8 @@ final class OpsRenderer {
             m.pkg(),
             "$pojo",
             m.name(),
+            "$sentinels",
+            CodecRenderer.sentinels(m, true),
             "$reset",
             reset,
             "$copy",
@@ -112,6 +115,12 @@ final class OpsRenderer {
 
   /** The statements of {@code reset} that restore the initializer of a property. */
   private static String resetStatement(final Property p) {
+    if (p.presence() == Presence.HOLDER) {
+      return "    target.$field.reset();\n";
+    }
+    if (p.presence() == Presence.NULLABLE) {
+      return "    target.$field = DEFAULTS.$field;\n";
+    }
     return switch (p.type()) {
       // checked on every reset: an exception in the static initializer is not reliably
       // propagated, as the class is initialized while Codecs resolves these ops
@@ -140,11 +149,28 @@ final class OpsRenderer {
     for (final var p : m.properties()) {
       final var statements =
           switch (p.type()) {
-            case LONG, INT, BOOLEAN, ENUM -> "    target.$field = source.$field;\n";
+            case LONG, INT, BOOLEAN, BOXED_BOOLEAN, BOXED_LONG, BOXED_INT, ENUM ->
+                "    target.$field = source.$field;\n";
+            case REQUIRED_LONG, REQUIRED_INT ->
+                """
+                    if (source.$field.isSet()) {
+                      target.$field.set(source.$field.get());
+                    } else {
+                      target.$field.reset();
+                    }
+                """;
             case STRING, BINARY, RAW, DOCUMENT ->
-                p.inPlace()
-                    ? "    Decoding.copyInto(source.$field, target.$field);\n"
-                    : "    target.$field = Decoding.copy(source.$field);\n";
+                p.presence() == Presence.SENTINEL
+                    ? """
+                          if (source.$field.byteArray() == Decoding.UNSET_BYTES) {
+                            target.$field.wrap(Decoding.UNSET);
+                          } else {
+                            Decoding.copyInto(source.$field, target.$field);
+                          }
+                      """
+                    : p.inPlace()
+                        ? "    Decoding.copyInto(source.$field, target.$field);\n"
+                        : "    target.$field = Decoding.copy(source.$field);\n";
             case LIST -> "    target.$field.clear();\n$list";
             case NESTED ->
                 p.pojo()
@@ -184,11 +210,30 @@ final class OpsRenderer {
       final var differs =
           switch (p.type()) {
             case LONG, INT, BOOLEAN, ENUM -> "a.$field != b.$field";
+            case BOXED_BOOLEAN, BOXED_LONG, BOXED_INT ->
+                "!java.util.Objects.equals(a.$field, b.$field)";
+            case REQUIRED_LONG, REQUIRED_INT ->
+                "a.$field.isSet() != b.$field.isSet() || a.$field.isSet() && a.$field.get() != b.$field.get()";
             case STRING, BINARY, RAW, DOCUMENT -> "!Decoding.equalContent(a.$field, b.$field)";
             case NESTED ->
                 p.pojo() ? "!$typeOps.equals(a.$field, b.$field)" : "!a.$field.equals(b.$field)";
             case LIST -> null;
           };
+      if (p.canBeUnset()) {
+        body.append(
+            fill(
+                """
+                    if ($unsetA || $unsetB) {
+                      throw Decoding.unset($key);
+                    }
+                """,
+                "$unsetA",
+                p.unset("a"),
+                "$unsetB",
+                p.unset("b"),
+                "$key",
+                p.keyLiteral()));
+      }
       final var template =
           """
               if ($differs) {
@@ -237,7 +282,10 @@ final class OpsRenderer {
   /** The static {@code toString(value)} and {@code appendTo(builder, value)} of the ops class. */
   private static String toStringMethod(final Model m) {
     final var body = new StringBuilder();
+    // whether no property comes before, and whether one that is always printed does
     boolean first = true;
+    boolean printed = false;
+    boolean needsStart = false;
     for (final var p : m.properties()) {
       final var value =
           p.sanitized()
@@ -245,7 +293,9 @@ final class OpsRenderer {
                     sb.append("\\"***\\"");
                 """
               : switch (p.type()) {
-                case LONG, INT, BOOLEAN -> "    sb.append(v.$field);\n";
+                case LONG, INT, BOOLEAN, BOXED_BOOLEAN, BOXED_LONG, BOXED_INT ->
+                    "    sb.append(v.$field);\n";
+                case REQUIRED_LONG, REQUIRED_INT -> "    sb.append(v.$field.get());\n";
                 case STRING -> "    Decoding.appendString(sb, v.$field);\n";
                 case BINARY, DOCUMENT -> "    Decoding.appendBinary(sb, v.$field);\n";
                 case RAW -> "    Decoding.appendRaw(sb, v.$field);\n";
@@ -258,16 +308,31 @@ final class OpsRenderer {
               };
       var statements =
           """
-              sb.append("$separator\\"").append($key).append("\\":");
+              sb.append("\\"").append($key).append("\\":");
           """
               + value;
+      // the comma goes with the property, so a property that is left out leaves none behind
+      statements = separator(first, printed) + statements;
+      needsStart |= !first && !printed;
+      if (p.canBeUnset()) {
+        statements = "    if (!($unset)) {\n" + statements + "    }\n";
+      }
+      first = false;
+      printed |= !p.canBeUnset();
       final var list =
           p.type() == Type.LIST ? appendList("v." + p.field(), p.listElement(), 0) : "";
-      body.append(fill(p, statements, "$separator", first ? "{" : ",", "$list", list.indent(4)));
-      first = false;
+      body.append(fill(p, statements, "$unset", p.unset("v"), "$list", list.indent(4)));
     }
     if (m.unknownField() != null) {
-      body.append(fill("    v.$field.appendJson(sb);\n", "$field", m.unknownField()));
+      final var empty = first ? "true" : printed ? "false" : "sb.length() == start";
+      needsStart |= !first && !printed;
+      body.append(
+          fill(
+              "    v.$field.appendJson(sb, $empty);\n",
+              "$field",
+              m.unknownField(),
+              "$empty",
+              empty));
     }
     return fill(
         """
@@ -280,6 +345,8 @@ final class OpsRenderer {
 
           /** Appends {@link #toString} to a builder, for the string of a nested value. */
           public static void appendTo(final StringBuilder sb, final $pojo v) {
+            sb.append('{');
+        $start\
         $body\
             sb.append('}');
           }
@@ -287,8 +354,28 @@ final class OpsRenderer {
         """,
         "$pojo",
         m.name(),
+        "$start",
+        needsStart ? "    final int start = sb.length();\n" : "",
         "$body",
         body);
+  }
+
+  /**
+   * The comma before a property in {@link #toStringMethod}: none for the first property, a fixed
+   * one if a property that is always printed comes before, and else one only if a property was
+   * printed before, which the generated code sees from the length of the builder.
+   */
+  private static String separator(final boolean first, final boolean printed) {
+    if (first) {
+      return "";
+    }
+    return printed
+        ? "    sb.append(',');\n"
+        : """
+            if (sb.length() > start) {
+              sb.append(',');
+            }
+        """;
   }
 
   /** The static {@code hashCode(value)} of the ops class. */
@@ -300,7 +387,10 @@ final class OpsRenderer {
             case LONG -> "Long.hashCode(v.$field)";
             case INT -> "v.$field";
             case BOOLEAN -> "Boolean.hashCode(v.$field)";
-            case ENUM -> "java.util.Objects.hashCode(v.$field)";
+            case REQUIRED_LONG -> "(v.$field.isSet() ? Long.hashCode(v.$field.get()) : -1)";
+            case REQUIRED_INT -> "(v.$field.isSet() ? v.$field.get() : -1)";
+            case BOXED_BOOLEAN, BOXED_LONG, BOXED_INT, ENUM ->
+                "java.util.Objects.hashCode(v.$field)";
             case STRING, BINARY, RAW, DOCUMENT -> "Decoding.contentHash(v.$field)";
             // the hash code of a BaseValue is not consistent with its equals (it includes whether
             // a property was set and the recycled ones), so it is not used: equal values must hash

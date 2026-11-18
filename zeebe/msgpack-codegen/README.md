@@ -37,7 +37,8 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - The codec stores every non-static field under its field name, in declaration order. `@Ignore`
   excludes a field. `@Key("key")` sets a different key. The key names and their order are the
   stored format.
-- Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
+- Supported field types: `long`, `int`, `boolean`, `@Required long`/`int`,
+  `RequiredLong`/`RequiredInt` and `@Nullable Long`/`Integer`/`Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
   raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must
   not be overridden), `List<DirectBuffer>`, `List<Long>`, `List<Integer>` (read with the range
   check of an `int`), lists of these lists to any depth (`List<List<Long>>`, ...), agrona's
@@ -64,10 +65,51 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `DirectBuffer` field gets a new view per read, and so does every element of a list). A non-final
   one would be the shared default after a reset, so wrapping it would change the default.
   Compilation fails if a field breaks these rules.
-- A key missing in the input keeps the default. If an enum field has no initializer and the input
-  does not have its key, the read fails ("Property 'key' has no valid value").
-- String, binary and raw fields need an initializer. `reset` assigns (or wraps) the default of
-  a shared prototype instance, so a default buffer must never be modified in place.
+- A key missing in the input keeps the default.
+- A property without a default, like a legacy property declared without one, has an unset state
+  and no initializer. A `long` or `int` is a `final RequiredLong`/`RequiredInt` field: a small
+  mutable holder with `set(v)`, `get()`, `isSet()` and `reset()`, which does not allocate on read
+  and has no sentinel value that a real value could clash with. A string, binary, raw, document,
+  enum or `Boolean` is a `@Nullable` field (jspecify) that starts as `null`; `null` is unset. A
+  `@Nullable Long` or `Integer` is supported as well, an alternative to the holders that is written
+  like a `long`/`int` but allocates when it is read (the holders do not). A `boolean`, `long` or
+  `int` with a default stays a primitive: the boxed types are only for one without a default.
+- `@Required` is a third alternative for a `long` or `int` without a default: the field
+  stays a primitive and its initializer is a sentinel meaning unset, `0` without one
+  (`@Required long processInstanceKey;`, as no key is 0, or
+  `@Required long priority = Long.MIN_VALUE;` where 0 is a real value). A new instance and
+  one after `reset` hold the sentinel, so both are unset. The generated code compares with a
+  `static final` copy of each sentinel. The sentinel must be outside the values of the property:
+  writing it fails like an unset property, and so does reading a message that holds it. Its
+  getter returns `Decoding.required(field, FooOps.SENTINEL_field, "key")`, which fails like the
+  `getValue()` of an unset legacy property. A string, binary, raw or document is a
+  `@Required final UnsafeBuffer name = new UnsafeBuffer(Decoding.UNSET);`: it is unset while it is
+  wrapped around the shared `Decoding.UNSET_BYTES` array, so a value that is set, read or copied,
+  an empty one included, is never unset. It is wrapped in place on read, so unlike a `@Nullable
+  DirectBuffer` it does not allocate. The ops class fails to load if the initializer is another
+  one. Its getter returns `Decoding.requiredBuffer(field, "key")`. The
+  processor rejects `@Nullable` on a primitive, on a holder, on an `UnsafeBuffer` or on a nested
+  value, a holder that is not `final`, and a `Boolean`, `Long` or `Integer` that is not
+  `@Nullable`.
+- A class that has properties without a default is `@NullMarked`, and the fields of those properties
+  are `@Nullable`. Their getters are non-null and return `Decoding.required(field, "key")`, so
+  NullAway forces the check and an unset value fails with the `MsgpackPropertyException` of the
+  `getValue()` of a legacy property ("Expected a value or default value to be specified, but has
+  nothing").
+- The unset properties behave like those of an `UnpackedObject`: `write` and `getLength` fail with
+  the `MsgpackPropertyException` of the first one that is unset ("Expected a value or default
+  value to be set before writing, but has nothing", and "... to be specified, ..." for the
+  length), before anything is written. `read` fails with "Property 'key' has no valid value" if
+  the key is missing (`reset` makes every one unset again), and `get()` of an unset holder fails
+  with an `IllegalStateException` with the message of the legacy `getValue`. `toString` leaves an
+  unset property out and keeps its comma, like `ObjectValue#toString`, which is not valid JSON.
+  `copyFrom` copies the unset state too. `equals` fails with the `MsgpackPropertyException` of the
+  legacy `getValue()` if a property of either value is unset (not if both are the same instance),
+  like `UnpackedObject#equals`; `hashCode` does not fail.
+- A string, binary and raw field that is not `@Nullable` needs an initializer. `reset` assigns (or
+  wraps) the default of a shared prototype instance, so a default buffer must never be modified in
+  place. An enum that is not `@Nullable` needs one too; if it is `null` anyway, `write` and
+  `getLength` fail like for an unset property.
 - Generated code finds the codecs of its nested values with `Codecs.of(Type.class)`
   (a `ClassValue`, by naming convention) once, when the generated class is initialized. A
   `MsgpackBufferValue` does no look-up: it declares abstract `codec()` and `ops()`, which every
@@ -126,5 +168,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `NoClassDefFoundError`. A no-argument constructor must stay reachable from the package.
 - A class with `@Ignore`d state overrides `reset()` as `super.reset()` followed by the reset
   of that state, like `copyFrom`, `equals` and `hashCode`.
+- For a `long` or `int` without a default, use a `RequiredLong`/`RequiredInt` holder. Use a
+  `@Required` sentinel only for a property with an obvious free value, and only after
+  reviewers approved the sentinel: the sentinel can never be a real value. Give the evidence that
+  the code never sets it. A `-1` or `0` often is a real value (a `NO_KEY` constant, a position, a
+  count or an index); `Long.MIN_VALUE` and `Integer.MIN_VALUE` are the safe choice. Test the
+  property against `FooOps.SENTINEL_field` to see whether it is set.
 - A `@MsgpackPojo` is not a `BaseValue`, so an `UnpackedObject` cannot hold it in an
   `ObjectProperty` or `ArrayProperty`. The class that holds it must be a `@MsgpackPojo` too.
