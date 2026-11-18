@@ -393,6 +393,11 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     try {
       for (final var store : secretStoreRegistry.getStores().entrySet()) {
         for (final var entry : store.getValue().listEntries()) {
+          if (entry == null) {
+            // a store is third-party code: a null entry costs the caller that entry, not the
+            // listing
+            continue;
+          }
           final var name = entry.name();
           if (status != null && entry.status() != status) {
             continue;

@@ -22,6 +22,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.InMemorySecretCache;
+import io.camunda.secretstore.SecretListEntry;
+import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStatus;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
@@ -927,6 +929,40 @@ public class SecretServicesTest {
     // then the listing costs that one name rather than failing as an internal error
     assertThat(references)
         .containsExactly("camunda.secrets.a", "camunda.secrets.b", "camunda.secrets.token");
+  }
+
+  @Test
+  void shouldOmitANullEntryFromTheListingWithoutFailingIt() {
+    // given a store that lists a null entry, which the store SPI's nullness contract forbids but a
+    // third-party store could still do
+    authorizationsConfig.setEnabled(true);
+    grantReadWildcard();
+    final SecretStore nullEntryStore =
+        new SecretStore() {
+          @Override
+          public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+            return Map.of();
+          }
+
+          @Override
+          public List<String> list() {
+            return List.of();
+          }
+
+          @Override
+          public List<SecretListEntry> listEntries() {
+            return Arrays.asList(null, new SecretListEntry("a", SecretStatus.ACTIVE));
+          }
+        };
+    final var nullEntryServices =
+        newSecretServices(
+            PHYSICAL_TENANT_ID, registryOf(nullEntryStore, new InMemorySecretCache()));
+
+    // when
+    final var references = nullEntryServices.list(authentication, SecretStatus.ACTIVE).join();
+
+    // then the listing costs that one entry rather than failing as an internal error
+    assertThat(references).containsExactly("camunda.secrets.a");
   }
 
   @Test
