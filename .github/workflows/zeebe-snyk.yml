@@ -194,7 +194,7 @@ jobs:
         run: |
           # Preserve operational errors even when subsequent scans succeed or only find vulnerabilities.
           exitCode=0
-          JAVA_PROJECTS=(bom clients/java clients/camunda-spring-boot-starter zeebe/bpmn-model zeebe/exporter-api zeebe/gateway-protocol-impl zeebe/protocol)
+          JAVA_PROJECTS=(bom clients/java clients/camunda-spring-boot-starter zeebe/bpmn-model zeebe/xml-model zeebe/dmn-model zeebe/exporter-api zeebe/gateway-protocol-impl zeebe/protocol)
 
           # Remember that when called from a sub-shell, the environment/globals are different
           function output() {

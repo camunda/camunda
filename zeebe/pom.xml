@@ -23,6 +23,8 @@
     <module>protocol-test-util</module>
     <module>protocol</module>
     <module>bpmn-model</module>
+    <module>xml-model</module>
+    <module>dmn-model</module>
     <module>logstreams</module>
     <module>stream-platform</module>
     <module>engine</module>

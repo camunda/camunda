@@ -120,6 +120,8 @@ Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Protocol ([protocol](/zeebe/protocol))
 - Gateway Protocol Implementation ([gateway-protocol-impl](/zeebe/gateway-protocol-impl))
 - BPMN Model API ([bpmn-model](/zeebe/bpmn-model))
+- XML Model API ([xml-model](/zeebe/xml-model))
+- DMN Model API ([dmn-model](/zeebe/dmn-model))
 
 ### Clarification on gRPC Code Generation
 
