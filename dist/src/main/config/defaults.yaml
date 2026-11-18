@@ -2066,6 +2066,9 @@ camunda: # Type: io.camunda.configuration.Camunda
     # How often each node reads the secrets that configuration values refer to again, and passes changed
     # values on to the clients that use them. At least 30 seconds, and 5 minutes by default.
     refresh-interval: "5m" # Type: Duration, Env: CAMUNDA_SECRETS_REFRESHINTERVAL
+    # Whether startup fails when a credential in the configuration holds a literal value instead of a
+    # reference to a configuration secret. When off, each literal credential gets a warning.
+    reject-literal-credentials: false # Type: Boolean, Env: CAMUNDA_SECRETS_REJECTLITERALCREDENTIALS
     stores: # Type: io.camunda.configuration.Secrets$Stores  
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
       azure: null # Type: Map<String,io.camunda.configuration.Secrets$AzureKeyVaultStore>, Env: CAMUNDA_SECRETS_STORES_AZURE

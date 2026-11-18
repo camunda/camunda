@@ -141,6 +141,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
     resolvedPhysicalTenants.forEach(ConfigurationSecretReferenceValidation::validate);
+    LiteralCredentialValidation.validate(
+        environment, resolvedPhysicalTenants, camunda.getSecrets().isRejectLiteralCredentials());
     if (resolvedPhysicalTenants.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID) != camunda) {
       // the root configuration is still read for the default tenant, next to its own declaration
       ConfigurationSecretReferenceValidation.validate(

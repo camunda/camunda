@@ -27,6 +27,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.cache.max-size}
  *   <li>{@code camunda.secrets.max-concurrency}
  *   <li>{@code camunda.secrets.refresh-interval}
+ *   <li>{@code camunda.secrets.reject-literal-credentials}
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
  *   <li>{@code camunda.secrets.stores.aws.<id>.region}
  *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
@@ -123,6 +124,12 @@ public class Secrets {
   private Duration refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
   /**
+   * Whether startup fails when a credential in the configuration holds a literal value instead of a
+   * reference to a configuration secret. When off, each literal credential gets a warning.
+   */
+  private boolean rejectLiteralCredentials;
+
+  /**
    * How many sequential backend calls a store whose cost scales with call count ({@code
    * namesPerCall()} less than the request size) may issue at once, bounded by a semaphore shared by
    * every such store the registry wraps. {@code 1} resolves exactly as before this setting existed:
@@ -187,6 +194,14 @@ public class Secrets {
 
   public void setRefreshInterval(final @Nullable Duration refreshInterval) {
     this.refreshInterval = refreshInterval == null ? DEFAULT_REFRESH_INTERVAL : refreshInterval;
+  }
+
+  public boolean isRejectLiteralCredentials() {
+    return rejectLiteralCredentials;
+  }
+
+  public void setRejectLiteralCredentials(final boolean rejectLiteralCredentials) {
+    this.rejectLiteralCredentials = rejectLiteralCredentials;
   }
 
   public InternalConfig getInternalConfig() {
