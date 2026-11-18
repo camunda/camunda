@@ -1,7 +1,10 @@
 import buildlogic.ArtifactKind
 import buildlogic.artifactKind
 
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.spring-configuration-metadata-conventions")
+}
 
 // Build-time tooling (GenerateDefaults) that is run against the Spring configuration metadata. It is
 // kept out of `main` so it is not packaged in the module jar.
