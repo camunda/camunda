@@ -14,9 +14,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -45,10 +43,6 @@ public final class DistributionMetrics {
   private final Table<Integer, String, PartitionDistributionMetrics> partitionMetrics =
       Table.concurrent();
 
-  /** All created entries of {@link #partitionMetrics}, as a table cannot be iterated. */
-  private final List<PartitionDistributionMetrics> allPartitionMetrics =
-      new CopyOnWriteArrayList<>();
-
   // Metrics
   private final StatefulGauge activeDistributionsGauge;
   private final Counter distributionsCounter;
@@ -73,7 +67,7 @@ public final class DistributionMetrics {
 
   public void reset() {
     activeDistributionsGauge.set(0);
-    allPartitionMetrics.forEach(PartitionDistributionMetrics::resetGauges);
+    partitionMetrics.forEachValue(PartitionDistributionMetrics::resetGauges);
   }
 
   public void startedDistribution() {
@@ -149,12 +143,8 @@ public final class DistributionMetrics {
     return partitionMetrics.computeIfAbsent(
         targetPartitionId,
         toQueueTag(queueId),
-        (partitionId, queueTag) -> {
-          final var metrics =
-              new PartitionDistributionMetrics(partitionId, queueTag, meterRegistry);
-          allPartitionMetrics.add(metrics);
-          return metrics;
-        });
+        (partitionId, queueTag) ->
+            new PartitionDistributionMetrics(partitionId, queueTag, meterRegistry));
   }
 
   /** Maps the queue id to a tag value out of a bounded set: known queues, NONE, or OTHER. */
