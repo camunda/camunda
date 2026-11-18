@@ -64,10 +64,11 @@ import org.mockito.Mockito;
 
 @Timeout(120)
 final class ClusterConfigurationInitializerTest {
-  @RegisterExtension final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
   // Far above the milliseconds these waits take, so slow CI machines do not make the tests flaky.
   // It only bounds them, so that a broken initializer fails the test instead of hanging it.
   private static final Duration FAIL_FAST_TIMEOUT = Duration.ofSeconds(10);
+
+  @RegisterExtension final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
 
   @TempDir Path rootDir;
   private final CurrentClusterConfiguration initialClusterConfiguration =
