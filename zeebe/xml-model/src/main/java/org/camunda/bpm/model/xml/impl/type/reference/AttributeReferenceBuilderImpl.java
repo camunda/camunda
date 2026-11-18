@@ -33,8 +33,8 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReferenceBuilder;
 public class AttributeReferenceBuilderImpl<T extends ModelElementInstance>
     implements AttributeReferenceBuilder<T>, ModelBuildOperation {
 
-  private final AttributeImpl<String> referenceSourceAttribute;
   protected AttributeReferenceImpl<T> attributeReferenceImpl;
+  private final AttributeImpl<String> referenceSourceAttribute;
   private final Class<T> referenceTargetElement;
 
   /**

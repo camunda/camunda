@@ -37,6 +37,10 @@ public class Animals extends ModelElementInstanceImpl {
   protected static ChildElement<Description> descriptionChild;
   protected static ChildElementCollection<Animal> animalColl;
 
+  public Animals(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -57,10 +61,6 @@ public class Animals extends ModelElementInstanceImpl {
     animalColl = sequence.elementCollection(Animal.class).build();
 
     typeBuilder.build();
-  }
-
-  public Animals(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public Description getDescription() {

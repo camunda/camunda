@@ -20,9 +20,13 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.instance.Bird;
 import org.junit.Before;
@@ -47,7 +51,7 @@ public class ModelValidationTest {
 
   @Test
   public void shouldValidateWithEmptyList() {
-    final ValidationResults results = modelInstance.validate(List.of());
+    final ValidationResults results = modelInstance.validate(Collections.emptyList());
 
     assertThat(results).isNotNull();
     assertThat(results.hasErrors()).isFalse();
@@ -55,7 +59,8 @@ public class ModelValidationTest {
 
   @Test
   public void shouldCollectWarnings() {
-    final List<ModelElementValidator<?>> validators = List.of(new IsAdultWarner());
+    final List<ModelElementValidator<?>> validators =
+        Collections.singletonList(new IsAdultWarner());
 
     final ValidationResults results = modelInstance.validate(validators);
 
@@ -67,7 +72,8 @@ public class ModelValidationTest {
 
   @Test
   public void shouldCollectErrors() {
-    final List<ModelElementValidator<?>> validators = List.of(new IllegalBirdValidator("tweety"));
+    final List<ModelElementValidator<?>> validators =
+        Collections.singletonList(new IllegalBirdValidator("tweety"));
 
     final ValidationResults results = modelInstance.validate(validators);
 
@@ -79,7 +85,8 @@ public class ModelValidationTest {
 
   @Test
   public void shouldWriteResults() {
-    final List<ModelElementValidator<?>> validators = List.of(new IllegalBirdValidator("tweety"));
+    final List<ModelElementValidator<?>> validators =
+        Collections.singletonList(new IllegalBirdValidator("tweety"));
 
     final ValidationResults results = modelInstance.validate(validators);
 
@@ -96,10 +103,11 @@ public class ModelValidationTest {
 
     // adds 7 elements with warnings of size 30, and an element prefix of size 8
     // total size for 1 warning = 38
-    final List<ModelElementValidator<?>> validators = List.of(new IsAdultWarner());
+    final List<ModelElementValidator<?>> validators =
+        Collections.singletonList(new IsAdultWarner());
 
-    final var results = modelInstance.validate(validators);
-    final var stringWriter = new StringWriter();
+    final ValidationResults results = modelInstance.validate(validators);
+    final StringWriter stringWriter = new StringWriter();
 
     // When
     results.write(stringWriter, new TestResultFormatter(), maxSize);
@@ -120,13 +128,15 @@ public class ModelValidationTest {
     final int maxSize = 120;
 
     // has 7 warnings
-    final var results1 = modelInstance.validate(List.of(new IsAdultWarner()));
+    final ValidationResults results1 =
+        modelInstance.validate(Collections.singletonList(new IsAdultWarner()));
     // has 1 error
-    final var results2 = modelInstance.validate(List.of(new IllegalBirdValidator("tweety")));
-    final var stringWriter = new StringWriter();
+    final ValidationResults results2 =
+        modelInstance.validate(Collections.singletonList(new IllegalBirdValidator("tweety")));
+    final StringWriter stringWriter = new StringWriter();
 
     // When
-    final var results = new ModelValidationResultsImpl(results1, results2);
+    final ModelValidationResultsImpl results = new ModelValidationResultsImpl(results1, results2);
     results.write(stringWriter, new TestResultFormatter(), maxSize);
 
     // it has enough size to print 3 warnings, but it will only print 2,
@@ -142,17 +152,18 @@ public class ModelValidationTest {
   @Test
   public void shouldReturnResults() {
     final List<ModelElementValidator<?>> validators =
-        List.of(new IllegalBirdValidator("tweety"), new IsAdultWarner());
+        Arrays.asList(new IllegalBirdValidator("tweety"), new IsAdultWarner());
 
     final ValidationResults results = modelInstance.validate(validators);
 
     assertThat(results.getErrorCount()).isEqualTo(1);
     assertThat(results.getWarinigCount()).isEqualTo(7);
 
-    final var resultsByElement = results.getResults();
+    final Map<ModelElementInstance, List<ValidationResult>> resultsByElement = results.getResults();
     assertThat(resultsByElement.size()).isEqualTo(7);
 
-    for (var resultEntry : resultsByElement.entrySet()) {
+    for (final Map.Entry<ModelElementInstance, List<ValidationResult>> resultEntry :
+        resultsByElement.entrySet()) {
       final Bird element = (Bird) resultEntry.getKey();
       final List<ValidationResult> validationResults = resultEntry.getValue();
       assertThat(element).isNotNull();

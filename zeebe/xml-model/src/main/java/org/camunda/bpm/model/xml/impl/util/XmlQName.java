@@ -93,35 +93,32 @@ public class XmlQName {
   }
 
   private String determinePrefixAndNamespaceUri() {
-    if (namespaceUri != null) {
-      if (rootElement != null && namespaceUri.equals(rootElement.getNamespaceURI())) {
-        // global namespaces do not have a prefix or namespace URI
-        return null;
-      } else {
-        // lookup for prefix
-        final String lookupPrefix = lookupPrefix();
-        if (lookupPrefix == null && rootElement != null) {
-          // if no prefix is found we generate a new one
-          // search for known prefixes
-          final String knownPrefix = KNOWN_PREFIXES.get(namespaceUri);
-          if (knownPrefix == null) {
-            // generate namespace
-            return rootElement.registerNamespace(namespaceUri);
-          } else if (knownPrefix.isEmpty()) {
-            // ignored namespace
-            return null;
-          } else {
-            // register known prefix
-            rootElement.registerNamespace(knownPrefix, namespaceUri);
-            return knownPrefix;
-          }
-        } else {
-          return lookupPrefix;
-        }
-      }
-    } else {
+    if (namespaceUri == null) {
       // no namespace so no prefix
       return null;
+    }
+    if (rootElement != null && namespaceUri.equals(rootElement.getNamespaceURI())) {
+      // global namespaces do not have a prefix or namespace URI
+      return null;
+    }
+    // lookup for prefix
+    final String lookupPrefix = lookupPrefix();
+    if (lookupPrefix != null || rootElement == null) {
+      return lookupPrefix;
+    }
+    // if no prefix is found we generate a new one
+    // search for known prefixes
+    final String knownPrefix = KNOWN_PREFIXES.get(namespaceUri);
+    if (knownPrefix == null) {
+      // generate namespace
+      return rootElement.registerNamespace(namespaceUri);
+    } else if (knownPrefix.isEmpty()) {
+      // ignored namespace
+      return null;
+    } else {
+      // register known prefix
+      rootElement.registerNamespace(knownPrefix, namespaceUri);
+      return knownPrefix;
     }
   }
 

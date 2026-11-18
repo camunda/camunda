@@ -37,6 +37,10 @@ public abstract class FlyingAnimal extends Animal {
   public static ElementReferenceCollection<FlyingAnimal, FlightPartnerRef> flightPartnerRefsColl;
   public static Attribute<Double> wingspanAttribute;
 
+  FlyingAnimal(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -60,10 +64,6 @@ public abstract class FlyingAnimal extends Animal {
             .build();
 
     typeBuilder.build();
-  }
-
-  FlyingAnimal(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public Double getWingspan() {

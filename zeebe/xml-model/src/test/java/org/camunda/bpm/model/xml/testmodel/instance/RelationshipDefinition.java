@@ -33,6 +33,10 @@ public abstract class RelationshipDefinition extends ModelElementInstanceImpl {
   protected static Attribute<String> idAttr;
   protected static AttributeReference<Animal> animalRef;
 
+  public RelationshipDefinition(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -49,10 +53,6 @@ public abstract class RelationshipDefinition extends ModelElementInstanceImpl {
             .build();
 
     typeBuilder.build();
-  }
-
-  public RelationshipDefinition(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public String getId() {

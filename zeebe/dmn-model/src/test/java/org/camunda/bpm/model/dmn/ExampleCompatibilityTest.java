@@ -52,6 +52,10 @@ public class ExampleCompatibilityTest extends DmnModelTest {
 
   private final DmnModelInstance originalModelInstance;
 
+  public ExampleCompatibilityTest(DmnModelInstance originalModelInstance) {
+    this.originalModelInstance = originalModelInstance;
+  }
+
   @Parameterized.Parameters(name = "Namespace: {0}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
@@ -86,10 +90,6 @@ public class ExampleCompatibilityTest extends DmnModelTest {
                 ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.5.dmn"))
           }
         });
-  }
-
-  public ExampleCompatibilityTest(DmnModelInstance originalModelInstance) {
-    this.originalModelInstance = originalModelInstance;
   }
 
   @Before

@@ -32,9 +32,9 @@ public class ElementReferenceCollectionBuilderImpl<
         Target extends ModelElementInstance, Source extends ModelElementInstance>
     implements ElementReferenceCollectionBuilder<Target, Source> {
 
+  protected ElementReferenceCollectionImpl<Target, Source> elementReferenceCollectionImpl;
   private final Class<Source> childElementType;
   private final Class<Target> referenceTargetClass;
-  protected ElementReferenceCollectionImpl<Target, Source> elementReferenceCollectionImpl;
 
   public ElementReferenceCollectionBuilderImpl(
       Class<Source> childElementType,

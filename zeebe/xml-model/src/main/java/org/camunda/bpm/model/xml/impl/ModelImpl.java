@@ -36,14 +36,14 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
  */
 public class ModelImpl implements Model {
 
+  protected final Map<String, Set<String>> actualNsToAlternative =
+      new HashMap<String, Set<String>>();
+  protected final Map<String, String> alternativeNsToActual = new HashMap<String, String>();
+
   private final Map<QName, ModelElementType> typesByName = new HashMap<QName, ModelElementType>();
   private final Map<Class<? extends ModelElementInstance>, ModelElementType> typesByClass =
       new HashMap<Class<? extends ModelElementInstance>, ModelElementType>();
   private final String modelName;
-
-  protected final Map<String, Set<String>> actualNsToAlternative =
-      new HashMap<String, Set<String>>();
-  protected final Map<String, String> alternativeNsToActual = new HashMap<String, String>();
 
   /**
    * Create a new {@link Model} with a model name.

@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.xml.type;
 
+import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
 import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.junit.Assert.fail;
 
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelInstance;

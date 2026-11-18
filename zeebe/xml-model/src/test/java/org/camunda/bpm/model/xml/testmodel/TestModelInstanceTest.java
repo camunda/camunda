@@ -16,9 +16,7 @@
  */
 package org.camunda.bpm.model.xml.testmodel;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.testmodel.instance.Animal;
@@ -42,8 +40,8 @@ public class TestModelInstanceTest {
     final ModelInstance cloneInstance = modelInstance.clone();
     getFirstAnimal(cloneInstance).setId("TestId2");
 
-    assertThat(getFirstAnimal(modelInstance).getId(), is(equalTo("TestId")));
-    assertThat(getFirstAnimal(cloneInstance).getId(), is(equalTo("TestId2")));
+    assertThat(getFirstAnimal(modelInstance).getId()).isEqualTo("TestId");
+    assertThat(getFirstAnimal(cloneInstance).getId()).isEqualTo("TestId2");
   }
 
   protected Animal getFirstAnimal(ModelInstance modelInstance) {

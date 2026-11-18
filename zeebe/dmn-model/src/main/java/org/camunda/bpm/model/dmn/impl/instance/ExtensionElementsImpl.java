@@ -34,6 +34,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 public class ExtensionElementsImpl extends DmnModelElementInstanceImpl
     implements ExtensionElements {
 
+  public ExtensionElementsImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -48,10 +52,6 @@ public class ExtensionElementsImpl extends DmnModelElementInstanceImpl
                 });
 
     typeBuilder.build();
-  }
-
-  public ExtensionElementsImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   public Collection<ModelElementInstance> getElements() {

@@ -48,6 +48,105 @@ import org.xml.sax.SAXParseException;
 public final class DomUtil {
 
   /**
+   * Allows to apply a {@link NodeListFilter} to a {@link NodeList}. This allows to remove all
+   * elements from a node list which do not match the Filter.
+   *
+   * @param nodeList the {@link NodeList} to filter
+   * @param filter the {@link NodeListFilter} to apply to the {@link NodeList}
+   * @return the List of all Nodes which match the filter
+   */
+  public static List<DomElement> filterNodeList(NodeList nodeList, NodeListFilter filter) {
+
+    final List<DomElement> filteredList = new ArrayList<DomElement>();
+    for (int i = 0; i < nodeList.getLength(); i++) {
+      final Node node = nodeList.item(i);
+      if (filter.matches(node)) {
+        filteredList.add(new DomElementImpl((Element) node));
+      }
+    }
+
+    return filteredList;
+  }
+
+  /**
+   * Filters a {@link NodeList} retaining all elements
+   *
+   * @param nodeList the the {@link NodeList} to filter
+   * @return the list of all elements
+   */
+  public static List<DomElement> filterNodeListForElements(NodeList nodeList) {
+    return filterNodeList(nodeList, new ElementNodeListFilter());
+  }
+
+  /**
+   * Filter a {@link NodeList} retaining all elements with a specific name
+   *
+   * @param nodeList the {@link NodeList} to filter
+   * @param namespaceUri the namespace for the elements
+   * @param localName the local element name to filter for
+   * @return the List of all Elements which match the filter
+   */
+  public static List<DomElement> filterNodeListByName(
+      NodeList nodeList, String namespaceUri, String localName) {
+    return filterNodeList(nodeList, new ElementByNameListFilter(localName, namespaceUri));
+  }
+
+  /**
+   * Filter a {@link NodeList} retaining all elements with a specific type
+   *
+   * @param nodeList the {@link NodeList} to filter
+   * @param modelInstance the model instance
+   * @param type the type class to filter for
+   * @return the list of all Elements which match the filter
+   */
+  public static List<DomElement> filterNodeListByType(
+      NodeList nodeList, ModelInstanceImpl modelInstance, Class<?> type) {
+    return filterNodeList(nodeList, new ElementByTypeListFilter(type, modelInstance));
+  }
+
+  /**
+   * Get an empty DOM document
+   *
+   * @param documentBuilderFactory the factory to build to DOM document
+   * @return the new empty document
+   * @throws ModelParseException if unable to create a new document
+   */
+  public static DomDocument getEmptyDocument(DocumentBuilderFactory documentBuilderFactory) {
+    try {
+      final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+      return new DomDocumentImpl(documentBuilder.newDocument());
+    } catch (ParserConfigurationException e) {
+      throw new ModelParseException("Unable to create a new document", e);
+    }
+  }
+
+  /**
+   * Create a new DOM document from the input stream
+   *
+   * @param documentBuilderFactory the factory to build to DOM document
+   * @param inputStream the input stream to parse
+   * @return the new DOM document
+   * @throws ModelParseException if a parsing or IO error is triggered
+   */
+  public static DomDocument parseInputStream(
+      DocumentBuilderFactory documentBuilderFactory, InputStream inputStream) {
+
+    try {
+      final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+      documentBuilder.setErrorHandler(new DomErrorHandler());
+      return new DomDocumentImpl(documentBuilder.parse(inputStream));
+    } catch (ParserConfigurationException e) {
+      throw new ModelParseException("ParserConfigurationException while parsing input stream", e);
+
+    } catch (SAXException e) {
+      throw new ModelParseException("SAXException while parsing input stream", e);
+
+    } catch (IOException e) {
+      throw new ModelParseException("IOException while parsing input stream", e);
+    }
+  }
+
+  /**
    * A {@link NodeListFilter} allows to filter a {@link NodeList}, retaining only elements in the
    * list which match the filter.
    *
@@ -116,63 +215,6 @@ public final class DomUtil {
     }
   }
 
-  /**
-   * Allows to apply a {@link NodeListFilter} to a {@link NodeList}. This allows to remove all
-   * elements from a node list which do not match the Filter.
-   *
-   * @param nodeList the {@link NodeList} to filter
-   * @param filter the {@link NodeListFilter} to apply to the {@link NodeList}
-   * @return the List of all Nodes which match the filter
-   */
-  public static List<DomElement> filterNodeList(NodeList nodeList, NodeListFilter filter) {
-
-    final List<DomElement> filteredList = new ArrayList<DomElement>();
-    for (int i = 0; i < nodeList.getLength(); i++) {
-      final Node node = nodeList.item(i);
-      if (filter.matches(node)) {
-        filteredList.add(new DomElementImpl((Element) node));
-      }
-    }
-
-    return filteredList;
-  }
-
-  /**
-   * Filters a {@link NodeList} retaining all elements
-   *
-   * @param nodeList the the {@link NodeList} to filter
-   * @return the list of all elements
-   */
-  public static List<DomElement> filterNodeListForElements(NodeList nodeList) {
-    return filterNodeList(nodeList, new ElementNodeListFilter());
-  }
-
-  /**
-   * Filter a {@link NodeList} retaining all elements with a specific name
-   *
-   * @param nodeList the {@link NodeList} to filter
-   * @param namespaceUri the namespace for the elements
-   * @param localName the local element name to filter for
-   * @return the List of all Elements which match the filter
-   */
-  public static List<DomElement> filterNodeListByName(
-      NodeList nodeList, String namespaceUri, String localName) {
-    return filterNodeList(nodeList, new ElementByNameListFilter(localName, namespaceUri));
-  }
-
-  /**
-   * Filter a {@link NodeList} retaining all elements with a specific type
-   *
-   * @param nodeList the {@link NodeList} to filter
-   * @param modelInstance the model instance
-   * @param type the type class to filter for
-   * @return the list of all Elements which match the filter
-   */
-  public static List<DomElement> filterNodeListByType(
-      NodeList nodeList, ModelInstanceImpl modelInstance, Class<?> type) {
-    return filterNodeList(nodeList, new ElementByTypeListFilter(type, modelInstance));
-  }
-
   public static class DomErrorHandler implements ErrorHandler {
 
     private static final Logger LOGGER = Logger.getLogger(DomErrorHandler.class.getName());
@@ -193,48 +235,6 @@ public final class DomUtil {
     public void fatalError(SAXParseException spe) throws SAXException {
       final String message = "Fatal Error: " + getParseExceptionInfo(spe);
       throw new SAXException(message);
-    }
-  }
-
-  /**
-   * Get an empty DOM document
-   *
-   * @param documentBuilderFactory the factory to build to DOM document
-   * @return the new empty document
-   * @throws ModelParseException if unable to create a new document
-   */
-  public static DomDocument getEmptyDocument(DocumentBuilderFactory documentBuilderFactory) {
-    try {
-      final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-      return new DomDocumentImpl(documentBuilder.newDocument());
-    } catch (ParserConfigurationException e) {
-      throw new ModelParseException("Unable to create a new document", e);
-    }
-  }
-
-  /**
-   * Create a new DOM document from the input stream
-   *
-   * @param documentBuilderFactory the factory to build to DOM document
-   * @param inputStream the input stream to parse
-   * @return the new DOM document
-   * @throws ModelParseException if a parsing or IO error is triggered
-   */
-  public static DomDocument parseInputStream(
-      DocumentBuilderFactory documentBuilderFactory, InputStream inputStream) {
-
-    try {
-      final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-      documentBuilder.setErrorHandler(new DomErrorHandler());
-      return new DomDocumentImpl(documentBuilder.parse(inputStream));
-    } catch (ParserConfigurationException e) {
-      throw new ModelParseException("ParserConfigurationException while parsing input stream", e);
-
-    } catch (SAXException e) {
-      throw new ModelParseException("SAXException while parsing input stream", e);
-
-    } catch (IOException e) {
-      throw new ModelParseException("IOException while parsing input stream", e);
     }
   }
 }

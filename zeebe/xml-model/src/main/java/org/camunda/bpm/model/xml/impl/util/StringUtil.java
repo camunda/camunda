@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  */
 public final class StringUtil {
 
-  private static final Pattern pattern = Pattern.compile("(\\w[^,]*)|([#$]\\{[^}]*})");
+  private static final Pattern PATTERN = Pattern.compile("(\\w[^,]*)|([#$]\\{[^}]*})");
 
   /**
    * Splits a comma separated list in to single Strings. The list can contain expressions with
@@ -41,7 +41,7 @@ public final class StringUtil {
     if (text == null || text.isEmpty()) {
       return Collections.emptyList();
     }
-    final Matcher matcher = pattern.matcher(text);
+    final Matcher matcher = PATTERN.matcher(text);
     final List<String> parts = new ArrayList<String>();
     while (matcher.find()) {
       parts.add(matcher.group().trim());

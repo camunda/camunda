@@ -130,6 +130,7 @@ public class Dmn {
    * the singleton instance of {@link Dmn}. If you want to customize the behavior of Dmn, replace
    * this instance with an instance of a custom subclass of {@link Dmn}.
    */
+  @SuppressWarnings("checkstyle:StaticVariableName")
   public static Dmn INSTANCE = new Dmn();
 
   /** the parser used by the Dmn implementation. */
@@ -139,6 +140,19 @@ public class Dmn {
 
   /** The {@link Model} */
   private Model dmnModel;
+
+  /** Register known types of the Dmn model */
+  protected Dmn() {
+    dmnModelBuilder = ModelBuilder.createInstance("DMN Model");
+    dmnModelBuilder.alternativeNamespace(DMN15_NS, DMN13_NS);
+    dmnModelBuilder.alternativeNamespace(DMN14_NS, DMN13_NS);
+    dmnModelBuilder.alternativeNamespace(DMN13_ALTERNATIVE_NS, DMN13_NS);
+    dmnModelBuilder.alternativeNamespace(DMN12_NS, DMN13_NS);
+    dmnModelBuilder.alternativeNamespace(DMN11_NS, DMN13_NS);
+    dmnModelBuilder.alternativeNamespace(DMN11_ALTERNATIVE_NS, DMN13_NS);
+    doRegisterTypes(dmnModelBuilder);
+    dmnModel = dmnModelBuilder.build();
+  }
 
   /**
    * Allows reading a {@link DmnModelInstance} from a File.
@@ -215,19 +229,6 @@ public class Dmn {
    */
   public static DmnModelInstance createEmptyModel() {
     return INSTANCE.doCreateEmptyModel();
-  }
-
-  /** Register known types of the Dmn model */
-  protected Dmn() {
-    dmnModelBuilder = ModelBuilder.createInstance("DMN Model");
-    dmnModelBuilder.alternativeNamespace(DMN15_NS, DMN13_NS);
-    dmnModelBuilder.alternativeNamespace(DMN14_NS, DMN13_NS);
-    dmnModelBuilder.alternativeNamespace(DMN13_ALTERNATIVE_NS, DMN13_NS);
-    dmnModelBuilder.alternativeNamespace(DMN12_NS, DMN13_NS);
-    dmnModelBuilder.alternativeNamespace(DMN11_NS, DMN13_NS);
-    dmnModelBuilder.alternativeNamespace(DMN11_ALTERNATIVE_NS, DMN13_NS);
-    doRegisterTypes(dmnModelBuilder);
-    dmnModel = dmnModelBuilder.build();
   }
 
   protected DmnModelInstance doReadModelFromFile(File file) {

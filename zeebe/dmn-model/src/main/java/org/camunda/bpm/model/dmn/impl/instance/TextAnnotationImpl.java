@@ -37,6 +37,10 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
 
   protected static ChildElement<Text> textChild;
 
+  public TextAnnotationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public String getTextFormat() {
     return textFormatAttribute.getValue(this);
   }
@@ -51,10 +55,6 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
 
   public void setText(Text text) {
     textChild.setChild(this, text);
-  }
-
-  public TextAnnotationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {

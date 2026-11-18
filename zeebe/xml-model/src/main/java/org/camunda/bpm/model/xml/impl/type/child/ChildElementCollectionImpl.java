@@ -38,17 +38,17 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance>
 
   protected final Class<T> childElementTypeClass;
 
-  /** the containing type of the collection */
-  private final ModelElementType parentElementType;
-
-  /** the minimal count of child elements in the collection */
-  private int minOccurs = 0;
-
   /**
    * the maximum count of child elements in the collection. An unbounded collection has a negative
    * maxOccurs.
    */
   protected int maxOccurs = -1;
+
+  /** the containing type of the collection */
+  private final ModelElementType parentElementType;
+
+  /** the minimal count of child elements in the collection */
+  private int minOccurs = 0;
 
   /** indicates whether this collection is mutable. */
   private boolean isMutable = true;

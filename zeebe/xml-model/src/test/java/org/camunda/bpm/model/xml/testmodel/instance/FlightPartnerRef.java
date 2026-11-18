@@ -30,6 +30,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class FlightPartnerRef extends ModelElementInstanceImpl {
 
+  public FlightPartnerRef(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -43,9 +47,5 @@ public class FlightPartnerRef extends ModelElementInstanceImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public FlightPartnerRef(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

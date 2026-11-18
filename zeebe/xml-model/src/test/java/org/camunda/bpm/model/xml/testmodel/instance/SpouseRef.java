@@ -29,6 +29,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class SpouseRef extends ModelElementInstanceImpl {
 
+  public SpouseRef(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -42,9 +46,5 @@ public class SpouseRef extends ModelElementInstanceImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public SpouseRef(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

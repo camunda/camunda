@@ -46,9 +46,9 @@ public abstract class AbstractModelParser {
       "javax.xml.accessExternalSchema";
   protected static final String JAXP_ACCESS_EXTERNAL_SCHEMA_ALL = "all";
 
-  private final DocumentBuilderFactory documentBuilderFactory;
   protected SchemaFactory schemaFactory;
   protected Map<String, Schema> schemas = new HashMap<>();
+  private final DocumentBuilderFactory documentBuilderFactory;
 
   protected AbstractModelParser() {
     final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -84,16 +84,19 @@ public abstract class AbstractModelParser {
     try {
       dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
     } catch (ParserConfigurationException ignored) {
+      // the parser implementation doesn't support this feature
     }
 
     try {
       dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     } catch (ParserConfigurationException ignored) {
+      // the parser implementation doesn't support this feature
     }
 
     try {
       dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
     } catch (ParserConfigurationException ignored) {
+      // the parser implementation doesn't support this feature
     }
 
     dbf.setXIncludeAware(false);

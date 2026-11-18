@@ -32,8 +32,8 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReferenceCollectionBuil
 public class AttributeReferenceCollectionBuilderImpl<T extends ModelElementInstance>
     implements AttributeReferenceCollectionBuilder<T>, ModelBuildOperation {
 
-  private final AttributeImpl<String> referenceSourceAttribute;
   protected AttributeReferenceCollection<T> attributeReferenceCollection;
+  private final AttributeImpl<String> referenceSourceAttribute;
   private final Class<T> referenceTargetElement;
 
   @SuppressWarnings({"unchecked", "rawtypes"})

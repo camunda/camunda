@@ -31,11 +31,12 @@ import org.junit.runners.Parameterized;
 public abstract class TestModelTest {
 
   protected final String testName;
-  private final ModelInstance testModelInstance;
-  private final AbstractModelParser modelParser;
 
   // cloned model instance for every test method (see subclasses)
   protected ModelInstance modelInstance;
+
+  private final ModelInstance testModelInstance;
+  private final AbstractModelParser modelParser;
 
   public TestModelTest(
       String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {

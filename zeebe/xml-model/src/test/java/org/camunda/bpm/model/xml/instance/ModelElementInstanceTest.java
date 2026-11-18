@@ -107,7 +107,7 @@ public class ModelElementInstanceTest extends TestModelTest {
   }
 
   @Test
-  public void TestElementType() {
+  public void testElementType() {
     final ModelElementType birdType = modelInstance.getModel().getType(Bird.class);
     assertThat(tweety.getElementType()).isEqualTo(birdType);
     assertThat(donald.getElementType()).isEqualTo(birdType);
@@ -116,7 +116,7 @@ public class ModelElementInstanceTest extends TestModelTest {
   }
 
   @Test
-  public void TestParentElement() {
+  public void testParentElement() {
     assertThat(tweety.getParentElement()).isEqualTo(animals);
     assertThat(donald.getParentElement()).isEqualTo(animals);
     assertThat(daisy.getParentElement()).isEqualTo(animals);
@@ -129,7 +129,7 @@ public class ModelElementInstanceTest extends TestModelTest {
   }
 
   @Test
-  public void TestModelInstance() {
+  public void testModelInstance() {
     assertThat(tweety.getModelInstance()).isEqualTo(modelInstance);
     assertThat(donald.getModelInstance()).isEqualTo(modelInstance);
     assertThat(daisy.getModelInstance()).isEqualTo(modelInstance);

@@ -57,6 +57,10 @@ public abstract class Animal extends ModelElementInstanceImpl {
   protected static ElementReferenceCollection<RelationshipDefinition, RelationshipDefinitionRef>
       relationshipDefinitionRefsColl;
 
+  public Animal(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -105,10 +109,6 @@ public abstract class Animal extends ModelElementInstanceImpl {
             .build();
 
     typeBuilder.build();
-  }
-
-  public Animal(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public String getId() {

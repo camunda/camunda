@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.xml.type.child;
 
+import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;

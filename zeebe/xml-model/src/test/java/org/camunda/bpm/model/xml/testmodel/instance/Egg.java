@@ -37,6 +37,10 @@ public class Egg extends ModelElementInstanceImpl {
   protected static ElementReference<Animal, Mother> motherRefChild;
   protected static ElementReferenceCollection<Animal, Guardian> guardianRefCollection;
 
+  public Egg(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -63,10 +67,6 @@ public class Egg extends ModelElementInstanceImpl {
             .build();
 
     typeBuilder.build();
-  }
-
-  public Egg(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public String getId() {

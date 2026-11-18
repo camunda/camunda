@@ -52,17 +52,17 @@ public class ModelElementInstanceImpl implements ModelElementInstance {
   /** the implementing model element type */
   private final ModelElementTypeImpl elementType;
 
+  public ModelElementInstanceImpl(ModelTypeInstanceContext instanceContext) {
+    this.domElement = instanceContext.getDomElement();
+    this.modelInstance = instanceContext.getModel();
+    this.elementType = instanceContext.getModelType();
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder.defineType(ModelElementInstance.class, "").abstractType();
 
     typeBuilder.build();
-  }
-
-  public ModelElementInstanceImpl(ModelTypeInstanceContext instanceContext) {
-    this.domElement = instanceContext.getDomElement();
-    this.modelInstance = instanceContext.getModel();
-    this.elementType = instanceContext.getModelType();
   }
 
   public DomElement getDomElement() {

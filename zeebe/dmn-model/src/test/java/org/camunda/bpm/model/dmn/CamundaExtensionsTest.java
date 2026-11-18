@@ -35,6 +35,10 @@ public class CamundaExtensionsTest {
   private final DmnModelInstance originalModelInstance;
   private DmnModelInstance modelInstance;
 
+  public CamundaExtensionsTest(DmnModelInstance originalModelInstance) {
+    this.originalModelInstance = originalModelInstance;
+  }
+
   @Parameters(name = "Namespace: {0}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
@@ -50,10 +54,6 @@ public class CamundaExtensionsTest {
                     "CamundaExtensionsCompatibilityTest.dmn"))
           }
         });
-  }
-
-  public CamundaExtensionsTest(DmnModelInstance originalModelInstance) {
-    this.originalModelInstance = originalModelInstance;
   }
 
   @Before

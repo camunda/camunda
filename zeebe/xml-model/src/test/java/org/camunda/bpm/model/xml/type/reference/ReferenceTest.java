@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.xml.type.reference;
 
+import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
@@ -177,7 +177,7 @@ public class ReferenceTest extends TestModelTest {
     final Collection<FlyingAnimal> flightPartners =
         Arrays.asList(new FlyingAnimal[] {birdo, daffy, daisy, plucky});
 
-    // directly test collection methods and not use the	appropriate assertion methods
+    // directly test collection methods and not use the appropriate assertion methods
     assertThat(referenceTargetElements.size()).isEqualTo(1);
     assertThat(referenceTargetElements.isEmpty()).isFalse();
     assertThat(referenceTargetElements.contains(daffy)).isTrue();

@@ -43,6 +43,10 @@ public class Bird extends FlyingAnimal {
   protected static Attribute<Boolean> canHazExtendedWings;
   protected static ChildElement<Wings> wings;
 
+  public Bird(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -74,10 +78,6 @@ public class Bird extends FlyingAnimal {
     wings = sequence.element(Wings.class).build();
 
     typeBuilder.build();
-  }
-
-  public Bird(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   public Collection<Egg> getEggs() {

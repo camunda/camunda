@@ -41,8 +41,8 @@ public class ChildElementCollectionBuilderImpl<T extends ModelElementInstance>
   /** The {@link ModelElementType} of the element containing the collection */
   protected final ModelElementTypeImpl parentElementType;
 
-  private final ChildElementCollectionImpl<T> collection;
   protected final Class<T> childElementType;
+  private final ChildElementCollectionImpl<T> collection;
 
   private ElementReferenceCollectionBuilder<?, ?> referenceBuilder;
 

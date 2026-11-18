@@ -47,7 +47,7 @@ public class ModelValidationResultsImpl implements ValidationResults {
 
   public ModelValidationResultsImpl(ValidationResults... validationResults) {
     collectedResults = new HashMap<>();
-    for (var entry : validationResults) {
+    for (final ValidationResults entry : validationResults) {
       collectedResults.putAll(entry.getResults());
       errorCount += entry.getErrorCount();
       warningCount += entry.getWarinigCount();
@@ -88,13 +88,14 @@ public class ModelValidationResultsImpl implements ValidationResults {
   public void write(StringWriter writer, ValidationResultFormatter formatter, int maxSize) {
     int printedCount = 0;
     int previousLength = 0;
-    for (var entry : collectedResults.entrySet()) {
-      final var element = entry.getKey();
-      final var results = entry.getValue();
+    for (final Entry<ModelElementInstance, List<ValidationResult>> entry :
+        collectedResults.entrySet()) {
+      final ModelElementInstance element = entry.getKey();
+      final List<ValidationResult> results = entry.getValue();
 
       formatter.formatElement(writer, element);
 
-      for (var result : results) {
+      for (final ValidationResult result : results) {
         formatter.formatResult(writer, result);
 
         // Size and Length are not necessarily the same, depending on the encoding of the string.
