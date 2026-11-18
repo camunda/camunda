@@ -7,13 +7,20 @@
 # they cannot emit "skipped" checks that would mask an in-progress benchmark from a
 # previous workflow run for the same PR.
 #
+# Two kinds of labels start different pipelines, each with its own matrix:
+#   regression-load-test-<storage>-<protocol>: one cluster at the SLO rate, compared with the daily run
+#                                              (camunda-pr-load-test.yaml)
+#   maximum-load-test-<storage>-<protocol>:    3 base and 3 PR clusters above capacity, medians compared
+#                                              (camunda-pr-maximum-load-test.yaml)
+#
 # Event -> matrix mapping:
 #   labeled:     single-entry matrix for the added DB
 #   unlabeled:   single-entry matrix for the removed DB (triggers cleanup)
 #   synchronize: all currently-labeled DBs (restarts all benchmarks)
 #   closed:      all currently-labeled DBs (cleanup for all)
 #
-# Job-level concurrency (keyed on matrix.db + matrix.protocol + PR) ensures:
+# Job-level concurrency (keyed on matrix.db + matrix.protocol + PR, one group per label kind:
+# pr-benchmark-* and pr-maximum-*) ensures:
 #   - adding/removing a label for one DB never cancels a benchmark for another DB
 #   - pushing a commit restarts each labeled DB's benchmark independently
 #   - unlabeling a DB cancels its in-progress run; the reusable pipeline then runs cleanup
@@ -45,6 +52,8 @@ jobs:
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
       any: ${{ steps.build.outputs.any }}
+      maximum-matrix: ${{ steps.build.outputs.maximum-matrix }}
+      maximum-any: ${{ steps.build.outputs.maximum-any }}
     steps:
       - id: build
         name: Build matrix from event
@@ -71,14 +80,31 @@ jobs:
             [regression-load-test-none-grpc]="none grpc"
           )
 
+          # Maximum load test label -> "<secondary-storage-type> <protocol> <offered PI/s>". The rate
+          # must stay above the capacity of the setup, otherwise a faster build is hidden because the
+          # offered rate is already sustained. Same setups as the regression labels, they have a daily
+          # run. The Elasticsearch rates are placeholders until the capacity of that setup is measured.
+          declare -A label_to_maximum=(
+            [maximum-load-test-none-rest]="none rest 900"
+            [maximum-load-test-none-grpc]="none grpc 900"
+            [maximum-load-test-elasticsearch-rest]="elasticsearch rest 450"
+            [maximum-load-test-elasticsearch-grpc]="elasticsearch grpc 450"
+          )
+
           entries=()
+          maximum_entries=()
           add_entry() {
             local label="$1"
             local setup="${label_to_setup[$label]:-}"
+            local maximum="${label_to_maximum[$label]:-}"
             if [[ -n "$setup" ]]; then
               local db protocol
               read -r db protocol <<< "$setup"
               entries+=("{\"label\":\"${label}\",\"db\":\"${db}\",\"protocol\":\"${protocol}\"}")
+            elif [[ -n "$maximum" ]]; then
+              local db protocol rate
+              read -r db protocol rate <<< "$maximum"
+              maximum_entries+=("{\"label\":\"${label}\",\"db\":\"${db}\",\"protocol\":\"${protocol}\",\"rate\":\"${rate}\"}")
             else
               echo "::warning title=Unknown Load Test Label::Label '$label' is not a recognized load test trigger. Ignoring."
             fi
@@ -108,9 +134,23 @@ jobs:
             any=true
           fi
 
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "any=$any" >> "$GITHUB_OUTPUT"
+          if (( ${#maximum_entries[@]} == 0 )); then
+            maximum_matrix='{"include":[]}'
+            maximum_any=false
+          else
+            joined=$(IFS=,; echo "${maximum_entries[*]}")
+            maximum_matrix="{\"include\":[${joined}]}"
+            maximum_any=true
+          fi
+
+          {
+            echo "matrix=$matrix"
+            echo "any=$any"
+            echo "maximum-matrix=$maximum_matrix"
+            echo "maximum-any=$maximum_any"
+          } >> "$GITHUB_OUTPUT"
           echo "Generated matrix: $matrix"
+          echo "Generated maximum matrix: $maximum_matrix"
 
   benchmark:
     name: Benchmark (${{ matrix.db }}, ${{ matrix.protocol }})
@@ -134,3 +174,25 @@ jobs:
       secondary-storage-type: ${{ matrix.db }}
       protocol: ${{ matrix.protocol }}
       ref: ${{ github.event.pull_request.head.ref }}
+
+  maximum:
+    name: Maximum (${{ matrix.db }}, ${{ matrix.protocol }})
+    needs: dispatch
+    if: needs.dispatch.outputs.maximum-any == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.dispatch.outputs.maximum-matrix) }}
+    concurrency:
+      group: pr-maximum-${{ matrix.db }}-${{ matrix.protocol }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      id-token: write # Teleport cluster auth
+      pull-requests: write # post the comparison comment
+    uses: ./.github/workflows/camunda-pr-maximum-load-test.yaml
+    secrets: inherit
+    with:
+      label: ${{ matrix.label }}
+      secondary-storage-type: ${{ matrix.db }}
+      protocol: ${{ matrix.protocol }}
+      rate: ${{ matrix.rate }}

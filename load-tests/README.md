@@ -454,6 +454,16 @@ Load tests started by labeling a PR will always run a stress test (no endurance 
 
 A new commit on the PR cancels the in-flight run — including mid-sleep waits — and redeploys fresh. This is handled by job-level concurrency in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml), keyed per-DB and per-PR.
 
+##### Maximum load test labels
+
+The regression label runs at a rate below the capacity, so it finds a regression but cannot show an improvement: a faster build is hidden because the offered rate is already sustained. To measure what a PR changes in the maximum throughput, label the PR with `maximum-load-test-<storage>-<protocol>` instead. Available for `none` and Elasticsearch, each with `rest` and `grpc`, for example `maximum-load-test-none-rest`. See the [maximum load test labels](https://github.com/camunda/camunda/labels?q=maximum-load-test-).
+
+The [workflow](../.github/workflows/camunda-pr-maximum-load-test.yaml) deploys 3 clusters from the merge-base with the base branch and 3 clusters from the PR head, all with the `max` scenario at a rate above the capacity of the setup. The rate per label is set in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml). After the same warmup and metrics window as above, [`.github/scripts/render-maximum-comparison.py`](../.github/scripts/render-maximum-comparison.py) posts one comment with the median and range of each side. Then all 6 namespaces are torn down.
+
+- **Smallest visible difference:** identical clusters at 900 PI/s differ by about 5%. With the median of 3 clusters per side only a change of roughly 10% or more shows, a smaller delta is reported as within noise.
+- **Outliers:** a cluster more than 15% from the median of its side in the completed PI/s is listed in the comment. Check it for a failover or a slow host before trusting the median.
+- **Cost:** 6 clusters run for about an hour, plus the image builds of both sides. Use it for changes that should move the throughput, not for every PR.
+
 #### Trigger Camunda load test GitHub workflow (recommended)
 
 The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support setting up load tests for different Camunda/Zeebe versions by selecting the specific workflow revision as part of the workflow dispatch form (UI).
@@ -497,7 +507,7 @@ If you need custom tuning, start with the closest `scenario` and then add target
 
 Select the `scenario` input in the workflow dispatch form:
 
-- `max`: artificial stress workload (currently `300` PI/s, or `650` PI/s with secondary storage `none`; an explicit `load-test-load` such as `--set load-tester.starter.rate=...` takes precedence) for stress and quick regression validation; this is the default ad-hoc option. The rate is below the capacity on purpose, see [regression test vs maximum test](../docs/testing/reliability-testing.md#regression-test-vs-maximum-test). To find the limit, run with a higher rate (for example `--set load-tester.starter.rate=900`). Keep the rate in `setup/common.mk` and `docs/scripts/optimal.json` together.
+- `max`: artificial stress workload (currently `300` PI/s, or `650` PI/s with secondary storage `none`; an explicit `load-test-load` such as `--set load-tester.starter.rate=...` takes precedence) for stress and quick regression validation; this is the default ad-hoc option. The rate is below the capacity on purpose, see [regression test vs maximum test](../docs/testing/reliability-testing.md#regression-test-vs-maximum-test). To find the limit, run with a higher rate (for example `--set load-tester.starter.rate=900`), or compare a PR with the base using a [maximum load test label](#maximum-load-test-labels). Keep the rate in `setup/common.mk` and `docs/scripts/optimal.json` together.
 - `realistic` — complex, customer-like workload with multi-instance activities, call activities, and DMN; use this for release-like validation and broader functional realism. See [realistic load](../docs/testing/reliability-testing.md#realistic-load).
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).
