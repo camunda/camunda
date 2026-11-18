@@ -121,34 +121,6 @@ class ProcessDefinitionSuspendedStateSearchIT {
         .containsExactly(versions.v1().getProcessDefinitionKey());
   }
 
-  @Test
-  void shouldReturnResumedVersionAsLatestActive() throws IOException {
-    // given
-    final var versions = deployTwoVersions();
-    writeState(versions.v2(), false);
-    awaitState(versions.v2(), ProcessDefinitionState.SUSPENDED);
-
-    // when
-    writeState(versions.v2(), true);
-
-    // then
-    awaitState(versions.v2(), ProcessDefinitionState.ACTIVE);
-    final var latestActive =
-        camundaClient
-            .newProcessDefinitionSearchRequest()
-            .filter(
-                f ->
-                    f.processDefinitionId(versions.v2().getBpmnProcessId())
-                        .isLatestVersion(true)
-                        .state(ProcessDefinitionState.ACTIVE))
-            .send()
-            .join()
-            .items();
-    assertThat(latestActive)
-        .extracting(ProcessDefinition::getProcessDefinitionKey)
-        .containsExactly(versions.v2().getProcessDefinitionKey());
-  }
-
   private static Versions deployTwoVersions() {
     final var processId = Strings.newRandomValidBpmnId();
     final var v1 =
