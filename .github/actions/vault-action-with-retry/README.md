@@ -23,16 +23,16 @@ See [Notes](#notes) for what that means when you edit this action.
 
 ### Inputs
 
-|  Input   |                        Description                         | Required | Default |
-|----------|------------------------------------------------------------|----------|---------|
-| url      | Vault URL                                                  | true     |         |
-| method   | Authentication method, `jwt` or the deprecated `approle`   | true     |         |
-| roleId   | Vault AppRole role ID                                      | false    |         |
-| secretId | Vault AppRole secret ID                                    | false    |         |
-| path | Vault JWT auth backend path | false | |
-| role | Vault JWT role | false | |
-| jwtGithubAudience | GitHub OIDC audience for the Vault JWT login | false | |
-| secrets  | Multi-line Vault secret mapping forwarded to the action    | true     |         |
+|       Input       |                       Description                        | Required | Default |
+|-------------------|----------------------------------------------------------|----------|---------|
+| url               | Vault URL                                                | true     |         |
+| method            | Authentication method, `jwt` or the deprecated `approle` | true     |         |
+| roleId            | Vault AppRole role ID                                    | false    |         |
+| secretId          | Vault AppRole secret ID                                  | false    |         |
+| path              | Vault JWT auth backend path                              | false    |         |
+| role              | Vault JWT role                                           | false    |         |
+| jwtGithubAudience | GitHub OIDC audience for the Vault JWT login             | false    |         |
+| secrets           | Multi-line Vault secret mapping forwarded to the action  | true     |         |
 
 ### Outputs
 
