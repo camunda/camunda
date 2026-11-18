@@ -22,9 +22,9 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**
  * @author Sebastian Menski
- *
  */
-public class QNameAttributeReferenceImpl<T extends ModelElementInstance> extends AttributeReferenceImpl<T> {
+public class QNameAttributeReferenceImpl<T extends ModelElementInstance>
+    extends AttributeReferenceImpl<T> {
 
   /**
    * Create a new QName reference outgoing from the reference source attribute
@@ -41,10 +41,8 @@ public class QNameAttributeReferenceImpl<T extends ModelElementInstance> extends
     if (identifier != null) {
       QName qName = QName.parseQName(identifier);
       return qName.getLocalName();
-    }
-    else {
+    } else {
       return null;
     }
   }
-
 }

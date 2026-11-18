@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_RELATION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.Column;
 import org.camunda.bpm.model.dmn.instance.Expression;
 import org.camunda.bpm.model.dmn.instance.Relation;
@@ -50,24 +49,24 @@ public class RelationImpl extends ExpressionImpl implements Relation {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Relation.class, DMN_ELEMENT_RELATION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Expression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Relation>() {
-        public Relation newInstance(ModelTypeInstanceContext instanceContext) {
-          return new RelationImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Relation.class, DMN_ELEMENT_RELATION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Expression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Relation>() {
+                  public Relation newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new RelationImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    columnCollection = sequenceBuilder.elementCollection(Column.class)
-      .build();
+    columnCollection = sequenceBuilder.elementCollection(Column.class).build();
 
-    rowCollection = sequenceBuilder.elementCollection(Row.class)
-      .build();
+    rowCollection = sequenceBuilder.elementCollection(Row.class).build();
 
     typeBuilder.build();
   }
-
 }

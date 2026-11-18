@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_INFORMATION_REQUIREMENT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.InformationRequirement;
@@ -31,7 +31,8 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.ElementReference;
 
-public class InformationRequirementImpl extends DmnModelElementInstanceImpl implements InformationRequirement {
+public class InformationRequirementImpl extends DmnModelElementInstanceImpl
+    implements InformationRequirement {
 
   protected static ElementReference<Decision, RequiredDecisionReference> requiredDecisionRef;
   protected static ElementReference<InputData, RequiredInputReference> requiredInputRef;
@@ -57,25 +58,32 @@ public class InformationRequirementImpl extends DmnModelElementInstanceImpl impl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(InformationRequirement.class, DMN_ELEMENT_INFORMATION_REQUIREMENT)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<InformationRequirement>() {
-        public InformationRequirement newInstance(ModelTypeInstanceContext instanceContext) {
-          return new InformationRequirementImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(InformationRequirement.class, DMN_ELEMENT_INFORMATION_REQUIREMENT)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<InformationRequirement>() {
+                  public InformationRequirement newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new InformationRequirementImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    requiredDecisionRef = sequenceBuilder.element(RequiredDecisionReference.class)
-      .uriElementReference(Decision.class)
-      .build();
+    requiredDecisionRef =
+        sequenceBuilder
+            .element(RequiredDecisionReference.class)
+            .uriElementReference(Decision.class)
+            .build();
 
-    requiredInputRef = sequenceBuilder.element(RequiredInputReference.class)
-      .uriElementReference(InputData.class)
-      .build();
+    requiredInputRef =
+        sequenceBuilder
+            .element(RequiredInputReference.class)
+            .uriElementReference(InputData.class)
+            .build();
 
     typeBuilder.build();
   }
-
 }

@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public class QuestionTest extends AbstractTextContentElementTest {
-
-}
+public class QuestionTest extends AbstractTextContentElementTest {}

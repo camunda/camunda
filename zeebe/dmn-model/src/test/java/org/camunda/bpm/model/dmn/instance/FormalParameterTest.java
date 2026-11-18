@@ -31,5 +31,4 @@ public class FormalParameterTest extends DmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

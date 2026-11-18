@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_SUPPORTED_OBJECT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.SupportedObjectiveReference;
@@ -26,23 +26,27 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class SupportedObjectiveReferenceImpl extends DmnElementReferenceImpl implements SupportedObjectiveReference {
+public class SupportedObjectiveReferenceImpl extends DmnElementReferenceImpl
+    implements SupportedObjectiveReference {
 
   public SupportedObjectiveReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(SupportedObjectiveReference.class, DMN_ELEMENT_SUPPORTED_OBJECT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<SupportedObjectiveReference>() {
-        public SupportedObjectiveReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new SupportedObjectiveReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(SupportedObjectiveReference.class, DMN_ELEMENT_SUPPORTED_OBJECT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<SupportedObjectiveReference>() {
+                  public SupportedObjectiveReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new SupportedObjectiveReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

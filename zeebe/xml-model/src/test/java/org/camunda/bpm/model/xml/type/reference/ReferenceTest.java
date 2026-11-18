@@ -16,6 +16,12 @@
  */
 package org.camunda.bpm.model.xml.type.reference;
 
+import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.UnsupportedModelOperationException;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
@@ -29,13 +35,6 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.Collection;
-
-import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author Sebastian Menski
@@ -54,11 +53,12 @@ public class ReferenceTest extends TestModelTest {
   private AttributeReferenceImpl<Animal> motherReference;
   private ElementReferenceCollection<FlyingAnimal, FlightPartnerRef> flightPartnerRefsColl;
 
-  public ReferenceTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public ReferenceTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(ReferenceTest.class)};
     return Arrays.asList(models);
@@ -81,7 +81,7 @@ public class ReferenceTest extends TestModelTest {
 
     tweety.getFlightPartnerRefs().add(daffy);
 
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -98,16 +98,23 @@ public class ReferenceTest extends TestModelTest {
     animalType = modelInstance.getModel().getType(Animal.class);
 
     // QName attribute reference
-    fatherReference = (QNameAttributeReferenceImpl<Animal>) animalType.getAttribute("father").getOutgoingReferences().iterator().next();
+    fatherReference =
+        (QNameAttributeReferenceImpl<Animal>)
+            animalType.getAttribute("father").getOutgoingReferences().iterator().next();
 
     // ID attribute reference
-    motherReference = (AttributeReferenceImpl<Animal>) animalType.getAttribute("mother").getOutgoingReferences().iterator().next();
+    motherReference =
+        (AttributeReferenceImpl<Animal>)
+            animalType.getAttribute("mother").getOutgoingReferences().iterator().next();
 
     // ID element reference
     flightPartnerRefsColl = FlyingAnimal.flightPartnerRefsColl;
 
-    ModelElementType flightPartnerRefType = modelInstance.getModel().getType(FlightPartnerRef.class);
-    flightPartnerRef = (FlightPartnerRef) modelInstance.getModelElementsByType(flightPartnerRefType).iterator().next();
+    ModelElementType flightPartnerRefType =
+        modelInstance.getModel().getType(FlightPartnerRef.class);
+    flightPartnerRef =
+        (FlightPartnerRef)
+            modelInstance.getModelElementsByType(flightPartnerRefType).iterator().next();
   }
 
   @Test
@@ -165,31 +172,28 @@ public class ReferenceTest extends TestModelTest {
 
   @Test
   public void testTargetElementsCollection() {
-    Collection<FlyingAnimal> referenceTargetElements = flightPartnerRefsColl.getReferenceTargetElements(tweety);
-    Collection<FlyingAnimal> flightPartners = Arrays.asList(new FlyingAnimal[]{birdo, daffy, daisy, plucky});
+    Collection<FlyingAnimal> referenceTargetElements =
+        flightPartnerRefsColl.getReferenceTargetElements(tweety);
+    Collection<FlyingAnimal> flightPartners =
+        Arrays.asList(new FlyingAnimal[] {birdo, daffy, daisy, plucky});
 
     // directly test collection methods and not use the	appropriate assertion methods
     assertThat(referenceTargetElements.size()).isEqualTo(1);
     assertThat(referenceTargetElements.isEmpty()).isFalse();
     assertThat(referenceTargetElements.contains(daffy)).isTrue();
-    assertThat(referenceTargetElements.toArray()).isEqualTo(new Object[]{daffy});
-    assertThat(referenceTargetElements.toArray(new FlyingAnimal[1])).isEqualTo(new FlyingAnimal[]{daffy});
+    assertThat(referenceTargetElements.toArray()).isEqualTo(new Object[] {daffy});
+    assertThat(referenceTargetElements.toArray(new FlyingAnimal[1]))
+        .isEqualTo(new FlyingAnimal[] {daffy});
 
     assertThat(referenceTargetElements.add(daisy)).isTrue();
-    assertThat(referenceTargetElements)
-      .hasSize(2)
-      .containsOnly(daffy, daisy);
+    assertThat(referenceTargetElements).hasSize(2).containsOnly(daffy, daisy);
 
     assertThat(referenceTargetElements.remove(daisy)).isTrue();
-    assertThat(referenceTargetElements)
-      .hasSize(1)
-      .containsOnly(daffy);
+    assertThat(referenceTargetElements).hasSize(1).containsOnly(daffy);
 
     assertThat(referenceTargetElements.addAll(flightPartners)).isTrue();
     assertThat(referenceTargetElements.containsAll(flightPartners)).isTrue();
-    assertThat(referenceTargetElements)
-      .hasSize(4)
-      .containsOnly(daffy, daisy, plucky, birdo);
+    assertThat(referenceTargetElements).hasSize(4).containsOnly(daffy, daisy, plucky, birdo);
 
     assertThat(referenceTargetElements.removeAll(flightPartners)).isTrue();
     assertThat(referenceTargetElements).isEmpty();
@@ -197,8 +201,7 @@ public class ReferenceTest extends TestModelTest {
     try {
       referenceTargetElements.retainAll(flightPartners);
       fail("retainAll method is not implemented");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       assertThat(e).isInstanceOf(UnsupportedModelOperationException.class);
     }
 
@@ -207,5 +210,4 @@ public class ReferenceTest extends TestModelTest {
     referenceTargetElements.clear();
     assertThat(referenceTargetElements).isEmpty();
   }
-
 }

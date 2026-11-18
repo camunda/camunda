@@ -31,5 +31,4 @@ public class InputValuesTest extends DmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

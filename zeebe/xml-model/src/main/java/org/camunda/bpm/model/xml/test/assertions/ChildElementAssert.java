@@ -24,7 +24,8 @@ import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 /**
  * @author Sebastian Menski
  */
-public class ChildElementAssert extends AbstractAssert<ChildElementAssert, ChildElementCollection<?>> {
+public class ChildElementAssert
+    extends AbstractAssert<ChildElementAssert, ChildElementCollection<?>> {
 
   private final Class<? extends ModelElementInstance> typeClass;
 
@@ -39,7 +40,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     int actualMinOccurs = actual.getMinOccurs();
 
     if (actualMinOccurs != minOccurs) {
-      failWithMessage("Expected child element <%s> to have a min occurs of <%s> but was <%s>", typeClass, minOccurs, actualMinOccurs);
+      failWithMessage(
+          "Expected child element <%s> to have a min occurs of <%s> but was <%s>",
+          typeClass, minOccurs, actualMinOccurs);
     }
 
     return this;
@@ -51,7 +54,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     int actualMaxOccurs = actual.getMaxOccurs();
 
     if (actualMaxOccurs != maxOccurs) {
-      failWithMessage("Expected child element <%s> to have a max occurs of <%s> but was <%s>", typeClass, maxOccurs, actualMaxOccurs);
+      failWithMessage(
+          "Expected child element <%s> to have a max occurs of <%s> but was <%s>",
+          typeClass, maxOccurs, actualMaxOccurs);
     }
 
     return this;
@@ -63,7 +68,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     int actualMinOccurs = actual.getMinOccurs();
 
     if (actualMinOccurs != 0) {
-      failWithMessage("Expected child element <%s> to be optional but has min occurs of <%s>", typeClass, actualMinOccurs);
+      failWithMessage(
+          "Expected child element <%s> to be optional but has min occurs of <%s>",
+          typeClass, actualMinOccurs);
     }
 
     return this;
@@ -75,7 +82,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     int actualMaxOccurs = actual.getMaxOccurs();
 
     if (actualMaxOccurs != -1) {
-      failWithMessage("Expected child element <%s> to be unbounded but has a max occurs of <%s>", typeClass, actualMaxOccurs);
+      failWithMessage(
+          "Expected child element <%s> to be unbounded but has a max occurs of <%s>",
+          typeClass, actualMaxOccurs);
     }
 
     return this;
@@ -105,13 +114,18 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     return this;
   }
 
-  public ChildElementAssert containsType(Class<? extends ModelElementInstance> childElementTypeClass) {
+  public ChildElementAssert containsType(
+      Class<? extends ModelElementInstance> childElementTypeClass) {
     isNotNull();
 
-    Class<? extends ModelElementInstance> actualChildElementTypeClass = actual.getChildElementTypeClass();
+    Class<? extends ModelElementInstance> actualChildElementTypeClass =
+        actual.getChildElementTypeClass();
 
     if (!childElementTypeClass.equals(actualChildElementTypeClass)) {
-      failWithMessage("Expected child element <%s> to contain elements of type <%s> but contains elements of type <%s>", typeClass, childElementTypeClass, actualChildElementTypeClass);
+      failWithMessage(
+          "Expected child element <%s> to contain elements of type <%s> but contains elements of"
+              + " type <%s>",
+          typeClass, childElementTypeClass, actualChildElementTypeClass);
     }
 
     return this;
@@ -123,7 +137,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     ModelElementType actualParentElementType = actual.getParentElementType();
 
     if (!parentElementType.equals(actualParentElementType)) {
-      failWithMessage("Expected child element <%s> to have parent element type <%s> but has <%s>", typeClass, parentElementType.getTypeName(), actualParentElementType.getTypeName());
+      failWithMessage(
+          "Expected child element <%s> to have parent element type <%s> but has <%s>",
+          typeClass, parentElementType.getTypeName(), actualParentElementType.getTypeName());
     }
 
     return this;
@@ -147,7 +163,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     int actualNumberOfChildElements = actual.get(instance).size();
 
     if (actualNumberOfChildElements != numberOfChildElements) {
-      failWithMessage("Expected child element <%s> to contain <%s> elements but has <%s>", typeClass, numberOfChildElements, actualNumberOfChildElements);
+      failWithMessage(
+          "Expected child element <%s> to contain <%s> elements but has <%s>",
+          typeClass, numberOfChildElements, actualNumberOfChildElements);
     }
 
     return this;
@@ -159,7 +177,9 @@ public class ChildElementAssert extends AbstractAssert<ChildElementAssert, Child
     int actualNumberOfChildElements = actual.get(instance).size();
 
     if (actualNumberOfChildElements > 0) {
-      failWithMessage("Expected child element <%s> to contain no elements but contains <%s> elements", typeClass, actualNumberOfChildElements);
+      failWithMessage(
+          "Expected child element <%s> to contain no elements but contains <%s> elements",
+          typeClass, actualNumberOfChildElements);
     }
 
     return this;

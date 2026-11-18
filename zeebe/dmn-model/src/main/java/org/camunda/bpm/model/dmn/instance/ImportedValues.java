@@ -25,5 +25,4 @@ public interface ImportedValues extends Import {
   ImportedElement getImportedElement();
 
   void setImportedElement(ImportedElement importedElement);
-
 }

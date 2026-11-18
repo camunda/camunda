@@ -29,5 +29,4 @@ public interface Import extends DmnModelElementInstance {
   String getImportType();
 
   void setImportType(String importType);
-
 }

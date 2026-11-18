@@ -26,13 +26,10 @@ public class ContextTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
-      new ChildElementAssumption(ContextEntry.class)
-    );
+    return Arrays.asList(new ChildElementAssumption(ContextEntry.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

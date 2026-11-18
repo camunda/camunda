@@ -16,6 +16,9 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
+
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
@@ -24,10 +27,6 @@ import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.ElementReference;
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
-
-import java.util.Collection;
 
 /**
  * @author Sebastian Menski
@@ -39,27 +38,29 @@ public class Egg extends ModelElementInstanceImpl {
   protected static ElementReferenceCollection<Animal, Guardian> guardianRefCollection;
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Egg.class, ELEMENT_NAME_EGG)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelElementTypeBuilder.ModelTypeInstanceProvider<Egg>() {
-        public Egg newInstance(ModelTypeInstanceContext instanceContext) {
-          return new Egg(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Egg.class, ELEMENT_NAME_EGG)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelElementTypeBuilder.ModelTypeInstanceProvider<Egg>() {
+                  public Egg newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new Egg(instanceContext);
+                  }
+                });
 
-    idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID)
-      .idAttribute()
-      .build();
+    idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID).idAttribute().build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    motherRefChild = sequenceBuilder.element(Mother.class)
-      .uriElementReference(Animal.class)
-      .build();
+    motherRefChild =
+        sequenceBuilder.element(Mother.class).uriElementReference(Animal.class).build();
 
-    guardianRefCollection = sequenceBuilder.elementCollection(Guardian.class)
-      .uriElementReferenceCollection(Animal.class)
-      .build();
+    guardianRefCollection =
+        sequenceBuilder
+            .elementCollection(Guardian.class)
+            .uriElementReferenceCollection(Animal.class)
+            .build();
 
     typeBuilder.build();
   }
@@ -99,5 +100,4 @@ public class Egg extends ModelElementInstanceImpl {
   public Collection<Guardian> getGuardianRefs() {
     return guardianRefCollection.getReferenceSourceCollection().get(this);
   }
-
 }

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.ModelValidationException;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
@@ -54,12 +53,12 @@ public class AnimalTest extends TestModelTest {
   private RelationshipDefinition timmyRelationship;
   private RelationshipDefinition daisyRelationship;
 
-  public AnimalTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public AnimalTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(AnimalTest.class)};
     return Arrays.asList(models);
@@ -84,13 +83,17 @@ public class AnimalTest extends TestModelTest {
     createBird(modelInstance, "daisy", Gender.Female);
 
     // create and add some relationships
-    RelationshipDefinition hedwigRelationship = createRelationshipDefinition(modelInstance, hedwig, ChildRelationshipDefinition.class);
+    RelationshipDefinition hedwigRelationship =
+        createRelationshipDefinition(modelInstance, hedwig, ChildRelationshipDefinition.class);
     addRelationshipDefinition(tweety, hedwigRelationship);
-    RelationshipDefinition birdoRelationship = createRelationshipDefinition(modelInstance, birdo, ChildRelationshipDefinition.class);
+    RelationshipDefinition birdoRelationship =
+        createRelationshipDefinition(modelInstance, birdo, ChildRelationshipDefinition.class);
     addRelationshipDefinition(tweety, birdoRelationship);
-    RelationshipDefinition pluckyRelationship = createRelationshipDefinition(modelInstance, plucky, FriendRelationshipDefinition.class);
+    RelationshipDefinition pluckyRelationship =
+        createRelationshipDefinition(modelInstance, plucky, FriendRelationshipDefinition.class);
     addRelationshipDefinition(tweety, pluckyRelationship);
-    RelationshipDefinition fiffyRelationship = createRelationshipDefinition(modelInstance, fiffy, FriendRelationshipDefinition.class);
+    RelationshipDefinition fiffyRelationship =
+        createRelationshipDefinition(modelInstance, fiffy, FriendRelationshipDefinition.class);
     addRelationshipDefinition(tweety, fiffyRelationship);
 
     tweety.getRelationshipDefinitionRefs().add(hedwigRelationship);
@@ -101,7 +104,7 @@ public class AnimalTest extends TestModelTest {
     tweety.getBestFriends().add(birdo);
     tweety.getBestFriends().add(plucky);
 
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -121,8 +124,10 @@ public class AnimalTest extends TestModelTest {
     pluckyRelationship = modelInstance.getModelElementById("tweety-plucky");
     fiffyRelationship = modelInstance.getModelElementById("tweety-fiffy");
 
-    timmyRelationship = createRelationshipDefinition(modelInstance, timmy, FriendRelationshipDefinition.class);
-    daisyRelationship = createRelationshipDefinition(modelInstance, daisy, ChildRelationshipDefinition.class);
+    timmyRelationship =
+        createRelationshipDefinition(modelInstance, timmy, FriendRelationshipDefinition.class);
+    daisyRelationship =
+        createRelationshipDefinition(modelInstance, daisy, ChildRelationshipDefinition.class);
   }
 
   @Test
@@ -280,8 +285,7 @@ public class AnimalTest extends TestModelTest {
     try {
       validateModel();
       fail("The model is invalid cause the gender of an animal is a required attribute.");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       assertThat(e).isInstanceOf(ModelValidationException.class);
     }
 
@@ -310,16 +314,22 @@ public class AnimalTest extends TestModelTest {
   @Test
   public void testAddRelationshipDefinitionsByHelper() {
     assertThat(tweety.getRelationshipDefinitions())
-      .isNotEmpty()
-      .hasSize(4)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
+        .isNotEmpty()
+        .hasSize(4)
+        .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
 
     tweety.getRelationshipDefinitions().add(timmyRelationship);
     tweety.getRelationshipDefinitions().add(daisyRelationship);
 
     assertThat(tweety.getRelationshipDefinitions())
-      .hasSize(6)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
+        .hasSize(6)
+        .containsOnly(
+            hedwigRelationship,
+            birdoRelationship,
+            pluckyRelationship,
+            fiffyRelationship,
+            timmyRelationship,
+            daisyRelationship);
   }
 
   @Test
@@ -327,8 +337,8 @@ public class AnimalTest extends TestModelTest {
     hedwigRelationship.setId("new-" + hedwigRelationship.getId());
     pluckyRelationship.setId("new-" + pluckyRelationship.getId());
     assertThat(tweety.getRelationshipDefinitions())
-      .hasSize(4)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
+        .hasSize(4)
+        .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
   }
 
   @Test
@@ -336,8 +346,8 @@ public class AnimalTest extends TestModelTest {
     birdoRelationship.setAttributeValue("id", "new-" + birdoRelationship.getId(), true);
     fiffyRelationship.setAttributeValue("id", "new-" + fiffyRelationship.getId(), true);
     assertThat(tweety.getRelationshipDefinitions())
-      .hasSize(4)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
+        .hasSize(4)
+        .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
   }
 
   @Test
@@ -345,8 +355,8 @@ public class AnimalTest extends TestModelTest {
     hedwigRelationship.replaceWithElement(timmyRelationship);
     pluckyRelationship.replaceWithElement(daisyRelationship);
     assertThat(tweety.getRelationshipDefinitions())
-      .hasSize(4)
-      .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
+        .hasSize(4)
+        .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
   }
 
   @Test
@@ -354,8 +364,8 @@ public class AnimalTest extends TestModelTest {
     tweety.getRelationshipDefinitions().remove(birdoRelationship);
     tweety.getRelationshipDefinitions().remove(fiffyRelationship);
     assertThat(tweety.getRelationshipDefinitions())
-      .hasSize(2)
-      .containsOnly(hedwigRelationship, pluckyRelationship);
+        .hasSize(2)
+        .containsOnly(hedwigRelationship, pluckyRelationship);
   }
 
   @Test
@@ -367,9 +377,9 @@ public class AnimalTest extends TestModelTest {
   @Test
   public void testAddRelationsDefinitionRefsByHelper() {
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .isNotEmpty()
-      .hasSize(4)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
+        .isNotEmpty()
+        .hasSize(4)
+        .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
 
     addRelationshipDefinition(tweety, timmyRelationship);
     addRelationshipDefinition(tweety, daisyRelationship);
@@ -377,9 +387,15 @@ public class AnimalTest extends TestModelTest {
     tweety.getRelationshipDefinitionRefs().add(daisyRelationship);
 
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .isNotEmpty()
-      .hasSize(6)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
+        .isNotEmpty()
+        .hasSize(6)
+        .containsOnly(
+            hedwigRelationship,
+            birdoRelationship,
+            pluckyRelationship,
+            fiffyRelationship,
+            timmyRelationship,
+            daisyRelationship);
   }
 
   @Test
@@ -387,8 +403,8 @@ public class AnimalTest extends TestModelTest {
     hedwigRelationship.setId("child-relationship");
     pluckyRelationship.setId("friend-relationship");
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(4)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
+        .hasSize(4)
+        .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
   }
 
   @Test
@@ -396,8 +412,8 @@ public class AnimalTest extends TestModelTest {
     birdoRelationship.setAttributeValue("id", "birdo-relationship", true);
     fiffyRelationship.setAttributeValue("id", "fiffy-relationship", true);
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(4)
-      .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
+        .hasSize(4)
+        .containsOnly(hedwigRelationship, birdoRelationship, pluckyRelationship, fiffyRelationship);
   }
 
   @Test
@@ -405,8 +421,8 @@ public class AnimalTest extends TestModelTest {
     hedwigRelationship.replaceWithElement(timmyRelationship);
     pluckyRelationship.replaceWithElement(daisyRelationship);
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(4)
-      .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
+        .hasSize(4)
+        .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
   }
 
   @Test
@@ -414,8 +430,8 @@ public class AnimalTest extends TestModelTest {
     tweety.getRelationshipDefinitions().remove(birdoRelationship);
     tweety.getRelationshipDefinitions().remove(fiffyRelationship);
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(2)
-      .containsOnly(hedwigRelationship, pluckyRelationship);
+        .hasSize(2)
+        .containsOnly(hedwigRelationship, pluckyRelationship);
   }
 
   @Test
@@ -423,8 +439,8 @@ public class AnimalTest extends TestModelTest {
     birdoRelationship.removeAttribute("id");
     pluckyRelationship.removeAttribute("id");
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(2)
-      .containsOnly(hedwigRelationship, fiffyRelationship);
+        .hasSize(2)
+        .containsOnly(hedwigRelationship, fiffyRelationship);
   }
 
   @Test
@@ -446,29 +462,30 @@ public class AnimalTest extends TestModelTest {
 
   @Test
   public void testAddRelationshipDefinitionRefElementsByHelper() {
-    assertThat(tweety.getRelationshipDefinitionRefElements())
-      .isNotEmpty()
-      .hasSize(4);
+    assertThat(tweety.getRelationshipDefinitionRefElements()).isNotEmpty().hasSize(4);
 
     addRelationshipDefinition(tweety, timmyRelationship);
-    RelationshipDefinitionRef timmyRelationshipDefinitionRef = modelInstance.newInstance(RelationshipDefinitionRef.class);
+    RelationshipDefinitionRef timmyRelationshipDefinitionRef =
+        modelInstance.newInstance(RelationshipDefinitionRef.class);
     timmyRelationshipDefinitionRef.setTextContent(timmyRelationship.getId());
     tweety.getRelationshipDefinitionRefElements().add(timmyRelationshipDefinitionRef);
 
     addRelationshipDefinition(tweety, daisyRelationship);
-    RelationshipDefinitionRef daisyRelationshipDefinitionRef = modelInstance.newInstance(RelationshipDefinitionRef.class);
+    RelationshipDefinitionRef daisyRelationshipDefinitionRef =
+        modelInstance.newInstance(RelationshipDefinitionRef.class);
     daisyRelationshipDefinitionRef.setTextContent(daisyRelationship.getId());
     tweety.getRelationshipDefinitionRefElements().add(daisyRelationshipDefinitionRef);
 
     assertThat(tweety.getRelationshipDefinitionRefElements())
-      .isNotEmpty()
-      .hasSize(6)
-      .contains(timmyRelationshipDefinitionRef, daisyRelationshipDefinitionRef);
+        .isNotEmpty()
+        .hasSize(6)
+        .contains(timmyRelationshipDefinitionRef, daisyRelationshipDefinitionRef);
   }
 
   @Test
   public void testRelationshipDefinitionRefElementsByTextContent() {
-    Collection<RelationshipDefinitionRef> relationshipDefinitionRefElements = tweety.getRelationshipDefinitionRefElements();
+    Collection<RelationshipDefinitionRef> relationshipDefinitionRefElements =
+        tweety.getRelationshipDefinitionRefElements();
     Collection<String> textContents = new ArrayList<String>();
     for (RelationshipDefinitionRef relationshipDefinitionRef : relationshipDefinitionRefElements) {
       String textContent = relationshipDefinitionRef.getTextContent();
@@ -476,14 +493,19 @@ public class AnimalTest extends TestModelTest {
       textContents.add(textContent);
     }
     assertThat(textContents)
-      .isNotEmpty()
-      .hasSize(4)
-      .containsOnly(hedwigRelationship.getId(), birdoRelationship.getId(), pluckyRelationship.getId(), fiffyRelationship.getId());
+        .isNotEmpty()
+        .hasSize(4)
+        .containsOnly(
+            hedwigRelationship.getId(),
+            birdoRelationship.getId(),
+            pluckyRelationship.getId(),
+            fiffyRelationship.getId());
   }
 
   @Test
   public void testUpdateRelationshipDefinitionRefElementsByTextContent() {
-    List<RelationshipDefinitionRef> relationshipDefinitionRefs = new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
+    List<RelationshipDefinitionRef> relationshipDefinitionRefs =
+        new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
 
     addRelationshipDefinition(tweety, timmyRelationship);
     relationshipDefinitionRefs.get(0).setTextContent(timmyRelationship.getId());
@@ -492,13 +514,14 @@ public class AnimalTest extends TestModelTest {
     relationshipDefinitionRefs.get(2).setTextContent(daisyRelationship.getId());
 
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(4)
-      .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
+        .hasSize(4)
+        .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
   }
 
   @Test
   public void testUpdateRelationshipDefinitionRefElementsByTextContentWithNamespace() {
-    List<RelationshipDefinitionRef> relationshipDefinitionRefs = new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
+    List<RelationshipDefinitionRef> relationshipDefinitionRefs =
+        new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
 
     addRelationshipDefinition(tweety, timmyRelationship);
     relationshipDefinitionRefs.get(0).setTextContent("tns:" + timmyRelationship.getId());
@@ -507,18 +530,19 @@ public class AnimalTest extends TestModelTest {
     relationshipDefinitionRefs.get(2).setTextContent("tns:" + daisyRelationship.getId());
 
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(4)
-      .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
+        .hasSize(4)
+        .containsOnly(birdoRelationship, fiffyRelationship, timmyRelationship, daisyRelationship);
   }
 
   @Test
   public void testUpdateRelationshipDefinitionRefElementsByRemoveElements() {
-    List<RelationshipDefinitionRef> relationshipDefinitionRefs = new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
+    List<RelationshipDefinitionRef> relationshipDefinitionRefs =
+        new ArrayList<RelationshipDefinitionRef>(tweety.getRelationshipDefinitionRefElements());
     tweety.getRelationshipDefinitionRefElements().remove(relationshipDefinitionRefs.get(1));
     tweety.getRelationshipDefinitionRefElements().remove(relationshipDefinitionRefs.get(3));
     assertThat(tweety.getRelationshipDefinitionRefs())
-      .hasSize(2)
-      .containsOnly(hedwigRelationship, pluckyRelationship);
+        .hasSize(2)
+        .containsOnly(hedwigRelationship, pluckyRelationship);
   }
 
   @Test
@@ -527,9 +551,7 @@ public class AnimalTest extends TestModelTest {
     assertThat(tweety.getRelationshipDefinitionRefElements()).isEmpty();
     assertThat(tweety.getRelationshipDefinitionRefs()).isEmpty();
     // should not affect animal relationship definitions
-    assertThat(tweety.getRelationshipDefinitions())
-      .isNotEmpty()
-      .hasSize(4);
+    assertThat(tweety.getRelationshipDefinitions()).isNotEmpty().hasSize(4);
   }
 
   @Test
@@ -538,9 +560,7 @@ public class AnimalTest extends TestModelTest {
     assertThat(tweety.getRelationshipDefinitionRefs()).isEmpty();
     assertThat(tweety.getRelationshipDefinitionRefElements()).isEmpty();
     // should not affect animal relationship definitions
-    assertThat(tweety.getRelationshipDefinitions())
-      .isNotEmpty()
-      .hasSize(4);
+    assertThat(tweety.getRelationshipDefinitions()).isNotEmpty().hasSize(4);
   }
 
   @Test
@@ -556,10 +576,7 @@ public class AnimalTest extends TestModelTest {
   public void testGetBestFriends() {
     Collection<Animal> bestFriends = tweety.getBestFriends();
 
-    assertThat(bestFriends)
-      .isNotEmpty()
-      .hasSize(2)
-      .containsOnly(birdo, plucky);
+    assertThat(bestFriends).isNotEmpty().hasSize(2).containsOnly(birdo, plucky);
   }
 
   @Test
@@ -568,10 +585,7 @@ public class AnimalTest extends TestModelTest {
 
     Collection<Animal> bestFriends = tweety.getBestFriends();
 
-    assertThat(bestFriends)
-      .isNotEmpty()
-      .hasSize(3)
-      .containsOnly(birdo, plucky, daisy);
+    assertThat(bestFriends).isNotEmpty().hasSize(3).containsOnly(birdo, plucky, daisy);
   }
 
   @Test
@@ -580,10 +594,7 @@ public class AnimalTest extends TestModelTest {
 
     Collection<Animal> bestFriends = tweety.getBestFriends();
 
-    assertThat(bestFriends)
-      .isNotEmpty()
-      .hasSize(1)
-      .containsOnly(birdo);
+    assertThat(bestFriends).isNotEmpty().hasSize(1).containsOnly(birdo);
   }
 
   @Test
@@ -592,8 +603,7 @@ public class AnimalTest extends TestModelTest {
 
     Collection<Animal> bestFriends = tweety.getBestFriends();
 
-    assertThat(bestFriends)
-      .isEmpty();
+    assertThat(bestFriends).isEmpty();
   }
 
   @Test
@@ -602,13 +612,10 @@ public class AnimalTest extends TestModelTest {
 
     Collection<Animal> bestFriends = tweety.getBestFriends();
 
-    assertThat(bestFriends)
-      .isEmpty();
+    assertThat(bestFriends).isEmpty();
 
     bestFriends.add(daisy);
 
-    assertThat(bestFriends)
-      .hasSize(1)
-      .containsOnly(daisy);
+    assertThat(bestFriends).hasSize(1).containsOnly(daisy);
   }
 }

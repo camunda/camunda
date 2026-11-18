@@ -50,5 +50,4 @@ public class TestModelInstanceTest {
     Animals animals = (Animals) modelInstance.getDocumentElement();
     return animals.getAnimals().iterator().next();
   }
-
 }

@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_HREF;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_REFERENCE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.xml.ModelBuilder;
@@ -27,7 +27,8 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-public class DmnElementReferenceImpl extends DmnModelElementInstanceImpl implements DmnElementReference {
+public class DmnElementReferenceImpl extends DmnModelElementInstanceImpl
+    implements DmnElementReference {
 
   protected static Attribute<String> hrefAttribute;
 
@@ -44,19 +45,19 @@ public class DmnElementReferenceImpl extends DmnModelElementInstanceImpl impleme
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DmnElementReference.class, DMN_ELEMENT_REFERENCE)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<DmnElementReference>() {
-        public DmnElementReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DmnElementReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DmnElementReference.class, DMN_ELEMENT_REFERENCE)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<DmnElementReference>() {
+                  public DmnElementReference newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new DmnElementReferenceImpl(instanceContext);
+                  }
+                });
 
-    hrefAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_HREF)
-      .required()
-      .build();
+    hrefAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_HREF).required().build();
 
     typeBuilder.build();
   }
-
 }

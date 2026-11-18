@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_EXPRESSION_LANGUAGE;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_UNARY_TESTS;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElement;
 import org.camunda.bpm.model.dmn.instance.Text;
@@ -58,24 +58,25 @@ public class UnaryTestsImpl extends DmnElementImpl implements UnaryTests {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(UnaryTests.class, DMN_ELEMENT_UNARY_TESTS)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<UnaryTests>() {
-        public UnaryTests newInstance(ModelTypeInstanceContext instanceContext) {
-          return new UnaryTestsImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(UnaryTests.class, DMN_ELEMENT_UNARY_TESTS)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<UnaryTests>() {
+                  public UnaryTests newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new UnaryTestsImpl(instanceContext);
+                  }
+                });
 
-    expressionLanguageAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_EXPRESSION_LANGUAGE)
-      .build();
+    expressionLanguageAttribute =
+        typeBuilder.stringAttribute(DMN_ATTRIBUTE_EXPRESSION_LANGUAGE).build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    textChild = sequenceBuilder.element(Text.class)
-      .build();
+    textChild = sequenceBuilder.element(Text.class).build();
 
     typeBuilder.build();
   }
-
 }

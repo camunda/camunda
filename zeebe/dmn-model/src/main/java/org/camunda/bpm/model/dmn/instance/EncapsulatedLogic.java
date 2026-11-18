@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface EncapsulatedLogic extends FunctionDefinition {
-
-}
+public interface EncapsulatedLogic extends FunctionDefinition {}

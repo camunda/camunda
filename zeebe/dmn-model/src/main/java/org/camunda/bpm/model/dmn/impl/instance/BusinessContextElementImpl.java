@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_URI;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_BUSINESS_CONTEXT_ELEMENT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.BusinessContextElement;
 import org.camunda.bpm.model.dmn.instance.NamedElement;
@@ -27,7 +27,8 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-public abstract class BusinessContextElementImpl extends NamedElementImpl implements BusinessContextElement {
+public abstract class BusinessContextElementImpl extends NamedElementImpl
+    implements BusinessContextElement {
 
   protected static Attribute<String> uriAttribute;
 
@@ -44,15 +45,15 @@ public abstract class BusinessContextElementImpl extends NamedElementImpl implem
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(BusinessContextElement.class, DMN_ELEMENT_BUSINESS_CONTEXT_ELEMENT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(NamedElement.class)
-      .abstractType();
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(BusinessContextElement.class, DMN_ELEMENT_BUSINESS_CONTEXT_ELEMENT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(NamedElement.class)
+            .abstractType();
 
-    uriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_URI)
-      .build();
+    uriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_URI).build();
 
     typeBuilder.build();
   }
-
 }

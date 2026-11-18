@@ -22,14 +22,16 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 /**
  * @author Sebastian Menski
  */
-public interface ElementReference<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceCollection<Target, Source> {
+public interface ElementReference<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollection<Target, Source> {
 
   Source getReferenceSource(ModelElementInstance referenceSourceParent);
 
   Target getReferenceTargetElement(ModelElementInstanceImpl referenceSourceParentElement);
 
-  void setReferenceTargetElement(ModelElementInstanceImpl referenceSourceParentElement, Target referenceTargetElement);
+  void setReferenceTargetElement(
+      ModelElementInstanceImpl referenceSourceParentElement, Target referenceTargetElement);
 
   void clearReferenceTargetElement(ModelElementInstanceImpl referenceSourceParentElement);
-
 }

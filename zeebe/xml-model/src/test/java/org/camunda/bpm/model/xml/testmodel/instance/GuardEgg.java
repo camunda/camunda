@@ -32,15 +32,17 @@ public class GuardEgg extends ModelElementInstanceImpl {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(GuardEgg.class, ELEMENT_NAME_GUARD_EGG)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<GuardEgg>() {
-        public GuardEgg newInstance(ModelTypeInstanceContext instanceContext) {
-          return new GuardEgg(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(GuardEgg.class, ELEMENT_NAME_GUARD_EGG)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<GuardEgg>() {
+                  public GuardEgg newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new GuardEgg(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

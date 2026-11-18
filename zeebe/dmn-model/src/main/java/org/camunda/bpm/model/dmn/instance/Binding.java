@@ -25,5 +25,4 @@ public interface Binding extends DmnModelElementInstance {
   Expression getExpression();
 
   void setExpression(Expression expression);
-
 }

@@ -25,7 +25,8 @@ import org.junit.ClassRule;
 public abstract class DmnModelElementInstanceTest extends AbstractModelElementInstanceTest {
 
   @ClassRule
-  public static final GetDmnModelElementTypeRule modelElementTypeRule = new GetDmnModelElementTypeRule();
+  public static final GetDmnModelElementTypeRule modelElementTypeRule =
+      new GetDmnModelElementTypeRule();
 
   @BeforeClass
   public static void initModelElementType() {
@@ -35,5 +36,4 @@ public abstract class DmnModelElementInstanceTest extends AbstractModelElementIn
   public String getDefaultNamespace() {
     return DmnModelConstants.LATEST_DMN_NS;
   }
-
 }

@@ -16,6 +16,14 @@
  */
 package org.camunda.bpm.model.xml.impl.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.DomDocumentImpl;
@@ -30,29 +38,18 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
 /**
- * Helper methods which abstract some gruesome DOM specifics.
- * It does not provide synchronization when invoked in parallel with
- * the same objects.
+ * Helper methods which abstract some gruesome DOM specifics. It does not provide synchronization
+ * when invoked in parallel with the same objects.
  *
  * @author Daniel Meyer
  * @author Sebastian Menski
- *
  */
 public final class DomUtil {
 
   /**
-   * A {@link NodeListFilter} allows to filter a {@link NodeList},
-   * retaining only elements in the list which match the filter.
+   * A {@link NodeListFilter} allows to filter a {@link NodeList}, retaining only elements in the
+   * list which match the filter.
    *
    * @see DomUtil#filterNodeList(NodeList, NodeListFilter)
    */
@@ -65,25 +62,17 @@ public final class DomUtil {
      * @return true if the filter does match the node, false otherwise
      */
     boolean matches(Node node);
-
   }
 
-  /**
-   * Filter retaining only Nodes of type {@link Node#ELEMENT_NODE}
-   *
-   */
+  /** Filter retaining only Nodes of type {@link Node#ELEMENT_NODE} */
   public static class ElementNodeListFilter implements NodeListFilter {
 
     public boolean matches(Node node) {
       return node.getNodeType() == Node.ELEMENT_NODE;
     }
-
   }
 
-  /**
-   * Filters {@link Element Elements} by their nodeName + namespaceUri
-   *
-   */
+  /** Filters {@link Element Elements} by their nodeName + namespaceUri */
   public static class ElementByNameListFilter extends ElementNodeListFilter {
 
     private final String localName;
@@ -100,11 +89,10 @@ public final class DomUtil {
 
     @Override
     public boolean matches(Node node) {
-     return super.matches(node)
-        && localName.equals(node.getLocalName())
-        && namespaceUri.equals(node.getNamespaceURI());
+      return super.matches(node)
+          && localName.equals(node.getLocalName())
+          && namespaceUri.equals(node.getNamespaceURI());
     }
-
   }
 
   public static class ElementByTypeListFilter extends ElementNodeListFilter {
@@ -113,22 +101,24 @@ public final class DomUtil {
     private final ModelInstanceImpl model;
 
     public ElementByTypeListFilter(Class<?> type, ModelInstanceImpl modelInstance) {
-      this.type =  type;
+      this.type = type;
       this.model = modelInstance;
     }
 
     @Override
     public boolean matches(Node node) {
-      if (! super.matches(node)) {
+      if (!super.matches(node)) {
         return false;
       }
-      ModelElementInstance modelElement = ModelUtil.getModelElement(new DomElementImpl((Element) node), model);
+      ModelElementInstance modelElement =
+          ModelUtil.getModelElement(new DomElementImpl((Element) node), model);
       return type.isAssignableFrom(modelElement.getClass());
     }
   }
 
   /**
-   * Allows to apply a {@link NodeListFilter} to a {@link NodeList}. This allows to remove all elements from a node list which do not match the Filter.
+   * Allows to apply a {@link NodeListFilter} to a {@link NodeList}. This allows to remove all
+   * elements from a node list which do not match the Filter.
    *
    * @param nodeList the {@link NodeList} to filter
    * @param filter the {@link NodeListFilter} to apply to the {@link NodeList}
@@ -137,21 +127,20 @@ public final class DomUtil {
   public static List<DomElement> filterNodeList(NodeList nodeList, NodeListFilter filter) {
 
     List<DomElement> filteredList = new ArrayList<DomElement>();
-    for(int i = 0; i< nodeList.getLength(); i++) {
+    for (int i = 0; i < nodeList.getLength(); i++) {
       Node node = nodeList.item(i);
-      if(filter.matches(node)) {
+      if (filter.matches(node)) {
         filteredList.add(new DomElementImpl((Element) node));
       }
     }
 
     return filteredList;
-
   }
 
   /**
    * Filters a {@link NodeList} retaining all elements
    *
-   * @param nodeList  the the {@link NodeList} to filter
+   * @param nodeList the the {@link NodeList} to filter
    * @return the list of all elements
    */
   public static List<DomElement> filterNodeListForElements(NodeList nodeList) {
@@ -161,26 +150,26 @@ public final class DomUtil {
   /**
    * Filter a {@link NodeList} retaining all elements with a specific name
    *
-   *
    * @param nodeList the {@link NodeList} to filter
    * @param namespaceUri the namespace for the elements
    * @param localName the local element name to filter for
    * @return the List of all Elements which match the filter
    */
-  public static List<DomElement> filterNodeListByName(NodeList nodeList, String namespaceUri, String localName) {
+  public static List<DomElement> filterNodeListByName(
+      NodeList nodeList, String namespaceUri, String localName) {
     return filterNodeList(nodeList, new ElementByNameListFilter(localName, namespaceUri));
   }
 
   /**
    * Filter a {@link NodeList} retaining all elements with a specific type
    *
-   *
-   * @param nodeList  the {@link NodeList} to filter
-   * @param modelInstance  the model instance
-   * @param type  the type class to filter for
+   * @param nodeList the {@link NodeList} to filter
+   * @param modelInstance the model instance
+   * @param type the type class to filter for
    * @return the list of all Elements which match the filter
    */
-  public static List<DomElement> filterNodeListByType(NodeList nodeList, ModelInstanceImpl modelInstance, Class<?> type) {
+  public static List<DomElement> filterNodeListByType(
+      NodeList nodeList, ModelInstanceImpl modelInstance, Class<?> type) {
     return filterNodeList(nodeList, new ElementByTypeListFilter(type, modelInstance));
   }
 
@@ -189,8 +178,7 @@ public final class DomUtil {
     private static final Logger LOGGER = Logger.getLogger(DomErrorHandler.class.getName());
 
     private String getParseExceptionInfo(SAXParseException spe) {
-      return "URI=" + spe.getSystemId() + " Line="
-        + spe.getLineNumber() + ": " + spe.getMessage();
+      return "URI=" + spe.getSystemId() + " Line=" + spe.getLineNumber() + ": " + spe.getMessage();
     }
 
     public void warning(SAXParseException spe) {
@@ -232,7 +220,8 @@ public final class DomUtil {
    * @return the new DOM document
    * @throws ModelParseException if a parsing or IO error is triggered
    */
-  public static DomDocument parseInputStream(DocumentBuilderFactory documentBuilderFactory, InputStream inputStream) {
+  public static DomDocument parseInputStream(
+      DocumentBuilderFactory documentBuilderFactory, InputStream inputStream) {
 
     try {
       DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -246,8 +235,6 @@ public final class DomUtil {
 
     } catch (IOException e) {
       throw new ModelParseException("IOException while parsing input stream", e);
-
     }
   }
-
 }

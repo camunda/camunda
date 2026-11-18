@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface RequiredKnowledgeReference extends DmnElementReference {
-
-}
+public interface RequiredKnowledgeReference extends DmnElementReference {}

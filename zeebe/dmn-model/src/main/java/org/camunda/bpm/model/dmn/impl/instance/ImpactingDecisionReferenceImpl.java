@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_IMPACTING_DECISION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.ImpactingDecisionReference;
@@ -26,23 +26,27 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class ImpactingDecisionReferenceImpl extends DmnElementReferenceImpl implements ImpactingDecisionReference {
+public class ImpactingDecisionReferenceImpl extends DmnElementReferenceImpl
+    implements ImpactingDecisionReference {
 
   public ImpactingDecisionReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ImpactingDecisionReference.class, DMN_ELEMENT_IMPACTING_DECISION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<ImpactingDecisionReference>() {
-        public ImpactingDecisionReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ImpactingDecisionReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ImpactingDecisionReference.class, DMN_ELEMENT_IMPACTING_DECISION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ImpactingDecisionReference>() {
+                  public ImpactingDecisionReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new ImpactingDecisionReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

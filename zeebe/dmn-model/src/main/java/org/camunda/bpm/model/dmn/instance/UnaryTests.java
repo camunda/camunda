@@ -25,5 +25,4 @@ public interface UnaryTests extends DmnElement {
   Text getText();
 
   void setText(Text text);
-
 }

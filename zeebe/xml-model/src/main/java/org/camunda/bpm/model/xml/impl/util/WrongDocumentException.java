@@ -21,17 +21,20 @@ import org.camunda.bpm.model.xml.instance.DomDocument;
 import org.w3c.dom.Node;
 
 /**
- * <p>Thrown when a Model Element is added to the wrong document</p>
+ * Thrown when a Model Element is added to the wrong document
  *
  * @author Daniel Meyer
- *
  */
 public class WrongDocumentException extends ModelException {
 
   private static final long serialVersionUID = 1L;
 
   public WrongDocumentException(Node nodeToAdd, DomDocument targetDocument) {
-    super("Cannot add attribute '"+ nodeToAdd +"' to document '" + targetDocument + "' not created by document.");
+    super(
+        "Cannot add attribute '"
+            + nodeToAdd
+            + "' to document '"
+            + targetDocument
+            + "' not created by document.");
   }
-
 }

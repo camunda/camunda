@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ORGANIZATION_UNIT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.BusinessContextElement;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionMadeReference;
@@ -35,8 +34,10 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
 public class OrganizationUnitImpl extends BusinessContextElementImpl implements OrganizationUnit {
 
-  protected static ElementReferenceCollection<Decision, DecisionMadeReference> decisionDecisionMadeRefCollection;
-  protected static ElementReferenceCollection<Decision, DecisionOwnedReference> decisionDecisionOwnedRefCollection;
+  protected static ElementReferenceCollection<Decision, DecisionMadeReference>
+      decisionDecisionMadeRefCollection;
+  protected static ElementReferenceCollection<Decision, DecisionOwnedReference>
+      decisionDecisionOwnedRefCollection;
 
   public OrganizationUnitImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -51,26 +52,32 @@ public class OrganizationUnitImpl extends BusinessContextElementImpl implements 
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(OrganizationUnit.class, DMN_ELEMENT_ORGANIZATION_UNIT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(BusinessContextElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<OrganizationUnit>() {
-        public OrganizationUnit newInstance(ModelTypeInstanceContext instanceContext) {
-          return new OrganizationUnitImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(OrganizationUnit.class, DMN_ELEMENT_ORGANIZATION_UNIT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(BusinessContextElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<OrganizationUnit>() {
+                  public OrganizationUnit newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new OrganizationUnitImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    decisionDecisionMadeRefCollection = sequenceBuilder.elementCollection(DecisionMadeReference.class)
-      .uriElementReferenceCollection(Decision.class)
-      .build();
+    decisionDecisionMadeRefCollection =
+        sequenceBuilder
+            .elementCollection(DecisionMadeReference.class)
+            .uriElementReferenceCollection(Decision.class)
+            .build();
 
-    decisionDecisionOwnedRefCollection = sequenceBuilder.elementCollection(DecisionOwnedReference.class)
-      .uriElementReferenceCollection(Decision.class)
-      .build();
+    decisionDecisionOwnedRefCollection =
+        sequenceBuilder
+            .elementCollection(DecisionOwnedReference.class)
+            .uriElementReferenceCollection(Decision.class)
+            .build();
 
     typeBuilder.build();
   }
-
 }

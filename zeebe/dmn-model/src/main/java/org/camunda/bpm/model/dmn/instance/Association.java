@@ -31,5 +31,4 @@ public interface Association extends Artifact {
   DmnElement getTarget();
 
   void setTarget(DmnElement target);
-
 }

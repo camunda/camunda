@@ -16,11 +16,11 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_IMPORT_TYPE;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_LOCATION_URI;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_NAMESPACE;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_IMPORT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Import;
 import org.camunda.bpm.model.xml.ModelBuilder;
@@ -64,26 +64,23 @@ public class ImportImpl extends DmnModelElementInstanceImpl implements Import {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Import.class, DMN_ELEMENT_IMPORT)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<Import>() {
-        public Import newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ImportImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Import.class, DMN_ELEMENT_IMPORT)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Import>() {
+                  public Import newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ImportImpl(instanceContext);
+                  }
+                });
 
-    namespaceAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_NAMESPACE)
-      .required()
-      .build();
+    namespaceAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_NAMESPACE).required().build();
 
-    locationUriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LOCATION_URI)
-      .build();
+    locationUriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LOCATION_URI).build();
 
-    importTypeAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_IMPORT_TYPE)
-      .required()
-      .build();
+    importTypeAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_IMPORT_TYPE).required().build();
 
     typeBuilder.build();
   }
-
 }

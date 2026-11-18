@@ -37,5 +37,4 @@ public interface ItemDefinition extends NamedElement {
   void setAllowedValues(AllowedValues allowedValues);
 
   Collection<ItemComponent> getItemComponents();
-
 }

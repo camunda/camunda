@@ -55,7 +55,7 @@ public interface Decision extends DrgElement {
   void setExpression(Expression expression);
 
   // camunda extensions
-  
+
   @Deprecated
   Integer getCamundaHistoryTimeToLive();
 
@@ -63,9 +63,9 @@ public interface Decision extends DrgElement {
   void setCamundaHistoryTimeToLive(Integer historyTimeToLive);
 
   String getCamundaHistoryTimeToLiveString();
-  
+
   void setCamundaHistoryTimeToLiveString(String historyTimeToLive);
-  
+
   String getVersionTag();
 
   void setVersionTag(String inputValue);

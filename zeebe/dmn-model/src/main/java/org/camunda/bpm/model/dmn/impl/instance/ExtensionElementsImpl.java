@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_EXTENSION_ELEMENTS;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.Query;
 import org.camunda.bpm.model.dmn.impl.QueryImpl;
 import org.camunda.bpm.model.dmn.instance.ExtensionElements;
@@ -31,20 +30,22 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 
-/**
- * The DMN extensionElements element
- */
-public class ExtensionElementsImpl extends DmnModelElementInstanceImpl implements ExtensionElements {
+/** The DMN extensionElements element */
+public class ExtensionElementsImpl extends DmnModelElementInstanceImpl
+    implements ExtensionElements {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ExtensionElements.class, DMN_ELEMENT_EXTENSION_ELEMENTS)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelElementTypeBuilder.ModelTypeInstanceProvider<ExtensionElements>() {
-        public ExtensionElements newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ExtensionElementsImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ExtensionElements.class, DMN_ELEMENT_EXTENSION_ELEMENTS)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelElementTypeBuilder.ModelTypeInstanceProvider<ExtensionElements>() {
+                  public ExtensionElements newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ExtensionElementsImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
@@ -62,7 +63,8 @@ public class ExtensionElementsImpl extends DmnModelElementInstanceImpl implement
   }
 
   public ModelElementInstance addExtensionElement(String namespaceUri, String localName) {
-    ModelElementType extensionElementType = modelInstance.registerGenericType(namespaceUri, localName);
+    ModelElementType extensionElementType =
+        modelInstance.registerGenericType(namespaceUri, localName);
     ModelElementInstance extensionElement = extensionElementType.newInstance(modelInstance);
     addChildElement(extensionElement);
     return extensionElement;
@@ -78,5 +80,4 @@ public class ExtensionElementsImpl extends DmnModelElementInstanceImpl implement
   public void addChildElement(ModelElementInstance extensionElement) {
     getDomElement().appendChild(extensionElement.getDomElement());
   }
-
 }

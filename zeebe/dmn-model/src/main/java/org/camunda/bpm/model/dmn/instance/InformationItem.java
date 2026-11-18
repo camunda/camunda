@@ -21,5 +21,4 @@ public interface InformationItem extends NamedElement {
   String getTypeRef();
 
   void setTypeRef(String typeRef);
-
 }

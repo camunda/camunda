@@ -21,5 +21,4 @@ import java.util.Collection;
 public interface Context extends Expression {
 
   Collection<ContextEntry> getContextEntries();
-
 }

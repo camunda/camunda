@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface OutputValues extends UnaryTests {
-
-}
+public interface OutputValues extends UnaryTests {}

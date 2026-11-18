@@ -16,6 +16,7 @@
  */
 package org.camunda.bpm.model.xml;
 
+import java.util.Collection;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.instance.DomDocument;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -23,13 +24,10 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
-import java.util.Collection;
-
 /**
  * An instance of a model
  *
  * @author Daniel Meyer
- *
  */
 public interface ModelInstance {
 
@@ -41,8 +39,8 @@ public interface ModelInstance {
   DomDocument getDocument();
 
   /**
-   * Returns the {@link ModelElementInstanceImpl ModelElement} corresponding to the document
-   * element of this model or null if no document element exists.
+   * Returns the {@link ModelElementInstanceImpl ModelElement} corresponding to the document element
+   * of this model or null if no document element exists.
    *
    * @return the document element or null
    */
@@ -51,15 +49,15 @@ public interface ModelInstance {
   /**
    * Updates the document element.
    *
-   * @param documentElement  the new document element to set
+   * @param documentElement the new document element to set
    */
   void setDocumentElement(ModelElementInstance documentElement);
 
   /**
    * Creates a new instance of type class.
    *
-   * @param type  the class of the type to create
-   * @param <T>   instance type
+   * @param type the class of the type to create
+   * @param <T> instance type
    * @return the new created instance
    */
   <T extends ModelElementInstance> T newInstance(Class<T> type);
@@ -67,9 +65,9 @@ public interface ModelInstance {
   /**
    * Creates a new instance of type class with user-defined id.
    *
-   * @param type  the class of the type to create
-   * @param id    identifier of new element instance
-   * @param <T>   instance type
+   * @param type the class of the type to create
+   * @param id identifier of new element instance
+   * @param <T> instance type
    * @return the new created instance
    */
   <T extends ModelElementInstance> T newInstance(Class<T> type, String id);
@@ -77,8 +75,8 @@ public interface ModelInstance {
   /**
    * Creates a new instance of type.
    *
-   * @param type  the type to create
-   * @param <T>   instance type
+   * @param type the type to create
+   * @param <T> instance type
    * @return the new created instance
    */
   <T extends ModelElementInstance> T newInstance(ModelElementType type);
@@ -86,10 +84,10 @@ public interface ModelInstance {
   /**
    * Creates a new instance of type with user-defined id.
    *
-   * @param type  the type to create
-   * @param id    identifier of new element instance
-   * @param <T>   instance type
-   * @return  the new created instance
+   * @param type the type to create
+   * @param id identifier of new element instance
+   * @param <T> instance type
+   * @return the new created instance
    */
   <T extends ModelElementInstance> T newInstance(ModelElementType type, String id);
 
@@ -103,7 +101,7 @@ public interface ModelInstance {
   /**
    * Find a unique element of the model by id.
    *
-   * @param id  the id of the element
+   * @param id the id of the element
    * @return the element with the id or null
    */
   <T extends ModelElementInstance> T getModelElementById(String id);
@@ -111,7 +109,7 @@ public interface ModelInstance {
   /**
    * Find all elements of a type.
    *
-   * @param referencingType  the type of the elements
+   * @param referencingType the type of the elements
    * @return the collection of elements of the type
    */
   Collection<ModelElementInstance> getModelElementsByType(ModelElementType referencingType);
@@ -119,7 +117,7 @@ public interface ModelInstance {
   /**
    * Find all elements of a type.
    *
-   * @param referencingClass  the type class of the elements
+   * @param referencingClass the type class of the elements
    * @return the collection of elements of the type
    */
   <T extends ModelElementInstance> Collection<T> getModelElementsByType(Class<T> referencingClass);
@@ -135,13 +133,12 @@ public interface ModelInstance {
   /**
    * Validate semantic properties of this model instance using a collection of validators.
    * ModelElementValidator is an SPI that can be implemented by the user to execute custom
-   * validation logic on the model. The validation results are collected into a {@link ValidationResults}
-   * object which is returned by this method.
+   * validation logic on the model. The validation results are collected into a {@link
+   * ValidationResults} object which is returned by this method.
    *
    * @param validators the validators to execute
    * @return the results of the validation.
    * @since 7.6
    */
   ValidationResults validate(Collection<ModelElementValidator<?>> validators);
-
 }

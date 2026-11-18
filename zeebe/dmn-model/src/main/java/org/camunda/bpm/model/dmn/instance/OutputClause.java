@@ -33,5 +33,4 @@ public interface OutputClause extends DmnElement {
   DefaultOutputEntry getDefaultOutputEntry();
 
   void setDefaultOutputEntry(DefaultOutputEntry defaultOutputEntry);
-
 }

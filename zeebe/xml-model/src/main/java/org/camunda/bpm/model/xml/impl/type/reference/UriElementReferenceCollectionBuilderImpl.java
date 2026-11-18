@@ -19,11 +19,16 @@ package org.camunda.bpm.model.xml.impl.type.reference;
 import org.camunda.bpm.model.xml.impl.type.child.ChildElementCollectionImpl;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-public class UriElementReferenceCollectionBuilderImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceCollectionBuilderImpl<Target, Source> {
+public class UriElementReferenceCollectionBuilderImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollectionBuilderImpl<Target, Source> {
 
-  public UriElementReferenceCollectionBuilderImpl(Class<Source> childElementType, Class<Target> referenceTargetClass, ChildElementCollectionImpl<Source> collection) {
+  public UriElementReferenceCollectionBuilderImpl(
+      Class<Source> childElementType,
+      Class<Target> referenceTargetClass,
+      ChildElementCollectionImpl<Source> collection) {
     super(childElementType, referenceTargetClass, collection);
-    this.elementReferenceCollectionImpl = new UriElementReferenceCollectionImpl<Target, Source>(collection);
+    this.elementReferenceCollectionImpl =
+        new UriElementReferenceCollectionImpl<Target, Source>(collection);
   }
-
 }

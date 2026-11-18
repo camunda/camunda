@@ -27,13 +27,11 @@ public class InvocationTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Expression.class, 0, 1),
-      new ChildElementAssumption(Binding.class)
-    );
+        new ChildElementAssumption(Expression.class, 0, 1),
+        new ChildElementAssumption(Binding.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

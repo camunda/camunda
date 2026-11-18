@@ -16,6 +16,14 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.junit.runners.Parameterized.Parameters;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.impl.util.StringUtil;
@@ -24,15 +32,6 @@ import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.TestModelTest;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author Sebastian Menski
@@ -46,11 +45,12 @@ public class BirdTest extends TestModelTest {
   private Egg egg2;
   private Egg egg3;
 
-  public BirdTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public BirdTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(BirdTest.class)};
     return Arrays.asList(models);
@@ -97,7 +97,7 @@ public class BirdTest extends TestModelTest {
     timmy.getGuardedEggRefs().add(guardEgg);
     timmy.getGuardedEggs().add(egg3);
 
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -113,37 +113,28 @@ public class BirdTest extends TestModelTest {
 
   @Test
   public void testAddEggsByHelper() {
-    assertThat(tweety.getEggs())
-      .isNotEmpty()
-      .hasSize(3)
-      .containsOnly(egg1, egg2, egg3);
+    assertThat(tweety.getEggs()).isNotEmpty().hasSize(3).containsOnly(egg1, egg2, egg3);
 
     Egg egg4 = createEgg(modelInstance, "egg4");
     tweety.getEggs().add(egg4);
     Egg egg5 = createEgg(modelInstance, "egg5");
     tweety.getEggs().add(egg5);
 
-    assertThat(tweety.getEggs())
-      .hasSize(5)
-      .containsOnly(egg1, egg2, egg3, egg4, egg5);
+    assertThat(tweety.getEggs()).hasSize(5).containsOnly(egg1, egg2, egg3, egg4, egg5);
   }
 
   @Test
   public void testUpdateEggsByIdByHelper() {
     egg1.setId("new-" + egg1.getId());
     egg2.setId("new-" + egg2.getId());
-    assertThat(tweety.getEggs())
-      .hasSize(3)
-      .containsOnly(egg1, egg2, egg3);
+    assertThat(tweety.getEggs()).hasSize(3).containsOnly(egg1, egg2, egg3);
   }
 
   @Test
   public void testUpdateEggsByIdByAttributeName() {
     egg1.setAttributeValue("id", "new-" + egg1.getId(), true);
     egg2.setAttributeValue("id", "new-" + egg2.getId(), true);
-    assertThat(tweety.getEggs())
-      .hasSize(3)
-      .containsOnly(egg1, egg2, egg3);
+    assertThat(tweety.getEggs()).hasSize(3).containsOnly(egg1, egg2, egg3);
   }
 
   @Test
@@ -152,24 +143,19 @@ public class BirdTest extends TestModelTest {
     Egg egg5 = createEgg(modelInstance, "egg5");
     egg1.replaceWithElement(egg4);
     egg2.replaceWithElement(egg5);
-    assertThat(tweety.getEggs())
-      .hasSize(3)
-      .containsOnly(egg3, egg4, egg5);
+    assertThat(tweety.getEggs()).hasSize(3).containsOnly(egg3, egg4, egg5);
   }
 
   @Test
   public void testUpdateEggsByRemoveElement() {
     tweety.getEggs().remove(egg1);
-    assertThat(tweety.getEggs())
-      .hasSize(2)
-      .containsOnly(egg2, egg3);
+    assertThat(tweety.getEggs()).hasSize(2).containsOnly(egg2, egg3);
   }
 
   @Test
   public void testClearEggs() {
     tweety.getEggs().clear();
-    assertThat(tweety.getEggs())
-      .isEmpty();
+    assertThat(tweety.getEggs()).isEmpty();
   }
 
   @Test
@@ -318,18 +304,13 @@ public class BirdTest extends TestModelTest {
 
   @Test
   public void testAddGuardianRefsByHelper() {
-    assertThat(egg1.getGuardianRefs())
-      .isNotEmpty()
-      .hasSize(2);
+    assertThat(egg1.getGuardianRefs()).isNotEmpty().hasSize(2);
 
     Guardian tweetyGuardian = modelInstance.newInstance(Guardian.class);
     tweetyGuardian.setHref("#" + tweety.getId());
     egg1.getGuardianRefs().add(tweetyGuardian);
 
-    assertThat(egg1.getGuardianRefs())
-      .isNotEmpty()
-      .hasSize(3)
-      .contains(tweetyGuardian);
+    assertThat(egg1.getGuardianRefs()).isNotEmpty().hasSize(3).contains(tweetyGuardian);
   }
 
   @Test
@@ -342,9 +323,9 @@ public class BirdTest extends TestModelTest {
       hrefs.add(href);
     }
     assertThat(hrefs)
-      .isNotEmpty()
-      .hasSize(2)
-      .containsOnly("#" + hedwig.getId(), "#" + timmy.getId());
+        .isNotEmpty()
+        .hasSize(2)
+        .containsOnly("#" + hedwig.getId(), "#" + timmy.getId());
   }
 
   @Test
@@ -353,18 +334,14 @@ public class BirdTest extends TestModelTest {
 
     guardianRefs.get(0).setHref("#" + tweety.getId());
 
-    assertThat(egg1.getGuardians())
-      .hasSize(2)
-      .containsOnly(tweety, timmy);
+    assertThat(egg1.getGuardians()).hasSize(2).containsOnly(tweety, timmy);
   }
 
   @Test
   public void testUpdateGuardianRefsByRemoveElements() {
     List<Guardian> guardianRefs = new ArrayList<Guardian>(egg1.getGuardianRefs());
     egg1.getGuardianRefs().remove(guardianRefs.get(1));
-    assertThat(egg1.getGuardians())
-      .hasSize(1)
-      .containsOnly(hedwig);
+    assertThat(egg1.getGuardians()).hasSize(1).containsOnly(hedwig);
   }
 
   @Test
@@ -374,40 +351,27 @@ public class BirdTest extends TestModelTest {
 
     // should not affect animals collection
     Animals animals = (Animals) modelInstance.getDocumentElement();
-    assertThat(animals.getAnimals())
-      .isNotEmpty()
-      .hasSize(3);
+    assertThat(animals.getAnimals()).isNotEmpty().hasSize(3);
   }
 
   @Test
   public void testGetGuardedEggs() {
     Collection<Egg> guardedEggs = hedwig.getGuardedEggs();
-    assertThat(guardedEggs)
-      .isNotEmpty()
-      .hasSize(2)
-      .contains(egg1, egg2);
+    assertThat(guardedEggs).isNotEmpty().hasSize(2).contains(egg1, egg2);
 
     guardedEggs = timmy.getGuardedEggs();
-    assertThat(guardedEggs)
-      .isNotEmpty()
-      .hasSize(3)
-      .contains(egg1, egg2);
+    assertThat(guardedEggs).isNotEmpty().hasSize(3).contains(egg1, egg2);
   }
 
   @Test
   public void testAddGuardedEggRefsByHelper() {
-    assertThat(hedwig.getGuardedEggRefs())
-      .isNotEmpty()
-      .hasSize(2);
+    assertThat(hedwig.getGuardedEggRefs()).isNotEmpty().hasSize(2);
 
     GuardEgg egg3GuardedEgg = modelInstance.newInstance(GuardEgg.class);
     egg3GuardedEgg.setTextContent(egg3.getId());
     hedwig.getGuardedEggRefs().add(egg3GuardedEgg);
 
-    assertThat(hedwig.getGuardedEggRefs())
-      .isNotEmpty()
-      .hasSize(3)
-      .contains(egg3GuardedEgg);
+    assertThat(hedwig.getGuardedEggRefs()).isNotEmpty().hasSize(3).contains(egg3GuardedEgg);
   }
 
   @Test
@@ -420,9 +384,9 @@ public class BirdTest extends TestModelTest {
       textContents.addAll(StringUtil.splitListBySeparator(textContent, " "));
     }
     assertThat(textContents)
-      .isNotEmpty()
-      .hasSize(3)
-      .containsOnly(egg1.getId(), egg2.getId(), egg3.getId());
+        .isNotEmpty()
+        .hasSize(3)
+        .containsOnly(egg1.getId(), egg2.getId(), egg3.getId());
   }
 
   @Test
@@ -431,18 +395,14 @@ public class BirdTest extends TestModelTest {
 
     guardianRefs.get(0).setTextContent(egg1.getId() + " " + egg3.getId());
 
-    assertThat(hedwig.getGuardedEggs())
-      .hasSize(3)
-      .containsOnly(egg1, egg2, egg3);
+    assertThat(hedwig.getGuardedEggs()).hasSize(3).containsOnly(egg1, egg2, egg3);
   }
 
   @Test
   public void testUpdateGuardedEggRefsByRemoveElements() {
     List<GuardEgg> guardianRefs = new ArrayList<GuardEgg>(timmy.getGuardedEggRefs());
     timmy.getGuardedEggRefs().remove(guardianRefs.get(0));
-    assertThat(timmy.getGuardedEggs())
-      .hasSize(1)
-      .containsOnly(egg3);
+    assertThat(timmy.getGuardedEggs()).hasSize(1).containsOnly(egg3);
   }
 
   @Test
@@ -452,9 +412,6 @@ public class BirdTest extends TestModelTest {
 
     // should not affect animals collection
     Animals animals = (Animals) modelInstance.getDocumentElement();
-    assertThat(animals.getAnimals())
-      .isNotEmpty()
-      .hasSize(3);
+    assertThat(animals.getAnimals()).isNotEmpty().hasSize(3);
   }
-
 }

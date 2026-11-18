@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_FLIGHT_INSTRUCTOR;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_FLIGHT_INSTRUCTOR;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
 /**
  * @author Sebastian Menski
@@ -31,13 +31,16 @@ import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeIn
 public class FlightInstructor extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(FlightInstructor.class, ELEMENT_NAME_FLIGHT_INSTRUCTOR)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<FlightInstructor>() {
-        public FlightInstructor newInstance(ModelTypeInstanceContext instanceContext) {
-          return new FlightInstructor(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FlightInstructor.class, ELEMENT_NAME_FLIGHT_INSTRUCTOR)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<FlightInstructor>() {
+                  public FlightInstructor newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new FlightInstructor(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
@@ -45,5 +48,4 @@ public class FlightInstructor extends ModelElementInstanceImpl {
   public FlightInstructor(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
-
 }

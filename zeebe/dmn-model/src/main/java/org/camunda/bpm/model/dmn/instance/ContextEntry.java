@@ -25,5 +25,4 @@ public interface ContextEntry extends DmnModelElementInstance {
   Expression getExpression();
 
   void setExpression(Expression expression);
-
 }

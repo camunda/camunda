@@ -22,7 +22,8 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 /**
  * @author Sebastian Menski
  */
-public class AttributeReferenceAssert extends AbstractReferenceAssert<AttributeReferenceAssert, AttributeReference<?>> {
+public class AttributeReferenceAssert
+    extends AbstractReferenceAssert<AttributeReferenceAssert, AttributeReference<?>> {
 
   protected AttributeReferenceAssert(AttributeReference<?> actual) {
     super(actual, AttributeReferenceAssert.class);
@@ -34,11 +35,11 @@ public class AttributeReferenceAssert extends AbstractReferenceAssert<AttributeR
     Attribute<String> actualSourceAttribute = actual.getReferenceSourceAttribute();
 
     if (!sourceAttribute.equals(actualSourceAttribute)) {
-      failWithMessage("Expected reference <%s> to have source attribute <%s> but was <%s>", actual, sourceAttribute, actualSourceAttribute);
+      failWithMessage(
+          "Expected reference <%s> to have source attribute <%s> but was <%s>",
+          actual, sourceAttribute, actualSourceAttribute);
     }
 
     return this;
   }
-
-
 }

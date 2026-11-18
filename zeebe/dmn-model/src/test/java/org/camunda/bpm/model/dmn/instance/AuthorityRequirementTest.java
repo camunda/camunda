@@ -27,14 +27,12 @@ public class AuthorityRequirementTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(RequiredDecisionReference.class, 0, 1),
-      new ChildElementAssumption(RequiredInputReference.class, 0, 1),
-      new ChildElementAssumption(RequiredAuthorityReference.class, 0, 1)
-    );
+        new ChildElementAssumption(RequiredDecisionReference.class, 0, 1),
+        new ChildElementAssumption(RequiredInputReference.class, 0, 1),
+        new ChildElementAssumption(RequiredAuthorityReference.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

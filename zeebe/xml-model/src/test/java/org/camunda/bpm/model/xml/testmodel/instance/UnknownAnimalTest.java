@@ -16,6 +16,13 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.junit.Assert.fail;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
@@ -27,14 +34,6 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.junit.Assert.fail;
 
 /**
  * @author Sebastian Menski
@@ -78,8 +77,11 @@ public class UnknownAnimalTest {
   @Test
   public void testGetUnknownAnimalByType() {
     ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
-    ModelElementType unknownAnimalType = modelInstanceImpl.registerGenericType(MODEL_NAMESPACE, "unknownAnimal");
-    List<ModelElementInstance> unknownAnimals = new ArrayList<ModelElementInstance>(modelInstance.getModelElementsByType(unknownAnimalType));
+    ModelElementType unknownAnimalType =
+        modelInstanceImpl.registerGenericType(MODEL_NAMESPACE, "unknownAnimal");
+    List<ModelElementInstance> unknownAnimals =
+        new ArrayList<ModelElementInstance>(
+            modelInstance.getModelElementsByType(unknownAnimalType));
     assertThat(unknownAnimals).hasSize(2);
 
     ModelElementInstance wanda = unknownAnimals.get(0);
@@ -96,7 +98,8 @@ public class UnknownAnimalTest {
   @Test
   public void testAddUnknownAnimal() {
     ModelInstanceImpl modelInstanceImpl = (ModelInstanceImpl) modelInstance;
-    ModelElementType unknownAnimalType = modelInstanceImpl.registerGenericType(MODEL_NAMESPACE, "unknownAnimal");
+    ModelElementType unknownAnimalType =
+        modelInstanceImpl.registerGenericType(MODEL_NAMESPACE, "unknownAnimal");
     ModelElementType animalsType = modelInstance.getModel().getType(Animals.class);
     ModelElementType animalType = modelInstance.getModel().getType(Animal.class);
 
@@ -106,8 +109,10 @@ public class UnknownAnimalTest {
     unknownAnimal.setAttributeValue("gender", "Unknown");
     unknownAnimal.setAttributeValue("species", "unknown");
 
-    ModelElementInstance animals = modelInstance.getModelElementsByType(animalsType).iterator().next();
-    List<ModelElementInstance> childElementsByType = new ArrayList<ModelElementInstance>(animals.getChildElementsByType(animalType));
+    ModelElementInstance animals =
+        modelInstance.getModelElementsByType(animalsType).iterator().next();
+    List<ModelElementInstance> childElementsByType =
+        new ArrayList<ModelElementInstance>(animals.getChildElementsByType(animalType));
     animals.insertElementAfter(unknownAnimal, childElementsByType.get(2));
     assertThat(animals.getChildElementsByType(unknownAnimalType)).hasSize(3);
   }
@@ -123,22 +128,23 @@ public class UnknownAnimalTest {
 
   @Test
   public void testAddRelationshipDefinitionToUnknownAnimal() {
-    RelationshipDefinition friendRelationshipDefinition = modelInstance.newInstance(FriendRelationshipDefinition.class);
+    RelationshipDefinition friendRelationshipDefinition =
+        modelInstance.newInstance(FriendRelationshipDefinition.class);
     friendRelationshipDefinition.setId("friend-relationship");
     friendRelationshipDefinition.setAttributeValue("animalRef", flipper.getAttributeValue("id"));
 
     try {
       wanda.addChildElement(friendRelationshipDefinition);
       fail("Cannot add relationship definition to UnknownAnimal cause no child types are defined");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       assertThat(e).isInstanceOf(ModelException.class);
     }
 
     wanda.insertElementAfter(friendRelationshipDefinition, null);
 
     Animal tweety = modelInstance.getModelElementById("tweety");
-    RelationshipDefinition childRelationshipDefinition = modelInstance.newInstance(ChildRelationshipDefinition.class);
+    RelationshipDefinition childRelationshipDefinition =
+        modelInstance.newInstance(ChildRelationshipDefinition.class);
     childRelationshipDefinition.setId("child-relationship");
     childRelationshipDefinition.setAnimal(tweety);
 
@@ -173,7 +179,6 @@ public class UnknownAnimalTest {
     wanda.replaceChildElement(flipper, yogi);
     assertThat(wanda.getChildElementsByType(flipper.getElementType())).hasSize(1);
     assertThat(wanda.getChildElementsByType(flipper.getElementType()).iterator().next())
-      .isEqualTo(yogi);
+        .isEqualTo(yogi);
   }
-
 }

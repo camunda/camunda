@@ -18,7 +18,6 @@ package org.camunda.bpm.model.xml.impl.util;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class QName {
 
@@ -47,7 +46,7 @@ public class QName {
     String localName;
 
     String[] split = identifier.split(":", 2);
-    if(split.length == 2) {
+    if (split.length == 2) {
       qualifier = split[0];
       localName = split[1];
     } else {
@@ -66,8 +65,7 @@ public class QName {
   public static String combine(String qualifier, String localName) {
     if (qualifier == null || qualifier.isEmpty()) {
       return localName;
-    }
-    else {
+    } else {
       return qualifier + ":" + localName;
     }
   }
@@ -109,6 +107,4 @@ public class QName {
     }
     return true;
   }
-
-
 }

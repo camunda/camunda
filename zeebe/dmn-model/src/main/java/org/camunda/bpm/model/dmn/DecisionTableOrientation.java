@@ -17,7 +17,6 @@
 package org.camunda.bpm.model.dmn;
 
 public enum DecisionTableOrientation {
-
   Rule_as_Row("Rule-as-Row"),
   Rule_as_Column("Rule-as-Column"),
   CrossTable;
@@ -35,5 +34,4 @@ public enum DecisionTableOrientation {
   public String toString() {
     return name;
   }
-
 }

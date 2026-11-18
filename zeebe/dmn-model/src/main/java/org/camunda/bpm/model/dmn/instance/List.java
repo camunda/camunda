@@ -21,5 +21,4 @@ import java.util.Collection;
 public interface List extends Expression {
 
   Collection<Expression> getExpressions();
-
 }

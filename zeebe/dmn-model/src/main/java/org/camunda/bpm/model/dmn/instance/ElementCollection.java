@@ -21,5 +21,4 @@ import java.util.Collection;
 public interface ElementCollection extends NamedElement {
 
   Collection<DrgElement> getDrgElements();
-
 }

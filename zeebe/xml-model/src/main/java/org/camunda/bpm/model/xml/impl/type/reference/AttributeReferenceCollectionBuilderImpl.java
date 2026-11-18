@@ -28,21 +28,27 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReferenceCollectionBuil
 /**
  * @author Roman Smirnov
  * @author Sebastian Menski
- *
  */
-public class AttributeReferenceCollectionBuilderImpl<T extends ModelElementInstance> implements AttributeReferenceCollectionBuilder<T>, ModelBuildOperation {
+public class AttributeReferenceCollectionBuilderImpl<T extends ModelElementInstance>
+    implements AttributeReferenceCollectionBuilder<T>, ModelBuildOperation {
 
   private final AttributeImpl<String> referenceSourceAttribute;
   protected AttributeReferenceCollection<T> attributeReferenceCollection;
   private final Class<T> referenceTargetElement;
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public AttributeReferenceCollectionBuilderImpl(AttributeImpl<String> attribute, Class<T> referenceTargetElement, Class<? extends AttributeReferenceCollection> attributeReferenceCollection) {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public AttributeReferenceCollectionBuilderImpl(
+      AttributeImpl<String> attribute,
+      Class<T> referenceTargetElement,
+      Class<? extends AttributeReferenceCollection> attributeReferenceCollection) {
     this.referenceSourceAttribute = attribute;
     this.referenceTargetElement = referenceTargetElement;
     try {
-      this.attributeReferenceCollection = (AttributeReferenceCollection<T>) attributeReferenceCollection.getConstructor(AttributeImpl.class)
-        .newInstance(referenceSourceAttribute);
+      this.attributeReferenceCollection =
+          (AttributeReferenceCollection<T>)
+              attributeReferenceCollection
+                  .getConstructor(AttributeImpl.class)
+                  .newInstance(referenceSourceAttribute);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -56,19 +62,25 @@ public class AttributeReferenceCollectionBuilderImpl<T extends ModelElementInsta
   @SuppressWarnings("unchecked")
   public void performModelBuild(Model model) {
     // register declaring type as a referencing type of referenced type
-    ModelElementTypeImpl referenceTargetType = (ModelElementTypeImpl) model.getType(referenceTargetElement);
+    ModelElementTypeImpl referenceTargetType =
+        (ModelElementTypeImpl) model.getType(referenceTargetElement);
 
     // the actual referenced type
     attributeReferenceCollection.setReferenceTargetElementType(referenceTargetType);
 
     // the referenced attribute may be declared on a base type of the referenced type.
-    AttributeImpl<String> idAttribute = (AttributeImpl<String>) referenceTargetType.getAttribute("id");
-    if(idAttribute != null) {
+    AttributeImpl<String> idAttribute =
+        (AttributeImpl<String>) referenceTargetType.getAttribute("id");
+    if (idAttribute != null) {
       idAttribute.registerIncoming(attributeReferenceCollection);
       attributeReferenceCollection.setReferenceTargetAttribute(idAttribute);
     } else {
-      throw new ModelException("Element type " + referenceTargetType.getTypeNamespace() + ":" + referenceTargetType.getTypeName() + " has no id attribute");
+      throw new ModelException(
+          "Element type "
+              + referenceTargetType.getTypeNamespace()
+              + ":"
+              + referenceTargetType.getTypeName()
+              + " has no id attribute");
     }
   }
-
 }

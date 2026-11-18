@@ -27,16 +27,11 @@ public class OutputClauseTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(OutputValues.class, 0, 1),
-      new ChildElementAssumption(DefaultOutputEntry.class, 0, 1)
-    );
+        new ChildElementAssumption(OutputValues.class, 0, 1),
+        new ChildElementAssumption(DefaultOutputEntry.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("name"),
-      new AttributeAssumption("typeRef")
-    );
+    return Arrays.asList(new AttributeAssumption("name"), new AttributeAssumption("typeRef"));
   }
-
 }

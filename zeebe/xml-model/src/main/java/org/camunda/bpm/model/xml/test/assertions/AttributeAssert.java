@@ -16,14 +16,13 @@
  */
 package org.camunda.bpm.model.xml.test.assertions;
 
+import java.util.Arrays;
+import java.util.List;
 import org.assertj.core.api.AbstractAssert;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.Reference;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author Sebastian Menski
@@ -83,7 +82,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     Object actualDefaultValue = actual.getDefaultValue();
 
     if (!defaultValue.equals(actualDefaultValue)) {
-      failWithMessage("Expected attribute <%s> to have default value <%s> but was <%s>", attributeName, defaultValue, actualDefaultValue);
+      failWithMessage(
+          "Expected attribute <%s> to have default value <%s> but was <%s>",
+          attributeName, defaultValue, actualDefaultValue);
     }
 
     return this;
@@ -95,7 +96,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     Object actualDefaultValue = actual.getDefaultValue();
 
     if (actualDefaultValue != null) {
-      failWithMessage("Expected attribute <%s> to have no default value but was <%s>", attributeName, actualDefaultValue);
+      failWithMessage(
+          "Expected attribute <%s> to have no default value but was <%s>",
+          attributeName, actualDefaultValue);
     }
 
     return this;
@@ -107,7 +110,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     ModelElementType actualOwningElementType = actual.getOwningElementType();
 
     if (!owningElementType.equals(actualOwningElementType)) {
-      failWithMessage("Expected attribute <%s> to have owning element type <%s> but was <%s>", attributeName, owningElementType, actualOwningElementType);
+      failWithMessage(
+          "Expected attribute <%s> to have owning element type <%s> but was <%s>",
+          attributeName, owningElementType, actualOwningElementType);
     }
 
     return this;
@@ -131,7 +136,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     Object actualValue = actual.getValue(modelElementInstance);
 
     if (!value.equals(actualValue)) {
-      failWithMessage("Expected attribute <%s> to have value <%s> but was <%s>", attributeName, value, actualValue);
+      failWithMessage(
+          "Expected attribute <%s> to have value <%s> but was <%s>",
+          attributeName, value, actualValue);
     }
 
     return this;
@@ -143,16 +150,20 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     Object actualValue = actual.getValue(modelElementInstance);
 
     if (actualValue != null) {
-      failWithMessage("Expected attribute <%s> to have no value but was <%s>", attributeName, actualValue);
+      failWithMessage(
+          "Expected attribute <%s> to have no value but was <%s>", attributeName, actualValue);
     }
 
     return this;
   }
+
   public AttributeAssert hasAttributeName(String attributeName) {
     isNotNull();
 
     if (!attributeName.equals(this.attributeName)) {
-      failWithMessage("Expected attribute to have attribute name <%s> but was <%s>", attributeName, this.attributeName);
+      failWithMessage(
+          "Expected attribute to have attribute name <%s> but was <%s>",
+          attributeName, this.attributeName);
     }
 
     return this;
@@ -164,7 +175,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     String actualNamespaceUri1 = actual.getNamespaceUri();
 
     if (!namespaceUri.equals(actualNamespaceUri1)) {
-      failWithMessage("Expected attribute <%s> to have namespace URI <%s> but was <%s>", attributeName, namespaceUri, actualNamespaceUri1);
+      failWithMessage(
+          "Expected attribute <%s> to have namespace URI <%s> but was <%s>",
+          attributeName, namespaceUri, actualNamespaceUri1);
     }
 
     return this;
@@ -176,7 +189,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     String actualNamespaceUri = actual.getNamespaceUri();
 
     if (actualNamespaceUri != null) {
-      failWithMessage("Expected attribute <%s> to have no namespace URI but was <%s>", attributeName, actualNamespaceUri);
+      failWithMessage(
+          "Expected attribute <%s> to have no namespace URI but was <%s>",
+          attributeName, actualNamespaceUri);
     }
 
     return this;
@@ -188,7 +203,8 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     List<Reference<?>> actualIncomingReferences = actual.getIncomingReferences();
 
     if (actualIncomingReferences.isEmpty()) {
-      failWithMessage("Expected attribute <%s> to have incoming references but has not", attributeName);
+      failWithMessage(
+          "Expected attribute <%s> to have incoming references but has not", attributeName);
     }
 
     return this;
@@ -201,7 +217,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     List<Reference<?>> actualIncomingReferences = actual.getIncomingReferences();
 
     if (!actualIncomingReferences.containsAll(incomingReferences)) {
-      failWithMessage("Expected attribute <%s> to have incoming references <%s> but has <%s>", attributeName, incomingReferences, actualIncomingReferences);
+      failWithMessage(
+          "Expected attribute <%s> to have incoming references <%s> but has <%s>",
+          attributeName, incomingReferences, actualIncomingReferences);
     }
 
     return this;
@@ -213,7 +231,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     List<Reference<?>> actualIncomingReferences = actual.getIncomingReferences();
 
     if (!actualIncomingReferences.isEmpty()) {
-      failWithMessage("Expected attribute <%s> to have no incoming references but has <%s>", attributeName, actualIncomingReferences);
+      failWithMessage(
+          "Expected attribute <%s> to have no incoming references but has <%s>",
+          attributeName, actualIncomingReferences);
     }
 
     return this;
@@ -225,7 +245,8 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     List<Reference<?>> actualOutgoingReferences = actual.getOutgoingReferences();
 
     if (actualOutgoingReferences.isEmpty()) {
-      failWithMessage("Expected attribute <%s> to have outgoing references but has not", attributeName);
+      failWithMessage(
+          "Expected attribute <%s> to have outgoing references but has not", attributeName);
     }
 
     return this;
@@ -238,7 +259,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     List<Reference<?>> actualOutgoingReferences = actual.getOutgoingReferences();
 
     if (!actualOutgoingReferences.containsAll(outgoingReferences)) {
-      failWithMessage("Expected attribute <%s> to have outgoing references <%s> but has <%s>", attributeName, outgoingReferences, actualOutgoingReferences);
+      failWithMessage(
+          "Expected attribute <%s> to have outgoing references <%s> but has <%s>",
+          attributeName, outgoingReferences, actualOutgoingReferences);
     }
 
     return this;
@@ -250,7 +273,9 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     List<Reference<?>> actualOutgoingReferences = actual.getOutgoingReferences();
 
     if (!actualOutgoingReferences.isEmpty()) {
-      failWithMessage("Expected attribute <%s> to have no outgoing references but has <%s>", attributeName, actualOutgoingReferences);
+      failWithMessage(
+          "Expected attribute <%s> to have no outgoing references but has <%s>",
+          attributeName, actualOutgoingReferences);
     }
 
     return this;

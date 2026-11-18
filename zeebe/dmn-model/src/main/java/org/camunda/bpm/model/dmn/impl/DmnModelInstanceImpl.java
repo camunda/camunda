@@ -23,7 +23,6 @@ import org.camunda.bpm.model.xml.impl.ModelImpl;
 import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
 import org.camunda.bpm.model.xml.instance.DomDocument;
 
-
 public class DmnModelInstanceImpl extends ModelInstanceImpl implements DmnModelInstance {
 
   public DmnModelInstanceImpl(ModelImpl model, ModelBuilder modelBuilder, DomDocument document) {
@@ -42,5 +41,4 @@ public class DmnModelInstanceImpl extends ModelInstanceImpl implements DmnModelI
   public DmnModelInstance clone() {
     return new DmnModelInstanceImpl(model, modelBuilder, document.clone());
   }
-
 }

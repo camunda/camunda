@@ -18,5 +18,4 @@ package org.camunda.bpm.model.dmn.instance;
 
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-public interface DmnModelElementInstance extends ModelElementInstance {
-}
+public interface DmnModelElementInstance extends ModelElementInstance {}

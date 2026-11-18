@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public class RequiredAuthorityReferenceTest extends AbstractDmnElementReferenceTest {
-
-}
+public class RequiredAuthorityReferenceTest extends AbstractDmnElementReferenceTest {}

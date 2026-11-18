@@ -25,5 +25,4 @@ public interface TextAnnotation extends Artifact {
   Text getText();
 
   void setText(Text text);
-
 }

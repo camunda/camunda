@@ -27,11 +27,12 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceBuilder;
 
 /**
  * @author Daniel Meyer
- *
  */
-public class ChildElementBuilderImpl<T extends ModelElementInstance> extends ChildElementCollectionBuilderImpl<T> implements ChildElementBuilder<T> {
+public class ChildElementBuilderImpl<T extends ModelElementInstance>
+    extends ChildElementCollectionBuilderImpl<T> implements ChildElementBuilder<T> {
 
-  public ChildElementBuilderImpl(Class<T> childElementTypeClass, ModelElementType parentElementType) {
+  public ChildElementBuilderImpl(
+      Class<T> childElementTypeClass, ModelElementType parentElementType) {
     super(childElementTypeClass, parentElementType);
   }
 
@@ -64,25 +65,30 @@ public class ChildElementBuilderImpl<T extends ModelElementInstance> extends Chi
     return (ChildElement<T>) super.build();
   }
 
-  public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> qNameElementReference(Class<V> referenceTargetType) {
+  public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> qNameElementReference(
+      Class<V> referenceTargetType) {
     ChildElementImpl<T> child = (ChildElementImpl<T>) build();
-    QNameElementReferenceBuilderImpl<V,T> builder = new QNameElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
+    QNameElementReferenceBuilderImpl<V, T> builder =
+        new QNameElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
     setReferenceBuilder(builder);
     return builder;
   }
 
-  public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> idElementReference(Class<V> referenceTargetType) {
+  public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> idElementReference(
+      Class<V> referenceTargetType) {
     ChildElementImpl<T> child = (ChildElementImpl<T>) build();
-    ElementReferenceBuilderImpl<V, T> builder = new ElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
+    ElementReferenceBuilderImpl<V, T> builder =
+        new ElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
     setReferenceBuilder(builder);
     return builder;
   }
 
-  public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> uriElementReference(Class<V> referenceTargetType) {
+  public <V extends ModelElementInstance> ElementReferenceBuilder<V, T> uriElementReference(
+      Class<V> referenceTargetType) {
     ChildElementImpl<T> child = (ChildElementImpl<T>) build();
-    ElementReferenceBuilderImpl<V, T> builder = new UriElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
+    ElementReferenceBuilderImpl<V, T> builder =
+        new UriElementReferenceBuilderImpl<V, T>(childElementType, referenceTargetType, child);
     setReferenceBuilder(builder);
     return builder;
   }
-
 }

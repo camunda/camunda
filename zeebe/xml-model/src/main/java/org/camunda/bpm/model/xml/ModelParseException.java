@@ -16,19 +16,16 @@
  */
 package org.camunda.bpm.model.xml;
 
-
 /**
  * Thrown when an error is encountered during XML parsing
  *
  * @author Daniel Meyer
- *
  */
 public class ModelParseException extends ModelException {
 
   private static final long serialVersionUID = 1L;
 
-  public ModelParseException() {
-  }
+  public ModelParseException() {}
 
   public ModelParseException(String message, Throwable cause) {
     super(message, cause);
@@ -41,5 +38,4 @@ public class ModelParseException extends ModelException {
   public ModelParseException(Throwable cause) {
     super(cause);
   }
-
 }

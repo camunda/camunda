@@ -16,16 +16,14 @@
  */
 package org.camunda.bpm.model.xml.impl.util;
 
-import org.camunda.bpm.model.xml.instance.DomDocument;
-
+import java.io.*;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.StreamResult;
-import java.io.*;
+import org.camunda.bpm.model.xml.instance.DomDocument;
 
 /**
  * @author Daniel Meyer
  * @author Sebastian Menski
- *
  */
 public final class IoUtil {
 
@@ -58,7 +56,8 @@ public final class IoUtil {
    * @return the resulting {@link String}
    * @throws IOException
    */
-  private static String getStringFromInputStream(InputStream inputStream, boolean trim) throws IOException {
+  private static String getStringFromInputStream(InputStream inputStream, boolean trim)
+      throws IOException {
     BufferedReader bufferedReader = null;
     StringBuilder stringBuilder = new StringBuilder();
     try {
@@ -67,13 +66,11 @@ public final class IoUtil {
       while ((line = bufferedReader.readLine()) != null) {
         if (trim) {
           stringBuilder.append(line.trim());
-        }
-        else {
+        } else {
           stringBuilder.append(line).append("\n");
         }
       }
-    }
-    finally {
+    } finally {
       closeSilently(bufferedReader);
     }
 
@@ -81,8 +78,8 @@ public final class IoUtil {
   }
 
   /**
-   * Converts a {@link OutputStream} to an {@link InputStream} by coping the data directly.
-   * WARNING: Do not use for large data (>100MB). Only for testing purpose.
+   * Converts a {@link OutputStream} to an {@link InputStream} by coping the data directly. WARNING:
+   * Do not use for large data (>100MB). Only for testing purpose.
    *
    * @param outputStream the {@link OutputStream} to convert
    * @return the resulting {@link InputStream}
@@ -95,7 +92,7 @@ public final class IoUtil {
   /**
    * Converts a {@link DomDocument} to its String representation
    *
-   * @param document  the XML document to convert
+   * @param document the XML document to convert
    */
   public static String convertXmlDocumentToString(DomDocument document) {
     StringWriter stringWriter = new StringWriter();
@@ -107,8 +104,8 @@ public final class IoUtil {
   /**
    * Writes a {@link DomDocument} to an {@link OutputStream} by transforming the DOM to XML.
    *
-   * @param document  the DOM document to write
-   * @param outputStream  the {@link OutputStream} to write to
+   * @param document the DOM document to write
+   * @param outputStream the {@link OutputStream} to write to
    */
   public static void writeDocumentToOutputStream(DomDocument document, OutputStream outputStream) {
     StreamResult result = new StreamResult(outputStream);
@@ -118,8 +115,8 @@ public final class IoUtil {
   /**
    * Transforms a {@link DomDocument} to XML output.
    *
-   * @param document  the DOM document to transform
-   * @param result  the {@link StreamResult} to write to
+   * @param document the DOM document to transform
+   * @param result the {@link StreamResult} to write to
    */
   public static void transformDocumentToXml(DomDocument document, StreamResult result) {
     TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -129,7 +126,7 @@ public final class IoUtil {
       transformer.setOutputProperty(OutputKeys.INDENT, "yes");
       transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
-      synchronized(document) {
+      synchronized (document) {
         transformer.transform(document.getDomSource(), result);
       }
     } catch (TransformerConfigurationException e) {
@@ -138,5 +135,4 @@ public final class IoUtil {
       throw new ModelIoException("Unable to transform model to xml", e);
     }
   }
-
 }

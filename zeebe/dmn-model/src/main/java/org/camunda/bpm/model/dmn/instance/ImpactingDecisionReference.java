@@ -16,5 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface ImpactingDecisionReference extends DmnElementReference {
-}
+public interface ImpactingDecisionReference extends DmnElementReference {}

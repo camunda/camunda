@@ -21,7 +21,6 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
-import org.camunda.bpm.model.xml.testmodel.TestModelConstants;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
@@ -43,19 +42,19 @@ public class AnimalReference extends ModelElementInstanceImpl {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(AnimalReference.class, ELEMENT_NAME_ANIMAL_REFERENCE)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<AnimalReference>() {
-        public AnimalReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new AnimalReference(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(AnimalReference.class, ELEMENT_NAME_ANIMAL_REFERENCE)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<AnimalReference>() {
+                  public AnimalReference newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new AnimalReference(instanceContext);
+                  }
+                });
 
-    hrefAttribute = typeBuilder.stringAttribute("href")
-      .required()
-      .build();
+    hrefAttribute = typeBuilder.stringAttribute("href").required().build();
 
     typeBuilder.build();
   }
-
 }

@@ -21,5 +21,4 @@ public interface BusinessContextElement extends NamedElement {
   String getUri();
 
   void setUri(String uri);
-
 }

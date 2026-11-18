@@ -16,5 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface UsingProcessReference extends DmnElementReference {
-}
+public interface UsingProcessReference extends DmnElementReference {}

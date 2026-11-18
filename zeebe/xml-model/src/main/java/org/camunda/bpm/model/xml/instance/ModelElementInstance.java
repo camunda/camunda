@@ -16,18 +16,16 @@
  */
 package org.camunda.bpm.model.xml.instance;
 
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
-import java.util.Collection;
-
 /**
  * An instance of a {@link ModelElementType}
  *
  * @author Daniel Meyer
- *
  */
 public interface ModelElementInstance {
 
@@ -43,8 +41,8 @@ public interface ModelElementInstance {
    *
    * @return the model instance
    */
-
   ModelInstance getModelInstance();
+
   /**
    * Returns the parent element of this.
    *
@@ -62,7 +60,7 @@ public interface ModelElementInstance {
   /**
    * Returns the attribute value for the attribute name.
    *
-   * @param attributeName  the name of the attribute
+   * @param attributeName the name of the attribute
    * @return the value of the attribute
    */
   String getAttributeValue(String attributeName);
@@ -70,43 +68,44 @@ public interface ModelElementInstance {
   /**
    * Sets the value by name of a non-ID attribute.
    *
-   * @param attributeName  the name of the attribute
-   * @param xmlValue  the value to set
+   * @param attributeName the name of the attribute
+   * @param xmlValue the value to set
    */
   void setAttributeValue(String attributeName, String xmlValue);
 
   /**
    * Sets attribute value by name.
    *
-   * @param attributeName  the name of the attribute
-   * @param xmlValue  the value to set
-   * @param isIdAttribute  true if the attribute is an ID attribute, false otherwise
+   * @param attributeName the name of the attribute
+   * @param xmlValue the value to set
+   * @param isIdAttribute true if the attribute is an ID attribute, false otherwise
    */
   void setAttributeValue(String attributeName, String xmlValue, boolean isIdAttribute);
 
   /**
    * Sets attribute value by name.
    *
-   * @param attributeName  the name of the attribute
-   * @param xmlValue  the value to set
-   * @param isIdAttribute  true if the attribute is an ID attribute, false otherwise
-   * @param withReferenceUpdate  true to update incoming references in other elements, false otherwise
+   * @param attributeName the name of the attribute
+   * @param xmlValue the value to set
+   * @param isIdAttribute true if the attribute is an ID attribute, false otherwise
+   * @param withReferenceUpdate true to update incoming references in other elements, false
+   *     otherwise
    */
-  void setAttributeValue(String attributeName, String xmlValue,
-                         boolean isIdAttribute, boolean withReferenceUpdate);
+  void setAttributeValue(
+      String attributeName, String xmlValue, boolean isIdAttribute, boolean withReferenceUpdate);
 
   /**
    * Removes attribute by name.
    *
-   * @param attributeName  the name of the attribute
+   * @param attributeName the name of the attribute
    */
   void removeAttribute(String attributeName);
 
   /**
    * Returns the attribute value for the given attribute name and namespace URI.
    *
-   * @param namespaceUri  the namespace URI of the attribute
-   * @param attributeName  the attribute name of the attribute
+   * @param namespaceUri the namespace URI of the attribute
+   * @param attributeName the attribute name of the attribute
    * @return the value of the attribute
    */
   String getAttributeValueNs(String namespaceUri, String attributeName);
@@ -114,45 +113,51 @@ public interface ModelElementInstance {
   /**
    * Sets the value by name and namespace of a non-ID attribute.
    *
-   * @param namespaceUri  the namespace URI of the attribute
-   * @param attributeName  the name of the attribute
-   * @param xmlValue  the XML value to set
+   * @param namespaceUri the namespace URI of the attribute
+   * @param attributeName the name of the attribute
+   * @param xmlValue the XML value to set
    */
   void setAttributeValueNs(String namespaceUri, String attributeName, String xmlValue);
 
   /**
    * Sets the attribute value by name and namespace.
    *
-   * @param namespaceUri  the namespace URI of the attribute
-   * @param attributeName  the name of the attribute
-   * @param xmlValue  the XML value to set
-   * @param isIdAttribute  true if the attribute is an ID attribute, false otherwise
+   * @param namespaceUri the namespace URI of the attribute
+   * @param attributeName the name of the attribute
+   * @param xmlValue the XML value to set
+   * @param isIdAttribute true if the attribute is an ID attribute, false otherwise
    */
-  void setAttributeValueNs(String namespaceUri, String attributeName, String xmlValue, boolean isIdAttribute);
+  void setAttributeValueNs(
+      String namespaceUri, String attributeName, String xmlValue, boolean isIdAttribute);
 
   /**
    * Sets the attribute value by name and namespace.
    *
-   * @param namespaceUri  the namespace URI of the attribute
-   * @param attributeName  the name of the attribute
-   * @param xmlValue  the XML value to set
-   * @param isIdAttribute  true if the attribute is an ID attribute, false otherwise
-   * @param withReferenceUpdate  true to update incoming references in other elements, false otherwise
+   * @param namespaceUri the namespace URI of the attribute
+   * @param attributeName the name of the attribute
+   * @param xmlValue the XML value to set
+   * @param isIdAttribute true if the attribute is an ID attribute, false otherwise
+   * @param withReferenceUpdate true to update incoming references in other elements, false
+   *     otherwise
    */
-  void setAttributeValueNs(String namespaceUri, String attributeName, String xmlValue,
-                           boolean isIdAttribute, boolean withReferenceUpdate);
+  void setAttributeValueNs(
+      String namespaceUri,
+      String attributeName,
+      String xmlValue,
+      boolean isIdAttribute,
+      boolean withReferenceUpdate);
 
   /**
    * Removes the attribute by name and namespace.
    *
-   * @param namespaceUri  the namespace URI of the attribute
-   * @param attributeName  the name of the attribute
+   * @param namespaceUri the namespace URI of the attribute
+   * @param attributeName the name of the attribute
    */
   void removeAttributeNs(String namespaceUri, String attributeName);
 
   /**
-   * Returns the text content of the DOM element without leading and trailing spaces. For
-   * raw text content see {@link ModelElementInstanceImpl#getRawTextContent()}.
+   * Returns the text content of the DOM element without leading and trailing spaces. For raw text
+   * content see {@link ModelElementInstanceImpl#getRawTextContent()}.
    *
    * @return text content of underlying DOM element with leading and trailing whitespace trimmed
    */
@@ -168,14 +173,14 @@ public interface ModelElementInstance {
   /**
    * Sets the text content of the DOM element
    *
-   * @param  textContent the new text content
+   * @param textContent the new text content
    */
   void setTextContent(String textContent);
 
   /**
    * Replaces this element with a new element and updates references.
    *
-   * @param newElement  the new element to replace with
+   * @param newElement the new element to replace with
    */
   void replaceWithElement(ModelElementInstance newElement);
 
@@ -191,10 +196,11 @@ public interface ModelElementInstance {
   /**
    * Returns a child element with the given type
    *
-   * @param elementType  the type of the element
+   * @param elementType the type of the element
    * @return the child element or null
    */
-  ModelElementInstance getUniqueChildElementByType(Class<? extends ModelElementInstance> elementType);
+  ModelElementInstance getUniqueChildElementByType(
+      Class<? extends ModelElementInstance> elementType);
 
   /**
    * Adds or replaces a child element by name. Replaces an existing Child Element with the same name
@@ -205,7 +211,8 @@ public interface ModelElementInstance {
   void setUniqueChildElementByNameNs(ModelElementInstance newChild);
 
   /**
-   * Replace an existing child element with a new child element. Changes the underlying DOM element tree.
+   * Replace an existing child element with a new child element. Changes the underlying DOM element
+   * tree.
    *
    * @param existingChild the child element to replace
    * @param newChild the new child element
@@ -213,9 +220,8 @@ public interface ModelElementInstance {
   void replaceChildElement(ModelElementInstance existingChild, ModelElementInstance newChild);
 
   /**
-   * Adds a new child element to the children of this element. The child
-   * is inserted at the correct position of the allowed child types.
-   * Updates the underlying DOM element tree.
+   * Adds a new child element to the children of this element. The child is inserted at the correct
+   * position of the allowed child types. Updates the underlying DOM element tree.
    *
    * @param newChild the new child element
    * @throws ModelException if the new child type is not an allowed child type
@@ -225,7 +231,7 @@ public interface ModelElementInstance {
   /**
    * Removes the child element from this.
    *
-   * @param child  the child element to remove
+   * @param child the child element to remove
    * @return true if the child element could be removed
    */
   boolean removeChildElement(ModelElementInstance child);
@@ -241,21 +247,21 @@ public interface ModelElementInstance {
   /**
    * Return all child elements of a given type
    *
-   * @param childElementClass  the class of the child element type to search for
+   * @param childElementClass the class of the child element type to search for
    * @return a collection of elements to the given type
    */
   <T extends ModelElementInstance> Collection<T> getChildElementsByType(Class<T> childElementClass);
 
   /**
-   * Inserts the new element after the given element or at the beginning if the given element is null.
+   * Inserts the new element after the given element or at the beginning if the given element is
+   * null.
    *
-   * @param elementToInsert  the new element to insert
-   * @param insertAfterElement  the element to insert after or null to insert at first position
+   * @param elementToInsert the new element to insert
+   * @param insertAfterElement the element to insert after or null to insert at first position
    */
-  void insertElementAfter(ModelElementInstance elementToInsert, ModelElementInstance insertAfterElement);
+  void insertElementAfter(
+      ModelElementInstance elementToInsert, ModelElementInstance insertAfterElement);
 
-  /**
-   * Execute updates after the element was inserted as a replacement of another element.
-   */
+  /** Execute updates after the element was inserted as a replacement of another element. */
   void updateAfterReplacement();
 }

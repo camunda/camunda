@@ -16,13 +16,13 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_SPOUSE_REF;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_SPOUSE_REF;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
 
 /**
  * @author Sebastian Menski
@@ -30,13 +30,16 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMES
 public class SpouseRef extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(SpouseRef.class, ELEMENT_NAME_SPOUSE_REF)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelElementTypeBuilder.ModelTypeInstanceProvider<SpouseRef>() {
-        public SpouseRef newInstance(ModelTypeInstanceContext instanceContext) {
-          return new SpouseRef(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(SpouseRef.class, ELEMENT_NAME_SPOUSE_REF)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelElementTypeBuilder.ModelTypeInstanceProvider<SpouseRef>() {
+                  public SpouseRef newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new SpouseRef(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }

@@ -28,16 +28,22 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollectionBuilde
 /**
  * @author Sebastian Menski
  */
-public class ElementReferenceCollectionBuilderImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> implements ElementReferenceCollectionBuilder<Target, Source> {
+public class ElementReferenceCollectionBuilderImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    implements ElementReferenceCollectionBuilder<Target, Source> {
 
   private final Class<Source> childElementType;
   private final Class<Target> referenceTargetClass;
   protected ElementReferenceCollectionImpl<Target, Source> elementReferenceCollectionImpl;
 
-  public ElementReferenceCollectionBuilderImpl(Class<Source> childElementType, Class<Target> referenceTargetClass, ChildElementCollectionImpl<Source> collection) {
+  public ElementReferenceCollectionBuilderImpl(
+      Class<Source> childElementType,
+      Class<Target> referenceTargetClass,
+      ChildElementCollectionImpl<Source> collection) {
     this.childElementType = childElementType;
     this.referenceTargetClass = referenceTargetClass;
-    this.elementReferenceCollectionImpl = new ElementReferenceCollectionImpl<Target, Source>(collection);
+    this.elementReferenceCollectionImpl =
+        new ElementReferenceCollectionImpl<Target, Source>(collection);
   }
 
   public ElementReferenceCollection<Target, Source> build() {
@@ -46,13 +52,16 @@ public class ElementReferenceCollectionBuilderImpl<Target extends ModelElementIn
 
   @SuppressWarnings("unchecked")
   public void performModelBuild(Model model) {
-    ModelElementTypeImpl referenceTargetType = (ModelElementTypeImpl) model.getType(referenceTargetClass);
-    ModelElementTypeImpl referenceSourceType = (ModelElementTypeImpl) model.getType(childElementType);
+    ModelElementTypeImpl referenceTargetType =
+        (ModelElementTypeImpl) model.getType(referenceTargetClass);
+    ModelElementTypeImpl referenceSourceType =
+        (ModelElementTypeImpl) model.getType(childElementType);
     elementReferenceCollectionImpl.setReferenceTargetElementType(referenceTargetType);
     elementReferenceCollectionImpl.setReferenceSourceElementType(referenceSourceType);
 
     // the referenced attribute may be declared on a base type of the referenced type.
-    AttributeImpl<String> idAttribute = (AttributeImpl<String>) referenceTargetType.getAttribute("id");
+    AttributeImpl<String> idAttribute =
+        (AttributeImpl<String>) referenceTargetType.getAttribute("id");
     if (idAttribute != null) {
       idAttribute.registerIncoming(elementReferenceCollectionImpl);
       elementReferenceCollectionImpl.setReferenceTargetAttribute(idAttribute);

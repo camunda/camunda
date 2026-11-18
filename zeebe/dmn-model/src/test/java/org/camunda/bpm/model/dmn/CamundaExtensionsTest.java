@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.Input;
 import org.junit.After;
@@ -36,14 +35,22 @@ public class CamundaExtensionsTest {
   private final DmnModelInstance originalModelInstance;
   private DmnModelInstance modelInstance;
 
-   @Parameters(name="Namespace: {0}")
-   public static Collection<Object[]> parameters(){
-     return Arrays.asList(new Object[][]{
-         {Dmn.readModelFromStream(CamundaExtensionsTest.class.getResourceAsStream("CamundaExtensionsTest.dmn"))},
-         // for compatibility reasons we gotta check the old namespace, too
-         {Dmn.readModelFromStream(CamundaExtensionsTest.class.getResourceAsStream("CamundaExtensionsCompatibilityTest.dmn"))}
-     });
-   }
+  @Parameters(name = "Namespace: {0}")
+  public static Collection<Object[]> parameters() {
+    return Arrays.asList(
+        new Object[][] {
+          {
+            Dmn.readModelFromStream(
+                CamundaExtensionsTest.class.getResourceAsStream("CamundaExtensionsTest.dmn"))
+          },
+          // for compatibility reasons we gotta check the old namespace, too
+          {
+            Dmn.readModelFromStream(
+                CamundaExtensionsTest.class.getResourceAsStream(
+                    "CamundaExtensionsCompatibilityTest.dmn"))
+          }
+        });
+  }
 
   public CamundaExtensionsTest(DmnModelInstance originalModelInstance) {
     this.originalModelInstance = originalModelInstance;
@@ -52,7 +59,6 @@ public class CamundaExtensionsTest {
   @Before
   public void parseModel() {
     modelInstance = originalModelInstance.clone();
-
   }
 
   @Test
@@ -83,5 +89,4 @@ public class CamundaExtensionsTest {
   public void validateModel() {
     Dmn.validateModel(modelInstance);
   }
-
 }

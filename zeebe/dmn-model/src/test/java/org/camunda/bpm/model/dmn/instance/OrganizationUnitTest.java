@@ -27,13 +27,11 @@ public class OrganizationUnitTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(DecisionMadeReference.class),
-      new ChildElementAssumption(DecisionOwnedReference.class)
-    );
+        new ChildElementAssumption(DecisionMadeReference.class),
+        new ChildElementAssumption(DecisionOwnedReference.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

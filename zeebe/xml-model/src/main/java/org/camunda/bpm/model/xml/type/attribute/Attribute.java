@@ -16,15 +16,13 @@
  */
 package org.camunda.bpm.model.xml.type.attribute;
 
+import java.util.List;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.reference.Reference;
 
-import java.util.List;
-
 /**
  * @author meyerd
- *
  * @param <T>
  */
 public interface Attribute<T> {
@@ -74,5 +72,4 @@ public interface Attribute<T> {
   List<Reference<?>> getIncomingReferences();
 
   List<Reference<?>> getOutgoingReferences();
-
 }

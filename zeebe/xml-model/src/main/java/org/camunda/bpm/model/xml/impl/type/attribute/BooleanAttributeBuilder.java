@@ -18,17 +18,14 @@ package org.camunda.bpm.model.xml.impl.type.attribute;
 
 import org.camunda.bpm.model.xml.impl.type.ModelElementTypeImpl;
 
-
 /**
- * <p>Builder for building {@link BooleanAttribute BooleanAttributes}</p>
+ * Builder for building {@link BooleanAttribute BooleanAttributes}
  *
  * @author Daniel Meyer
- *
  */
 public class BooleanAttributeBuilder extends AttributeBuilderImpl<Boolean> {
 
   public BooleanAttributeBuilder(String attributeName, ModelElementTypeImpl modelType) {
     super(attributeName, modelType, new BooleanAttribute(modelType));
   }
-
 }

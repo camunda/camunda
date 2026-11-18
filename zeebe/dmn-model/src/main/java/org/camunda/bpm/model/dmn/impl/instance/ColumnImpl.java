@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_COLUMN;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Column;
 import org.camunda.bpm.model.dmn.instance.InformationItem;
@@ -33,16 +33,18 @@ public class ColumnImpl extends InformationItemImpl implements Column {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Column.class, DMN_ELEMENT_COLUMN)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(InformationItem.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Column>() {
-        public Column newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ColumnImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Column.class, DMN_ELEMENT_COLUMN)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(InformationItem.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Column>() {
+                  public Column newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ColumnImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

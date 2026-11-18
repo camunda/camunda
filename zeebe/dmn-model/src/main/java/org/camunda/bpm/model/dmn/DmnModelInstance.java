@@ -19,18 +19,18 @@ package org.camunda.bpm.model.dmn;
 import org.camunda.bpm.model.dmn.instance.Definitions;
 import org.camunda.bpm.model.xml.ModelInstance;
 
-
 public interface DmnModelInstance extends ModelInstance {
 
   /**
    * @return the {@link Definitions}, root element of the Dmn Model.
-   * */
+   */
   Definitions getDefinitions();
 
   /**
    * Set the Dmn Definitions Root element
+   *
    * @param definitions the {@link Definitions} element to set
-   * */
+   */
   void setDefinitions(Definitions definitions);
 
   /**
@@ -40,5 +40,4 @@ public interface DmnModelInstance extends ModelInstance {
    * @return the new DMN model instance
    */
   DmnModelInstance clone();
-
 }

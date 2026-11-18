@@ -20,7 +20,6 @@ import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertTh
 import static org.junit.Assert.fail;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.type.ModelElementTypeImpl;
@@ -34,7 +33,6 @@ import org.junit.Test;
 import org.w3c.dom.DOMException;
 
 public abstract class AbstractModelElementInstanceTest {
-
 
   protected class TypeAssumption {
 
@@ -54,7 +52,10 @@ public abstract class AbstractModelElementInstanceTest {
       this(getDefaultNamespace(), extendsType, isAbstract);
     }
 
-    public TypeAssumption(String namespaceUri, Class<? extends ModelElementInstance> extendsType, boolean isAbstract) {
+    public TypeAssumption(
+        String namespaceUri,
+        Class<? extends ModelElementInstance> extendsType,
+        boolean isAbstract) {
       this.namespaceUri = namespaceUri;
       this.extendsType = model.getType(extendsType);
       this.isAbstract = isAbstract;
@@ -72,23 +73,33 @@ public abstract class AbstractModelElementInstanceTest {
       this(childElementType, 0, -1);
     }
 
-    public ChildElementAssumption(String namespaceUri, Class<? extends ModelElementInstance> childElementType) {
+    public ChildElementAssumption(
+        String namespaceUri, Class<? extends ModelElementInstance> childElementType) {
       this(namespaceUri, childElementType, 0, -1);
     }
 
-    public ChildElementAssumption(Class<? extends ModelElementInstance> childElementType, int minOccurs) {
+    public ChildElementAssumption(
+        Class<? extends ModelElementInstance> childElementType, int minOccurs) {
       this(childElementType, minOccurs, -1);
     }
 
-    public ChildElementAssumption(String namespaceUri, Class<? extends ModelElementInstance> childElementType, int minOccurs) {
+    public ChildElementAssumption(
+        String namespaceUri,
+        Class<? extends ModelElementInstance> childElementType,
+        int minOccurs) {
       this(namespaceUri, childElementType, minOccurs, -1);
     }
 
-    public ChildElementAssumption(Class<? extends ModelElementInstance> childElementType, int minOccurs, int maxOccurs) {
+    public ChildElementAssumption(
+        Class<? extends ModelElementInstance> childElementType, int minOccurs, int maxOccurs) {
       this(getDefaultNamespace(), childElementType, minOccurs, maxOccurs);
     }
 
-    public ChildElementAssumption(String namespaceUri, Class<? extends ModelElementInstance> childElementType, int minOccurs, int maxOccurs) {
+    public ChildElementAssumption(
+        String namespaceUri,
+        Class<? extends ModelElementInstance> childElementType,
+        int minOccurs,
+        int maxOccurs) {
       this.namespaceUri = namespaceUri;
       this.childElementType = model.getType(childElementType);
       this.minOccurs = minOccurs;
@@ -124,15 +135,22 @@ public abstract class AbstractModelElementInstanceTest {
       this(attributeName, isIdAttribute, isRequired, null);
     }
 
-    public AttributeAssumption(String namespace, String attributeName, boolean isIdAttribute, boolean isRequired) {
+    public AttributeAssumption(
+        String namespace, String attributeName, boolean isIdAttribute, boolean isRequired) {
       this(namespace, attributeName, isIdAttribute, isRequired, null);
     }
 
-    public AttributeAssumption(String attributeName, boolean isIdAttribute, boolean isRequired, Object defaultValue) {
+    public AttributeAssumption(
+        String attributeName, boolean isIdAttribute, boolean isRequired, Object defaultValue) {
       this(null, attributeName, isIdAttribute, isRequired, defaultValue);
     }
 
-    public AttributeAssumption(String namespace, String attributeName, boolean isIdAttribute, boolean isRequired, Object defaultValue) {
+    public AttributeAssumption(
+        String namespace,
+        String attributeName,
+        boolean isIdAttribute,
+        boolean isRequired,
+        Object defaultValue) {
       this.attributeName = attributeName;
       this.namespace = namespace;
       this.isIdAttribute = isIdAttribute;
@@ -155,10 +173,12 @@ public abstract class AbstractModelElementInstanceTest {
   }
 
   public abstract String getDefaultNamespace();
-  public abstract TypeAssumption getTypeAssumption();
-  public abstract Collection<ChildElementAssumption> getChildElementAssumptions();
-  public abstract Collection<AttributeAssumption> getAttributesAssumptions();
 
+  public abstract TypeAssumption getTypeAssumption();
+
+  public abstract Collection<ChildElementAssumption> getChildElementAssumptions();
+
+  public abstract Collection<AttributeAssumption> getAttributesAssumptions();
 
   public ModelElementTypeAssert assertThatType() {
     return assertThat(modelElementType);
@@ -186,14 +206,12 @@ public abstract class AbstractModelElementInstanceTest {
 
     if (assumption.isAbstract) {
       assertThatType().isAbstract();
-    }
-    else {
+    } else {
       assertThatType().isNotAbstract();
     }
     if (assumption.extendsType == null) {
       assertThatType().extendsNoType();
-    }
-    else {
+    } else {
       assertThatType().extendsType(assumption.extendsType);
     }
 
@@ -201,18 +219,14 @@ public abstract class AbstractModelElementInstanceTest {
       try {
         modelInstance.newInstance(modelElementType);
         fail("Element type " + modelElementType.getTypeName() + " is abstract.");
-      }
-      catch (DOMException e) {
+      } catch (DOMException e) {
         // expected exception
-      }
-      catch (ModelTypeException e) {
+      } catch (ModelTypeException e) {
         // expected exception
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         fail("Unexpected exception " + e.getMessage());
       }
-    }
-    else {
+    } else {
       ModelElementInstance modelElementInstance = modelInstance.newInstance(modelElementType);
       assertThat(modelElementInstance).isNotNull();
     }
@@ -223,17 +237,17 @@ public abstract class AbstractModelElementInstanceTest {
     Collection<ChildElementAssumption> childElementAssumptions = getChildElementAssumptions();
     if (childElementAssumptions == null) {
       assertThatType().hasNoChildElements();
-    }
-    else {
-      assertThat(modelElementType.getChildElementTypes().size()).isEqualTo(childElementAssumptions.size());
+    } else {
+      assertThat(modelElementType.getChildElementTypes().size())
+          .isEqualTo(childElementAssumptions.size());
       for (ChildElementAssumption assumption : childElementAssumptions) {
         assertThatType().hasChildElements(assumption.childElementType);
         if (assumption.namespaceUri != null) {
           assertThat(assumption.childElementType).hasTypeNamespace(assumption.namespaceUri);
         }
         assertThatChildElement(assumption.childElementType)
-          .occursMinimal(assumption.minOccurs)
-          .occursMaximal(assumption.maxOccurs);
+            .occursMinimal(assumption.minOccurs)
+            .occursMaximal(assumption.maxOccurs);
       }
     }
   }
@@ -243,8 +257,7 @@ public abstract class AbstractModelElementInstanceTest {
     Collection<AttributeAssumption> attributesAssumptions = getAttributesAssumptions();
     if (attributesAssumptions == null) {
       assertThatType().hasNoAttributes();
-    }
-    else {
+    } else {
       assertThat(attributesAssumptions).hasSameSizeAs(modelElementType.getAttributes());
       for (AttributeAssumption assumption : attributesAssumptions) {
         assertThatType().hasAttributes(assumption.attributeName);
@@ -254,32 +267,27 @@ public abstract class AbstractModelElementInstanceTest {
 
         if (assumption.namespace != null) {
           attributeAssert.hasNamespaceUri(assumption.namespace);
-        }
-        else {
+        } else {
           attributeAssert.hasNoNamespaceUri();
         }
 
         if (assumption.isIdAttribute) {
           attributeAssert.isIdAttribute();
-        }
-        else {
+        } else {
           attributeAssert.isNotIdAttribute();
         }
 
         if (assumption.isRequired) {
           attributeAssert.isRequired();
-        }
-        else {
+        } else {
           attributeAssert.isOptional();
         }
 
         if (assumption.defaultValue == null) {
           attributeAssert.hasNoDefaultValue();
-        }
-        else {
+        } else {
           attributeAssert.hasDefaultValue(assumption.defaultValue);
         }
-
       }
     }
   }

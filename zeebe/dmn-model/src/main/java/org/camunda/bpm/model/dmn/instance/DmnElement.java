@@ -33,5 +33,4 @@ public interface DmnElement extends DmnModelElementInstance {
   ExtensionElements getExtensionElements();
 
   void setExtensionElements(ExtensionElements extensionElements);
-
 }

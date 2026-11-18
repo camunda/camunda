@@ -28,7 +28,6 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMES
 import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_ANIMAL;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
@@ -43,7 +42,6 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
 /**
  * @author Daniel Meyer
- *
  */
 public abstract class Animal extends ModelElementInstanceImpl {
 
@@ -56,52 +54,55 @@ public abstract class Animal extends ModelElementInstanceImpl {
   protected static Attribute<Integer> ageAttr;
   protected static AttributeReferenceCollection<Animal> bestFriendsRefCollection;
   protected static ChildElementCollection<RelationshipDefinition> relationshipDefinitionsColl;
-  protected static ElementReferenceCollection<RelationshipDefinition, RelationshipDefinitionRef> relationshipDefinitionRefsColl;
+  protected static ElementReferenceCollection<RelationshipDefinition, RelationshipDefinitionRef>
+      relationshipDefinitionRefsColl;
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Animal.class, TYPE_NAME_ANIMAL)
-      .namespaceUri(MODEL_NAMESPACE)
-      .abstractType();
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Animal.class, TYPE_NAME_ANIMAL)
+            .namespaceUri(MODEL_NAMESPACE)
+            .abstractType();
 
-    idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID)
-      .idAttribute()
-      .build();
+    idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID).idAttribute().build();
 
-    nameAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_NAME)
-      .build();
+    nameAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_NAME).build();
 
-    fatherRef = typeBuilder.stringAttribute(ATTRIBUTE_NAME_FATHER)
-      .qNameAttributeReference(Animal.class)
-      .build();
+    fatherRef =
+        typeBuilder
+            .stringAttribute(ATTRIBUTE_NAME_FATHER)
+            .qNameAttributeReference(Animal.class)
+            .build();
 
-    motherRef = typeBuilder.stringAttribute(ATTRIBUTE_NAME_MOTHER)
-      .idAttributeReference(Animal.class)
-      .build();
+    motherRef =
+        typeBuilder
+            .stringAttribute(ATTRIBUTE_NAME_MOTHER)
+            .idAttributeReference(Animal.class)
+            .build();
 
-    isEndangeredAttr = typeBuilder.booleanAttribute(ATTRIBUTE_NAME_IS_ENDANGERED)
-      .defaultValue(false)
-      .build();
+    isEndangeredAttr =
+        typeBuilder.booleanAttribute(ATTRIBUTE_NAME_IS_ENDANGERED).defaultValue(false).build();
 
-    genderAttr = typeBuilder.enumAttribute(ATTRIBUTE_NAME_GENDER, Gender.class)
-      .required()
-      .build();
+    genderAttr = typeBuilder.enumAttribute(ATTRIBUTE_NAME_GENDER, Gender.class).required().build();
 
-    ageAttr = typeBuilder.integerAttribute(ATTRIBUTE_NAME_AGE)
-      .build();
+    ageAttr = typeBuilder.integerAttribute(ATTRIBUTE_NAME_AGE).build();
 
-    bestFriendsRefCollection = typeBuilder.stringAttribute(ATTRIBUTE_NAME_BEST_FRIEND_REFS)
-        .idAttributeReferenceCollection(Animal.class, AnimalAttributeReferenceCollection.class)
-        .build();
+    bestFriendsRefCollection =
+        typeBuilder
+            .stringAttribute(ATTRIBUTE_NAME_BEST_FRIEND_REFS)
+            .idAttributeReferenceCollection(Animal.class, AnimalAttributeReferenceCollection.class)
+            .build();
 
     SequenceBuilder sequence = typeBuilder.sequence();
 
-    relationshipDefinitionsColl = sequence.elementCollection(RelationshipDefinition.class)
-      .build();
+    relationshipDefinitionsColl = sequence.elementCollection(RelationshipDefinition.class).build();
 
-    relationshipDefinitionRefsColl = sequence.elementCollection(RelationshipDefinitionRef.class)
-      .qNameElementReferenceCollection(RelationshipDefinition.class)
-      .build();
+    relationshipDefinitionRefsColl =
+        sequence
+            .elementCollection(RelationshipDefinitionRef.class)
+            .qNameElementReferenceCollection(RelationshipDefinition.class)
+            .build();
 
     typeBuilder.build();
   }
@@ -181,5 +182,4 @@ public abstract class Animal extends ModelElementInstanceImpl {
   public Collection<Animal> getBestFriends() {
     return bestFriendsRefCollection.getReferenceTargetElements(this);
   }
-
 }

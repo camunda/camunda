@@ -22,7 +22,6 @@ import org.camunda.bpm.model.xml.validation.ValidationResultType;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class ModelValidationResultImpl implements ValidationResult {
 
@@ -31,7 +30,8 @@ public class ModelValidationResultImpl implements ValidationResult {
   protected ModelElementInstance element;
   protected String message;
 
-  public ModelValidationResultImpl(ModelElementInstance element, ValidationResultType type, int code, String message) {
+  public ModelValidationResultImpl(
+      ModelElementInstance element, ValidationResultType type, int code, String message) {
     this.element = element;
     this.type = type;
     this.code = code;
@@ -57,5 +57,4 @@ public class ModelValidationResultImpl implements ValidationResult {
   public int getCode() {
     return code;
   }
-
 }

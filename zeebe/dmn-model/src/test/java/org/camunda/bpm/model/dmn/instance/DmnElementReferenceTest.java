@@ -30,9 +30,6 @@ public class DmnElementReferenceTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("href", false, true)
-    );
+    return Arrays.asList(new AttributeAssumption("href", false, true));
   }
-
 }

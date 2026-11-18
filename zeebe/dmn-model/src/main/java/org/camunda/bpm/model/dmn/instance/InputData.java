@@ -21,5 +21,4 @@ public interface InputData extends DrgElement {
   InformationItem getInformationItem();
 
   void setInformationItem(InformationItem informationItem);
-
 }

@@ -16,30 +16,32 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
-import org.camunda.bpm.model.xml.testmodel.TestModelConstants;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
-
 public class Description extends ModelElementInstanceImpl {
 
-    public Description(ModelTypeInstanceContext instanceContext) {
-        super(instanceContext);
-    }
+  public Description(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
 
-    public static void registerType(ModelBuilder modelBuilder) {
-      ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Description.class, ELEMENT_NAME_DESCRIPTION)
-        .namespaceUri(MODEL_NAMESPACE)
-        .instanceProvider(new ModelTypeInstanceProvider<Description>() {
-          public Description newInstance(ModelTypeInstanceContext instanceContext) {
-            return new Description(instanceContext);
-          }
-        });
+  public static void registerType(ModelBuilder modelBuilder) {
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Description.class, ELEMENT_NAME_DESCRIPTION)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Description>() {
+                  public Description newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new Description(instanceContext);
+                  }
+                });
 
-      typeBuilder.build();
-    }
+    typeBuilder.build();
+  }
 }

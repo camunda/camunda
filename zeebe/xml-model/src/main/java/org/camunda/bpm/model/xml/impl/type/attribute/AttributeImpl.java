@@ -16,22 +16,20 @@
  */
 package org.camunda.bpm.model.xml.impl.type.attribute;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import org.camunda.bpm.model.xml.impl.type.reference.ReferenceImpl;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.Reference;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 /**
- * <p>Base class for implementing primitive value attributes</p>
+ * Base class for implementing primitive value attributes
  *
  * @author Daniel Meyer
- *
  */
 public abstract class AttributeImpl<T> implements Attribute<T> {
 
@@ -41,9 +39,9 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   /** the namespace for this attribute */
   private String namespaceUri;
 
-  /** the default value for this attribute: the default value is returned
-   * by the {@link #getValue(ModelElementInstance)} method in case the attribute is not set on the
-   * domElement.
+  /**
+   * the default value for this attribute: the default value is returned by the {@link
+   * #getValue(ModelElementInstance)} method in case the attribute is not set on the domElement.
    */
   private T defaultValue;
 
@@ -62,16 +60,16 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   }
 
   /**
-   * to be implemented by subclasses: converts the raw (String) value of the
-   * attribute to the type required by the model
+   * to be implemented by subclasses: converts the raw (String) value of the attribute to the type
+   * required by the model
    *
    * @return the converted value
    */
   protected abstract T convertXmlValueToModelValue(String rawValue);
 
   /**
-   * to be implemented by subclasses: converts the raw (String) value of the
-   * attribute to the type required by the model
+   * to be implemented by subclasses: converts the raw (String) value of the attribute to the type
+   * required by the model
    *
    * @return the converted value
    */
@@ -88,12 +86,13 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
    */
   public T getValue(ModelElementInstance modelElement) {
     String value;
-    if(namespaceUri == null) {
+    if (namespaceUri == null) {
       value = modelElement.getAttributeValue(attributeName);
     } else {
       value = modelElement.getAttributeValueNs(namespaceUri, attributeName);
-      if(value == null) {
-        Set<String> alternativeNamespaces = owningElementType.getModel().getAlternativeNamespaces(namespaceUri);
+      if (value == null) {
+        Set<String> alternativeNamespaces =
+            owningElementType.getModel().getAlternativeNamespaces(namespaceUri);
 
         if (alternativeNamespaces != null) {
           Iterator<String> namespaceIt = alternativeNamespaces.iterator();
@@ -116,7 +115,7 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   /**
    * sets the value of the attribute.
    *
-   *  the value of the attribute.
+   * <p>the value of the attribute.
    */
   public void setValue(ModelElementInstance modelElement, T value) {
     setValue(modelElement, value, true);
@@ -125,19 +124,20 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   @Override
   public void setValue(ModelElementInstance modelElement, T value, boolean withReferenceUpdate) {
     String xmlValue = convertModelValueToXmlValue(value);
-    if(namespaceUri == null) {
-      modelElement.setAttributeValue(attributeName, xmlValue,
-              isIdAttribute, withReferenceUpdate);
+    if (namespaceUri == null) {
+      modelElement.setAttributeValue(attributeName, xmlValue, isIdAttribute, withReferenceUpdate);
     } else {
-      modelElement.setAttributeValueNs(namespaceUri, attributeName,
-              xmlValue, isIdAttribute, withReferenceUpdate);
+      modelElement.setAttributeValueNs(
+          namespaceUri, attributeName, xmlValue, isIdAttribute, withReferenceUpdate);
     }
   }
 
-  public void updateIncomingReferences(ModelElementInstance modelElement, String newIdentifier, String oldIdentifier) {
+  public void updateIncomingReferences(
+      ModelElementInstance modelElement, String newIdentifier, String oldIdentifier) {
     if (!incomingReferences.isEmpty()) {
       for (Reference<?> incomingReference : incomingReferences) {
-        ((ReferenceImpl<?>) incomingReference).referencedElementUpdated(modelElement, oldIdentifier, newIdentifier);
+        ((ReferenceImpl<?>) incomingReference)
+            .referencedElementUpdated(modelElement, oldIdentifier, newIdentifier);
       }
     }
   }
@@ -150,13 +150,11 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
     this.defaultValue = defaultValue;
   }
 
-
   public boolean isRequired() {
     return isRequired;
   }
 
-  /**
-   */
+  /** */
   public void setRequired(boolean required) {
     this.isRequired = required;
   }
@@ -179,10 +177,7 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
     return isIdAttribute;
   }
 
-  /**
-   * Indicate whether this attribute is an Id attribute
-   *
-   */
+  /** Indicate whether this attribute is an Id attribute */
   public void setId() {
     this.isIdAttribute = true;
   }
@@ -204,8 +199,7 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   public void removeAttribute(ModelElementInstance modelElement) {
     if (namespaceUri == null) {
       modelElement.removeAttribute(attributeName);
-    }
-    else {
+    } else {
       modelElement.removeAttributeNs(namespaceUri, attributeName);
     }
   }
@@ -213,7 +207,8 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   public void unlinkReference(ModelElementInstance modelElement, Object referenceIdentifier) {
     if (!incomingReferences.isEmpty()) {
       for (Reference<?> incomingReference : incomingReferences) {
-        ((ReferenceImpl<?>) incomingReference).referencedElementRemoved(modelElement, referenceIdentifier);
+        ((ReferenceImpl<?>) incomingReference)
+            .referencedElementRemoved(modelElement, referenceIdentifier);
       }
     }
   }
@@ -239,5 +234,4 @@ public abstract class AttributeImpl<T> implements Attribute<T> {
   public void registerIncoming(Reference<?> ref) {
     incomingReferences.add(ref);
   }
-
 }

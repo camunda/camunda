@@ -18,7 +18,6 @@ package org.camunda.bpm.model.dmn.instance;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.DecisionTableOrientation;
 import org.camunda.bpm.model.dmn.HitPolicy;
 
@@ -30,19 +29,17 @@ public class DecisionTableTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Input.class),
-      new ChildElementAssumption(Output.class, 1),
-      new ChildElementAssumption(Rule.class)
-    );
+        new ChildElementAssumption(Input.class),
+        new ChildElementAssumption(Output.class, 1),
+        new ChildElementAssumption(Rule.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      new AttributeAssumption("hitPolicy", false, false, HitPolicy.UNIQUE),
-      new AttributeAssumption("aggregation"),
-      new AttributeAssumption("preferredOrientation", false, false, DecisionTableOrientation.Rule_as_Row),
-      new AttributeAssumption("outputLabel")
-    );
+        new AttributeAssumption("hitPolicy", false, false, HitPolicy.UNIQUE),
+        new AttributeAssumption("aggregation"),
+        new AttributeAssumption(
+            "preferredOrientation", false, false, DecisionTableOrientation.Rule_as_Row),
+        new AttributeAssumption("outputLabel"));
   }
-
 }

@@ -43,5 +43,4 @@ public class NamedEnumAttribute<T extends Enum<T>> extends AttributeImpl<T> {
   protected String convertModelValueToXmlValue(T modelValue) {
     return modelValue.toString();
   }
-
 }

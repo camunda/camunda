@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_INPUT_DECISION_REFERENCE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.InputDecisionReference;
@@ -26,23 +26,27 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class InputDecisionReferenceImpl extends DmnElementReferenceImpl implements InputDecisionReference {
+public class InputDecisionReferenceImpl extends DmnElementReferenceImpl
+    implements InputDecisionReference {
 
   public InputDecisionReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(InputDecisionReference.class, DMN_ELEMENT_INPUT_DECISION_REFERENCE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<InputDecisionReference>() {
-        public InputDecisionReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new InputDecisionReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(InputDecisionReference.class, DMN_ELEMENT_INPUT_DECISION_REFERENCE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<InputDecisionReference>() {
+                  public InputDecisionReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new InputDecisionReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

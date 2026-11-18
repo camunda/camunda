@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ELEMENT_COLLECTION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.DrgElement;
 import org.camunda.bpm.model.dmn.instance.DrgElementReference;
 import org.camunda.bpm.model.dmn.instance.ElementCollection;
@@ -34,7 +33,8 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
 public class ElementCollectionImpl extends NamedElementImpl implements ElementCollection {
 
-  protected static ElementReferenceCollection<DrgElement, DrgElementReference> drgElementRefCollection;
+  protected static ElementReferenceCollection<DrgElement, DrgElementReference>
+      drgElementRefCollection;
 
   public ElementCollectionImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -45,22 +45,26 @@ public class ElementCollectionImpl extends NamedElementImpl implements ElementCo
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ElementCollection.class, DMN_ELEMENT_ELEMENT_COLLECTION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(NamedElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<ElementCollection>() {
-        public ElementCollection newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ElementCollectionImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ElementCollection.class, DMN_ELEMENT_ELEMENT_COLLECTION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(NamedElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ElementCollection>() {
+                  public ElementCollection newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ElementCollectionImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    drgElementRefCollection = sequenceBuilder.elementCollection(DrgElementReference.class)
-      .uriElementReferenceCollection(DrgElement.class)
-      .build();
+    drgElementRefCollection =
+        sequenceBuilder
+            .elementCollection(DrgElementReference.class)
+            .uriElementReferenceCollection(DrgElement.class)
+            .build();
 
     typeBuilder.build();
   }
-
 }

@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_DECISION_MAKER;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DecisionMakerReference;
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
@@ -26,23 +26,27 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class DecisionMakerReferenceImpl extends DmnElementReferenceImpl implements DecisionMakerReference {
+public class DecisionMakerReferenceImpl extends DmnElementReferenceImpl
+    implements DecisionMakerReference {
 
   public DecisionMakerReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DecisionMakerReference.class, DMN_ELEMENT_DECISION_MAKER)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<DecisionMakerReference>() {
-        public DecisionMakerReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DecisionMakerReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DecisionMakerReference.class, DMN_ELEMENT_DECISION_MAKER)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<DecisionMakerReference>() {
+                  public DecisionMakerReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new DecisionMakerReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

@@ -16,13 +16,12 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_IS_COLLECTION;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_TYPE_LANGUAGE;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ITEM_DEFINITION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.AllowedValues;
 import org.camunda.bpm.model.dmn.instance.ItemComponent;
 import org.camunda.bpm.model.dmn.instance.ItemDefinition;
@@ -87,34 +86,31 @@ public class ItemDefinitionImpl extends NamedElementImpl implements ItemDefiniti
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ItemDefinition.class, DMN_ELEMENT_ITEM_DEFINITION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(NamedElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<ItemDefinition>() {
-        public ItemDefinition newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ItemDefinitionImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ItemDefinition.class, DMN_ELEMENT_ITEM_DEFINITION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(NamedElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ItemDefinition>() {
+                  public ItemDefinition newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ItemDefinitionImpl(instanceContext);
+                  }
+                });
 
-    typeLanguageAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_TYPE_LANGUAGE)
-      .build();
+    typeLanguageAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_TYPE_LANGUAGE).build();
 
-    isCollectionAttribute = typeBuilder.booleanAttribute(DMN_ATTRIBUTE_IS_COLLECTION)
-      .defaultValue(false)
-      .build();
+    isCollectionAttribute =
+        typeBuilder.booleanAttribute(DMN_ATTRIBUTE_IS_COLLECTION).defaultValue(false).build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    typeRefChild = sequenceBuilder.element(TypeRef.class)
-      .build();
+    typeRefChild = sequenceBuilder.element(TypeRef.class).build();
 
-    allowedValuesChild = sequenceBuilder.element(AllowedValues.class)
-      .build();
+    allowedValuesChild = sequenceBuilder.element(AllowedValues.class).build();
 
-    itemComponentCollection = sequenceBuilder.elementCollection(ItemComponent.class)
-      .build();
+    itemComponentCollection = sequenceBuilder.elementCollection(ItemComponent.class).build();
 
     typeBuilder.build();
   }
-
 }

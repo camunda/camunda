@@ -59,5 +59,4 @@ public class DmnModelInstanceTest {
     // then
     assertThat(exportedDiagram).contains(DmnModelConstants.LATEST_DMN_NS);
   }
-
 }

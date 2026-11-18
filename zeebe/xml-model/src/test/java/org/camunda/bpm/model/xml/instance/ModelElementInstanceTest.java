@@ -16,6 +16,12 @@
  */
 package org.camunda.bpm.model.xml.instance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.testmodel.Gender;
@@ -26,13 +32,6 @@ import org.camunda.bpm.model.xml.testmodel.instance.Bird;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.Collection;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author Daniel Meyer
@@ -46,11 +45,12 @@ public class ModelElementInstanceTest extends TestModelTest {
   private Bird daisy;
   private Bird hedwig;
 
-  public ModelElementInstanceTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public ModelElementInstanceTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(ModelElementInstanceTest.class)};
     return Arrays.asList(models);
@@ -72,7 +72,7 @@ public class ModelElementInstanceTest extends TestModelTest {
     daisy.setTextContent("\n        some text content with outer line breaks\n    ");
     hedwig.setTextContent("\n        some text content with inner\n        line breaks\n    ");
 
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -142,15 +142,11 @@ public class ModelElementInstanceTest extends TestModelTest {
     timmy.setId("timmy");
     timmy.setGender(Gender.Male);
 
-    assertThat(animals.getAnimals())
-      .contains(tweety)
-      .doesNotContain(timmy);
+    assertThat(animals.getAnimals()).contains(tweety).doesNotContain(timmy);
 
     tweety.replaceWithElement(timmy);
 
-    assertThat(animals.getAnimals())
-      .contains(timmy)
-      .doesNotContain(tweety);
+    assertThat(animals.getAnimals()).contains(timmy).doesNotContain(tweety);
   }
 
   @Test
@@ -166,7 +162,8 @@ public class ModelElementInstanceTest extends TestModelTest {
     assertThat(tweety.getTextContent()).isEqualTo("");
     assertThat(donald.getTextContent()).isEqualTo("some text content");
     assertThat(daisy.getTextContent()).isEqualTo("some text content with outer line breaks");
-    assertThat(hedwig.getTextContent()).isEqualTo("some text content with inner\n        line breaks");
+    assertThat(hedwig.getTextContent())
+        .isEqualTo("some text content with inner\n        line breaks");
 
     String testContent = "\n test content \n \n \t camunda.org \t    \n   ";
     tweety.setTextContent(testContent);
@@ -177,12 +174,13 @@ public class ModelElementInstanceTest extends TestModelTest {
   public void testRawTextContent() {
     assertThat(tweety.getRawTextContent()).isEqualTo("");
     assertThat(donald.getRawTextContent()).isEqualTo("some text content");
-    assertThat(daisy.getRawTextContent()).isEqualTo("\n        some text content with outer line breaks\n    ");
-    assertThat(hedwig.getRawTextContent()).isEqualTo("\n        some text content with inner\n        line breaks\n    ");
+    assertThat(daisy.getRawTextContent())
+        .isEqualTo("\n        some text content with outer line breaks\n    ");
+    assertThat(hedwig.getRawTextContent())
+        .isEqualTo("\n        some text content with inner\n        line breaks\n    ");
 
     String testContent = "\n test content \n \n \t camunda.org \t    \n   ";
     tweety.setTextContent(testContent);
     assertThat(tweety.getRawTextContent()).isEqualTo(testContent);
   }
-
 }

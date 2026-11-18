@@ -21,5 +21,4 @@ public interface NamedElement extends DmnElement {
   String getName();
 
   void setName(String name);
-
 }

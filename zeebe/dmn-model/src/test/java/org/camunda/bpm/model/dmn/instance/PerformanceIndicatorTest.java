@@ -26,13 +26,10 @@ public class PerformanceIndicatorTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
-      new ChildElementAssumption(ImpactingDecisionReference.class)
-    );
+    return Arrays.asList(new ChildElementAssumption(ImpactingDecisionReference.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

@@ -19,7 +19,6 @@ package org.camunda.bpm.model.xml.impl.type.reference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.util.StringUtil;
@@ -28,11 +27,14 @@ import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 
-public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceCollectionImpl<Target, Source> {
+public class IdsElementReferenceCollectionImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollectionImpl<Target, Source> {
 
   protected String separator = " ";
 
-  public IdsElementReferenceCollectionImpl(ChildElementCollection<Source> referenceSourceCollection) {
+  public IdsElementReferenceCollectionImpl(
+      ChildElementCollection<Source> referenceSourceCollection) {
     super(referenceSourceCollection);
   }
 
@@ -41,7 +43,8 @@ public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstan
     return StringUtil.splitListBySeparator(referenceIdentifiers, separator);
   }
 
-  protected void setReferenceIdentifiers(ModelElementInstance referenceSourceElement, List<String> referenceIdentifiers) {
+  protected void setReferenceIdentifiers(
+      ModelElementInstance referenceSourceElement, List<String> referenceIdentifiers) {
     String referenceIdentifier = StringUtil.joinList(referenceIdentifiers, separator);
     referenceSourceElement.setTextContent(referenceIdentifier);
   }
@@ -49,7 +52,8 @@ public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstan
   @Override
   protected Collection<DomElement> getView(ModelElementInstanceImpl referenceSourceParentElement) {
     DomDocument document = referenceSourceParentElement.getModelInstance().getDocument();
-    Collection<Source> referenceSourceElements = getReferenceSourceCollection().get(referenceSourceParentElement);
+    Collection<Source> referenceSourceElements =
+        getReferenceSourceCollection().get(referenceSourceParentElement);
     Collection<DomElement> referenceTargetElements = new ArrayList<DomElement>();
     for (Source referenceSourceElement : referenceSourceElements) {
       List<String> identifiers = getReferenceIdentifiers(referenceSourceElement);
@@ -57,8 +61,7 @@ public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstan
         DomElement referenceTargetElement = document.getElementById(identifier);
         if (referenceTargetElement != null) {
           referenceTargetElements.add(referenceTargetElement);
-        }
-        else {
+        } else {
           throw new ModelException("Unable to find a model element instance for id " + identifier);
         }
       }
@@ -67,7 +70,8 @@ public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstan
   }
 
   @Override
-  protected void updateReference(ModelElementInstance referenceSourceElement, String oldIdentifier, String newIdentifier) {
+  protected void updateReference(
+      ModelElementInstance referenceSourceElement, String oldIdentifier, String newIdentifier) {
     List<String> referenceIdentifiers = getReferenceIdentifiers(referenceSourceElement);
     if (referenceIdentifiers.contains(oldIdentifier)) {
       int index = referenceIdentifiers.indexOf(oldIdentifier);
@@ -78,15 +82,16 @@ public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstan
   }
 
   @Override
-  public void referencedElementRemoved(ModelElementInstance referenceTargetElement, Object referenceIdentifier) {
-    for (ModelElementInstance referenceSourceElement : findReferenceSourceElements(referenceTargetElement)) {
+  public void referencedElementRemoved(
+      ModelElementInstance referenceTargetElement, Object referenceIdentifier) {
+    for (ModelElementInstance referenceSourceElement :
+        findReferenceSourceElements(referenceTargetElement)) {
       List<String> referenceIdentifiers = getReferenceIdentifiers(referenceSourceElement);
       if (referenceIdentifiers.contains(referenceIdentifier)) {
         if (referenceIdentifiers.size() == 1) {
           // remove whole element
           removeReference(referenceSourceElement, referenceTargetElement);
-        }
-        else {
+        } else {
           // remove only single identifier
           referenceIdentifiers.remove(referenceIdentifier);
           setReferenceIdentifiers(referenceSourceElement, referenceIdentifiers);
@@ -94,5 +99,4 @@ public class IdsElementReferenceCollectionImpl<Target extends ModelElementInstan
       }
     }
   }
-
 }

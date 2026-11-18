@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_SOURCE_REF;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.SourceRef;
@@ -33,16 +33,18 @@ public class SourceRefImpl extends DmnElementReferenceImpl implements SourceRef 
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(SourceRef.class, DMN_ELEMENT_SOURCE_REF)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<SourceRef>() {
-        public SourceRef newInstance(ModelTypeInstanceContext instanceContext) {
-          return new SourceRefImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(SourceRef.class, DMN_ELEMENT_SOURCE_REF)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<SourceRef>() {
+                  public SourceRef newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new SourceRefImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

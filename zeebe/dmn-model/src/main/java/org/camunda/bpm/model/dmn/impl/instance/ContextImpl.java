@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_CONTEXT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.Context;
 import org.camunda.bpm.model.dmn.instance.ContextEntry;
 import org.camunda.bpm.model.dmn.instance.Expression;
@@ -42,23 +41,24 @@ public class ContextImpl extends ExpressionImpl implements Context {
   public Collection<ContextEntry> getContextEntries() {
     return contextEntryCollection.get(this);
   }
-  
+
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Context.class, DMN_ELEMENT_CONTEXT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Expression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Context>() {
-        public Context newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ContextImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Context.class, DMN_ELEMENT_CONTEXT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Expression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Context>() {
+                  public Context newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ContextImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    contextEntryCollection = sequenceBuilder.elementCollection(ContextEntry.class)
-      .build();
+    contextEntryCollection = sequenceBuilder.elementCollection(ContextEntry.class).build();
 
     typeBuilder.build();
   }
-  
 }

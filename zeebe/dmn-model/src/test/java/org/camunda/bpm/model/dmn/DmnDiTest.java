@@ -23,9 +23,9 @@ public class DmnDiTest {
   @Test
   public void validateDmnWithCamundaDi() {
 
-    DmnModelInstance modelInstance = Dmn.readModelFromStream(DmnDiTest.class.getResourceAsStream("ExampleWithCamundaDI.dmn"));
+    DmnModelInstance modelInstance =
+        Dmn.readModelFromStream(DmnDiTest.class.getResourceAsStream("ExampleWithCamundaDI.dmn"));
 
     Dmn.validateModel(modelInstance);
   }
-
 }

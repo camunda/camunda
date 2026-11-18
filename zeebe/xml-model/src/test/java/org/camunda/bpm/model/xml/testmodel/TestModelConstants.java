@@ -18,7 +18,6 @@ package org.camunda.bpm.model.xml.testmodel;
 
 /**
  * @author Daniel Meyer
- *
  */
 public abstract class TestModelConstants {
 
@@ -28,8 +27,10 @@ public abstract class TestModelConstants {
 
   public static final String TYPE_NAME_ANIMAL = "animal";
   public static final String TYPE_NAME_FLYING_ANIMAL = "flyingAnimal";
-  public static final String TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION = "childRelationshipDefinition";
-  public static final String TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION = "friendRelationshipDefinition";
+  public static final String TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION =
+      "childRelationshipDefinition";
+  public static final String TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION =
+      "friendRelationshipDefinition";
   public static final String TYPE_NAME_RELATIONSHIP_DEFINITION = "relationshipDefinition";
   public static final String TYPE_NAME_WINGS = "wings";
 
@@ -57,8 +58,5 @@ public abstract class TestModelConstants {
   public static final String ATTRIBUTE_NAME_ANIMAL_REF = "animalRef";
   public static final String ATTRIBUTE_NAME_WINGSPAN = "wingspan";
 
-  private TestModelConstants() {
-
-  }
-
+  private TestModelConstants() {}
 }

@@ -16,13 +16,12 @@
  */
 package org.camunda.bpm.model.xml.impl.util;
 
-import org.camunda.bpm.model.xml.instance.DomDocument;
-import org.camunda.bpm.model.xml.instance.DomElement;
+import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
+import org.camunda.bpm.model.xml.instance.DomDocument;
+import org.camunda.bpm.model.xml.instance.DomElement;
 
 /**
  * @author Sebastian Menski
@@ -30,8 +29,8 @@ import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
 public class XmlQName {
 
   public static final Map<String, String> KNOWN_PREFIXES;
-  static
-  {
+
+  static {
     KNOWN_PREFIXES = new HashMap<String, String>();
     KNOWN_PREFIXES.put("http://www.camunda.com/fox", "fox");
     KNOWN_PREFIXES.put("http://activiti.org/bpmn", "camunda");
@@ -88,8 +87,7 @@ public class XmlQName {
   public boolean hasLocalNamespace() {
     if (element != null) {
       return element.getNamespaceURI().equals(namespaceUri);
-    }
-    else {
+    } else {
       return false;
     }
   }
@@ -99,34 +97,29 @@ public class XmlQName {
       if (rootElement != null && namespaceUri.equals(rootElement.getNamespaceURI())) {
         // global namespaces do not have a prefix or namespace URI
         return null;
-      }
-      else {
+      } else {
         // lookup for prefix
         String lookupPrefix = lookupPrefix();
         if (lookupPrefix == null && rootElement != null) {
           // if no prefix is found we generate a new one
           // search for known prefixes
-         String knownPrefix = KNOWN_PREFIXES.get(namespaceUri);
+          String knownPrefix = KNOWN_PREFIXES.get(namespaceUri);
           if (knownPrefix == null) {
             // generate namespace
             return rootElement.registerNamespace(namespaceUri);
-          }
-          else if (knownPrefix.isEmpty()) {
+          } else if (knownPrefix.isEmpty()) {
             // ignored namespace
             return null;
-          }
-          else {
+          } else {
             // register known prefix
             rootElement.registerNamespace(knownPrefix, namespaceUri);
             return knownPrefix;
           }
-        }
-        else {
+        } else {
           return lookupPrefix;
         }
       }
-    }
-    else {
+    } else {
       // no namespace so no prefix
       return null;
     }
@@ -137,15 +130,12 @@ public class XmlQName {
       String lookupPrefix = null;
       if (element != null) {
         lookupPrefix = element.lookupPrefix(namespaceUri);
-      }
-      else if (rootElement != null) {
+      } else if (rootElement != null) {
         lookupPrefix = rootElement.lookupPrefix(namespaceUri);
       }
       return lookupPrefix;
-    }
-    else {
+    } else {
       return null;
     }
   }
-
 }

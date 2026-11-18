@@ -31,10 +31,8 @@ public class ImportTest extends DmnModelElementInstanceTest {
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      new AttributeAssumption("namespace", false, true),
-      new AttributeAssumption("locationURI"),
-      new AttributeAssumption("importType", false, true)
-    );
+        new AttributeAssumption("namespace", false, true),
+        new AttributeAssumption("locationURI"),
+        new AttributeAssumption("importType", false, true));
   }
-
 }

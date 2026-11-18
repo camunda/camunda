@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_FORMAL_PARAMETER;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.FormalParameter;
 import org.camunda.bpm.model.dmn.instance.InformationItem;
@@ -33,16 +33,18 @@ public class FormalParameterImpl extends InformationItemImpl implements FormalPa
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(FormalParameter.class, DMN_ELEMENT_FORMAL_PARAMETER)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(InformationItem.class)
-      .instanceProvider(new ModelTypeInstanceProvider<FormalParameter>() {
-        public FormalParameter newInstance(ModelTypeInstanceContext instanceContext) {
-          return new FormalParameterImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FormalParameter.class, DMN_ELEMENT_FORMAL_PARAMETER)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(InformationItem.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<FormalParameter>() {
+                  public FormalParameter newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new FormalParameterImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

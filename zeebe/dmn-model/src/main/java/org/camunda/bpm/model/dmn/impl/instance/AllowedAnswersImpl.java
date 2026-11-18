@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ALLOWED_ANSWERS;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.AllowedAnswers;
 import org.camunda.bpm.model.xml.ModelBuilder;
@@ -32,15 +32,17 @@ public class AllowedAnswersImpl extends DmnModelElementInstanceImpl implements A
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(AllowedAnswers.class, DMN_ELEMENT_ALLOWED_ANSWERS)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<AllowedAnswers>() {
-        public AllowedAnswers newInstance(ModelTypeInstanceContext instanceContext) {
-          return new AllowedAnswersImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(AllowedAnswers.class, DMN_ELEMENT_ALLOWED_ANSWERS)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<AllowedAnswers>() {
+                  public AllowedAnswers newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new AllowedAnswersImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

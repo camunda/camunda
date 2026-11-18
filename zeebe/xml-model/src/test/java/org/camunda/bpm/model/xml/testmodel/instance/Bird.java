@@ -16,6 +16,10 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_BIRD;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.testmodel.TestModelConstants;
@@ -28,14 +32,8 @@ import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.ElementReference;
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
-import java.util.Collection;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_BIRD;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-
 /**
  * @author Daniel Meyer
- *
  */
 public class Bird extends FlyingAnimal {
 
@@ -46,39 +44,36 @@ public class Bird extends FlyingAnimal {
   protected static ChildElement<Wings> wings;
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Bird.class, ELEMENT_NAME_BIRD)
-      .namespaceUri(MODEL_NAMESPACE)
-      .extendsType(FlyingAnimal.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Bird>() {
-        public Bird newInstance(ModelTypeInstanceContext instanceContext) {
-          return new Bird(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Bird.class, ELEMENT_NAME_BIRD)
+            .namespaceUri(MODEL_NAMESPACE)
+            .extendsType(FlyingAnimal.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Bird>() {
+                  public Bird newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new Bird(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequence = typeBuilder.sequence();
 
-    eggColl = sequence.elementCollection(Egg.class)
-      .minOccurs(0)
-      .maxOccurs(6)
-      .build();
+    eggColl = sequence.elementCollection(Egg.class).minOccurs(0).maxOccurs(6).build();
 
-    spouseRefsColl = sequence.element(SpouseRef.class)
-      .qNameElementReference(Bird.class)
-      .build();
+    spouseRefsColl = sequence.element(SpouseRef.class).qNameElementReference(Bird.class).build();
 
-    guardEggRefCollection = sequence.elementCollection(GuardEgg.class)
-      .idsElementReferenceCollection(Egg.class)
-      .build();
+    guardEggRefCollection =
+        sequence.elementCollection(GuardEgg.class).idsElementReferenceCollection(Egg.class).build();
 
-    canHazExtendedWings = typeBuilder.booleanAttribute("canHazExtendedWings")
-    .namespace(TestModelConstants.NEWER_NAMESPACE)
-    .build();
+    canHazExtendedWings =
+        typeBuilder
+            .booleanAttribute("canHazExtendedWings")
+            .namespace(TestModelConstants.NEWER_NAMESPACE)
+            .build();
 
-    wings = sequence.element(Wings.class)
-        .build();
+    wings = sequence.element(Wings.class).build();
 
     typeBuilder.build();
-
   }
 
   public Bird(ModelTypeInstanceContext instanceContext) {
@@ -113,20 +108,19 @@ public class Bird extends FlyingAnimal {
     return guardEggRefCollection.getReferenceSourceCollection().get(this);
   }
 
-  public Boolean canHazExtendedWings(){
+  public Boolean canHazExtendedWings() {
     return canHazExtendedWings.getValue(this);
   }
 
-  public void setCanHazExtendedWings(boolean b){
+  public void setCanHazExtendedWings(boolean b) {
     canHazExtendedWings.setValue(this, b);
   }
 
-  public Wings getWings(){
+  public Wings getWings() {
     return wings.getChild(this);
   }
 
-  public void setWings(Wings w){
+  public void setWings(Wings w) {
     wings.setChild(this, w);
   }
-
 }

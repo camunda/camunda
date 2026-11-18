@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface SourceRef extends DmnElementReference {
-
-}
+public interface SourceRef extends DmnElementReference {}

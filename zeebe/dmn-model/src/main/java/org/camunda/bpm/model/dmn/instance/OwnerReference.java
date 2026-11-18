@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface OwnerReference extends DmnElementReference {
-
-}
+public interface OwnerReference extends DmnElementReference {}

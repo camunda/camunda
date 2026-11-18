@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface Text extends DmnModelElementInstance {
-
-}
+public interface Text extends DmnModelElementInstance {}

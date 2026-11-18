@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface UsingTaskReference extends DmnElementReference {
-
-}
+public interface UsingTaskReference extends DmnElementReference {}

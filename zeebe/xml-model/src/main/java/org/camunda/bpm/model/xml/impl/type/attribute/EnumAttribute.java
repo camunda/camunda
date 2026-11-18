@@ -19,10 +19,9 @@ package org.camunda.bpm.model.xml.impl.type.attribute;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
 /**
- * <p>An attribute exposing an Enum value</p>
+ * An attribute exposing an Enum value
  *
  * @author Daniel Meyer
- *
  */
 public class EnumAttribute<T extends Enum<T>> extends AttributeImpl<T> {
 
@@ -36,8 +35,7 @@ public class EnumAttribute<T extends Enum<T>> extends AttributeImpl<T> {
   protected T convertXmlValueToModelValue(String rawValue) {
     if (rawValue != null) {
       return Enum.valueOf(type, rawValue);
-    }
-    else {
+    } else {
       return null;
     }
   }
@@ -45,5 +43,4 @@ public class EnumAttribute<T extends Enum<T>> extends AttributeImpl<T> {
   protected String convertModelValueToXmlValue(T modelValue) {
     return modelValue.name();
   }
-
 }

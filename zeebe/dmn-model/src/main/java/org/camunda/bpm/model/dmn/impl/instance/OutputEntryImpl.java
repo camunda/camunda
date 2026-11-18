@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_OUTPUT_ENTRY;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.LiteralExpression;
 import org.camunda.bpm.model.dmn.instance.OutputEntry;
@@ -33,16 +33,18 @@ public class OutputEntryImpl extends LiteralExpressionImpl implements OutputEntr
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(OutputEntry.class, DMN_ELEMENT_OUTPUT_ENTRY)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(LiteralExpression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<OutputEntry>() {
-        public OutputEntry newInstance(ModelTypeInstanceContext instanceContext) {
-          return new OutputEntryImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(OutputEntry.class, DMN_ELEMENT_OUTPUT_ENTRY)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(LiteralExpression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<OutputEntry>() {
+                  public OutputEntry newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new OutputEntryImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

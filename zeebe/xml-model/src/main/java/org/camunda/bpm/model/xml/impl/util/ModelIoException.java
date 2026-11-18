@@ -23,8 +23,7 @@ package org.camunda.bpm.model.xml.impl.util;
  */
 public class ModelIoException extends RuntimeException {
 
-  public ModelIoException() {
-  }
+  public ModelIoException() {}
 
   public ModelIoException(String message) {
     super(message);
@@ -37,5 +36,4 @@ public class ModelIoException extends RuntimeException {
   public ModelIoException(Throwable cause) {
     super(cause);
   }
-
 }

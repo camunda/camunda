@@ -20,7 +20,6 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
 
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
-import org.camunda.bpm.model.xml.testmodel.TestModelConstants;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
@@ -31,16 +30,18 @@ public class Mother extends AnimalReference {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Mother.class, ELEMENT_NAME_MOTHER)
-      .namespaceUri(MODEL_NAMESPACE)
-      .extendsType(AnimalReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Mother>() {
-        public Mother newInstance(ModelTypeInstanceContext instanceContext) {
-          return new Mother(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Mother.class, ELEMENT_NAME_MOTHER)
+            .namespaceUri(MODEL_NAMESPACE)
+            .extendsType(AnimalReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Mother>() {
+                  public Mother newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new Mother(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

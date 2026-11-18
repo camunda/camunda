@@ -20,7 +20,6 @@ import org.camunda.bpm.model.xml.testmodel.instance.FlyingAnimal;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class IsAdultWarner implements ModelElementValidator<FlyingAnimal> {
 
@@ -32,9 +31,8 @@ public class IsAdultWarner implements ModelElementValidator<FlyingAnimal> {
   @Override
   public void validate(FlyingAnimal element, ValidationResultCollector validationResultCollector) {
 
-    if(element.getAge() == null || element.getAge() < 18) {
+    if (element.getAge() == null || element.getAge() < 18) {
       validationResultCollector.addWarning(10, "Is not an adult");
     }
   }
-
 }

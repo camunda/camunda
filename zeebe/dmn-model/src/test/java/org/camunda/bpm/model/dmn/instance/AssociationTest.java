@@ -18,7 +18,6 @@ package org.camunda.bpm.model.dmn.instance;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.AssociationDirection;
 
 public class AssociationTest extends DmnModelElementInstanceTest {
@@ -29,15 +28,12 @@ public class AssociationTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(SourceRef.class, 1, 1),
-      new ChildElementAssumption(TargetRef.class, 1, 1)
-    );
+        new ChildElementAssumption(SourceRef.class, 1, 1),
+        new ChildElementAssumption(TargetRef.class, 1, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      new AttributeAssumption("associationDirection", false, false, AssociationDirection.None)
-    );
+        new AttributeAssumption("associationDirection", false, false, AssociationDirection.None));
   }
-
 }

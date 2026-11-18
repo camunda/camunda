@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_ASSOCIATION_DIRECTION;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ASSOCIATION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.AssociationDirection;
 import org.camunda.bpm.model.dmn.instance.Artifact;
@@ -70,32 +70,40 @@ public class AssociationImpl extends ArtifactImpl implements Association {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Association.class, DMN_ELEMENT_ASSOCIATION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Artifact.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Association>() {
-        public Association newInstance(ModelTypeInstanceContext instanceContext) {
-          return new AssociationImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Association.class, DMN_ELEMENT_ASSOCIATION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Artifact.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Association>() {
+                  public Association newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new AssociationImpl(instanceContext);
+                  }
+                });
 
-    associationDirectionAttribute = typeBuilder.enumAttribute(DMN_ATTRIBUTE_ASSOCIATION_DIRECTION, AssociationDirection.class)
-      .defaultValue(AssociationDirection.None)
-      .build();
+    associationDirectionAttribute =
+        typeBuilder
+            .enumAttribute(DMN_ATTRIBUTE_ASSOCIATION_DIRECTION, AssociationDirection.class)
+            .defaultValue(AssociationDirection.None)
+            .build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    sourceRef = sequenceBuilder.element(SourceRef.class)
-      .required()
-      .uriElementReference(DmnElement.class)
-      .build();
+    sourceRef =
+        sequenceBuilder
+            .element(SourceRef.class)
+            .required()
+            .uriElementReference(DmnElement.class)
+            .build();
 
-    targetRef = sequenceBuilder.element(TargetRef.class)
-      .required()
-      .uriElementReference(DmnElement.class)
-      .build();
+    targetRef =
+        sequenceBuilder
+            .element(TargetRef.class)
+            .required()
+            .uriElementReference(DmnElement.class)
+            .build();
 
     typeBuilder.build();
   }
-
 }

@@ -16,18 +16,17 @@
  */
 package org.camunda.bpm.model.xml.type.child;
 
+import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-import java.util.Collection;
-
 /**
- * A single child element (child Element collection where {@link ChildElementCollection#getMaxOccurs()} returns 1.
+ * A single child element (child Element collection where {@link
+ * ChildElementCollection#getMaxOccurs()} returns 1.
  *
- * The {@link Collection#add(Object)} operation provided by this collection has special behavior: it will
- * replace an existing element if it exists.
+ * <p>The {@link Collection#add(Object)} operation provided by this collection has special behavior:
+ * it will replace an existing element if it exists.
  *
  * @author Daniel Meyer
- *
  * @param <T> the type of the child element
  */
 public interface ChildElement<T extends ModelElementInstance> extends ChildElementCollection<T> {
@@ -51,7 +50,7 @@ public interface ChildElement<T extends ModelElementInstance> extends ChildEleme
   /**
    * Removes the child element.
    *
-   * @param element  the parent element of the child element
+   * @param element the parent element of the child element
    * @return true if the child was remove otherwise false
    */
   boolean removeChild(ModelElementInstance element);

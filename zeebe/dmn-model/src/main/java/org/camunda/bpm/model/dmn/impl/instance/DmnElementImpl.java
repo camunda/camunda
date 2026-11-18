@@ -16,10 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_ID;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_LABEL;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Description;
 import org.camunda.bpm.model.dmn.instance.DmnElement;
@@ -39,7 +39,7 @@ public abstract class DmnElementImpl extends DmnModelElementInstanceImpl impleme
   protected static ChildElement<Description> descriptionChild;
   protected static ChildElement<ExtensionElements> extensionElementsChild;
 
-  public DmnElementImpl (ModelTypeInstanceContext instanceContext) {
+  public DmnElementImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -76,26 +76,22 @@ public abstract class DmnElementImpl extends DmnModelElementInstanceImpl impleme
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DmnElement.class, DMN_ELEMENT)
-      .namespaceUri(LATEST_DMN_NS)
-      .abstractType();
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DmnElement.class, DMN_ELEMENT)
+            .namespaceUri(LATEST_DMN_NS)
+            .abstractType();
 
-    idAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_ID)
-      .idAttribute()
-      .build();
+    idAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_ID).idAttribute().build();
 
-    labelAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LABEL)
-      .build();
+    labelAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LABEL).build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    descriptionChild = sequenceBuilder.element(Description.class)
-      .build();
+    descriptionChild = sequenceBuilder.element(Description.class).build();
 
-    extensionElementsChild = sequenceBuilder.element(ExtensionElements.class)
-      .build();
+    extensionElementsChild = sequenceBuilder.element(ExtensionElements.class).build();
 
     typeBuilder.build();
   }
-
 }

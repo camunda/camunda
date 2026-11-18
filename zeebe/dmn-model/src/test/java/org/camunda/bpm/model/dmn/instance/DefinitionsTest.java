@@ -27,23 +27,22 @@ public class DefinitionsTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Import.class),
-      new ChildElementAssumption(ItemDefinition.class),
-      new ChildElementAssumption(DrgElement.class),
-      new ChildElementAssumption(Artifact.class),
-      new ChildElementAssumption(ElementCollection.class),
-      new ChildElementAssumption(BusinessContextElement.class)
-    );
+        new ChildElementAssumption(Import.class),
+        new ChildElementAssumption(ItemDefinition.class),
+        new ChildElementAssumption(DrgElement.class),
+        new ChildElementAssumption(Artifact.class),
+        new ChildElementAssumption(ElementCollection.class),
+        new ChildElementAssumption(BusinessContextElement.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      new AttributeAssumption("expressionLanguage", false, false, "http://www.omg.org/spec/FEEL/20140401"),
-      new AttributeAssumption("typeLanguage", false, false, "http://www.omg.org/spec/FEEL/20140401"),
-      new AttributeAssumption("namespace", false, true),
-      new AttributeAssumption("exporter"),
-      new AttributeAssumption("exporterVersion")
-    );
+        new AttributeAssumption(
+            "expressionLanguage", false, false, "http://www.omg.org/spec/FEEL/20140401"),
+        new AttributeAssumption(
+            "typeLanguage", false, false, "http://www.omg.org/spec/FEEL/20140401"),
+        new AttributeAssumption("namespace", false, true),
+        new AttributeAssumption("exporter"),
+        new AttributeAssumption("exporterVersion"));
   }
-
 }

@@ -21,5 +21,4 @@ import java.util.Collection;
 public interface PerformanceIndicator extends BusinessContextElement {
 
   Collection<Decision> getImpactingDecisions();
-
 }

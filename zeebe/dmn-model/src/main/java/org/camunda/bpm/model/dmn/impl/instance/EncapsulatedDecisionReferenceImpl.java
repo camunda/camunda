@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ENCAPSULATED_DECISION_REFERENCE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.EncapsulatedDecisionReference;
@@ -26,23 +26,28 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class EncapsulatedDecisionReferenceImpl extends DmnElementReferenceImpl implements EncapsulatedDecisionReference {
+public class EncapsulatedDecisionReferenceImpl extends DmnElementReferenceImpl
+    implements EncapsulatedDecisionReference {
 
   public EncapsulatedDecisionReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(EncapsulatedDecisionReference.class, DMN_ELEMENT_ENCAPSULATED_DECISION_REFERENCE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<EncapsulatedDecisionReference>() {
-        public EncapsulatedDecisionReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new EncapsulatedDecisionReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(
+                EncapsulatedDecisionReference.class, DMN_ELEMENT_ENCAPSULATED_DECISION_REFERENCE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<EncapsulatedDecisionReference>() {
+                  public EncapsulatedDecisionReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new EncapsulatedDecisionReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

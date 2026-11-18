@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface Column extends InformationItem {
-
-}
+public interface Column extends InformationItem {}

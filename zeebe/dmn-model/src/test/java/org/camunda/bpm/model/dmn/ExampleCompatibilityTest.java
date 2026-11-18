@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 import org.camunda.bpm.model.dmn.instance.BusinessContextElement;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionTable;
@@ -53,22 +52,41 @@ public class ExampleCompatibilityTest extends DmnModelTest {
 
   private final DmnModelInstance originalModelInstance;
 
-   @Parameterized.Parameters(name="Namespace: {0}")
-   public static Collection<Object[]> parameters(){
-     return Arrays.asList(new Object[][]{
-         {Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("Example.dmn"))},
-         // for compatibility reasons we gotta check the old namespace, too
-         {Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("ExampleCompatibility.dmn"))},
-         // DMN 1.2
-         {Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.2.dmn"))},
-         // DMN 1.3
-         {Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.3.dmn"))},
-         // DMN 1.4
-         {Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.4.dmn"))},
-         // DMN 1.5
-         {Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.5.dmn"))}
-     });
-   }
+  @Parameterized.Parameters(name = "Namespace: {0}")
+  public static Collection<Object[]> parameters() {
+    return Arrays.asList(
+        new Object[][] {
+          {
+            Dmn.readModelFromStream(
+                ExampleCompatibilityTest.class.getResourceAsStream("Example.dmn"))
+          },
+          // for compatibility reasons we gotta check the old namespace, too
+          {
+            Dmn.readModelFromStream(
+                ExampleCompatibilityTest.class.getResourceAsStream("ExampleCompatibility.dmn"))
+          },
+          // DMN 1.2
+          {
+            Dmn.readModelFromStream(
+                ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.2.dmn"))
+          },
+          // DMN 1.3
+          {
+            Dmn.readModelFromStream(
+                ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.3.dmn"))
+          },
+          // DMN 1.4
+          {
+            Dmn.readModelFromStream(
+                ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.4.dmn"))
+          },
+          // DMN 1.5
+          {
+            Dmn.readModelFromStream(
+                ExampleCompatibilityTest.class.getResourceAsStream("Example-DMN-1.5.dmn"))
+          }
+        });
+  }
 
   public ExampleCompatibilityTest(DmnModelInstance originalModelInstance) {
     this.originalModelInstance = originalModelInstance;
@@ -172,7 +190,8 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     List<OutputEntry> outputEntries = new ArrayList<>(rule.getOutputEntries());
     assertThat(outputEntries).hasSize(2);
     assertThat(outputEntries.get(0).getText().getTextContent()).isEqualTo("\"notok\"");
-    assertThat(outputEntries.get(1).getText().getTextContent()).isEqualTo("\"work on your status first, as bronze you're not going to get anything\"");
+    assertThat(outputEntries.get(1).getText().getTextContent())
+        .isEqualTo("\"work on your status first, as bronze you're not going to get anything\"");
 
     // 2. Rule
     rule = rules.get(1);
@@ -184,7 +203,8 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     outputEntries = new ArrayList<>(rule.getOutputEntries());
     assertThat(outputEntries).hasSize(2);
     assertThat(outputEntries.get(0).getText().getTextContent()).isEqualTo("\"ok\"");
-    assertThat(outputEntries.get(1).getText().getTextContent()).isEqualTo("\"you little fish will get what you want\"");
+    assertThat(outputEntries.get(1).getText().getTextContent())
+        .isEqualTo("\"you little fish will get what you want\"");
 
     // 3. Rule
     rule = rules.get(2);
@@ -196,7 +216,8 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     outputEntries = new ArrayList<>(rule.getOutputEntries());
     assertThat(outputEntries).hasSize(2);
     assertThat(outputEntries.get(0).getText().getTextContent()).isEqualTo("\"notok\"");
-    assertThat(outputEntries.get(1).getText().getTextContent()).isEqualTo("\"you took too much man, you took too much!\"");
+    assertThat(outputEntries.get(1).getText().getTextContent())
+        .isEqualTo("\"you took too much man, you took too much!\"");
 
     // 4. Rule
     rule = rules.get(3);
@@ -208,14 +229,16 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     outputEntries = new ArrayList<>(rule.getOutputEntries());
     assertThat(outputEntries).hasSize(2);
     assertThat(outputEntries.get(0).getText().getTextContent()).isEqualTo("\"ok\"");
-    assertThat(outputEntries.get(1).getText().getTextContent()).isEqualTo("\"you get anything you want\"");
+    assertThat(outputEntries.get(1).getText().getTextContent())
+        .isEqualTo("\"you get anything you want\"");
 
     // Element collections
     Collection<ElementCollection> elementCollections = definitions.getElementCollections();
     assertThat(elementCollections).isEmpty();
 
     // Business contexts
-    Collection<BusinessContextElement> businessContextElements = definitions.getBusinessContextElements();
+    Collection<BusinessContextElement> businessContextElements =
+        definitions.getBusinessContextElements();
     assertThat(businessContextElements).isEmpty();
   }
 
@@ -301,7 +324,9 @@ public class ExampleCompatibilityTest extends DmnModelTest {
     rule.getOutputEntries().add(outputEntry);
     outputEntry = generateElement(OutputEntry.class, 2);
     text = generateElement(Text.class);
-    text.getDomElement().addCDataSection("\"work on your status first, as bronze you're not going to get anything\"");
+    text.getDomElement()
+        .addCDataSection(
+            "\"work on your status first, as bronze you're not going to get anything\"");
     outputEntry.setText(text);
     rule.getOutputEntries().add(outputEntry);
     decisionTable.getRules().add(rule);
@@ -380,5 +405,4 @@ public class ExampleCompatibilityTest extends DmnModelTest {
 
     assertModelEqualsFile(EXAMPLE_DMN);
   }
-
 }

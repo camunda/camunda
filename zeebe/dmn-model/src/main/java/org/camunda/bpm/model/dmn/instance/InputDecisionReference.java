@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface InputDecisionReference extends DmnElementReference {
-
-}
+public interface InputDecisionReference extends DmnElementReference {}

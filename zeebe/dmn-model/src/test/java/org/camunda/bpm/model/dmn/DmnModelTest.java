@@ -20,10 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.io.File;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.camunda.bpm.model.dmn.instance.DmnElement;
 import org.camunda.bpm.model.dmn.instance.DmnModelElementInstance;
 import org.camunda.bpm.model.dmn.instance.NamedElement;
@@ -40,13 +38,11 @@ import org.xmlunit.diff.Diff;
 
 public abstract class DmnModelTest {
 
-  public final static String TEST_NAMESPACE = "http://camunda.org/schema/1.0/dmn";
+  public static final String TEST_NAMESPACE = "http://camunda.org/schema/1.0/dmn";
 
-  @Rule
-  public final ParseDmnModelRule parseDmnModelRule = new ParseDmnModelRule();
+  @Rule public final ParseDmnModelRule parseDmnModelRule = new ParseDmnModelRule();
 
-  @Rule
-  public TemporaryFolder tmpFolder = new TemporaryFolder();
+  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
 
   protected DmnModelInstance modelInstance;
 
@@ -67,7 +63,8 @@ public abstract class DmnModelTest {
     return generateNamedElement(elementClass, name, null);
   }
 
-  public <E extends NamedElement> E generateNamedElement(Class<E> elementClass, String name, Integer suffix) {
+  public <E extends NamedElement> E generateNamedElement(
+      Class<E> elementClass, String name, Integer suffix) {
     E element = generateElement(elementClass, suffix);
     element.setName(name);
     return element;
@@ -77,7 +74,8 @@ public abstract class DmnModelTest {
     return generateElement(elementClass, null);
   }
 
-  public <E extends DmnModelElementInstance> E generateElement(Class<E> elementClass, Integer suffix) {
+  public <E extends DmnModelElementInstance> E generateElement(
+      Class<E> elementClass, Integer suffix) {
     E element = modelInstance.newInstance(elementClass);
     if (element instanceof DmnElement) {
       String identifier = elementClass.getSimpleName();
@@ -101,15 +99,20 @@ public abstract class DmnModelTest {
     Document actualDocument = docBuilder.parse(actualFile);
     Document expectedDocument = docBuilder.parse(expectedFile);
 
-    Diff diff = DiffBuilder.compare(expectedDocument).withTest(actualDocument)
-      .withNodeFilter(new Java9CDataWhitespaceFilter())
-      .checkForSimilar()
-      .build();
+    Diff diff =
+        DiffBuilder.compare(expectedDocument)
+            .withTest(actualDocument)
+            .withNodeFilter(new Java9CDataWhitespaceFilter())
+            .checkForSimilar()
+            .build();
 
     if (diff.hasDifferences()) {
 
-      String failMsg = "XML differs:\n" + diff.getDifferences() +
-          "\n\nActual XML:\n" + Dmn.convertToString(modelInstance);
+      String failMsg =
+          "XML differs:\n"
+              + diff.getDifferences()
+              + "\n\nActual XML:\n"
+              + Dmn.convertToString(modelInstance);
       fail(failMsg);
     }
   }
@@ -122,5 +125,4 @@ public abstract class DmnModelTest {
 
     assertThat(actualElement).isEqualTo(expectedElement);
   }
-
 }

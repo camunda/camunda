@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface Question extends DmnModelElementInstance {
-
-}
+public interface Question extends DmnModelElementInstance {}

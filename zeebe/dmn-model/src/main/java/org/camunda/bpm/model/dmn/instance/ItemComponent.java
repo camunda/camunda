@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface ItemComponent extends ItemDefinition {
-
-}
+public interface ItemComponent extends ItemDefinition {}

@@ -27,5 +27,4 @@ public interface DecisionService extends NamedElement {
   Collection<Decision> getInputDecisions();
 
   Collection<InputData> getInputData();
-
 }

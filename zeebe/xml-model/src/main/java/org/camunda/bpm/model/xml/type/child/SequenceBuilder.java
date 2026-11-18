@@ -20,12 +20,11 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**
  * @author Daniel Meyer
- *
  */
 public interface SequenceBuilder {
 
   <T extends ModelElementInstance> ChildElementBuilder<T> element(Class<T> childElementType);
 
-  <T extends ModelElementInstance> ChildElementCollectionBuilder<T> elementCollection(Class<T> childElementType);
-
+  <T extends ModelElementInstance> ChildElementCollectionBuilder<T> elementCollection(
+      Class<T> childElementType);
 }

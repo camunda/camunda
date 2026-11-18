@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_INVOCATION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.Binding;
 import org.camunda.bpm.model.dmn.instance.Expression;
 import org.camunda.bpm.model.dmn.instance.Invocation;
@@ -54,24 +53,24 @@ public class InvocationImpl extends ExpressionImpl implements Invocation {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Invocation.class, DMN_ELEMENT_INVOCATION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Expression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Invocation>() {
-        public Invocation newInstance(ModelTypeInstanceContext instanceContext) {
-          return new InvocationImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Invocation.class, DMN_ELEMENT_INVOCATION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Expression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Invocation>() {
+                  public Invocation newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new InvocationImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    expressionChild = sequenceBuilder.element(Expression.class)
-      .build();
+    expressionChild = sequenceBuilder.element(Expression.class).build();
 
-    bindingCollection = sequenceBuilder.elementCollection(Binding.class)
-      .build();
+    bindingCollection = sequenceBuilder.elementCollection(Binding.class).build();
 
     typeBuilder.build();
   }
-
 }

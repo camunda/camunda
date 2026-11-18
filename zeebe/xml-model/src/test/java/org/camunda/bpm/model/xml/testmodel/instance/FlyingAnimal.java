@@ -16,6 +16,9 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
+
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
@@ -24,13 +27,8 @@ import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.ElementReference;
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
-import java.util.Collection;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
-
 /**
  * @author Daniel Meyer
- *
  */
 public abstract class FlyingAnimal extends Animal {
 
@@ -41,26 +39,27 @@ public abstract class FlyingAnimal extends Animal {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(FlyingAnimal.class, TYPE_NAME_FLYING_ANIMAL)
-      .namespaceUri(MODEL_NAMESPACE)
-      .extendsType(Animal.class)
-      .abstractType();
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FlyingAnimal.class, TYPE_NAME_FLYING_ANIMAL)
+            .namespaceUri(MODEL_NAMESPACE)
+            .extendsType(Animal.class)
+            .abstractType();
 
-    wingspanAttribute = typeBuilder.doubleAttribute(ATTRIBUTE_NAME_WINGSPAN)
-      .build();
+    wingspanAttribute = typeBuilder.doubleAttribute(ATTRIBUTE_NAME_WINGSPAN).build();
 
     SequenceBuilder sequence = typeBuilder.sequence();
 
-    flightInstructorChild = sequence.element(FlightInstructor.class)
-      .idElementReference(FlyingAnimal.class)
-      .build();
+    flightInstructorChild =
+        sequence.element(FlightInstructor.class).idElementReference(FlyingAnimal.class).build();
 
-    flightPartnerRefsColl = sequence.elementCollection(FlightPartnerRef.class)
-      .idElementReferenceCollection(FlyingAnimal.class)
-      .build();
+    flightPartnerRefsColl =
+        sequence
+            .elementCollection(FlightPartnerRef.class)
+            .idElementReferenceCollection(FlyingAnimal.class)
+            .build();
 
     typeBuilder.build();
-
   }
 
   FlyingAnimal(ModelTypeInstanceContext instanceContext) {

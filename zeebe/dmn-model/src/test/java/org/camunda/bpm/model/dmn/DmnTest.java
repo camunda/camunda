@@ -26,5 +26,4 @@ public class DmnTest {
   public void testDmn() {
     assertThat(Dmn.INSTANCE).isNotNull();
   }
-
 }

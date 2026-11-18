@@ -31,12 +31,10 @@ public class DoubleAttribute extends AttributeImpl<Double> {
     if (rawValue != null) {
       try {
         return Double.parseDouble(rawValue);
-      }
-      catch (NumberFormatException e) {
+      } catch (NumberFormatException e) {
         return null;
       }
-    }
-    else {
+    } else {
       return null;
     }
   }

@@ -26,13 +26,10 @@ public class KnowledgeRequirementTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
-      new ChildElementAssumption(RequiredKnowledgeReference.class, 1, 1)
-    );
+    return Arrays.asList(new ChildElementAssumption(RequiredKnowledgeReference.class, 1, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

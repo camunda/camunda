@@ -25,7 +25,8 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 /**
  * @author Sebastian Menski
  */
-public class AttributeReferenceImpl<T extends ModelElementInstance> extends ReferenceImpl<T> implements AttributeReference<T> {
+public class AttributeReferenceImpl<T extends ModelElementInstance> extends ReferenceImpl<T>
+    implements AttributeReference<T> {
 
   protected final AttributeImpl<String> referenceSourceAttribute;
 
@@ -37,7 +38,8 @@ public class AttributeReferenceImpl<T extends ModelElementInstance> extends Refe
     return referenceSourceAttribute.getValue(referenceSourceElement);
   }
 
-  protected void setReferenceIdentifier(ModelElementInstance referenceSourceElement, String referenceIdentifier) {
+  protected void setReferenceIdentifier(
+      ModelElementInstance referenceSourceElement, String referenceIdentifier) {
     referenceSourceAttribute.setValue(referenceSourceElement, referenceIdentifier);
   }
 
@@ -54,15 +56,16 @@ public class AttributeReferenceImpl<T extends ModelElementInstance> extends Refe
     return referenceSourceAttribute.getOwningElementType();
   }
 
-  protected void updateReference(ModelElementInstance referenceSourceElement, String oldIdentifier, String newIdentifier) {
+  protected void updateReference(
+      ModelElementInstance referenceSourceElement, String oldIdentifier, String newIdentifier) {
     String referencingAttributeValue = getReferenceIdentifier(referenceSourceElement);
-    if(oldIdentifier != null && oldIdentifier.equals(referencingAttributeValue)) {
+    if (oldIdentifier != null && oldIdentifier.equals(referencingAttributeValue)) {
       setReferenceIdentifier(referenceSourceElement, newIdentifier);
     }
   }
 
-  protected void removeReference(ModelElementInstance referenceSourceElement, ModelElementInstance referenceTargetElement) {
+  protected void removeReference(
+      ModelElementInstance referenceSourceElement, ModelElementInstance referenceTargetElement) {
     referenceSourceAttribute.removeAttribute(referenceSourceElement);
   }
-
 }

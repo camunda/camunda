@@ -22,7 +22,6 @@ import org.camunda.bpm.model.xml.testmodel.instance.*;
 
 /**
  * @author Daniel Meyer
- *
  */
 public final class TestModel {
 
@@ -30,7 +29,7 @@ public final class TestModel {
   private static ModelBuilder modelBuilder;
 
   public static Model getTestModel() {
-    if(model == null) {
+    if (model == null) {
       ModelBuilder modelBuilder = getModelBuilder();
 
       Animals.registerType(modelBuilder);
@@ -65,5 +64,4 @@ public final class TestModel {
     }
     return modelBuilder;
   }
-
 }

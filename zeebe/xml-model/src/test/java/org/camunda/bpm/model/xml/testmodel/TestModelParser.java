@@ -16,6 +16,8 @@
  */
 package org.camunda.bpm.model.xml.testmodel;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.validation.SchemaFactory;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.ModelValidationException;
 import org.camunda.bpm.model.xml.impl.ModelImpl;
@@ -25,17 +27,15 @@ import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.camunda.bpm.model.xml.instance.DomDocument;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.validation.SchemaFactory;
-
 /**
  * @author Daniel Meyer
- *
  */
 public class TestModelParser extends AbstractModelParser {
 
-  private static final String JAXP_SCHEMA_SOURCE = "http://java.sun.com/xml/jaxp/properties/schemaSource";
-  private static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
+  private static final String JAXP_SCHEMA_SOURCE =
+      "http://java.sun.com/xml/jaxp/properties/schemaSource";
+  private static final String JAXP_SCHEMA_LANGUAGE =
+      "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
 
   private static final String SCHEMA_LOCATION = "org/camunda/bpm/model/xml/testmodel/Testmodel.xsd";
   private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
@@ -47,7 +47,8 @@ public class TestModelParser extends AbstractModelParser {
     try {
       addSchema(TEST_NS, schemaFactory.newSchema(ReflectUtil.getResource(SCHEMA_LOCATION)));
     } catch (SAXException e) {
-      throw new ModelValidationException("Unable to parse schema:" + ReflectUtil.getResource(SCHEMA_LOCATION), e);
+      throw new ModelValidationException(
+          "Unable to parse schema:" + ReflectUtil.getResource(SCHEMA_LOCATION), e);
     }
   }
 
@@ -60,7 +61,7 @@ public class TestModelParser extends AbstractModelParser {
 
   @Override
   protected ModelInstance createModelInstance(DomDocument document) {
-    return new ModelInstanceImpl((ModelImpl) TestModel.getTestModel(), TestModel.getModelBuilder(), document);
+    return new ModelInstanceImpl(
+        (ModelImpl) TestModel.getTestModel(), TestModel.getModelBuilder(), document);
   }
-
 }

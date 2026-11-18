@@ -20,11 +20,9 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**
  * @author Sebastian Menski
- *
  * @param <T> the type of the referenced element
  */
 public interface ReferenceBuilder<T extends ModelElementInstance> {
 
   Reference<T> build();
-
 }

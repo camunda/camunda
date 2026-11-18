@@ -27,17 +27,14 @@ public class ItemDefinitionTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(TypeRef.class, 0, 1),
-      new ChildElementAssumption(AllowedValues.class, 0, 1),
-      new ChildElementAssumption(ItemComponent.class)
-    );
+        new ChildElementAssumption(TypeRef.class, 0, 1),
+        new ChildElementAssumption(AllowedValues.class, 0, 1),
+        new ChildElementAssumption(ItemComponent.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      new AttributeAssumption("typeLanguage"),
-      new AttributeAssumption("isCollection", false, false, false)
-    );
+        new AttributeAssumption("typeLanguage"),
+        new AttributeAssumption("isCollection", false, false, false));
   }
-
 }

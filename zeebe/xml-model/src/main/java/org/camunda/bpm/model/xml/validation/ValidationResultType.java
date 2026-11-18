@@ -18,10 +18,8 @@ package org.camunda.bpm.model.xml.validation;
 
 /**
  * @author Daniel Meyer
- *
  */
 public enum ValidationResultType {
-
   ERROR,
   WARNING
 }

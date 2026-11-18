@@ -20,7 +20,6 @@ import org.camunda.bpm.model.xml.impl.type.ModelElementTypeImpl;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class EnumAttributeBuilder<T extends Enum<T>> extends AttributeBuilderImpl<T> {
 

@@ -16,6 +16,14 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.junit.runners.Parameterized.Parameters;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.testmodel.Gender;
@@ -23,15 +31,6 @@ import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.TestModelTest;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author Sebastian Menski
@@ -46,11 +45,12 @@ public class FlyingAnimalTest extends TestModelTest {
   private FlyingAnimal timmy;
   private FlyingAnimal daisy;
 
-  public FlyingAnimalTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public FlyingAnimalTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(FlyingAnimalTest.class)};
     return Arrays.asList(models);
@@ -81,8 +81,7 @@ public class FlyingAnimalTest extends TestModelTest {
     tweety.getFlightPartnerRefs().add(plucky);
     tweety.getFlightPartnerRefs().add(fiffy);
 
-
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -162,53 +161,45 @@ public class FlyingAnimalTest extends TestModelTest {
   @Test
   public void testAddFlightPartnerRefsByHelper() {
     assertThat(tweety.getFlightPartnerRefs())
-      .isNotEmpty()
-      .hasSize(4)
-      .containsOnly(hedwig, birdo, plucky, fiffy);
+        .isNotEmpty()
+        .hasSize(4)
+        .containsOnly(hedwig, birdo, plucky, fiffy);
 
     tweety.getFlightPartnerRefs().add(timmy);
     tweety.getFlightPartnerRefs().add(daisy);
 
     assertThat(tweety.getFlightPartnerRefs())
-      .isNotEmpty()
-      .hasSize(6)
-      .containsOnly(hedwig, birdo, plucky, fiffy, timmy, daisy);
+        .isNotEmpty()
+        .hasSize(6)
+        .containsOnly(hedwig, birdo, plucky, fiffy, timmy, daisy);
   }
 
   @Test
   public void testUpdateFlightPartnerRefsByIdByHelper() {
     hedwig.setId("new-" + hedwig.getId());
     plucky.setId("new-" + plucky.getId());
-    assertThat(tweety.getFlightPartnerRefs())
-      .hasSize(4)
-      .containsOnly(hedwig, birdo, plucky, fiffy);
+    assertThat(tweety.getFlightPartnerRefs()).hasSize(4).containsOnly(hedwig, birdo, plucky, fiffy);
   }
 
   @Test
   public void testUpdateFlightPartnerRefsByIdByAttributeName() {
     birdo.setAttributeValue("id", "new-" + birdo.getId(), true);
     fiffy.setAttributeValue("id", "new-" + fiffy.getId(), true);
-    assertThat(tweety.getFlightPartnerRefs())
-      .hasSize(4)
-      .containsOnly(hedwig, birdo, plucky, fiffy);
+    assertThat(tweety.getFlightPartnerRefs()).hasSize(4).containsOnly(hedwig, birdo, plucky, fiffy);
   }
 
   @Test
   public void testUpdateFlightPartnerRefsByReplaceElements() {
     hedwig.replaceWithElement(timmy);
     plucky.replaceWithElement(daisy);
-    assertThat(tweety.getFlightPartnerRefs())
-      .hasSize(4)
-      .containsOnly(birdo, fiffy, timmy ,daisy);
+    assertThat(tweety.getFlightPartnerRefs()).hasSize(4).containsOnly(birdo, fiffy, timmy, daisy);
   }
 
   @Test
   public void testUpdateFlightPartnerRefsByRemoveElements() {
     tweety.getFlightPartnerRefs().remove(birdo);
     tweety.getFlightPartnerRefs().remove(fiffy);
-    assertThat(tweety.getFlightPartnerRefs())
-      .hasSize(2)
-      .containsOnly(hedwig, plucky);
+    assertThat(tweety.getFlightPartnerRefs()).hasSize(2).containsOnly(hedwig, plucky);
   }
 
   @Test
@@ -219,9 +210,7 @@ public class FlyingAnimalTest extends TestModelTest {
 
   @Test
   public void testAddFlightPartnerRefElementsByHelper() {
-    assertThat(tweety.getFlightPartnerRefElements())
-      .isNotEmpty()
-      .hasSize(4);
+    assertThat(tweety.getFlightPartnerRefElements()).isNotEmpty().hasSize(4);
 
     FlightPartnerRef timmyFlightPartnerRef = modelInstance.newInstance(FlightPartnerRef.class);
     timmyFlightPartnerRef.setTextContent(timmy.getId());
@@ -232,9 +221,9 @@ public class FlyingAnimalTest extends TestModelTest {
     tweety.getFlightPartnerRefElements().add(daisyFlightPartnerRef);
 
     assertThat(tweety.getFlightPartnerRefElements())
-      .isNotEmpty()
-      .hasSize(6)
-      .contains(timmyFlightPartnerRef, daisyFlightPartnerRef);
+        .isNotEmpty()
+        .hasSize(6)
+        .contains(timmyFlightPartnerRef, daisyFlightPartnerRef);
   }
 
   @Test
@@ -247,31 +236,29 @@ public class FlyingAnimalTest extends TestModelTest {
       textContents.add(textContent);
     }
     assertThat(textContents)
-      .isNotEmpty()
-      .hasSize(4)
-      .containsOnly(hedwig.getId(), birdo.getId(), plucky.getId(), fiffy.getId());
+        .isNotEmpty()
+        .hasSize(4)
+        .containsOnly(hedwig.getId(), birdo.getId(), plucky.getId(), fiffy.getId());
   }
 
   @Test
   public void testUpdateFlightPartnerRefElementsByTextContent() {
-    List<FlightPartnerRef> flightPartnerRefs = new ArrayList<FlightPartnerRef>(tweety.getFlightPartnerRefElements());
+    List<FlightPartnerRef> flightPartnerRefs =
+        new ArrayList<FlightPartnerRef>(tweety.getFlightPartnerRefElements());
 
     flightPartnerRefs.get(0).setTextContent(timmy.getId());
     flightPartnerRefs.get(2).setTextContent(daisy.getId());
 
-    assertThat(tweety.getFlightPartnerRefs())
-      .hasSize(4)
-      .containsOnly(birdo, fiffy, timmy, daisy);
+    assertThat(tweety.getFlightPartnerRefs()).hasSize(4).containsOnly(birdo, fiffy, timmy, daisy);
   }
 
   @Test
   public void testUpdateFlightPartnerRefElementsByRemoveElements() {
-    List<FlightPartnerRef> flightPartnerRefs = new ArrayList<FlightPartnerRef>(tweety.getFlightPartnerRefElements());
+    List<FlightPartnerRef> flightPartnerRefs =
+        new ArrayList<FlightPartnerRef>(tweety.getFlightPartnerRefElements());
     tweety.getFlightPartnerRefElements().remove(flightPartnerRefs.get(1));
     tweety.getFlightPartnerRefElements().remove(flightPartnerRefs.get(3));
-    assertThat(tweety.getFlightPartnerRefs())
-      .hasSize(2)
-      .containsOnly(hedwig, plucky);
+    assertThat(tweety.getFlightPartnerRefs()).hasSize(2).containsOnly(hedwig, plucky);
   }
 
   @Test
@@ -281,9 +268,6 @@ public class FlyingAnimalTest extends TestModelTest {
 
     // should not affect animals collection
     Animals animals = (Animals) modelInstance.getDocumentElement();
-    assertThat(animals.getAnimals())
-      .isNotEmpty()
-      .hasSize(7);
+    assertThat(animals.getAnimals()).isNotEmpty().hasSize(7);
   }
-
 }

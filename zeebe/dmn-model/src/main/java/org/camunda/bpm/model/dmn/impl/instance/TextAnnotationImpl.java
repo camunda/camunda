@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_TEXT_FORMAT;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_TEXT_ANNOTATION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Artifact;
 import org.camunda.bpm.model.dmn.instance.Text;
@@ -58,25 +58,25 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(TextAnnotation.class, DMN_ELEMENT_TEXT_ANNOTATION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Artifact.class)
-      .instanceProvider(new ModelTypeInstanceProvider<TextAnnotation>() {
-        public TextAnnotation newInstance(ModelTypeInstanceContext instanceContext) {
-          return new TextAnnotationImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(TextAnnotation.class, DMN_ELEMENT_TEXT_ANNOTATION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Artifact.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<TextAnnotation>() {
+                  public TextAnnotation newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new TextAnnotationImpl(instanceContext);
+                  }
+                });
 
-    textFormatAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_TEXT_FORMAT)
-      .defaultValue("text/plain")
-      .build();
+    textFormatAttribute =
+        typeBuilder.stringAttribute(DMN_ATTRIBUTE_TEXT_FORMAT).defaultValue("text/plain").build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    textChild = sequenceBuilder.element(Text.class)
-      .build();
+    textChild = sequenceBuilder.element(Text.class).build();
 
     typeBuilder.build();
   }
-
 }

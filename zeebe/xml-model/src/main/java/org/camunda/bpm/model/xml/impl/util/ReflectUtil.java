@@ -16,14 +16,12 @@
  */
 package org.camunda.bpm.model.xml.impl.util;
 
-import org.camunda.bpm.model.xml.ModelException;
-
 import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.URISyntaxException;
 import java.net.URL;
-
+import org.camunda.bpm.model.xml.ModelException;
 
 /**
  * @author Tom Baeyens
@@ -48,7 +46,7 @@ public abstract class ReflectUtil {
   }
 
   public static URL getResource(String name, ClassLoader classLoader) {
-    if(classLoader == null) {
+    if (classLoader == null) {
       // Try the current Thread context class loader
       classLoader = Thread.currentThread().getContextClassLoader();
     }
@@ -93,8 +91,7 @@ public abstract class ReflectUtil {
       return constructor.newInstance(parameters);
 
     } catch (Exception e) {
-      throw new ModelException("Exception while creating an instance of type "+type, e);
+      throw new ModelException("Exception while creating an instance of type " + type, e);
     }
   }
-
 }

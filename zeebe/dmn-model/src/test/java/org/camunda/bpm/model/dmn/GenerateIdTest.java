@@ -28,14 +28,16 @@ public class GenerateIdTest {
 
   @Test
   public void shouldNotGenerateIdsOnRead() {
-    DmnModelInstance modelInstance = Dmn.readModelFromStream(GenerateIdTest.class.getResourceAsStream("GenerateIdTest.dmn"));
+    DmnModelInstance modelInstance =
+        Dmn.readModelFromStream(GenerateIdTest.class.getResourceAsStream("GenerateIdTest.dmn"));
     Definitions definitions = modelInstance.getDefinitions();
     assertThat(definitions.getId()).isNull();
 
     Decision decision = modelInstance.getModelElementsByType(Decision.class).iterator().next();
     assertThat(decision.getId()).isNull();
 
-    DecisionTable decisionTable = modelInstance.getModelElementsByType(DecisionTable.class).iterator().next();
+    DecisionTable decisionTable =
+        modelInstance.getModelElementsByType(DecisionTable.class).iterator().next();
     assertThat(decisionTable.getId()).isNull();
 
     Output output = modelInstance.getModelElementsByType(Output.class).iterator().next();
@@ -57,5 +59,4 @@ public class GenerateIdTest {
     Output output = modelInstance.newInstance(Output.class);
     assertThat(output.getId()).isNotNull();
   }
-
 }

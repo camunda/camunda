@@ -16,9 +16,9 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_NAME;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_NAMED_ELEMENT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElement;
 import org.camunda.bpm.model.dmn.instance.NamedElement;
@@ -44,16 +44,15 @@ public abstract class NamedElementImpl extends DmnElementImpl implements NamedEl
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(NamedElement.class, DMN_ELEMENT_NAMED_ELEMENT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElement.class)
-      .abstractType();
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(NamedElement.class, DMN_ELEMENT_NAMED_ELEMENT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElement.class)
+            .abstractType();
 
-    nameAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_NAME)
-      .required()
-      .build();
+    nameAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_NAME).required().build();
 
     typeBuilder.build();
   }
-
 }

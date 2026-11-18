@@ -27,15 +27,11 @@ public class LiteralExpressionTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Text.class, 0, 1),
-      new ChildElementAssumption(ImportedValues.class, 0, 1)
-    );
+        new ChildElementAssumption(Text.class, 0, 1),
+        new ChildElementAssumption(ImportedValues.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("expressionLanguage")
-    );
+    return Arrays.asList(new AttributeAssumption("expressionLanguage"));
   }
-
 }

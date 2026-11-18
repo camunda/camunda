@@ -16,6 +16,10 @@
  */
 package org.camunda.bpm.model.xml.type;
 
+import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.junit.Assert.fail;
+
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.util.ModelTypeException;
@@ -23,10 +27,6 @@ import org.camunda.bpm.model.xml.testmodel.TestModelParser;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.junit.Assert.fail;
 
 /**
  * @author Sebastian Menski
@@ -78,7 +78,8 @@ public class ModelElementTypeTest {
   @Test
   public void testAttributes() {
     assertThat(animalsType).hasNoAttributes();
-    assertThat(animalType).hasAttributes("id", "name", "father", "mother", "isEndangered", "gender", "age");
+    assertThat(animalType)
+        .hasAttributes("id", "name", "father", "mother", "isEndangered", "gender", "age");
     assertThat(flyingAnimalType).hasAttributes("wingspan");
     assertThat(birdType).hasAttributes("canHazExtendedWings");
   }
@@ -102,9 +103,7 @@ public class ModelElementTypeTest {
   @Test
   public void testExtendingTypes() {
     assertThat(animalsType).isNotExtended();
-    assertThat(animalType)
-      .isExtendedBy(flyingAnimalType)
-      .isNotExtendedBy(birdType);
+    assertThat(animalType).isExtendedBy(flyingAnimalType).isNotExtendedBy(birdType);
     assertThat(flyingAnimalType).isExtendedBy(birdType);
     assertThat(birdType).isNotExtended();
   }
@@ -130,16 +129,14 @@ public class ModelElementTypeTest {
     try {
       animalType.newInstance(modelInstance);
       fail("Animal is a abstract type and not instance can be created.");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       assertThat(e).isInstanceOf(ModelTypeException.class);
     }
 
     try {
       flyingAnimalType.newInstance(modelInstance);
       fail("Flying animal is a abstract type and not instance can be created.");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       assertThat(e).isInstanceOf(ModelTypeException.class);
     }
 
@@ -162,9 +159,9 @@ public class ModelElementTypeTest {
     ModelElementType spouseRefType = model.getType(SpouseRef.class);
 
     assertThat(animalsType).hasChildElements(animalType);
-    assertThat(animalType).hasChildElements(relationshipDefinitionType, relationshipDefinitionRefType);
+    assertThat(animalType)
+        .hasChildElements(relationshipDefinitionType, relationshipDefinitionRefType);
     assertThat(flyingAnimalType).hasChildElements(flightPartnerRefType);
     assertThat(birdType).hasChildElements(eggType, spouseRefType);
   }
-
 }

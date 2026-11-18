@@ -16,17 +16,15 @@
  */
 package org.camunda.bpm.model.xml.type;
 
+import java.util.Collection;
+import java.util.List;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-import java.util.Collection;
-import java.util.List;
-
 /**
  * @author Daniel Meyer
- *
  */
 public interface ModelElementType {
 
@@ -57,5 +55,4 @@ public interface ModelElementType {
   List<ModelElementType> getChildElementTypes();
 
   List<ModelElementType> getAllChildElementTypes();
-
 }

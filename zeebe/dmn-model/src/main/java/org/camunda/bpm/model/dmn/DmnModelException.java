@@ -22,8 +22,7 @@ public class DmnModelException extends ModelException {
 
   private static final long serialVersionUID = 1L;
 
-  public DmnModelException() {
-  }
+  public DmnModelException() {}
 
   public DmnModelException(String message, Throwable cause) {
     super(message, cause);
@@ -36,6 +35,4 @@ public class DmnModelException extends ModelException {
   public DmnModelException(Throwable cause) {
     super(cause);
   }
-
-
 }

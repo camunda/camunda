@@ -27,13 +27,10 @@ public class RelationTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Column.class),
-      new ChildElementAssumption(Row.class)
-    );
+        new ChildElementAssumption(Column.class), new ChildElementAssumption(Row.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

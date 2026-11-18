@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_USING_TASK;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.UsingTaskReference;
@@ -33,16 +33,18 @@ public class UsingTaskReferenceImpl extends DmnElementReferenceImpl implements U
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(UsingTaskReference.class, DMN_ELEMENT_USING_TASK)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<UsingTaskReference>() {
-        public UsingTaskReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new UsingTaskReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(UsingTaskReference.class, DMN_ELEMENT_USING_TASK)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<UsingTaskReference>() {
+                  public UsingTaskReference newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new UsingTaskReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

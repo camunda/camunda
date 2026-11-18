@@ -16,6 +16,11 @@
  */
 package org.camunda.bpm.model.xml.type.attribute;
 
+import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
+import static org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.impl.type.attribute.AttributeImpl;
@@ -30,12 +35,6 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.runners.Parameterized.Parameters;
-
 /**
  * @author Sebastian Menski
  */
@@ -46,11 +45,12 @@ public class AttributeTest extends TestModelTest {
   private Attribute<String> nameAttribute;
   private Attribute<String> fatherAttribute;
 
-  public AttributeTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public AttributeTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(AnimalTest.class)};
     return Arrays.asList(models);
@@ -65,7 +65,7 @@ public class AttributeTest extends TestModelTest {
 
     createBird(modelInstance, "tweety", Gender.Female);
 
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -183,5 +183,4 @@ public class AttributeTest extends TestModelTest {
     assertThat(nameAttribute).hasNoOutgoingReferences();
     assertThat(fatherAttribute).hasOutgoingReferences();
   }
-
 }

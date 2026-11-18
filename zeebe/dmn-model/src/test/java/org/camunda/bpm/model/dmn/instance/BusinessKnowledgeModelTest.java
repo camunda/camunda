@@ -27,15 +27,13 @@ public class BusinessKnowledgeModelTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(EncapsulatedLogic.class, 0, 1),
-      new ChildElementAssumption(Variable.class, 0, 1),
-      new ChildElementAssumption(KnowledgeRequirement.class),
-      new ChildElementAssumption(AuthorityRequirement.class)
-    );
+        new ChildElementAssumption(EncapsulatedLogic.class, 0, 1),
+        new ChildElementAssumption(Variable.class, 0, 1),
+        new ChildElementAssumption(KnowledgeRequirement.class),
+        new ChildElementAssumption(AuthorityRequirement.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

@@ -28,5 +28,4 @@ public interface GetModelElementTypeRule extends TestRule {
   Model getModel();
 
   ModelElementType getModelElementType();
-
 }

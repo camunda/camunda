@@ -27,13 +27,11 @@ public class FunctionDefinitionTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(FormalParameter.class),
-      new ChildElementAssumption(Expression.class, 0, 1)
-    );
+        new ChildElementAssumption(FormalParameter.class),
+        new ChildElementAssumption(Expression.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

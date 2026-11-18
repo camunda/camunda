@@ -29,7 +29,6 @@ public interface BusinessKnowledgeModel extends DrgElement {
   void setVariable(Variable variable);
 
   Collection<KnowledgeRequirement> getKnowledgeRequirement();
-  
+
   Collection<AuthorityRequirement> getAuthorityRequirement();
-  
 }

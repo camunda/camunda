@@ -21,7 +21,6 @@ import java.util.Collection;
 
 public class NamedElementTest extends DmnModelElementInstanceTest {
 
-
   public TypeAssumption getTypeAssumption() {
     return new TypeAssumption(DmnElement.class, true);
   }
@@ -31,9 +30,6 @@ public class NamedElementTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("name", false, true)
-    );
+    return Arrays.asList(new AttributeAssumption("name", false, true));
   }
-
 }

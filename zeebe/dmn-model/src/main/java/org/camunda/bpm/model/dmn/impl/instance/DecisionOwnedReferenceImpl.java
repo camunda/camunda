@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_DECISION_OWNED;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DecisionOwnedReference;
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
@@ -26,23 +26,27 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class DecisionOwnedReferenceImpl extends DmnElementReferenceImpl implements DecisionOwnedReference {
+public class DecisionOwnedReferenceImpl extends DmnElementReferenceImpl
+    implements DecisionOwnedReference {
 
   public DecisionOwnedReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DecisionOwnedReference.class, DMN_ELEMENT_DECISION_OWNED)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<DecisionOwnedReference>() {
-        public DecisionOwnedReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DecisionOwnedReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DecisionOwnedReference.class, DMN_ELEMENT_DECISION_OWNED)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<DecisionOwnedReference>() {
+                  public DecisionOwnedReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new DecisionOwnedReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

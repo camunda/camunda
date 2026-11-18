@@ -17,7 +17,6 @@
 package org.camunda.bpm.model.dmn;
 
 import java.util.List;
-
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
@@ -32,5 +31,4 @@ public interface Query<T extends ModelElementInstance> {
   <V extends ModelElementInstance> Query<V> filterByType(Class<V> elementClass);
 
   T singleResult();
-
 }

@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.ModelInstance;
@@ -42,7 +41,6 @@ import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class ModelElementTypeImpl implements ModelElementType {
 
@@ -62,13 +60,15 @@ public class ModelElementTypeImpl implements ModelElementType {
 
   private final List<ModelElementType> childElementTypes = new ArrayList<ModelElementType>();
 
-  private final List<ChildElementCollection<?>> childElementCollections = new ArrayList<ChildElementCollection<?>>();
+  private final List<ChildElementCollection<?>> childElementCollections =
+      new ArrayList<ChildElementCollection<?>>();
 
   private ModelTypeInstanceProvider<?> instanceProvider;
 
   private boolean isAbstract;
 
-  public ModelElementTypeImpl(ModelImpl model, String name, Class<? extends ModelElementInstance> instanceType) {
+  public ModelElementTypeImpl(
+      ModelImpl model, String name, Class<? extends ModelElementInstance> instanceType) {
     this.model = model;
     this.typeName = name;
     this.instanceType = instanceType;
@@ -82,7 +82,8 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public ModelElementInstance newInstance(ModelInstanceImpl modelInstance, DomElement domElement) {
-    ModelTypeInstanceContext modelTypeInstanceContext = new ModelTypeInstanceContext(domElement, modelInstance, this);
+    ModelTypeInstanceContext modelTypeInstanceContext =
+        new ModelTypeInstanceContext(domElement, modelInstance, this);
     return createModelElementInstance(modelTypeInstanceContext);
   }
 
@@ -110,11 +111,12 @@ public class ModelElementTypeImpl implements ModelElementType {
     }
   }
 
-  protected ModelElementInstance createModelElementInstance(ModelTypeInstanceContext instanceContext) {
+  protected ModelElementInstance createModelElementInstance(
+      ModelTypeInstanceContext instanceContext) {
     if (isAbstract) {
-      throw new ModelTypeException("Model element type " + getTypeName() + " is abstract and no instances can be created.");
-    }
-    else {
+      throw new ModelTypeException(
+          "Model element type " + getTypeName() + " is abstract and no instances can be created.");
+    } else {
       return instanceProvider.newInstance(instanceContext);
     }
   }
@@ -142,16 +144,21 @@ public class ModelElementTypeImpl implements ModelElementType {
   public void setBaseType(ModelElementTypeImpl baseType) {
     if (this.baseType == null) {
       this.baseType = baseType;
-    }
-    else if (!this.baseType.equals(baseType)) {
-      throw new ModelException("Type can not have multiple base types. " + this.getClass() + " already extends type " + this.baseType.getClass()
-          + " and can not also extend type " + baseType.getClass());
+    } else if (!this.baseType.equals(baseType)) {
+      throw new ModelException(
+          "Type can not have multiple base types. "
+              + this.getClass()
+              + " already extends type "
+              + this.baseType.getClass()
+              + " and can not also extend type "
+              + baseType.getClass());
     }
   }
 
   public void setInstanceProvider(ModelTypeInstanceProvider<?> instanceProvider) {
     this.instanceProvider = instanceProvider;
   }
+
   public boolean isAbstract() {
     return isAbstract;
   }
@@ -177,7 +184,7 @@ public class ModelElementTypeImpl implements ModelElementType {
    * @param allExtendingTypes set of calculated extending types
    */
   public void resolveExtendingTypes(Set<ModelElementType> allExtendingTypes) {
-    for(ModelElementType modelElementType : extendingTypes) {
+    for (ModelElementType modelElementType : extendingTypes) {
       ModelElementTypeImpl modelElementTypeImpl = (ModelElementTypeImpl) modelElementType;
       if (!allExtendingTypes.contains(modelElementTypeImpl)) {
         allExtendingTypes.add(modelElementType);
@@ -197,7 +204,6 @@ public class ModelElementTypeImpl implements ModelElementType {
       baseType.resolveBaseTypes(baseTypes);
     }
   }
-
 
   public ModelElementType getBaseType() {
     return baseType;
@@ -225,7 +231,8 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   public List<ChildElementCollection<?>> getAllChildElementCollections() {
-    List<ChildElementCollection<?>> allChildElementCollections = new ArrayList<ChildElementCollection<?>>();
+    List<ChildElementCollection<?>> allChildElementCollections =
+        new ArrayList<ChildElementCollection<?>>();
     if (baseType != null) {
       allChildElementCollections.addAll(baseType.getAllChildElementCollections());
     }
@@ -252,8 +259,7 @@ public class ModelElementTypeImpl implements ModelElementType {
     if (elements.isEmpty()) {
       Set<String> alternativeNamespaces = getModel().getAlternativeNamespaces(namespaceURI);
 
-      if (alternativeNamespaces != null)
-      {
+      if (alternativeNamespaces != null) {
         Iterator<String> namespaceIt = alternativeNamespaces.iterator();
         while (elements.isEmpty() && namespaceIt.hasNext()) {
           elements = getElementsByNameNs(document, namespaceIt.next());
@@ -265,7 +271,8 @@ public class ModelElementTypeImpl implements ModelElementType {
   }
 
   /**
-   * Test if a element type is a base type of this type. So this type extends the given element type.
+   * Test if a element type is a base type of this type. So this type extends the given element
+   * type.
    *
    * @param elementType the element type to test
    * @return true if {@code childElementTypeClass} is a base type of this type, else otherwise
@@ -273,8 +280,7 @@ public class ModelElementTypeImpl implements ModelElementType {
   public boolean isBaseTypeOf(ModelElementType elementType) {
     if (this.equals(elementType)) {
       return true;
-    }
-    else {
+    } else {
       Collection<ModelElementType> baseTypes = ModelUtil.calculateAllBaseTypes(elementType);
       return baseTypes.contains(this);
     }
@@ -364,5 +370,4 @@ public class ModelElementTypeImpl implements ModelElementType {
     }
     return true;
   }
-
 }

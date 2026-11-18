@@ -20,11 +20,10 @@ import org.camunda.bpm.model.xml.impl.util.ModelUtil;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
 /**
- * <p>class for providing Boolean value attributes. Takes care of type conversion and
- * the interaction with the underlying Xml model model.</p>
+ * class for providing Boolean value attributes. Takes care of type conversion and the interaction
+ * with the underlying Xml model model.
  *
  * @author Daniel Meyer
- *
  */
 public class BooleanAttribute extends AttributeImpl<Boolean> {
 
@@ -39,5 +38,4 @@ public class BooleanAttribute extends AttributeImpl<Boolean> {
   protected String convertModelValueToXmlValue(Boolean modelValue) {
     return ModelUtil.valueAsString(modelValue);
   }
-
 }

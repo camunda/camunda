@@ -29,5 +29,4 @@ public interface AuthorityRequirement extends DmnModelElementInstance {
   KnowledgeSource getRequiredAuthority();
 
   void setRequiredAuthority(KnowledgeSource requiredAuthority);
-
 }

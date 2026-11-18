@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_BUSINESS_KNOWLEDGE_MODEL;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.AuthorityRequirement;
 import org.camunda.bpm.model.dmn.instance.BusinessKnowledgeModel;
 import org.camunda.bpm.model.dmn.instance.DrgElement;
@@ -71,30 +70,31 @@ public class BusinessKnowledgeModelImpl extends DrgElementImpl implements Busine
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(BusinessKnowledgeModel.class, DMN_ELEMENT_BUSINESS_KNOWLEDGE_MODEL)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DrgElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<BusinessKnowledgeModel>() {
-        public BusinessKnowledgeModel newInstance(ModelTypeInstanceContext instanceContext) {
-          return new BusinessKnowledgeModelImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(BusinessKnowledgeModel.class, DMN_ELEMENT_BUSINESS_KNOWLEDGE_MODEL)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DrgElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<BusinessKnowledgeModel>() {
+                  public BusinessKnowledgeModel newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new BusinessKnowledgeModelImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    encapsulatedLogicChild = sequenceBuilder.element(EncapsulatedLogic.class)
-      .build();
+    encapsulatedLogicChild = sequenceBuilder.element(EncapsulatedLogic.class).build();
 
-    variableChild = sequenceBuilder.element(Variable.class)
-      .build();
+    variableChild = sequenceBuilder.element(Variable.class).build();
 
-    knowledgeRequirementCollection = sequenceBuilder.elementCollection(KnowledgeRequirement.class)
-      .build();
+    knowledgeRequirementCollection =
+        sequenceBuilder.elementCollection(KnowledgeRequirement.class).build();
 
-    authorityRequirementCollection = sequenceBuilder.elementCollection(AuthorityRequirement.class)
-      .build();
+    authorityRequirementCollection =
+        sequenceBuilder.elementCollection(AuthorityRequirement.class).build();
 
     typeBuilder.build();
   }
-
 }

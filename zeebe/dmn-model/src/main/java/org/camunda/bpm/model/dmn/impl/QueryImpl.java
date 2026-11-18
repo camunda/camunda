@@ -19,7 +19,6 @@ package org.camunda.bpm.model.dmn.impl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.camunda.bpm.model.dmn.DmnModelException;
 import org.camunda.bpm.model.dmn.Query;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -61,9 +60,9 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
   public T singleResult() {
     if (collection.size() == 1) {
       return collection.iterator().next();
-    }
-    else {
-      throw new DmnModelException("Collection expected to have <1> entry but has <" + collection.size() + ">");
+    } else {
+      throw new DmnModelException(
+          "Collection expected to have <1> entry but has <" + collection.size() + ">");
     }
   }
 }

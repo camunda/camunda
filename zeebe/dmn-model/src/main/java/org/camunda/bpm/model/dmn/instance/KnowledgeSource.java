@@ -33,5 +33,4 @@ public interface KnowledgeSource extends DrgElement {
   OrganizationUnit getOwner();
 
   void setOwner(OrganizationUnit owner);
-
 }

@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public class UsingProcessReferenceTest extends AbstractDmnElementReferenceTest {
-
-}
+public class UsingProcessReferenceTest extends AbstractDmnElementReferenceTest {}

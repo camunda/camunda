@@ -25,5 +25,4 @@ public interface FunctionDefinition extends Expression {
   Expression getExpression();
 
   void setExpression(Expression expression);
-
 }

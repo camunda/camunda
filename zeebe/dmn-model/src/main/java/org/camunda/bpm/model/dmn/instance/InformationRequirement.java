@@ -25,5 +25,4 @@ public interface InformationRequirement extends DmnModelElementInstance {
   InputData getRequiredInput();
 
   void setRequiredInput(InputData requiredInput);
-
 }

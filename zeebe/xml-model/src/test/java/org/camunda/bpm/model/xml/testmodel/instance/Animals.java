@@ -16,6 +16,10 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_ANIMALS;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+
+import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
@@ -25,14 +29,8 @@ import org.camunda.bpm.model.xml.type.child.ChildElement;
 import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 
-import java.util.Collection;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_ANIMALS;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-
 /**
  * @author Daniel Meyer
- *
  */
 public class Animals extends ModelElementInstanceImpl {
 
@@ -41,24 +39,24 @@ public class Animals extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Animals.class, ELEMENT_NAME_ANIMALS)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<Animals>() {
-        public Animals newInstance(ModelTypeInstanceContext instanceContext) {
-          return new Animals(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Animals.class, ELEMENT_NAME_ANIMALS)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Animals>() {
+                  public Animals newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new Animals(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequence = typeBuilder.sequence();
 
-    descriptionChild = sequence.element(Description.class)
-      .build();
+    descriptionChild = sequence.element(Description.class).build();
 
-    animalColl = sequence.elementCollection(Animal.class)
-      .build();
+    animalColl = sequence.elementCollection(Animal.class).build();
 
     typeBuilder.build();
-
   }
 
   public Animals(ModelTypeInstanceContext instanceContext) {
@@ -76,5 +74,4 @@ public class Animals extends ModelElementInstanceImpl {
   public Collection<Animal> getAnimals() {
     return animalColl.get(this);
   }
-
 }

@@ -16,13 +16,13 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION;
 
 /**
  * @author Sebastian Menski
@@ -30,15 +30,19 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_C
 public class ChildRelationshipDefinition extends RelationshipDefinition {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ChildRelationshipDefinition.class, TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION)
-      .namespaceUri(MODEL_NAMESPACE)
-      .extendsType(RelationshipDefinition.class)
-      .instanceProvider(new ModelTypeInstanceProvider<ChildRelationshipDefinition>() {
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ChildRelationshipDefinition.class, TYPE_NAME_CHILD_RELATIONSHIP_DEFINITION)
+            .namespaceUri(MODEL_NAMESPACE)
+            .extendsType(RelationshipDefinition.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ChildRelationshipDefinition>() {
 
-        public ChildRelationshipDefinition newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ChildRelationshipDefinition(instanceContext);
-        }
-      });
+                  public ChildRelationshipDefinition newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new ChildRelationshipDefinition(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }

@@ -29,11 +29,11 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 public interface ModelElementValidator<T extends ModelElementInstance> {
 
   /**
-   * <p>The type of the element this validator is applied to. The validator is applied to all
-   * instances implementing this type.</p>
+   * The type of the element this validator is applied to. The validator is applied to all instances
+   * implementing this type.
    *
-   * <p>Example from BPMN: Assume the type returned is 'Task'. Then the validator is invoked for
-   * all instances of task, including instances of 'ServiceTask', 'UserTask', ...</p>
+   * <p>Example from BPMN: Assume the type returned is 'Task'. Then the validator is invoked for all
+   * instances of task, including instances of 'ServiceTask', 'UserTask', ...
    *
    * @return the type of the element this validator is applied to.
    */

@@ -16,18 +16,16 @@
  */
 package org.camunda.bpm.model.xml;
 
+import java.util.Collection;
+import java.util.Set;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
-import java.util.Collection;
-import java.util.Set;
-
 /**
- * A model contains all defined types and the relationship between them.
- * See {@link ModelBuilder#createInstance} to create a new model.
+ * A model contains all defined types and the relationship between them. See {@link
+ * ModelBuilder#createInstance} to create a new model.
  *
  * @author Daniel Meyer
- *
  */
 public interface Model {
 
@@ -41,7 +39,7 @@ public interface Model {
   /**
    * Gets the defined {@link ModelElementType} of a {@link ModelElementInstance}.
    *
-   * @param instanceClass  the instance class to find the type for
+   * @param instanceClass the instance class to find the type for
    * @return the corresponding element type or null if no type is defined for the instance
    */
   ModelElementType getType(Class<? extends ModelElementInstance> instanceClass);
@@ -49,7 +47,7 @@ public interface Model {
   /**
    * Gets the defined {@link ModelElementType} for a type by its name.
    *
-   * @param typeName  the name of the type
+   * @param typeName the name of the type
    * @return the element type or null if no type is defined for the name
    */
   ModelElementType getTypeForName(String typeName);
@@ -57,9 +55,8 @@ public interface Model {
   /**
    * Gets the defined {@link ModelElementType} for a type by its name and namespace URI.
    *
-   *
-   * @param namespaceUri  the namespace URI for the type
-   * @param typeName  the name of the type
+   * @param namespaceUri the namespace URI for the type
+   * @param typeName the name of the type
    * @return the element type or null if no type is defined for the name and namespace URI
    */
   ModelElementType getTypeForName(String namespaceUri, String typeName);
@@ -73,6 +70,7 @@ public interface Model {
 
   /**
    * Returns the actual namespace URI for an alternative namespace URI
+   *
    * @param alternativeNs the alternative namespace URI
    * @return the actual namespace URI or null if none is set
    */
@@ -80,11 +78,11 @@ public interface Model {
 
   /**
    * Returns the alternative namespace URI for a namespace URI
+   *
    * @param actualNs the actual namespace URI
    * @return the alternative namespace URI or null if none is set
    */
   String getAlternativeNamespace(String actualNs);
 
   Set<String> getAlternativeNamespaces(String actualNs);
-
 }

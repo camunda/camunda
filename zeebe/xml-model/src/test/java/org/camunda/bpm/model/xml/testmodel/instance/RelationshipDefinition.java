@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
 
 /**
  * @author Sebastian Menski
@@ -34,17 +34,19 @@ public abstract class RelationshipDefinition extends ModelElementInstanceImpl {
   protected static AttributeReference<Animal> animalRef;
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(RelationshipDefinition.class, TYPE_NAME_RELATIONSHIP_DEFINITION)
-      .namespaceUri(MODEL_NAMESPACE)
-      .abstractType();
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(RelationshipDefinition.class, TYPE_NAME_RELATIONSHIP_DEFINITION)
+            .namespaceUri(MODEL_NAMESPACE)
+            .abstractType();
 
-    idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID)
-      .idAttribute()
-      .build();
+    idAttr = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ID).idAttribute().build();
 
-    animalRef = typeBuilder.stringAttribute(ATTRIBUTE_NAME_ANIMAL_REF)
-      .idAttributeReference(Animal.class)
-      .build();
+    animalRef =
+        typeBuilder
+            .stringAttribute(ATTRIBUTE_NAME_ANIMAL_REF)
+            .idAttributeReference(Animal.class)
+            .build();
 
     typeBuilder.build();
   }

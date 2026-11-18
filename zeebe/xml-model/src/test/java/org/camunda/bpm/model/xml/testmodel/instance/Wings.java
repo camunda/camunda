@@ -27,9 +27,8 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 
 /**
  * @author Ronny Bräunlich
- *
  */
-public class Wings extends ModelElementInstanceImpl{
+public class Wings extends ModelElementInstanceImpl {
 
   /**
    * @param instanceContext
@@ -40,16 +39,18 @@ public class Wings extends ModelElementInstanceImpl{
 
   public static void registerType(ModelBuilder modelBuilder) {
 
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Wings.class, TYPE_NAME_WINGS)
-      .namespaceUri(NEWER_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<Wings>() {
-        @Override
-        public Wings newInstance(ModelTypeInstanceContext instanceContext) {
-          return new Wings(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Wings.class, TYPE_NAME_WINGS)
+            .namespaceUri(NEWER_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Wings>() {
+                  @Override
+                  public Wings newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new Wings(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

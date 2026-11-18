@@ -23,7 +23,9 @@ import org.camunda.bpm.model.xml.type.child.ChildElement;
 /**
  * @author Sebastian Menski
  */
-public class QNameElementReferenceImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceImpl<Target,Source> {
+public class QNameElementReferenceImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceImpl<Target, Source> {
 
   public QNameElementReferenceImpl(ChildElement<Source> referenceSourceCollection) {
     super(referenceSourceCollection);
@@ -35,8 +37,7 @@ public class QNameElementReferenceImpl<Target extends ModelElementInstance, Sour
     if (identifier != null) {
       QName qName = QName.parseQName(identifier);
       return qName.getLocalName();
-    }
-    else {
+    } else {
       return null;
     }
   }

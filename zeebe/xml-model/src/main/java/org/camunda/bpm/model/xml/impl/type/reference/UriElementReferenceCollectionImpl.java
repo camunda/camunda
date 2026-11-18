@@ -19,9 +19,12 @@ package org.camunda.bpm.model.xml.impl.type.reference;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 
-public class UriElementReferenceCollectionImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceCollectionImpl<Target, Source> {
+public class UriElementReferenceCollectionImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollectionImpl<Target, Source> {
 
-  public UriElementReferenceCollectionImpl(ChildElementCollection<Source> referenceSourceCollection) {
+  public UriElementReferenceCollectionImpl(
+      ChildElementCollection<Source> referenceSourceCollection) {
     super(referenceSourceCollection);
   }
 
@@ -33,20 +36,18 @@ public class UriElementReferenceCollectionImpl<Target extends ModelElementInstan
       String[] parts = identifier.split("#");
       if (parts.length > 1) {
         return parts[parts.length - 1];
-      }
-      else {
+      } else {
         return parts[0];
       }
-    }
-    else {
+    } else {
       return null;
     }
   }
 
   @Override
-  protected void setReferenceIdentifier(ModelElementInstance referenceSourceElement, String referenceIdentifier) {
+  protected void setReferenceIdentifier(
+      ModelElementInstance referenceSourceElement, String referenceIdentifier) {
     // TODO: implement something more robust (CAM-4028)
     referenceSourceElement.setAttributeValue("href", "#" + referenceIdentifier);
   }
-
 }

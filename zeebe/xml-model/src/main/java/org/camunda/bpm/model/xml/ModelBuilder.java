@@ -25,13 +25,13 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  * This builder is used to define and create a new model.
  *
  * @author Daniel Meyer
- *
  */
 public abstract class ModelBuilder {
 
   public abstract ModelBuilder alternativeNamespace(String alternativeNs, String actualNs);
 
-  public abstract ModelElementTypeBuilder defineType(Class<? extends ModelElementInstance> modelInstanceType, String typeName);
+  public abstract ModelElementTypeBuilder defineType(
+      Class<? extends ModelElementInstance> modelInstanceType, String typeName);
 
   public abstract ModelElementType defineGenericType(String typeName, String typeNamespaceUri);
 
@@ -40,5 +40,4 @@ public abstract class ModelBuilder {
   public static ModelBuilder createInstance(String modelName) {
     return new ModelBuilderImpl(modelName);
   }
-
 }

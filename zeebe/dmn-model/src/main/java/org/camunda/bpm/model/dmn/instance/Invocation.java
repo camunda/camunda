@@ -25,5 +25,4 @@ public interface Invocation extends Expression {
   void setExpression(Expression expression);
 
   Collection<Binding> getBindings();
-
 }

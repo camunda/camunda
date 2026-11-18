@@ -25,5 +25,4 @@ import org.camunda.bpm.model.xml.type.attribute.Attribute;
 public interface AttributeReference<T extends ModelElementInstance> extends Reference<T> {
 
   Attribute<String> getReferenceSourceAttribute();
-
 }

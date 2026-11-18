@@ -45,5 +45,4 @@ public interface ValidationResult {
    * @return A reference code for this validation result
    */
   int getCode();
-
 }

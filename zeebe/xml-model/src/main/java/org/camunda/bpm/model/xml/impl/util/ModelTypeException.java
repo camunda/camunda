@@ -16,15 +16,13 @@
  */
 package org.camunda.bpm.model.xml.impl.util;
 
+import java.lang.reflect.Type;
 import org.camunda.bpm.model.xml.ModelException;
 
-import java.lang.reflect.Type;
-
 /**
- * <p>Thrown in case a value cannot be converted to or from the requested type</p>
+ * Thrown in case a value cannot be converted to or from the requested type
  *
  * @author Daniel Meyer
- *
  */
 public class ModelTypeException extends ModelException {
 
@@ -35,7 +33,6 @@ public class ModelTypeException extends ModelException {
   }
 
   public ModelTypeException(String value, Type type) {
-    super("Illegal value "+value+" for type "+type);
+    super("Illegal value " + value + " for type " + type);
   }
-
 }

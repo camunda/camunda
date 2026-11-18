@@ -31,5 +31,4 @@ public class AllowedValuesTest extends DmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

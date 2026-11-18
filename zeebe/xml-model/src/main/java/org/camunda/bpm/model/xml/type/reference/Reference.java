@@ -16,16 +16,13 @@
  */
 package org.camunda.bpm.model.xml.type.reference;
 
+import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-import java.util.Collection;
-
 /**
- *
  * @author Sebastian Menski
- *
  * @param <T> the type of the referenced element
  */
 public interface Reference<T extends ModelElementInstance> {
@@ -40,7 +37,8 @@ public interface Reference<T extends ModelElementInstance> {
 
   T getReferenceTargetElement(ModelElementInstance modelElement);
 
-  void setReferenceTargetElement(ModelElementInstance referenceSourceElement, T referenceTargetElement);
+  void setReferenceTargetElement(
+      ModelElementInstance referenceSourceElement, T referenceTargetElement);
 
   Attribute<String> getReferenceTargetAttribute();
 
@@ -50,9 +48,11 @@ public interface Reference<T extends ModelElementInstance> {
    * @param referenceTargetElement the reference target model element instance
    * @return the collection of all reference source element instances
    */
-  Collection<ModelElementInstance> findReferenceSourceElements(ModelElementInstance referenceTargetElement);
+  Collection<ModelElementInstance> findReferenceSourceElements(
+      ModelElementInstance referenceTargetElement);
 
-  /** @return the {@link ModelElementType} of the source element.
-   * */
+  /**
+   * @return the {@link ModelElementType} of the source element.
+   */
   ModelElementType getReferenceSourceElementType();
 }

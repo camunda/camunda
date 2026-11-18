@@ -16,13 +16,13 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION;
 
 /**
  * @author Sebastian Menski
@@ -30,15 +30,20 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.TYPE_NAME_F
 public class FriendRelationshipDefinition extends RelationshipDefinition {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(FriendRelationshipDefinition.class, TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION)
-      .namespaceUri(MODEL_NAMESPACE)
-      .extendsType(RelationshipDefinition.class)
-      .instanceProvider(new ModelTypeInstanceProvider<FriendRelationshipDefinition>() {
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(
+                FriendRelationshipDefinition.class, TYPE_NAME_FRIEND_RELATIONSHIP_DEFINITION)
+            .namespaceUri(MODEL_NAMESPACE)
+            .extendsType(RelationshipDefinition.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<FriendRelationshipDefinition>() {
 
-        public FriendRelationshipDefinition newInstance(ModelTypeInstanceContext instanceContext) {
-          return new FriendRelationshipDefinition(instanceContext);
-        }
-      });
+                  public FriendRelationshipDefinition newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new FriendRelationshipDefinition(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
@@ -46,5 +51,4 @@ public class FriendRelationshipDefinition extends RelationshipDefinition {
   public FriendRelationshipDefinition(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
-
 }

@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_DEFAULT_OUTPUT_ENTRY;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DefaultOutputEntry;
 import org.camunda.bpm.model.dmn.instance.LiteralExpression;
@@ -33,16 +33,18 @@ public class DefaultOutputEntryImpl extends LiteralExpressionImpl implements Def
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DefaultOutputEntry.class, DMN_ELEMENT_DEFAULT_OUTPUT_ENTRY)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(LiteralExpression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<DefaultOutputEntry>() {
-        public DefaultOutputEntry newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DefaultOutputEntryImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DefaultOutputEntry.class, DMN_ELEMENT_DEFAULT_OUTPUT_ENTRY)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(LiteralExpression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<DefaultOutputEntry>() {
+                  public DefaultOutputEntry newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new DefaultOutputEntryImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

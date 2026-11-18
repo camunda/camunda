@@ -18,7 +18,6 @@ package org.camunda.bpm.model.xml.validation;
 
 import java.io.StringWriter;
 import java.util.Formatter;
-
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.testmodel.instance.FlyingAnimal;
 

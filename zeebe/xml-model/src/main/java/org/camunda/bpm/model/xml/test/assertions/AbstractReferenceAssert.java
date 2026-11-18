@@ -24,7 +24,9 @@ import org.camunda.bpm.model.xml.type.reference.Reference;
 /**
  * @author Sebastian Menski
  */
-public abstract class AbstractReferenceAssert<S extends AbstractReferenceAssert<S, T>, T extends Reference<?>> extends AbstractAssert<S, T> {
+public abstract class AbstractReferenceAssert<
+        S extends AbstractReferenceAssert<S, T>, T extends Reference<?>>
+    extends AbstractAssert<S, T> {
 
   protected AbstractReferenceAssert(T actual, Class<?> selfType) {
     super(actual, selfType);
@@ -36,7 +38,9 @@ public abstract class AbstractReferenceAssert<S extends AbstractReferenceAssert<
     String actualIdentifier = actual.getReferenceIdentifier(instance);
 
     if (!identifier.equals(actualIdentifier)) {
-      failWithMessage("Expected reference <%s> to have identifier <%s> but was <%s>", actual, identifier, actualIdentifier);
+      failWithMessage(
+          "Expected reference <%s> to have identifier <%s> but was <%s>",
+          actual, identifier, actualIdentifier);
     }
 
     return myself;
@@ -48,7 +52,9 @@ public abstract class AbstractReferenceAssert<S extends AbstractReferenceAssert<
     ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
 
     if (!targetElement.equals(actualTargetElement)) {
-      failWithMessage("Expected reference <%s> to have target element <%s> but was <%s>", actual, targetElement, actualTargetElement);
+      failWithMessage(
+          "Expected reference <%s> to have target element <%s> but was <%s>",
+          actual, targetElement, actualTargetElement);
     }
 
     return myself;
@@ -60,7 +66,9 @@ public abstract class AbstractReferenceAssert<S extends AbstractReferenceAssert<
     ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
 
     if (actualTargetElement != null) {
-      failWithMessage("Expected reference <%s> to have no target element but has <%s>", actualTargetElement, actualTargetElement);
+      failWithMessage(
+          "Expected reference <%s> to have no target element but has <%s>",
+          actualTargetElement, actualTargetElement);
     }
 
     return myself;
@@ -72,7 +80,9 @@ public abstract class AbstractReferenceAssert<S extends AbstractReferenceAssert<
     Attribute<String> actualTargetAttribute = actual.getReferenceTargetAttribute();
 
     if (!targetAttribute.equals(actualTargetAttribute)) {
-      failWithMessage("Expected reference <%s> to have target attribute <%s> but was <%s>", actual, targetAttribute, actualTargetAttribute);
+      failWithMessage(
+          "Expected reference <%s> to have target attribute <%s> but was <%s>",
+          actual, targetAttribute, actualTargetAttribute);
     }
 
     return myself;

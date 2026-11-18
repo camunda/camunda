@@ -19,7 +19,6 @@ package org.camunda.bpm.model.xml.impl.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
-
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.bpm.model.xml.testmodel.TestModelParser;
@@ -32,8 +31,7 @@ public class ParserTest {
 
   private static final String ACCESS_EXTERNAL_SCHEMA_PROP = "javax.xml.accessExternalSchema";
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldThrowExceptionForTooManyAttributes() {
@@ -106,7 +104,8 @@ public class ParserTest {
     } catch (ModelParseException mpe) {
       assertThat(mpe.getMessage()).isEqualTo("SAXException while parsing input stream");
       assertThat(mpe.getCause()).hasMessageContaining("DOCTYPE");
-      assertThat(mpe.getCause()).hasMessageContaining("http://apache.org/xml/features/disallow-doctype-decl");
+      assertThat(mpe.getCause())
+          .hasMessageContaining("http://apache.org/xml/features/disallow-doctype-decl");
     }
   }
 
@@ -115,10 +114,9 @@ public class ParserTest {
     String javaVersion = System.getProperty("java.version");
 
     boolean isIbmJDK = jvmVendor != null && jvmVendor.contains("IBM");
-    boolean isJava6or7 = javaVersion != null && (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"));
+    boolean isJava6or7 =
+        javaVersion != null && (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"));
 
     return !(isIbmJDK && isJava6or7);
-
   }
-
 }

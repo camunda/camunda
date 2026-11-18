@@ -17,7 +17,6 @@
 package org.camunda.bpm.model.dmn.util;
 
 import java.io.InputStream;
-
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.xml.impl.util.IoUtil;
@@ -33,7 +32,7 @@ public class ParseDmnModelRule extends TestWatcher {
 
     DmnModelResource dmnModelResource = description.getAnnotation(DmnModelResource.class);
 
-    if(dmnModelResource != null) {
+    if (dmnModelResource != null) {
 
       String resourcePath = dmnModelResource.resource();
 
@@ -51,13 +50,10 @@ public class ParseDmnModelRule extends TestWatcher {
       } finally {
         IoUtil.closeSilently(resourceAsStream);
       }
-
     }
-
   }
 
   public DmnModelInstance getDmnModel() {
     return dmnModelInstance;
   }
-
 }

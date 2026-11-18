@@ -20,7 +20,6 @@ import org.camunda.bpm.model.xml.testmodel.instance.Bird;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class IllegalBirdValidator implements ModelElementValidator<Bird> {
 
@@ -38,10 +37,8 @@ public class IllegalBirdValidator implements ModelElementValidator<Bird> {
   @Override
   public void validate(Bird bird, ValidationResultCollector validationResultCollector) {
 
-    if(nameOfBird.equals(bird.getId())) {
+    if (nameOfBird.equals(bird.getId())) {
       validationResultCollector.addError(20, String.format("Bird %s is illegal", nameOfBird));
     }
-
   }
-
 }

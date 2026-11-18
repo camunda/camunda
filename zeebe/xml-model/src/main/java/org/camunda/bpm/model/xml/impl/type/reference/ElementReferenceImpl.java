@@ -27,8 +27,10 @@ import org.camunda.bpm.model.xml.type.reference.ElementReference;
 /**
  * @author Sebastian Menski
  */
-public class ElementReferenceImpl<Target extends ModelElementInstance, Source extends ModelElementInstance>  extends ElementReferenceCollectionImpl<Target,Source> implements ElementReference<Target, Source> {
-
+public class ElementReferenceImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollectionImpl<Target, Source>
+    implements ElementReference<Target, Source> {
 
   public ElementReferenceImpl(ChildElement<Source> referenceSourceCollection) {
     super(referenceSourceCollection);
@@ -42,7 +44,8 @@ public class ElementReferenceImpl<Target extends ModelElementInstance, Source ex
     return getReferenceSourceChild().getChild(referenceSourceParent);
   }
 
-  private void setReferenceSource(ModelElementInstance referenceSourceParent, Source referenceSource) {
+  private void setReferenceSource(
+      ModelElementInstance referenceSourceParent, Source referenceSource) {
     getReferenceSourceChild().setChild(referenceSourceParent, referenceSource);
   }
 
@@ -51,29 +54,30 @@ public class ElementReferenceImpl<Target extends ModelElementInstance, Source ex
     Source referenceSource = getReferenceSource(referenceSourceParentElement);
     if (referenceSource != null) {
       String identifier = getReferenceIdentifier(referenceSource);
-      ModelElementInstance referenceTargetElement = referenceSourceParentElement.getModelInstance().getModelElementById(identifier);
+      ModelElementInstance referenceTargetElement =
+          referenceSourceParentElement.getModelInstance().getModelElementById(identifier);
       if (referenceTargetElement != null) {
         return (Target) referenceTargetElement;
-      }
-      else {
+      } else {
         throw new ModelException("Unable to find a model element instance for id " + identifier);
       }
-    }
-    else {
+    } else {
       return null;
     }
   }
 
-  public void setReferenceTargetElement(ModelElementInstanceImpl referenceSourceParentElement, Target referenceTargetElement) {
+  public void setReferenceTargetElement(
+      ModelElementInstanceImpl referenceSourceParentElement, Target referenceTargetElement) {
     ModelInstanceImpl modelInstance = referenceSourceParentElement.getModelInstance();
     String identifier = referenceTargetAttribute.getValue(referenceTargetElement);
     ModelElementInstance existingElement = modelInstance.getModelElementById(identifier);
 
     if (existingElement == null || !existingElement.equals(referenceTargetElement)) {
-      throw new ModelReferenceException("Cannot create reference to model element " + referenceTargetElement
-        +": element is not part of model. Please connect element to the model first.");
-    }
-    else {
+      throw new ModelReferenceException(
+          "Cannot create reference to model element "
+              + referenceTargetElement
+              + ": element is not part of model. Please connect element to the model first.");
+    } else {
       Source referenceSourceElement = modelInstance.newInstance(getReferenceSourceElementType());
       setReferenceSource(referenceSourceParentElement, referenceSourceElement);
       setReferenceIdentifier(referenceSourceElement, identifier);

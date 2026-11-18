@@ -22,11 +22,16 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 /**
  * @author Sebastian Menski
  */
-public class QNameElementReferenceCollectionBuilderImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceCollectionBuilderImpl<Target, Source> {
+public class QNameElementReferenceCollectionBuilderImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollectionBuilderImpl<Target, Source> {
 
-  public QNameElementReferenceCollectionBuilderImpl(Class<Source> childElementType, Class<Target> referenceTargetClass, ChildElementCollectionImpl<Source> collection) {
+  public QNameElementReferenceCollectionBuilderImpl(
+      Class<Source> childElementType,
+      Class<Target> referenceTargetClass,
+      ChildElementCollectionImpl<Source> collection) {
     super(childElementType, referenceTargetClass, collection);
-    this.elementReferenceCollectionImpl = new QNameElementReferenceCollectionImpl<Target, Source>(collection);
+    this.elementReferenceCollectionImpl =
+        new QNameElementReferenceCollectionImpl<Target, Source>(collection);
   }
-
 }

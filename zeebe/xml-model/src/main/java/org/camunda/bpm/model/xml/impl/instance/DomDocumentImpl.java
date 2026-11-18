@@ -16,6 +16,10 @@
  */
 package org.camunda.bpm.model.xml.impl.instance;
 
+import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
+
+import java.util.List;
+import javax.xml.transform.dom.DOMSource;
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.impl.util.DomUtil;
 import org.camunda.bpm.model.xml.impl.util.XmlQName;
@@ -24,11 +28,6 @@ import org.camunda.bpm.model.xml.instance.DomElement;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-
-import javax.xml.transform.dom.DOMSource;
-import java.util.List;
-
-import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
 
 /**
  * @author Sebastian Menski
@@ -44,53 +43,50 @@ public class DomDocumentImpl implements DomDocument {
   }
 
   public DomElement getRootElement() {
-    synchronized(document) {
+    synchronized (document) {
       Element documentElement = document.getDocumentElement();
       if (documentElement != null) {
         return new DomElementImpl(documentElement);
-      }
-      else {
+      } else {
         return null;
       }
     }
-
   }
 
   public void setRootElement(DomElement rootElement) {
-    synchronized(document) {
+    synchronized (document) {
       Element documentElement = document.getDocumentElement();
       Element newDocumentElement = ((DomElementImpl) rootElement).getElement();
       if (documentElement != null) {
         document.replaceChild(newDocumentElement, documentElement);
-      }
-      else {
+      } else {
         document.appendChild(newDocumentElement);
       }
     }
   }
 
   public DomElement createElement(String namespaceUri, String localName) {
-    synchronized(document) {
+    synchronized (document) {
       XmlQName xmlQName = new XmlQName(this, namespaceUri, localName);
-      Element element = document.createElementNS(xmlQName.getNamespaceUri(), xmlQName.getPrefixedName());
+      Element element =
+          document.createElementNS(xmlQName.getNamespaceUri(), xmlQName.getPrefixedName());
       return new DomElementImpl(element);
     }
   }
 
   public DomElement getElementById(String id) {
-    synchronized(document) {
+    synchronized (document) {
       Element element = document.getElementById(id);
       if (element != null) {
         return new DomElementImpl(element);
-      }
-      else {
+      } else {
         return null;
       }
     }
   }
 
   public List<DomElement> getElementsByNameNs(String namespaceUri, String localName) {
-    synchronized(document) {
+    synchronized (document) {
       NodeList elementsByTagNameNS = document.getElementsByTagNameNS(namespaceUri, localName);
       return DomUtil.filterNodeListByName(elementsByTagNameNS, namespaceUri, localName);
     }
@@ -101,36 +97,35 @@ public class DomDocumentImpl implements DomDocument {
   }
 
   public String registerNamespace(String namespaceUri) {
-    synchronized(document) {
+    synchronized (document) {
       DomElement rootElement = getRootElement();
       if (rootElement != null) {
         return rootElement.registerNamespace(namespaceUri);
-      }
-      else {
-        throw new ModelException("Unable to define a new namespace without a root document element");
+      } else {
+        throw new ModelException(
+            "Unable to define a new namespace without a root document element");
       }
     }
   }
 
   public void registerNamespace(String prefix, String namespaceUri) {
-    synchronized(document) {
+    synchronized (document) {
       DomElement rootElement = getRootElement();
       if (rootElement != null) {
         rootElement.registerNamespace(prefix, namespaceUri);
-      }
-      else {
-        throw new ModelException("Unable to define a new namespace without a root document element");
+      } else {
+        throw new ModelException(
+            "Unable to define a new namespace without a root document element");
       }
     }
   }
 
   protected String getUnusedGenericNsPrefix() {
-    synchronized(document) {
+    synchronized (document) {
       Element documentElement = document.getDocumentElement();
       if (documentElement == null) {
         return GENERIC_NS_PREFIX + "0";
-      }
-      else {
+      } else {
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
           if (!documentElement.hasAttributeNS(XMLNS_ATTRIBUTE_NS_URI, GENERIC_NS_PREFIX + i)) {
             return GENERIC_NS_PREFIX + i;
@@ -142,7 +137,7 @@ public class DomDocumentImpl implements DomDocument {
   }
 
   public DomDocument clone() {
-    synchronized(document) {
+    synchronized (document) {
       return new DomDocumentImpl((Document) document.cloneNode(true));
     }
   }

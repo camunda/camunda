@@ -17,7 +17,6 @@
 package org.camunda.bpm.model.dmn;
 
 public enum HitPolicy {
-
   UNIQUE,
   FIRST,
   PRIORITY,
@@ -25,7 +24,6 @@ public enum HitPolicy {
   COLLECT,
   RULE_ORDER("RULE ORDER"),
   OUTPUT_ORDER("OUTPUT ORDER");
-
 
   private final String name;
 
@@ -40,5 +38,4 @@ public enum HitPolicy {
   public String toString() {
     return name;
   }
-
 }

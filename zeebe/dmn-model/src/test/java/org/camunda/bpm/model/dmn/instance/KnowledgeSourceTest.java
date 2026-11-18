@@ -27,16 +27,12 @@ public class KnowledgeSourceTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(AuthorityRequirement.class),
-      new ChildElementAssumption(Type.class, 0, 1),
-      new ChildElementAssumption(OwnerReference.class, 0, 1)
-    );
+        new ChildElementAssumption(AuthorityRequirement.class),
+        new ChildElementAssumption(Type.class, 0, 1),
+        new ChildElementAssumption(OwnerReference.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("locationURI")
-    );
+    return Arrays.asList(new AttributeAssumption("locationURI"));
   }
-
 }

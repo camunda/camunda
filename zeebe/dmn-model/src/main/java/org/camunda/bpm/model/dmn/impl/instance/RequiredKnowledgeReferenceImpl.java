@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_REQUIRED_KNOWLEDGE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.RequiredKnowledgeReference;
@@ -26,23 +26,27 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class RequiredKnowledgeReferenceImpl extends DmnElementReferenceImpl implements RequiredKnowledgeReference {
+public class RequiredKnowledgeReferenceImpl extends DmnElementReferenceImpl
+    implements RequiredKnowledgeReference {
 
   public RequiredKnowledgeReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(RequiredKnowledgeReference.class, DMN_ELEMENT_REQUIRED_KNOWLEDGE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<RequiredKnowledgeReference>() {
-        public RequiredKnowledgeReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new RequiredKnowledgeReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(RequiredKnowledgeReference.class, DMN_ELEMENT_REQUIRED_KNOWLEDGE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<RequiredKnowledgeReference>() {
+                  public RequiredKnowledgeReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new RequiredKnowledgeReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

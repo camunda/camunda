@@ -26,15 +26,10 @@ public class TextAnnotationTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
-      new ChildElementAssumption(Text.class, 0, 1)
-    );
+    return Arrays.asList(new ChildElementAssumption(Text.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("textFormat", false, false, "text/plain")
-    );
+    return Arrays.asList(new AttributeAssumption("textFormat", false, false, "text/plain"));
   }
-
 }

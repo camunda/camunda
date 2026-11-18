@@ -23,5 +23,4 @@ public interface OrganizationUnit extends BusinessContextElement {
   Collection<Decision> getDecisionsMade();
 
   Collection<Decision> getDecisionsOwned();
-
 }

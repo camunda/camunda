@@ -23,7 +23,6 @@ import org.camunda.bpm.model.xml.instance.DomElement;
 /**
  * @author Daniel Meyer
  * @author Sebastian Menski
- *
  */
 public final class ModelTypeInstanceContext {
 
@@ -31,7 +30,8 @@ public final class ModelTypeInstanceContext {
   private final DomElement domElement;
   private final ModelElementTypeImpl modelType;
 
-  public ModelTypeInstanceContext(DomElement domElement, ModelInstanceImpl model, ModelElementTypeImpl modelType) {
+  public ModelTypeInstanceContext(
+      DomElement domElement, ModelInstanceImpl model, ModelElementTypeImpl modelType) {
     this.domElement = domElement;
     this.model = model;
     this.modelType = modelType;
@@ -57,5 +57,4 @@ public final class ModelTypeInstanceContext {
   public ModelElementTypeImpl getModelType() {
     return modelType;
   }
-
 }

@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public class ImpactedPerformanceIndicatorReferenceTest extends AbstractDmnElementReferenceTest {
-
-}
+public class ImpactedPerformanceIndicatorReferenceTest extends AbstractDmnElementReferenceTest {}

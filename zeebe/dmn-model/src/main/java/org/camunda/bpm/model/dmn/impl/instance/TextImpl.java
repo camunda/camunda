@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_TEXT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Text;
 import org.camunda.bpm.model.xml.ModelBuilder;
@@ -32,15 +32,17 @@ public class TextImpl extends DmnModelElementInstanceImpl implements Text {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Text.class, DMN_ELEMENT_TEXT)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<Text>() {
-        public Text newInstance(ModelTypeInstanceContext instanceContext) {
-          return new TextImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Text.class, DMN_ELEMENT_TEXT)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Text>() {
+                  public Text newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new TextImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

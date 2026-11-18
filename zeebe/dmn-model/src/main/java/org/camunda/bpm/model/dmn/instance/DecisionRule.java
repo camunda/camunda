@@ -23,5 +23,4 @@ public interface DecisionRule extends DmnElement {
   Collection<InputEntry> getInputEntries();
 
   Collection<OutputEntry> getOutputEntries();
-
 }

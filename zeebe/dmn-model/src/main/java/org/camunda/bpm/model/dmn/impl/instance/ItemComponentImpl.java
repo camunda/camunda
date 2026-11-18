@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ITEM_COMPONENT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.ItemComponent;
 import org.camunda.bpm.model.dmn.instance.ItemDefinition;
@@ -33,16 +33,18 @@ public class ItemComponentImpl extends ItemDefinitionImpl implements ItemCompone
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ItemComponent.class, DMN_ELEMENT_ITEM_COMPONENT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(ItemDefinition.class)
-      .instanceProvider(new ModelTypeInstanceProvider<ItemComponent>() {
-        public ItemComponent newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ItemComponentImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ItemComponent.class, DMN_ELEMENT_ITEM_COMPONENT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(ItemDefinition.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ItemComponent>() {
+                  public ItemComponent newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ItemComponentImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

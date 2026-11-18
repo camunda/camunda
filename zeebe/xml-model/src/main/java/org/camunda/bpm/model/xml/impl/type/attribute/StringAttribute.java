@@ -19,10 +19,9 @@ package org.camunda.bpm.model.xml.impl.type.attribute;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
 /**
- * <p>Base class for String attributes
+ * Base class for String attributes
  *
  * @author Daniel Meyer
- *
  */
 public class StringAttribute extends AttributeImpl<String> {
 
@@ -37,5 +36,4 @@ public class StringAttribute extends AttributeImpl<String> {
   protected String convertModelValueToXmlValue(String modelValue) {
     return modelValue;
   }
-
 }

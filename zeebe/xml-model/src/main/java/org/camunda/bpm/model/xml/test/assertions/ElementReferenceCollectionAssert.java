@@ -21,11 +21,11 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 /**
  * @author Sebastian Menski
  */
-public class ElementReferenceCollectionAssert extends AbstractReferenceAssert<ElementReferenceCollectionAssert, ElementReferenceCollection<?, ?>> {
+public class ElementReferenceCollectionAssert
+    extends AbstractReferenceAssert<
+        ElementReferenceCollectionAssert, ElementReferenceCollection<?, ?>> {
 
   protected ElementReferenceCollectionAssert(ElementReferenceCollection<?, ?> actual) {
     super(actual, ElementReferenceCollectionAssert.class);
   }
-
 }
-

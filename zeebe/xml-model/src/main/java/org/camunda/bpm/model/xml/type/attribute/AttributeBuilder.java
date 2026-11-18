@@ -16,10 +16,8 @@
  */
 package org.camunda.bpm.model.xml.type.attribute;
 
-
 /**
  * @author Daniel Meyer
- *
  * @param <T> the type of the {@link Attribute}
  */
 public interface AttributeBuilder<T> {
@@ -33,5 +31,4 @@ public interface AttributeBuilder<T> {
   AttributeBuilder<T> idAttribute();
 
   Attribute<T> build();
-
 }

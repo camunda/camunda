@@ -21,5 +21,4 @@ public interface KnowledgeRequirement extends DmnModelElementInstance {
   BusinessKnowledgeModel getRequiredKnowledge();
 
   void setRequiredKnowledge(BusinessKnowledgeModel requiredKnowledge);
-
 }

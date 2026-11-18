@@ -19,11 +19,10 @@ package org.camunda.bpm.model.dmn.impl.instance;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_ATTRIBUTE_VERSION_TAG;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_NS;
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_DECISION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.AllowedAnswers;
 import org.camunda.bpm.model.dmn.instance.AuthorityRequirement;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -59,10 +58,15 @@ public class DecisionImpl extends DrgElementImpl implements Decision {
   protected static ChildElementCollection<InformationRequirement> informationRequirementCollection;
   protected static ChildElementCollection<KnowledgeRequirement> knowledgeRequirementCollection;
   protected static ChildElementCollection<AuthorityRequirement> authorityRequirementCollection;
-  protected static ChildElementCollection<SupportedObjectiveReference> supportedObjectiveChildElementCollection;
-  protected static ElementReferenceCollection<PerformanceIndicator, ImpactedPerformanceIndicatorReference> impactedPerformanceIndicatorRefCollection;
-  protected static ElementReferenceCollection<OrganizationUnit, DecisionMakerReference> decisionMakerRefCollection;
-  protected static ElementReferenceCollection<OrganizationUnit, DecisionOwnerReference> decisionOwnerRefCollection;
+  protected static ChildElementCollection<SupportedObjectiveReference>
+      supportedObjectiveChildElementCollection;
+  protected static ElementReferenceCollection<
+          PerformanceIndicator, ImpactedPerformanceIndicatorReference>
+      impactedPerformanceIndicatorRefCollection;
+  protected static ElementReferenceCollection<OrganizationUnit, DecisionMakerReference>
+      decisionMakerRefCollection;
+  protected static ElementReferenceCollection<OrganizationUnit, DecisionOwnerReference>
+      decisionOwnerRefCollection;
   protected static ChildElementCollection<UsingProcessReference> usingProcessCollection;
   protected static ChildElementCollection<UsingTaskReference> usingTaskCollection;
   protected static ChildElement<Expression> expressionChild;
@@ -180,70 +184,73 @@ public class DecisionImpl extends DrgElementImpl implements Decision {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Decision.class, DMN_ELEMENT_DECISION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DrgElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Decision>() {
-        public Decision newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DecisionImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Decision.class, DMN_ELEMENT_DECISION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DrgElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Decision>() {
+                  public Decision newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new DecisionImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    questionChild = sequenceBuilder.element(Question.class)
-      .build();
+    questionChild = sequenceBuilder.element(Question.class).build();
 
-    allowedAnswersChild = sequenceBuilder.element(AllowedAnswers.class)
-      .build();
+    allowedAnswersChild = sequenceBuilder.element(AllowedAnswers.class).build();
 
-    variableChild = sequenceBuilder.element(Variable.class)
-      .build();
+    variableChild = sequenceBuilder.element(Variable.class).build();
 
-    informationRequirementCollection = sequenceBuilder.elementCollection(InformationRequirement.class)
-      .build();
+    informationRequirementCollection =
+        sequenceBuilder.elementCollection(InformationRequirement.class).build();
 
-    knowledgeRequirementCollection = sequenceBuilder.elementCollection(KnowledgeRequirement.class)
-      .build();
+    knowledgeRequirementCollection =
+        sequenceBuilder.elementCollection(KnowledgeRequirement.class).build();
 
-    authorityRequirementCollection = sequenceBuilder.elementCollection(AuthorityRequirement.class)
-      .build();
+    authorityRequirementCollection =
+        sequenceBuilder.elementCollection(AuthorityRequirement.class).build();
 
-    supportedObjectiveChildElementCollection = sequenceBuilder.elementCollection(SupportedObjectiveReference.class)
-      .build();
+    supportedObjectiveChildElementCollection =
+        sequenceBuilder.elementCollection(SupportedObjectiveReference.class).build();
 
-    impactedPerformanceIndicatorRefCollection = sequenceBuilder.elementCollection(ImpactedPerformanceIndicatorReference.class)
-      .uriElementReferenceCollection(PerformanceIndicator.class)
-      .build();
+    impactedPerformanceIndicatorRefCollection =
+        sequenceBuilder
+            .elementCollection(ImpactedPerformanceIndicatorReference.class)
+            .uriElementReferenceCollection(PerformanceIndicator.class)
+            .build();
 
-    decisionMakerRefCollection = sequenceBuilder.elementCollection(DecisionMakerReference.class)
-      .uriElementReferenceCollection(OrganizationUnit.class)
-      .build();
+    decisionMakerRefCollection =
+        sequenceBuilder
+            .elementCollection(DecisionMakerReference.class)
+            .uriElementReferenceCollection(OrganizationUnit.class)
+            .build();
 
-    decisionOwnerRefCollection = sequenceBuilder.elementCollection(DecisionOwnerReference.class)
-      .uriElementReferenceCollection(OrganizationUnit.class)
-      .build();
+    decisionOwnerRefCollection =
+        sequenceBuilder
+            .elementCollection(DecisionOwnerReference.class)
+            .uriElementReferenceCollection(OrganizationUnit.class)
+            .build();
 
-    usingProcessCollection = sequenceBuilder.elementCollection(UsingProcessReference.class)
-      .build();
+    usingProcessCollection = sequenceBuilder.elementCollection(UsingProcessReference.class).build();
 
-    usingTaskCollection = sequenceBuilder.elementCollection(UsingTaskReference.class)
-      .build();
+    usingTaskCollection = sequenceBuilder.elementCollection(UsingTaskReference.class).build();
 
-    expressionChild = sequenceBuilder.element(Expression.class)
-      .build();
+    expressionChild = sequenceBuilder.element(Expression.class).build();
 
     // camunda extensions
 
-    camundaHistoryTimeToLiveAttribute = typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE)
-        .namespace(CAMUNDA_NS)
-        .build();
+    camundaHistoryTimeToLiveAttribute =
+        typeBuilder
+            .stringAttribute(CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE)
+            .namespace(CAMUNDA_NS)
+            .build();
 
-    camundaVersionTag = typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_VERSION_TAG)
-      .namespace(CAMUNDA_NS)
-      .build();
+    camundaVersionTag =
+        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_VERSION_TAG).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
-
 }

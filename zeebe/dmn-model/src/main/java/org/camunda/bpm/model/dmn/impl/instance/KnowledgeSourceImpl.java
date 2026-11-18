@@ -16,12 +16,11 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_LOCATION_URI;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_KNOWLEDGE_SOURCE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.AuthorityRequirement;
 import org.camunda.bpm.model.dmn.instance.DrgElement;
 import org.camunda.bpm.model.dmn.instance.KnowledgeSource;
@@ -79,31 +78,33 @@ public class KnowledgeSourceImpl extends DrgElementImpl implements KnowledgeSour
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(KnowledgeSource.class, DMN_ELEMENT_KNOWLEDGE_SOURCE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DrgElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<KnowledgeSource>() {
-        public KnowledgeSource newInstance(ModelTypeInstanceContext instanceContext) {
-          return new KnowledgeSourceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(KnowledgeSource.class, DMN_ELEMENT_KNOWLEDGE_SOURCE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DrgElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<KnowledgeSource>() {
+                  public KnowledgeSource newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new KnowledgeSourceImpl(instanceContext);
+                  }
+                });
 
-    locationUriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LOCATION_URI)
-      .build();
+    locationUriAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_LOCATION_URI).build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    authorityRequirementCollection = sequenceBuilder.elementCollection(AuthorityRequirement.class)
-      .build();
+    authorityRequirementCollection =
+        sequenceBuilder.elementCollection(AuthorityRequirement.class).build();
 
-    typeChild = sequenceBuilder.element(Type.class)
-      .build();
+    typeChild = sequenceBuilder.element(Type.class).build();
 
-    ownerRef = sequenceBuilder.element(OwnerReference.class)
-      .uriElementReference(OrganizationUnit.class)
-      .build();
+    ownerRef =
+        sequenceBuilder
+            .element(OwnerReference.class)
+            .uriElementReference(OrganizationUnit.class)
+            .build();
 
     typeBuilder.build();
   }
-
 }

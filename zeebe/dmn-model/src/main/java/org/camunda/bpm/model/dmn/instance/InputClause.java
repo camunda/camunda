@@ -31,5 +31,4 @@ public interface InputClause extends DmnElement {
   String getCamundaInputVariable();
 
   void setCamundaInputVariable(String inputVariable);
-
 }

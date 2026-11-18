@@ -26,15 +26,10 @@ public class ImportedValuesTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
-      new ChildElementAssumption(ImportedElement.class, 1, 1)
-    );
+    return Arrays.asList(new ChildElementAssumption(ImportedElement.class, 1, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("expressionLanguage")
-    );
+    return Arrays.asList(new AttributeAssumption("expressionLanguage"));
   }
-
 }

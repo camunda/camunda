@@ -20,7 +20,8 @@ import org.camunda.bpm.model.xml.impl.type.ModelElementTypeImpl;
 
 public class NamedEnumAttributeBuilder<T extends Enum<T>> extends AttributeBuilderImpl<T> {
 
-  public NamedEnumAttributeBuilder(String attributeName, ModelElementTypeImpl modelType, Class<T> type) {
+  public NamedEnumAttributeBuilder(
+      String attributeName, ModelElementTypeImpl modelType, Class<T> type) {
     super(attributeName, modelType, new NamedEnumAttribute<T>(modelType, type));
   }
 
@@ -43,5 +44,4 @@ public class NamedEnumAttributeBuilder<T extends Enum<T>> extends AttributeBuild
   public NamedEnumAttributeBuilder<T> idAttribute() {
     return (NamedEnumAttributeBuilder<T>) super.idAttribute();
   }
-
 }

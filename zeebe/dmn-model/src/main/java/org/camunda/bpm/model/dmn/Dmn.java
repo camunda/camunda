@@ -30,7 +30,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import org.camunda.bpm.model.dmn.impl.DmnParser;
 import org.camunda.bpm.model.dmn.impl.instance.AllowedAnswersImpl;
 import org.camunda.bpm.model.dmn.impl.instance.AllowedValuesImpl;
@@ -127,16 +126,18 @@ import org.camunda.bpm.model.xml.impl.util.IoUtil;
 
 public class Dmn {
 
-  /** the singleton instance of {@link Dmn}. If you want to customize the behavior of Dmn,
-   * replace this instance with an instance of a custom subclass of {@link Dmn}. */
+  /**
+   * the singleton instance of {@link Dmn}. If you want to customize the behavior of Dmn, replace
+   * this instance with an instance of a custom subclass of {@link Dmn}.
+   */
   public static Dmn INSTANCE = new Dmn();
 
   /** the parser used by the Dmn implementation. */
   private DmnParser dmnParser = new DmnParser();
+
   private final ModelBuilder dmnModelBuilder;
 
-  /** The {@link Model}
-   */
+  /** The {@link Model} */
   private Model dmnModel;
 
   /**
@@ -162,8 +163,7 @@ public class Dmn {
   }
 
   /**
-   * Allows writing a {@link DmnModelInstance} to a File. It will be
-   * validated before writing.
+   * Allows writing a {@link DmnModelInstance} to a File. It will be validated before writing.
    *
    * @param file the {@link File} to write the {@link DmnModelInstance} to
    * @param modelInstance the {@link DmnModelInstance} to write
@@ -175,8 +175,8 @@ public class Dmn {
   }
 
   /**
-   * Allows writing a {@link DmnModelInstance} to an {@link OutputStream}. It will be
-   * validated before writing.
+   * Allows writing a {@link DmnModelInstance} to an {@link OutputStream}. It will be validated
+   * before writing.
    *
    * @param stream the {@link OutputStream} to write the {@link DmnModelInstance} to
    * @param modelInstance the {@link DmnModelInstance} to write
@@ -188,10 +188,10 @@ public class Dmn {
   }
 
   /**
-   * Allows the conversion of a {@link DmnModelInstance} to an {@link String}. It will
-   * be validated before conversion.
+   * Allows the conversion of a {@link DmnModelInstance} to an {@link String}. It will be validated
+   * before conversion.
    *
-   * @param modelInstance  the model instance to convert
+   * @param modelInstance the model instance to convert
    * @return the XML string representation of the model instance
    */
   public static String convertToString(DmnModelInstance modelInstance) {
@@ -217,9 +217,7 @@ public class Dmn {
     return INSTANCE.doCreateEmptyModel();
   }
 
-  /**
-   * Register known types of the Dmn model
-   */
+  /** Register known types of the Dmn model */
   protected Dmn() {
     dmnModelBuilder = ModelBuilder.createInstance("DMN Model");
     dmnModelBuilder.alternativeNamespace(DMN15_NS, DMN13_NS);
@@ -239,11 +237,10 @@ public class Dmn {
       return doReadModelFromInputStream(is);
 
     } catch (FileNotFoundException e) {
-      throw new DmnModelException("Cannot read model from file "+file+": file does not exist.");
+      throw new DmnModelException("Cannot read model from file " + file + ": file does not exist.");
 
     } finally {
       IoUtil.closeSilently(is);
-
     }
   }
 
@@ -256,9 +253,8 @@ public class Dmn {
     try {
       os = new FileOutputStream(file);
       doWriteModelToOutputStream(os, modelInstance);
-    }
-    catch (FileNotFoundException e) {
-      throw new DmnModelException("Cannot write model to file "+file+": file does not exist.");
+    } catch (FileNotFoundException e) {
+      throw new DmnModelException("Cannot write model to file " + file + ": file does not exist.");
     } finally {
       IoUtil.closeSilently(os);
     }
@@ -395,5 +391,4 @@ public class Dmn {
   public void setDmnModel(Model dmnModel) {
     this.dmnModel = dmnModel;
   }
-
 }

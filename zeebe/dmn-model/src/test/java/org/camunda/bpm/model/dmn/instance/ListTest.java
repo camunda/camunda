@@ -26,13 +26,10 @@ public class ListTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
-      new ChildElementAssumption(Expression.class)
-    );
+    return Arrays.asList(new ChildElementAssumption(Expression.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

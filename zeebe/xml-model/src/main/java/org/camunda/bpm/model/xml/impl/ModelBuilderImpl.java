@@ -16,6 +16,10 @@
  */
 package org.camunda.bpm.model.xml.impl;
 
+import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
@@ -25,20 +29,15 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
-
 /**
  * This builder is used to define and create a new model.
  *
  * @author Daniel Meyer
- *
  */
 public class ModelBuilderImpl extends ModelBuilder {
 
-  private final List<ModelElementTypeBuilderImpl> typeBuilders = new ArrayList<ModelElementTypeBuilderImpl>();
+  private final List<ModelElementTypeBuilderImpl> typeBuilders =
+      new ArrayList<ModelElementTypeBuilderImpl>();
   private final ModelImpl model;
 
   public ModelBuilderImpl(String modelName) {
@@ -50,20 +49,25 @@ public class ModelBuilderImpl extends ModelBuilder {
     return this;
   }
 
-  public ModelElementTypeBuilder defineType(Class<? extends ModelElementInstance> modelInstanceType, String typeName) {
-    ModelElementTypeBuilderImpl typeBuilder = new ModelElementTypeBuilderImpl(modelInstanceType, typeName, model);
+  public ModelElementTypeBuilder defineType(
+      Class<? extends ModelElementInstance> modelInstanceType, String typeName) {
+    ModelElementTypeBuilderImpl typeBuilder =
+        new ModelElementTypeBuilderImpl(modelInstanceType, typeName, model);
     typeBuilders.add(typeBuilder);
     return typeBuilder;
   }
 
   public ModelElementType defineGenericType(String typeName, String typeNamespaceUri) {
-    ModelElementTypeBuilder typeBuilder = defineType(ModelElementInstance.class, typeName)
-      .namespaceUri(typeNamespaceUri)
-      .instanceProvider(new ModelTypeInstanceProvider<ModelElementInstance>() {
-        public ModelElementInstance newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ModelElementInstanceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        defineType(ModelElementInstance.class, typeName)
+            .namespaceUri(typeNamespaceUri)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ModelElementInstance>() {
+                  public ModelElementInstance newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new ModelElementInstanceImpl(instanceContext);
+                  }
+                });
 
     return typeBuilder.build();
   }
@@ -77,5 +81,4 @@ public class ModelBuilderImpl extends ModelBuilder {
     }
     return model;
   }
-
 }

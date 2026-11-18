@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface AllowedValues extends UnaryTests {
-
-}
+public interface AllowedValues extends UnaryTests {}

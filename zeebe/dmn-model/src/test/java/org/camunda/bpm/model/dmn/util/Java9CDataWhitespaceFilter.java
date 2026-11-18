@@ -23,34 +23,30 @@ import org.w3c.dom.Text;
 import org.xmlunit.util.Predicate;
 
 /**
- * <p>In Java 8, a CDATA section is serialized with pretty printing as
+ * In Java 8, a CDATA section is serialized with pretty printing as
  *
- * <pre>
- * {@code
+ * <pre>{@code
  * <foo>
  *   <bar><![CDATA[data]]></bar>
  * </foo>
- * }
- * </pre>
+ * }</pre>
  *
  * <p>whereas in Java 9+ it becomes
  *
- * <pre>
- * {@code
+ * <pre>{@code
  * <foo>
  *   <bar>
  *      <![CDATA[data]]>
  *   </bar>
  * </foo>
- *}
- * </pre>
+ * }</pre>
  *
- * <p>Note that the bar element in the second example has three children: a text with whitespace,
- * a cdata section and another text with whitespace. This is semantically different XML than the
- * first example.
+ * <p>Note that the bar element in the second example has three children: a text with whitespace, a
+ * cdata section and another text with whitespace. This is semantically different XML than the first
+ * example.
  *
- * <p>This filter detects this whitespace pattern and removes the whitespace text
- * nodes before xmlunit performs the comparison.
+ * <p>This filter detects this whitespace pattern and removes the whitespace text nodes before
+ * xmlunit performs the comparison.
  *
  * @see https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8223291
  */
@@ -85,8 +81,7 @@ public class Java9CDataWhitespaceFilter implements Predicate<Node> {
     }
   }
 
-  private boolean isWhitespaceTextNode(Node node)
-  {
+  private boolean isWhitespaceTextNode(Node node) {
     return isTextNode(node) && ((Text) node).getNodeValue().trim().isEmpty();
   }
 

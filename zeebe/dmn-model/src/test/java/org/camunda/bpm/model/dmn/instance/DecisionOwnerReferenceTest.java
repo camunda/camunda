@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public class DecisionOwnerReferenceTest extends AbstractDmnElementReferenceTest {
-
-}
+public class DecisionOwnerReferenceTest extends AbstractDmnElementReferenceTest {}

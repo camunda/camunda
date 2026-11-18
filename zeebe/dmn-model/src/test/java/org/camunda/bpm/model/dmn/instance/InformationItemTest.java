@@ -30,9 +30,6 @@ public class InformationItemTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("typeRef")
-    );
+    return Arrays.asList(new AttributeAssumption("typeRef"));
   }
-
 }

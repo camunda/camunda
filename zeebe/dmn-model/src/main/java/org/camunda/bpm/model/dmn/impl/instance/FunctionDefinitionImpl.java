@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_FUNCTION_DEFINITION;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.Expression;
 import org.camunda.bpm.model.dmn.instance.FormalParameter;
 import org.camunda.bpm.model.dmn.instance.FunctionDefinition;
@@ -54,24 +53,24 @@ public class FunctionDefinitionImpl extends ExpressionImpl implements FunctionDe
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(FunctionDefinition.class, DMN_ELEMENT_FUNCTION_DEFINITION)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Expression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<FunctionDefinition>() {
-        public FunctionDefinition newInstance(ModelTypeInstanceContext instanceContext) {
-          return new FunctionDefinitionImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FunctionDefinition.class, DMN_ELEMENT_FUNCTION_DEFINITION)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Expression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<FunctionDefinition>() {
+                  public FunctionDefinition newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new FunctionDefinitionImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    formalParameterCollection = sequenceBuilder.elementCollection(FormalParameter.class)
-      .build();
+    formalParameterCollection = sequenceBuilder.elementCollection(FormalParameter.class).build();
 
-    expressionChild = sequenceBuilder.element(Expression.class)
-      .build();
+    expressionChild = sequenceBuilder.element(Expression.class).build();
 
     typeBuilder.build();
   }
-
 }

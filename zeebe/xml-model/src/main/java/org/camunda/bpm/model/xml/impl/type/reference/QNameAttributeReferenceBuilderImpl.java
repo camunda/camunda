@@ -22,16 +22,18 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 /**
  * @author Sebastian Menski
  */
-public class QNameAttributeReferenceBuilderImpl<T extends ModelElementInstance> extends AttributeReferenceBuilderImpl<T> {
+public class QNameAttributeReferenceBuilderImpl<T extends ModelElementInstance>
+    extends AttributeReferenceBuilderImpl<T> {
 
   /**
-   * Create a new {@link AttributeReferenceBuilderImpl} from the reference source attribute
-   * to the reference target model element instance
+   * Create a new {@link AttributeReferenceBuilderImpl} from the reference source attribute to the
+   * reference target model element instance
    *
    * @param referenceSourceAttribute the reference source attribute
-   * @param referenceTargetElement   the reference target model element instance
+   * @param referenceTargetElement the reference target model element instance
    */
-  public QNameAttributeReferenceBuilderImpl(AttributeImpl<String> referenceSourceAttribute, Class<T> referenceTargetElement) {
+  public QNameAttributeReferenceBuilderImpl(
+      AttributeImpl<String> referenceSourceAttribute, Class<T> referenceTargetElement) {
     super(referenceSourceAttribute, referenceTargetElement);
     this.attributeReferenceImpl = new QNameAttributeReferenceImpl<T>(referenceSourceAttribute);
   }

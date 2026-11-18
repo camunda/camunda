@@ -20,10 +20,10 @@ import org.camunda.bpm.model.dmn.instance.DmnModelElementInstance;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 
-public abstract class DmnModelElementInstanceImpl extends ModelElementInstanceImpl implements DmnModelElementInstance {
+public abstract class DmnModelElementInstanceImpl extends ModelElementInstanceImpl
+    implements DmnModelElementInstance {
 
   public DmnModelElementInstanceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
-
 }

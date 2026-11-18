@@ -16,10 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_NAME;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_TYPE_REF;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_OUTPUT_CLAUSE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DefaultOutputEntry;
 import org.camunda.bpm.model.dmn.instance.DmnElement;
@@ -78,30 +78,28 @@ public class OutputClauseImpl extends DmnElementImpl implements OutputClause {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(OutputClause.class, DMN_ELEMENT_OUTPUT_CLAUSE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<OutputClause>() {
-        public OutputClause newInstance(ModelTypeInstanceContext instanceContext) {
-          return new OutputClauseImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(OutputClause.class, DMN_ELEMENT_OUTPUT_CLAUSE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<OutputClause>() {
+                  public OutputClause newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new OutputClauseImpl(instanceContext);
+                  }
+                });
 
-    nameAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_NAME)
-      .build();
+    nameAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_NAME).build();
 
-    typeRefAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_TYPE_REF)
-      .build();
+    typeRefAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_TYPE_REF).build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    outputValuesChild = sequenceBuilder.element(OutputValues.class)
-      .build();
+    outputValuesChild = sequenceBuilder.element(OutputValues.class).build();
 
-    defaultOutputEntryChild = sequenceBuilder.element(DefaultOutputEntry.class)
-      .build();
+    defaultOutputEntryChild = sequenceBuilder.element(DefaultOutputEntry.class).build();
 
     typeBuilder.build();
   }
-
 }

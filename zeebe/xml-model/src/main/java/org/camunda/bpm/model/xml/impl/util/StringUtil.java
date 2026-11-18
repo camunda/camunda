@@ -31,10 +31,10 @@ public final class StringUtil {
   private static final Pattern pattern = Pattern.compile("(\\w[^,]*)|([#$]\\{[^}]*})");
 
   /**
-   * Splits a comma separated list in to single Strings. The list can
-   * contain expressions with commas in it.
+   * Splits a comma separated list in to single Strings. The list can contain expressions with
+   * commas in it.
    *
-   * @param text  the comma separated list
+   * @param text the comma separated list
    * @return the Strings of the list or an empty List if text is empty or null
    */
   public static List<String> splitCommaSeparatedList(String text) {
@@ -43,7 +43,7 @@ public final class StringUtil {
     }
     Matcher matcher = pattern.matcher(text);
     List<String> parts = new ArrayList<String>();
-    while(matcher.find()) {
+    while (matcher.find()) {
       parts.add(matcher.group().trim());
     }
     return parts;
@@ -52,7 +52,7 @@ public final class StringUtil {
   /**
    * Joins a list of Strings to a comma separated single String.
    *
-   * @param list  the list to join
+   * @param list the list to join
    * @return the resulting comma separated string or null if the list is null
    */
   public static String joinCommaSeparatedList(List<String> list) {
@@ -60,7 +60,7 @@ public final class StringUtil {
   }
 
   public static List<String> splitListBySeparator(String text, String separator) {
-    String[] result = new String[]{};
+    String[] result = new String[] {};
     if (text != null) {
       result = text.split(separator);
     }
@@ -75,11 +75,9 @@ public final class StringUtil {
     int size = list.size();
     if (size == 0) {
       return "";
-    }
-    else if (size == 1) {
+    } else if (size == 1) {
       return list.get(0);
-    }
-    else {
+    } else {
       StringBuilder builder = new StringBuilder(size * 8);
       builder.append(list.get(0));
       for (Object element : list.subList(1, size)) {

@@ -31,5 +31,4 @@ public class EncapsulatedLogicTest extends DmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

@@ -29,5 +29,4 @@ public interface LiteralExpression extends Expression {
   ImportedValues getImportValues();
 
   void setImportValues(ImportedValues importedValues);
-
 }

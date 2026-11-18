@@ -20,35 +20,36 @@ public final class DmnModelConstants {
 
   /** The DMN 1.1 namespace */
   public static final String DMN11_NS = "http://www.omg.org/spec/DMN/20151101/dmn.xsd";
+
   public static final String DMN12_NS = "http://www.omg.org/spec/DMN/20180521/MODEL/";
   public static final String DMN13_NS = "https://www.omg.org/spec/DMN/20191111/MODEL/";
   public static final String DMN14_NS = "https://www.omg.org/spec/DMN/20211108/MODEL/";
   public static final String DMN15_NS = "https://www.omg.org/spec/DMN/20230324/MODEL/";
   public static final String LATEST_DMN_NS = DMN13_NS;
 
-  /**
-   * The DMN 1.1 namespace URL release with Camunda 7.4.0
-   */
-  public static final String DMN11_ALTERNATIVE_NS = "http://www.omg.org/spec/DMN/20151101/dmn11.xsd";
+  /** The DMN 1.1 namespace URL release with Camunda 7.4.0 */
+  public static final String DMN11_ALTERNATIVE_NS =
+      "http://www.omg.org/spec/DMN/20151101/dmn11.xsd";
 
-  /**
-   * The DMN 1.3 namespace URL release with Camunda 7.13.0
-   */
-  public static final String DMN13_ALTERNATIVE_NS = "https://www.omg.org/spec/DMN/20191111/DMN13.xsd";
+  /** The DMN 1.3 namespace URL release with Camunda 7.13.0 */
+  public static final String DMN13_ALTERNATIVE_NS =
+      "https://www.omg.org/spec/DMN/20191111/DMN13.xsd";
 
   /** The location of the DMN 1.1 XML schema. */
   public static final String DMN_11_SCHEMA_LOCATION = "org/camunda/bpm/model/dmn/schema/DMN11.xsd";
+
   public static final String DMN_12_SCHEMA_LOCATION = "org/camunda/bpm/model/dmn/schema/DMN12.xsd";
   public static final String DMN_13_SCHEMA_LOCATION = "org/camunda/bpm/model/dmn/schema/DMN13.xsd";
   public static final String DMN_14_SCHEMA_LOCATION = "org/camunda/bpm/model/dmn/schema/DMN14.xsd";
   public static final String DMN_15_SCHEMA_LOCATION = "org/camunda/bpm/model/dmn/schema/DMN15.xsd";
-  /**
-   * The location of the DMN 1.1 XML schema released with Camunda 7.4.0
-   */
-  public static final String DMN_11_ALTERNATIVE_SCHEMA_LOCATION = "org/camunda/bpm/model/dmn/schema/DMN11_Alternative.xsd";
+
+  /** The location of the DMN 1.1 XML schema released with Camunda 7.4.0 */
+  public static final String DMN_11_ALTERNATIVE_SCHEMA_LOCATION =
+      "org/camunda/bpm/model/dmn/schema/DMN11_Alternative.xsd";
 
   /** The FEEL namespace */
   public static final String FEEL_NS = "http://www.omg.org/spec/FEEL/20140401";
+
   public static final String FEEL12_NS = "http://www.omg.org/spec/DMN/20180521/FEEL/";
   public static final String FEEL13_NS = "https://www.omg.org/spec/DMN/20191111/FEEL/";
   public static final String FEEL14_NS = "https://www.omg.org/spec/DMN/20211108/FEEL/";
@@ -58,8 +59,8 @@ public final class DmnModelConstants {
   public static final String CAMUNDA_NS = "http://camunda.org/schema/1.0/dmn";
 
   /** DMN element */
-
   public static final String DMN_ELEMENT = "DMNElement";
+
   public static final String DMN_ELEMENT_ALLOWED_ANSWERS = "allowedAnswers";
   public static final String DMN_ELEMENT_ALLOWED_VALUE = "allowedValue";
   public static final String DMN_ELEMENT_ARTIFACT = "artifact";
@@ -91,7 +92,8 @@ public final class DmnModelConstants {
   public static final String DMN_ELEMENT_EXTENSION_ELEMENTS = "extensionElements";
   public static final String DMN_ELEMENT_FORMAL_PARAMETER = "formalParameter";
   public static final String DMN_ELEMENT_FUNCTION_DEFINITION = "functionDefinition";
-  public static final String DMN_ELEMENT_IMPACTED_PERFORMANCE_INDICATOR = "impactedPerformanceIndicator";
+  public static final String DMN_ELEMENT_IMPACTED_PERFORMANCE_INDICATOR =
+      "impactedPerformanceIndicator";
   public static final String DMN_ELEMENT_IMPACTING_DECISION = "impactingDecision";
   public static final String DMN_ELEMENT_IMPORT = "import";
   public static final String DMN_ELEMENT_IMPORTED_ELEMENT = "importedElement";
@@ -146,8 +148,8 @@ public final class DmnModelConstants {
   public static final String DMN_ELEMENT_VARIABLE = "variable";
 
   /** DMN attributes */
-
   public static final String DMN_ATTRIBUTE_AGGREGATION = "aggregation";
+
   public static final String DMN_ATTRIBUTE_ASSOCIATION_DIRECTION = "associationDirection";
   public static final String DMN_ATTRIBUTE_EXPRESSION_LANGUAGE = "expressionLanguage";
   public static final String DMN_ATTRIBUTE_EXPORTER = "exporter";
@@ -169,9 +171,8 @@ public final class DmnModelConstants {
   public static final String DMN_ATTRIBUTE_URI = "URI";
 
   /** camunda extensions */
-
   public static final String CAMUNDA_ATTRIBUTE_INPUT_VARIABLE = "inputVariable";
+
   public static final String CAMUNDA_ATTRIBUTE_HISTORY_TIME_TO_LIVE = "historyTimeToLive";
   public static final String CAMUNDA_ATTRIBUTE_VERSION_TAG = "versionTag";
-
 }

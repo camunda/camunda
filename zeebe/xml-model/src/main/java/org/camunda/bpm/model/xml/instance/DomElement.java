@@ -18,7 +18,6 @@ package org.camunda.bpm.model.xml.instance;
 
 import java.util.List;
 import java.util.Set;
-
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
 import org.w3c.dom.Element;
@@ -98,13 +97,14 @@ public interface DomElement {
    *
    * @return the list of child elements matching the type
    */
-  List<DomElement> getChildElementsByType(ModelInstanceImpl modelInstance, Class<? extends ModelElementInstance> elementType);
+  List<DomElement> getChildElementsByType(
+      ModelInstanceImpl modelInstance, Class<? extends ModelElementInstance> elementType);
 
   /**
    * Replaces a child element with a new element.
    *
-   * @param newChildDomElement  the new child element
-   * @param existingChildDomElement  the existing child element
+   * @param newChildDomElement the new child element
+   * @param existingChildDomElement the existing child element
    * @throws ModelException if the child cannot be replaced
    */
   void replaceChild(DomElement newChildDomElement, DomElement existingChildDomElement);
@@ -112,7 +112,7 @@ public interface DomElement {
   /**
    * Removes a child element of this element.
    *
-   * @param domElement  the child element to remove
+   * @param domElement the child element to remove
    * @return true if the child element was removed otherwise false
    */
   boolean removeChild(DomElement domElement);
@@ -120,23 +120,23 @@ public interface DomElement {
   /**
    * Appends the element to the child elements of this element.
    *
-   * @param childElement  the element to append
+   * @param childElement the element to append
    */
   void appendChild(DomElement childElement);
 
   /**
-   * Inserts the new child element after another child element. If the child element to
-   * insert after is null the new child element will be inserted at the beginning.
+   * Inserts the new child element after another child element. If the child element to insert after
+   * is null the new child element will be inserted at the beginning.
    *
-   * @param elementToInsert  the new element to insert
-   * @param insertAfter  the existing child element to insert after or null
+   * @param elementToInsert the new element to insert
+   * @param insertAfter the existing child element to insert after or null
    */
   void insertChildElementAfter(DomElement elementToInsert, DomElement insertAfter);
 
   /**
    * Checks if this element has a attribute under the namespace of this element.
    *
-   * @param localName  the name of the attribute
+   * @param localName the name of the attribute
    * @return true if the attribute exists otherwise false
    */
   boolean hasAttribute(String localName);
@@ -144,8 +144,8 @@ public interface DomElement {
   /**
    * Checks if this element has a attribute with the given namespace.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
-   * @param localName  the name of the attribute
+   * @param namespaceUri the namespaceUri of the namespace
+   * @param localName the name of the attribute
    * @return true if the attribute exists otherwise false
    */
   boolean hasAttribute(String namespaceUri, String localName);
@@ -153,7 +153,7 @@ public interface DomElement {
   /**
    * Returns the attribute value for the namespace of this element.
    *
-   * @param attributeName  the name of the attribute
+   * @param attributeName the name of the attribute
    * @return the value of the attribute or the empty string
    */
   String getAttribute(String attributeName);
@@ -161,8 +161,8 @@ public interface DomElement {
   /**
    * Returns the attribute value for the given namespace.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
-   * @param localName  the name of the attribute
+   * @param namespaceUri the namespaceUri of the namespace
+   * @param localName the name of the attribute
    * @return the value of the attribute or the empty string
    */
   String getAttribute(String namespaceUri, String localName);
@@ -170,49 +170,49 @@ public interface DomElement {
   /**
    * Sets the attribute value for the namespace of this element.
    *
-   * @param localName  the name of the attribute
-   * @param value  the value to set
+   * @param localName the name of the attribute
+   * @param value the value to set
    */
   void setAttribute(String localName, String value);
 
   /**
    * Sets the attribute value for the given namespace.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
-   * @param localName  the name of the attribute
-   * @param value  the value to set
+   * @param namespaceUri the namespaceUri of the namespace
+   * @param localName the name of the attribute
+   * @param value the value to set
    */
   void setAttribute(String namespaceUri, String localName, String value);
 
   /**
    * Sets the value of a id attribute for the namespace of this element.
    *
-   * @param localName  the name of the attribute
-   * @param value  the value to set
+   * @param localName the name of the attribute
+   * @param value the value to set
    */
   void setIdAttribute(String localName, String value);
 
   /**
    * Sets the value of a id attribute for the given namespace.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
-   * @param localName  the name of the attribute
-   * @param value  the value to set
+   * @param namespaceUri the namespaceUri of the namespace
+   * @param localName the name of the attribute
+   * @param value the value to set
    */
   void setIdAttribute(String namespaceUri, String localName, String value);
 
   /**
    * Removes the attribute for the namespace of this element.
    *
-   * @param localName  the name of the attribute
+   * @param localName the name of the attribute
    */
   void removeAttribute(String localName);
 
   /**
    * Removes the attribute for the given namespace.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
-   * @param localName  the name of the attribute
+   * @param namespaceUri the namespaceUri of the namespace
+   * @param localName the name of the attribute
    */
   void removeAttribute(String namespaceUri, String localName);
 
@@ -226,14 +226,14 @@ public interface DomElement {
   /**
    * Sets the text content of this element.
    *
-   * @param textContent  the text content to set
+   * @param textContent the text content to set
    */
   void setTextContent(String textContent);
 
   /**
    * Adds a CDATA section to this element.
    *
-   * @param textContent  the CDATA content to set
+   * @param textContent the CDATA content to set
    */
   void addCDataSection(String data);
 
@@ -247,14 +247,14 @@ public interface DomElement {
   /**
    * Sets the {@link ModelElementInstance} which should be associated with this element.
    *
-   * @param modelElementInstance  the {@link ModelElementInstance} to associate
+   * @param modelElementInstance the {@link ModelElementInstance} to associate
    */
   void setModelElementInstance(ModelElementInstance modelElementInstance);
 
   /**
    * Adds a new namespace with a generated prefix to this element.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
+   * @param namespaceUri the namespaceUri of the namespace
    * @return the generated prefix for the new namespace
    */
   String registerNamespace(String namespaceUri);
@@ -262,16 +262,16 @@ public interface DomElement {
   /**
    * Adds a new namespace with prefix to this element.
    *
-   * @param prefix  the prefix of the namespace
-   * @param namespaceUri  the namespaceUri of the namespace
+   * @param prefix the prefix of the namespace
+   * @param namespaceUri the namespaceUri of the namespace
    */
   void registerNamespace(String prefix, String namespaceUri);
 
   /**
-   * Returns the prefix of the namespace starting from this node upwards.
-   * The default namespace has the prefix {@code null}.
+   * Returns the prefix of the namespace starting from this node upwards. The default namespace has
+   * the prefix {@code null}.
    *
-   * @param namespaceUri  the namespaceUri of the namespace
+   * @param namespaceUri the namespaceUri of the namespace
    * @return the prefix or null if non is defined
    */
   String lookupPrefix(String namespaceUri);

@@ -27,15 +27,13 @@ public class DecisionServiceTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(OutputDecisionReference.class, 1),
-      new ChildElementAssumption(EncapsulatedDecisionReference.class),
-      new ChildElementAssumption(InputDecisionReference.class),
-      new ChildElementAssumption(InputDataReference.class)
-    );
+        new ChildElementAssumption(OutputDecisionReference.class, 1),
+        new ChildElementAssumption(EncapsulatedDecisionReference.class),
+        new ChildElementAssumption(InputDecisionReference.class),
+        new ChildElementAssumption(InputDataReference.class));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

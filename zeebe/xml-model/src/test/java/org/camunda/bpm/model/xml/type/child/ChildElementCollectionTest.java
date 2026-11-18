@@ -16,6 +16,13 @@
  */
 package org.camunda.bpm.model.xml.type.child;
 
+import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.bpm.model.xml.UnsupportedModelOperationException;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
@@ -28,14 +35,6 @@ import org.camunda.bpm.model.xml.testmodel.instance.*;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-
-import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.runners.Parameterized.Parameters;
 
 /**
  * @author Sebastian Menski
@@ -50,11 +49,12 @@ public class ChildElementCollectionTest extends TestModelTest {
   private ChildElement<FlightInstructor> flightInstructorChild;
   private ChildElementCollection<FlightPartnerRef> flightPartnerRefCollection;
 
-  public ChildElementCollectionTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public ChildElementCollectionTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     super(testName, testModelInstance, modelParser);
   }
 
-  @Parameters(name="Model {0}")
+  @Parameters(name = "Model {0}")
   public static Collection<Object[]> models() {
     Object[][] models = {createModel(), parseModel(ChildElementCollectionTest.class)};
     return Arrays.asList(models);
@@ -77,7 +77,7 @@ public class ChildElementCollectionTest extends TestModelTest {
     tweety.getFlightPartnerRefs().add(daisy);
     tweety.getFlightPartnerRefs().add(plucky);
 
-    return new Object[]{"created", modelInstance, modelParser};
+    return new Object[] {"created", modelInstance, modelParser};
   }
 
   @Before
@@ -90,7 +90,9 @@ public class ChildElementCollectionTest extends TestModelTest {
     plucky = modelInstance.getModelElementById("plucky");
     birdo = modelInstance.getModelElementById("birdo");
 
-    flightInstructorChild = (ChildElement<FlightInstructor>) FlyingAnimal.flightInstructorChild.getReferenceSourceCollection();
+    flightInstructorChild =
+        (ChildElement<FlightInstructor>)
+            FlyingAnimal.flightInstructorChild.getReferenceSourceCollection();
     flightPartnerRefCollection = FlyingAnimal.flightPartnerRefsColl.getReferenceSourceCollection();
   }
 
@@ -180,24 +182,19 @@ public class ChildElementCollectionTest extends TestModelTest {
     assertThat(flightPartnerRefs.size()).isEqualTo(2);
     assertThat(flightPartnerRefs.isEmpty()).isFalse();
     assertThat(flightPartnerRefs.contains(daisyRef));
-    assertThat(flightPartnerRefs.toArray()).isEqualTo(new Object[]{daisyRef, pluckyRef});
-    assertThat(flightPartnerRefs.toArray(new FlightPartnerRef[1])).isEqualTo(new FlightPartnerRef[]{daisyRef, pluckyRef});
+    assertThat(flightPartnerRefs.toArray()).isEqualTo(new Object[] {daisyRef, pluckyRef});
+    assertThat(flightPartnerRefs.toArray(new FlightPartnerRef[1]))
+        .isEqualTo(new FlightPartnerRef[] {daisyRef, pluckyRef});
 
     assertThat(flightPartnerRefs.add(birdoRef)).isTrue();
-    assertThat(flightPartnerRefs)
-      .hasSize(3)
-      .containsOnly(birdoRef, daisyRef, pluckyRef);
+    assertThat(flightPartnerRefs).hasSize(3).containsOnly(birdoRef, daisyRef, pluckyRef);
 
     assertThat(flightPartnerRefs.remove(daisyRef)).isTrue();
-    assertThat(flightPartnerRefs)
-      .hasSize(2)
-      .containsOnly(birdoRef, pluckyRef);
+    assertThat(flightPartnerRefs).hasSize(2).containsOnly(birdoRef, pluckyRef);
 
     assertThat(flightPartnerRefs.addAll(flightPartners)).isTrue();
     assertThat(flightPartnerRefs.containsAll(flightPartners)).isTrue();
-    assertThat(flightPartnerRefs)
-      .hasSize(3)
-      .containsOnly(birdoRef, daisyRef, pluckyRef);
+    assertThat(flightPartnerRefs).hasSize(3).containsOnly(birdoRef, daisyRef, pluckyRef);
 
     assertThat(flightPartnerRefs.removeAll(flightPartners)).isTrue();
     assertThat(flightPartnerRefs).isEmpty();
@@ -205,8 +202,7 @@ public class ChildElementCollectionTest extends TestModelTest {
     try {
       flightPartnerRefs.retainAll(flightPartners);
       fail("retainAll method is not implemented");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       assertThat(e).isInstanceOf(UnsupportedModelOperationException.class);
     }
 

@@ -39,5 +39,4 @@ public interface ValidationResultCollector {
    * @param message a human consumable error message
    */
   void addWarning(int code, String message);
-
 }

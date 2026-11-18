@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface OutputEntry extends LiteralExpression {
-
-}
+public interface OutputEntry extends LiteralExpression {}

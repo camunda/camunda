@@ -27,7 +27,7 @@ import org.junit.Test;
 public class DmnWriterTest extends DmnModelTest {
 
   /**
-   * <p>There is an issue in JDK 9+ that changes how CDATA section are serialized:
+   * There is an issue in JDK 9+ that changes how CDATA section are serialized:
    *
    * <p>https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8223291
    *
@@ -53,16 +53,17 @@ public class DmnWriterTest extends DmnModelTest {
    *
    * <p>(the text element has three child nodes, a text node, a CDATA section and another text node)
    *
-   * <p>This test ensures, that a JDK9-formatted model can be read
-   * and the text content method returns the CDATA value only
+   * <p>This test ensures, that a JDK9-formatted model can be read and the text content method
+   * returns the CDATA value only
    */
   @Test
-  public void shouldReadJDK9StyleModel()
-  {
+  public void shouldReadJDK9StyleModel() {
     DmnModelInstance modelInstance =
-        Dmn.readModelFromStream(ExampleCompatibilityTest.class.getResourceAsStream("JDK9-style-CDATA.dmn"));
+        Dmn.readModelFromStream(
+            ExampleCompatibilityTest.class.getResourceAsStream("JDK9-style-CDATA.dmn"));
 
-    Decision decision = (Decision) modelInstance.getDefinitions().getDrgElements().iterator().next();
+    Decision decision =
+        (Decision) modelInstance.getDefinitions().getDrgElements().iterator().next();
 
     DecisionTable decisionTable = (DecisionTable) decision.getExpression();
 

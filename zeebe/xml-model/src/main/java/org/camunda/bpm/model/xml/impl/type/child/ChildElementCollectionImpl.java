@@ -16,6 +16,8 @@
  */
 package org.camunda.bpm.model.xml.impl.type.child;
 
+import java.util.Collection;
+import java.util.Iterator;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.UnsupportedModelOperationException;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
@@ -26,16 +28,13 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 /**
- * <p>This collection is a view on an the children of a Model Element.</p>
+ * This collection is a view on an the children of a Model Element.
  *
  * @author Daniel Meyer
- *
  */
-public class ChildElementCollectionImpl<T extends ModelElementInstance> implements ChildElementCollection<T> {
+public class ChildElementCollectionImpl<T extends ModelElementInstance>
+    implements ChildElementCollection<T> {
 
   protected final Class<T> childElementTypeClass;
 
@@ -46,15 +45,16 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
   private int minOccurs = 0;
 
   /**
-   * the maximum count of child elements in the collection.
-   * An unbounded collection has a negative maxOccurs.
+   * the maximum count of child elements in the collection. An unbounded collection has a negative
+   * maxOccurs.
    */
   protected int maxOccurs = -1;
 
   /** indicates whether this collection is mutable. */
   private boolean isMutable = true;
 
-  public ChildElementCollectionImpl(Class<T> childElementTypeClass, ModelElementTypeImpl parentElementType) {
+  public ChildElementCollectionImpl(
+      Class<T> childElementTypeClass, ModelElementTypeImpl parentElementType) {
     this.childElementTypeClass = childElementTypeClass;
     this.parentElementType = parentElementType;
   }
@@ -79,7 +79,9 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
    * @return the view represented by this collection
    */
   private Collection<DomElement> getView(ModelElementInstanceImpl modelElement) {
-    return modelElement.getDomElement().getChildElementsByType(modelElement.getModelInstance(), childElementTypeClass);
+    return modelElement
+        .getDomElement()
+        .getChildElementsByType(modelElement.getModelInstance(), childElementTypeClass);
   }
 
   public int getMinOccurs() {
@@ -117,12 +119,14 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
 
   /** the "remove" operation used by this collection */
   private boolean performRemoveOperation(ModelElementInstanceImpl modelElement, Object e) {
-    return modelElement.removeChildElement((ModelElementInstanceImpl)e);
+    return modelElement.removeChildElement((ModelElementInstanceImpl) e);
   }
 
   /** the "clear" operation used by this collection */
-  private void performClearOperation(ModelElementInstanceImpl modelElement, Collection<DomElement> elementsToRemove) {
-    Collection<ModelElementInstance> modelElements = ModelUtil.getModelElementCollection(elementsToRemove, modelElement.getModelInstance());
+  private void performClearOperation(
+      ModelElementInstanceImpl modelElement, Collection<DomElement> elementsToRemove) {
+    Collection<ModelElementInstance> modelElements =
+        ModelUtil.getModelElementCollection(elementsToRemove, modelElement.getModelInstance());
     for (ModelElementInstance element : modelElements) {
       modelElement.removeChildElement(element);
     }
@@ -135,21 +139,20 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
     return new Collection<T>() {
 
       public boolean contains(Object o) {
-        if(o == null) {
+        if (o == null) {
           return false;
 
-        } else if(!(o instanceof ModelElementInstanceImpl)) {
+        } else if (!(o instanceof ModelElementInstanceImpl)) {
           return false;
 
         } else {
-          return getView(modelElement).contains(((ModelElementInstanceImpl)o).getDomElement());
-
+          return getView(modelElement).contains(((ModelElementInstanceImpl) o).getDomElement());
         }
       }
 
       public boolean containsAll(Collection<?> c) {
         for (Object elementToCheck : c) {
-          if(!contains(elementToCheck)) {
+          if (!contains(elementToCheck)) {
             return false;
           }
         }
@@ -161,17 +164,23 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       }
 
       public Iterator<T> iterator() {
-        Collection<T> modelElementCollection = ModelUtil.getModelElementCollection(getView(modelElement), modelElement.getModelInstance());
+        Collection<T> modelElementCollection =
+            ModelUtil.getModelElementCollection(
+                getView(modelElement), modelElement.getModelInstance());
         return modelElementCollection.iterator();
       }
 
       public Object[] toArray() {
-        Collection<T> modelElementCollection = ModelUtil.getModelElementCollection(getView(modelElement), modelElement.getModelInstance());
+        Collection<T> modelElementCollection =
+            ModelUtil.getModelElementCollection(
+                getView(modelElement), modelElement.getModelInstance());
         return modelElementCollection.toArray();
       }
 
       public <U> U[] toArray(U[] a) {
-        Collection<T> modelElementCollection = ModelUtil.getModelElementCollection(getView(modelElement), modelElement.getModelInstance());
+        Collection<T> modelElementCollection =
+            ModelUtil.getModelElementCollection(
+                getView(modelElement), modelElement.getModelInstance());
         return modelElementCollection.toArray(a);
       }
 
@@ -180,7 +189,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       }
 
       public boolean add(T e) {
-        if(!isMutable) {
+        if (!isMutable) {
           throw new UnsupportedModelOperationException("add()", "collection is immutable");
         }
         performAddOperation(modelElement, e);
@@ -188,7 +197,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       }
 
       public boolean addAll(Collection<? extends T> c) {
-        if(!isMutable) {
+        if (!isMutable) {
           throw new UnsupportedModelOperationException("addAll()", "collection is immutable");
         }
         boolean result = false;
@@ -199,7 +208,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       }
 
       public void clear() {
-        if(!isMutable) {
+        if (!isMutable) {
           throw new UnsupportedModelOperationException("clear()", "collection is immutable");
         }
         Collection<DomElement> view = getView(modelElement);
@@ -207,7 +216,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       }
 
       public boolean remove(Object e) {
-        if(!isMutable) {
+        if (!isMutable) {
           throw new UnsupportedModelOperationException("remove()", "collection is immutable");
         }
         ModelUtil.ensureInstanceOf(e, ModelElementInstanceImpl.class);
@@ -215,7 +224,7 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       }
 
       public boolean removeAll(Collection<?> c) {
-        if(!isMutable) {
+        if (!isMutable) {
           throw new UnsupportedModelOperationException("removeAll()", "collection is immutable");
         }
         boolean result = false;
@@ -228,8 +237,6 @@ public class ChildElementCollectionImpl<T extends ModelElementInstance> implemen
       public boolean retainAll(Collection<?> c) {
         throw new UnsupportedModelOperationException("retainAll()", "not implemented");
       }
-
     };
   }
-
 }

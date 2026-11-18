@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_INPUT_VALUES;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.InputValues;
 import org.camunda.bpm.model.dmn.instance.UnaryTests;
@@ -33,16 +33,18 @@ public class InputValuesImpl extends UnaryTestsImpl implements InputValues {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(InputValues.class, DMN_ELEMENT_INPUT_VALUES)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(UnaryTests.class)
-      .instanceProvider(new ModelTypeInstanceProvider<InputValues>() {
-        public InputValues newInstance(ModelTypeInstanceContext instanceContext) {
-          return new InputValuesImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(InputValues.class, DMN_ELEMENT_INPUT_VALUES)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(UnaryTests.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<InputValues>() {
+                  public InputValues newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new InputValuesImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

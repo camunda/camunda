@@ -30,5 +30,4 @@ public abstract class AbstractTextContentElementTest extends DmnModelElementInst
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

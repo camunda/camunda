@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_ENCAPSULATED_LOGIC;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.EncapsulatedLogic;
 import org.camunda.bpm.model.dmn.instance.FunctionDefinition;
@@ -33,16 +33,18 @@ public class EncapsulatedLogicImpl extends FunctionDefinitionImpl implements Enc
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(EncapsulatedLogic.class, DMN_ELEMENT_ENCAPSULATED_LOGIC)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(FunctionDefinition.class)
-      .instanceProvider(new ModelTypeInstanceProvider<EncapsulatedLogic>() {
-        public EncapsulatedLogic newInstance(ModelTypeInstanceContext instanceContext) {
-          return new EncapsulatedLogicImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(EncapsulatedLogic.class, DMN_ELEMENT_ENCAPSULATED_LOGIC)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(FunctionDefinition.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<EncapsulatedLogic>() {
+                  public EncapsulatedLogic newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new EncapsulatedLogicImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

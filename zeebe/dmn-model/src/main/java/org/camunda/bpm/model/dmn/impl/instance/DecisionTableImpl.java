@@ -16,15 +16,14 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_AGGREGATION;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_HIT_POLICY;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_OUTPUT_LABEL;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ATTRIBUTE_PREFERRED_ORIENTATION;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_DECISION_TABLE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.BuiltinAggregator;
 import org.camunda.bpm.model.dmn.DecisionTableOrientation;
 import org.camunda.bpm.model.dmn.HitPolicy;
@@ -42,7 +41,7 @@ import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 
 public class DecisionTableImpl extends ExpressionImpl implements DecisionTable {
-  
+
   protected static Attribute<HitPolicy> hitPolicyAttribute;
   protected static Attribute<BuiltinAggregator> aggregationAttribute;
   protected static Attribute<DecisionTableOrientation> preferredOrientationAttribute;
@@ -101,42 +100,43 @@ public class DecisionTableImpl extends ExpressionImpl implements DecisionTable {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DecisionTable.class, DMN_ELEMENT_DECISION_TABLE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(Expression.class)
-      .instanceProvider(new ModelTypeInstanceProvider<DecisionTable>() {
-        public DecisionTable newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DecisionTableImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DecisionTable.class, DMN_ELEMENT_DECISION_TABLE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(Expression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<DecisionTable>() {
+                  public DecisionTable newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new DecisionTableImpl(instanceContext);
+                  }
+                });
 
-    hitPolicyAttribute = typeBuilder.namedEnumAttribute(DMN_ATTRIBUTE_HIT_POLICY, HitPolicy.class)
-      .defaultValue(HitPolicy.UNIQUE)
-      .build();
+    hitPolicyAttribute =
+        typeBuilder
+            .namedEnumAttribute(DMN_ATTRIBUTE_HIT_POLICY, HitPolicy.class)
+            .defaultValue(HitPolicy.UNIQUE)
+            .build();
 
-    aggregationAttribute = typeBuilder.enumAttribute(DMN_ATTRIBUTE_AGGREGATION, BuiltinAggregator.class)
-      .build();
+    aggregationAttribute =
+        typeBuilder.enumAttribute(DMN_ATTRIBUTE_AGGREGATION, BuiltinAggregator.class).build();
 
-    preferredOrientationAttribute = typeBuilder.namedEnumAttribute(DMN_ATTRIBUTE_PREFERRED_ORIENTATION, DecisionTableOrientation.class)
-      .defaultValue(DecisionTableOrientation.Rule_as_Row)
-      .build();
+    preferredOrientationAttribute =
+        typeBuilder
+            .namedEnumAttribute(DMN_ATTRIBUTE_PREFERRED_ORIENTATION, DecisionTableOrientation.class)
+            .defaultValue(DecisionTableOrientation.Rule_as_Row)
+            .build();
 
-    outputLabelAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_OUTPUT_LABEL)
-      .build();
+    outputLabelAttribute = typeBuilder.stringAttribute(DMN_ATTRIBUTE_OUTPUT_LABEL).build();
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    inputCollection = sequenceBuilder.elementCollection(Input.class)
-      .build();
+    inputCollection = sequenceBuilder.elementCollection(Input.class).build();
 
-    outputCollection = sequenceBuilder.elementCollection(Output.class)
-      .required()
-      .build();
+    outputCollection = sequenceBuilder.elementCollection(Output.class).required().build();
 
-    ruleCollection = sequenceBuilder.elementCollection(Rule.class)
-      .build();
+    ruleCollection = sequenceBuilder.elementCollection(Rule.class).build();
 
     typeBuilder.build();
   }
-
 }

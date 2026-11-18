@@ -16,15 +16,13 @@
  */
 package org.camunda.bpm.model.xml.testmodel;
 
+import java.io.InputStream;
 import org.camunda.bpm.model.xml.ModelInstance;
-import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
 import org.junit.After;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.io.InputStream;
 
 /**
  * @author Sebastian Menski
@@ -39,7 +37,8 @@ public abstract class TestModelTest {
   // cloned model instance for every test method (see subclasses)
   protected ModelInstance modelInstance;
 
-  public TestModelTest(String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
+  public TestModelTest(
+      String testName, ModelInstance testModelInstance, AbstractModelParser modelParser) {
     this.testName = testName;
     this.testModelInstance = testModelInstance;
     this.modelParser = modelParser;
@@ -54,7 +53,7 @@ public abstract class TestModelTest {
     String testXml = test.getSimpleName() + ".xml";
     InputStream testXmlAsStream = test.getResourceAsStream(testXml);
     ModelInstance modelInstance = modelParser.parseModelFromStream(testXmlAsStream);
-    return new Object[]{"parsed", modelInstance, modelParser};
+    return new Object[] {"parsed", modelInstance, modelParser};
   }
 
   public static Bird createBird(ModelInstance modelInstance, String id, Gender gender) {
@@ -65,15 +64,22 @@ public abstract class TestModelTest {
     return bird;
   }
 
-  protected static RelationshipDefinition createRelationshipDefinition(ModelInstance modelInstance, Animal animalInRelationshipWith, Class<? extends RelationshipDefinition> relationshipDefinitionClass) {
-    RelationshipDefinition relationshipDefinition = modelInstance.newInstance(relationshipDefinitionClass, "relationship-" + animalInRelationshipWith.getId());
+  protected static RelationshipDefinition createRelationshipDefinition(
+      ModelInstance modelInstance,
+      Animal animalInRelationshipWith,
+      Class<? extends RelationshipDefinition> relationshipDefinitionClass) {
+    RelationshipDefinition relationshipDefinition =
+        modelInstance.newInstance(
+            relationshipDefinitionClass, "relationship-" + animalInRelationshipWith.getId());
     relationshipDefinition.setAnimal(animalInRelationshipWith);
     return relationshipDefinition;
   }
 
-  public static void addRelationshipDefinition(Animal animalWithRelationship, RelationshipDefinition relationshipDefinition) {
+  public static void addRelationshipDefinition(
+      Animal animalWithRelationship, RelationshipDefinition relationshipDefinition) {
     Animal animalInRelationshipWith = relationshipDefinition.getAnimal();
-    relationshipDefinition.setId(animalWithRelationship.getId() + "-" + animalInRelationshipWith.getId());
+    relationshipDefinition.setId(
+        animalWithRelationship.getId() + "-" + animalInRelationshipWith.getId());
     animalWithRelationship.getRelationshipDefinitions().add(relationshipDefinition);
   }
 

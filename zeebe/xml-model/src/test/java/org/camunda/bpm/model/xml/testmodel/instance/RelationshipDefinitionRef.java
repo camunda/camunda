@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_RELATIONSHIP_DEFINITION_REF;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_RELATIONSHIP_DEFINITION_REF;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
 
 /**
  * @author Sebastian Menski
@@ -31,14 +31,18 @@ import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMES
 public class RelationshipDefinitionRef extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(RelationshipDefinitionRef.class, ELEMENT_NAME_RELATIONSHIP_DEFINITION_REF)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<RelationshipDefinitionRef>() {
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(RelationshipDefinitionRef.class, ELEMENT_NAME_RELATIONSHIP_DEFINITION_REF)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<RelationshipDefinitionRef>() {
 
-        public RelationshipDefinitionRef newInstance(ModelTypeInstanceContext instanceContext) {
-          return new RelationshipDefinitionRef(instanceContext);
-        }
-      });
+                  public RelationshipDefinitionRef newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new RelationshipDefinitionRef(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
@@ -46,5 +50,4 @@ public class RelationshipDefinitionRef extends ModelElementInstanceImpl {
   public RelationshipDefinitionRef(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
-
 }

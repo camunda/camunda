@@ -18,8 +18,8 @@ package org.camunda.bpm.model.dmn.impl.instance;
 
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_ATTRIBUTE_INPUT_VARIABLE;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_NS;
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_INPUT_CLAUSE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElement;
 import org.camunda.bpm.model.dmn.instance.InputClause;
@@ -67,37 +67,34 @@ public class InputClauseImpl extends DmnElementImpl implements InputClause {
     return camundaInputVariableAttribute.getValue(this);
   }
 
-
   public void setCamundaInputVariable(String inputVariable) {
     camundaInputVariableAttribute.setValue(this, inputVariable);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(InputClause.class, DMN_ELEMENT_INPUT_CLAUSE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<InputClause>() {
-        public InputClause newInstance(ModelTypeInstanceContext instanceContext) {
-          return new InputClauseImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(InputClause.class, DMN_ELEMENT_INPUT_CLAUSE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<InputClause>() {
+                  public InputClause newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new InputClauseImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    inputExpressionChild = sequenceBuilder.element(InputExpression.class)
-      .required()
-      .build();
+    inputExpressionChild = sequenceBuilder.element(InputExpression.class).required().build();
 
-    inputValuesChild = sequenceBuilder.element(InputValues.class)
-      .build();
+    inputValuesChild = sequenceBuilder.element(InputValues.class).build();
 
     // camunda extensions
 
-    camundaInputVariableAttribute = typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_INPUT_VARIABLE)
-      .namespace(CAMUNDA_NS)
-      .build();
+    camundaInputVariableAttribute =
+        typeBuilder.stringAttribute(CAMUNDA_ATTRIBUTE_INPUT_VARIABLE).namespace(CAMUNDA_NS).build();
 
     typeBuilder.build();
   }
-
 }

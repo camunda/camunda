@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_INPUT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Input;
 import org.camunda.bpm.model.dmn.instance.InputClause;
@@ -33,16 +33,18 @@ public class InputImpl extends InputClauseImpl implements Input {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Input.class, DMN_ELEMENT_INPUT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(InputClause.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Input>() {
-        public Input newInstance(ModelTypeInstanceContext instanceContext) {
-          return new InputImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Input.class, DMN_ELEMENT_INPUT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(InputClause.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Input>() {
+                  public Input newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new InputImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

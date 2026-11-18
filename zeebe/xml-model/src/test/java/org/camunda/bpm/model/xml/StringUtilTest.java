@@ -16,14 +16,13 @@
  */
 package org.camunda.bpm.model.xml;
 
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.xml.impl.util.StringUtil.joinCommaSeparatedList;
 import static org.camunda.bpm.model.xml.impl.util.StringUtil.splitCommaSeparatedList;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Test;
 
 /**
  * @author Sebastian Menski
@@ -42,10 +41,15 @@ public class StringUtilTest {
     assertThat(splitCommaSeparatedList(" #{ } ")).containsExactly("#{ }");
     assertThat(splitCommaSeparatedList(" #{}, ${a}, #{b} ")).containsExactly("#{}", "${a}", "#{b}");
     assertThat(splitCommaSeparatedList(" a, ${b}, #{c} ")).containsExactly("a", "${b}", "#{c}");
-    assertThat(splitCommaSeparatedList(" #{a}, b, ,c ,${d} ")).containsExactly("#{a}", "b", "c", "${d}");
-    assertThat(splitCommaSeparatedList(" #{a(b,c)}, d, ,e ,${fg(h , i , j)} ")).containsExactly("#{a(b,c)}", "d", "e", "${fg(h , i , j)}");
-    assertThat(splitCommaSeparatedList(" #{a == (b, c)}, d = e, f ,${fg(h , i , j)} ")).containsExactly("#{a == (b, c)}", "d = e", "f", "${fg(h , i , j)}");
-    assertThat(splitCommaSeparatedList("accountancy, ${fakeLdapService.findManagers(execution, emp)}")).containsExactly("accountancy", "${fakeLdapService.findManagers(execution, emp)}");
+    assertThat(splitCommaSeparatedList(" #{a}, b, ,c ,${d} "))
+        .containsExactly("#{a}", "b", "c", "${d}");
+    assertThat(splitCommaSeparatedList(" #{a(b,c)}, d, ,e ,${fg(h , i , j)} "))
+        .containsExactly("#{a(b,c)}", "d", "e", "${fg(h , i , j)}");
+    assertThat(splitCommaSeparatedList(" #{a == (b, c)}, d = e, f ,${fg(h , i , j)} "))
+        .containsExactly("#{a == (b, c)}", "d = e", "f", "${fg(h , i , j)}");
+    assertThat(
+            splitCommaSeparatedList("accountancy, ${fakeLdapService.findManagers(execution, emp)}"))
+        .containsExactly("accountancy", "${fakeLdapService.findManagers(execution, emp)}");
   }
 
   @Test
@@ -76,5 +80,4 @@ public class StringUtilTest {
   public void testNullJoin() {
     assertThat(joinCommaSeparatedList(null)).isNull();
   }
-
 }

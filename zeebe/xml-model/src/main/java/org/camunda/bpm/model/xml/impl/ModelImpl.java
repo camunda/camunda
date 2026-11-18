@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelException;
 import org.camunda.bpm.model.xml.impl.util.ModelUtil;
@@ -34,36 +33,40 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
  * A model contains all defined types and the relationship between them.
  *
  * @author Daniel Meyer
- *
  */
 public class ModelImpl implements Model {
 
   private final Map<QName, ModelElementType> typesByName = new HashMap<QName, ModelElementType>();
-  private final Map<Class<? extends ModelElementInstance>, ModelElementType> typesByClass = new HashMap<Class<? extends ModelElementInstance>, ModelElementType>();
+  private final Map<Class<? extends ModelElementInstance>, ModelElementType> typesByClass =
+      new HashMap<Class<? extends ModelElementInstance>, ModelElementType>();
   private final String modelName;
 
-  protected final Map<String, Set<String>> actualNsToAlternative = new HashMap<String, Set<String>>();
+  protected final Map<String, Set<String>> actualNsToAlternative =
+      new HashMap<String, Set<String>>();
   protected final Map<String, String> alternativeNsToActual = new HashMap<String, String>();
 
   /**
    * Create a new {@link Model} with a model name.
-   * @param modelName  the model name to identify the model
+   *
+   * @param modelName the model name to identify the model
    */
   public ModelImpl(String modelName) {
     this.modelName = modelName;
   }
 
   /**
-   * Declares an alternative namespace for an actual so that during lookup of elements/attributes both will be considered.
-   * This can be used if a newer namespaces replaces an older one but XML files with the old one should still be parseable.
+   * Declares an alternative namespace for an actual so that during lookup of elements/attributes
+   * both will be considered. This can be used if a newer namespaces replaces an older one but XML
+   * files with the old one should still be parseable.
+   *
    * @param alternativeNs
    * @param actualNs
-   * @throws IllegalArgumentException if the alternative is already used or if the actual namespace has an alternative
+   * @throws IllegalArgumentException if the alternative is already used or if the actual namespace
+   *     has an alternative
    */
   public void declareAlternativeNamespace(String alternativeNs, String actualNs) {
     Set<String> alternativeNamespaces = actualNsToAlternative.get(actualNs);
-    if (alternativeNamespaces == null)
-    {
+    if (alternativeNamespaces == null) {
       // linked hash set for consistent iteration order
       alternativeNamespaces = new LinkedHashSet<String>();
       actualNsToAlternative.put(actualNs, alternativeNamespaces);
@@ -73,8 +76,8 @@ public class ModelImpl implements Model {
     alternativeNsToActual.put(alternativeNs, actualNs);
   }
 
-  public void undeclareAlternativeNamespace(String alternativeNs){
-    if(!alternativeNsToActual.containsKey(alternativeNs)){
+  public void undeclareAlternativeNamespace(String alternativeNs) {
+    if (!alternativeNsToActual.containsKey(alternativeNs)) {
       return;
     }
     String actual = alternativeNsToActual.remove(alternativeNs);
@@ -91,12 +94,9 @@ public class ModelImpl implements Model {
 
     if (alternatives == null || alternatives.size() == 0) {
       return null;
-    }
-    else if (alternatives.size() == 1) {
+    } else if (alternatives.size() == 1) {
       return alternatives.iterator().next();
-    }
-    else
-    {
+    } else {
       throw new ModelException("There is more than one alternative namespace registered");
     }
   }
@@ -124,11 +124,13 @@ public class ModelImpl implements Model {
   /**
    * Registers a {@link ModelElementType} in this {@link Model}.
    *
-   * @param modelElementType  the element type to register
-   * @param instanceType  the instance class of the type to register
+   * @param modelElementType the element type to register
+   * @param instanceType the instance class of the type to register
    */
-  public void registerType(ModelElementType modelElementType, Class<? extends ModelElementInstance> instanceType) {
-    QName qName = ModelUtil.getQName(modelElementType.getTypeNamespace(), modelElementType.getTypeName());
+  public void registerType(
+      ModelElementType modelElementType, Class<? extends ModelElementInstance> instanceType) {
+    QName qName =
+        ModelUtil.getQName(modelElementType.getTypeNamespace(), modelElementType.getTypeName());
     typesByName.put(qName, modelElementType);
     typesByClass.put(instanceType, modelElementType);
   }
@@ -166,5 +168,4 @@ public class ModelImpl implements Model {
     }
     return true;
   }
-
 }

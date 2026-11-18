@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_DECISION_RULE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.DecisionRule;
 import org.camunda.bpm.model.dmn.instance.DmnElement;
 import org.camunda.bpm.model.dmn.instance.InputEntry;
@@ -50,25 +49,24 @@ public class DecisionRuleImpl extends DmnElementImpl implements DecisionRule {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(DecisionRule.class, DMN_ELEMENT_DECISION_RULE)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<DecisionRule>() {
-        public DecisionRule newInstance(ModelTypeInstanceContext instanceContext) {
-          return new DecisionRuleImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(DecisionRule.class, DMN_ELEMENT_DECISION_RULE)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<DecisionRule>() {
+                  public DecisionRule newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new DecisionRuleImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    inputEntryCollection = sequenceBuilder.elementCollection(InputEntry.class)
-      .build();
+    inputEntryCollection = sequenceBuilder.elementCollection(InputEntry.class).build();
 
-    outputEntryCollection = sequenceBuilder.elementCollection(OutputEntry.class)
-      .required()
-      .build();
+    outputEntryCollection = sequenceBuilder.elementCollection(OutputEntry.class).required().build();
 
     typeBuilder.build();
   }
-
 }

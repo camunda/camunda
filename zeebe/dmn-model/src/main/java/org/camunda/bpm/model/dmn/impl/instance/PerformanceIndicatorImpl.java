@@ -16,11 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_PERFORMANCE_INDICATOR;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.instance.BusinessContextElement;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.ImpactingDecisionReference;
@@ -32,9 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
-public class PerformanceIndicatorImpl extends BusinessContextElementImpl implements PerformanceIndicator {
+public class PerformanceIndicatorImpl extends BusinessContextElementImpl
+    implements PerformanceIndicator {
 
-  protected static ElementReferenceCollection<Decision, ImpactingDecisionReference> impactingDecisionRefCollection;
+  protected static ElementReferenceCollection<Decision, ImpactingDecisionReference>
+      impactingDecisionRefCollection;
 
   public PerformanceIndicatorImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -45,22 +46,27 @@ public class PerformanceIndicatorImpl extends BusinessContextElementImpl impleme
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(PerformanceIndicator.class, DMN_ELEMENT_PERFORMANCE_INDICATOR)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(BusinessContextElement.class)
-      .instanceProvider(new ModelTypeInstanceProvider<PerformanceIndicator>() {
-        public PerformanceIndicator newInstance(ModelTypeInstanceContext instanceContext) {
-          return new PerformanceIndicatorImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(PerformanceIndicator.class, DMN_ELEMENT_PERFORMANCE_INDICATOR)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(BusinessContextElement.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<PerformanceIndicator>() {
+                  public PerformanceIndicator newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new PerformanceIndicatorImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    impactingDecisionRefCollection = sequenceBuilder.elementCollection(ImpactingDecisionReference.class)
-      .uriElementReferenceCollection(Decision.class)
-      .build();
+    impactingDecisionRefCollection =
+        sequenceBuilder
+            .elementCollection(ImpactingDecisionReference.class)
+            .uriElementReferenceCollection(Decision.class)
+            .build();
 
     typeBuilder.build();
   }
-
 }

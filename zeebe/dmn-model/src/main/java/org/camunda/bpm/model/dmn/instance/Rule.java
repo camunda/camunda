@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface Rule extends DecisionRule {
-
-}
+public interface Rule extends DecisionRule {}

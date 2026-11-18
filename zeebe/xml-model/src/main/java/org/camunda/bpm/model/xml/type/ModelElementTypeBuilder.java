@@ -31,7 +31,8 @@ public interface ModelElementTypeBuilder {
 
   ModelElementTypeBuilder extendsType(Class<? extends ModelElementInstance> extendedType);
 
-  <T extends ModelElementInstance> ModelElementTypeBuilder instanceProvider(ModelTypeInstanceProvider<T> instanceProvider);
+  <T extends ModelElementInstance> ModelElementTypeBuilder instanceProvider(
+      ModelTypeInstanceProvider<T> instanceProvider);
 
   ModelElementTypeBuilder abstractType();
 
@@ -45,15 +46,14 @@ public interface ModelElementTypeBuilder {
 
   <V extends Enum<V>> AttributeBuilder<V> enumAttribute(String attributeName, Class<V> enumType);
 
-  <V extends Enum<V>> AttributeBuilder<V> namedEnumAttribute(String attributeName, Class<V> enumType);
+  <V extends Enum<V>> AttributeBuilder<V> namedEnumAttribute(
+      String attributeName, Class<V> enumType);
 
   SequenceBuilder sequence();
 
   ModelElementType build();
 
-
   interface ModelTypeInstanceProvider<T extends ModelElementInstance> {
     T newInstance(ModelTypeInstanceContext instanceContext);
   }
-
 }

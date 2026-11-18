@@ -17,7 +17,6 @@
 package org.camunda.bpm.model.dmn.instance;
 
 import java.util.Collection;
-
 import org.camunda.bpm.model.dmn.BuiltinAggregator;
 import org.camunda.bpm.model.dmn.DecisionTableOrientation;
 import org.camunda.bpm.model.dmn.HitPolicy;
@@ -25,15 +24,15 @@ import org.camunda.bpm.model.dmn.HitPolicy;
 public interface DecisionTable extends Expression {
 
   HitPolicy getHitPolicy();
-  
+
   void setHitPolicy(HitPolicy hitPolicy);
-  
+
   BuiltinAggregator getAggregation();
-  
+
   void setAggregation(BuiltinAggregator aggregation);
-  
+
   DecisionTableOrientation getPreferredOrientation();
-  
+
   void setPreferredOrientation(DecisionTableOrientation preferredOrientation);
 
   String getOutputLabel();
@@ -45,5 +44,4 @@ public interface DecisionTable extends Expression {
   Collection<Output> getOutputs();
 
   Collection<Rule> getRules();
-
 }

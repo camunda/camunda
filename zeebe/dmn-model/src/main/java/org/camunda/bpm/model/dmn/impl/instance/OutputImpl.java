@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_OUTPUT;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Output;
 import org.camunda.bpm.model.dmn.instance.OutputClause;
@@ -33,16 +33,18 @@ public class OutputImpl extends OutputClauseImpl implements Output {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Output.class, DMN_ELEMENT_OUTPUT)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(OutputClause.class)
-      .instanceProvider(new ModelTypeInstanceProvider<Output>() {
-        public Output newInstance(ModelTypeInstanceContext instanceContext) {
-          return new OutputImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Output.class, DMN_ELEMENT_OUTPUT)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(OutputClause.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Output>() {
+                  public Output newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new OutputImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

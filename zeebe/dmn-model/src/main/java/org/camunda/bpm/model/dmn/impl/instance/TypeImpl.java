@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_TYPE;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.Type;
 import org.camunda.bpm.model.xml.ModelBuilder;
@@ -32,15 +32,17 @@ public class TypeImpl extends DmnModelElementInstanceImpl implements Type {
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(Type.class, DMN_ELEMENT_TYPE)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<Type>() {
-        public Type newInstance(ModelTypeInstanceContext instanceContext) {
-          return new TypeImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(Type.class, DMN_ELEMENT_TYPE)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<Type>() {
+                  public Type newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new TypeImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

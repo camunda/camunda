@@ -16,6 +16,9 @@
  */
 package org.camunda.bpm.model.xml.impl;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.ModelException;
@@ -30,16 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 /**
  * An instance of a model
  *
  * @author Daniel Meyer
  * @author Sebastian Menski
- *
  */
 public class ModelInstanceImpl implements ModelInstance {
 
@@ -59,7 +57,7 @@ public class ModelInstanceImpl implements ModelInstance {
 
   public ModelElementInstance getDocumentElement() {
     DomElement rootElement = document.getRootElement();
-    if(rootElement != null) {
+    if (rootElement != null) {
       return ModelUtil.getModelElement(rootElement, this);
     } else {
       return null;
@@ -78,10 +76,11 @@ public class ModelInstanceImpl implements ModelInstance {
 
   public <T extends ModelElementInstance> T newInstance(Class<T> type, String id) {
     ModelElementType modelElementType = model.getType(type);
-    if(modelElementType != null) {
+    if (modelElementType != null) {
       return newInstance(modelElementType, id);
     } else {
-      throw new ModelException("Cannot create instance of ModelType "+type+": no such type registered.");
+      throw new ModelException(
+          "Cannot create instance of ModelType " + type + ": no such type registered.");
     }
   }
 
@@ -120,7 +119,7 @@ public class ModelInstanceImpl implements ModelInstance {
     }
 
     DomElement element = document.getElementById(id);
-    if(element != null) {
+    if (element != null) {
       return (T) ModelUtil.getModelElement(element, this);
     } else {
       return null;
@@ -132,7 +131,7 @@ public class ModelInstanceImpl implements ModelInstance {
 
     List<ModelElementInstance> instances = new ArrayList<ModelElementInstance>();
     for (ModelElementType modelElementType : extendingTypes) {
-      if(!modelElementType.isAbstract()) {
+      if (!modelElementType.isAbstract()) {
         instances.addAll(modelElementType.getInstances(this));
       }
     }
@@ -140,18 +139,18 @@ public class ModelInstanceImpl implements ModelInstance {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends ModelElementInstance> Collection<T> getModelElementsByType(Class<T> referencingClass) {
+  public <T extends ModelElementInstance> Collection<T> getModelElementsByType(
+      Class<T> referencingClass) {
     return (Collection<T>) getModelElementsByType(getModel().getType(referencingClass));
   }
 
   @Override
   public ModelInstance clone() {
-      return new ModelInstanceImpl(model, modelBuilder, document.clone());
+    return new ModelInstanceImpl(model, modelBuilder, document.clone());
   }
 
   @Override
   public ValidationResults validate(Collection<ModelElementValidator<?>> validators) {
     return new ModelInstanceValidator(this, validators).validate();
   }
-
 }

@@ -51,5 +51,4 @@ public interface Definitions extends NamedElement {
   Collection<ElementCollection> getElementCollections();
 
   Collection<BusinessContextElement> getBusinessContextElements();
-
 }

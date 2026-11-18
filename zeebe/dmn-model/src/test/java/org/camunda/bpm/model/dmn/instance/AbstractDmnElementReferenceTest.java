@@ -31,5 +31,4 @@ public abstract class AbstractDmnElementReferenceTest extends DmnModelElementIns
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

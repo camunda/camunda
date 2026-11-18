@@ -30,8 +30,7 @@ public class IntegerAttribute extends AttributeImpl<Integer> {
   protected Integer convertXmlValueToModelValue(String rawValue) {
     try {
       return Integer.parseInt(rawValue);
-    }
-    catch (NumberFormatException e) {
+    } catch (NumberFormatException e) {
       return null;
     }
   }

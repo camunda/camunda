@@ -16,16 +16,15 @@
  */
 package org.camunda.bpm.model.xml;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
+
+import java.util.Collection;
 import org.camunda.bpm.model.xml.testmodel.TestModel;
 import org.camunda.bpm.model.xml.testmodel.instance.*;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Collection;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.*;
 
 /**
  * @author Sebastian Menski
@@ -43,13 +42,13 @@ public class ModelTest {
   public void testGetTypes() {
     Collection<ModelElementType> types = model.getTypes();
     assertThat(types).isNotEmpty();
-    assertThat(types).contains(
-      model.getType(Animals.class),
-      model.getType(Animal.class),
-      model.getType(FlyingAnimal.class),
-      model.getType(Bird.class),
-      model.getType(RelationshipDefinition.class)
-      );
+    assertThat(types)
+        .contains(
+            model.getType(Animals.class),
+            model.getType(Animal.class),
+            model.getType(FlyingAnimal.class),
+            model.getType(Bird.class),
+            model.getType(RelationshipDefinition.class));
   }
 
   @Test

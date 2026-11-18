@@ -16,6 +16,4 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
-public interface InputEntry extends UnaryTests {
-
-}
+public interface InputEntry extends UnaryTests {}

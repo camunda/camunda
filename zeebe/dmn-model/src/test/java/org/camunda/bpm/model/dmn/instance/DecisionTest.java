@@ -16,9 +16,10 @@
  */
 package org.camunda.bpm.model.dmn.instance;
 
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_NS;
+
 import java.util.Arrays;
 import java.util.Collection;
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.CAMUNDA_NS;
 
 public class DecisionTest extends DmnModelElementInstanceTest {
 
@@ -28,27 +29,24 @@ public class DecisionTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Question.class, 0, 1),
-      new ChildElementAssumption(AllowedAnswers.class, 0, 1),
-      new ChildElementAssumption(Variable.class, 0, 1),
-      new ChildElementAssumption(InformationRequirement.class),
-      new ChildElementAssumption(KnowledgeRequirement.class),
-      new ChildElementAssumption(AuthorityRequirement.class),
-      new ChildElementAssumption(SupportedObjectiveReference.class),
-      new ChildElementAssumption(ImpactedPerformanceIndicatorReference.class),
-      new ChildElementAssumption(DecisionMakerReference.class),
-      new ChildElementAssumption(DecisionOwnerReference.class),
-      new ChildElementAssumption(UsingProcessReference.class),
-      new ChildElementAssumption(UsingTaskReference.class),
-      new ChildElementAssumption(Expression.class, 0, 1)
-    );
+        new ChildElementAssumption(Question.class, 0, 1),
+        new ChildElementAssumption(AllowedAnswers.class, 0, 1),
+        new ChildElementAssumption(Variable.class, 0, 1),
+        new ChildElementAssumption(InformationRequirement.class),
+        new ChildElementAssumption(KnowledgeRequirement.class),
+        new ChildElementAssumption(AuthorityRequirement.class),
+        new ChildElementAssumption(SupportedObjectiveReference.class),
+        new ChildElementAssumption(ImpactedPerformanceIndicatorReference.class),
+        new ChildElementAssumption(DecisionMakerReference.class),
+        new ChildElementAssumption(DecisionOwnerReference.class),
+        new ChildElementAssumption(UsingProcessReference.class),
+        new ChildElementAssumption(UsingTaskReference.class),
+        new ChildElementAssumption(Expression.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      new AttributeAssumption(CAMUNDA_NS, "versionTag"),
-      new AttributeAssumption(CAMUNDA_NS, "historyTimeToLive")
-    );
+        new AttributeAssumption(CAMUNDA_NS, "versionTag"),
+        new AttributeAssumption(CAMUNDA_NS, "historyTimeToLive"));
   }
-
 }

@@ -30,9 +30,6 @@ public class BusinessContextElementTest extends DmnModelElementInstanceTest {
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(
-      new AttributeAssumption("URI")
-    );
+    return Arrays.asList(new AttributeAssumption("URI"));
   }
-
 }

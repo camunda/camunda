@@ -29,16 +29,13 @@ public class InputClauseTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(InputExpression.class, 1, 1),
-      new ChildElementAssumption(InputValues.class, 0, 1)
-    );
+        new ChildElementAssumption(InputExpression.class, 1, 1),
+        new ChildElementAssumption(InputValues.class, 0, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-      // camunda extensions
-      new AttributeAssumption(CAMUNDA_NS, "inputVariable")
-    );
+        // camunda extensions
+        new AttributeAssumption(CAMUNDA_NS, "inputVariable"));
   }
-
 }

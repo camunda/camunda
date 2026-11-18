@@ -22,11 +22,16 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 /**
  * @author Sebastian Menski
  */
-public class IdsElementReferenceCollectionBuilderImpl<Target extends ModelElementInstance, Source extends ModelElementInstance> extends ElementReferenceCollectionBuilderImpl<Target, Source> {
+public class IdsElementReferenceCollectionBuilderImpl<
+        Target extends ModelElementInstance, Source extends ModelElementInstance>
+    extends ElementReferenceCollectionBuilderImpl<Target, Source> {
 
-  public IdsElementReferenceCollectionBuilderImpl(Class<Source> childElementType, Class<Target> referenceTargetClass, ChildElementCollectionImpl<Source> collection) {
+  public IdsElementReferenceCollectionBuilderImpl(
+      Class<Source> childElementType,
+      Class<Target> referenceTargetClass,
+      ChildElementCollectionImpl<Source> collection) {
     super(childElementType, referenceTargetClass, collection);
-    this.elementReferenceCollectionImpl = new IdsElementReferenceCollectionImpl<Target, Source>(collection);
+    this.elementReferenceCollectionImpl =
+        new IdsElementReferenceCollectionImpl<Target, Source>(collection);
   }
-
 }

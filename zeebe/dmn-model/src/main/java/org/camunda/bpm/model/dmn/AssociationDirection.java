@@ -17,9 +17,7 @@
 package org.camunda.bpm.model.dmn;
 
 public enum AssociationDirection {
-
   None,
   One,
   Both
-
 }

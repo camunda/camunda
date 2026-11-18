@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_IMPACTED_PERFORMANCE_INDICATOR;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.DmnElementReference;
 import org.camunda.bpm.model.dmn.instance.ImpactedPerformanceIndicatorReference;
@@ -26,23 +26,29 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
-public class ImpactedPerformanceIndicatorReferenceImpl extends DmnElementReferenceImpl implements ImpactedPerformanceIndicatorReference {
+public class ImpactedPerformanceIndicatorReferenceImpl extends DmnElementReferenceImpl
+    implements ImpactedPerformanceIndicatorReference {
 
   public ImpactedPerformanceIndicatorReferenceImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ImpactedPerformanceIndicatorReference.class, DMN_ELEMENT_IMPACTED_PERFORMANCE_INDICATOR)
-      .namespaceUri(LATEST_DMN_NS)
-      .extendsType(DmnElementReference.class)
-      .instanceProvider(new ModelTypeInstanceProvider<ImpactedPerformanceIndicatorReference>() {
-        public ImpactedPerformanceIndicatorReference newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ImpactedPerformanceIndicatorReferenceImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(
+                ImpactedPerformanceIndicatorReference.class,
+                DMN_ELEMENT_IMPACTED_PERFORMANCE_INDICATOR)
+            .namespaceUri(LATEST_DMN_NS)
+            .extendsType(DmnElementReference.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ImpactedPerformanceIndicatorReference>() {
+                  public ImpactedPerformanceIndicatorReference newInstance(
+                      ModelTypeInstanceContext instanceContext) {
+                    return new ImpactedPerformanceIndicatorReferenceImpl(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }
-
 }

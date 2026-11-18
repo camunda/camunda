@@ -29,22 +29,23 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReferenceBuilder;
  * A builder for a attribute model reference based on a QName
  *
  * @author Sebastian Menski
- *
  */
-public class AttributeReferenceBuilderImpl<T extends ModelElementInstance> implements AttributeReferenceBuilder<T>, ModelBuildOperation {
+public class AttributeReferenceBuilderImpl<T extends ModelElementInstance>
+    implements AttributeReferenceBuilder<T>, ModelBuildOperation {
 
   private final AttributeImpl<String> referenceSourceAttribute;
   protected AttributeReferenceImpl<T> attributeReferenceImpl;
   private final Class<T> referenceTargetElement;
 
   /**
-   * Create a new {@link AttributeReferenceBuilderImpl} from the reference source attribute
-   * to the reference target model element instance
-   * 
+   * Create a new {@link AttributeReferenceBuilderImpl} from the reference source attribute to the
+   * reference target model element instance
+   *
    * @param referenceSourceAttribute the reference source attribute
    * @param referenceTargetElement the reference target model element instance
    */
-  public AttributeReferenceBuilderImpl(AttributeImpl<String> referenceSourceAttribute, Class<T> referenceTargetElement) {
+  public AttributeReferenceBuilderImpl(
+      AttributeImpl<String> referenceSourceAttribute, Class<T> referenceTargetElement) {
     this.referenceSourceAttribute = referenceSourceAttribute;
     this.referenceTargetElement = referenceTargetElement;
     this.attributeReferenceImpl = new AttributeReferenceImpl<T>(referenceSourceAttribute);
@@ -58,19 +59,25 @@ public class AttributeReferenceBuilderImpl<T extends ModelElementInstance> imple
   @SuppressWarnings("unchecked")
   public void performModelBuild(Model model) {
     // register declaring type as a referencing type of referenced type
-    ModelElementTypeImpl referenceTargetType = (ModelElementTypeImpl) model.getType(referenceTargetElement);
+    ModelElementTypeImpl referenceTargetType =
+        (ModelElementTypeImpl) model.getType(referenceTargetElement);
 
     // the actual referenced type
     attributeReferenceImpl.setReferenceTargetElementType(referenceTargetType);
 
     // the referenced attribute may be declared on a base type of the referenced type.
-    AttributeImpl<String> idAttribute = (AttributeImpl<String>) referenceTargetType.getAttribute("id");
-    if(idAttribute != null) {
+    AttributeImpl<String> idAttribute =
+        (AttributeImpl<String>) referenceTargetType.getAttribute("id");
+    if (idAttribute != null) {
       idAttribute.registerIncoming(attributeReferenceImpl);
       attributeReferenceImpl.setReferenceTargetAttribute(idAttribute);
     } else {
-      throw new ModelException("Element type " + referenceTargetType.getTypeNamespace() + ":" + referenceTargetType.getTypeName() + " has no id attribute");
+      throw new ModelException(
+          "Element type "
+              + referenceTargetType.getTypeNamespace()
+              + ":"
+              + referenceTargetType.getTypeName()
+              + " has no id attribute");
     }
   }
-
 }

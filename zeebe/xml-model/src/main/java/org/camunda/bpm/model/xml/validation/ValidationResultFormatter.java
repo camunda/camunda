@@ -17,7 +17,6 @@
 package org.camunda.bpm.model.xml.validation;
 
 import java.io.StringWriter;
-
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**

@@ -22,7 +22,6 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReferenceCollection;
 /**
  * @author Roman Smirnov
  * @author Sebastian Menski
- *
  */
 public class AnimalAttributeReferenceCollection extends AttributeReferenceCollection<Animal> {
 
@@ -33,5 +32,4 @@ public class AnimalAttributeReferenceCollection extends AttributeReferenceCollec
   protected String getTargetElementIdentifier(Animal referenceTargetElement) {
     return referenceTargetElement.getId();
   }
-
 }

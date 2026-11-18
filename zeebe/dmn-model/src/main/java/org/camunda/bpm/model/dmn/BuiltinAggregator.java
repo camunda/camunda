@@ -17,10 +17,8 @@
 package org.camunda.bpm.model.dmn;
 
 public enum BuiltinAggregator {
-
   SUM,
   COUNT,
   MIN,
   MAX
-
 }

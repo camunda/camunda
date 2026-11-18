@@ -21,7 +21,6 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollectionBuilde
 
 /**
  * @author Daniel Meyer
- *
  */
 public interface ChildElementCollectionBuilder<T extends ModelElementInstance> {
 
@@ -35,12 +34,19 @@ public interface ChildElementCollectionBuilder<T extends ModelElementInstance> {
 
   ChildElementCollection<T> build();
 
-  <V extends ModelElementInstance> ElementReferenceCollectionBuilder<V,T> qNameElementReferenceCollection(Class<V> referenceTargetType);
+  <V extends ModelElementInstance>
+      ElementReferenceCollectionBuilder<V, T> qNameElementReferenceCollection(
+          Class<V> referenceTargetType);
 
-  <V extends ModelElementInstance> ElementReferenceCollectionBuilder<V, T> idElementReferenceCollection(Class<V> referenceTargetType);
+  <V extends ModelElementInstance>
+      ElementReferenceCollectionBuilder<V, T> idElementReferenceCollection(
+          Class<V> referenceTargetType);
 
-  <V extends ModelElementInstance> ElementReferenceCollectionBuilder<V, T> idsElementReferenceCollection(Class<V> referenceTargetType);
+  <V extends ModelElementInstance>
+      ElementReferenceCollectionBuilder<V, T> idsElementReferenceCollection(
+          Class<V> referenceTargetType);
 
-  <V extends ModelElementInstance> ElementReferenceCollectionBuilder<V, T> uriElementReferenceCollection(Class<V> referenceTargetType);
-
+  <V extends ModelElementInstance>
+      ElementReferenceCollectionBuilder<V, T> uriElementReferenceCollection(
+          Class<V> referenceTargetType);
 }

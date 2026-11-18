@@ -21,5 +21,4 @@ public interface DmnElementReference extends DmnModelElementInstance {
   String getHref();
 
   void setHref(String href);
-
 }

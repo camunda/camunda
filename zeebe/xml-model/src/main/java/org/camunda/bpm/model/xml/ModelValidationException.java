@@ -16,19 +16,16 @@
  */
 package org.camunda.bpm.model.xml;
 
-
 /**
  * Thrown when an error is encountered during the model validation.
  *
  * @author Sebastian Menski
- *
  */
 public class ModelValidationException extends ModelException {
 
   private static final long serialVersionUID = 1L;
 
-  public ModelValidationException() {
-  }
+  public ModelValidationException() {}
 
   public ModelValidationException(String message, Throwable cause) {
     super(message, cause);
@@ -41,5 +38,4 @@ public class ModelValidationException extends ModelException {
   public ModelValidationException(Throwable cause) {
     super(cause);
   }
-
 }

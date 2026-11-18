@@ -21,9 +21,9 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceBuilder;
 
 /**
  * @author Daniel Meyer
- *
  */
-public interface ChildElementBuilder<T extends ModelElementInstance> extends ChildElementCollectionBuilder<T> {
+public interface ChildElementBuilder<T extends ModelElementInstance>
+    extends ChildElementCollectionBuilder<T> {
 
   ChildElementBuilder<T> immutable();
 
@@ -35,10 +35,12 @@ public interface ChildElementBuilder<T extends ModelElementInstance> extends Chi
 
   ChildElement<T> build();
 
-  <V extends ModelElementInstance> ElementReferenceBuilder<V,T> qNameElementReference(Class<V> referenceTargetType);
+  <V extends ModelElementInstance> ElementReferenceBuilder<V, T> qNameElementReference(
+      Class<V> referenceTargetType);
 
-  <V extends ModelElementInstance> ElementReferenceBuilder<V, T> idElementReference(Class<V> referenceTargetType);
+  <V extends ModelElementInstance> ElementReferenceBuilder<V, T> idElementReference(
+      Class<V> referenceTargetType);
 
-  <V extends ModelElementInstance> ElementReferenceBuilder<V, T> uriElementReference(Class<V> referenceTargetType);
-
+  <V extends ModelElementInstance> ElementReferenceBuilder<V, T> uriElementReference(
+      Class<V> referenceTargetType);
 }

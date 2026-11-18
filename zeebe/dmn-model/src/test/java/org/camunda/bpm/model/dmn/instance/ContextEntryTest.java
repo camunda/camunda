@@ -27,13 +27,11 @@ public class ContextEntryTest extends DmnModelElementInstanceTest {
 
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
     return Arrays.asList(
-      new ChildElementAssumption(Variable.class, 0, 1),
-      new ChildElementAssumption(Expression.class, 1, 1)
-    );
+        new ChildElementAssumption(Variable.class, 0, 1),
+        new ChildElementAssumption(Expression.class, 1, 1));
   }
 
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return null;
   }
-
 }

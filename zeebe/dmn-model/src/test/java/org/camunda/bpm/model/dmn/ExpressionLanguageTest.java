@@ -35,9 +35,9 @@ import org.junit.Test;
 
 public class ExpressionLanguageTest extends DmnModelTest {
 
-  public static final String EXPRESSION_LANGUAGE_DMN = "org/camunda/bpm/model/dmn/ExpressionLanguageTest.dmn";
+  public static final String EXPRESSION_LANGUAGE_DMN =
+      "org/camunda/bpm/model/dmn/ExpressionLanguageTest.dmn";
   public static final String EXPRESSION_LANGUAGE = "juel";
-
 
   @Test
   @DmnModelResource(resource = EXPRESSION_LANGUAGE_DMN)
@@ -102,5 +102,4 @@ public class ExpressionLanguageTest extends DmnModelTest {
 
     assertModelEqualsFile(EXPRESSION_LANGUAGE_DMN);
   }
-
 }

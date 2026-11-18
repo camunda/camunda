@@ -21,5 +21,4 @@ public interface Expression extends DmnElement {
   String getTypeRef();
 
   void setTypeRef(String typeRef);
-
 }

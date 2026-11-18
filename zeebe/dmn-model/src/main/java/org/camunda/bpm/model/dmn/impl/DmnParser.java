@@ -30,7 +30,8 @@ import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_14_SCHEMA_LOC
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_15_SCHEMA_LOCATION;
 
 import java.io.InputStream;
-
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.validation.SchemaFactory;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelException;
 import org.camunda.bpm.model.xml.ModelParseException;
@@ -39,13 +40,12 @@ import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.camunda.bpm.model.xml.instance.DomDocument;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.validation.SchemaFactory;
-
 public class DmnParser extends AbstractModelParser {
 
-  private static final String JAXP_SCHEMA_SOURCE = "http://java.sun.com/xml/jaxp/properties/schemaSource";
-  private static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
+  private static final String JAXP_SCHEMA_SOURCE =
+      "http://java.sun.com/xml/jaxp/properties/schemaSource";
+  private static final String JAXP_SCHEMA_LANGUAGE =
+      "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
 
   private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
 
@@ -56,34 +56,45 @@ public class DmnParser extends AbstractModelParser {
     addSchema(DMN13_NS, createSchema(DMN_13_SCHEMA_LOCATION, DmnParser.class.getClassLoader()));
     addSchema(DMN12_NS, createSchema(DMN_12_SCHEMA_LOCATION, DmnParser.class.getClassLoader()));
     addSchema(DMN11_NS, createSchema(DMN_11_SCHEMA_LOCATION, DmnParser.class.getClassLoader()));
-    addSchema(DMN11_ALTERNATIVE_NS, createSchema(DMN_11_ALTERNATIVE_SCHEMA_LOCATION, DmnParser.class.getClassLoader()));
+    addSchema(
+        DMN11_ALTERNATIVE_NS,
+        createSchema(DMN_11_ALTERNATIVE_SCHEMA_LOCATION, DmnParser.class.getClassLoader()));
   }
 
   @Override
   protected void configureFactory(DocumentBuilderFactory dbf) {
     dbf.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
-    dbf.setAttribute(JAXP_SCHEMA_SOURCE, new String[] {
-      ReflectUtil.getResource(DMN_15_SCHEMA_LOCATION, DmnParser.class.getClassLoader()).toString(),
-      ReflectUtil.getResource(DMN_14_SCHEMA_LOCATION, DmnParser.class.getClassLoader()).toString(),
-      ReflectUtil.getResource(DMN_13_SCHEMA_LOCATION, DmnParser.class.getClassLoader()).toString(),
-      ReflectUtil.getResource(DMN_12_SCHEMA_LOCATION, DmnParser.class.getClassLoader()).toString(),
-      ReflectUtil.getResource(DMN_11_SCHEMA_LOCATION, DmnParser.class.getClassLoader()).toString(),
-      ReflectUtil.getResource(DMN_11_ALTERNATIVE_SCHEMA_LOCATION, DmnParser.class.getClassLoader()).toString()
-    });
+    dbf.setAttribute(
+        JAXP_SCHEMA_SOURCE,
+        new String[] {
+          ReflectUtil.getResource(DMN_15_SCHEMA_LOCATION, DmnParser.class.getClassLoader())
+              .toString(),
+          ReflectUtil.getResource(DMN_14_SCHEMA_LOCATION, DmnParser.class.getClassLoader())
+              .toString(),
+          ReflectUtil.getResource(DMN_13_SCHEMA_LOCATION, DmnParser.class.getClassLoader())
+              .toString(),
+          ReflectUtil.getResource(DMN_12_SCHEMA_LOCATION, DmnParser.class.getClassLoader())
+              .toString(),
+          ReflectUtil.getResource(DMN_11_SCHEMA_LOCATION, DmnParser.class.getClassLoader())
+              .toString(),
+          ReflectUtil.getResource(
+                  DMN_11_ALTERNATIVE_SCHEMA_LOCATION, DmnParser.class.getClassLoader())
+              .toString()
+        });
     super.configureFactory(dbf);
   }
 
   @Override
   protected DmnModelInstanceImpl createModelInstance(DomDocument document) {
-    return new DmnModelInstanceImpl((ModelImpl) Dmn.INSTANCE.getDmnModel(), Dmn.INSTANCE.getDmnModelBuilder(), document);
+    return new DmnModelInstanceImpl(
+        (ModelImpl) Dmn.INSTANCE.getDmnModel(), Dmn.INSTANCE.getDmnModelBuilder(), document);
   }
 
   @Override
   public DmnModelInstanceImpl parseModelFromStream(InputStream inputStream) {
     try {
       return (DmnModelInstanceImpl) super.parseModelFromStream(inputStream);
-    }
-    catch (ModelParseException e) {
+    } catch (ModelParseException e) {
       throw new DmnModelException("Unable to parse model", e);
     }
   }

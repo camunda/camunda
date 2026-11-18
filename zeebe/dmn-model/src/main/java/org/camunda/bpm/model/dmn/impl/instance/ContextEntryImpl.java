@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.model.dmn.impl.instance;
 
-import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.DMN_ELEMENT_CONTEXT_ENTRY;
+import static org.camunda.bpm.model.dmn.impl.DmnModelConstants.LATEST_DMN_NS;
 
 import org.camunda.bpm.model.dmn.instance.ContextEntry;
 import org.camunda.bpm.model.dmn.instance.Expression;
@@ -55,24 +55,23 @@ public class ContextEntryImpl extends DmnModelElementInstanceImpl implements Con
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(ContextEntry.class, DMN_ELEMENT_CONTEXT_ENTRY)
-      .namespaceUri(LATEST_DMN_NS)
-      .instanceProvider(new ModelTypeInstanceProvider<ContextEntry>() {
-        public ContextEntry newInstance(ModelTypeInstanceContext instanceContext) {
-          return new ContextEntryImpl(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ContextEntry.class, DMN_ELEMENT_CONTEXT_ENTRY)
+            .namespaceUri(LATEST_DMN_NS)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ContextEntry>() {
+                  public ContextEntry newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ContextEntryImpl(instanceContext);
+                  }
+                });
 
     SequenceBuilder sequenceBuilder = typeBuilder.sequence();
 
-    variableChild = sequenceBuilder.element(Variable.class)
-      .build();
+    variableChild = sequenceBuilder.element(Variable.class).build();
 
-    expressionChild = sequenceBuilder.element(Expression.class)
-      .required()
-      .build();
+    expressionChild = sequenceBuilder.element(Expression.class).required().build();
 
     typeBuilder.build();
   }
-
 }

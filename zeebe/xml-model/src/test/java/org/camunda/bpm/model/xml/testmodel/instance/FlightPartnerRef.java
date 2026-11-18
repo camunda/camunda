@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.model.xml.testmodel.instance;
 
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_FLIGHT_PARTNER_REF;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
+import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
-
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.ELEMENT_NAME_FLIGHT_PARTNER_REF;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAMESPACE;
-import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 
 /**
  * @author Sebastian Menski
@@ -31,13 +31,16 @@ import static org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeIn
 public class FlightPartnerRef extends ModelElementInstanceImpl {
 
   public static void registerType(ModelBuilder modelBuilder) {
-    ModelElementTypeBuilder typeBuilder = modelBuilder.defineType(FlightPartnerRef.class, ELEMENT_NAME_FLIGHT_PARTNER_REF)
-      .namespaceUri(MODEL_NAMESPACE)
-      .instanceProvider(new ModelTypeInstanceProvider<FlightPartnerRef>() {
-        public FlightPartnerRef newInstance(ModelTypeInstanceContext instanceContext) {
-          return new FlightPartnerRef(instanceContext);
-        }
-      });
+    ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FlightPartnerRef.class, ELEMENT_NAME_FLIGHT_PARTNER_REF)
+            .namespaceUri(MODEL_NAMESPACE)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<FlightPartnerRef>() {
+                  public FlightPartnerRef newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new FlightPartnerRef(instanceContext);
+                  }
+                });
 
     typeBuilder.build();
   }

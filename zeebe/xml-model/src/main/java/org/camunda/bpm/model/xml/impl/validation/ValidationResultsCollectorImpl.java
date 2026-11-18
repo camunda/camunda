@@ -20,22 +20,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
+import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.camunda.bpm.model.xml.validation.ValidationResultType;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
-import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 /**
  * @author Daniel Meyer
- *
  */
 public class ValidationResultsCollectorImpl implements ValidationResultCollector {
 
   protected ModelElementInstance currentElement;
 
-  protected Map<ModelElementInstance, List<ValidationResult>> collectedResults = new HashMap<ModelElementInstance, List<ValidationResult>>();
+  protected Map<ModelElementInstance, List<ValidationResult>> collectedResults =
+      new HashMap<ModelElementInstance, List<ValidationResult>>();
 
   protected int errorCount = 0;
   protected int warningCount = 0;
@@ -43,7 +42,9 @@ public class ValidationResultsCollectorImpl implements ValidationResultCollector
   @Override
   public void addError(int code, String message) {
     resultsForCurrentElement()
-      .add(new ModelValidationResultImpl(currentElement, ValidationResultType.ERROR, code, message));
+        .add(
+            new ModelValidationResultImpl(
+                currentElement, ValidationResultType.ERROR, code, message));
 
     ++errorCount;
   }
@@ -51,7 +52,9 @@ public class ValidationResultsCollectorImpl implements ValidationResultCollector
   @Override
   public void addWarning(int code, String message) {
     resultsForCurrentElement()
-      .add(new ModelValidationResultImpl(currentElement, ValidationResultType.WARNING, code, message));
+        .add(
+            new ModelValidationResultImpl(
+                currentElement, ValidationResultType.WARNING, code, message));
 
     ++warningCount;
   }
@@ -67,11 +70,10 @@ public class ValidationResultsCollectorImpl implements ValidationResultCollector
   protected List<ValidationResult> resultsForCurrentElement() {
     List<ValidationResult> resultsByElement = collectedResults.get(currentElement);
 
-    if(resultsByElement == null) {
+    if (resultsByElement == null) {
       resultsByElement = new ArrayList<ValidationResult>();
       collectedResults.put(currentElement, resultsByElement);
     }
     return resultsByElement;
   }
-
 }

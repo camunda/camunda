@@ -16,25 +16,22 @@
  */
 package org.camunda.bpm.model.xml.testmodel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAME;
+
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.xml.testmodel.TestModelConstants.MODEL_NAME;
-
 /**
  * @author Daniel Meyer
- *
  */
 public class ModelBuilderTest {
 
   @Test
   public void shouldSetModelName() {
-    Model model = ModelBuilder.createInstance(MODEL_NAME)
-      .build();
+    Model model = ModelBuilder.createInstance(MODEL_NAME).build();
 
     assertThat(model.getModelName()).isEqualTo(MODEL_NAME);
   }
-
 }
