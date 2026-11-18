@@ -272,11 +272,6 @@ const mockSystemConfigurationEndpoint = createEndpointMock({
 	method: endpoints.getSystemConfiguration.method,
 });
 
-const mockOperateClientConfigEndpoint = createEndpointMock({
-	endpoint: '/operate/client-config.js',
-	method: 'GET',
-});
-
 const mockLicenseEndpoint = createEndpointMock({
 	endpoint: endpoints.getLicense.getUrl(),
 	method: endpoints.getLicense.method,
@@ -800,7 +795,6 @@ export {
 	mockLoginEndpoint,
 	mockLogoutEndpoint,
 	mockSystemConfigurationEndpoint,
-	mockOperateClientConfigEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockC3OrganizationsEndpoint,

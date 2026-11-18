@@ -14,7 +14,6 @@ import {
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
-	mockOperateClientConfigEndpoint,
 	mockGetElementInstanceEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
@@ -25,7 +24,6 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
@@ -45,13 +43,7 @@ import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-inst
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
-test.beforeEach(async ({network, page}) => {
-	await page.route('**/operate/client-config.js', (route) =>
-		route.fulfill({
-			contentType: 'text/javascript',
-			body: createOperateClientConfigScript(),
-		}),
-	);
+test.beforeEach(async ({network}) => {
 	network.use(
 		...processInstanceDiagramHandlers(),
 		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
@@ -60,9 +52,6 @@ test.beforeEach(async ({network, page}) => {
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockOperateClientConfigEndpoint({
-			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
@@ -338,10 +327,19 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		operatePreviewProcessInstancePage,
 		page,
 	}) => {
-		await page.route('**/operate/client-config.js', (route) =>
-			route.fulfill({
-				contentType: 'text/javascript',
-				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['operate']},
+						deployment: {
+							isMultiTenancyEnabled: false,
+							isTenantsApiEnabled: false,
+							isWaitStatesEnabled: false,
+							maxRequestSize: 0,
+						},
+					}),
+				),
 			}),
 		);
 		const statisticsRequests: string[] = [];
@@ -365,13 +363,23 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 	});
 
 	test('should leave the mapping tab when the selection is cleared and the flag is off', async ({
+		network,
 		operatePreviewProcessInstancePage,
 		page,
 	}) => {
-		await page.route('**/operate/client-config.js', (route) =>
-			route.fulfill({
-				contentType: 'text/javascript',
-				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['operate']},
+						deployment: {
+							isMultiTenancyEnabled: false,
+							isTenantsApiEnabled: false,
+							isWaitStatesEnabled: false,
+							maxRequestSize: 0,
+						},
+					}),
+				),
 			}),
 		);
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);

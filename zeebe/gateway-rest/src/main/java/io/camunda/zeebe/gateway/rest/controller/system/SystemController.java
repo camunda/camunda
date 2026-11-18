@@ -50,6 +50,7 @@ public class SystemController {
   private final CamundaSecurityLibraryProperties cslProperties;
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
+  private final boolean waitStatesEnabled;
   private final PhysicalTenantRestConfigProvider tenantRestConfigProvider;
   private final PhysicalTenantCamundaGroups camundaGroups;
 
@@ -59,6 +60,7 @@ public class SystemController {
       @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize,
+      @Value("${camunda.data.wait-states.enabled:true}") final boolean waitStatesEnabled,
       final PhysicalTenantRestConfigProvider tenantRestConfigProvider,
       final Environment environment) {
     this.serviceRegistry = serviceRegistry;
@@ -67,6 +69,7 @@ public class SystemController {
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize.toBytes();
+    this.waitStatesEnabled = waitStatesEnabled;
     this.tenantRestConfigProvider = tenantRestConfigProvider;
     camundaGroups = new PhysicalTenantCamundaGroups(environment);
   }
@@ -131,6 +134,7 @@ public class SystemController {
     return DeploymentConfigurationResponse.Builder.create()
         .isMultiTenancyEnabled(isMultiTenancyEnabled)
         .isTenantsApiEnabled(isTenantsApiEnabled)
+        .isWaitStatesEnabled(waitStatesEnabled)
         .maxRequestSize(maxRequestSizeBytes)
         .build();
   }

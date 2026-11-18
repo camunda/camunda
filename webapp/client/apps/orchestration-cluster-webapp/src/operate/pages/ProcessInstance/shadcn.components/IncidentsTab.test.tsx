@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -38,6 +38,8 @@ import {
 } from '#/shared-test-modules/api-mocks/decision-instances';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Toaster} from '@camunda/design-system';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {IncidentsTab} from './IncidentsTab';
@@ -46,6 +48,10 @@ import {Notifications} from '#/shared/notifications/shadcn.components/Notificati
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const ELEMENT_INSTANCE_KEY = '2251799813685281';
+
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
 
 afterEach(async () => {
 	await cleanup();

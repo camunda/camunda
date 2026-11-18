@@ -60,7 +60,12 @@ describe('<ProcessInstanceHeader /> (DS)', () => {
 			'clientConfig',
 			JSON.stringify(
 				createSystemConfiguration({
-					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: false, maxRequestSize: 0},
+					deployment: {
+						isMultiTenancyEnabled: true,
+						isTenantsApiEnabled: false,
+						isWaitStatesEnabled: true,
+						maxRequestSize: 0,
+					},
 				}),
 			),
 		);

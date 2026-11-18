@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, expect, vi} from 'vitest';
+import {afterEach, beforeEach, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -15,8 +15,14 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockGetProcessInstanceWaitStateStatisticsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessInstanceDefaultTabRedirect} from './ProcessInstanceDefaultTabRedirect';
 import {ProcessInstanceContext} from './useProcessInstancePage';
+
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
 
 afterEach(async () => {
 	await cleanup();

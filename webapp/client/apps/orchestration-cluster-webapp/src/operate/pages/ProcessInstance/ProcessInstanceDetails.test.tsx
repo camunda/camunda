@@ -102,7 +102,7 @@ function renderDetails({
 		JSON.stringify(
 			createSystemConfiguration({
 				components: {active: activeComponents},
-				deployment: {isMultiTenancyEnabled, isTenantsApiEnabled: false, maxRequestSize: 0},
+				deployment: {isMultiTenancyEnabled, isTenantsApiEnabled: false, isWaitStatesEnabled: true, maxRequestSize: 0},
 			}),
 		),
 	);

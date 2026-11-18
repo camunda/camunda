@@ -7,7 +7,7 @@
  */
 
 import {useReducer} from 'react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -40,6 +40,8 @@ import {
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {InstanceDiagram} from './InstanceDiagram';
@@ -174,6 +176,10 @@ async function renderModificationPage({
 function getDiagramElement(elementId: string) {
 	return document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`)!;
 }
+
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
 
 afterEach(async () => {
 	await cleanup();

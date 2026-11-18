@@ -58,7 +58,12 @@ test('should match the create cluster variable modal snapshot', async ({adminClu
 			successResponse: HttpResponse.json(
 				createSystemConfiguration({
 					components: {active: ['admin']},
-					deployment: {isMultiTenancyEnabled: true, isTenantsApiEnabled: true, maxRequestSize: 0},
+					deployment: {
+						isMultiTenancyEnabled: true,
+						isTenantsApiEnabled: true,
+						isWaitStatesEnabled: true,
+						maxRequestSize: 0,
+					},
 				}),
 			),
 		}),

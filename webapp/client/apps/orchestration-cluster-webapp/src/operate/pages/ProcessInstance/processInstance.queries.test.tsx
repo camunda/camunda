@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, expect, vi} from 'vitest';
+import {afterEach, beforeEach, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
@@ -18,6 +18,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {ForbiddenError} from '#/shared/errors';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
@@ -36,8 +37,12 @@ import {
 const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 const PROCESS_INSTANCE_KEY = '123';
 
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
+
 afterEach(async () => {
-	clearSessionState('operateClientConfig');
+	clearSessionState('clientConfig');
 	await cleanup();
 	queryClient.clear();
 });
@@ -346,7 +351,17 @@ it('should neither fetch nor show waiting state when the wait-states flag is off
 	);
 	worker.events.on('request:start', onRequest);
 	try {
-		storeSessionState('operateClientConfig', {waitStatesEnabled: false});
+		storeSessionState(
+			'clientConfig',
+			createSystemConfiguration({
+				deployment: {
+					isMultiTenancyEnabled: false,
+					isTenantsApiEnabled: false,
+					isWaitStatesEnabled: false,
+					maxRequestSize: 0,
+				},
+			}),
+		);
 		queryClient.setQueryData(processInstanceWaitStateStatisticsQuery(PROCESS_INSTANCE_KEY).queryKey, items);
 		const screen = await render(
 			<QueryClientProvider client={queryClient}>

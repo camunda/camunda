@@ -18,7 +18,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {getOperateClientConfig} from '#/shared/config/getOperateClientConfig';
 import {mergePathname} from '#/shared/http/mergePathname';
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
@@ -159,7 +158,7 @@ const ProcessInstanceDetails: React.FC = () => {
 
 	const waitStatesKey = isProcessScope ? processInstanceId : elementInstanceKey;
 	const isWaitStatesEnabled =
-		getOperateClientConfig().waitStatesEnabled &&
+		getClientConfig().deployment.isWaitStatesEnabled &&
 		waitStatesKey !== undefined &&
 		isRunning &&
 		(isProcessScope || resolvedElementInstance?.state === 'ACTIVE');

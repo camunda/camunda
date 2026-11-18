@@ -7,7 +7,7 @@
  */
 
 import {useReducer} from 'react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -32,6 +32,8 @@ import {
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
@@ -140,6 +142,10 @@ async function renderModificationPage({
 	await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 	return screen;
 }
+
+beforeEach(() => {
+	storeSessionState('clientConfig', createSystemConfiguration());
+});
 
 afterEach(async () => {
 	await cleanup();

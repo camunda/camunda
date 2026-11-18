@@ -1355,12 +1355,6 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: 'GET',
 		}),
-
-	getOperateClientConfig: () =>
-		new Request(getFullURL('/operate/client-config.js'), {
-			...BASE_REQUEST_OPTIONS,
-			method: 'GET',
-		}),
 };
 
 export {endpoints};

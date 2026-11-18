@@ -12,7 +12,6 @@ import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {getOperateClientConfig} from '#/shared/config/getOperateClientConfig';
 import {mergePathname} from '#/shared/http/mergePathname';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 import {StructuredList} from '#/operate/shared/StructuredList/StructuredList';
@@ -75,7 +74,7 @@ const ProcessInstanceDetails: React.FC = () => {
 
 	const waitStatesKey = isProcessScope ? processInstanceId : elementInstanceKey;
 	const isWaitStatesEnabled =
-		getOperateClientConfig().waitStatesEnabled &&
+		getClientConfig().deployment.isWaitStatesEnabled &&
 		waitStatesKey !== undefined &&
 		isRunning &&
 		(isProcessScope || resolvedElementInstance?.state === 'ACTIVE');

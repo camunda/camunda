@@ -12,7 +12,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
-import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
 	createElementInstanceInspection,
 	createQueryElementInstanceInspectionResponse,
@@ -23,6 +23,7 @@ import {
 	mockGetElementInstanceEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryElementInstanceInspectionEndpoint,
+	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
 test('should preserve legacy history bookmarks and their tenant and element selection on mobile', async ({
@@ -262,21 +263,14 @@ const waitStatesCases = [
 	{
 		title: 'show element wait states in the details tab when the flag is on',
 		waitStatesEnabled: true,
-		configStatus: 200,
 	},
 	{
 		title: 'neither request nor show element wait states in the details tab when the flag is off',
 		waitStatesEnabled: false,
-		configStatus: 200,
-	},
-	{
-		title: 'show element wait states in the details tab when the client config cannot be loaded',
-		waitStatesEnabled: true,
-		configStatus: 503,
 	},
 ];
 
-for (const {title, waitStatesEnabled, configStatus} of waitStatesCases) {
+for (const {title, waitStatesEnabled} of waitStatesCases) {
 	test(`should ${title}`, async ({network, page, operateProcessInstancePage}) => {
 		const instance = createProcessInstance({processInstanceKey: '2251799813756091', state: 'ACTIVE'});
 		const element = createElementInstance({
@@ -293,13 +287,6 @@ for (const {title, waitStatesEnabled, configStatus} of waitStatesCases) {
 				waitStateRequests.push(request.url());
 			}
 		});
-		await page.route('**/operate/client-config.js', (route) =>
-			route.fulfill({
-				status: configStatus,
-				contentType: 'text/javascript',
-				body: createOperateClientConfigScript({waitStatesEnabled}),
-			}),
-		);
 		network.use(
 			mockQueryElementInstancesEndpoint({
 				successResponse: HttpResponse.json(createPaginatedResponse({items: [element]})),
@@ -318,6 +305,21 @@ for (const {title, waitStatesEnabled, configStatus} of waitStatesCases) {
 				),
 			}),
 			...processInstanceHeaderHandlers(instance),
+		);
+		network.use(
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({
+						components: {active: ['operate']},
+						deployment: {
+							isMultiTenancyEnabled: true,
+							isTenantsApiEnabled: false,
+							isWaitStatesEnabled: waitStatesEnabled,
+							maxRequestSize: 0,
+						},
+					}),
+				),
+			}),
 		);
 
 		await operateProcessInstancePage.goto(
