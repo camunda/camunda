@@ -384,15 +384,13 @@ const InstancesTable: React.FC<Props> = ({
 			/>
 		);
 
-	const hasSelection = selection.selectedCount > 0;
-	const selectedTotal = `${selection.selectedCount}${selection.isCountTruncated ? '+' : ''}`;
-	const panelTitle = hasSelection
-		? `${t('operate.processes.instancesTable.title')}\u00A0\u00A0\u00A0-\u00A0\u00A0\u00A0${t('operate.processes.instancesTable.selectedCount', {total: selectedTotal})}`
-		: t('operate.processes.instancesTable.title');
-
 	return (
 		<InstancesTableContainer aria-label={t('operate.processes.instancesTable.panelLabel')}>
-			<PanelHeader title={panelTitle} count={hasSelection ? 0 : totalCount} hasMoreTotalItems={hasMoreTotalItems} />
+			<PanelHeader
+				title={t('operate.processes.instancesTable.title')}
+				count={totalCount}
+				hasMoreTotalItems={hasMoreTotalItems}
+			/>
 			{status === 'success' && (
 				<ProcessesToolbar
 					key={filterIdentity}

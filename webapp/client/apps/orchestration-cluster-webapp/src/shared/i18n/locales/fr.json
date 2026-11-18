@@ -1376,7 +1376,6 @@
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
 					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
 					"tableLabel": "Instances de processus",
-					"selectedCount": "{{total}} sélectionnées",
 					"loadingPreviousPage": "Chargement des instances de processus précédentes",
 					"loadingNextPage": "Chargement des instances de processus suivantes",
 					"errorTitle": "Impossible de récupérer les données",

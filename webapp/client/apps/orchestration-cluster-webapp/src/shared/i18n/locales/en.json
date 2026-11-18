@@ -1385,7 +1385,6 @@
 					"emptyMessage": "There are no Instances matching this filter set",
 					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
 					"tableLabel": "Process instances",
-					"selectedCount": "{{total}} selected",
 					"loadingPreviousPage": "Loading previous process instances",
 					"loadingNextPage": "Loading next process instances",
 					"errorTitle": "Couldn't fetch data",

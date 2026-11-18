@@ -1373,7 +1373,6 @@
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
 					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
 					"tableLabel": "Prozessinstanzen",
-					"selectedCount": "{{total}} ausgewählt",
 					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
 					"loadingNextPage": "Nächste Prozessinstanzen werden geladen",
 					"errorTitle": "Daten konnten nicht abgerufen werden",

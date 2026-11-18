@@ -821,30 +821,6 @@ describe('<InstancesTable />', () => {
 		await expect.element(panel.getByText(/25000 results/)).toBeVisible();
 	});
 
-	it('should show the selected count instead of the total in the header', async ({worker}) => {
-		worker.use(
-			mockQueryProcessInstancesEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryProcessInstancesResponse({
-						items: ['1', '2'].map((processInstanceKey) => createProcessInstance({processInstanceKey})),
-						page: {totalItems: 15133},
-					}),
-				),
-			}),
-			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
-		);
-
-		const screen = await renderInstancesTable();
-		const panel = screen.getByRole('region', {name: 'Process Instances Panel'});
-		await expect.element(panel.getByText(/15133 results/)).toBeVisible();
-
-		await userEvent.click(screen.getByRole('checkbox', {name: 'Select instance 1'}), {force: true});
-		await userEvent.click(screen.getByRole('checkbox', {name: 'Select instance 2'}), {force: true});
-
-		await expect.element(panel.getByText(/2 selected/).first()).toBeVisible();
-		await expect.element(panel.getByText(/15133 results/)).not.toBeInTheDocument();
-	});
-
 	it('should not request another page when the reported total is exact', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({

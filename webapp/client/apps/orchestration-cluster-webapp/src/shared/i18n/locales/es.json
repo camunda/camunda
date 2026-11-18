@@ -1373,7 +1373,6 @@
 					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
 					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
 					"tableLabel": "Instancias de proceso",
-					"selectedCount": "{{total}} seleccionadas",
 					"loadingPreviousPage": "Cargando instancias de proceso anteriores",
 					"loadingNextPage": "Cargando instancias de proceso siguientes",
 					"errorTitle": "No se pudieron obtener los datos",
