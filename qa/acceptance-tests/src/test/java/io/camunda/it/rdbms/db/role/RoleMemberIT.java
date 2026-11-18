@@ -7,6 +7,8 @@
  */
 package io.camunda.it.rdbms.db.role;
 
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.ROLE;
+import static io.camunda.security.api.model.authz.PermissionType.READ;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -23,7 +25,10 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
@@ -96,6 +101,59 @@ public class RoleMemberIT {
     assertThat(searchResult.total()).isEqualTo(2);
     assertThat(searchResult.items().stream().map(RoleMemberEntity::id))
         .containsExactlyInAnyOrder("jonny", "mrjonas");
+  }
+
+  @TestTemplate
+  public void shouldOnlyFindMembersOfAuthorizedRoles(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RoleMemberDbReader reader = rdbmsService.getRoleMemberReader();
+
+    // given
+    final var roleA = RoleFixtures.createAndSaveRole(rdbmsWriters, b -> b);
+    final var roleB = RoleFixtures.createAndSaveRole(rdbmsWriters, b -> b);
+    addUserToRole(rdbmsWriters, roleA.roleId(), "member-a-" + roleA.roleId());
+    addUserToRole(rdbmsWriters, roleB.roleId(), "member-b-" + roleB.roleId());
+    final var accessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(
+                    a ->
+                        a.resourceType(ROLE)
+                            .permissionType(READ)
+                            .resourceIds(List.of(roleA.roleId())))),
+            TenantCheck.disabled());
+
+    // when
+    final var ofUnauthorizedRole =
+        reader.search(
+            new RoleMemberQuery(
+                RoleMemberFilter.of(b -> b.roleId(roleB.roleId())),
+                RoleMemberSort.of(b -> b),
+                SearchQueryPage.of(b -> b)),
+            accessChecks);
+    final var ofAuthorizedRole =
+        reader.search(
+            new RoleMemberQuery(
+                RoleMemberFilter.of(b -> b.roleId(roleA.roleId())),
+                RoleMemberSort.of(b -> b),
+                SearchQueryPage.of(b -> b)),
+            accessChecks);
+    final var unfiltered =
+        reader.search(
+            new RoleMemberQuery(
+                RoleMemberFilter.of(b -> b), RoleMemberSort.of(b -> b), SearchQueryPage.of(b -> b)),
+            accessChecks);
+
+    // then
+    assertThat(ofUnauthorizedRole.total()).isZero();
+    assertThat(ofUnauthorizedRole.items()).isEmpty();
+    assertThat(ofAuthorizedRole.items().stream().map(RoleMemberEntity::id))
+        .containsExactly("member-a-" + roleA.roleId());
+    assertThat(unfiltered.items().stream().map(RoleMemberEntity::id))
+        .containsExactly("member-a-" + roleA.roleId());
+    assertThat(unfiltered.total()).isEqualTo(1);
   }
 
   private void addUserToRole(
