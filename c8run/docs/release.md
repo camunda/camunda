@@ -1,6 +1,6 @@
 # Release Process
 
-Releases are owned by SMX (`@camunda/distribution` in CODEOWNERS until the team switch) and follow a **build-once → promote** model:
+Releases are owned by `@camunda/smx` and follow a **build-once → promote** model:
 
 - [`c8run-release-rc.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-release-rc.yaml)
   builds, signs, and notarizes the four OS artifacts **once** and stages them in Harbor as the release

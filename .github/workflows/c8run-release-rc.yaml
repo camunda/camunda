@@ -1,5 +1,5 @@
 # type: Release
-# owner: @camunda/distribution
+# owner: @camunda/smx
 ---
 name: "C8Run: Release Candidate"
 # run-name carries the full version so the release-train BPMN can find this run by name

@@ -406,18 +406,18 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/operate-test-importer.yml @camunda/data-layer
 
 ################################
-## @camunda/distribution
+## @camunda/smx
 ################################
 
 # C8Run
-/c8run/                     @camunda/distribution
+/c8run/                     @camunda/smx
 
 # CI/CD
-/.github/actions/setup-c8run/*       @camunda/distribution
-/.github/actions/sign-and-notarize/* @camunda/distribution
-/.github/workflows/c8run*            @camunda/distribution
-/.github/workflows/docker-build-helm-integration.yml @camunda/distribution
-/.github/workflows/trigger-c8run-e2e-tests.yml @camunda/distribution
+/.github/actions/setup-c8run/*       @camunda/smx
+/.github/actions/sign-and-notarize/* @camunda/smx
+/.github/workflows/c8run*            @camunda/smx
+/.github/workflows/docker-build-helm-integration.yml @camunda/smx
+/.github/workflows/trigger-c8run-e2e-tests.yml @camunda/smx
 
 ################################
 ## Late overrides
