@@ -55,20 +55,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Benchmark label -> "<secondary-storage-type> <protocol>". gRPC labels exist only for the
+          # Regression load test label -> "<secondary-storage-type> <protocol>". gRPC labels exist only for the
           # storages with a daily gRPC run. Without a daily run of the same setup, the comparison is
           # not correct.
           declare -A label_to_setup=(
-            [benchmark-elasticsearch-rest]="elasticsearch rest"
-            [benchmark-elasticsearch-grpc]="elasticsearch grpc"
-            [benchmark-opensearch-rest]="opensearch rest"
-            [benchmark-postgresql-rest]="postgresql rest"
-            [benchmark-mysql-rest]="mysql rest"
-            [benchmark-mariadb-rest]="mariadb rest"
-            [benchmark-mssql-rest]="mssql rest"
-            [benchmark-oracle-rest]="oracle rest"
-            [benchmark-none-rest]="none rest"
-            [benchmark-none-grpc]="none grpc"
+            [regression-load-test-elasticsearch-rest]="elasticsearch rest"
+            [regression-load-test-elasticsearch-grpc]="elasticsearch grpc"
+            [regression-load-test-opensearch-rest]="opensearch rest"
+            [regression-load-test-postgresql-rest]="postgresql rest"
+            [regression-load-test-mysql-rest]="mysql rest"
+            [regression-load-test-mariadb-rest]="mariadb rest"
+            [regression-load-test-mssql-rest]="mssql rest"
+            [regression-load-test-oracle-rest]="oracle rest"
+            [regression-load-test-none-rest]="none rest"
+            [regression-load-test-none-grpc]="none grpc"
           )
 
           entries=()
@@ -80,7 +80,7 @@ jobs:
               read -r db protocol <<< "$setup"
               entries+=("{\"label\":\"${label}\",\"db\":\"${db}\",\"protocol\":\"${protocol}\"}")
             else
-              echo "::warning title=Unknown Benchmark Label::Label '$label' is not a recognized benchmark trigger. Ignoring."
+              echo "::warning title=Unknown Load Test Label::Label '$label' is not a recognized load test trigger. Ignoring."
             fi
           }
 
