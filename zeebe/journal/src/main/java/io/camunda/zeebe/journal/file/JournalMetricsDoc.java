@@ -137,6 +137,55 @@ public enum JournalMetricsDoc implements ExtendedMeterDocumentation {
       return new KeyName[] {PartitionKeyNames.PARTITION};
     }
   },
+  /** Number of compacted segments that wait for deletion */
+  PENDING_SEGMENT_DELETIONS {
+    @Override
+    public String getName() {
+      return "atomix.segment.deletion.pending";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Number of compacted segments that wait for deletion";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
+    }
+  },
+  /** Time spent to delete a compacted segment */
+  SEGMENT_DELETION_TIME {
+    @Override
+    public String getName() {
+      return "atomix.segment.deletion.time";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Time spent to delete a compacted segment";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return super.getTimerSLOs();
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION};
+    }
+  },
   /** Time taken to open the journal */
   JOURNAL_OPERATION_DURATION {
     @Override

@@ -234,6 +234,11 @@ final class Segment implements AutoCloseable, FlushableSegment {
     IoUtil.unmap(buffer);
   }
 
+  /** Readers must stop before the asynchronous {@link #delete()} removes the file. */
+  void markAsClosed() {
+    open = false;
+  }
+
   /** Deletes the segment. */
   void delete() {
     open = false;
