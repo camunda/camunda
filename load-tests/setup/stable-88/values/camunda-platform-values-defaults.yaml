@@ -209,6 +209,7 @@ orchestration:
       # (see camunda-platform-override-values.yaml).
       zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
       zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+      # CUSTOMIZATION: execution metrics are off by default, we enable them to see the execution metrics, like process instance and job completion times.
       zeebe.broker.executionMetricsExporterEnabled: "true"
 
       # Camunda Exporter configuration

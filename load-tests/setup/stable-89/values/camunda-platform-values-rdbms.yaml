@@ -22,7 +22,7 @@ orchestration:
   extraConfiguration:
     - file: application.yml
       content: |
-        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+        # CUSTOMIZATION: execution metrics are off by default, we enable them to see the execution metrics, like process instance and job completion times.
         zeebe.broker.executionMetricsExporterEnabled: "true"
         camunda.flags.jfr.metrics: "true"
         # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
