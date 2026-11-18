@@ -640,6 +640,83 @@ public class UserTaskIT {
   }
 
   @TestTemplate
+  public void shouldFindNoUserTaskByCandidateGroupsAuthorizationWhenCallerHasNoGroups(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // when - the only grant is property-based on candidateGroups, the caller has no groups
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        RequiredAuthorization.of(
+                            b -> b.userTask().read().authorizedByCandidateGroups())),
+                    TenantCheck.disabled(),
+                    CamundaAuthentication.of(
+                        builder -> builder.user(generateRandomString("user")))));
+
+    // then
+    assertThat(searchResult.total()).isZero();
+    assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldFindNoUserTaskByAssigneeAuthorizationWhenCallerHasNoUsername(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // when - the only grant is property-based on assignee, the caller is a client without username
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        RequiredAuthorization.of(b -> b.userTask().read().authorizedByAssignee())),
+                    TenantCheck.disabled(),
+                    CamundaAuthentication.of(
+                        builder -> builder.clientId(generateRandomString("client")))));
+
+    // then
+    assertThat(searchResult.total()).isZero();
+    assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldFindNoUserTaskByCandidateUsersAuthorizationWhenCallerHasNoUsername(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    // when - the only grant is property-based on candidateUsers, the caller has no username
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                ResourceAccessChecks.of(
+                    AuthorizationCheck.enabled(
+                        RequiredAuthorization.of(
+                            b -> b.userTask().read().authorizedByCandidateUsers())),
+                    TenantCheck.disabled(),
+                    CamundaAuthentication.of(
+                        builder -> builder.clientId(generateRandomString("client")))));
+
+    // then
+    assertThat(searchResult.total()).isZero();
+    assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
   public void shouldFindSeveralUserTaskByPropertyBasedAuthorizationWithCandidateGroups(
       final CamundaRdbmsTestApplication testApplication) {
     // given

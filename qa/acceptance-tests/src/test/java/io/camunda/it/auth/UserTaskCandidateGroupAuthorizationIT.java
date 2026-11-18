@@ -53,6 +53,7 @@ class UserTaskCandidateGroupAuthorizationIT {
 
   private static final String PROCESS_ID_WITH_GROUP_NAME = "processWithGroupName";
   private static final String USER_IN_MIGRATED_GROUP = "userInMigratedGroup";
+  private static final String USER_WITHOUT_GROUP = "userWithoutGroup";
 
   // Simulating 8.7→8.8 migration: groupId is slugified, name is the original
   private static final String GROUP_ID = "front_support_retail_ch"; // slugified ID
@@ -65,6 +66,15 @@ class UserTaskCandidateGroupAuthorizationIT {
           "password",
           List.of(
               // User has permission to read user tasks by candidateGroups property
+              Permissions.withPropertyName(USER_TASK, READ, "candidateGroups")));
+
+  @UserDefinition
+  private static final TestUser USER_WITHOUT_GROUP_USER =
+      new TestUser(
+          USER_WITHOUT_GROUP,
+          "password",
+          List.of(
+              // the only permission is property-based, and the user is a member of no group
               Permissions.withPropertyName(USER_TASK, READ, "candidateGroups")));
 
   @GroupDefinition
@@ -119,6 +129,20 @@ class UserTaskCandidateGroupAuthorizationIT {
         .contains(PROCESS_ID_WITH_GROUP_NAME);
     // however, candidate group filtering by group name isn't supported
     assertThat(resultFilteredByGroupName.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNotFindTasksWhenUserHasOnlyCandidateGroupsPermissionAndNoGroups(
+      @Authenticated(USER_WITHOUT_GROUP) final CamundaClient camundaClient) {
+    // given - a task with a candidate group exists
+    // and - the user's only permission is READ on candidateGroups, without any group membership
+
+    // when
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+
+    // then - the permission resolves to no group, so nothing is accessible
+    assertThat(result.items()).isEmpty();
+    assertThat(result.page().totalItems()).isZero();
   }
 
   private static void waitForProcessAndTasksBeingExported(final CamundaClient camundaClient) {
