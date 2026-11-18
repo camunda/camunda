@@ -17,7 +17,6 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Diagram} from '#/operate/shared/Diagram';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
-import {MODIFICATIONS_BADGE} from '#/operate/shared/utils/badgePositions';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstanceWaitStateStatistics} from './processInstance.queries';
 import {useProcessInstancePage} from './useProcessInstancePage';
@@ -28,20 +27,13 @@ import {
 	calledProcessQuery,
 	calledDecisionQuery,
 } from './instanceDiagram.queries';
-import {useInstanceDiagramOverlays, type ModificationBadge} from './useInstanceDiagramOverlays';
+import {useInstanceDiagramOverlays} from './useInstanceDiagramOverlays';
 import {InstanceDiagramOverlays} from './InstanceDiagramOverlays';
 import {DiagramPanel, ModificationInfoBanner, ModificationInfoBannerText, Panel} from './instanceDiagram.styled';
 import {InstanceHistoryContext} from './useInstanceHistory';
 import {useProcessInstanceModification} from './useProcessInstanceModification';
+import {useInstanceDiagramModification} from './useInstanceDiagramModification';
 import {ModificationDropdown} from './ModificationDropdown';
-import {createFinishMovingTokenAction} from './modifications/modificationOperations';
-import {getModificationsByElement} from './modifications/modificationSelectors';
-import {getLoadedInstanceAncestors} from './modifications/historyPlaceholders';
-import {
-	getAncestorScopeType,
-	getModifiableElements,
-	getRunningInstancesByElement,
-} from './modifications/modificationTargets';
 
 type Props = {
 	isModificationModeEnabled?: boolean;
@@ -96,72 +88,6 @@ function InstanceDiagram({
 	const {data: waitStates} = useProcessInstanceWaitStateStatistics(processInstance);
 	const isRunning = isInstanceRunning(processInstance);
 	const businessObjects = diagram?.businessObjects;
-	const runningInstancesByElement = useMemo(
-		() => getRunningInstancesByElement(statistics.data, businessObjects),
-		[statistics.data, businessObjects],
-	);
-	const modificationsByElement = useMemo(
-		() =>
-			getModificationsByElement(modificationState, {
-				businessObjects,
-				totalRunningInstancesByElement: runningInstancesByElement,
-				totalRunningInstancesVisibleByElement: runningInstancesByElement,
-			}),
-		[modificationState, businessObjects, runningInstancesByElement],
-	);
-	const modificationBadges = useMemo<ModificationBadge[]>(
-		() =>
-			Object.entries(modificationsByElement).map(([elementId, {newTokens, visibleCancelledTokens}]) => ({
-				elementId,
-				type: 'instance-modification',
-				position: MODIFICATIONS_BADGE,
-				payload: {newTokenCount: newTokens, cancelledTokenCount: visibleCancelledTokens},
-			})),
-		[modificationsByElement],
-	);
-	const modifiableElements = useMemo(
-		() => getModifiableElements(modificationState, businessObjects, statistics.data, runningInstancesByElement),
-		[modificationState, businessObjects, statistics.data, runningInstancesByElement],
-	);
-	const overlaysData = useInstanceDiagramOverlays({
-		statistics: statistics.data,
-		waitStates: isRunning ? waitStates : undefined,
-		agents: agents.data,
-		businessObjects: diagram?.businessObjects,
-		processDefinitionId: processInstance.processDefinitionId,
-		isModificationModeEnabled,
-		isExecutionCountVisible,
-		modificationBadges,
-	});
-	const selectableElements = useMemo(() => statistics.data?.map(({elementId}) => elementId) ?? [], [statistics.data]);
-	const selectedElementIds = useMemo(() => (selectedElementId ? [selectedElementId] : undefined), [selectedElementId]);
-	const highlightedElementIds = useMemo(
-		() => statistics.data?.filter(({completed}) => completed > 0).map(({elementId}) => elementId),
-		[statistics.data],
-	);
-	const highlightedSequenceFlows = useMemo(() => {
-		const completedElements = new Set(highlightedElementIds);
-		const compensationAssociations = Object.values(diagram?.diagramModel?.elementsById ?? {})
-			.filter(
-				({$type, targetRef}) =>
-					$type === 'bpmn:Association' && targetRef?.isForCompensation && completedElements.has(targetRef.id),
-			)
-			.map(({id}) => id);
-		return [...new Set([...(sequenceFlows.data?.map(({elementId}) => elementId) ?? []), ...compensationAssociations])];
-	}, [diagram?.diagramModel, highlightedElementIds, sequenceFlows.data]);
-	const customElementClasses = useMemo<[string, string][]>(() => {
-		if (isModificationModeEnabled || !diagram) {
-			return [];
-		}
-		const drilldownElements: [string, string][] = Object.entries(diagram.businessObjects)
-			.filter(([, businessObject]) => ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'].includes(businessObject.$type))
-			.map(([elementId]) => [elementId, 'op-drilldown']);
-		if (pendingDrillDownElementId) {
-			drilldownElements.push([pendingDrillDownElementId, 'op-drilldown-loading']);
-		}
-		return drilldownElements;
-	}, [diagram, isModificationModeEnabled, pendingDrillDownElementId]);
-
 	const clearSelection = useCallback(
 		(shouldClear?: (elementId?: string) => boolean) => {
 			drillDownVersion.current++;
@@ -215,59 +141,57 @@ function InstanceDiagram({
 		});
 	};
 
-	const finishMovingToken = (targetElementId?: string) => {
-		if (businessObjects === undefined) {
-			return;
+	const {
+		runningInstancesByElement,
+		modificationsByElement,
+		modificationBadges,
+		modifiableElements,
+		finishMovingToken,
+		handleModificationElementSelection,
+	} = useInstanceDiagramModification({
+		businessObjects,
+		statistics: statistics.data,
+		selectElement,
+		clearSelection,
+	});
+	const overlaysData = useInstanceDiagramOverlays({
+		statistics: statistics.data,
+		waitStates: isRunning ? waitStates : undefined,
+		agents: agents.data,
+		businessObjects: diagram?.businessObjects,
+		processDefinitionId: processInstance.processDefinitionId,
+		isModificationModeEnabled,
+		isExecutionCountVisible,
+		modificationBadges,
+	});
+	const selectableElements = useMemo(() => statistics.data?.map(({elementId}) => elementId) ?? [], [statistics.data]);
+	const selectedElementIds = useMemo(() => (selectedElementId ? [selectedElementId] : undefined), [selectedElementId]);
+	const highlightedElementIds = useMemo(
+		() => statistics.data?.filter(({completed}) => completed > 0).map(({elementId}) => elementId),
+		[statistics.data],
+	);
+	const highlightedSequenceFlows = useMemo(() => {
+		const completedElements = new Set(highlightedElementIds);
+		const compensationAssociations = Object.values(diagram?.diagramModel?.elementsById ?? {})
+			.filter(
+				({$type, targetRef}) =>
+					$type === 'bpmn:Association' && targetRef?.isForCompensation && completedElements.has(targetRef.id),
+			)
+			.map(({id}) => id);
+		return [...new Set([...(sequenceFlows.data?.map(({elementId}) => elementId) ?? []), ...compensationAssociations])];
+	}, [diagram?.diagramModel, highlightedElementIds, sequenceFlows.data]);
+	const customElementClasses = useMemo<[string, string][]>(() => {
+		if (isModificationModeEnabled || !diagram) {
+			return [];
 		}
-		const sourceElementId = modificationState.sourceElementIdForMoveOperation;
-		const sourceElementInstanceKey = modificationState.sourceElementInstanceKeyForMoveOperation;
-		const sourceAncestors =
-			sourceElementInstanceKey === null
-				? []
-				: getLoadedInstanceAncestors(
-						[...(history?.windows.values() ?? [])].map(({scope, query}) => ({
-							key: scope.key,
-							items: query.data?.items ?? [],
-						})),
-						sourceElementInstanceKey,
-						processInstanceId,
-						processInstance.processDefinitionId,
-					);
-		const affectedTokenCount = modificationState.sourceElementInstanceKeyForMoveOperation
-			? 1
-			: (sourceElementId ? runningInstancesByElement[sourceElementId] : undefined) || 1;
-		dispatchModification(
-			createFinishMovingTokenAction(modificationState, {
-				businessObjects,
-				affectedTokenCount,
-				visibleAffectedTokenCount: affectedTokenCount,
-				bpmnProcessId: processInstance.processDefinitionId,
-				runningInstancesByElement,
-				sourceAncestors,
-				targetElementId,
-				ancestorScopeType:
-					targetElementId === undefined
-						? undefined
-						: getAncestorScopeType(businessObjects, sourceElementId ?? '', targetElementId, runningInstancesByElement),
-			}),
-		);
-	};
-
-	const handleModificationElementSelection = (elementId?: string, isMultiInstance?: boolean) => {
-		if (modificationState.status === 'moving-token' && businessObjects !== undefined) {
-			clearSelection();
-			finishMovingToken(elementId);
-			return;
+		const drilldownElements: [string, string][] = Object.entries(diagram.businessObjects)
+			.filter(([, businessObject]) => ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'].includes(businessObject.$type))
+			.map(([elementId]) => [elementId, 'op-drilldown']);
+		if (pendingDrillDownElementId) {
+			drilldownElements.push([pendingDrillDownElementId, 'op-drilldown-loading']);
 		}
-		if (modificationState.status === 'adding-token') {
-			return;
-		}
-		if (elementId) {
-			selectElement(elementId, isMultiInstance);
-		} else {
-			clearSelection();
-		}
-	};
+		return drilldownElements;
+	}, [diagram, isModificationModeEnabled, pendingDrillDownElementId]);
 
 	const handleDrillDown = async (elementId: string) => {
 		if (isModificationModeEnabled || pendingDrillDownElementId !== null) {

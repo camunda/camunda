@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useReducer, useState} from 'react';
 import {afterEach, beforeAll, describe, expect, onTestFinished, vi} from 'vitest';
-import {userEvent} from 'vitest/browser';
+import {userEvent, type Locator} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import type {SetupWorker} from 'msw/browser';
@@ -20,6 +21,7 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetDocumentEndpoint,
 	mockGetElementInstanceEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryVariablesEndpoint,
@@ -34,10 +36,13 @@ import {variableRow} from '#/shared-test-modules/variable-row';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {useModificationController} from '../useProcessInstanceModification';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
+import {addToken, createModificationState} from '../modifications/mocks';
+import {initialModificationState, modificationReducer, type Modification} from '../modifications/modificationReducer';
+import {isModificationModeEnabled as selectIsModificationModeEnabled} from '../modifications/modificationSelectors';
+import {ProcessInstanceModificationFooter} from './ProcessInstanceModificationFooter';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
@@ -53,17 +58,26 @@ function variablesResponse(
 	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
 
-function renderVariables(search = '') {
+function renderVariables(
+	search = '',
+	{
+		isModificationModeEnabled: initialModificationMode = false,
+		modifications = [],
+	}: {isModificationModeEnabled?: boolean; modifications?: Modification[]} = {},
+) {
 	function Variables() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
-		const modification = useModificationController(PROCESS_INSTANCE_ID);
+		const [isModificationModeEnabled, setIsModificationModeEnabled] = useState(initialModificationMode);
 		return (
 			<div style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
+				<button type="button" onClick={() => setIsModificationModeEnabled(true)}>
+					Enter modification mode
+				</button>
 				<ProcessInstancePageProvider
 					processInstanceId={PROCESS_INSTANCE_ID}
 					processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
 					search={processInstanceSearchSchema.parse(routeSearch)}
-					modification={modification}
+					modification={{state: createModificationState(modifications), isModificationModeEnabled, dispatch: () => {}}}
 				>
 					<ProcessInstanceVariables />
 				</ProcessInstancePageProvider>
@@ -75,6 +89,50 @@ function renderVariables(search = '') {
 		path: '/operate-preview/processes/$processInstanceId/variables',
 		initialEntry: `/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables${search}`,
 	});
+}
+
+function renderVariablesWithModificationReducer() {
+	function Variables() {
+		const routeSearch = useRouterState({select: (state) => state.location.search});
+		const [state, dispatch] = useReducer(modificationReducer, initialModificationState);
+
+		return (
+			<div style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
+				<button
+					type="button"
+					onClick={() => {
+						dispatch({type: 'enableModificationMode'});
+						dispatch({
+							type: 'addModification',
+							modification: addToken({elementId: 'task_1', scopeId: 'scope-1'}),
+						});
+					}}
+				>
+					Start modification
+				</button>
+				<ProcessInstancePageProvider
+					processInstanceId={PROCESS_INSTANCE_ID}
+					processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
+					search={processInstanceSearchSchema.parse(routeSearch)}
+					modification={{state, dispatch, isModificationModeEnabled: selectIsModificationModeEnabled(state)}}
+				>
+					<ProcessInstanceVariables />
+					<ProcessInstanceModificationFooter />
+				</ProcessInstancePageProvider>
+			</div>
+		);
+	}
+
+	return renderWithRouter(Variables, {
+		path: '/operate-preview/processes/$processInstanceId/variables',
+		initialEntry: `/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`,
+	});
+}
+
+async function appendToNewValue(group: Locator, text: string) {
+	await userEvent.click(group);
+	await expect.element(group.getByRole('textbox')).toHaveFocus();
+	await userEvent.keyboard(`{End}${text}`);
 }
 
 describe('<ProcessInstanceVariables />', () => {
@@ -538,17 +596,21 @@ describe('<ProcessInstanceVariables />', () => {
 			);
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
-			await expect.element(screen.getByRole('radio', {name: 'All'})).toBeChecked();
+			await expect
+				.element(screen.getByRole('tab', {name: 'All', exact: true}))
+				.toHaveAttribute('aria-selected', 'true');
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
-			await expect.element(screen.getByRole('radio', {name: 'Documents'})).toBeChecked();
+			await expect
+				.element(screen.getByRole('tab', {name: 'Documents', exact: true}))
+				.toHaveAttribute('aria-selected', 'true');
 			await expect.element(variableRow(screen, 'amount')).not.toBeInTheDocument();
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
 			await expect.element(variableRow(screen, 'nestedDecoy')).not.toBeInTheDocument();
 			await expect.element(variableRow(screen, 'stringDecoy')).not.toBeInTheDocument();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'All'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'All', exact: true}));
 
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
@@ -565,10 +627,153 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'amount')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(screen.getByText('There are no document variables')).toBeVisible();
 			await expect.element(variableRow(screen, 'nestedDecoy')).not.toBeInTheDocument();
+		});
+
+		it('should hide the search and document filter in modification mode', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			);
+			const screen = await renderVariables('', {isModificationModeEnabled: true});
+
+			await expect.element(variableRow(screen, 'amount')).toBeVisible();
+			await expect.element(screen.getByRole('tablist', {name: 'Variable filter'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument();
+		});
+
+		it('should render inputs for a new variable added next to a staged token', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			);
+			const screen = await renderVariables('', {
+				isModificationModeEnabled: true,
+				modifications: [addToken({elementId: 'task_1', scopeId: 'scope-1'})],
+			});
+
+			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
+
+			await expect.element(screen.getByRole('textbox', {name: 'Name'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeDisabled();
+		});
+
+		describe('staging new variables through the modification reducer', () => {
+			async function startAddingVariable(worker: SetupWorker) {
+				worker.use(
+					mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+					mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+				);
+				const screen = await renderVariablesWithModificationReducer();
+				await userEvent.click(screen.getByRole('button', {name: 'Start modification'}));
+				await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
+
+				return screen;
+			}
+
+			async function fillVariable(screen: Awaited<ReturnType<typeof renderVariables>>, name: string, value: string) {
+				await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), name);
+				await appendToNewValue(screen.getByRole('group', {name: 'Value'}), value);
+				await userEvent.tab();
+			}
+
+			it('should stage a valid name and value on blur', async ({worker}) => {
+				const screen = await startAddingVariable(worker);
+
+				await fillVariable(screen, 'foo', '1');
+				await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
+
+				const dialog = screen.getByRole('dialog', {name: 'Apply Modifications'});
+				await expect.element(dialog.getByRole('row').filter({hasText: 'foo: 1'})).toBeVisible();
+			});
+
+			it('should not stage a duplicate name', async ({worker}) => {
+				const screen = await startAddingVariable(worker);
+
+				await fillVariable(screen, 'amount', '1');
+
+				await expect.element(screen.getByText('Name should be unique')).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
+				await expect
+					.element(
+						screen.getByRole('dialog', {name: 'Apply Modifications'}).getByText('No planned variable modifications'),
+					)
+					.toBeVisible();
+			});
+
+			it('should not stage an invalid value', async ({worker}) => {
+				const screen = await startAddingVariable(worker);
+
+				await fillVariable(screen, 'foo', 'abc');
+
+				await expect.element(screen.getByText('Value has to be JSON')).toBeVisible();
+				await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
+				await expect
+					.element(
+						screen.getByRole('dialog', {name: 'Apply Modifications'}).getByText('No planned variable modifications'),
+					)
+					.toBeVisible();
+			});
+
+			it('should remove the staged variable and its fields when undoing', async ({worker}) => {
+				const screen = await startAddingVariable(worker);
+				await fillVariable(screen, 'foo', '1');
+
+				await userEvent.click(screen.getByRole('button', {name: 'Undo'}));
+
+				await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
+				await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
+				await expect
+					.element(
+						screen.getByRole('dialog', {name: 'Apply Modifications'}).getByText('No planned variable modifications'),
+					)
+					.toBeVisible();
+			});
+
+			it('should remove the staged variable when deleting its fields', async ({worker}) => {
+				const screen = await startAddingVariable(worker);
+				await fillVariable(screen, 'foo', '1');
+
+				await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+
+				await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
+				await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
+				await expect
+					.element(
+						screen.getByRole('dialog', {name: 'Apply Modifications'}).getByText('No planned variable modifications'),
+					)
+					.toBeVisible();
+			});
+		});
+
+		it('should stop filtering by documents when entering modification mode', async ({worker}) => {
+			worker.use(
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+				mockQueryVariablesEndpoint({
+					schema: documentsOnlySchema,
+					successResponse: variablesResponse([
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+					]),
+					failureResponse: variablesResponse([
+						createVariable({name: 'amount'}),
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+					]),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(variableRow(screen, 'amount')).toBeVisible();
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
+			await expect.element(variableRow(screen, 'amount')).not.toBeInTheDocument();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Enter modification mode'}));
+
+			await expect.element(variableRow(screen, 'amount')).toBeVisible();
+			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
+			await expect.element(screen.getByRole('tablist', {name: 'Variable filter'})).not.toBeInTheDocument();
 		});
 
 		it('should keep loading document candidates when a page has no documents', async ({worker}) => {
@@ -593,7 +798,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'decoy-00')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(variableRow(screen, 'invoice')).toBeVisible();
 			await expect.element(variableRow(screen, 'decoy-00')).not.toBeInTheDocument();
@@ -625,7 +830,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'decoy-00')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(variableRow(screen, 'first')).toBeVisible();
 			await expect.element(variableRow(screen, 'second')).toBeVisible();
@@ -652,7 +857,7 @@ describe('<ProcessInstanceVariables />', () => {
 			const screen = await renderVariables();
 			await expect.element(variableRow(screen, 'decoy-00')).toBeVisible();
 
-			await userEvent.click(screen.getByRole('radio', {name: 'Documents'}));
+			await userEvent.click(screen.getByRole('tab', {name: 'Documents', exact: true}));
 
 			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
 			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();

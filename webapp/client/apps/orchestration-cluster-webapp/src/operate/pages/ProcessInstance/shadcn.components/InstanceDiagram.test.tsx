@@ -214,6 +214,7 @@ describe('<InstanceDiagram /> (DS)', () => {
 		await expect.element(screen.getByRole('img', {name: 'Review, Incidents: 1'})).toBeVisible();
 		await expect.element(screen.getByRole('img', {name: 'Completed: 1', exact: true})).toBeVisible();
 		await expect.element(screen.getByText('2 waiting')).toBeVisible();
+		await expect.element(screen.getByText('2 waiting')).toHaveAttribute('data-slot', 'badge');
 		await expect.element(screen.getByText('Thinking... + 1 more active agent')).toBeVisible();
 		await expect.element(screen.getByText('Waiting', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('img', {name: 'Review, Completed: 3'})).not.toBeInTheDocument();
