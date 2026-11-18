@@ -301,6 +301,30 @@ in:title FooIT AND (label:kind/flake OR in:title flaky)" ]
   ! grep -q "shouldIdle" fixtures/gh-searches.txt
 }
 
+@test "should name at most 3 due tests outside the top per team" {
+  # given
+  top_tests \
+    "main|io.camunda.it.FooIT|shouldA|30|10|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldB|29|10|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldC|28|10|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldD|27|10|101:1:job" \
+    "main|io.camunda.it.FooIT|shouldE|26|10|101:1:job" \
+    "main|io.camunda.it.WaitIT|shouldA|20|10|102:1:job" \
+    "main|io.camunda.it.WaitIT|shouldB|19|10|102:1:job" \
+    "main|io.camunda.it.WaitIT|shouldC|18|10|102:1:job" \
+    "main|io.camunda.it.WaitIT|shouldD|17|10|102:1:job" \
+    "main|io.camunda.it.WaitIT|shouldE|16|10|102:1:job"
+  owned_test io.camunda.it.FooIT
+  owned_test io.camunda.it.WaitIT @camunda/core-features
+  issue "in:title FooIT AND (label:kind/flake OR in:title flaky)" 4711
+
+  # when
+  build flaky
+
+  # then
+  [[ "$(block 0 2)" == *$'\n\n'"*core-features* (0 of 5 tests) :arrow_right:  ${CORE_FEATURES_MEDIC} (also due: \`WaitIT.shouldA\` 20x, \`WaitIT.shouldB\` 19x, \`WaitIT.shouldC\` 18x, +2 more)" ]]
+}
+
 @test "should show a team without a medic by name and not ping it" {
   # given
   top_tests "main|io.camunda.it.FooIT|shouldFoo|15|1|101:1:job"

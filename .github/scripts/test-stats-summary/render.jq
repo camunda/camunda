@@ -78,13 +78,18 @@ def team_groups($rows):
     })
   | sort_by((.shown == []), (.key == ""), -(.shown | map(.count) | max // 0), .key);
 
+# Due tests named in a team header. More would use the section space of the shown tests and of
+# the medic pings of other teams.
+def max_also_due: 3;
+
 def team_header($max_name):
   "*\(.key | team_label | escape)* (\(.shown | length) of \(plural(.total; "test")))"
   + (if .medic then
        " :arrow_right:  \(.medic)"
        + (if .also_due == [] then ""
           else " (also due: "
-            + (.also_due | map("`\(.name | truncate($max_name) | escape)` \(.count)x") | join(", "))
+            + (.also_due[:max_also_due] | map("`\(.name | truncate($max_name) | escape)` \(.count)x") | join(", "))
+            + (if (.also_due | length) > max_also_due then ", +\((.also_due | length) - max_also_due) more" else "" end)
             + ")"
           end)
      else "" end);
