@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore.validation;
 
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -20,7 +21,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.restore.RestoreFailure.BackupNotFound;
-import io.camunda.zeebe.restore.RestoreFailure.BackupStoreUnavailable;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreFailure;
 import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import io.camunda.zeebe.restore.RestoreFailure.InvalidState;
 import io.camunda.zeebe.restore.RestoreFailure.Reason;
@@ -34,13 +35,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -439,8 +443,8 @@ public final class RestoreValidator
   /**
    * What resolving backups failed with. The cluster restore API maps the types this validator
    * raises to its responses, so these, and the same types from the store, are passed on as they
-   * are; anything else the store failed with is wrapped as the store being unavailable, which the
-   * API still maps as before.
+   * are; anything else the store failed with is wrapped to name its reason, which the API still
+   * maps as before.
    */
   private static RuntimeException resolutionFailure(final @Nullable Throwable cause) {
     if (cause instanceof IllegalArgumentException
@@ -448,13 +452,38 @@ public final class RestoreValidator
         || cause instanceof NoSuchElementException) {
       return (RuntimeException) cause;
     }
+    final var reason = storeFailureReason(cause);
     if (cause instanceof RuntimeException) {
-      return new BackupStoreUnavailable(cause);
+      return new BackupStoreFailure(reason, cause);
     }
     if (cause instanceof Exception) {
-      return new InvalidState(Reason.BACKUP_STORE_UNAVAILABLE, "Failed to resolve backups", cause);
+      return new InvalidState(reason, "Failed to resolve backups", cause);
     }
     return new IllegalStateException("Failed to resolve backups", cause);
+  }
+
+  /**
+   * Why the store failed. Each store wraps what went wrong in an exception of its own, so only the
+   * parser's exception in the cause chain tells content it could not parse, such as a corrupt
+   * backup manifest, apart from the store being unreachable, where retrying may help.
+   */
+  private static Reason storeFailureReason(final @Nullable Throwable failure) {
+    if (hasCause(failure, JsonProcessingException.class)) {
+      return Reason.BACKUPS_INCONSISTENT;
+    }
+    return Reason.BACKUP_STORE_UNAVAILABLE;
+  }
+
+  private static boolean hasCause(final @Nullable Throwable failure, final Class<?> type) {
+    final Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+    for (Throwable current = failure;
+        current != null && seen.add(current);
+        current = current.getCause()) {
+      if (type.isInstance(current)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static boolean hasTimeRange(@Nullable final Instant from, @Nullable final Instant to) {

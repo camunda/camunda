@@ -84,19 +84,21 @@ public sealed interface RestoreFailure {
   }
 
   /**
-   * A failure of the backup store itself, wrapping what the store failed with. It extends none of
-   * the types the cluster restore API maps specifically, as the store's own exceptions do not, so
-   * the API still answers with an internal error.
+   * What the backup store failed with, wrapped to name its reason. It extends none of the types the
+   * cluster restore API maps specifically, as the store's own exceptions do not, so the API still
+   * answers with an internal error.
    */
-  final class BackupStoreUnavailable extends RuntimeException implements RestoreFailure {
+  final class BackupStoreFailure extends RuntimeException implements RestoreFailure {
+    private final Reason reason;
 
-    public BackupStoreUnavailable(final Throwable cause) {
+    public BackupStoreFailure(final Reason reason, final Throwable cause) {
       super(cause);
+      this.reason = reason;
     }
 
     @Override
     public Reason reason() {
-      return Reason.BACKUP_STORE_UNAVAILABLE;
+      return reason;
     }
 
     /**

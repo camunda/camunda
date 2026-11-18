@@ -12,6 +12,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.restore.RestoreFailure;
 import io.camunda.zeebe.restore.RestoreFailure.Reason;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -108,6 +111,29 @@ final class RestoreValidatorFailureReasonTest {
   }
 
   @Test
+  void shouldReportAnUnparsableBackupManifestAsInconsistentBackupsWithItsOwnDescription() {
+    // given - the stores wrap the failure to parse a manifest in an exception of their own
+    final var storeFailure = new UncheckedIOException("Unable to read manifest", unparsableJson());
+    when(backupStore.list(any(BackupIdentifierWildcard.class)))
+        .thenReturn(CompletableFuture.failedFuture(storeFailure));
+    final var validator = new RestoreValidator(1, backupStore, null);
+
+    // when
+    final var failure =
+        validator.validate(request(List.of(42L), null, null, "rdbms", false)).getLeft();
+
+    // then - retrying does not help, and the API answers with the same internal error as before
+    assertThat(failure)
+        .isNotInstanceOfAny(
+            IllegalArgumentException.class,
+            IllegalStateException.class,
+            NoSuchElementException.class)
+        .hasCause(storeFailure)
+        .hasToString(storeFailure.toString());
+    assertReason(failure, Reason.BACKUPS_INCONSISTENT);
+  }
+
+  @Test
   void shouldReportACheckedBackupStoreFailureAsAnIllegalState() {
     // given
     final var storeFailure = new IOException("Disk unavailable");
@@ -125,6 +151,15 @@ final class RestoreValidatorFailureReasonTest {
         .hasMessage("Failed to resolve backups")
         .hasCause(storeFailure);
     assertReason(failure, Reason.BACKUP_STORE_UNAVAILABLE);
+  }
+
+  private static JsonProcessingException unparsableJson() {
+    try {
+      new ObjectMapper().readTree("{");
+      throw new AssertionError("Expected the JSON to be unparsable");
+    } catch (final JsonProcessingException e) {
+      return e;
+    }
   }
 
   private static void assertReason(final Exception failure, final Reason reason) {
