@@ -17,7 +17,10 @@ import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.azure.identity.WorkloadIdentityCredentialBuilder;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 /**
@@ -56,6 +59,8 @@ final class AzureCredentialChain {
   static final String ENVIRONMENT = "EnvironmentCredential";
   static final String WORKLOAD_IDENTITY = "WorkloadIdentityCredential";
   static final String MANAGED_IDENTITY = "ManagedIdentityCredential";
+
+  private static final Logger LOG = LoggerFactory.getLogger(AzureCredentialChain.class);
 
   private static final String AZURE_FEDERATED_TOKEN_FILE = "AZURE_FEDERATED_TOKEN_FILE";
 
@@ -133,6 +138,7 @@ final class AzureCredentialChain {
       final @Nullable HttpClient httpClient,
       final ExecutorService executor) {
     if (!isServicePrincipalConfigured(environment)) {
+      warnIfServicePrincipalIsIncomplete(environment);
       // without a complete service principal the SDK falls back to AZURE_USERNAME and
       // AZURE_PASSWORD, which would sign in as a person rather than an application identity
       return unavailable(
@@ -195,6 +201,26 @@ final class AzureCredentialChain {
       builder.httpClient(httpClient);
     }
     return builder.build();
+  }
+
+  /**
+   * A secret or certificate path shows the operator meant to sign in as a service principal, so the
+   * chain silently moving on to another identity would hide the mistake. {@code AZURE_CLIENT_ID}
+   * alone is not a sign of that: AKS workload identity sets it too.
+   */
+  private static void warnIfServicePrincipalIsIncomplete(final Configuration environment) {
+    if (!isSet(environment, Configuration.PROPERTY_AZURE_CLIENT_SECRET)
+        && !isSet(environment, Configuration.PROPERTY_AZURE_CLIENT_CERTIFICATE_PATH)) {
+      return;
+    }
+    final var missing =
+        Stream.of(Configuration.PROPERTY_AZURE_TENANT_ID, Configuration.PROPERTY_AZURE_CLIENT_ID)
+            .filter(name -> !isSet(environment, name))
+            .toList();
+    LOG.warn(
+        "Ignoring the service principal in the environment because {} is not set; signing in to"
+            + " Azure Key Vault with workload or managed identity instead",
+        String.join(" and ", missing));
   }
 
   private static boolean isServicePrincipalConfigured(final Configuration environment) {

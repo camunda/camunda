@@ -16,11 +16,13 @@ import com.azure.core.credential.TokenRequestContext;
 import com.azure.core.exception.ClientAuthenticationException;
 import com.azure.core.util.Configuration;
 import io.camunda.secretstore.azure.StubAzureHttpClient.Request;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.logging.log4j.Level;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -354,6 +356,40 @@ final class AzureCredentialChainTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenant ID");
     assertThat(http.requests()).isEmpty();
+  }
+
+  @Test
+  void shouldWarnWhenTheServicePrincipalInTheEnvironmentIsIncomplete() {
+    // given — a secret without its tenant
+    final var environment =
+        environment(Map.of("AZURE_CLIENT_ID", "sp-client-id", "AZURE_CLIENT_SECRET", "sp-secret"));
+
+    try (final var log = LogCapturer.capturing(AzureCredentialChain.class, Level.WARN)) {
+      // when
+      chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment, StubAzureHttpClient.offline());
+
+      // then
+      assertThat(log.messages())
+          .singleElement()
+          .asString()
+          .contains("AZURE_TENANT_ID")
+          .doesNotContain("AZURE_CLIENT_ID")
+          .doesNotContain("sp-secret");
+    }
+  }
+
+  @Test
+  void shouldNotWarnAboutAServicePrincipalInAWorkloadIdentityPod() throws Exception {
+    // given — AKS sets AZURE_CLIENT_ID for workload identity, not for a service principal
+    final var environment = workloadIdentityEnvironment("pod-client-id", "federated-token");
+
+    try (final var log = LogCapturer.capturing(AzureCredentialChain.class, Level.WARN)) {
+      // when
+      chain(AzureKeyVaultStoreConfig.of(VAULT_URL), environment, StubAzureHttpClient.offline());
+
+      // then
+      assertThat(log.messages()).isEmpty();
+    }
   }
 
   @Test
