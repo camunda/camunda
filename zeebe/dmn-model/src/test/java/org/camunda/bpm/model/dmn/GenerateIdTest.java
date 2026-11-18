@@ -22,7 +22,7 @@ import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionTable;
 import org.camunda.bpm.model.dmn.instance.Definitions;
 import org.camunda.bpm.model.dmn.instance.Output;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class GenerateIdTest {
 
