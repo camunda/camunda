@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import io.camunda.db.rdbms.sql.IncidentMapper.MigrateIncidentDto;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -62,7 +63,14 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
     } else if (record.getIntent().equals(IncidentIntent.RESOLVED)) {
       incidentWriter.resolve(record.getKey());
     } else if (record.getIntent().equals(IncidentIntent.MIGRATED)) {
-      incidentWriter.update(map(record));
+      final var value = record.getValue();
+      incidentWriter.migrate(
+          new MigrateIncidentDto(
+              record.getKey(),
+              value.getBpmnProcessId(),
+              mapIfGreaterZero(value.getProcessDefinitionKey()),
+              value.getElementId(),
+              buildTreePath(record)));
     } else {
       LOGGER.warn(
           "Unexpected incident intent {} for record {}/{}",

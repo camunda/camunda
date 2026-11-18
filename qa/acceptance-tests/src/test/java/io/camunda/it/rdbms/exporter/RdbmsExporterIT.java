@@ -827,6 +827,101 @@ class RdbmsExporterIT {
   }
 
   @Test
+  public void shouldKeepStartDateAndIncidentOfProcessInstanceOnMigration() {
+    // given - a running process instance with an open incident
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
+    final var processInstanceKey =
+        ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
+    exporter.export(processInstanceRecord);
+    final var elementRecord = FIXTURES.getElementActivatingRecord(processInstanceKey);
+    exporter.export(elementRecord);
+    exporter.export(
+        FIXTURES.getIncidentRecord(
+            IncidentIntent.CREATED,
+            nextKey(),
+            processInstanceKey,
+            getProcessInstanceRootProcessInstanceKey(processInstanceRecord),
+            elementRecord.getKey()));
+    final var before =
+        rdbmsService.getProcessInstanceReader().findOne(processInstanceKey).orElseThrow();
+    assertThat(before.hasIncident()).isTrue();
+
+    // when - the instance is migrated to another process definition
+    final long targetProcessDefinitionKey = nextKey();
+    exporter.export(
+        FIXTURES.getElementMigratedRecord(
+            processInstanceRecord, targetProcessDefinitionKey, "target-process", "target-process"));
+
+    // then - the definition changed, but the start date and the open incident are kept
+    final var after =
+        rdbmsService.getProcessInstanceReader().findOne(processInstanceKey).orElseThrow();
+    assertThat(after.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(after.processDefinitionId()).isEqualTo("target-process");
+    assertThat(after.processDefinitionVersion()).isEqualTo(before.processDefinitionVersion() + 1);
+    assertThat(after.hasIncident()).isTrue();
+    assertThat(after.startDate()).isEqualTo(before.startDate());
+  }
+
+  @Test
+  public void shouldKeepStartDateOfElementOnMigration() {
+    // given - an active element
+    final var elementRecord = FIXTURES.getElementActivatingRecord();
+    exporter.export(elementRecord);
+    final var before =
+        rdbmsService.getFlowNodeInstanceReader().findOne(elementRecord.getKey()).orElseThrow();
+
+    // when - the element is migrated to another process definition
+    final long targetProcessDefinitionKey = nextKey();
+    exporter.export(
+        FIXTURES.getElementMigratedRecord(
+            elementRecord, targetProcessDefinitionKey, "target-process", "targetTask"));
+
+    // then - the element points to the target definition, but keeps its start date
+    final var after =
+        rdbmsService.getFlowNodeInstanceReader().findOne(elementRecord.getKey()).orElseThrow();
+    assertThat(after.flowNodeId()).isEqualTo("targetTask");
+    assertThat(after.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(after.processDefinitionId()).isEqualTo("target-process");
+    assertThat(after.state()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(after.startDate()).isEqualTo(before.startDate());
+  }
+
+  @Test
+  public void shouldKeepCreationTimeOfIncidentOnMigration() {
+    // given - an open incident on an element of a running process instance
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
+    final var processInstanceKey =
+        ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
+    exporter.export(processInstanceRecord);
+    final var elementRecord = FIXTURES.getElementActivatingRecord(processInstanceKey);
+    exporter.export(elementRecord);
+    final long incidentKey = nextKey();
+    final var incidentRecord =
+        FIXTURES.getIncidentRecord(
+            IncidentIntent.CREATED,
+            incidentKey,
+            processInstanceKey,
+            getProcessInstanceRootProcessInstanceKey(processInstanceRecord),
+            elementRecord.getKey());
+    exporter.export(incidentRecord);
+    final var before = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
+
+    // when - the incident is migrated along with its process instance
+    final long targetProcessDefinitionKey = nextKey();
+    exporter.export(
+        FIXTURES.getIncidentMigratedRecord(
+            incidentRecord, targetProcessDefinitionKey, "target-process", "targetTask"));
+
+    // then - the incident points to the target definition, but keeps its creation time
+    final var after = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
+    assertThat(after.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(after.processDefinitionId()).isEqualTo("target-process");
+    assertThat(after.flowNodeId()).isEqualTo("targetTask");
+    assertThat(after.state()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(after.creationTime()).isEqualTo(before.creationTime());
+  }
+
+  @Test
   public void shouldExportJobBatchMetrics() {
     // given
     final var startTime = OffsetDateTime.now(UTC).truncatedTo(ChronoUnit.MILLIS);

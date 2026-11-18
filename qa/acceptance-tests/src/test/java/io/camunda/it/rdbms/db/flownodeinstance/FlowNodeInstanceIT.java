@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.flownodeinstance;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
@@ -331,11 +332,11 @@ public class FlowNodeInstanceIT {
             b -> b.flowNodeName("List users").type(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE));
 
     // when
-    // ELEMENT_MIGRATED handling writes the full model via update(); the migrated model carries no
-    // resolved inner-instance name (null). The update mapper must not clobber the existing name.
+    // the migrated model carries no resolved inner-instance name (null); the migration must not
+    // clobber the existing name
     rdbmsWriters
         .getFlowNodeInstanceWriter()
-        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
+        .migrate(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
     rdbmsWriters.flush();
 
     // then
@@ -358,7 +359,7 @@ public class FlowNodeInstanceIT {
     // when
     rdbmsWriters
         .getFlowNodeInstanceWriter()
-        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
+        .migrate(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
     rdbmsWriters.flush();
 
     // then
@@ -384,13 +385,46 @@ public class FlowNodeInstanceIT {
     // when
     rdbmsWriters
         .getFlowNodeInstanceWriter()
-        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName("New")));
+        .migrate(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName("New")));
     rdbmsWriters.flush();
 
     // then
     // a legitimate non-null name update must not be blocked by the null-skip guard
     final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
     assertThat(actual.flowNodeName()).isEqualTo("New");
+  }
+
+  @TestTemplate
+  public void shouldKeepCompletionWhenElementIsMigratedAndCompletedBeforeFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - an element that is activated, migrated and completed before the next flush; the
+    // completion is merged into the queued insert, which runs before the migration update
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+    final var writer = rdbmsWriters.getFlowNodeInstanceWriter();
+    final var activated =
+        FlowNodeInstanceFixtures.createRandomized(
+            b -> b.state(FlowNodeState.ACTIVE).type(FlowNodeType.SERVICE_TASK).endDate(null));
+    final long targetProcessDefinitionKey = nextKey();
+    final var endDate = OffsetDateTime.now();
+
+    // when
+    writer.create(activated);
+    writer.migrate(
+        activated.copy(
+            b ->
+                ((FlowNodeInstanceDbModelBuilder) b)
+                    .processDefinitionKey(targetProcessDefinitionKey)));
+    writer.finish(activated.flowNodeInstanceKey(), FlowNodeState.COMPLETED, endDate);
+    rdbmsWriters.flush();
+
+    // then - the completion merged into the queued insert survives the migration update
+    final var actual = reader.findOne(activated.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(actual.state()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(actual.endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
   }
 
   @TestTemplate
