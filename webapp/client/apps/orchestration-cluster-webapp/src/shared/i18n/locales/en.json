@@ -1674,10 +1674,6 @@
 						"heading": "You do not have permission to view this information"
 					}
 				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Diagram panel placeholder",
-					"bottomPanelPlaceholder": "Bottom panel placeholder"
-				},
 				"history": {
 					"title": "Instance History",
 					"tabs": "Process instance tabs",

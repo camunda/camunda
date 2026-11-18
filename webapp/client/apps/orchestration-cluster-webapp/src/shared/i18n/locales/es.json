@@ -1662,10 +1662,6 @@
 						"heading": "No tiene permiso para ver esta información"
 					}
 				},
-				"scaffold": {
-					"diagramPanelPlaceholder": "Marcador de posición del panel de diagrama",
-					"bottomPanelPlaceholder": "Marcador de posición del panel inferior"
-				},
 				"history": {
 					"title": "Historial de la instancia",
 					"tabs": "Pestañas de la instancia de proceso",

@@ -17,13 +17,11 @@ import {
 	TabsContent,
 	TabsList,
 	TabsTrigger,
-	Text,
 } from '@camunda/design-system';
 import {Frame} from '#/operate/shared/Frame/shadcn.components/Frame';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, type ProcessInstanceTab} from './processInstanceTabs';
-import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 const HISTORY_PANEL_MIN_WIDTH = 420;
 
@@ -109,7 +107,7 @@ const ProcessInstance: React.FC<Props> = ({
 						forceMount
 						className="mt-0 min-h-0 flex-1 overflow-auto data-[state=inactive]:hidden"
 					>
-						{tab === activeTab ? (children ?? <ProcessInstanceTabPlaceholder />) : null}
+						{tab === activeTab ? children : null}
 					</TabsContent>
 				))}
 			</Tabs>
@@ -165,12 +163,7 @@ const ProcessInstance: React.FC<Props> = ({
 								>
 									<section className="flex h-full min-h-0 flex-col">
 										{topPanel ?? (
-											<>
-												<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
-												<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
-													{t('operate.processInstance.scaffold.diagramPanelPlaceholder')}
-												</Text>
-											</>
+											<PanelHeader title={t('operate.processes.diagramHeader.title')} className="bg-transparent" />
 										)}
 									</section>
 									{bottomPanel}
