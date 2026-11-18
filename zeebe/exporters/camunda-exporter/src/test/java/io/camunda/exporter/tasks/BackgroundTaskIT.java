@@ -22,6 +22,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
@@ -112,6 +113,7 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
   private static CamundaExporterITTemplateExtension templateExtension =
       new CamundaExporterITTemplateExtension(searchDB);
 
+  protected TargetIndexLocator targetIndexLocator = new TargetIndexLocator();
   protected CamundaExporterMetrics exporterMetrics;
   protected ExecutorService executor;
   protected Context context;
@@ -238,12 +240,38 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
   }
 
   protected void store(
+      final IndexTemplateDescriptor indexDescriptor,
+      final int storageOrdinal,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    client.index(
+        entity.getId(),
+        targetIndexLocator.locateOrdinalIndex(indexDescriptor, storageOrdinal).name(),
+        entity);
+  }
+
+  protected void store(
       final IndexDescriptor indexDescriptor,
       final SearchClientAdapter client,
       final ExporterEntity<?> parent,
       final ExporterEntity<?> child)
       throws IOException {
     client.index(child.getId(), parent.getId(), indexDescriptor.getFullQualifiedName(), child);
+  }
+
+  protected void store(
+      final IndexTemplateDescriptor indexDescriptor,
+      final int storageOrdinal,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> child)
+      throws IOException {
+    client.index(
+        child.getId(),
+        parent.getId(),
+        targetIndexLocator.locateOrdinalIndex(indexDescriptor, storageOrdinal).name(),
+        child);
   }
 
   protected ElasticsearchAsyncClient createAsyncESClient(final ExporterConfiguration config) {
@@ -350,6 +378,11 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
 
   protected ProcessInstanceForListViewEntity processInstanceForListViewEntity(
       final String endDate) {
+    return processInstanceForListViewEntity(endDate, null);
+  }
+
+  protected ProcessInstanceForListViewEntity processInstanceForListViewEntity(
+      final String endDate, final Integer storageOrdinal) {
     final ProcessInstanceForListViewEntity processInstance = new ProcessInstanceForListViewEntity();
     final long id = ID_GENERATOR.incrementAndGet();
     processInstance.setId(String.valueOf(id));
@@ -358,6 +391,7 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
     if (endDate != null) {
       processInstance.setEndDate(OffsetDateTime.parse(endDate));
     }
+    processInstance.setStorageOrdinal(storageOrdinal);
 
     return processInstance;
   }
