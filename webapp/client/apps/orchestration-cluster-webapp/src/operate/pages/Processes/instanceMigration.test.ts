@@ -10,7 +10,11 @@ import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {getInstanceMigration, getInstanceMigrationLocation} from './instanceMigration';
+import {
+	getInstanceMigration,
+	getInstanceMigrationLocation,
+	getPreviewInstanceMigrationLocation,
+} from './instanceMigration';
 
 const INSTANCE = createProcessInstance({
 	processInstanceKey: '2251799813685249',
@@ -36,6 +40,14 @@ describe('instanceMigration', () => {
 
 	afterEach(() => {
 		sessionStorage.clear();
+	});
+
+	it('should target the design system processes route with the same handoff in the preview location', () => {
+		const preview = getPreviewInstanceMigrationLocation(INSTANCE);
+
+		expect(preview.to).toBe('/operate-preview/processes');
+		expect(preview.state).toEqual(getInstanceMigrationLocation(INSTANCE).state);
+		expect(preview.search).toEqual(getInstanceMigrationLocation(INSTANCE).search);
 	});
 
 	it('should hand over only the instance facts and rebuild its single-instance migration', () => {

@@ -738,5 +738,43 @@ describe('<Diagram />', () => {
 				})
 				.toBeLessThan(1);
 		});
+
+		it('should keep the diagram when it is resized to zero size', async () => {
+			// given
+			const resizeCallbacks: ResizeObserverCallback[] = [];
+			vi.stubGlobal(
+				'ResizeObserver',
+				class {
+					constructor(callback: ResizeObserverCallback) {
+						resizeCallbacks.push(callback);
+					}
+					observe() {}
+					unobserve() {}
+					disconnect() {}
+				},
+			);
+			const screen = await render(
+				<div style={{position: 'relative', width: 800, height: 600}}>
+					<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />
+				</div>,
+			);
+			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
+			const canvas = screen.getByRole('region', {name: 'Diagram'}).element();
+
+			vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+				callback(0);
+				return 0;
+			});
+
+			// when
+			canvas.parentElement!.style.width = '0px';
+			canvas.parentElement!.style.height = '0px';
+			resizeCallbacks.forEach((callback) =>
+				callback([{contentRect: {width: 0, height: 0}} as ResizeObserverEntry], {} as ResizeObserver),
+			);
+
+			// then
+			await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
+		});
 	});
 });

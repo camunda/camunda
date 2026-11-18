@@ -7,9 +7,11 @@
  */
 
 import {afterEach, describe, expect, vi} from 'vitest';
-import {act} from 'react';
+import {act, type ReactNode} from 'react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {cleanup, renderHook} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
+import {processesSearchSchema} from '../processesFilter';
 import type {ProcessInstancesSelection} from '../useProcessInstancesSelection';
 import {useProcessBulkActions} from './useProcessBulkActions';
 
@@ -23,6 +25,11 @@ function createSelection(selectedCount: number): ProcessInstancesSelection {
 	} as unknown as ProcessInstancesSelection;
 }
 
+const queryClient = new QueryClient();
+const Wrapper = ({children}: {children: ReactNode}) => (
+	<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+);
+
 describe('useProcessBulkActions', () => {
 	afterEach(async () => {
 		await cleanup();
@@ -32,8 +39,17 @@ describe('useProcessBulkActions', () => {
 		// given
 		const {result, rerender} = await renderHook(
 			(props?: {selection: ProcessInstancesSelection}) =>
-				useProcessBulkActions({selection: props!.selection, isSubmitting: false, onSubmit: vi.fn()}),
-			{initialProps: {selection: createSelection(2)}},
+				useProcessBulkActions({
+					selection: props!.selection,
+					isSubmitting: false,
+					onSubmit: vi.fn(),
+					migration: {
+						search: processesSearchSchema.parse({}),
+						processDefinitionSelection: {kind: 'no-match'},
+						onEnter: vi.fn(),
+					},
+				}),
+			{initialProps: {selection: createSelection(2)}, wrapper: Wrapper},
 		);
 		act(() => {
 			result.current.batchActions.find(({id}) => id === 'cancel')?.onClick();

@@ -51,6 +51,11 @@ describe('getTargetSummaryOverlays', () => {
 			},
 		]);
 	});
+	it.for(['constructor', 'toString', '__proto__'])('should count instances moved to a target named %s', (targetId) => {
+		expect(getTargetSummaryOverlays(STATISTICS, {'task-a': targetId, 'task-b': targetId})).toEqual([
+			expect.objectContaining({elementId: targetId, payload: {newTokenCount: 7}}),
+		]);
+	});
 });
 
 describe('getSourceSummaryOverlays', () => {

@@ -39,6 +39,19 @@ describe('<ModificationBadgeOverlay />', () => {
 		await expect.element(screen.getByRole('img', {name, exact: true})).toBeVisible();
 	});
 
+	it('should name the badge after the element', async () => {
+		const screen = await render(
+			<ModificationBadgeOverlay
+				container={container}
+				newTokenCount={2}
+				cancelledTokenCount={0}
+				elementName="Check order"
+			/>,
+		);
+
+		await expect.element(screen.getByRole('img', {name: 'Check order, 2 added', exact: true})).toBeVisible();
+	});
+
 	it('should render nothing without modifications', async () => {
 		const screen = await render(
 			<ModificationBadgeOverlay container={container} newTokenCount={0} cancelledTokenCount={0} />,

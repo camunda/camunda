@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
@@ -65,7 +65,7 @@ function renderTable() {
 	return renderWithRouter(
 		() => (
 			<div style={{height: '100vh'}}>
-				<InstancesTable search={SEARCH} />
+				<InstancesTable search={SEARCH} processDefinitionSelection={{kind: 'no-match'}} onMigrationEnter={vi.fn()} />
 				<Notifications />
 				<Toaster />
 			</div>
