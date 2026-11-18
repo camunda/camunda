@@ -26,8 +26,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
@@ -49,11 +51,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 @Timeout(120)
 final class ClusterConfigurationInitializerTest {
+  @RegisterExtension final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
   @TempDir Path rootDir;
   private final ClusterConfiguration initialClusterConfiguration =
       ClusterConfiguration.init()
@@ -151,57 +155,57 @@ final class ClusterConfigurationInitializerTest {
   @Test
   void shouldLogWarningsThenErrorWhileWaitingForGossip() {
     // given
-    final var executor = new TestConcurrencyControl(true);
-    final var notifier = new TestClusterConfigurationNotifier();
-    final var initializer =
-        new GossipInitializer(
-            notifier,
-            persistedClusterConfiguration,
-            ignore -> {},
-            executor,
-            Duration.ofSeconds(1));
+    final var initializer = newGossipInitializerOnActor(new TestClusterConfigurationNotifier());
 
     try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
-      // when
+      // when - initialize() is called from the test thread, not from the actor
       initializer.initialize();
-      for (int i = 0; i < GossipInitializer.ERROR_LOG_THRESHOLD; i++) {
-        executor.runAll();
-      }
 
       // then
+      Awaitility.await("until the wait is escalated to an error")
+          .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.ERROR)).isNotEmpty());
       assertThat(logCapturer.messagesAt(Level.WARN))
           .hasSize(GossipInitializer.ERROR_LOG_THRESHOLD - 1)
           .allMatch(m -> m.contains("Still waiting for the coordinator"));
       assertThat(logCapturer.messagesAt(Level.ERROR))
-          .singleElement()
-          .asString()
-          .contains("Still waiting for the coordinator");
+          .allMatch(m -> m.contains("Still waiting for the coordinator"));
     }
   }
 
   @Test
   void shouldStopLoggingOnceGossipIsReceived() {
     // given
-    final var executor = new TestConcurrencyControl(true);
     final var notifier = new TestClusterConfigurationNotifier();
-    final var initializer =
-        new GossipInitializer(
-            notifier,
-            persistedClusterConfiguration,
-            ignore -> {},
-            executor,
-            Duration.ofSeconds(1));
+    final var initializer = newGossipInitializerOnActor(notifier);
 
     try (final var logCapturer = LogCapturer.capturing(GossipInitializer.class, Level.WARN)) {
-      initializer.initialize();
-      notifier.updateTopology(initialClusterConfiguration);
+      final var initializeFuture = initializer.initialize();
+      Awaitility.await("until the first warning")
+          .untilAsserted(() -> assertThat(logCapturer.messagesAt(Level.WARN)).isNotEmpty());
 
       // when
-      executor.runAll();
+      notifier.updateTopology(initialClusterConfiguration);
+      initializeFuture.join();
+      final var loggedBeforeStop = logCapturer.messages().size();
 
-      // then
-      assertThat(logCapturer.messages()).isEmpty();
+      // then - several intervals pass without any further log
+      Awaitility.await("until no more logs are written")
+          .during(Duration.ofMillis(250))
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> assertThat(logCapturer.messages()).hasSize(loggedBeforeStop));
     }
+  }
+
+  private GossipInitializer newGossipInitializerOnActor(
+      final TestClusterConfigurationNotifier notifier) {
+    final var actor = Actor.newActor().name("gossip-initializer-test").build();
+    actorScheduler.submitActor(actor).join();
+    return new GossipInitializer(
+        notifier,
+        persistedClusterConfiguration,
+        ignore -> {},
+        actor,
+        Duration.ofMillis(25));
   }
 
   @Test
