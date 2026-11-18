@@ -203,6 +203,12 @@ final class ClusterConfigurationInitializerTest {
     }
   }
 
+  /**
+   * Creates the initializer on a real actor. {@code ActorControl#runAtFixedRate} throws when called
+   * from outside the actor, which {@link TestConcurrencyControl} does not enforce. Tests call
+   * {@code initialize()} from the test thread, so they fail if scheduling the timer is not handed
+   * over to the actor.
+   */
   private GossipInitializer<ClusterConfiguration> newGossipInitializerOnActor(
       final TestClusterConfigurationNotifier notifier) {
     final var actor = Actor.newActor().name("gossip-initializer-test").build();
