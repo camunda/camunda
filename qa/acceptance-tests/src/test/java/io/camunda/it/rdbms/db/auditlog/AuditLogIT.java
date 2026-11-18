@@ -29,6 +29,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.Authorization;
@@ -642,6 +643,88 @@ public class AuditLogIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().auditLogKey()).isEqualTo(log1.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldReturnGlobalAndAuthorizedTenantAuditLogs(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given a global log, a log of the authorized tenant and a log of another tenant
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final var actorId = "actor-" + nextKey();
+    final var authorizedTenant = "tenant-" + nextKey();
+
+    final var globalLog =
+        createAndSaveAuditLog(
+            rdbmsWriters, b -> b.actorId(actorId).tenantScope(AuditLogTenantScope.GLOBAL));
+    final var authorizedTenantLog =
+        createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.actorId(actorId)
+                    .tenantScope(AuditLogTenantScope.TENANT)
+                    .tenantId(authorizedTenant));
+    final var otherTenantLog =
+        createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.actorId(actorId)
+                    .tenantScope(AuditLogTenantScope.TENANT)
+                    .tenantId("tenant-" + nextKey()));
+
+    // when searching with access to all audit logs of the authorized tenant only
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.actorIds(actorId))),
+            allAuditLogsWithTenantCheck(List.of(authorizedTenant)));
+
+    // then the global log and the log of the authorized tenant are returned
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .containsExactlyInAnyOrder(globalLog.auditLogKey(), authorizedTenantLog.auditLogKey())
+        .doesNotContain(otherTenantLog.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldOnlyReturnGlobalAuditLogsWhenNoTenantIsAuthorized(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given a global log and a tenant-scoped log
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final var actorId = "actor-" + nextKey();
+
+    final var globalLog =
+        createAndSaveAuditLog(
+            rdbmsWriters, b -> b.actorId(actorId).tenantScope(AuditLogTenantScope.GLOBAL));
+    final var tenantLog =
+        createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.actorId(actorId)
+                    .tenantScope(AuditLogTenantScope.TENANT)
+                    .tenantId("tenant-" + nextKey()));
+
+    // when searching with access to all audit logs but without access to any tenant
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.actorIds(actorId))),
+            allAuditLogsWithTenantCheck(List.of()));
+
+    // then only the global log is returned
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .containsExactly(globalLog.auditLogKey())
+        .doesNotContain(tenantLog.auditLogKey());
+    assertThat(searchResult.total()).isEqualTo(1);
+  }
+
+  private static ResourceAccessChecks allAuditLogsWithTenantCheck(final List<String> tenantIds) {
+    return ResourceAccessChecks.of(
+        AuthorizationCheck.enabled(
+            Authorization.of(a -> a.resourceType(AUDIT_LOG).resourceIds(List.of("*")))),
+        TenantCheck.enabled(tenantIds));
   }
 
   private void compareAuditLog(final AuditLogEntity instance, final AuditLogDbModel original) {
