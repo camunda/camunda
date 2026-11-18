@@ -71,19 +71,6 @@ final class FileSetManager {
     this.client = client;
     this.config = config;
     this.readRateLimiter = readRateLimiter;
-    config
-        .writeTimeout()
-        .filter(
-            timeout ->
-                !readRateLimiter.isUnlimited()
-                    && timeout.isPositive()
-                    && timeout.compareTo(BackupReadRateLimiter.MAX_READ_PAUSE) <= 0)
-        .ifPresent(
-            timeout ->
-                LOG.warn(
-                    "The write timeout of {} is not longer than the {} an upload may pause while it waits for the backup read limit. The S3 client may abort such uploads; increase the write timeout.",
-                    timeout,
-                    BackupReadRateLimiter.MAX_READ_PAUSE));
     // We try not to exhaust the available connections by restricting the number of
     // concurrent uploads to half of the number of available connections.
     // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files

@@ -252,6 +252,7 @@ public class BackupCfg implements ConfigurationEntry {
           final var limiter = BackupReadRateLimiter.of(maxReadRate.toBytes());
           Loggers.SYSTEM_LOGGER.info(
               "Limiting the backup reads of this broker to {} per second", maxReadRate);
+          warnIfWriteTimeoutIsTooShort(backupCfg.getWriteTimeout());
           yield limiter;
         }
         case GCS, AZURE, FILESYSTEM -> {
@@ -262,6 +263,20 @@ public class BackupCfg implements ConfigurationEntry {
           yield BackupReadRateLimiter.unlimited();
         }
       };
+    }
+
+    /**
+     * A limited upload writes nothing while it waits for the read limit, and the S3 client aborts
+     * an upload that writes nothing for its write timeout.
+     */
+    private static void warnIfWriteTimeoutIsTooShort(final @Nullable Duration writeTimeout) {
+      if (writeTimeout != null
+          && writeTimeout.compareTo(BackupReadRateLimiter.MAX_READ_PAUSE) <= 0) {
+        Loggers.SYSTEM_LOGGER.warn(
+            "The backup writeTimeout of {} is not longer than the {} an upload may pause while it waits for the backup read limit. The S3 client may abort such uploads; increase the write timeout.",
+            writeTimeout,
+            BackupReadRateLimiter.MAX_READ_PAUSE);
+      }
     }
   }
 
