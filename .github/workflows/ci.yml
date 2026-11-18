@@ -1993,9 +1993,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
+<<<<<<< HEAD
           node-version: 24
           cache: 'npm'
           cache-dependency-path: '${{ env.CLIENT_DIR }}/package-lock.json'
+=======
+          node-version: 26
+>>>>>>> 621c7a9c (ci: stop caching npm twice in jobs that use npm-ci-with-retry)
       - name: Install dependencies
         uses: ./.github/actions/npm-ci-with-retry
         with:
