@@ -10,8 +10,10 @@ package io.camunda.zeebe.broker.exporter.context;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -73,6 +75,38 @@ final class ExporterConfigurationListDeserializerTest {
 
     // then
     assertThat(instance.items()).containsExactly("a", "b");
+  }
+
+  @Test
+  void shouldDeserializeElevenIndexedEntriesInIndexOrder() {
+    // given — keys 0..10. As text, "10" sorts before "2" and fails to insert.
+    final var indexed = new LinkedHashMap<String, Object>();
+    IntStream.rangeClosed(0, 10).forEach(i -> indexed.put(String.valueOf(i), "v" + i));
+    final var args = Map.<String, Object>of("items", indexed);
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(StringListConfig.class, args);
+
+    // then
+    assertThat(instance.items())
+        .containsExactlyElementsOf(IntStream.rangeClosed(0, 10).mapToObj(i -> "v" + i).toList());
+  }
+
+  @Test
+  void shouldDeserializeElevenIndexedEntriesInIndexOrderWhenInsertedInReverse() {
+    // given — same keys inserted in descending order, so map iteration order must not matter
+    final var indexed = new LinkedHashMap<String, Object>();
+    IntStream.rangeClosed(0, 10)
+        .map(i -> 10 - i)
+        .forEach(i -> indexed.put(String.valueOf(i), "v" + i));
+    final var args = Map.<String, Object>of("items", indexed);
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(StringListConfig.class, args);
+
+    // then
+    assertThat(instance.items())
+        .containsExactlyElementsOf(IntStream.rangeClosed(0, 10).mapToObj(i -> "v" + i).toList());
   }
 
   // ---------------------------------------------------------------------------

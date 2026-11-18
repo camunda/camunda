@@ -19,9 +19,9 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 
 /**
  * Delegating deserializer which converts a {@link Map} with all numeric keys into a list, where the
@@ -137,9 +137,9 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
 
       final ArrayList<E> list = new ArrayList<>(value.size());
 
-      // sort the keys so we can access them in ascending order, avoiding index out of bounds due to
-      // random access order of the map keys
-      final var keys = new TreeSet<>(value.keySet());
+      // Numeric order: as text, "10" sorts before "2" and would fail to insert.
+      final var keys =
+          value.keySet().stream().sorted(Comparator.comparingInt(Integer::parseInt)).toList();
       for (final var key : keys) {
         setListValue(value, key, list);
       }
