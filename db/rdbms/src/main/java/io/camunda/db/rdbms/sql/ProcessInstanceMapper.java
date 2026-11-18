@@ -25,6 +25,8 @@ public interface ProcessInstanceMapper {
 
   void insert(ProcessInstanceDbModel processInstance);
 
+  void migrate(MigrateProcessInstanceDto dto);
+
   void updateStateAndEndDate(EndProcessInstanceDto dto);
 
   void incrementIncidentCount(Long processInstanceKey);
@@ -97,6 +99,13 @@ public interface ProcessInstanceMapper {
       }
     }
   }
+
+  record MigrateProcessInstanceDto(
+      long processInstanceKey,
+      String processDefinitionId,
+      long processDefinitionKey,
+      int version,
+      String treePath) {}
 
   record EndProcessInstanceDto(
       long processInstanceKey,

@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.flownodeinstance;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
@@ -17,11 +18,14 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
@@ -265,6 +269,39 @@ public class FlowNodeInstanceIT {
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().flowNodeInstanceKey())
         .isEqualTo(instance.flowNodeInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldKeepCompletionWhenElementIsMigratedAndCompletedBeforeFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given - an element that is activated, migrated and completed before the next flush; the
+    // completion is merged into the queued insert, which runs before the migration update
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+    final var writer = rdbmsWriters.getFlowNodeInstanceWriter();
+    final var activated =
+        FlowNodeInstanceFixtures.createRandomized(
+            b -> b.state(FlowNodeState.ACTIVE).type(FlowNodeType.SERVICE_TASK).endDate(null));
+    final long targetProcessDefinitionKey = nextKey();
+    final var endDate = OffsetDateTime.now();
+
+    // when
+    writer.create(activated);
+    writer.migrate(
+        activated.copy(
+            b ->
+                ((FlowNodeInstanceDbModelBuilder) b)
+                    .processDefinitionKey(targetProcessDefinitionKey)));
+    writer.finish(activated.flowNodeInstanceKey(), FlowNodeState.COMPLETED, endDate);
+    rdbmsWriters.flush();
+
+    // then - the completion merged into the queued insert survives the migration update
+    final var actual = reader.findOne(activated.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.processDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+    assertThat(actual.state()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(actual.endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
   }
 
   private static void compareFlowNodeInstance(
