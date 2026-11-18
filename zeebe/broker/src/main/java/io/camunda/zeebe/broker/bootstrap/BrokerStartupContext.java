@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.systempartition.SystemPartitionService;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -144,6 +145,13 @@ public interface BrokerStartupContext {
   void removeBrokerAdminService(String physicalTenantId);
 
   ClusterConfigurationService getClusterConfigurationService();
+
+  /**
+   * @return the system partition, or null if it is disabled
+   */
+  SystemPartitionService getSystemPartitionService();
+
+  void setSystemPartitionService(SystemPartitionService systemPartitionService);
 
   void setClusterConfigurationService(ClusterConfigurationService clusterConfigurationService);
 

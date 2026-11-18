@@ -13,12 +13,20 @@ import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.systempartition.SystemPartitionService;
 import java.util.Map;
 
 /** Context for components/actors managed directly by the Broker */
 public interface BrokerContext {
 
   ClusterServices getClusterServices();
+
+  /**
+   * @return the system partition, or null if it is disabled
+   */
+  default SystemPartitionService getSystemPartitionService() {
+    return null;
+  }
 
   EmbeddedGatewayService getEmbeddedGatewayService();
 

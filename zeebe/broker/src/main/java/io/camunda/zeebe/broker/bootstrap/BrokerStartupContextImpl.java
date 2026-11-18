@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.systempartition.SystemPartitionService;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -89,6 +90,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private ClusterConfigurationService clusterConfigurationService;
+  private SystemPartitionService systemPartitionService;
   private CheckpointSchedulingService checkpointSchedulingService;
 
   public BrokerStartupContextImpl(
@@ -322,6 +324,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void removeBrokerAdminService(final String physicalTenantId) {
     brokerAdminServices.remove(physicalTenantId);
+  }
+
+  @Override
+  public SystemPartitionService getSystemPartitionService() {
+    return systemPartitionService;
+  }
+
+  @Override
+  public void setSystemPartitionService(final SystemPartitionService systemPartitionService) {
+    this.systemPartitionService = systemPartitionService;
   }
 
   @Override

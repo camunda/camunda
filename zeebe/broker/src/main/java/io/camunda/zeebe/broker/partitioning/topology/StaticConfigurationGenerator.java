@@ -119,7 +119,7 @@ public final class StaticConfigurationGenerator {
     return distributionBuilder.build();
   }
 
-  private static Set<MemberId> getRaftGroupMembers(
+  public static Set<MemberId> getRaftGroupMembers(
       final ClusterCfg clusterCfg, final PartitioningCfg partitioningCfg) {
     if (partitioningCfg.getScheme() == Scheme.ZONE_AWARE) {
       return getZoneAwareRaftGroupMembers(partitioningCfg);

@@ -49,6 +49,10 @@ public final class BrokerStartupProcess {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
     result.add(new ClusterServicesStep());
+    if (config.getExperimental().getSystemPartition().isEnabled()) {
+      // before the dynamic configuration: the origin marker must be written before its file
+      result.add(new SystemPartitionStep());
+    }
     result.add(new ClusterConfigurationManagerStep());
 
     // must be executed before any disk space usage listeners are registered
@@ -120,6 +124,7 @@ public final class BrokerStartupProcess {
         bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getPartitionManagers(),
         bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),
-        bsc.getApiMessagingService());
+        bsc.getApiMessagingService(),
+        bsc.getSystemPartitionService());
   }
 }

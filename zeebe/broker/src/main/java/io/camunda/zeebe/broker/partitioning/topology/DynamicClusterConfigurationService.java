@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationManagerServiceImpl;
+import io.camunda.zeebe.dynamic.config.impl.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -306,12 +307,14 @@ public class DynamicClusterConfigurationService
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
         Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
+    final var systemPartition = brokerStartupContext.getSystemPartitionService();
     return new ClusterConfigurationManagerServiceImpl(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
+        systemPartition != null ? systemPartition : new NoopClusterMembershipChangeExecutor(),
         brokerStartupContext.getMeterRegistry());
   }
 

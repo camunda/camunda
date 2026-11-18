@@ -67,8 +67,29 @@ public final class RaftPartitionFactory {
       final PartitionMetadata partitionMetadata,
       final Path partitionDirectory,
       final MeterRegistry partitionMeterRegistry) {
+    return createRaftPartition(
+        partitionMetadata, partitionDirectory, partitionMeterRegistry, false);
+  }
+
+  /**
+   * Creates the Raft partition of the system partition, with the option {@code systemPartition}
+   * (design R20).
+   */
+  public RaftPartition createSystemRaftPartition(
+      final PartitionMetadata partitionMetadata,
+      final Path partitionDirectory,
+      final MeterRegistry partitionMeterRegistry) {
+    return createRaftPartition(partitionMetadata, partitionDirectory, partitionMeterRegistry, true);
+  }
+
+  private RaftPartition createRaftPartition(
+      final PartitionMetadata partitionMetadata,
+      final Path partitionDirectory,
+      final MeterRegistry partitionMeterRegistry,
+      final boolean systemPartition) {
     final var storageConfig = new RaftStorageConfig();
     final var partitionConfig = new RaftPartitionConfig();
+    partitionConfig.setSystemPartition(systemPartition);
 
     final var maxMessageSize = brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     final var segmentSize = brokerCfg.getData().getLogSegmentSizeInBytes();
