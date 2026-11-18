@@ -41,6 +41,15 @@ public interface MockDmnDecisionInstruction extends TestCaseInstruction {
   String getDecisionDefinitionId();
 
   /**
+   * The version tag of the mocked DMN decision. Optional. When set, the deployed stub decision will
+   * carry this version tag, enabling business rule tasks that use {@code bindingType="versionTag"}
+   * to resolve the stub.
+   *
+   * @return the version tag or empty if not set
+   */
+  Optional<String> getVersionTag();
+
+  /**
    * The decision output to mock. Optional.
    *
    * @return the decision output or empty if not set
