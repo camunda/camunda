@@ -80,6 +80,7 @@ jobs:
   build:
     permissions:
       contents: read
+      id-token: write # Vault JWT login
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
