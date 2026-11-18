@@ -26,7 +26,7 @@ CI test jobs; you run it on demand. A run is slow (minutes for a module), so sco
 | `pit.targetClasses`   | comma-separated class globs to mutate; required outside dynamic-config   |
 | `pit.targetTests`     | comma-separated test class globs to run (default: derived by PIT)        |
 | `pit.threads`         | worker threads (default 8)                                               |
-| `pit.timeoutConstant` | timeout constant in milliseconds (PIT default)                           |
+| `pit.timeoutConstant` | timeout constant in milliseconds (default 30000)                         |
 | `pit.engine`          | `gregor` (default) or `descartes` (extreme mutation, far fewer mutants)  |
 | `pit.crossModule`     | `:zeebe-cluster-config-impl` also mutates the api classes (default true) |
 
