@@ -545,7 +545,7 @@ function Diagram({
 					onBlur={() => setIsKeyboardFocused(false)}
 					onPointerOver={handleCanvasPointerOver}
 					onPointerLeave={() => setTooltipAnchor(null)}
-					className="absolute top-0 left-0 h-full min-h-[200px] w-full"
+					className="absolute top-0 left-0 h-full min-h-[200px] w-full select-none"
 				/>
 				<span
 					id={keyboardHintId}
