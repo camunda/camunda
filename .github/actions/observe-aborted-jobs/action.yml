@@ -27,7 +27,7 @@ runs:
   steps:
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      uses: ./.github/actions/vault-action-with-retry
       if: |
         inputs.secret_vault_address != ''
         && inputs.secret_vault_roleId != ''
@@ -37,11 +37,10 @@ runs:
         method: approle
         roleId: ${{ inputs.secret_vault_roleId }}
         secretId: ${{ inputs.secret_vault_secretId }}
-        exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
           secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
     - uses: camunda/infra-global-github-actions/submit-aborted-gha-status@main
-      if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
+      if: ${{ always() && fromJSON(steps.secrets.outputs.secrets || '{}').gcloud_sa_key != '' }}
       with:
-        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+        gcp_credentials_json: "${{ fromJSON(steps.secrets.outputs.secrets).gcloud_sa_key }}"

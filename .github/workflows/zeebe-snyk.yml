@@ -104,7 +104,7 @@ jobs:
           minimus: true
       - name: Import Snyk token from Vault
         id: snyk-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -186,7 +186,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Run Snyk
         env:
-          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ fromJSON(steps.snyk-secrets.outputs.secrets).SNYK_TOKEN }}
         # The script is set up to scan all distributable artifacts: the projects listed in the bom,
         # the Go client, and the official Docker image.
         # If we add things to the BOM, for example, we should also add them here to the

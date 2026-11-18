@@ -306,7 +306,7 @@ jobs:
       - name: Import secrets from Vault
         id: secrets
         if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        uses: ./.github/actions/vault-action-with-retry
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -318,7 +318,7 @@ jobs:
         if: ${{ !cancelled() && steps.detect-if-retry.outputs.should-retry != 'true' }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
-          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook: ${{ fromJSON(steps.secrets.outputs.secrets).DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           # For posting a rich message using Block Kit
           payload: |
