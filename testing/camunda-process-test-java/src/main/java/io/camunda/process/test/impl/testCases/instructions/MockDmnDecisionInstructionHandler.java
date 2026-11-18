@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.mock.MockDmnDecisionBuilder;
 import io.camunda.process.test.api.testCases.instructions.MockDmnDecisionInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
@@ -33,15 +34,15 @@ public class MockDmnDecisionInstructionHandler
 
     final Object decisionOutput =
         instruction.getDecisionOutput().orElse(instruction.getVariables());
+
+    MockDmnDecisionBuilder builder =
+        context.mockDmnDecision().withDecisionId(instruction.getDecisionDefinitionId());
+
     if (instruction.getVersionTag().isPresent()) {
-      context
-          .mockDmnDecision()
-          .withDecisionId(instruction.getDecisionDefinitionId())
-          .withVersionTag(instruction.getVersionTag().get())
-          .thenReturn(decisionOutput);
-    } else {
-      context.mockDmnDecision(instruction.getDecisionDefinitionId(), decisionOutput);
+      builder = builder.withVersionTag(instruction.getVersionTag().get());
     }
+
+    builder.thenReturn(decisionOutput);
   }
 
   @Override
