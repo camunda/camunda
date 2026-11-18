@@ -87,9 +87,7 @@ final class ModelBuilder {
         break;
       }
       for (final Element field : superclass.getEnclosedElements()) {
-        if (field.getKind() == ElementKind.FIELD
-            && !field.getModifiers().contains(Modifier.STATIC)
-            && field.getAnnotation(Ignore.class) == null) {
+        if (isStored(field)) {
           throw new IllegalArgumentException(
               "Field %s of superclass %s would not be stored: declare it in the @MsgpackPojo class or annotate it with @Ignore"
                   .formatted(field.getSimpleName(), name));
@@ -136,9 +134,7 @@ final class ModelBuilder {
   private static Set<TypeElement> nestedPojos(final TypeElement type) {
     final var pojos = new LinkedHashSet<TypeElement>();
     for (final Element field : type.getEnclosedElements()) {
-      if (field.getKind() == ElementKind.FIELD
-          && !field.getModifiers().contains(Modifier.STATIC)
-          && field.getAnnotation(Ignore.class) == null) {
+      if (isStored(field)) {
         collectPojos(field.asType(), pojos);
       }
     }
@@ -171,14 +167,12 @@ final class ModelBuilder {
   private Model buildModel(final TypeElement type) {
     final var pkg =
         processingEnv.getElementUtils().getPackageOf(type).getQualifiedName().toString();
+    final var unknownProperties = type.getAnnotation(MsgpackPojo.class).unknownProperties();
     final var properties = new ArrayList<Property>();
     final var keys = new HashSet<String>();
-    final var unknownProperties = type.getAnnotation(MsgpackPojo.class).unknownProperties();
     String unknownField = null;
     for (final Element field : type.getEnclosedElements()) {
-      if (field.getKind() != ElementKind.FIELD
-          || field.getModifiers().contains(Modifier.STATIC)
-          || field.getAnnotation(Ignore.class) != null) {
+      if (!isStored(field)) {
         continue;
       }
       final var fieldName = field.getSimpleName().toString();
@@ -187,108 +181,11 @@ final class ModelBuilder {
             "Field " + fieldName + " must not be private, or annotated with @Ignore");
       }
       if (isType(field.asType(), UNKNOWN_PROPERTIES)) {
-        if (!unknownProperties) {
-          throw new IllegalArgumentException(
-              "Field %s: a @MsgpackPojo(unknownProperties = false) class must not have an UnknownProperties field"
-                  .formatted(fieldName));
-        }
-        if (unknownField != null) {
-          throw new IllegalArgumentException(
-              "Fields %s and %s are both UnknownProperties fields"
-                  .formatted(unknownField, fieldName));
-        }
-        if (!field.getModifiers().contains(Modifier.FINAL)) {
-          throw new IllegalArgumentException(
-              "UnknownProperties field %s must be final".formatted(fieldName));
-        }
+        requireValidUnknownField(field, unknownProperties, unknownField);
         unknownField = fieldName;
-        continue;
+      } else {
+        properties.add(propertyOf(field, keys));
       }
-      final var raw = field.getAnnotation(Raw.class) != null;
-      final var binary = field.getAnnotation(Binary.class) != null;
-      final var document = field.getAnnotation(Document.class) != null;
-      if (document && (raw || binary)) {
-        throw new IllegalArgumentException(
-            "Field %s: document cannot be combined with raw or binary".formatted(fieldName));
-      }
-      final var keyAnnotation = field.getAnnotation(Key.class);
-      final var key = keyAnnotation == null ? fieldName : keyAnnotation.value();
-      if (key.isEmpty()) {
-        throw new IllegalArgumentException("Field %s: @Key must not be empty".formatted(fieldName));
-      }
-      if (!keys.add(key)) {
-        throw new IllegalArgumentException(
-            "Field " + fieldName + " uses the key '" + key + "' of another field");
-      }
-      final var mirror = field.asType();
-      final var kind = typeOf(mirror, raw, binary, document, fieldName);
-      if (document && kind != Type.DOCUMENT) {
-        throw new IllegalArgumentException(
-            "Field %s: document requires a DirectBuffer or UnsafeBuffer field"
-                .formatted(fieldName));
-      }
-      final var nullable = isNullable(field);
-      if (nullable && !kind.nullable) {
-        throw new IllegalArgumentException(
-            ("Field %s must not be @Nullable: only a string, binary, raw, document, enum, Boolean, "
-                    + "Long or Integer field can be unset. Use Long, Integer, RequiredLong or "
-                    + "RequiredInt for a long or int")
-                .formatted(fieldName));
-      }
-      if (!nullable && (kind == Type.BOXED_LONG || kind == Type.BOXED_INT)) {
-        throw new IllegalArgumentException(
-            "Field %s must be @Nullable, null is its unset state. Use %s for a default"
-                .formatted(fieldName, kind == Type.BOXED_LONG ? "long" : "int"));
-      }
-      if (!nullable && kind == Type.BOXED_BOOLEAN) {
-        throw new IllegalArgumentException(
-            "Field %s must be @Nullable, null is its unset state. Use boolean for a default"
-                .formatted(fieldName));
-      }
-      final var inPlace = isUnsafeBuffer(mirror);
-      final var isFinal = field.getModifiers().contains(Modifier.FINAL);
-      if (!isFinal && kind.container) {
-        throw new IllegalArgumentException(
-            "Field %s must be final: it is read into and reset in place".formatted(fieldName));
-      }
-      if (nullable && inPlace) {
-        throw new IllegalArgumentException(
-            "Field %s must not be @Nullable: an UnsafeBuffer is final and never null"
-                .formatted(fieldName));
-      }
-      if (!isFinal && inPlace) {
-        throw new IllegalArgumentException(
-            ("Field %s must be final: an UnsafeBuffer is wrapped in place, which would modify the "
-                    + "shared default. Declare it as DirectBuffer to replace it on every read")
-                .formatted(fieldName));
-      }
-      final var mutable = !kind.container && !inPlace;
-      if (isFinal && mutable) {
-        throw new IllegalArgumentException("Field " + fieldName + " must not be final");
-      }
-      final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
-      final var sanitized = field.getAnnotation(Sanitized.class) != null;
-      final var element = kind == Type.LIST ? elementOf(mirror, fieldName) : null;
-      if (element != null && !element.unboxed()) {
-        switch (element.kind()) {
-          case INT -> warning(field, boxedListWarning(fieldName, "IntArrayList"));
-          case LONG -> warning(field, boxedListWarning(fieldName, "LongArrayList"));
-          default -> {}
-        }
-      }
-      final var javaType = element != null ? element.leaf().javaType() : javaType(mirror, kind);
-      final var pojo =
-          kind == Type.NESTED
-              && ((DeclaredType) mirror).asElement().getAnnotation(MsgpackPojo.class) != null;
-      final var presence =
-          nullable
-              ? Presence.NULLABLE
-              : kind == Type.REQUIRED_LONG || kind == Type.REQUIRED_INT
-                  ? Presence.HOLDER
-                  : Presence.DEFAULT;
-      properties.add(
-          new Property(
-              keyLiteral, kind, fieldName, javaType, inPlace, presence, sanitized, pojo, element));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no stored fields");
@@ -300,6 +197,138 @@ final class ModelBuilder {
               + "@MsgpackPojo(unknownProperties = false) to skip them instead");
     }
     return new Model(pkg, type.getSimpleName().toString(), properties, unknownField);
+  }
+
+  /** A non-static field without {@code @Ignore}, whose value is stored. */
+  private static boolean isStored(final Element field) {
+    return field.getKind() == ElementKind.FIELD
+        && !field.getModifiers().contains(Modifier.STATIC)
+        && field.getAnnotation(Ignore.class) == null;
+  }
+
+  /**
+   * The one final field that keeps the entries of the keys the class does not declare, if the class
+   * keeps them.
+   */
+  private static void requireValidUnknownField(
+      final Element field, final boolean unknownProperties, final @Nullable String previous) {
+    final var fieldName = field.getSimpleName();
+    if (!unknownProperties) {
+      throw new IllegalArgumentException(
+          "Field %s: a @MsgpackPojo(unknownProperties = false) class must not have an UnknownProperties field"
+              .formatted(fieldName));
+    }
+    if (previous != null) {
+      throw new IllegalArgumentException(
+          "Fields %s and %s are both UnknownProperties fields".formatted(previous, fieldName));
+    }
+    if (!field.getModifiers().contains(Modifier.FINAL)) {
+      throw new IllegalArgumentException(
+          "UnknownProperties field %s must be final".formatted(fieldName));
+    }
+  }
+
+  /** Validates a stored field and describes it; {@code keys} collects the keys of the class. */
+  private Property propertyOf(final Element field, final Set<String> keys) {
+    final var fieldName = field.getSimpleName().toString();
+    final var raw = field.getAnnotation(Raw.class) != null;
+    final var binary = field.getAnnotation(Binary.class) != null;
+    final var document = field.getAnnotation(Document.class) != null;
+    if (document && (raw || binary)) {
+      throw new IllegalArgumentException(
+          "Field %s: document cannot be combined with raw or binary".formatted(fieldName));
+    }
+    final var keyAnnotation = field.getAnnotation(Key.class);
+    final var key = keyAnnotation == null ? fieldName : keyAnnotation.value();
+    if (key.isEmpty()) {
+      throw new IllegalArgumentException("Field %s: @Key must not be empty".formatted(fieldName));
+    }
+    if (!keys.add(key)) {
+      throw new IllegalArgumentException(
+          "Field " + fieldName + " uses the key '" + key + "' of another field");
+    }
+    final var mirror = field.asType();
+    final var kind = typeOf(mirror, raw, binary, document, fieldName);
+    if (document && kind != Type.DOCUMENT) {
+      throw new IllegalArgumentException(
+          "Field %s: document requires a DirectBuffer or UnsafeBuffer field".formatted(fieldName));
+    }
+    final var inPlace = isUnsafeBuffer(mirror);
+    final var presence = presenceOf(field, kind, inPlace);
+    requireValidFinality(field, kind, inPlace);
+    final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
+    final var sanitized = field.getAnnotation(Sanitized.class) != null;
+    final var element = kind == Type.LIST ? elementOf(mirror, fieldName) : null;
+    if (element != null && !element.unboxed()) {
+      switch (element.kind()) {
+        case INT -> warning(field, boxedListWarning(fieldName, "IntArrayList"));
+        case LONG -> warning(field, boxedListWarning(fieldName, "LongArrayList"));
+        default -> {}
+      }
+    }
+    final var javaType = element != null ? element.leaf().javaType() : javaType(mirror, kind);
+    final var pojo =
+        kind == Type.NESTED
+            && ((DeclaredType) mirror).asElement().getAnnotation(MsgpackPojo.class) != null;
+    return new Property(
+        keyLiteral, kind, fieldName, javaType, inPlace, presence, sanitized, pojo, element);
+  }
+
+  /** Whether the field can be unset: {@code @Nullable} only where null is its unset state. */
+  private static Presence presenceOf(final Element field, final Type kind, final boolean inPlace) {
+    final var fieldName = field.getSimpleName();
+    final var nullable = isNullable(field);
+    if (nullable && !kind.nullable) {
+      throw new IllegalArgumentException(
+          ("Field %s must not be @Nullable: only a string, binary, raw, document, enum, Boolean, "
+                  + "Long or Integer field can be unset. Use Long, Integer, RequiredLong or "
+                  + "RequiredInt for a long or int")
+              .formatted(fieldName));
+    }
+    if (!nullable && (kind == Type.BOXED_LONG || kind == Type.BOXED_INT)) {
+      throw new IllegalArgumentException(
+          "Field %s must be @Nullable, null is its unset state. Use %s for a default"
+              .formatted(fieldName, kind == Type.BOXED_LONG ? "long" : "int"));
+    }
+    if (!nullable && kind == Type.BOXED_BOOLEAN) {
+      throw new IllegalArgumentException(
+          "Field %s must be @Nullable, null is its unset state. Use boolean for a default"
+              .formatted(fieldName));
+    }
+    if (nullable && inPlace) {
+      throw new IllegalArgumentException(
+          "Field %s must not be @Nullable: an UnsafeBuffer is final and never null"
+              .formatted(fieldName));
+    }
+    if (nullable) {
+      return Presence.NULLABLE;
+    }
+    return kind == Type.REQUIRED_LONG || kind == Type.REQUIRED_INT
+        ? Presence.HOLDER
+        : Presence.DEFAULT;
+  }
+
+  /**
+   * Containers and {@code UnsafeBuffer}s are read into and reset in place, so they are final; the
+   * other fields are replaced, so they are not.
+   */
+  private static void requireValidFinality(
+      final Element field, final Type kind, final boolean inPlace) {
+    final var fieldName = field.getSimpleName();
+    final var isFinal = field.getModifiers().contains(Modifier.FINAL);
+    if (!isFinal && kind.container) {
+      throw new IllegalArgumentException(
+          "Field %s must be final: it is read into and reset in place".formatted(fieldName));
+    }
+    if (!isFinal && inPlace) {
+      throw new IllegalArgumentException(
+          ("Field %s must be final: an UnsafeBuffer is wrapped in place, which would modify the "
+                  + "shared default. Declare it as DirectBuffer to replace it on every read")
+              .formatted(fieldName));
+    }
+    if (isFinal && !kind.container && !inPlace) {
+      throw new IllegalArgumentException("Field " + fieldName + " must not be final");
+    }
   }
 
   private Type typeOf(
