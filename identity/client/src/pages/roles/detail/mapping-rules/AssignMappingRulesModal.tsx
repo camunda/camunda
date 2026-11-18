@@ -20,17 +20,9 @@ const AssignMappingRulesModal: FC<
     { id: Role["roleId"] },
     {
       assignedMappingRules: MappingRule[];
-      onItemsAssigned: (count: number) => void;
     }
   >
-> = ({
-  entity: role,
-  assignedMappingRules,
-  onSuccess,
-  onItemsAssigned,
-  open,
-  onClose,
-}) => {
+> = ({ entity: role, assignedMappingRules, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("roles");
   const [selectedMappingRules, setSelectedMappingRules] = useState<
     MappingRule[]
@@ -51,14 +43,14 @@ const AssignMappingRulesModal: FC<
     setLoadingAssignMappingRule(true);
     try {
       await Promise.all(
-        selectedMappingRules.map(({ mappingRuleId }) =>
+        selectedMappingRules.map((mappingRule) =>
           callAssignMappingRule({
-            mappingRuleId: mappingRuleId,
+            mappingRuleId: mappingRule.mappingRuleId,
+            mappingRule,
             roleId: role.id,
           }),
         ),
       );
-      onItemsAssigned(selectedMappingRules.length);
       onSuccess();
     } catch {
       // error handled globally

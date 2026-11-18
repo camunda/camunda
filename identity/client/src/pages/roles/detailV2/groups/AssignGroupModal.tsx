@@ -20,10 +20,9 @@ const AssignGroupModal: FC<
     { roleId: Role["roleId"] },
     {
       assignedGroups: Group[];
-      onItemsAssigned: (count: number) => void;
     }
   >
-> = ({ entity: { roleId }, onSuccess, onItemsAssigned, open, onClose }) => {
+> = ({ entity: { roleId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("roles");
   const [groupId, setGroupId] = useState("");
   const qc = useQueryClient();
@@ -39,7 +38,6 @@ const AssignGroupModal: FC<
       { groupId, roleId },
       {
         onSuccess: () => {
-          onItemsAssigned(1);
           onSuccess();
         },
       },
