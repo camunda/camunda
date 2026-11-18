@@ -46,8 +46,7 @@ import {
 import {setVariableConditions, useVariableConditions} from '../../VariablesFilter/variableFilterStore';
 import {truncate} from '../../VariablesFilter/truncate';
 import {VariableFilterRow} from './VariableFilterRow';
-
-const SOFT_WARNING_THRESHOLD = 8;
+import {VariableFilterWarnings} from './VariableFilterWarnings';
 
 type Tab = 'fields' | 'json';
 
@@ -274,20 +273,7 @@ const VariableFilterModal: React.FC = () => {
 											/>
 										))}
 									</div>
-									{conditions.some(({operator}) => operator === 'contains') && (
-										<Alert
-											variant="warning"
-											role="status"
-											description={t('operate.processes.variableFilter.containsWarning')}
-										/>
-									)}
-									{conditions.length >= SOFT_WARNING_THRESHOLD && (
-										<Alert
-											variant="info"
-											role="status"
-											description={t('operate.processes.variableFilter.manyConditionsWarning')}
-										/>
-									)}
+									<VariableFilterWarnings conditions={conditions} />
 									<Button variant="ghost" size="sm" className="self-start" onClick={addCondition}>
 										<Plus aria-hidden />
 										{t('operate.processes.variableFilter.addCondition')}

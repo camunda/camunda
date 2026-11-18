@@ -294,9 +294,39 @@ describe('<Processes /> (design system)', () => {
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).not.toBeInTheDocument();
 	});
 
+	it('should show the contains warning next to the stored conditions', async () => {
+		setVariableConditions([{name: 'status', operator: 'contains', value: 'open'}]);
+
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await expect.element(screen.getByText(/"contains" searches only the first/)).toBeVisible();
+	});
+
+	it('should offer to add a condition when the variables filter has no stored conditions', async () => {
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Variables'}));
+
+		await expect.element(screen.getByRole('button', {name: 'Add condition'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Edit conditions'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('list', {name: 'Active variable filters'})).not.toBeInTheDocument();
+	});
+
+	it('should warn about filtering by many variable conditions', async () => {
+		setVariableConditions(
+			Array.from({length: 8}, (_, index) => ({name: `variable${index}`, operator: 'equals', value: '1'})),
+		);
+
+		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+
+		await expect.element(screen.getByText(/Filtering by many conditions can be slow/)).toBeVisible();
+	});
+
 	it('should clear the variable conditions when filters are reset', async () => {
 		setVariableConditions([{name: 'status', operator: 'equals', value: '"open"'}]);
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
+		await expect.element(screen.getByRole('list', {name: 'Active variable filters'})).toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset filters'}));
 

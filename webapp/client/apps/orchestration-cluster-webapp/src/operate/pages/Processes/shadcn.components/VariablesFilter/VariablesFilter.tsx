@@ -14,6 +14,7 @@ import {Pencil, Plus} from '@camunda/design-system/icons';
 import {isValueRequired, type VariableCondition} from '../../VariablesFilter/variableConditions';
 import {useVariableConditions} from '../../VariablesFilter/variableFilterStore';
 import {truncate} from '../../VariablesFilter/truncate';
+import {VariableFilterWarnings} from './VariableFilterWarnings';
 
 const VariablesFilter: React.FC = () => {
 	const {t} = useTranslation();
@@ -39,6 +40,7 @@ const VariablesFilter: React.FC = () => {
 					))}
 				</ul>
 			)}
+			<VariableFilterWarnings conditions={conditions} />
 			<Button
 				variant="ghost"
 				size="sm"
