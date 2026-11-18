@@ -34,6 +34,10 @@ describe("test.custom-model.js writeFlow scenario", () => {
       { rate: 50, duration: "10m" },
       { rate: 100, duration: "30s" },
     ]);
+    assert.deepEqual(script.parseWriteFlowStages("5:1m;6:2m"), [
+      { rate: 5, duration: "1m" },
+      { rate: 6, duration: "2m" },
+    ]);
     assert.deepEqual(script.parseWriteFlowStages(""), []);
   });
 

@@ -162,12 +162,13 @@ export function userTasksScenario(users) {
   };
 }
 
-/* Parses "50:10m,100:10m" into [{ rate: 50, duration: "10m" }, ...]. */
+/* Parses "50:10m,100:10m" into [{ rate: 50, duration: "10m" }, ...]. A semicolon also separates the
+ * stages, because `helm --set` splits its values at commas. */
 export function parseWriteFlowStages(value) {
   if (value.trim() === "") {
     return [];
   }
-  return value.split(",").map((stage) => {
+  return value.split(/[;,]/).map((stage) => {
     const match = /^\s*(\d+):(\d+(?:ms|s|m|h))\s*$/.exec(stage);
     if (!match || parseInt(match[1]) <= 0) {
       throw new Error(`Invalid write flow stage: ${stage}`);
