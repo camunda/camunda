@@ -576,6 +576,7 @@ class SegmentedJournalTest {
     assertThat(reader.seekToFirst()).isEqualTo(5);
     assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(7);
     assertThat(deletions).hasSize(1);
+    assertThat(pendingSegmentDeletions()).isEqualTo(2);
     assertThat(logDirectory)
         .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-1.log"))
         .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-2.log"));
@@ -590,6 +591,14 @@ class SegmentedJournalTest {
         .isDirectoryNotContaining(
             p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
         .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-3.log"));
+    assertThat(pendingSegmentDeletions()).isZero();
+    assertThat(
+            journalFactory
+                .meterRegistry()
+                .get(JournalMetricsDoc.SEGMENT_DELETION_TIME.getName())
+                .timer()
+                .count())
+        .isEqualTo(2);
   }
 
   @Test
@@ -653,6 +662,7 @@ class SegmentedJournalTest {
     // then
     assertThat(logDirectory)
         .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+    assertThat(pendingSegmentDeletions()).isEqualTo(2);
 
     // when
     Files.move(movedFirstSegment, firstSegment);
@@ -728,6 +738,7 @@ class SegmentedJournalTest {
     // then
     assertThat(logDirectory)
         .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+    assertThat(pendingSegmentDeletions()).isZero();
     Files.move(movedFirstSegment, firstSegment);
     journal = openJournal(2);
     assertThat(journal.getFirstIndex()).isEqualTo(1);
@@ -1669,6 +1680,14 @@ class SegmentedJournalTest {
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
+  }
+
+  private double pendingSegmentDeletions() {
+    return journalFactory
+        .meterRegistry()
+        .get(JournalMetricsDoc.PENDING_SEGMENT_DELETIONS.getName())
+        .gauge()
+        .value();
   }
 
   /** An entry with custom data, of the same size as {@link TestJournalFactory#entry()}. */
