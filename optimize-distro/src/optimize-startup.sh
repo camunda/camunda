@@ -60,4 +60,5 @@ echo
 echo "Starting Camunda Optimize ${project.version}..."
 echo
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp "${OPTIMIZE_CLASSPATH}" ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 io.camunda.optimize.Main
+# -XX:-UseBASE64Intrinsics mitigates CVE-2026-114938 (Java4Shell) on JDKs older than 21.0.13.1 / 25.0.5.1
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} -XX:-UseBASE64Intrinsics -cp "${OPTIMIZE_CLASSPATH}" ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 io.camunda.optimize.Main
