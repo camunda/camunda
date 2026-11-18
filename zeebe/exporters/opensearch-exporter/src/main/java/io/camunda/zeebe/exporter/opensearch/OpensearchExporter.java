@@ -223,7 +223,7 @@ public class OpensearchExporter implements Exporter {
   // TODO: remove this and instead allow client to be inject-able for testing
   protected OpensearchClient createClient() {
     return new OpensearchClient(
-        configuration, meterRegistry, OpensearchConnector.of(configuration).createClient());
+        configuration, meterRegistry, OpensearchClientFactory.of(configuration).createClient());
   }
 
   private void flushAndReschedule() {

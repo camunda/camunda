@@ -66,7 +66,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
         new OpensearchClient(
             config,
             bulkRequest,
-            OpensearchConnector.of(config).createClient(),
+            OpensearchClientFactory.of(config).createClient(),
             indexRouter,
             templateReader,
             new OpensearchMetrics(new SimpleMeterRegistry()));

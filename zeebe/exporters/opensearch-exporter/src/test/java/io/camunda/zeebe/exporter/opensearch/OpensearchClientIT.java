@@ -169,7 +169,7 @@ public class OpensearchClientIT {
         new OpensearchClient(
             SEARCH_DB.config(),
             SEARCH_DB.bulkRequest(),
-            OpensearchConnector.of(SEARCH_DB.config()).createClient(),
+            OpensearchClientFactory.of(SEARCH_DB.config()).createClient(),
             SEARCH_DB.indexRouter(),
             SEARCH_DB.templateReader(),
             new OpensearchMetrics(new SimpleMeterRegistry()));

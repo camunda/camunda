@@ -66,7 +66,7 @@ final class TestClient implements CloseableSilently {
     this(
         config,
         indexRouter,
-        OpensearchConnector.of(config.withObjectMapper(MAPPER)).createClient());
+        OpensearchClientFactory.of(config.withObjectMapper(MAPPER)).createClient());
   }
 
   TestClient(
