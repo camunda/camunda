@@ -21,7 +21,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
-import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
+import {createJob, createListenerJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
@@ -194,6 +194,40 @@ test('should match the process instance listeners tab snapshot', async ({
 	await operatePreviewProcessInstancePage.tab('Listeners').click();
 
 	await expect(operatePreviewProcessInstancePage.listenersList.getByText('audit-listener')).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test('should match the process instance details tab snapshot', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+}) => {
+	const elementInstanceKey = '2251799813685290';
+	network.use(
+		mockGetElementInstanceEndpoint({
+			successResponse: HttpResponse.json(
+				createElementInstance({
+					elementId: 'task-1',
+					elementInstanceKey,
+					type: 'USER_TASK',
+					state: 'COMPLETED',
+					startDate: '2026-01-15T10:00:00.000Z',
+					endDate: '2026-01-15T10:00:30.000Z',
+				}),
+			),
+		}),
+		mockQueryJobsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryJobsResponse([createJob({retries: 2, priority: 7, type: 'send-email', worker: 'email-worker'})]),
+			),
+		}),
+	);
+
+	await page.goto(
+		`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details?elementId=task-1&elementInstanceKey=${elementInstanceKey}`,
+	);
+
+	await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList.getByText('email-worker')).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
 });
 

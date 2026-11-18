@@ -19,6 +19,7 @@ import {
 	mockQueryElementInstancesEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryVariablesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -33,6 +34,10 @@ import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
+import {
+	createElementInstanceInspection,
+	createQueryElementInstanceInspectionResponse,
+} from '#/shared-test-modules/api-mocks/element-instance-inspection';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
@@ -311,11 +316,21 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 					createPaginatedResponse({items: [{elementId: 'my-process', waitingCount: 1}]}),
 				),
 			}),
+			mockQueryElementInstanceInspectionEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstanceInspectionResponse([
+						createElementInstanceInspection({elementInstanceKey: PROCESS_INSTANCE_ID}),
+					]),
+				),
+			}),
 		);
 
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details`);
+		await expect(
+			operatePreviewProcessInstancePage.tabPanel.getByText('Waiting for message: payment-received'),
+		).toBeVisible();
 	});
 
 	test('should not request wait states and should redirect to variables when the flag is off', async ({
