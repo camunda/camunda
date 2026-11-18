@@ -392,13 +392,19 @@ public class BpmnJobActivationBehavior {
           case ASSIGNED -> {
             final var authorizedTenants =
                 tenantCheck.resolveAuthorizedTenantsWithAuthInfo(authInfo);
+            // anonymous access resolves to all tenants, which is no assignment to stream from
             yield !authorizedTenants.wildcard()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }
-          case PROVIDED -> jobActivationProperties.tenantIds().contains(ownerTenantId);
+          case PROVIDED ->
+              jobActivationProperties.tenantIds().contains(ownerTenantId)
+                  && tenantCheck
+                      .resolveAuthorizedTenantsWithAuthInfo(authInfo)
+                      .isAuthorizedForTenantId(ownerTenantId);
         };
     if (!isTenantAuthorized) {
-      // don't push jobs to workers that don't request them from the job's tenant
+      // don't push jobs to workers that don't request them from the job's tenant, or that are
+      // not authorized for it
       jobAuthorizationLogger.logUnauthorizedTenantAccess(jobActivationProperties, jobRecord);
       return false;
     }
