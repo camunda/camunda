@@ -79,18 +79,28 @@ runs:
         #
         # `timeout` signals npm's whole process group (SIGKILL after 30s, exit
         # 137) but only waits for npm itself, so a descendant that ignores
-        # SIGTERM can outlive it. timeout leads its own process group, so the
-        # leftovers are killed by group ID before the rm -rf below runs. Don't
-        # add `--foreground`, it would signal npm only.
+        # SIGTERM can outlive it and keep writing while the rm -rf below runs.
+        # `set -m` is what makes timeout a process-group leader: without it a
+        # background job stays in this script's group, `$!` is a plain PID, and
+        # the `kill -0 -- -$pgid` guard below never matches. With it, PID and
+        # PGID coincide, so the leftovers can be killed by group ID. Don't add
+        # `--foreground`, it would signal npm only.
         command: |
           cd "$NPM_CI_DIRECTORY" || exit 1
           status=0
+          set -m
           timeout --kill-after=30s "${NPM_CI_TIMEOUT_SECONDS}s" npm ci --fetch-timeout=60000 --fetch-retries=3 --fetch-retry-mintimeout=5000 --fetch-retry-maxtimeout=15000 &
           pgid=$!
+          set +m
           wait "$pgid" || status=$?
           if kill -0 -- "-$pgid" 2>/dev/null; then
             kill -KILL -- "-$pgid" 2>/dev/null || true
-            while kill -0 -- "-$pgid" 2>/dev/null; do sleep 1; done
+            # Bounded: an unkillable process (for example stuck in D state on a
+            # hung mount) must not hang the step past the retry backstop.
+            for _ in $(seq 1 30); do
+              kill -0 -- "-$pgid" 2>/dev/null || break
+              sleep 1
+            done
           fi
           if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
             echo "::warning::npm ci timed out after ${NPM_CI_TIMEOUT_SECONDS}s (exit ${status})"
