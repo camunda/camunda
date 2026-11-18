@@ -58,14 +58,16 @@ public class UsageMetricsDbReader implements UsageMetricsReader {
   }
 
   /**
-   * Checks if the search result should be empty based on resource and tenant authorization.
-   * Returns {@code true} if authorization is enabled but no authorized tenant IDs are present.
+   * Checks if the result should be empty: the caller lacks the usage metric permission, or the
+   * tenant check is enabled without any tenant. This is what allows the mappers to read an empty
+   * authorized tenant list as "tenant check disabled".
    *
-   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
-   * @return {@code true} if the search result should be empty, {@code false
+   * @param resourceAccessChecks the resource access checks containing authorization and tenant
+   *     checks
+   * @return {@code true} if the result should be empty, {@code false} otherwise
    */
-  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.tenantCheck().enabled()
-        && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
+  static boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return !resourceAccessChecks.authorizationCheck().hasAnyResourceAccess()
+        || !resourceAccessChecks.tenantCheck().hasAnyTenantAccess();
   }
 }
