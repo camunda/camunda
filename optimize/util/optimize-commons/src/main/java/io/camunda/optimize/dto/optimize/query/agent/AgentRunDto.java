@@ -49,7 +49,8 @@ public class AgentRunDto implements OptimizeDto {
   private Long inputTokens;
   private Long outputTokens;
   private Long reasoningTokens;
-  private Long cacheCreationTokens;
+  // the engine calls this cacheCreationTokenCount; named like the API and dashboard instead
+  private Long cacheWriteTokens;
   private Long cacheReadTokens;
   private Long totalTokens;
   private Long modelCalls;
@@ -262,12 +263,12 @@ public class AgentRunDto implements OptimizeDto {
     this.reasoningTokens = reasoningTokens;
   }
 
-  public Long getCacheCreationTokens() {
-    return cacheCreationTokens;
+  public Long getCacheWriteTokens() {
+    return cacheWriteTokens;
   }
 
-  public void setCacheCreationTokens(final Long cacheCreationTokens) {
-    this.cacheCreationTokens = cacheCreationTokens;
+  public void setCacheWriteTokens(final Long cacheWriteTokens) {
+    this.cacheWriteTokens = cacheWriteTokens;
   }
 
   public Long getCacheReadTokens() {
@@ -436,7 +437,7 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(inputTokens, that.inputTokens)
         && Objects.equals(outputTokens, that.outputTokens)
         && Objects.equals(reasoningTokens, that.reasoningTokens)
-        && Objects.equals(cacheCreationTokens, that.cacheCreationTokens)
+        && Objects.equals(cacheWriteTokens, that.cacheWriteTokens)
         && Objects.equals(cacheReadTokens, that.cacheReadTokens)
         && Objects.equals(totalTokens, that.totalTokens)
         && Objects.equals(modelCalls, that.modelCalls)
@@ -483,7 +484,7 @@ public class AgentRunDto implements OptimizeDto {
         inputTokens,
         outputTokens,
         reasoningTokens,
-        cacheCreationTokens,
+        cacheWriteTokens,
         cacheReadTokens,
         totalTokens,
         modelCalls,
@@ -554,8 +555,8 @@ public class AgentRunDto implements OptimizeDto {
         + outputTokens
         + ", reasoningTokens="
         + reasoningTokens
-        + ", cacheCreationTokens="
-        + cacheCreationTokens
+        + ", cacheWriteTokens="
+        + cacheWriteTokens
         + ", cacheReadTokens="
         + cacheReadTokens
         + ", totalTokens="
@@ -620,7 +621,7 @@ public class AgentRunDto implements OptimizeDto {
     public static final String inputTokens = "inputTokens";
     public static final String outputTokens = "outputTokens";
     public static final String reasoningTokens = "reasoningTokens";
-    public static final String cacheCreationTokens = "cacheCreationTokens";
+    public static final String cacheWriteTokens = "cacheWriteTokens";
     public static final String cacheReadTokens = "cacheReadTokens";
     public static final String totalTokens = "totalTokens";
     public static final String modelCalls = "modelCalls";

@@ -62,7 +62,7 @@ class AgentRunIndexMappingTest {
                 entry("inputTokens", Property.Kind.Long),
                 entry("outputTokens", Property.Kind.Long),
                 entry("reasoningTokens", Property.Kind.Long),
-                entry("cacheCreationTokens", Property.Kind.Long),
+                entry("cacheWriteTokens", Property.Kind.Long),
                 entry("cacheReadTokens", Property.Kind.Long),
                 entry("totalTokens", Property.Kind.Long),
                 entry("modelCalls", Property.Kind.Long),
