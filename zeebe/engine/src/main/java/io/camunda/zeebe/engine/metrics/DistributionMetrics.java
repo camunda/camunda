@@ -23,14 +23,14 @@ import org.jspecify.annotations.Nullable;
 public final class DistributionMetrics {
 
   /** Tag value for distributions which are not part of any queue. */
-  static final String NO_QUEUE = "NONE";
+  private static final String NO_QUEUE = "NONE";
 
   /**
    * Tag value for queues which are not declared in {@link DistributionQueue}. Queue ids can also be
    * user-controlled (e.g. cluster variable names), so they must never be used as a tag value as
    * that would make the number of time series unbounded.
    */
-  static final String OTHER_QUEUE = "OTHER";
+  private static final String OTHER_QUEUE = "OTHER";
 
   private static final Set<String> KNOWN_QUEUES =
       Arrays.stream(DistributionQueue.getValues())
@@ -148,7 +148,7 @@ public final class DistributionMetrics {
   }
 
   /** Maps the queue id to a tag value out of a bounded set: known queues, NONE, or OTHER. */
-  static String toQueueTag(final @Nullable String queueId) {
+  private static String toQueueTag(final @Nullable String queueId) {
     if (queueId == null) {
       return NO_QUEUE;
     }

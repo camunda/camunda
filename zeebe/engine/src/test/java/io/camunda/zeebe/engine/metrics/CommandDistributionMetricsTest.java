@@ -21,6 +21,11 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -190,6 +195,38 @@ public class CommandDistributionMetricsTest {
     final var reset = engine.clock().reset();
     waitUntilCommandDistributionIs(CommandDistributionIntent.DISTRIBUTING, reset.getKey());
     return reset.getKey();
+  }
+
+  @Test
+  public void shouldNotTagWithUserControlledQueueIds() {
+    // given - cluster variables use their (user-supplied) name as distribution queue id
+    engine.pauseProcessing(2);
+    final var names =
+        IntStream.range(0, 3).mapToObj(i -> "var_" + UUID.randomUUID().toString().replace("-", ""));
+
+    // when
+    names.forEach(
+        name ->
+            engine
+                .clusterVariables()
+                .withName(name)
+                .setGlobalScope()
+                .withValue("\"value\"")
+                .create());
+
+    // then
+    final var pending = DistributionMetricsDoc.PENDING_COMMAND_DISTRIBUTIONS.getName();
+    assertThat(getGaugeValue(1, pending, 2, "OTHER")).isEqualTo(3);
+
+    final var allowedQueues =
+        Stream.concat(
+                Arrays.stream(DistributionQueue.getValues()).map(DistributionQueue::getQueueId),
+                Stream.of("NONE", "OTHER"))
+            .toList();
+    assertThat(engine.getMeterRegistry(1).find(pending).gauges())
+        .extracting(gauge -> gauge.getId().getTag(DistributionMetricKeyNames.QUEUE.asString()))
+        .isNotEmpty()
+        .are(new Condition<>(allowedQueues::contains, "a bounded queue tag"));
   }
 
   private long triggerQueuedDistribution() {
