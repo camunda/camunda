@@ -97,7 +97,6 @@ const VariableFilterModal: React.FC = () => {
 	const [tab, setTab] = useState<Tab>('fields');
 	const [jsonDraft, setJsonDraft] = useState('');
 	const [jsonError, setJsonError] = useState<string | null>(null);
-	const [hasJsonParseWarning, setHasJsonParseWarning] = useState(false);
 
 	useEffect(() => {
 		if (isEditorValid) {
@@ -143,16 +142,15 @@ const VariableFilterModal: React.FC = () => {
 
 	const handleTabChange = (nextTab: Tab) => {
 		if (nextTab === 'json') {
-			if (!hasJsonParseWarning) {
-				setJsonDraft(serializeConditions(conditions));
-			}
-			setHasJsonParseWarning(false);
+			setJsonDraft(serializeConditions(conditions));
 		} else {
 			const result = parseConditionsJson(jsonDraft);
-			if (result.ok) {
-				replaceConditions(result.conditions.length > 0 ? result.conditions : [createDraft()]);
+			if (!result.ok) {
+				jsonEditorRef.current?.showMarkers();
+				setJsonError(result.error);
+				return;
 			}
-			setHasJsonParseWarning(!result.ok);
+			replaceConditions(result.conditions.length > 0 ? result.conditions : [createDraft()]);
 		}
 		setJsonError(null);
 		setTab(nextTab);
@@ -263,13 +261,6 @@ const VariableFilterModal: React.FC = () => {
 							</TabsList>
 							<TabsContent value="fields" className="flex flex-col gap-5">
 								<>
-									{hasJsonParseWarning && (
-										<Alert
-											variant="warning"
-											role="status"
-											description={t('operate.processes.variableFilter.jsonWarning')}
-										/>
-									)}
 									<div className="flex max-h-[clamp(7.5rem,calc(84vh-22rem),24rem)] min-h-0 flex-col gap-4 overflow-x-hidden overflow-y-auto">
 										{conditions.map((condition, index) => (
 											<VariableFilterRow
