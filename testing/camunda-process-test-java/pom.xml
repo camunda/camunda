@@ -21,8 +21,8 @@
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
     <!-- Connectors Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
-    <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Renovate keeps it current; when updating manually, also change the same value in build.gradle.kts. -->
-    <io.camunda.process.test.connectorsDockerImageVersion>8.10.5</io.camunda.process.test.connectorsDockerImageVersion>
+    <!-- Follows the project version: SNAPSHOT versions fall back to the default SNAPSHOT image, a release uses the Connectors release with the same version. On stable branches, Renovate replaces it with a published Connectors version (the patch release workflow does so if Renovate has not yet). -->
+    <io.camunda.process.test.connectorsDockerImageVersion>${project.version}</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>
