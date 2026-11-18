@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.msgpack;
 
+import static io.camunda.zeebe.msgpack.MsgPackUtil.encodeMsgPack;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -52,6 +54,42 @@ final class ObjectValueTest {
 
     // then
     assertThat(result).isEqualTo("{}");
+  }
+
+  @Test
+  void shouldSeparateDeclaredAndUndeclaredProperties() {
+    // given a value whose declared property is set by reading, and a buffer with a property the
+    // class does not declare
+    final var objectValue = new TestObjectValueWithUndeclaredProperty();
+    objectValue.wrap(
+        encodeMsgPack(
+            writer -> {
+              writer.writeMapHeader(2);
+              writer.writeString(wrapString("declared-property"));
+              writer.writeInteger(1L);
+              writer.writeString(wrapString("undeclared-property"));
+              writer.writeInteger(2L);
+            }));
+
+    // when
+    final var builder = new StringBuilder();
+    objectValue.writeJSON(builder);
+
+    // then the undeclared property follows the declared one with a separator, printed as the raw
+    // value it holds
+    final var expected =
+        "{\"declared-property\":1,\"undeclared-property\":[packed value (length=1)]}";
+    assertThat(builder.toString()).isEqualTo(expected);
+    assertThat(objectValue.toString()).isEqualTo(expected);
+  }
+
+  private static final class TestObjectValueWithUndeclaredProperty extends UnpackedObject {
+    private final LongProperty declaredProperty = new LongProperty("declared-property");
+
+    private TestObjectValueWithUndeclaredProperty() {
+      super(1);
+      declareProperty(declaredProperty);
+    }
   }
 
   private static final class TestObjectValueWithUnsetProperties extends ObjectValue {
