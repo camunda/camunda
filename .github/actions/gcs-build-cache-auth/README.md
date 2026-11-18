@@ -10,9 +10,11 @@ It bundles the four steps every build-cache consumer repeated verbatim:
 
 1. Detect fork PRs (via [`is-fork`](../is-fork)) and skip Vault/WIF auth entirely
    when running on one, since secrets aren't available there.
-2. Fetch the `monorepo-build-cache-sa` service account from Vault (WIF provider +
-   service account, no long-lived key).
-3. Authenticate via `google-github-actions/auth` using Workload Identity Federation.
+2. Fetch the service account at `secret-path` from Vault (WIF provider +
+   service account, no long-lived key) via
+   [`vault-action-with-retry`](../vault-action-with-retry), up to three attempts.
+3. Authenticate via `google-github-actions/auth` using Workload Identity Federation,
+   up to three attempts.
 4. Install the gcloud CLI via `google-github-actions/setup-gcloud`.
 
 After this action runs, the caller issues its own `gcloud storage` command
