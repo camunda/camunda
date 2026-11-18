@@ -2,8 +2,7 @@
 #
 # This action expects certain secrets to be provided:
 #   - VAULT_ADDR
-#   - VAULT_ROLE_ID
-#   - VAULT_SECRET_ID
+#   - VAULT_JWT_ROLE, VAULT_JWT_PATH, VAULT_JWT_AUDIENCE (or the deprecated VAULT_ROLE_ID, VAULT_SECRET_ID)
 ---
 name: Observe Build Status
 description: Records the build status remotely for analytic purposes
@@ -30,6 +29,15 @@ inputs:
   secret_vault_secretId:
     description: 'Secret vault ID'
     required: false
+  secret_vault_jwtRole:
+    description: 'Vault JWT role; when set, the action logs in via JWT/OIDC and the job needs id-token: write'
+    required: false
+  secret_vault_jwtPath:
+    description: 'Vault JWT auth backend path'
+    required: false
+  secret_vault_jwtAudience:
+    description: 'GitHub OIDC audience for the Vault JWT login'
+    required: false
 
 runs:
   using: composite
@@ -39,13 +47,15 @@ runs:
       uses: hashicorp/vault-action@v3.0.0
       if: |
         inputs.secret_vault_address != ''
-        && inputs.secret_vault_roleId != ''
-        && inputs.secret_vault_secretId != ''
+        && (inputs.secret_vault_jwtRole != '' || (inputs.secret_vault_roleId != '' && inputs.secret_vault_secretId != ''))
       with:
         url: ${{ inputs.secret_vault_address }}
-        method: approle
-        roleId: ${{ inputs.secret_vault_roleId }}
-        secretId: ${{ inputs.secret_vault_secretId }}
+        method: ${{ inputs.secret_vault_jwtRole != '' && 'jwt' || 'approle' }}
+        path: ${{ inputs.secret_vault_jwtPath }}
+        role: ${{ inputs.secret_vault_jwtRole }}
+        jwtGithubAudience: ${{ inputs.secret_vault_jwtAudience }}
+        roleId: ${{ inputs.secret_vault_jwtRole == '' && inputs.secret_vault_roleId || '' }}
+        secretId: ${{ inputs.secret_vault_jwtRole == '' && inputs.secret_vault_secretId || '' }}
         exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
           secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
