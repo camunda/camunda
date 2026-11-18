@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -66,8 +65,6 @@ import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValu
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
@@ -78,9 +75,6 @@ import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
-import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
-import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -226,65 +220,6 @@ public class RecordFixtures {
                 .withBpmnProcessId("processStartForm")
                 .withVersion(1)
                 .build())
-        .build();
-  }
-
-  public ImmutableRecord<RecordValue> getNextProcessDefinitionVersionCreatedRecord(
-      final ImmutableRecord<RecordValue> previousVersion) {
-    final var previous = (Process) previousVersion.getValue();
-    final long key = previous.getProcessDefinitionKey() + 1;
-    return ImmutableRecord.builder()
-        .from(previousVersion)
-        .withKey(key)
-        .withPosition(nextPosition())
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableProcess.builder()
-                .from(previous)
-                .withProcessDefinitionKey(key)
-                .withVersion(previous.getVersion() + 1)
-                .build())
-        .build();
-  }
-
-  public ImmutableRecord<RecordValue> getProcessDefinitionDrainingRecord(
-      final ImmutableRecord<RecordValue> createdRecord) {
-    return ImmutableRecord.builder()
-        .from(createdRecord)
-        .withIntent(ProcessIntent.DRAINING)
-        .withPosition(nextPosition())
-        .withTimestamp(System.currentTimeMillis())
-        .build();
-  }
-
-  public ImmutableRecord<RecordValue> getProcessDefinitionSuspensionRecord(
-      final ProcessDefinitionSuspensionIntent intent,
-      final ProcessDefinitionSuspensionResolvedVersionValue... resolvedVersions) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.PROCESS_DEFINITION_SUSPENSION);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(intent)
-        .withPosition(nextPosition())
-        .withPartitionId(1)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableProcessDefinitionSuspensionRecordValue.builder()
-                .from((ProcessDefinitionSuspensionRecordValue) recordValueRecord.getValue())
-                .withResolvedVersions(List.of(resolvedVersions))
-                .build())
-        .build();
-  }
-
-  public ProcessDefinitionSuspensionResolvedVersionValue resolvedVersion(
-      final ImmutableRecord<RecordValue> processDefinitionRecord,
-      final ProcessDefinitionSuspensionOutcome outcome) {
-    final var process = (Process) processDefinitionRecord.getValue();
-    return ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
-        .withProcessDefinitionKey(process.getProcessDefinitionKey())
-        .withVersion(process.getVersion())
-        .withOutcome(outcome)
         .build();
   }
 
