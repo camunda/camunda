@@ -126,12 +126,17 @@ public final class RecordToWrite implements LogAppendEntry {
 
   /** Like a command sent by a client through the gateway: user claims and request metadata. */
   public static RecordToWrite commandFromRequest(final String username) {
+    return commandFromRequest(AuthorizationUtil.getAuthInfo(username));
+  }
+
+  /** Like a command sent by a client through the gateway: the given claims and request metadata. */
+  public static RecordToWrite commandFromRequest(final AuthInfo authInfo) {
     return new RecordToWrite(
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .requestId(1L)
             .requestStreamId(1)
-            .authorization(AuthorizationUtil.getAuthInfo(username)));
+            .authorization(authInfo));
   }
 
   public static RecordToWrite event() {
