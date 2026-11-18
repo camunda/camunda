@@ -56,7 +56,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -79,7 +78,6 @@ public final class BackgroundTaskManagerFactory {
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
-  private final LongSupplier exportedPosition;
 
   public BackgroundTaskManagerFactory(
       final int partitionId,
@@ -90,8 +88,7 @@ public final class BackgroundTaskManagerFactory {
       final Logger logger,
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
-      final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
-      final LongSupplier exportedPosition) {
+      final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -101,7 +98,6 @@ public final class BackgroundTaskManagerFactory {
     this.metadata = metadata;
     this.objectMapper = objectMapper;
     this.processCache = processCache;
-    this.exportedPosition = exportedPosition;
   }
 
   public BackgroundTaskManager build() {
@@ -176,7 +172,7 @@ public final class BackgroundTaskManagerFactory {
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
-        exportedPosition,
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
@@ -232,7 +228,7 @@ public final class BackgroundTaskManagerFactory {
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
         importPositionIndex.getFullQualifiedName(),
-        exportedPosition,
+        metadata::getLastFlushedPosition,
         asyncClient,
         executor,
         logger);
