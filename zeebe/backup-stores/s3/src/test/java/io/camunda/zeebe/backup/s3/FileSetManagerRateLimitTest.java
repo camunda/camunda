@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,8 +38,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceAccessMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
@@ -53,6 +58,12 @@ final class FileSetManagerRateLimitTest {
   // larger than the 8 MiB threshold above which files are compressed
   private static final int COMPRESSED_FILE_SIZE = 9 * 1024 * 1024;
   private static final long MIB = 1024 * 1024;
+
+  /**
+   * The tests of this class run concurrently. Tests that compress create temporary files, which the
+   * test that checks for leftover temporary files must not see.
+   */
+  private static final String COMPRESSION_TEMP_FILES = "zb-backup-compress temporary files";
 
   private final Map<String, byte[]> uploaded = new ConcurrentHashMap<>();
   private final Map<String, PutObjectRequest> requests = new ConcurrentHashMap<>();
@@ -79,6 +90,7 @@ final class FileSetManagerRateLimitTest {
   }
 
   @Test
+  @ResourceLock(value = COMPRESSION_TEMP_FILES, mode = ResourceAccessMode.READ)
   void shouldReadEveryByteToCompressAFileThroughTheLimiter() throws Exception {
     // given
     final var file =
@@ -115,6 +127,31 @@ final class FileSetManagerRateLimitTest {
     // then - the upload takes more than twice the timeout, but only because it waits its turn
     assertThat(saved).succeedsWithin(Duration.ofSeconds(30));
     assertThat(uploaded.get("prefix/segment-1.log")).isEqualTo(content);
+  }
+
+  @Test
+  @ResourceLock(COMPRESSION_TEMP_FILES)
+  void shouldDeleteThePartlyCompressedFileWhenCompressionFails() throws Exception {
+    // given - reading the file fails half way, e.g. because the read was interrupted while it
+    // waited for the read limit
+    final var file =
+        Files.write(directory.resolve("segment-1.log"), randomBytes(COMPRESSED_FILE_SIZE));
+    final var config =
+        new S3BackupConfig.Builder().withBucketName("b").withCompressionAlgorithm("zstd").build();
+    final var manager =
+        new FileSetManager(client, config, failingLimiter(COMPRESSED_FILE_SIZE / 2));
+    final var compressedFilesBefore = compressedTempFiles();
+
+    // when
+    final var saved = manager.save("prefix/", new NamedFileSetImpl(Map.of("segment-1.log", file)));
+
+    // then
+    assertThat(saved)
+        .failsWithin(Duration.ofSeconds(30))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(InterruptedIOException.class);
+    assertThat(compressedTempFiles()).isSubsetOf(compressedFilesBefore);
+    assertThat(uploaded).isEmpty();
   }
 
   @Test
@@ -183,6 +220,7 @@ final class FileSetManagerRateLimitTest {
   }
 
   @Test
+  @ResourceLock(value = COMPRESSION_TEMP_FILES, mode = ResourceAccessMode.READ)
   void shouldKeepApiCallTimeoutOfCompressedUploads() throws Exception {
     // given - the limited read happens while compressing, before the upload starts
     final var file =
@@ -278,6 +316,40 @@ final class FileSetManagerRateLimitTest {
         .withBucketName("b")
         .withApiCallTimeout(Duration.ofSeconds(seconds))
         .build();
+  }
+
+  /** A limiter whose streams fail once the given number of bytes was read from them. */
+  private static BackupReadRateLimiter failingLimiter(final long failAfterBytes)
+      throws IOException {
+    final var realLimiter = BackupReadRateLimiter.of(1L << 40);
+    final var limiter = mock(BackupReadRateLimiter.class);
+    when(limiter.wrap(any()))
+        .then(
+            invocation ->
+                realLimiter.wrap(
+                    new FilterInputStream(invocation.getArgument(0)) {
+                      private long read;
+
+                      @Override
+                      public int read(final byte[] buffer, final int offset, final int length)
+                          throws IOException {
+                        if (read >= failAfterBytes) {
+                          throw new InterruptedIOException("Interrupted while limiting reads");
+                        }
+                        final int count = super.read(buffer, offset, length);
+                        read += Math.max(0, count);
+                        return count;
+                      }
+                    }));
+    return limiter;
+  }
+
+  private static Set<Path> compressedTempFiles() throws IOException {
+    try (final var files = Files.list(Path.of(System.getProperty("java.io.tmpdir")))) {
+      return files
+          .filter(file -> file.getFileName().toString().startsWith("zb-backup-compress-"))
+          .collect(Collectors.toSet());
+    }
   }
 
   /** A limiter that never waits and counts the bytes that are read through its streams. */
