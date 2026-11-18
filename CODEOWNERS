@@ -22,6 +22,8 @@
 /.github/actions/paths-filter/*                          @camunda/engineering-operations
 /.github/actions/setup-build/*                           @camunda/engineering-operations
 /.github/actions/setup-maven*/*                          @camunda/engineering-operations
+/.github/actions/setup-npm-cache/*                       @camunda/engineering-operations
+/.github/actions/npm-ci-with-retry/*                     @camunda/engineering-operations
 /.github/actions/renew-github-token/*                    @camunda/engineering-operations
 /.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
 /.github/dependency-review-config.json                   @camunda/engineering-operations
@@ -147,6 +149,7 @@
 
 # Default for the unified webapp frontend; pod areas below override it.
 /webapp/client/                                                       @camunda/orchestration-cluster-webapps
+/.github/workflows/ci-webapp-client.yml                               @camunda/orchestration-cluster-webapps
 /webapp/client/apps/orchestration-cluster-webapp/src/routes/          @camunda/orchestration-cluster-webapps
 /webapp/client/apps/orchestration-cluster-webapp/src/shared/          @camunda/orchestration-cluster-webapps
 
