@@ -374,6 +374,7 @@ describe('<VariablesPanel />', () => {
 		const screen = await renderPanel();
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
 		await expect.element(screen.getByTestId('result-loading-spinner')).toBeVisible();
+		await expect.element(screen.getByTestId('result-loading-spinner')).toHaveTextContent('Loading result');
 		await expect.element(screen.getByTestId('results-json-viewer')).not.toBeInTheDocument();
 
 		release();

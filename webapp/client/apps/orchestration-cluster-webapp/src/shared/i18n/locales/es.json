@@ -1643,7 +1643,8 @@
 					},
 					"variablesPanel": {
 						"tabsLabel": "Pestañas del panel de variables",
-						"inputsAndOutputs": "Entradas y salidas"
+						"inputsAndOutputs": "Entradas y salidas",
+						"loadingResult": "Cargando resultado"
 					},
 					"forbidden": {
 						"heading": "No tiene permiso para ver esta información"

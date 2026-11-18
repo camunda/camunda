@@ -1655,7 +1655,8 @@
 					},
 					"variablesPanel": {
 						"tabsLabel": "Variable panel tabs",
-						"inputsAndOutputs": "Inputs and outputs"
+						"inputsAndOutputs": "Inputs and outputs",
+						"loadingResult": "Loading result"
 					},
 					"forbidden": {
 						"heading": "You do not have permission to view this information"

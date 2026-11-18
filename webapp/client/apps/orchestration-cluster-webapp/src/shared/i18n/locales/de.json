@@ -1643,7 +1643,8 @@
 					},
 					"variablesPanel": {
 						"tabsLabel": "Registerkarten des Variablenbereichs",
-						"inputsAndOutputs": "Eingaben und Ausgaben"
+						"inputsAndOutputs": "Eingaben und Ausgaben",
+						"loadingResult": "Ergebnis wird geladen"
 					},
 					"forbidden": {
 						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
