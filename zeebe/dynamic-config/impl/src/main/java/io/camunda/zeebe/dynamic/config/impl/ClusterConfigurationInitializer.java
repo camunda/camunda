@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,7 +236,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final ActorFuture<CurrentClusterConfiguration> initialized;
     private final ConcurrencyControl executor;
     private final Duration waitLogInterval;
-    private @Nullable ScheduledTimer waitLogTimer;
+    private ScheduledTimer waitLogTimer;
     private int waitLogCount;
 
     public GossipInitializer(
