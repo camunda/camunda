@@ -1669,6 +1669,11 @@
 				}
 			},
 			"processInstance": {
+				"ds": {
+					"forbidden": {
+						"heading": "You do not have permission to view this information"
+					}
+				},
 				"scaffold": {
 					"diagramPanelPlaceholder": "Diagram panel placeholder",
 					"bottomPanelPlaceholder": "Bottom panel placeholder"
