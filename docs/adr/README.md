@@ -82,6 +82,11 @@ ADR for that domain is written.
   store-owned per-store caching bounded by TTL and size, one store per physical
   tenant configured under `camunda.secrets.*`, and per-reference
   `SECRET:REVEAL` on the gateway path only (camunda/camunda#56572).
+- `secrets/002-secret-references-in-configuration.md` — `secret:<name>` references
+  in properties marked to accept them, read from a configuration secrets store of
+  their own that jobs can't reach, resolved in place on startup and refreshed per
+  tenant on every node, with clients that build, check and switch to a new client,
+  and literal credentials reported rather than rejected (camunda/camunda#69879).
 - `probes/001-probe-primitive.md` — probes, a request from a client to a worker
   answered in the same HTTP request without a process instance or a job: routing
   on an opaque `probeId`, REST long polling that mirrors job activation with one
