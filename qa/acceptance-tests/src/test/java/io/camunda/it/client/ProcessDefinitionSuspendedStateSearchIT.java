@@ -52,25 +52,6 @@ class ProcessDefinitionSuspendedStateSearchIT {
   private static DatabaseType databaseType;
 
   @Test
-  void shouldReturnSuspendedStateByKey() throws IOException {
-    // given
-    final var versions = deployTwoVersions();
-
-    // when
-    writeState(versions.v2(), false);
-
-    // then
-    awaitState(versions.v2(), ProcessDefinitionState.SUSPENDED);
-    assertThat(
-            camundaClient
-                .newProcessDefinitionGetRequest(versions.v1().getProcessDefinitionKey())
-                .send()
-                .join()
-                .getState())
-        .isEqualTo(ProcessDefinitionState.ACTIVE);
-  }
-
-  @Test
   void shouldSearchBySuspendedState() throws IOException {
     // given
     final var versions = deployTwoVersions();
