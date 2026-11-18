@@ -263,6 +263,52 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder clientCertificate(
+      final String certificateChainPath, final String privateKeyPath) {
+    innerBuilder.clientCertificate(certificateChainPath, privateKeyPath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientCertificateContent(
+      final String certificateChainPem, final String privateKeyPem) {
+    innerBuilder.clientCertificateContent(certificateChainPem, privateKeyPem);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientKeyPassphrase(final String keyPassphrase) {
+    innerBuilder.clientKeyPassphrase(keyPassphrase);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsCaCertificatePath(final String caPath) {
+    innerBuilder.mtlsCaCertificatePath(caPath);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsCaCertificateContent(final String caPem) {
+    innerBuilder.mtlsCaCertificateContent(caPem);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder clientKeystore(
+      final String keystorePath, final String keystorePassword, final String keyPassword) {
+    innerBuilder.clientKeystore(keystorePath, keystorePassword, keyPassword);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder mtlsTruststore(
+      final String truststorePath, final String truststorePassword) {
+    innerBuilder.mtlsTruststore(truststorePath, truststorePassword);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     innerBuilder.credentialsProvider(credentialsProvider);
     return this;
