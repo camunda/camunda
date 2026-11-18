@@ -44,10 +44,10 @@ import os
 import sys
 from dataclasses import dataclass
 
-# PI/s per secondary storage at which the max scenario saturates the cluster over gRPC.
-# TODO: replace with the result of a calibration run. This is an extrapolation: the daily stress test
-# runs 300 PI/s at about 50% of the CPU limit, and the exporters make up the rest of the load.
-ESTIMATED_GRPC_CAPACITY = {"elasticsearch": 600.0}
+# PI/s per secondary storage the max scenario reaches over gRPC on the default 4 CPU sizing, as
+# observed on a 10 tenant run. That is the throughput under heavy backpressure, so the rate the cluster
+# sustains without backpressure is lower. TODO: replace with the result of a calibration run.
+ESTIMATED_GRPC_CAPACITY = {"elasticsearch": 650.0}
 # REST spends a quarter to a third of the CPU in Tomcat and Spring request handling (profile of a
 # 10 tenant run), so the same cluster sustains less over REST. Assumed 35% less, to be calibrated.
 REST_CAPACITY_FACTOR = 0.65
