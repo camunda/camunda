@@ -507,6 +507,7 @@ secrets.internal-config.gcp.endpoint
 secrets.internal-config.gcp.path-prefix
 secrets.internal-config.gcp.project-id
 secrets.max-concurrency
+secrets.refresh-interval
 secrets.stores.aws
 secrets.stores.azure
 secrets.stores.env

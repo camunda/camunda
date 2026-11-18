@@ -1505,4 +1505,25 @@ class SecretsTest {
       assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
     }
   }
+
+  @Test
+  void shouldDefaultTheRefreshIntervalToFiveMinutes() {
+    // when
+    final var interval = new Secrets().getRefreshInterval();
+
+    // then
+    assertThat(interval).isEqualTo(Duration.ofMinutes(5));
+  }
+
+  @Test
+  void shouldRejectARefreshIntervalBelowThirtySeconds() {
+    // given
+    final var secrets = new Secrets();
+    secrets.setRefreshInterval(Duration.ofSeconds(29));
+
+    // when / then
+    assertThatThrownBy(secrets::getRefreshInterval)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("camunda.secrets.refresh-interval");
+  }
 }
