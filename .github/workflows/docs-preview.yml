@@ -95,8 +95,6 @@ jobs:
         if: github.event.action != 'closed'
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: ${{ env.DOCS_DIR }}/package-lock.json
 
       - name: Install dependencies
         if: github.event.action != 'closed'
