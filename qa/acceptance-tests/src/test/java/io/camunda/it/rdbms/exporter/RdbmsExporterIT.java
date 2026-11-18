@@ -1533,32 +1533,36 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             InstantSource.system()));
     intervalExporter.open(intervalController);
+    try {
+      // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition
+      // for it but does not enqueue any data write operations (the record is skipped for data
+      // export)
+      final var skippedRecord =
+          ImmutableRecord.<RecordValue>builder()
+              .from(RecordFixtures.FACTORY.generateRecord(ValueType.TIMER))
+              .withPosition(42L)
+              .withPartitionId(2)
+              .withTimestamp(System.currentTimeMillis())
+              .build();
 
-    // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition
-    // for it but does not enqueue any data write operations (the record is skipped for data export)
-    final var skippedRecord =
-        ImmutableRecord.<RecordValue>builder()
-            .from(RecordFixtures.FACTORY.generateRecord(ValueType.TIMER))
-            .withPosition(42L)
-            .withPartitionId(2)
-            .withTimestamp(System.currentTimeMillis())
-            .build();
+      // when - export the record (no handler → no data queued, but lastPosition is still updated)
+      intervalExporter.export(skippedRecord);
 
-    // when - export the record (no handler → no data queued, but lastPosition is still updated)
-    intervalExporter.export(skippedRecord);
+      // then - trigger the scheduled interval flush (flushInterval defaults to 500ms)
+      intervalController.runScheduledTasks(Duration.ofSeconds(1));
 
-    // then - trigger the scheduled interval flush (flushInterval defaults to 500ms)
-    intervalController.runScheduledTasks(Duration.ofSeconds(1));
+      // then - broker position is updated even though no data handler processed the record
+      assertThat(intervalController.getPosition()).isEqualTo(42L);
 
-    // then - broker position is updated even though no data handler processed the record
-    assertThat(intervalController.getPosition()).isEqualTo(42L);
-
-    // then - RDBMS position is updated: the pre-flush listener adds the position update
-    // to the queue before the empty-queue check, so it is persisted even though the queue
-    // contained no data writes
-    final var rdbmsPosition = exporterPositionMapper.findOne(2);
-    assertThat(rdbmsPosition).isNotNull();
-    assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
+      // then - RDBMS position is updated: the pre-flush listener adds the position update
+      // to the queue before the empty-queue check, so it is persisted even though the queue
+      // contained no data writes
+      final var rdbmsPosition = exporterPositionMapper.findOne(2);
+      assertThat(rdbmsPosition).isNotNull();
+      assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
+    } finally {
+      intervalExporter.close();
+    }
   }
 
   @Test
@@ -1636,21 +1640,23 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             InstantSource.system()));
     batchingExporter.open(batchingController);
-    final var groupId = "recreated-group-" + UUID.randomUUID();
+    try {
+      final var groupId = "recreated-group-" + UUID.randomUUID();
 
-    // when - the group is created, deleted and created again before the next flush
-    batchingExporter.export(groupRecord(groupId, "first", GroupIntent.CREATED));
-    batchingExporter.export(groupRecord(groupId, "first", GroupIntent.DELETED));
-    batchingExporter.export(groupRecord(groupId, "second", GroupIntent.CREATED));
-    batchingController.runScheduledTasks(Duration.ofSeconds(1));
+      // when - the group is created, deleted and created again before the next flush
+      batchingExporter.export(groupRecord(groupId, "first", GroupIntent.CREATED));
+      batchingExporter.export(groupRecord(groupId, "first", GroupIntent.DELETED));
+      batchingExporter.export(groupRecord(groupId, "second", GroupIntent.CREATED));
+      batchingController.runScheduledTasks(Duration.ofSeconds(1));
 
-    // then - the flush succeeded and the group exists with the values of the second creation
-    assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
-    final var group = rdbmsService.getGroupReader().findOne(groupId);
-    assertThat(group).isNotEmpty();
-    assertThat(group.get().name()).isEqualTo("second");
-
-    batchingExporter.close();
+      // then - the flush succeeded and the group exists with the values of the second creation
+      assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
+      final var group = rdbmsService.getGroupReader().findOne(groupId);
+      assertThat(group).isNotEmpty();
+      assertThat(group.get().name()).isEqualTo("second");
+    } finally {
+      batchingExporter.close();
+    }
   }
 
   @ParameterizedTest
