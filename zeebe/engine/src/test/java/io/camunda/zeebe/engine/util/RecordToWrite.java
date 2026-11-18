@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -52,6 +54,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
@@ -102,12 +105,17 @@ public final class RecordToWrite implements LogAppendEntry {
 
   /** Like a command sent by a client through the gateway: user claims and request metadata. */
   public static RecordToWrite commandFromRequest(final String username) {
+    return commandFromRequest(AuthorizationUtil.getAuthInfo(username));
+  }
+
+  /** Like a command sent by a client through the gateway: the given claims and request metadata. */
+  public static RecordToWrite commandFromRequest(final AuthInfo authInfo) {
     return new RecordToWrite(
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .requestId(1L)
             .requestStreamId(1)
-            .authorization(AuthorizationUtil.getAuthInfo(username)));
+            .authorization(authInfo));
   }
 
   public static RecordToWrite event() {
@@ -287,6 +295,12 @@ public final class RecordToWrite implements LogAppendEntry {
    * @param index The index in the batch of the source record, also known as sourceIndex of this.
    * @return this
    */
+  public RecordToWrite userTask(final UserTaskIntent intent, final UserTaskRecord value) {
+    recordMetadata.valueType(ValueType.USER_TASK).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
   public RecordToWrite role(final RoleIntent intent, final RoleRecord value) {
     recordMetadata.valueType(ValueType.ROLE).intent(intent);
     unifiedRecordValue = value;
