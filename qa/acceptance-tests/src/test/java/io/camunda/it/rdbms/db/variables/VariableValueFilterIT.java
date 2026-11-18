@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.variables;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariables;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
@@ -692,6 +693,63 @@ public class VariableValueFilterIT {
     assertThat(actual.items())
         .extracting("value")
         .containsExactly("value?single_wildcards1", "value?single_wildcards2");
+  }
+
+  // A truncated variable stores its preview in VAR_VALUE and the original in VAR_FULL_VALUE, so a
+  // like filter has to check both columns. Placing the marker beyond the preview size makes only
+  // the VAR_FULL_VALUE branch match, which is the branch that must stay scoped by the other
+  // predicates of the query.
+
+  @TestTemplate
+  public void shouldApplyTenantCheckWhenLikeMatchesTruncatedValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two truncated variables in different tenants, both matching the like filter
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String marker = nextStringId();
+    final VariableDbModel authorizedVariable =
+        VariableFixtures.createRandomized(
+            b -> b.tenantId(nextStringId()).value(generateRandomString(9000, marker)));
+    createAndSaveVariable(rdbmsService, authorizedVariable);
+    final VariableDbModel otherTenantVariable =
+        VariableFixtures.createRandomized(
+            b -> b.tenantId(nextStringId()).value(generateRandomString(9000, marker)));
+    createAndSaveVariable(rdbmsService, otherTenantVariable);
+
+    // when searching as a user that is only authorized for the first tenant
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b -> b.filter(f -> f.valueOperations(Operation.like("*" + marker)))),
+                resourceAccessChecksFromTenantIds(authorizedVariable.tenantId()));
+
+    // then only the variable of the authorized tenant is returned
+    assertThat(searchResult.items())
+        .extracting(VariableEntity::variableKey)
+        .containsExactly(authorizedVariable.variableKey());
+    assertThat(searchResult.total()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldApplyNameFilterWhenLikeMatchesTruncatedValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given two truncated variables with different names, both matching the like filter
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String marker = nextStringId();
+    final VariableDbModel matchingVariable =
+        VariableFixtures.createRandomized(
+            b -> b.name("var-name-" + nextStringId()).value(generateRandomString(9000, marker)));
+    createAndSaveVariable(rdbmsService, matchingVariable);
+    createAndSaveVariable(
+        rdbmsService,
+        VariableFixtures.createRandomized(
+            b -> b.name("var-name-" + nextStringId()).value(generateRandomString(9000, marker))));
+
+    // when searching by the first variable's name and the like filter
+    // then only the variable with that name is returned
+    searchAndAssertVariableValueFilter(
+        rdbmsService, matchingVariable, matchingVariable.name(), Operation.like("*" + marker));
   }
 
   private static void searchAndAssertVariableValueFilter(
