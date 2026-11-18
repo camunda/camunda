@@ -41,6 +41,7 @@ on:
         type: choice
         options:
         - elasticsearch
+        - none
         default: elasticsearch
       reuse-tag:
         description: 'Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the build step. ⚠ Cannot be used with orchestration-tag.'
@@ -161,7 +162,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "none"'
         # type choice is invalid here
         type: string
         required: false
@@ -460,7 +461,7 @@ jobs:
   build-optimize-image:
     name: Build Optimize Docker image
     needs: calculate-image-tag
-    if: ${{ inputs.enable-optimize && inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
+    if: ${{ inputs.enable-optimize && inputs.secondary-storage-type != 'none' && inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -643,7 +644,7 @@ jobs:
             --set zeebeGateway.image.tag=${image_tag}"
 
           # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
-          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+          if [[ "${{ inputs.enable-optimize }}" == "true" && "${{ inputs.secondary-storage-type }}" != "none" ]]; then
             if [[ -n "${{ inputs.optimize-tag }}" ]]; then
               # Explicit optimize tag provided: use it directly (Docker Hub image)
               additional_platform_config+=" \
