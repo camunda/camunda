@@ -10,11 +10,9 @@ package io.camunda.zeebe.broker.exporter.context;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -32,19 +30,20 @@ final class ExporterConfigurationSetDeserializer<E> extends JsonDeserializer<Set
   private final ExporterConfigurationListDeserializer<E> listDeserializer;
 
   public ExporterConfigurationSetDeserializer() {
-    this(TypeFactory.defaultInstance().constructType(Object.class));
+    this(new ExporterConfigurationListDeserializer<>());
   }
 
-  private ExporterConfigurationSetDeserializer(final JavaType contentType) {
-    this.listDeserializer = new ExporterConfigurationListDeserializer<>(contentType);
+  private ExporterConfigurationSetDeserializer(
+      final ExporterConfigurationListDeserializer<E> listDeserializer) {
+    this.listDeserializer = listDeserializer;
   }
 
   @Override
-  public JsonDeserializer<?> createContextual(
+  public ExporterConfigurationSetDeserializer<E> createContextual(
       final DeserializationContext ctxt, final @Nullable BeanProperty property)
       throws JsonMappingException {
     return new ExporterConfigurationSetDeserializer<>(
-        ExporterConfigurationListDeserializer.contentType(ctxt, property));
+        listDeserializer.createContextual(ctxt, property));
   }
 
   @Override
