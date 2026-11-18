@@ -429,6 +429,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-msgpack-codegen</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
