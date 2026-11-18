@@ -605,19 +605,12 @@ class ProcessInstanceDeleterJobIT extends BackgroundTaskIT<ProcessInstanceDelete
   private DeletionRepository createDeletionRepository(
       final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
     final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
-    final var history = config.getHistory();
-    final var retention = history.getRetention();
-    final var deleter = retention.getDeleter();
-    final var listViewTemplate =
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     if (isElasticsearch) {
       return closeLater(
           new ElasticsearchDeletionRepository(
-              deleter,
-              retention,
-              history.getProcessInstanceRetentionMode(),
               PARTITION_ID,
-              listViewTemplate,
+              config.getHistory(),
+              resourceProvider,
               createAsyncESClient(config),
               executor,
               exporterMetrics,
@@ -627,11 +620,9 @@ class ProcessInstanceDeleterJobIT extends BackgroundTaskIT<ProcessInstanceDelete
 
       return closeLater(
           new OpensearchDeletionRepository(
-              deleter,
-              retention,
-              history.getProcessInstanceRetentionMode(),
               PARTITION_ID,
-              listViewTemplate,
+              config.getHistory(),
+              resourceProvider,
               asyncClient,
               executor,
               exporterMetrics,

@@ -20,15 +20,14 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TrackHits;
-import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.exporter.tasks.util.SearchAfterES;
-import io.camunda.search.schema.config.DeleterConfiguration;
-import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -37,35 +36,30 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
 public class ElasticsearchDeletionRepository extends ElasticsearchRepository
     implements DeletionRepository {
   private final DeleteByIdPipeline pipeline;
-  private final DeleterConfiguration config;
-  private final RetentionConfiguration retention;
-  private final ProcessInstanceRetentionMode retentionMode;
   private final int partitionId;
+  private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplate;
 
   public ElasticsearchDeletionRepository(
-      final DeleterConfiguration config,
-      final RetentionConfiguration retention,
-      final ProcessInstanceRetentionMode retentionMode,
       final int partitionId,
-      final IndexTemplateDescriptor listViewTemplate,
-      final ElasticsearchAsyncClient client,
+      final HistoryConfiguration config,
+      final ExporterResourceProvider resourceProvider,
+      @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
-    this.config = config;
-    this.retention = retention;
-    this.retentionMode = retentionMode;
     this.partitionId = partitionId;
-    this.listViewTemplate = listViewTemplate;
+    this.config = config;
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
 
-    pipeline = new DeleteByIdPipeline(config, this, metrics, logger);
+    pipeline = new DeleteByIdPipeline(config.getRetention().getDeleter(), this, metrics, logger);
   }
 
   @Override
@@ -79,8 +73,10 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
             .ignoreUnavailable(true)
             .query(
                 finishedProcessInstancesQuery(
-                    "now-" + retention.getMinimumAge(), partitionId, retentionMode))
-            .size(config.getEntityBatchSize())
+                    "now-" + config.getRetention().getMinimumAge(),
+                    partitionId,
+                    config.getProcessInstanceRetentionMode()))
+            .size(config.getRetention().getDeleter().getEntityBatchSize())
             .source(
                 s ->
                     s.filter(
@@ -108,7 +104,8 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
         .thenApplyAsync(
             response ->
                 ProcessInstanceDeletionBatch.from(
-                    response.hits().hits().stream().map(Hit::source).toList(), retentionMode),
+                    response.hits().hits().stream().map(Hit::source).toList(),
+                    config.getProcessInstanceRetentionMode()),
             executor);
   }
 
