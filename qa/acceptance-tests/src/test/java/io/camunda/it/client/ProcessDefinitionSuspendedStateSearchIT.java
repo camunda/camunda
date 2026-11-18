@@ -55,7 +55,7 @@ class ProcessDefinitionSuspendedStateSearchIT {
   void shouldReturnLatestActiveVersionSkippingSuspendedVersion() throws IOException {
     // given
     final var versions = deployTwoVersions();
-    writeState(versions.v2(), false);
+    suspendInSecondaryStorage(versions.v2());
     awaitState(versions.v2(), ProcessDefinitionState.SUSPENDED);
 
     // when
@@ -108,12 +108,15 @@ class ProcessDefinitionSuspendedStateSearchIT {
                     .isEqualTo(expected));
   }
 
-  /** Writes the state of the process definition straight into the secondary storage. */
-  private static void writeState(final Process process, final boolean active) throws IOException {
+  private static void suspendInSecondaryStorage(final Process process) throws IOException {
     final var key = process.getProcessDefinitionKey();
     final var physicalTenantId =
         Optional.ofNullable(CamundaMultiDBExtension.getPhysicalTenant())
             .orElse(DEFAULT_PHYSICAL_TENANT_ID);
+    final Map<String, String> suspendedDoc =
+        Map.of(
+            ProcessIndex.STATE,
+            io.camunda.webapps.schema.entities.ProcessDefinitionState.SUSPENDED.name());
     switch (databaseType.storageType()) {
       case ELASTICSEARCH ->
           BROKER
@@ -122,7 +125,7 @@ class ProcessDefinitionSuspendedStateSearchIT {
                   u ->
                       u.index(processIndexName(physicalTenantId))
                           .id(String.valueOf(key))
-                          .doc(Map.of(ProcessIndex.STATE, storageState(active)))
+                          .doc(suspendedDoc)
                           .refresh(co.elastic.clients.elasticsearch._types.Refresh.True),
                   Object.class);
       case OPENSEARCH ->
@@ -132,7 +135,7 @@ class ProcessDefinitionSuspendedStateSearchIT {
                   u ->
                       u.index(processIndexName(physicalTenantId))
                           .id(String.valueOf(key))
-                          .doc(Map.of(ProcessIndex.STATE, storageState(active)))
+                          .doc(suspendedDoc)
                           .refresh(org.opensearch.client.opensearch._types.Refresh.True),
                   Object.class);
       case RDBMS -> {
@@ -144,21 +147,11 @@ class ProcessDefinitionSuspendedStateSearchIT {
         mapper.updateState(
             new ProcessDefinitionStateDto(
                 key,
-                active
-                    ? io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState
-                        .ACTIVE
-                    : io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState
-                        .SUSPENDED));
+                io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState
+                    .SUSPENDED));
       }
       default -> throw new IllegalStateException("Unsupported database " + databaseType);
     }
-  }
-
-  private static String storageState(final boolean active) {
-    return (active
-            ? io.camunda.webapps.schema.entities.ProcessDefinitionState.ACTIVE
-            : io.camunda.webapps.schema.entities.ProcessDefinitionState.SUSPENDED)
-        .name();
   }
 
   private static String processIndexName(final String physicalTenantId) {
